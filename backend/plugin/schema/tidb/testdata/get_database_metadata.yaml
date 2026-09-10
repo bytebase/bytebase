@@ -1,0 +1,1069 @@
+- description: basic_tables_with_constraints
+  schema: |
+    CREATE TABLE users (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE posts (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published BOOLEAN DEFAULT false,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_id (user_id),
+        INDEX idx_published (published)
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "posts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "bigint"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "bigint"
+                },
+                {
+                  "name": "title",
+                  "position": 3,
+                  "type": "varchar(200)"
+                },
+                {
+                  "name": "content",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "published",
+                  "position": 5,
+                  "default": "FALSE",
+                  "nullable": true,
+                  "type": "tinyint(1)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_user_id",
+                  "expressions": [
+                    "user_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_published",
+                  "expressions": [
+                    "published"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_user",
+                  "columns": [
+                    "user_id"
+                  ],
+                  "referenced_table": "users",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE"
+                }
+              ]
+            },
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "bigint"
+                },
+                {
+                  "name": "username",
+                  "position": 2,
+                  "type": "varchar(50)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "updated_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "on_update": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "username",
+                  "expressions": [
+                    "username"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            }
+          ]
+        }
+      ]
+    }
+- description: table_with_various_data_types
+  schema: |
+    CREATE TABLE data_types_test (
+        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+        tiny_int_col TINYINT,
+        small_int_col SMALLINT,
+        medium_int_col MEDIUMINT,
+        int_col INT,
+        big_int_col BIGINT,
+        decimal_col DECIMAL(10, 2),
+        float_col FLOAT,
+        double_col DOUBLE,
+        bit_col BIT(8),
+        char_col CHAR(10),
+        varchar_col VARCHAR(100),
+        binary_col BINARY(10),
+        varbinary_col VARBINARY(100),
+        tinytext_col TINYTEXT,
+        text_col TEXT,
+        mediumtext_col MEDIUMTEXT,
+        longtext_col LONGTEXT,
+        tinyblob_col TINYBLOB,
+        blob_col BLOB,
+        mediumblob_col MEDIUMBLOB,
+        longblob_col LONGBLOB,
+        date_col DATE,
+        time_col TIME,
+        datetime_col DATETIME,
+        timestamp_col TIMESTAMP,
+        year_col YEAR,
+        json_col JSON,
+        enum_col ENUM('small', 'medium', 'large'),
+        set_col SET('a', 'b', 'c')
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "data_types_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "bigint"
+                },
+                {
+                  "name": "tiny_int_col",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "tinyint"
+                },
+                {
+                  "name": "small_int_col",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "smallint"
+                },
+                {
+                  "name": "medium_int_col",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "mediumint"
+                },
+                {
+                  "name": "int_col",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "big_int_col",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "bigint"
+                },
+                {
+                  "name": "decimal_col",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "float_col",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "float"
+                },
+                {
+                  "name": "double_col",
+                  "position": 9,
+                  "nullable": true,
+                  "type": "double"
+                },
+                {
+                  "name": "bit_col",
+                  "position": 10,
+                  "nullable": true,
+                  "type": "bit(8)"
+                },
+                {
+                  "name": "char_col",
+                  "position": 11,
+                  "nullable": true,
+                  "type": "char(10)"
+                },
+                {
+                  "name": "varchar_col",
+                  "position": 12,
+                  "nullable": true,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "binary_col",
+                  "position": 13,
+                  "nullable": true,
+                  "type": "binary(10)",
+                  "character_set": "binary"
+                },
+                {
+                  "name": "varbinary_col",
+                  "position": 14,
+                  "nullable": true,
+                  "type": "varbinary(100)",
+                  "character_set": "binary"
+                },
+                {
+                  "name": "tinytext_col",
+                  "position": 15,
+                  "nullable": true,
+                  "type": "tinytext"
+                },
+                {
+                  "name": "text_col",
+                  "position": 16,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "mediumtext_col",
+                  "position": 17,
+                  "nullable": true,
+                  "type": "mediumtext"
+                },
+                {
+                  "name": "longtext_col",
+                  "position": 18,
+                  "nullable": true,
+                  "type": "longtext"
+                },
+                {
+                  "name": "tinyblob_col",
+                  "position": 19,
+                  "nullable": true,
+                  "type": "tinyblob",
+                  "character_set": "binary"
+                },
+                {
+                  "name": "blob_col",
+                  "position": 20,
+                  "nullable": true,
+                  "type": "blob",
+                  "character_set": "binary"
+                },
+                {
+                  "name": "mediumblob_col",
+                  "position": 21,
+                  "nullable": true,
+                  "type": "mediumblob",
+                  "character_set": "binary"
+                },
+                {
+                  "name": "longblob_col",
+                  "position": 22,
+                  "nullable": true,
+                  "type": "longblob",
+                  "character_set": "binary"
+                },
+                {
+                  "name": "date_col",
+                  "position": 23,
+                  "nullable": true,
+                  "type": "date"
+                },
+                {
+                  "name": "time_col",
+                  "position": 24,
+                  "nullable": true,
+                  "type": "time"
+                },
+                {
+                  "name": "datetime_col",
+                  "position": 25,
+                  "nullable": true,
+                  "type": "datetime"
+                },
+                {
+                  "name": "timestamp_col",
+                  "position": 26,
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "year_col",
+                  "position": 27,
+                  "nullable": true,
+                  "type": "year(4)"
+                },
+                {
+                  "name": "json_col",
+                  "position": 28,
+                  "nullable": true,
+                  "type": "json",
+                  "character_set": "binary"
+                },
+                {
+                  "name": "enum_col",
+                  "position": 29,
+                  "nullable": true,
+                  "type": "enum('small','medium','large')"
+                },
+                {
+                  "name": "set_col",
+                  "position": 30,
+                  "nullable": true,
+                  "type": "set('a','b','c')"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            }
+          ]
+        }
+      ]
+    }
+- description: table_with_foreign_keys
+  schema: |
+    CREATE TABLE departments (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE employees (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        dept_id INT,
+        manager_id INT,
+        CONSTRAINT fk_dept FOREIGN KEY (dept_id) REFERENCES departments(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+        CONSTRAINT fk_manager FOREIGN KEY (manager_id) REFERENCES employees(id) ON DELETE SET NULL
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "departments",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            },
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "dept_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "manager_id",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "fk_dept",
+                  "expressions": [
+                    "dept_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "fk_manager",
+                  "expressions": [
+                    "manager_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_dept",
+                  "columns": [
+                    "dept_id"
+                  ],
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "RESTRICT"
+                },
+                {
+                  "name": "fk_manager",
+                  "columns": [
+                    "manager_id"
+                  ],
+                  "referenced_table": "employees",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- description: views_and_comments
+  schema: |
+    CREATE TABLE orders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        customer_name VARCHAR(100) COMMENT 'Customer full name',
+        amount DECIMAL(10,2) COMMENT 'Order amount in USD',
+        status VARCHAR(20) DEFAULT 'pending'
+    ) COMMENT='Order management table';
+
+    CREATE VIEW active_orders AS
+    SELECT id, customer_name, amount
+    FROM orders
+    WHERE status = 'active';
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "customer_name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "status",
+                  "position": 4,
+                  "default": "_UTF8MB4'pending'",
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "comment": "Order management table"
+            }
+          ],
+          "views": [
+            {
+              "name": "active_orders",
+              "definition": "SELECT id, customer_name, amount\nFROM orders\nWHERE status = 'active'"
+            }
+          ]
+        }
+      ]
+    }
+- description: indexes_and_constraints
+  schema: |
+    CREATE TABLE products (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        price DECIMAL(10,2) NOT NULL,
+        category VARCHAR(50),
+        tags JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        INDEX idx_price_category (price, category),
+        UNIQUE INDEX idx_unique_name (name),
+        FULLTEXT INDEX idx_description (description)
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "description",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "price",
+                  "position": 4,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "category",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "varchar(50)"
+                },
+                {
+                  "name": "tags",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "json",
+                  "character_set": "binary"
+                },
+                {
+                  "name": "created_at",
+                  "position": 7,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_price_category",
+                  "expressions": [
+                    "price",
+                    "category"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_unique_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
+            }
+          ]
+        }
+      ]
+    }
+- description: tidb_auto_random
+  schema: |
+    CREATE TABLE auto_random_test (
+        id BIGINT /*T![auto_rand] AUTO_RANDOM(5) */ PRIMARY KEY,
+        name VARCHAR(100),
+        data JSON
+    ) COMMENT='PK_AUTO_RANDOM_BITS=5';
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "auto_random_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_RANDOM(5)",
+                  "type": "bigint"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "data",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "json",
+                  "character_set": "binary"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "comment": "PK_AUTO_RANDOM_BITS=5"
+            }
+          ]
+        }
+      ]
+    }
+- description: complex_table_options
+  schema: |
+    CREATE TABLE table_options_test (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        data TEXT
+    ) ENGINE=InnoDB
+      DEFAULT CHARSET=utf8mb4
+      COLLATE=utf8mb4_general_ci
+      AUTO_INCREMENT=1000
+      COMMENT='Table with various TiDB options';
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "table_options_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "data",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "text"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "collation": "utf8mb4_general_ci",
+              "charset": "utf8mb4",
+              "comment": "Table with various TiDB options"
+            }
+          ]
+        }
+      ]
+    }
+- description: self_referencing_foreign_keys
+  schema: |
+    CREATE TABLE categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        parent_id INT,
+        CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "categories",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "parent_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "fk_parent",
+                  "expressions": [
+                    "parent_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "foreign_keys": [
+                {
+                  "name": "fk_parent",
+                  "columns": [
+                    "parent_id"
+                  ],
+                  "referenced_table": "categories",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- description: tidb_clustered_index
+  schema: |
+    CREATE TABLE clustered_test (
+        id INT PRIMARY KEY CLUSTERED,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100)
+    );
+
+    CREATE TABLE non_clustered_test (
+        id INT PRIMARY KEY NONCLUSTERED,
+        name VARCHAR(100) NOT NULL,
+        data TEXT
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "clustered_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "varchar(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "primary_key_type": "CLUSTERED"
+            },
+            {
+              "name": "non_clustered_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)"
+                },
+                {
+                  "name": "data",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "text"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "primary_key_type": "NONCLUSTERED"
+            }
+          ]
+        }
+      ]
+    }

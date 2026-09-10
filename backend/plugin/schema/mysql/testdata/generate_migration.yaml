@@ -1,0 +1,2288 @@
+- description: drop_table_with_dependencies
+  oldSchema: |
+    CREATE TABLE authors (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(100) NOT NULL,
+      email varchar(100) DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_email (email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    CREATE TABLE books (
+      id int NOT NULL AUTO_INCREMENT,
+      title varchar(200) NOT NULL,
+      author_id int NOT NULL,
+      isbn varchar(20) DEFAULT NULL,
+      published_year int DEFAULT NULL,
+      price decimal(8,2) DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_author (author_id),
+      KEY idx_year (published_year),
+      UNIQUE KEY uk_isbn (isbn),
+      CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors (id),
+      CONSTRAINT chk_price_positive CHECK (price > 0),
+      CONSTRAINT chk_year_valid CHECK ((published_year >= 1000) and (published_year <= 2100))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    CREATE TABLE products (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(50) NOT NULL,
+      price decimal(8,2) NOT NULL,
+      description text DEFAULT NULL,
+      category varchar(30) DEFAULT NULL,
+      is_active tinyint(1) DEFAULT '1',
+      PRIMARY KEY (id),
+      KEY idx_category (category),
+      KEY idx_price (price)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  newSchema: ""
+  expected: |+
+    DROP TABLE IF EXISTS `books`;
+
+    DROP TABLE IF EXISTS `products`;
+
+    DROP TABLE IF EXISTS `authors`;
+
+- description: Create tables with foreign key constraints
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  expected: |+
+    CREATE TABLE IF NOT EXISTS `posts` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `user_id` int NOT NULL,
+      `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+      `published_at` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CREATE INDEX `idx_user_id` ON `posts` (`user_id`);
+
+
+    CREATE TABLE IF NOT EXISTS `users` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_email` (`email`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CREATE INDEX `idx_username` ON `users` (`username`);
+
+
+    ALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE;
+
+- description: Basic table operations with columns, constraints, and indexes
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT true,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username),
+        INDEX idx_email_active (email, is_active)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE comments (
+        id INT NOT NULL AUTO_INCREMENT,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_post_user (post_id, user_id),
+        CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  expected: |+
+    DROP TABLE IF EXISTS `comments`;
+
+    ALTER TABLE `posts` DROP CONSTRAINT `chk_title_length`;
+
+    DROP INDEX `idx_email_active` ON `users`;
+
+    ALTER TABLE `users` DROP COLUMN `is_active`;
+
+
+- description: Views, triggers, and stored procedures
+  oldSchema: |2
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        PRIMARY KEY (id),
+        INDEX idx_name (name)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        total DECIMAL(10, 2),
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+    ) ENGINE=InnoDB;
+
+    CREATE VIEW product_inventory AS
+    SELECT
+        p.id,
+        p.name,
+        p.price,
+        p.stock,
+        COALESCE(SUM(o.quantity), 0) AS total_ordered
+    FROM products p
+    LEFT JOIN orders o ON p.id = o.product_id
+    GROUP BY p.id, p.name, p.price, p.stock;
+
+    CREATE VIEW low_stock_products AS
+    SELECT * FROM products WHERE stock < 10;
+
+    CREATE TRIGGER update_order_total
+    BEFORE INSERT ON orders
+    FOR EACH ROW
+    BEGIN
+        DECLARE product_price DECIMAL(10, 2);
+        SELECT price INTO product_price FROM products WHERE id = NEW.product_id;
+        SET NEW.total = NEW.quantity * product_price;
+    END;
+
+    CREATE PROCEDURE GetProductInventory(IN product_name VARCHAR(100))
+    BEGIN
+        SELECT * FROM product_inventory
+        WHERE name LIKE CONCAT('%', product_name, '%');
+    END;
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        PRIMARY KEY (id),
+        INDEX idx_name (name)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        total DECIMAL(10, 2),
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP TRIGGER IF EXISTS `update_order_total`;
+
+    CREATE OR REPLACE VIEW `low_stock_products` AS SELECT 1;
+
+    CREATE OR REPLACE VIEW `product_inventory` AS SELECT 1;
+
+    DROP VIEW IF EXISTS `low_stock_products`;
+
+    DROP VIEW IF EXISTS `product_inventory`;
+
+    DROP PROCEDURE IF EXISTS `GetProductInventory`;
+
+
+- description: Stored functions and dependent tables
+  oldSchema: |2
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_id, sale_date)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE sales_summary (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        month_year VARCHAR(7) NOT NULL,
+        total_sales DECIMAL(10, 2),
+        tax_amount DECIMAL(10, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_product_month (product_id, month_year)
+    ) ENGINE=InnoDB;
+
+    CREATE FUNCTION CalculateTotalSales(p_product_id INT, p_start_date DATE, p_end_date DATE)
+    RETURNS DECIMAL(10, 2)
+    DETERMINISTIC
+    READS SQL DATA
+    BEGIN
+        DECLARE total DECIMAL(10, 2);
+
+        SELECT COALESCE(SUM(quantity * unit_price), 0) INTO total
+        FROM sales
+        WHERE product_id = p_product_id
+        AND sale_date BETWEEN p_start_date AND p_end_date;
+
+        RETURN total;
+    END;
+
+    CREATE FUNCTION GetTaxAmount(amount DECIMAL(10, 2), tax_rate DECIMAL(5, 2))
+    RETURNS DECIMAL(10, 2)
+    DETERMINISTIC
+    NO SQL
+    BEGIN
+        RETURN amount * (tax_rate / 100);
+    END;
+  newSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_id, sale_date)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP FUNCTION IF EXISTS `CalculateTotalSales`;
+
+    DROP FUNCTION IF EXISTS `GetTaxAmount`;
+
+    DROP TABLE IF EXISTS `sales_summary`;
+
+- description: Drop indexes and constraints from tables
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category VARCHAR(50),
+        price DECIMAL(10, 2),
+        sku VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category VARCHAR(50),
+        price DECIMAL(10, 2),
+        sku VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_sku (sku),
+        INDEX idx_name (name),
+        INDEX idx_category (category),
+        INDEX idx_price (price),
+        CONSTRAINT chk_price_positive CHECK (price > 0),
+        CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3)
+    ) ENGINE=InnoDB;
+  expected: |+
+    CREATE INDEX `idx_category` ON `products` (`category`);
+
+    CREATE INDEX `idx_name` ON `products` (`name`);
+
+    CREATE INDEX `idx_price` ON `products` (`price`);
+
+    ALTER TABLE `products` ADD UNIQUE KEY `uk_sku` (`sku`);
+
+    ALTER TABLE `products` ADD CONSTRAINT `chk_name_length` CHECK (char_length(`name`) >= 3);
+
+    ALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK (`price` > 0);
+
+- description: Drop views and stored routines
+  oldSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_name VARCHAR(100) NOT NULL,
+        sale_amount DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  newSchema: |2
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_name VARCHAR(100) NOT NULL,
+        sale_amount DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE VIEW monthly_sales AS
+    SELECT
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(sale_amount) AS total_sales
+    FROM sales
+    GROUP BY YEAR(sale_date), MONTH(sale_date);
+
+    CREATE VIEW top_products AS
+    SELECT
+        product_name,
+        COUNT(*) AS sale_count,
+        SUM(sale_amount) AS total_revenue
+    FROM sales
+    GROUP BY product_name
+    ORDER BY SUM(sale_amount) DESC;
+
+    CREATE FUNCTION GetMonthlySalesTotal(year INT, month INT)
+    RETURNS DECIMAL(10, 2)
+    DETERMINISTIC
+    READS SQL DATA
+    BEGIN
+        DECLARE total DECIMAL(10, 2);
+        SELECT COALESCE(SUM(sale_amount), 0) INTO total
+        FROM sales
+        WHERE YEAR(sale_date) = year AND MONTH(sale_date) = month;
+        RETURN total;
+    END;
+
+    CREATE PROCEDURE CalculateDiscount(IN amount DECIMAL(10, 2), OUT discount DECIMAL(10, 2))
+    BEGIN
+        SET discount = amount * 0.1;
+    END;
+  expected: |+
+    CREATE VIEW `monthly_sales` AS SELECT 1;
+
+    CREATE VIEW `top_products` AS SELECT 1;
+
+    CREATE OR REPLACE VIEW `monthly_sales` AS select year(`sales`.`sale_date`) AS `year`,month(`sales`.`sale_date`) AS `month`,sum(`sales`.`sale_amount`) AS `total_sales` from `sales` group by year(`sales`.`sale_date`),month(`sales`.`sale_date`);
+
+    CREATE OR REPLACE VIEW `top_products` AS select `sales`.`product_name` AS `product_name`,count(0) AS `sale_count`,sum(`sales`.`sale_amount`) AS `total_revenue` from `sales` group by `sales`.`product_name` order by sum(`sales`.`sale_amount`) desc;
+
+    BEGIN
+        DECLARE total DECIMAL(10, 2);
+        SELECT COALESCE(SUM(sale_amount), 0) INTO total
+        FROM sales
+        WHERE YEAR(sale_date) = year AND MONTH(sale_date) = month;
+        RETURN total;
+    END;
+
+    BEGIN
+        SET discount = amount * 0.1;
+    END;
+
+- description: Alter table with column additions, type changes, and constraints
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        description TEXT NOT NULL,
+        category VARCHAR(50),
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        stock_quantity INT DEFAULT 0,
+        weight DECIMAL(5, 2),
+        PRIMARY KEY (id),
+        INDEX idx_category (category),
+        INDEX idx_price (price),
+        INDEX idx_created_at (created_at),
+        UNIQUE INDEX uk_name_category (name, category),
+        CONSTRAINT chk_price_positive CHECK (price > 0),
+        CONSTRAINT chk_stock_non_negative CHECK (stock_quantity >= 0)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        price DECIMAL(8, 2) NOT NULL,
+        description TEXT,
+        category VARCHAR(30),
+        is_active TINYINT(1) DEFAULT 1,
+        PRIMARY KEY (id),
+        INDEX idx_category (category),
+        INDEX idx_price (price)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  expected: |+
+    ALTER TABLE `products` DROP CONSTRAINT `chk_price_positive`;
+
+    ALTER TABLE `products` DROP CONSTRAINT `chk_stock_non_negative`;
+
+    DROP INDEX `idx_created_at` ON `products`;
+
+    DROP INDEX `uk_name_category` ON `products`;
+
+    ALTER TABLE `products` DROP COLUMN `created_at`;
+
+    ALTER TABLE `products` DROP COLUMN `stock_quantity`;
+
+    ALTER TABLE `products` DROP COLUMN `updated_at`;
+
+    ALTER TABLE `products` DROP COLUMN `weight`;
+
+
+    ALTER TABLE `products` MODIFY COLUMN `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `price` decimal(8,2) NOT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `category` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+- description: Drop and recreate constraints with different definitions
+  oldSchema: |+
+    --
+    -- Table structure for `authors`
+    --
+    CREATE TABLE `authors` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `email` varchar(100) DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_email` (`email`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `books`
+    --
+    CREATE TABLE `books` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `title` varchar(200) NOT NULL,
+      `author_id` int NOT NULL,
+      `isbn` varchar(20) DEFAULT (NULL),
+      `published_year` int DEFAULT (NULL),
+      `price` decimal(8,2) DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_isbn` (`isbn`),
+      KEY `idx_author` (`author_id`),
+      KEY `idx_year` (`published_year`),
+      CONSTRAINT `fk_author_new` FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT `chk_price_positive` CHECK (`price` > 0),
+      CONSTRAINT `chk_year_extended` CHECK ((`published_year` >= 1000) and (`published_year` <= 2030)),
+      CONSTRAINT `chk_title_length` CHECK (char_length(`title`) >= 3)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+  newSchema: |
+    CREATE TABLE authors (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE books (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        author_id INT NOT NULL,
+        isbn VARCHAR(20),
+        published_year INT,
+        price DECIMAL(8, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_isbn (isbn),
+        INDEX idx_author (author_id),
+        INDEX idx_year (published_year),
+        CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors(id),
+        CONSTRAINT chk_year_valid CHECK (published_year >= 1000 AND published_year <= 2100),
+        CONSTRAINT chk_price_positive CHECK (price > 0)
+    ) ENGINE=InnoDB;
+  expected: |+
+    ALTER TABLE `books` DROP FOREIGN KEY `fk_author_new`;
+
+    ALTER TABLE `books` DROP CONSTRAINT `chk_title_length`;
+
+    ALTER TABLE `books` DROP CONSTRAINT `chk_year_extended`;
+
+
+    ALTER TABLE `authors` MODIFY COLUMN `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `books` MODIFY COLUMN `isbn` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `books` MODIFY COLUMN `published_year` int DEFAULT NULL;
+
+    ALTER TABLE `books` MODIFY COLUMN `price` decimal(8,2) DEFAULT NULL;
+
+    ALTER TABLE `books` ADD CONSTRAINT `chk_year_valid` CHECK ((`published_year` >= 1000) and (`published_year` <= 2100));
+
+    ALTER TABLE `books` ADD CONSTRAINT `fk_author` FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`) ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+- description: FULLTEXT and SPATIAL indexes
+  oldSchema: |
+    CREATE TABLE articles (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        content TEXT NOT NULL,
+        tags VARCHAR(500),
+        PRIMARY KEY (id),
+        FULLTEXT idx_fulltext_content (title, content),
+        FULLTEXT idx_fulltext_tags (tags),
+        INDEX idx_title_tags (title(50), tags(50))
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE locations (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        position POINT NOT NULL,
+        PRIMARY KEY (id),
+        SPATIAL INDEX idx_spatial_position (position)
+    ) ENGINE=InnoDB;
+  newSchema: |
+    CREATE TABLE articles (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        content TEXT NOT NULL,
+        tags VARCHAR(500),
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE locations (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        position POINT NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP INDEX `idx_fulltext_content` ON `articles`;
+
+    DROP INDEX `idx_fulltext_tags` ON `articles`;
+
+    DROP INDEX `idx_title_tags` ON `articles`;
+
+    DROP INDEX `idx_spatial_position` ON `locations`;
+
+
+- description: Complex view dependencies with multiple levels
+  oldSchema: |+
+    --
+    -- Temporary view structure for `dept_employee_count`
+    --
+    -- `dept_employee_count` references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them
+
+    --
+    -- Temporary view structure for `dept_manager_summary`
+    --
+    -- `dept_manager_summary` references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them
+
+    --
+    -- Temporary view structure for `dept_summary`
+    --
+    -- `dept_summary` references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them
+
+    --
+    -- Table structure for `departments`
+    --
+    CREATE TABLE `departments` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `manager_id` int DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      KEY `fk_manager` (`manager_id`),
+      CONSTRAINT `fk_manager` FOREIGN KEY (`manager_id`) REFERENCES `employees` (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `employees`
+    --
+    CREATE TABLE `employees` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `department_id` int DEFAULT (NULL),
+      `salary` decimal(10,2) DEFAULT (NULL),
+      `hire_date` date DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      KEY `idx_dept` (`department_id`),
+      CONSTRAINT `fk_dept` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- View structure for `dept_employee_count`
+    --
+    CREATE OR REPLACE VIEW `dept_employee_count` AS select `d`.`id` AS `dept_id`,`d`.`name` AS `dept_name`,count(`e`.`id`) AS `emp_count` from (`departments` `d` left join `employees` `e` on((`d`.`id` = `e`.`department_id`))) group by `d`.`id`,`d`.`name`;
+
+    --
+    -- View structure for `dept_manager_summary`
+    --
+    CREATE OR REPLACE VIEW `dept_manager_summary` AS select `ds`.`dept_id` AS `dept_id`,`ds`.`dept_name` AS `dept_name`,`ds`.`emp_count` AS `emp_count`,`ds`.`avg_salary` AS `avg_salary`,`m`.`name` AS `manager_name` from ((`dept_summary` `ds` join `departments` `d` on((`ds`.`dept_id` = `d`.`id`))) left join `employees` `m` on((`d`.`manager_id` = `m`.`id`)));
+
+    --
+    -- View structure for `dept_summary`
+    --
+    CREATE OR REPLACE VIEW `dept_summary` AS select `dept_employee_count`.`dept_id` AS `dept_id`,`dept_employee_count`.`dept_name` AS `dept_name`,`dept_employee_count`.`emp_count` AS `emp_count`,0 AS `avg_salary`,0 AS `max_salary`,0 AS `min_salary` from `dept_employee_count`;
+
+  newSchema: |
+    CREATE TABLE departments (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        manager_id INT,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE employees (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        department_id INT,
+        salary DECIMAL(10, 2),
+        hire_date DATE,
+        PRIMARY KEY (id),
+        INDEX idx_dept (department_id),
+        CONSTRAINT fk_dept FOREIGN KEY (department_id) REFERENCES departments(id)
+    ) ENGINE=InnoDB;
+
+    -- Add self-referencing foreign key
+    ALTER TABLE departments ADD CONSTRAINT fk_manager FOREIGN KEY (manager_id) REFERENCES employees(id);
+  expected: |+
+    CREATE OR REPLACE VIEW `dept_employee_count` AS SELECT 1;
+
+    CREATE OR REPLACE VIEW `dept_manager_summary` AS SELECT 1;
+
+    CREATE OR REPLACE VIEW `dept_summary` AS SELECT 1;
+
+    DROP VIEW IF EXISTS `dept_employee_count`;
+
+    DROP VIEW IF EXISTS `dept_manager_summary`;
+
+    DROP VIEW IF EXISTS `dept_summary`;
+
+
+    ALTER TABLE `departments` MODIFY COLUMN `manager_id` int DEFAULT NULL;
+
+    ALTER TABLE `employees` MODIFY COLUMN `department_id` int DEFAULT NULL;
+
+    ALTER TABLE `employees` MODIFY COLUMN `salary` decimal(10,2) DEFAULT NULL;
+
+    ALTER TABLE `employees` MODIFY COLUMN `hire_date` date DEFAULT NULL;
+
+- description: Circular foreign key dependencies and triggers
+  oldSchema: |+
+    --
+    -- Table structure for `customers`
+    --
+    CREATE TABLE `customers` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `preferred_order_id` int DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      KEY `fk_preferred_order` (`preferred_order_id`),
+      CONSTRAINT `fk_preferred_order` FOREIGN KEY (`preferred_order_id`) REFERENCES `orders` (`id`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `order_items`
+    --
+    CREATE TABLE `order_items` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `order_id` int NOT NULL,
+      `product_name` varchar(100) NOT NULL,
+      `quantity` int NOT NULL,
+      `unit_price` decimal(10,2) NOT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_order` (`order_id`),
+      CONSTRAINT `fk_order_item` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `orders`
+    --
+    CREATE TABLE `orders` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `customer_id` int NOT NULL,
+      `order_date` datetime DEFAULT CURRENT_TIMESTAMP,
+      `total_amount` decimal(10,2) DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      KEY `fk_customer` (`customer_id`),
+      CONSTRAINT `fk_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Trigger structure for `trg_update_order_total`
+    --
+    DELIMITER ;;
+    CREATE TRIGGER `trg_update_order_total`
+    AFTER INSERT ON `order_items` FOR EACH ROW
+    BEGIN
+        UPDATE orders
+        SET total_amount = (
+            SELECT SUM(quantity * unit_price)
+            FROM order_items
+            WHERE order_id = NEW.order_id
+        )
+        WHERE id = NEW.order_id;
+    END;;
+    DELIMITER ;
+
+  newSchema: |
+    CREATE TABLE customers (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        preferred_order_id INT,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        customer_id INT NOT NULL,
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        total_amount DECIMAL(10, 2),
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP TRIGGER IF EXISTS `trg_update_order_total`;
+
+    ALTER TABLE `customers` DROP FOREIGN KEY `fk_preferred_order`;
+
+    ALTER TABLE `orders` DROP FOREIGN KEY `fk_customer`;
+
+    DROP TABLE IF EXISTS `order_items`;
+
+    DROP INDEX `fk_preferred_order` ON `customers`;
+
+    DROP INDEX `fk_customer` ON `orders`;
+
+
+    ALTER TABLE `customers` MODIFY COLUMN `preferred_order_id` int DEFAULT NULL;
+
+    ALTER TABLE `orders` MODIFY COLUMN `total_amount` decimal(10,2) DEFAULT NULL;
+
+- description: Operations on partitioned tables
+  oldSchema: |+
+    --
+    -- Temporary view structure for `regional_sales`
+    --
+    -- `regional_sales` references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them
+
+    --
+    -- Table structure for `sales_data`
+    --
+    CREATE TABLE `sales_data` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `sale_date` date NOT NULL,
+      `customer_id` int NOT NULL,
+      `product_id` int NOT NULL,
+      `amount` decimal(10,2) NOT NULL,
+      `region` varchar(50) NOT NULL,
+      PRIMARY KEY (`id`, `sale_date`),
+      KEY `idx_customer` (`customer_id`),
+      KEY `idx_product` (`product_id`),
+      KEY `idx_region_date` (`region`, `sale_date`),
+      CONSTRAINT `chk_amount_positive` CHECK (`amount` > 0)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- View structure for `regional_sales`
+    --
+    CREATE OR REPLACE VIEW `regional_sales` AS select `sales_data`.`region` AS `region`,year(`sales_data`.`sale_date`) AS `year`,month(`sales_data`.`sale_date`) AS `month`,sum(`sales_data`.`amount`) AS `total_sales`,count(distinct `sales_data`.`customer_id`) AS `unique_customers` from `sales_data` group by `sales_data`.`region`,year(`sales_data`.`sale_date`),month(`sales_data`.`sale_date`);
+
+  newSchema: |
+    CREATE TABLE sales_data (
+        id INT NOT NULL AUTO_INCREMENT,
+        sale_date DATE NOT NULL,
+        customer_id INT NOT NULL,
+        product_id INT NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        region VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id, sale_date)
+    ) ENGINE=InnoDB
+    PARTITION BY RANGE (YEAR(sale_date)) (
+        PARTITION p2020 VALUES LESS THAN (2021),
+        PARTITION p2021 VALUES LESS THAN (2022),
+        PARTITION p2022 VALUES LESS THAN (2023),
+        PARTITION p2023 VALUES LESS THAN (2024),
+        PARTITION p_future VALUES LESS THAN MAXVALUE
+    );
+  expected: |+
+    CREATE OR REPLACE VIEW `regional_sales` AS SELECT 1;
+
+    DROP VIEW IF EXISTS `regional_sales`;
+
+    ALTER TABLE `sales_data` DROP CONSTRAINT `chk_amount_positive`;
+
+    DROP INDEX `idx_customer` ON `sales_data`;
+
+    DROP INDEX `idx_product` ON `sales_data`;
+
+    DROP INDEX `idx_region_date` ON `sales_data`;
+
+
+- description: Re-adding a primary key and an overlapping secondary index on a partitioned table
+  oldSchema: |+
+    --
+    -- Table structure for `ads_member_asset_by_account_channel_d`
+    --
+    CREATE TABLE `ads_member_asset_by_account_channel_d` (
+      `dt` date NOT NULL,
+      `member_id` bigint NOT NULL,
+      `account_type` varchar(50) NOT NULL,
+      `net_asset_amount` decimal(38,10) DEFAULT (NULL)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+  newSchema: |
+    CREATE TABLE ads_member_asset_by_account_channel_d (
+        dt DATE NOT NULL,
+        member_id BIGINT NOT NULL,
+        account_type VARCHAR(50) NOT NULL,
+        net_asset_amount DECIMAL(38,10) DEFAULT NULL,
+        PRIMARY KEY (dt, member_id, account_type),
+        KEY sindex (dt, member_id, account_type)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    PARTITION BY RANGE (TO_DAYS(dt)) (
+        PARTITION p0 VALUES LESS THAN (739000),
+        PARTITION p1 VALUES LESS THAN (739001),
+        PARTITION p2 VALUES LESS THAN (739002),
+        PARTITION p3 VALUES LESS THAN (739003),
+        PARTITION p_future VALUES LESS THAN MAXVALUE
+    );
+  expected: |+
+    ALTER TABLE `ads_member_asset_by_account_channel_d` MODIFY COLUMN `net_asset_amount` decimal(38,10) DEFAULT NULL;
+
+    ALTER TABLE `ads_member_asset_by_account_channel_d` ADD PRIMARY KEY (`dt`, `member_id`, `account_type`);
+
+    CREATE INDEX `sindex` ON `ads_member_asset_by_account_channel_d` (`dt`, `member_id`, `account_type`);
+
+- description: Recreating a partitioned table from metadata
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE ads_member_asset_by_account_channel_d (
+        dt DATE NOT NULL,
+        member_id BIGINT NOT NULL,
+        account_type VARCHAR(50) NOT NULL,
+        net_asset_amount DECIMAL(38,10) DEFAULT NULL,
+        PRIMARY KEY (dt, member_id, account_type),
+        KEY sindex (dt, member_id, account_type)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    PARTITION BY RANGE (TO_DAYS(dt)) (
+        PARTITION p0 VALUES LESS THAN (739000),
+        PARTITION p1 VALUES LESS THAN (739001),
+        PARTITION p2 VALUES LESS THAN (739002),
+        PARTITION p_future VALUES LESS THAN MAXVALUE
+    );
+  expected: |+
+    CREATE TABLE IF NOT EXISTS `ads_member_asset_by_account_channel_d` (
+      `dt` date NOT NULL,
+      `member_id` bigint NOT NULL,
+      `account_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+      `net_asset_amount` decimal(38,10) DEFAULT NULL,
+      PRIMARY KEY (`dt`, `member_id`, `account_type`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    /*!50100 PARTITION BY RANGE (to_days(`dt`))
+    (PARTITION `p0` VALUES LESS THAN (739000) ENGINE=InnoDB,
+     PARTITION `p1` VALUES LESS THAN (739001) ENGINE=InnoDB,
+     PARTITION `p2` VALUES LESS THAN (739002) ENGINE=InnoDB,
+     PARTITION `p_future` VALUES LESS THAN MAXVALUE ENGINE=InnoDB) */;
+    CREATE INDEX `sindex` ON `ads_member_asset_by_account_channel_d` (`dt`, `member_id`, `account_type`);
+
+
+- description: Generated columns (virtual and stored)
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        tax_rate DECIMAL(5, 2) DEFAULT 8.0,
+        price_with_tax DECIMAL(10, 2) AS (price * (1 + tax_rate / 100)) STORED,
+        name_upper VARCHAR(100) AS (UPPER(name)) VIRTUAL,
+        PRIMARY KEY (id),
+        INDEX idx_price_with_tax (price_with_tax),
+        INDEX idx_name_upper (name_upper)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE order_summary (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        total_price DECIMAL(10, 2) AS (quantity * unit_price) STORED,
+        order_date DATE NOT NULL,
+        order_year INT AS (YEAR(order_date)) VIRTUAL,
+        order_month INT AS (MONTH(order_date)) VIRTUAL,
+        PRIMARY KEY (id),
+        INDEX idx_year_month (order_year, order_month)
+    ) ENGINE=InnoDB;
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        tax_rate DECIMAL(5, 2) DEFAULT 8.0,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP TABLE IF EXISTS `order_summary`;
+
+    DROP INDEX `idx_name_upper` ON `products`;
+
+    DROP INDEX `idx_price_with_tax` ON `products`;
+
+    ALTER TABLE `products` DROP COLUMN `name_upper`;
+
+    ALTER TABLE `products` DROP COLUMN `price_with_tax`;
+
+
+- description: JSON columns and functional indexes
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        preferences JSON,
+        metadata JSON,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        details JSON NOT NULL,
+        tags JSON,
+        brand VARCHAR(50) AS (details->>'$.brand') VIRTUAL,
+        PRIMARY KEY (id),
+        INDEX idx_product_brand ((CAST(details->>'$.brand' AS CHAR(50)))),
+        INDEX idx_product_price ((CAST(details->>'$.price' AS DECIMAL(10,2)))),
+        INDEX idx_brand (brand),
+        CONSTRAINT chk_details_not_empty CHECK (JSON_TYPE(details) IS NOT NULL)
+    ) ENGINE=InnoDB;
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP TABLE IF EXISTS `products`;
+
+    ALTER TABLE `users` DROP COLUMN `metadata`;
+
+    ALTER TABLE `users` DROP COLUMN `preferences`;
+
+
+- description: Multiple triggers and audit logging
+  oldSchema: |2
+    CREATE TABLE inventory (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_product (product_id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE inventory_log (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        old_quantity INT,
+        new_quantity INT,
+        change_type VARCHAR(20),
+        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TRIGGER trg_inventory_insert
+    AFTER INSERT ON inventory
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (NEW.product_id, NULL, NEW.quantity, 'INSERT');
+    END;
+
+    CREATE TRIGGER trg_inventory_update
+    AFTER UPDATE ON inventory
+    FOR EACH ROW
+    BEGIN
+        IF OLD.quantity != NEW.quantity THEN
+            INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+            VALUES (NEW.product_id, OLD.quantity, NEW.quantity, 'UPDATE');
+        END IF;
+    END;
+
+    CREATE TRIGGER trg_inventory_delete
+    BEFORE DELETE ON inventory
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (OLD.product_id, OLD.quantity, NULL, 'DELETE');
+    END;
+
+    CREATE VIEW inventory_changes AS
+    SELECT
+        product_id,
+        COUNT(*) AS change_count,
+        MAX(changed_at) AS last_changed
+    FROM inventory_log
+    GROUP BY product_id;
+  newSchema: |
+    CREATE TABLE inventory (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_product (product_id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE inventory_log (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        old_quantity INT,
+        new_quantity INT,
+        change_type VARCHAR(20),
+        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP TRIGGER IF EXISTS `trg_inventory_delete`;
+
+    DROP TRIGGER IF EXISTS `trg_inventory_insert`;
+
+    DROP TRIGGER IF EXISTS `trg_inventory_update`;
+
+    CREATE OR REPLACE VIEW `inventory_changes` AS SELECT 1;
+
+    DROP VIEW IF EXISTS `inventory_changes`;
+
+
+- description: Different character sets and collations
+  oldSchema: |+
+    --
+    -- Table structure for `international_content`
+    --
+    CREATE TABLE `international_content` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `english_text` varchar(1000) CHARACTER SET latin1 COLLATE latin1_swedish_ci DEFAULT NULL,
+      `chinese_text` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+      `emoji_text` varchar(500) COLLATE utf8mb4_bin DEFAULT NULL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `messages`
+    --
+    CREATE TABLE `messages` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `content` text NOT NULL,
+      `title` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+      `summary` varchar(500) CHARACTER SET latin1 COLLATE latin1_swedish_ci DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_title` (`title`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+  newSchema: |
+    CREATE TABLE messages (
+        id INT NOT NULL AUTO_INCREMENT,
+        content TEXT NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  expected: |+
+    DROP TABLE IF EXISTS `international_content`;
+
+    DROP INDEX `idx_title` ON `messages`;
+
+    ALTER TABLE `messages` DROP COLUMN `summary`;
+
+    ALTER TABLE `messages` DROP COLUMN `title`;
+
+
+- description: Events and advanced stored routines
+  oldSchema: |2
+    CREATE TABLE system_stats (
+        id INT NOT NULL AUTO_INCREMENT,
+        stat_name VARCHAR(100) NOT NULL,
+        stat_value DECIMAL(10, 2),
+        recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE EVENT IF NOT EXISTS evt_cleanup_old_stats
+    ON SCHEDULE EVERY 1 DAY
+    STARTS CURRENT_TIMESTAMP
+    DO
+    BEGIN
+        DELETE FROM system_stats
+        WHERE recorded_at < DATE_SUB(NOW(), INTERVAL 30 DAY);
+    END;
+
+    CREATE PROCEDURE RecordSystemStat(
+        IN p_stat_name VARCHAR(100),
+        IN p_stat_value DECIMAL(10, 2)
+    )
+    BEGIN
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            RESIGNAL;
+        END;
+
+        START TRANSACTION;
+
+        INSERT INTO system_stats (stat_name, stat_value)
+        VALUES (p_stat_name, p_stat_value);
+
+        COMMIT;
+    END;
+
+    CREATE FUNCTION GetAverageStat(p_stat_name VARCHAR(100))
+    RETURNS DECIMAL(10, 2)
+    DETERMINISTIC
+    READS SQL DATA
+    BEGIN
+        DECLARE avg_value DECIMAL(10, 2);
+
+        SELECT AVG(stat_value) INTO avg_value
+        FROM system_stats
+        WHERE stat_name = p_stat_name
+        AND recorded_at >= DATE_SUB(NOW(), INTERVAL 7 DAY);
+
+        RETURN COALESCE(avg_value, 0);
+    END;
+  newSchema: |
+    CREATE TABLE system_stats (
+        id INT NOT NULL AUTO_INCREMENT,
+        stat_name VARCHAR(100) NOT NULL,
+        stat_value DECIMAL(10, 2),
+        recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP EVENT IF EXISTS `evt_cleanup_old_stats`;
+
+    DROP PROCEDURE IF EXISTS `RecordSystemStat`;
+
+    DROP FUNCTION IF EXISTS `GetAverageStat`;
+
+- description: Add comments to tables and columns using MySQL COMMENT syntax
+  oldSchema: |+
+    --
+    -- Table structure for `categories`
+    --
+    CREATE TABLE `categories` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(50) NOT NULL COMMENT 'Category display name',
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Product categories for organization';
+
+    --
+    -- Table structure for `products`
+    --
+    CREATE TABLE `products` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL COMMENT 'Product display name',
+      `price` decimal(10,2) NOT NULL COMMENT 'Product price in USD',
+      `description` text DEFAULT NULL COMMENT 'Detailed product description',
+      `category_id` int DEFAULT NULL COMMENT 'Foreign key reference to categories table',
+      `supplier_id` int DEFAULT NULL COMMENT 'Reference to supplier providing this product',
+      PRIMARY KEY (`id`),
+      KEY `idx_category` (`category_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Product catalog table containing all product information';
+
+    --
+    -- Table structure for `suppliers`
+    --
+    CREATE TABLE `suppliers` (
+      `id` int NOT NULL AUTO_INCREMENT COMMENT 'Unique supplier identifier',
+      `company_name` varchar(100) NOT NULL COMMENT 'Legal company name',
+      `contact_email` varchar(100) DEFAULT NULL COMMENT 'Primary contact email address',
+      `phone` varchar(20) DEFAULT NULL COMMENT 'Business phone number',
+      `address` text DEFAULT NULL COMMENT 'Full business address',
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_email` (`contact_email`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Supplier information and contact details';
+
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        description TEXT,
+        category_id INT,
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP TABLE IF EXISTS `suppliers`;
+
+    ALTER TABLE `products` DROP COLUMN `supplier_id`;
+
+
+    ALTER TABLE `categories` MODIFY COLUMN `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+    ALTER TABLE `categories` COMMENT = '';
+
+    ALTER TABLE `products` MODIFY COLUMN `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `price` decimal(10,2) NOT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `category_id` int DEFAULT NULL;
+
+    ALTER TABLE `products` COMMENT = '';
+
+- description: Modify existing comments and remove comments by setting to empty string
+  oldSchema: |+
+    --
+    -- Table structure for `order_items`
+    --
+    CREATE TABLE `order_items` (
+      `id` int NOT NULL AUTO_INCREMENT COMMENT 'Line item identifier',
+      `order_id` int NOT NULL COMMENT 'Reference to parent order',
+      `product_name` varchar(150) NOT NULL COMMENT 'Full product name including variant details',
+      `quantity` int NOT NULL COMMENT 'Quantity ordered (must be positive)',
+      `unit_price` decimal(10,2) NOT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_order` (`order_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `orders`
+    --
+    CREATE TABLE `orders` (
+      `id` int NOT NULL AUTO_INCREMENT COMMENT 'Order unique identifier',
+      `customer_name` varchar(100) NOT NULL COMMENT 'Full name of the purchasing customer',
+      `order_date` date NOT NULL,
+      `total_amount` decimal(10,2) DEFAULT NULL,
+      `status` varchar(20) DEFAULT 'pending' COMMENT 'Order processing status (pending, processing, shipped, delivered, cancelled)',
+      `notes` text DEFAULT NULL COMMENT 'Special delivery instructions and customer notes',
+      PRIMARY KEY (`id`),
+      KEY `idx_date` (`order_date`),
+      KEY `idx_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Customer purchase orders with tracking information';
+
+  newSchema: |
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Order unique identifier',
+        customer_name VARCHAR(100) NOT NULL COMMENT 'Customer full name',
+        order_date DATE NOT NULL COMMENT 'Date when order was placed',
+        total_amount DECIMAL(10, 2) COMMENT 'Total order amount in USD',
+        status VARCHAR(20) DEFAULT 'pending' COMMENT 'Current order status',
+        notes TEXT COMMENT 'Additional order notes or special instructions',
+        PRIMARY KEY (id),
+        INDEX idx_date (order_date),
+        INDEX idx_status (status)
+    ) ENGINE=InnoDB COMMENT = 'Customer orders and order details';
+
+    CREATE TABLE order_items (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Line item identifier',
+        order_id INT NOT NULL COMMENT 'Reference to parent order',
+        product_name VARCHAR(100) NOT NULL COMMENT 'Name of ordered product',
+        quantity INT NOT NULL COMMENT 'Number of items ordered',
+        unit_price DECIMAL(10, 2) NOT NULL COMMENT 'Price per individual item',
+        PRIMARY KEY (id),
+        INDEX idx_order (order_id)
+    ) ENGINE=InnoDB COMMENT = 'Individual line items for each order';
+  expected: |+
+    ALTER TABLE `order_items` MODIFY COLUMN `product_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Name of ordered product';
+
+    ALTER TABLE `order_items` MODIFY COLUMN `quantity` int NOT NULL COMMENT 'Number of items ordered';
+
+    ALTER TABLE `order_items` MODIFY COLUMN `unit_price` decimal(10,2) NOT NULL COMMENT 'Price per individual item';
+
+    ALTER TABLE `order_items` COMMENT = 'Individual line items for each order';
+
+    ALTER TABLE `orders` MODIFY COLUMN `customer_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'Customer full name';
+
+    ALTER TABLE `orders` MODIFY COLUMN `order_date` date NOT NULL COMMENT 'Date when order was placed';
+
+    ALTER TABLE `orders` MODIFY COLUMN `total_amount` decimal(10,2) DEFAULT NULL COMMENT 'Total order amount in USD';
+
+    ALTER TABLE `orders` MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'pending' COMMENT 'Current order status';
+
+    ALTER TABLE `orders` MODIFY COLUMN `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT 'Additional order notes or special instructions';
+
+    ALTER TABLE `orders` COMMENT = 'Customer orders and order details';
+
+- description: Test comments with special characters, quotes, multiline text, and Unicode
+  oldSchema: "--\n-- Table structure for `analytics`\n--\nCREATE TABLE `analytics` (\n  `id` int NOT NULL AUTO_INCREMENT COMMENT 'Primary key (auto-increment)',\n  `event_name` varchar(100) NOT NULL COMMENT 'Event identifier - format: \"page_view\", \"button_click\", etc.',\n  `event_data` json COMMENT 'Event payload: {\"user_id\": 123, \"timestamp\": \"2023-12-01T10:30:00Z\", \"properties\": {...}}',\n  `ip_address` varchar(45) DEFAULT NULL COMMENT 'Client IP address (IPv4: xxx.xxx.xxx.xxx or IPv6: xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx)',\n  `user_agent` text DEFAULT NULL COMMENT 'Browser user agent string - may contain \"Mozilla/5.0\", various browser/OS info',\n  `referrer` varchar(500) DEFAULT NULL COMMENT 'HTTP referrer URL - where user came from (can be NULL)',\n  `created_at` timestamp DEFAULT CURRENT_TIMESTAMP COMMENT 'Event timestamp - UTC timezone',\n  `processed` tinyint(1) DEFAULT '0' COMMENT 'Processing status: TRUE = processed, FALSE = pending',\n  PRIMARY KEY (`id`),\n  KEY `idx_event_date` (`event_name`, `created_at`),\n  KEY `idx_processed` (`processed`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Analytics events tracking - stores user interactions & system events. Data retention: 2 years. Access level: \"admin\" & \"analyst\" roles only.';\n\n--\n-- Table structure for `posts`\n--\nCREATE TABLE `posts` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `user_id` int NOT NULL,\n  `title` varchar(200) NOT NULL COMMENT 'Post title - supports emojis \U0001F4DD✨\U0001F525\U0001F4A1\U0001F389 and Unicode characters',\n  `content` longtext DEFAULT NULL COMMENT 'Post content in HTML format: <p>, <strong>, <em>, <a href=\"...\">, <img src=\"...\"/>',\n  `metadata` json COMMENT 'Post metadata: {\"tags\": [\"tag1\", \"tag2\"], \"category\": \"tech\", \"featured\": true, \"views\": 0}',\n  PRIMARY KEY (`id`),\n  KEY `idx_user` (`user_id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Blog posts and articles - supports international content (中文, العربية, Русский, 日本語, 한국어, Français, Español, Deutsch)';\n\n--\n-- Table structure for `users`\n--\nCREATE TABLE `users` (\n  `id` int NOT NULL AUTO_INCREMENT,\n  `username` varchar(50) NOT NULL COMMENT 'User''s chosen \"display name\" for the platform',\n  `email` varchar(100) NOT NULL COMMENT 'Primary email address - must be \"unique\" across all users',\n  `bio` text DEFAULT NULL COMMENT 'User biography text\nCan contain multiple lines\nand various formatting',\n  `preferences` json COMMENT 'User settings: theme, notifications, privacy & security options (@, #, $, %, ^, &, *, +, =, |, \\\\, /, ?, <, >)',\n  PRIMARY KEY (`id`),\n  UNIQUE KEY `uk_email` (`email`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='User accounts - stores user''s personal information and preferences';\n\n"
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        bio TEXT,
+        preferences JSON,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content LONGTEXT,
+        metadata JSON,
+        PRIMARY KEY (id),
+        INDEX idx_user (user_id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    DROP TABLE IF EXISTS `analytics`;
+
+
+    ALTER TABLE `posts` MODIFY COLUMN `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+    ALTER TABLE `posts` MODIFY COLUMN `content` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `posts` MODIFY COLUMN `metadata` json DEFAULT NULL;
+
+    ALTER TABLE `posts` COMMENT = '';
+
+    ALTER TABLE `users` MODIFY COLUMN `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+    ALTER TABLE `users` MODIFY COLUMN `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+    ALTER TABLE `users` MODIFY COLUMN `bio` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `users` MODIFY COLUMN `preferences` json DEFAULT NULL;
+
+    ALTER TABLE `users` COMMENT = '';
+
+- description: 'Reverse: Drop tables with foreign key dependencies'
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE authors (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(100) NOT NULL,
+      email varchar(100) DEFAULT NULL,
+      PRIMARY KEY (id),
+      UNIQUE KEY uk_email (email)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    CREATE TABLE books (
+      id int NOT NULL AUTO_INCREMENT,
+      title varchar(200) NOT NULL,
+      author_id int NOT NULL,
+      isbn varchar(20) DEFAULT NULL,
+      published_year int DEFAULT NULL,
+      price decimal(8,2) DEFAULT NULL,
+      PRIMARY KEY (id),
+      KEY idx_author (author_id),
+      KEY idx_year (published_year),
+      UNIQUE KEY uk_isbn (isbn),
+      CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors (id),
+      CONSTRAINT chk_price_positive CHECK (price > 0),
+      CONSTRAINT chk_year_valid CHECK ((published_year >= 1000) and (published_year <= 2100))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    CREATE TABLE products (
+      id int NOT NULL AUTO_INCREMENT,
+      name varchar(50) NOT NULL,
+      price decimal(8,2) NOT NULL,
+      description text DEFAULT NULL,
+      category varchar(30) DEFAULT NULL,
+      is_active tinyint(1) DEFAULT '1',
+      PRIMARY KEY (id),
+      KEY idx_category (category),
+      KEY idx_price (price)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  expected: |+
+    CREATE TABLE IF NOT EXISTS `authors` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+      `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_email` (`email`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    CREATE TABLE IF NOT EXISTS `books` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+      `author_id` int NOT NULL,
+      `isbn` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+      `published_year` int DEFAULT NULL,
+      `price` decimal(8,2) DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_isbn` (`isbn`),
+      CONSTRAINT `chk_price_positive` CHECK ((`price` > 0)),
+      CONSTRAINT `chk_year_valid` CHECK (((`published_year` >= 1000) and (`published_year` <= 2100)))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    CREATE INDEX `idx_author` ON `books` (`author_id`);
+
+    CREATE INDEX `idx_year` ON `books` (`published_year`);
+
+
+    CREATE TABLE IF NOT EXISTS `products` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+      `price` decimal(8,2) NOT NULL,
+      `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+      `category` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL,
+      `is_active` tinyint(1) DEFAULT '1',
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    CREATE INDEX `idx_category` ON `products` (`category`);
+
+    CREATE INDEX `idx_price` ON `products` (`price`);
+
+
+    ALTER TABLE `books` ADD CONSTRAINT `fk_author` FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`) ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+- description: 'Reverse: Create tables with foreign key constraints'
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  newSchema: ""
+  expected: |+
+    DROP TABLE IF EXISTS `posts`;
+
+    DROP TABLE IF EXISTS `users`;
+
+- description: 'Reverse: Basic table operations'
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT true,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username),
+        INDEX idx_email_active (email, is_active)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE comments (
+        id INT NOT NULL AUTO_INCREMENT,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_post_user (post_id, user_id),
+        CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  expected: |+
+    CREATE TABLE IF NOT EXISTS `comments` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `post_id` int NOT NULL,
+      `user_id` int NOT NULL,
+      `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    CREATE INDEX `idx_post_user` ON `comments` (`post_id`, `user_id`);
+
+    CREATE INDEX `fk_comment_user` ON `comments` (`user_id`);
+
+
+    ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE;
+
+    ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE NO ACTION ON DELETE CASCADE;
+
+    ALTER TABLE `posts` ADD CONSTRAINT `chk_title_length` CHECK (char_length(`title`) > 0);
+
+    ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1) DEFAULT '1';
+
+    CREATE INDEX `idx_email_active` ON `users` (`email`, `is_active`);
+
+- description: 'Reverse: Views and triggers'
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        PRIMARY KEY (id),
+        INDEX idx_name (name)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        total DECIMAL(10, 2),
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+    ) ENGINE=InnoDB;
+  newSchema: |2
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        PRIMARY KEY (id),
+        INDEX idx_name (name)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        total DECIMAL(10, 2),
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+    ) ENGINE=InnoDB;
+
+    CREATE VIEW product_inventory AS
+    SELECT
+        p.id,
+        p.name,
+        p.price,
+        p.stock,
+        COALESCE(SUM(o.quantity), 0) AS total_ordered
+    FROM products p
+    LEFT JOIN orders o ON p.id = o.product_id
+    GROUP BY p.id, p.name, p.price, p.stock;
+
+    CREATE VIEW low_stock_products AS
+    SELECT * FROM products WHERE stock < 10;
+
+    CREATE TRIGGER update_order_total
+    BEFORE INSERT ON orders
+    FOR EACH ROW
+    BEGIN
+        DECLARE product_price DECIMAL(10, 2);
+        SELECT price INTO product_price FROM products WHERE id = NEW.product_id;
+        SET NEW.total = NEW.quantity * product_price;
+    END;
+
+    CREATE PROCEDURE GetProductInventory(IN product_name VARCHAR(100))
+    BEGIN
+        SELECT * FROM product_inventory
+        WHERE name LIKE CONCAT('%', product_name, '%');
+    END;
+  expected: |+
+    CREATE VIEW `low_stock_products` AS SELECT 1;
+
+    CREATE VIEW `product_inventory` AS SELECT 1;
+
+    CREATE TRIGGER `update_order_total` BEFORE INSERT ON `orders` FOR EACH ROW BEGIN
+        DECLARE product_price DECIMAL(10, 2);
+        SELECT price INTO product_price FROM products WHERE id = NEW.product_id;
+        SET NEW.total = NEW.quantity * product_price;
+    END;
+
+    CREATE OR REPLACE VIEW `low_stock_products` AS select `products`.`id` AS `id`,`products`.`name` AS `name`,`products`.`price` AS `price`,`products`.`stock` AS `stock` from `products` where (`products`.`stock` < 10);
+
+    CREATE OR REPLACE VIEW `product_inventory` AS select `p`.`id` AS `id`,`p`.`name` AS `name`,`p`.`price` AS `price`,`p`.`stock` AS `stock`,coalesce(sum(`o`.`quantity`),0) AS `total_ordered` from (`products` `p` left join `orders` `o` on((`p`.`id` = `o`.`product_id`))) group by `p`.`id`,`p`.`name`,`p`.`price`,`p`.`stock`;
+
+    BEGIN
+        SELECT * FROM product_inventory
+        WHERE name LIKE CONCAT('%', product_name, '%');
+    END;
+
+- description: 'Reverse: Stored functions'
+  oldSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_id, sale_date)
+    ) ENGINE=InnoDB;
+  newSchema: |2
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_id, sale_date)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE sales_summary (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        month_year VARCHAR(7) NOT NULL,
+        total_sales DECIMAL(10, 2),
+        tax_amount DECIMAL(10, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_product_month (product_id, month_year)
+    ) ENGINE=InnoDB;
+
+    CREATE FUNCTION CalculateTotalSales(p_product_id INT, p_start_date DATE, p_end_date DATE)
+    RETURNS DECIMAL(10, 2)
+    DETERMINISTIC
+    READS SQL DATA
+    BEGIN
+        DECLARE total DECIMAL(10, 2);
+
+        SELECT COALESCE(SUM(quantity * unit_price), 0) INTO total
+        FROM sales
+        WHERE product_id = p_product_id
+        AND sale_date BETWEEN p_start_date AND p_end_date;
+
+        RETURN total;
+    END;
+
+    CREATE FUNCTION GetTaxAmount(amount DECIMAL(10, 2), tax_rate DECIMAL(5, 2))
+    RETURNS DECIMAL(10, 2)
+    DETERMINISTIC
+    NO SQL
+    BEGIN
+        RETURN amount * (tax_rate / 100);
+    END;
+  expected: |+
+    CREATE TABLE IF NOT EXISTS `sales_summary` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `product_id` int NOT NULL,
+      `month_year` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+      `total_sales` decimal(10,2) DEFAULT NULL,
+      `tax_amount` decimal(10,2) DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_product_month` (`product_id`, `month_year`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    BEGIN
+        DECLARE total DECIMAL(10, 2);
+
+        SELECT COALESCE(SUM(quantity * unit_price), 0) INTO total
+        FROM sales
+        WHERE product_id = p_product_id
+        AND sale_date BETWEEN p_start_date AND p_end_date;
+
+        RETURN total;
+    END;
+
+    BEGIN
+        RETURN amount * (tax_rate / 100);
+    END;
+
+- description: 'Reverse: Add indexes and constraints'
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category VARCHAR(50),
+        price DECIMAL(10, 2),
+        sku VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_sku (sku),
+        INDEX idx_name (name),
+        INDEX idx_category (category),
+        INDEX idx_price (price),
+        CONSTRAINT chk_price_positive CHECK (price > 0),
+        CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3)
+    ) ENGINE=InnoDB;
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category VARCHAR(50),
+        price DECIMAL(10, 2),
+        sku VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  expected: |+
+    ALTER TABLE `products` DROP CONSTRAINT `chk_name_length`;
+
+    ALTER TABLE `products` DROP CONSTRAINT `chk_price_positive`;
+
+    DROP INDEX `idx_category` ON `products`;
+
+    DROP INDEX `idx_name` ON `products`;
+
+    DROP INDEX `idx_price` ON `products`;
+
+    DROP INDEX `uk_sku` ON `products`;
+
+
+- description: 'Reverse: Alter table columns'
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        price DECIMAL(8, 2) NOT NULL,
+        description TEXT,
+        category VARCHAR(30),
+        is_active TINYINT(1) DEFAULT 1,
+        PRIMARY KEY (id),
+        INDEX idx_category (category),
+        INDEX idx_price (price)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        description TEXT NOT NULL,
+        category VARCHAR(50),
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        stock_quantity INT DEFAULT 0,
+        weight DECIMAL(5, 2),
+        PRIMARY KEY (id),
+        INDEX idx_category (category),
+        INDEX idx_price (price),
+        INDEX idx_created_at (created_at),
+        UNIQUE INDEX uk_name_category (name, category),
+        CONSTRAINT chk_price_positive CHECK (price > 0),
+        CONSTRAINT chk_stock_non_negative CHECK (stock_quantity >= 0)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  expected: |+
+    ALTER TABLE `products` ADD COLUMN `created_at` timestamp DEFAULT CURRENT_TIMESTAMP;
+
+    ALTER TABLE `products` ADD COLUMN `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP;
+
+    ALTER TABLE `products` ADD COLUMN `stock_quantity` int DEFAULT '0';
+
+    ALTER TABLE `products` ADD COLUMN `weight` decimal(5,2) DEFAULT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `price` decimal(10,2) NOT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL;
+
+    ALTER TABLE `products` MODIFY COLUMN `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    CREATE INDEX `idx_created_at` ON `products` (`created_at`);
+
+    ALTER TABLE `products` ADD UNIQUE KEY `uk_name_category` (`name`, `category`);
+
+    ALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK (`price` > 0);
+
+    ALTER TABLE `products` ADD CONSTRAINT `chk_stock_non_negative` CHECK (`stock_quantity` >= 0);
+
+- description: 'Reverse: Drop FULLTEXT and SPATIAL indexes'
+  oldSchema: |
+    CREATE TABLE articles (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        content TEXT NOT NULL,
+        tags VARCHAR(500),
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE locations (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        position POINT NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  newSchema: |
+    CREATE TABLE articles (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        content TEXT NOT NULL,
+        tags VARCHAR(500),
+        PRIMARY KEY (id),
+        FULLTEXT idx_fulltext_content (title, content),
+        FULLTEXT idx_fulltext_tags (tags),
+        INDEX idx_title_tags (title(50), tags(50))
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE locations (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        position POINT NOT NULL,
+        PRIMARY KEY (id),
+        SPATIAL INDEX idx_spatial_position (position)
+    ) ENGINE=InnoDB;
+  expected: |+
+    CREATE FULLTEXT INDEX `idx_fulltext_content` ON `articles` (`title`, `content`);
+
+    CREATE FULLTEXT INDEX `idx_fulltext_tags` ON `articles` (`tags`);
+
+    CREATE INDEX `idx_title_tags` ON `articles` (`title`(50), `tags`(50));
+
+    CREATE SPATIAL INDEX `idx_spatial_position` ON `locations` (`position`);
+
+- description: 'Reverse: Drop generated columns'
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        tax_rate DECIMAL(5, 2) DEFAULT 8.0,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        tax_rate DECIMAL(5, 2) DEFAULT 8.0,
+        price_with_tax DECIMAL(10, 2) AS (price * (1 + tax_rate / 100)) STORED,
+        name_upper VARCHAR(100) AS (UPPER(name)) VIRTUAL,
+        PRIMARY KEY (id),
+        INDEX idx_price_with_tax (price_with_tax),
+        INDEX idx_name_upper (name_upper)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE order_summary (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        total_price DECIMAL(10, 2) AS (quantity * unit_price) STORED,
+        order_date DATE NOT NULL,
+        order_year INT AS (YEAR(order_date)) VIRTUAL,
+        order_month INT AS (MONTH(order_date)) VIRTUAL,
+        PRIMARY KEY (id),
+        INDEX idx_year_month (order_year, order_month)
+    ) ENGINE=InnoDB;
+  expected: |+
+    CREATE TABLE IF NOT EXISTS `order_summary` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `product_id` int NOT NULL,
+      `quantity` int NOT NULL,
+      `unit_price` decimal(10,2) NOT NULL,
+      `total_price` decimal(10,2) GENERATED ALWAYS AS ((`quantity` * `unit_price`)) STORED,
+      `order_date` date NOT NULL,
+      `order_year` int GENERATED ALWAYS AS (year(`order_date`)) VIRTUAL,
+      `order_month` int GENERATED ALWAYS AS (month(`order_date`)) VIRTUAL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    CREATE INDEX `idx_year_month` ON `order_summary` (`order_year`, `order_month`);
+
+
+    ALTER TABLE `products` ADD COLUMN `price_with_tax` decimal(10,2) GENERATED ALWAYS AS ((`price` * ((1 + (`tax_rate` / 100))))) STORED;
+
+    ALTER TABLE `products` ADD COLUMN `name_upper` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci GENERATED ALWAYS AS (upper(`name`)) VIRTUAL;
+
+    CREATE INDEX `idx_name_upper` ON `products` (`name_upper`);
+
+    CREATE INDEX `idx_price_with_tax` ON `products` (`price_with_tax`);
+
+- description: 'Reverse: Drop JSON columns and indexes'
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        preferences JSON,
+        metadata JSON,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        details JSON NOT NULL,
+        tags JSON,
+        brand VARCHAR(50) AS (details->>'$.brand') VIRTUAL,
+        PRIMARY KEY (id),
+        INDEX idx_product_brand ((CAST(details->>'$.brand' AS CHAR(50)))),
+        INDEX idx_product_price ((CAST(details->>'$.price' AS DECIMAL(10,2)))),
+        INDEX idx_brand (brand),
+        CONSTRAINT chk_details_not_empty CHECK (JSON_TYPE(details) IS NOT NULL)
+    ) ENGINE=InnoDB;
+  expected: |+
+    CREATE TABLE IF NOT EXISTS `products` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+      `details` json NOT NULL,
+      `tags` json DEFAULT NULL,
+      `brand` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci GENERATED ALWAYS AS (json_unquote(json_extract(`details`,_utf8mb4'$.brand'))) VIRTUAL,
+      PRIMARY KEY (`id`),
+      CONSTRAINT `chk_details_not_empty` CHECK ((json_type(`details`) is not null))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    CREATE INDEX `idx_product_brand` ON `products` (`cast(json_unquote(json_extract(`details`,_utf8mb4'$.brand')) as char(50) charset utf8mb4)`);
+
+    CREATE INDEX `idx_product_price` ON `products` (`cast(json_unquote(json_extract(`details`,_utf8mb4'$.price')) as decimal(10,2))`);
+
+    CREATE INDEX `idx_brand` ON `products` (`brand`);
+
+
+    ALTER TABLE `users` ADD COLUMN `preferences` json DEFAULT NULL;
+
+    ALTER TABLE `users` ADD COLUMN `metadata` json DEFAULT NULL;
+
+- description: 'Reverse: Drop triggers and views'
+  oldSchema: |
+    CREATE TABLE inventory (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_product (product_id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE inventory_log (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        old_quantity INT,
+        new_quantity INT,
+        change_type VARCHAR(20),
+        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  newSchema: |2
+    CREATE TABLE inventory (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        quantity INT NOT NULL DEFAULT 0,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_product (product_id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE inventory_log (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        old_quantity INT,
+        new_quantity INT,
+        change_type VARCHAR(20),
+        changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TRIGGER trg_inventory_insert
+    AFTER INSERT ON inventory
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (NEW.product_id, NULL, NEW.quantity, 'INSERT');
+    END;
+
+    CREATE TRIGGER trg_inventory_update
+    AFTER UPDATE ON inventory
+    FOR EACH ROW
+    BEGIN
+        IF OLD.quantity != NEW.quantity THEN
+            INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+            VALUES (NEW.product_id, OLD.quantity, NEW.quantity, 'UPDATE');
+        END IF;
+    END;
+
+    CREATE TRIGGER trg_inventory_delete
+    BEFORE DELETE ON inventory
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (OLD.product_id, OLD.quantity, NULL, 'DELETE');
+    END;
+
+    CREATE VIEW inventory_changes AS
+    SELECT
+        product_id,
+        COUNT(*) AS change_count,
+        MAX(changed_at) AS last_changed
+    FROM inventory_log
+    GROUP BY product_id;
+  expected: |+
+    CREATE VIEW `inventory_changes` AS SELECT 1;
+
+    CREATE TRIGGER `trg_inventory_delete` BEFORE DELETE ON `inventory` FOR EACH ROW BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (OLD.product_id, OLD.quantity, NULL, 'DELETE');
+    END;
+
+    CREATE TRIGGER `trg_inventory_insert` AFTER INSERT ON `inventory` FOR EACH ROW BEGIN
+        INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+        VALUES (NEW.product_id, NULL, NEW.quantity, 'INSERT');
+    END;
+
+    CREATE TRIGGER `trg_inventory_update` AFTER UPDATE ON `inventory` FOR EACH ROW BEGIN
+        IF OLD.quantity != NEW.quantity THEN
+            INSERT INTO inventory_log (product_id, old_quantity, new_quantity, change_type)
+            VALUES (NEW.product_id, OLD.quantity, NEW.quantity, 'UPDATE');
+        END IF;
+    END;
+
+    CREATE OR REPLACE VIEW `inventory_changes` AS select `inventory_log`.`product_id` AS `product_id`,count(0) AS `change_count`,max(`inventory_log`.`changed_at`) AS `last_changed` from `inventory_log` group by `inventory_log`.`product_id`;
+
+- description: 'Reverse: Drop events and advanced features'
+  oldSchema: |
+    CREATE TABLE system_stats (
+        id INT NOT NULL AUTO_INCREMENT,
+        stat_name VARCHAR(100) NOT NULL,
+        stat_value DECIMAL(10, 2),
+        recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+  newSchema: |2
+    CREATE TABLE system_stats (
+        id INT NOT NULL AUTO_INCREMENT,
+        stat_name VARCHAR(100) NOT NULL,
+        stat_value DECIMAL(10, 2),
+        recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE EVENT IF NOT EXISTS evt_cleanup_old_stats
+    ON SCHEDULE EVERY 1 DAY
+    STARTS CURRENT_TIMESTAMP
+    DO
+    BEGIN
+        DELETE FROM system_stats
+        WHERE recorded_at < DATE_SUB(NOW(), INTERVAL 30 DAY);
+    END;
+
+    CREATE PROCEDURE RecordSystemStat(
+        IN p_stat_name VARCHAR(100),
+        IN p_stat_value DECIMAL(10, 2)
+    )
+    BEGIN
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            RESIGNAL;
+        END;
+
+        START TRANSACTION;
+
+        INSERT INTO system_stats (stat_name, stat_value)
+        VALUES (p_stat_name, p_stat_value);
+
+        COMMIT;
+    END;
+
+    CREATE FUNCTION GetAverageStat(p_stat_name VARCHAR(100))
+    RETURNS DECIMAL(10, 2)
+    DETERMINISTIC
+    READS SQL DATA
+    BEGIN
+        DECLARE avg_value DECIMAL(10, 2);
+
+        SELECT AVG(stat_value) INTO avg_value
+        FROM system_stats
+        WHERE stat_name = p_stat_name
+        AND recorded_at >= DATE_SUB(NOW(), INTERVAL 7 DAY);
+
+        RETURN COALESCE(avg_value, 0);
+    END;
+  expected: |+
+    BEGIN
+        DECLARE avg_value DECIMAL(10, 2);
+
+        SELECT AVG(stat_value) INTO avg_value
+        FROM system_stats
+        WHERE stat_name = p_stat_name
+        AND recorded_at >= DATE_SUB(NOW(), INTERVAL 7 DAY);
+
+        RETURN COALESCE(avg_value, 0);
+    END;
+
+    BEGIN
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+            RESIGNAL;
+        END;
+
+        START TRANSACTION;
+
+        INSERT INTO system_stats (stat_name, stat_value)
+        VALUES (p_stat_name, p_stat_value);
+
+        COMMIT;
+    END;
+
+    CREATE DEFINER=`root`@`%` EVENT `evt_cleanup_old_stats` ON SCHEDULE EVERY 1 DAY
+    STARTS CURRENT_TIMESTAMP ON COMPLETION NOT PRESERVE ENABLE DO BEGIN
+        DELETE FROM system_stats
+        WHERE recorded_at < DATE_SUB(NOW(), INTERVAL 30 DAY);
+    END;
+
+- description: Verify no migration generated for identical schemas (tests primary key, index, check constraints, DEFAULT NULL fixes)
+  oldSchema: |+
+    --
+    -- Table structure for `some_table`
+    --
+    CREATE TABLE `some_table` (
+      `id` int NOT NULL,
+      `a` int NOT NULL,
+      PRIMARY KEY (`id`),
+      CONSTRAINT `some_table_chk_1` CHECK (`a` in (1,2,3))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` char(255) DEFAULT (NULL),
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `t1`
+    --
+    CREATE TABLE `t1` (
+      `id` int NOT NULL,
+      `a` int NOT NULL,
+      `b` int DEFAULT (NULL),
+      `c` int DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      KEY `b` (`b`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `test_table`
+    --
+    CREATE TABLE `test_table` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) DEFAULT (NULL),
+      `email` varchar(100) DEFAULT (NULL),
+      `status` varchar(20) DEFAULT ('active'),
+      `age` int DEFAULT (NULL),
+      `score` decimal(5,2) DEFAULT (NULL),
+      PRIMARY KEY (`id`),
+      KEY `idx_name` (`name`),
+      KEY `idx_status_hash` (`status`),
+      UNIQUE KEY `uk_email` (`email`),
+      CONSTRAINT `chk_age` CHECK (`age` >= 18),
+      CONSTRAINT `chk_status` CHECK (`status` in ('active','inactive','pending'))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+  newSchema: |
+    -- Test that identical schemas don't generate unnecessary migrations
+    -- This tests the fixes for primary key, index type, check constraints, and DEFAULT NULL
+
+    CREATE TABLE test_table (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) DEFAULT NULL,
+        email VARCHAR(100),
+        status VARCHAR(20) DEFAULT 'active',
+        age INT DEFAULT NULL,
+        score DECIMAL(5,2),
+        PRIMARY KEY (id),
+        INDEX idx_name (name),
+        INDEX idx_status_hash (status) USING HASH,
+        UNIQUE KEY uk_email (email),
+        CONSTRAINT chk_age CHECK (age >= 18),
+        CONSTRAINT chk_status CHECK (status IN ('active', 'inactive', 'pending'))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    -- Table with various column types and defaults
+    CREATE TABLE t (
+        id INT NOT NULL AUTO_INCREMENT,
+        name CHAR(255) DEFAULT NULL,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE t1 (
+        id INT NOT NULL,
+        a INT NOT NULL,
+        b INT DEFAULT NULL,
+        c INT,
+        PRIMARY KEY (id),
+        INDEX b (b) USING HASH
+    ) ENGINE=InnoDB;
+
+    -- Table with check constraint that has spaces
+    CREATE TABLE some_table (
+        id INT PRIMARY KEY,
+        a INT NOT NULL,
+        CONSTRAINT some_table_chk_1 CHECK (a IN (1, 2, 3))
+    ) ENGINE=InnoDB;
+  expected: |+
+    ALTER TABLE `t` MODIFY COLUMN `name` char(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `t1` MODIFY COLUMN `b` int DEFAULT NULL;
+
+    ALTER TABLE `t1` MODIFY COLUMN `c` int DEFAULT NULL;
+
+    ALTER TABLE `test_table` MODIFY COLUMN `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `test_table` MODIFY COLUMN `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL;
+
+    ALTER TABLE `test_table` MODIFY COLUMN `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT 'active';
+
+    ALTER TABLE `test_table` MODIFY COLUMN `age` int DEFAULT NULL;
+
+    ALTER TABLE `test_table` MODIFY COLUMN `score` decimal(5,2) DEFAULT NULL;
+

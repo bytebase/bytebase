@@ -8,6 +8,7 @@ import (
 
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
@@ -163,6 +164,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 		// Process column type
 		column.Type = m.getColumnType(col.Tp)
+		column.CharacterSet = col.Tp.GetCharset()
 
 		// Process column options
 		for _, option := range col.Options {
@@ -192,7 +194,12 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			case ast.ColumnOptionPrimaryKey:
 				// Mark column as primary key
 				column.Nullable = false
+				setPrimaryKeyType(table, option.PrimaryKeyTp)
 				// We'll handle creating the PRIMARY index after processing all columns
+			case ast.ColumnOptionCollate:
+				column.Collation = option.StrValue
+			case ast.ColumnOptionAutoRandom:
+				column.Default = autoRandomDefault(option.AutoRandOpt)
 			case ast.ColumnOptionUniqKey:
 				// Handle unique constraint at column level
 				// We'll handle creating unique indexes after processing all columns
@@ -211,6 +218,9 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
 		case ast.ConstraintPrimaryKey:
+			if constraint.Option != nil {
+				setPrimaryKeyType(table, constraint.Option.PrimaryKeyTp)
+			}
 			expressions, keyLengths, descending := m.getIndexColumnsInfo(constraint.Keys)
 			index := &storepb.IndexMetadata{
 				Name:        "PRIMARY",
@@ -312,9 +322,6 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			// Ignore other table options
 		}
 	}
-
-	// Handle TiDB-specific AUTO_RANDOM
-	m.processAutoRandom(stmt, table)
 
 	// Ensure foreign key indexes exist (after all other indexes have been processed)
 	m.ensureForeignKeyIndexes(table)
@@ -492,6 +499,9 @@ func (*metadataExtractor) getDefaultValue(expr ast.ExprNode) string {
 		// For other expression types, return the text representation
 		if textNode, ok := expr.(interface{ Text() string }); ok {
 			text := textNode.Text()
+			if text == "" {
+				return restoreExpression(expr)
+			}
 			// Clean up common default value formats
 			text = strings.Trim(text, "'\"")
 			if strings.HasPrefix(text, "_utf8mb4") {
@@ -606,10 +616,21 @@ func (m *metadataExtractor) processTiDBTableComment(comment string, table *store
 	}
 }
 
-func (*metadataExtractor) processAutoRandom(_ *ast.CreateTableStmt, _ *storepb.TableMetadata) {
-	// TiDB's AUTO_RANDOM is typically stored in table comments or special constraints
-	// This is a simplified implementation - full AUTO_RANDOM support would require
-	// parsing TiDB-specific syntax extensions
+// autoRandomDefault renders the column default the definition writer expects for
+// AUTO_RANDOM: bare when the shard width is left to TiDB, otherwise carrying it.
+func autoRandomDefault(opt ast.AutoRandomOption) string {
+	if opt.ShardBits <= 0 {
+		return autoRandomSymbol
+	}
+	return fmt.Sprintf("%s(%d)", autoRandomSymbol, opt.ShardBits)
+}
+
+// setPrimaryKeyType records CLUSTERED or NONCLUSTERED. PrimaryKeyTypeDefault
+// stringifies to empty, which means the DDL said nothing and TiDB decides.
+func setPrimaryKeyType(table *storepb.TableMetadata, pkType ast.PrimaryKeyType) {
+	if rendered := pkType.String(); rendered != "" {
+		table.PrimaryKeyType = rendered
+	}
 }
 
 func (*metadataExtractor) isPrimaryKeyColumn(column *storepb.ColumnMetadata, table *storepb.TableMetadata) bool {
@@ -685,11 +706,24 @@ func (*metadataExtractor) getIndexType(constraint *ast.Constraint) string {
 }
 
 func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, table *storepb.TableMetadata) {
-	// TiDB check constraints are handled differently
-	// For now, skip processing as the AST structure may not have ExprInCheck
-	// In a full implementation, we would need to check the constraint structure
-	_ = constraint
-	_ = table
+	if constraint.Expr == nil {
+		return
+	}
+	table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
+		Name:       constraint.Name,
+		Expression: restoreExpression(constraint.Expr),
+	})
+}
+
+// restoreExpression renders an expression back to SQL. The parser fills in Text()
+// only for nodes it captured verbatim, so literals such as a boolean default and
+// whole check expressions come back empty without this.
+func restoreExpression(expr ast.ExprNode) string {
+	var sb strings.Builder
+	if err := expr.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)); err != nil {
+		return ""
+	}
+	return sb.String()
 }
 
 func (*metadataExtractor) extractViewDefinition(stmt *ast.CreateViewStmt) string {

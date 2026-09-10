@@ -1,0 +1,2487 @@
+- description: basic_tables_with_constraints
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "posts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('posts_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "integer"
+                },
+                {
+                  "name": "title",
+                  "position": 3,
+                  "type": "character varying(200)"
+                },
+                {
+                  "name": "content",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "published",
+                  "position": 5,
+                  "default": "false",
+                  "nullable": true,
+                  "type": "boolean"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "posts_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "idx_posts_user_id",
+                  "expressions": [
+                    "user_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree"
+                },
+                {
+                  "name": "idx_posts_published",
+                  "expressions": [
+                    "published"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree"
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "fk_user",
+                  "columns": [
+                    "user_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "users",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ]
+            },
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('users_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "username",
+                  "position": 2,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp without time zone"
+                },
+                {
+                  "name": "updated_at",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "timestamp without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "users_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "users_username_key",
+                  "expressions": [
+                    "username"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."posts" (
+        "id" integer DEFAULT nextval('posts_id_seq'::regclass) NOT NULL,
+        "user_id" integer NOT NULL,
+        "title" character varying(200) NOT NULL,
+        "content" text,
+        "published" boolean DEFAULT false
+    );
+
+    ALTER TABLE ONLY "public"."posts" ADD CONSTRAINT "posts_pkey" PRIMARY KEY (id);
+
+    CREATE INDEX "idx_posts_user_id" ON "public"."posts" (user_id);
+
+    CREATE INDEX "idx_posts_published" ON "public"."posts" (published);
+
+    CREATE TABLE "public"."users" (
+        "id" integer DEFAULT nextval('users_id_seq'::regclass) NOT NULL,
+        "username" character varying(50) NOT NULL,
+        "email" character varying(100) NOT NULL,
+        "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" timestamp without time zone
+    );
+
+    ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_username_key" UNIQUE (username);
+
+    ALTER TABLE "public"."posts"
+        ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id")
+        REFERENCES "public"."users" ("id")
+        ON DELETE CASCADE;
+
+- description: sequences_and_custom_types
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "items",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('custom_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "status",
+                  "position": 3,
+                  "default": "'pending'::status_enum",
+                  "nullable": true,
+                  "type": "status_enum"
+                },
+                {
+                  "name": "user_mood",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "mood"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "items_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "sequences": [
+            {
+              "name": "custom_id_seq",
+              "data_type": "bigint",
+              "start": "1000",
+              "min_value": "1",
+              "max_value": "9223372036854775807",
+              "increment": "10",
+              "cache_size": "1"
+            }
+          ],
+          "enum_types": [
+            {
+              "name": "mood",
+              "values": [
+                "happy",
+                "sad",
+                "neutral"
+              ]
+            },
+            {
+              "name": "status_enum",
+              "values": [
+                "pending",
+                "active",
+                "inactive",
+                "deleted"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE TYPE "public"."mood" AS ENUM (
+        'happy',
+        'sad',
+        'neutral'
+    );
+
+    CREATE TYPE "public"."status_enum" AS ENUM (
+        'pending',
+        'active',
+        'inactive',
+        'deleted'
+    );
+
+    CREATE SEQUENCE "public"."custom_id_seq"
+        AS bigint
+    	START WITH 1000
+    	INCREMENT BY 10
+    	MINVALUE 1
+    	MAXVALUE 9223372036854775807
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."items" (
+        "id" integer DEFAULT nextval('custom_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "status" status_enum DEFAULT 'pending'::status_enum,
+        "user_mood" mood
+    );
+
+    ALTER TABLE ONLY "public"."items" ADD CONSTRAINT "items_pkey" PRIMARY KEY (id);
+
+- description: composite_types
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('orders_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "info",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "order_info"
+                },
+                {
+                  "name": "addresses",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "aa_nested"
+                },
+                {
+                  "name": "location",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "geo.point2"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "orders_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "enum_types": [
+            {
+              "name": "order_status",
+              "values": [
+                "pending",
+                "shipped"
+              ]
+            }
+          ],
+          "composite_types": [
+            {
+              "name": "aa_nested",
+              "attributes": [
+                {
+                  "name": "home",
+                  "type": "public.zz_base"
+                },
+                {
+                  "name": "homes",
+                  "type": "public.zz_base[]"
+                },
+                {
+                  "name": "tags",
+                  "type": "text[]"
+                }
+              ]
+            },
+            {
+              "name": "empty_type"
+            },
+            {
+              "name": "order_info",
+              "attributes": [
+                {
+                  "name": "status",
+                  "type": "public.order_status"
+                },
+                {
+                  "name": "note",
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "name": "wrapper",
+              "attributes": [
+                {
+                  "name": "p",
+                  "type": "geo.point2"
+                }
+              ]
+            },
+            {
+              "name": "zz_base",
+              "attributes": [
+                {
+                  "name": "street",
+                  "type": "text",
+                  "collation": "\"C\""
+                },
+                {
+                  "name": "city",
+                  "type": "character varying(50)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "geo",
+          "composite_types": [
+            {
+              "name": "point2",
+              "attributes": [
+                {
+                  "name": "lat",
+                  "type": "numeric(9,6)"
+                },
+                {
+                  "name": "lng",
+                  "type": "numeric(9,6)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SCHEMA IF NOT EXISTS "geo";
+
+    CREATE TYPE "public"."order_status" AS ENUM (
+        'pending',
+        'shipped'
+    );
+
+    CREATE TYPE "geo"."point2" AS (
+        "lat" numeric(9,6),
+        "lng" numeric(9,6)
+    );
+
+    CREATE TYPE "public"."empty_type" AS (
+
+    );
+
+    CREATE TYPE "public"."order_info" AS (
+        "status" public.order_status,
+        "note" text
+    );
+
+    CREATE TYPE "public"."wrapper" AS (
+        "p" geo.point2
+    );
+
+    CREATE TYPE "public"."zz_base" AS (
+        "street" text COLLATE "C",
+        "city" character varying(50)
+    );
+
+    CREATE TYPE "public"."aa_nested" AS (
+        "home" public.zz_base,
+        "homes" public.zz_base[],
+        "tags" text[]
+    );
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."orders" (
+        "id" integer DEFAULT nextval('orders_id_seq'::regclass) NOT NULL,
+        "info" order_info,
+        "addresses" aa_nested,
+        "location" geo.point2
+    );
+
+    ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
+
+- description: owned_sequence_dependency_order
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "history_audit",
+              "columns": [
+                {
+                  "name": "audit_id",
+                  "position": 1,
+                  "default": "nextval('history_cost_changes_id_seq'::regclass)",
+                  "type": "bigint"
+                },
+                {
+                  "name": "change_type",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "character varying(50)"
+                }
+              ]
+            },
+            {
+              "name": "history_cost_changes",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('history_cost_changes_id_seq'::regclass)",
+                  "type": "bigint"
+                },
+                {
+                  "name": "amount",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "description",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "history_cost_changes_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."history_audit" (
+        "audit_id" bigint DEFAULT nextval('history_cost_changes_id_seq'::regclass) NOT NULL,
+        "change_type" character varying(50)
+    );
+
+    CREATE TABLE "public"."history_cost_changes" (
+        "id" bigint DEFAULT nextval('history_cost_changes_id_seq'::regclass) NOT NULL,
+        "amount" numeric(10,2),
+        "description" text,
+        "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER TABLE ONLY "public"."history_cost_changes" ADD CONSTRAINT "history_cost_changes_pkey" PRIMARY KEY (id);
+
+- description: views_and_functions
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('employees_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "department",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "salary",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "numeric(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "employees_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "active_employees",
+              "definition": " SELECT id,\n    name,\n    department\n   FROM employees\n  WHERE (department IS NOT NULL);"
+            }
+          ],
+          "functions": [
+            {
+              "name": "calculate_bonus",
+              "definition": "CREATE OR REPLACE FUNCTION public.calculate_bonus(emp_id integer)\n RETURNS numeric\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    emp_salary DECIMAL;\nBEGIN\n    SELECT salary INTO emp_salary FROM employees WHERE id = emp_id;\n    RETURN emp_salary * 0.1;\nEND;\n$function$\n",
+              "signature": "public.calculate_bonus(integer)"
+            },
+            {
+              "name": "get_employee_count",
+              "definition": "CREATE OR REPLACE FUNCTION public.get_employee_count(dept character varying)\n RETURNS integer\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);\nEND;\n$function$\n",
+              "signature": "public.get_employee_count(character varying)"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE VIEW "public"."active_employees" AS
+     SELECT id,
+        name,
+        department
+       FROM employees
+      WHERE (department IS NOT NULL);
+
+    CREATE TABLE "public"."employees" (
+        "id" integer DEFAULT nextval('employees_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "department" character varying(50),
+        "salary" numeric(10,2)
+    );
+
+    ALTER TABLE ONLY "public"."employees" ADD CONSTRAINT "employees_pkey" PRIMARY KEY (id);
+
+    CREATE OR REPLACE FUNCTION public.calculate_bonus(emp_id integer)
+     RETURNS numeric
+     LANGUAGE plpgsql
+    AS $function$
+    DECLARE
+        emp_salary DECIMAL;
+    BEGIN
+        SELECT salary INTO emp_salary FROM employees WHERE id = emp_id;
+        RETURN emp_salary * 0.1;
+    END;
+    $function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.get_employee_count(dept character varying)
+     RETURNS integer
+     LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+        RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);
+    END;
+    $function$
+    ;
+
+- description: partitioned_tables
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "sales",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('sales_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "region",
+                  "position": 4,
+                  "type": "character varying(50)"
+                }
+              ]
+            },
+            {
+              "name": "sales_2023_q1",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('sales_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "region",
+                  "position": 4,
+                  "type": "character varying(50)"
+                }
+              ]
+            },
+            {
+              "name": "sales_2023_q2",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('sales_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "region",
+                  "position": 4,
+                  "type": "character varying(50)"
+                }
+              ]
+            },
+            {
+              "name": "sales_2023_q3",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('sales_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "region",
+                  "position": 4,
+                  "type": "character varying(50)"
+                }
+              ]
+            },
+            {
+              "name": "sales_2023_q4",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('sales_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "region",
+                  "position": 4,
+                  "type": "character varying(50)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."sales" (
+        "id" integer DEFAULT nextval('sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+    CREATE TABLE "public"."sales_2023_q1" (
+        "id" integer DEFAULT nextval('sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+    CREATE TABLE "public"."sales_2023_q2" (
+        "id" integer DEFAULT nextval('sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+    CREATE TABLE "public"."sales_2023_q3" (
+        "id" integer DEFAULT nextval('sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+    CREATE TABLE "public"."sales_2023_q4" (
+        "id" integer DEFAULT nextval('sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+- description: extensions_and_advanced_features
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "documents",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "uuid_generate_v4()",
+                  "type": "uuid"
+                },
+                {
+                  "name": "title",
+                  "position": 2,
+                  "type": "character varying(200)"
+                },
+                {
+                  "name": "content",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "tags",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "text[]"
+                },
+                {
+                  "name": "metadata",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "jsonb"
+                },
+                {
+                  "name": "created_at",
+                  "position": 6,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp with time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "documents_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "idx_documents_metadata",
+                  "expressions": [
+                    "metadata"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "gin"
+                },
+                {
+                  "name": "idx_documents_tags",
+                  "expressions": [
+                    "tags"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "gin"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "uuid_generate_v1",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v1()\n RETURNS uuid\n LANGUAGE c\n STRICT\n PARALLEL SAFE\nAS $function$uuid_generate_v1$function$\n",
+              "signature": "public.uuid_generate_v1()"
+            },
+            {
+              "name": "uuid_generate_v1mc",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v1mc()\n RETURNS uuid\n LANGUAGE c\n STRICT\n PARALLEL SAFE\nAS $function$uuid_generate_v1mc$function$\n",
+              "signature": "public.uuid_generate_v1mc()"
+            },
+            {
+              "name": "uuid_generate_v3",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v3(uuid, text)\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE\n STRICT\n PARALLEL SAFE\nAS $function$uuid_generate_v3$function$\n",
+              "signature": "public.uuid_generate_v3(uuid,text)"
+            },
+            {
+              "name": "uuid_generate_v4",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v4()\n RETURNS uuid\n LANGUAGE c\n STRICT\n PARALLEL SAFE\nAS $function$uuid_generate_v4$function$\n",
+              "signature": "public.uuid_generate_v4()"
+            },
+            {
+              "name": "uuid_generate_v5",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v5(uuid, text)\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE\n STRICT\n PARALLEL SAFE\nAS $function$uuid_generate_v5$function$\n",
+              "signature": "public.uuid_generate_v5(uuid,text)"
+            },
+            {
+              "name": "uuid_nil",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_nil()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE\n STRICT\n PARALLEL SAFE\nAS $function$uuid_nil$function$\n",
+              "signature": "public.uuid_nil()"
+            },
+            {
+              "name": "uuid_ns_dns",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_ns_dns()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE\n STRICT\n PARALLEL SAFE\nAS $function$uuid_ns_dns$function$\n",
+              "signature": "public.uuid_ns_dns()"
+            },
+            {
+              "name": "uuid_ns_oid",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_ns_oid()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE\n STRICT\n PARALLEL SAFE\nAS $function$uuid_ns_oid$function$\n",
+              "signature": "public.uuid_ns_oid()"
+            },
+            {
+              "name": "uuid_ns_url",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_ns_url()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE\n STRICT\n PARALLEL SAFE\nAS $function$uuid_ns_url$function$\n",
+              "signature": "public.uuid_ns_url()"
+            },
+            {
+              "name": "uuid_ns_x500",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_ns_x500()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE\n STRICT\n PARALLEL SAFE\nAS $function$uuid_ns_x500$function$\n",
+              "signature": "public.uuid_ns_x500()"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."documents" (
+        "id" uuid DEFAULT uuid_generate_v4() NOT NULL,
+        "title" character varying(200) NOT NULL,
+        "content" text,
+        "tags" text[],
+        "metadata" jsonb,
+        "created_at" timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER TABLE ONLY "public"."documents" ADD CONSTRAINT "documents_pkey" PRIMARY KEY (id);
+
+    CREATE INDEX "idx_documents_metadata" ON "public"."documents" USING GIN (metadata);
+
+    CREATE INDEX "idx_documents_tags" ON "public"."documents" USING GIN (tags);
+
+    CREATE OR REPLACE FUNCTION public.uuid_generate_v1()
+     RETURNS uuid
+     LANGUAGE c
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_generate_v1$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_generate_v1mc()
+     RETURNS uuid
+     LANGUAGE c
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_generate_v1mc$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_generate_v3(uuid, text)
+     RETURNS uuid
+     LANGUAGE c
+     IMMUTABLE
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_generate_v3$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_generate_v4()
+     RETURNS uuid
+     LANGUAGE c
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_generate_v4$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_generate_v5(uuid, text)
+     RETURNS uuid
+     LANGUAGE c
+     IMMUTABLE
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_generate_v5$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_nil()
+     RETURNS uuid
+     LANGUAGE c
+     IMMUTABLE
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_nil$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_ns_dns()
+     RETURNS uuid
+     LANGUAGE c
+     IMMUTABLE
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_ns_dns$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_ns_oid()
+     RETURNS uuid
+     LANGUAGE c
+     IMMUTABLE
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_ns_oid$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_ns_url()
+     RETURNS uuid
+     LANGUAGE c
+     IMMUTABLE
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_ns_url$function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.uuid_ns_x500()
+     RETURNS uuid
+     LANGUAGE c
+     IMMUTABLE
+     STRICT
+     PARALLEL SAFE
+    AS $function$uuid_ns_x500$function$
+    ;
+
+- description: check_constraints_and_comments
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('products_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "price",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "quantity",
+                  "position": 4,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "products_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "chk_price",
+                  "expression": "(price \u003e (0)::numeric)"
+                },
+                {
+                  "name": "chk_quantity",
+                  "expression": "(quantity \u003e= 0)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."products" (
+        "id" integer DEFAULT nextval('products_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "price" numeric(10,2) NOT NULL,
+        "quantity" integer NOT NULL,
+        CONSTRAINT "chk_price" CHECK (price > (0)::numeric),
+        CONSTRAINT "chk_quantity" CHECK (quantity >= 0)
+    );
+
+    ALTER TABLE ONLY "public"."products" ADD CONSTRAINT "products_pkey" PRIMARY KEY (id);
+
+- description: materialized_views
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "raw_data",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('raw_data_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "data_value",
+                  "position": 2,
+                  "type": "numeric"
+                },
+                {
+                  "name": "category",
+                  "position": 3,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "raw_data_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "materialized_views": [
+            {
+              "name": "data_summary",
+              "definition": " SELECT category,\n    count(*) AS count,\n    avg(data_value) AS avg_value,\n    max(data_value) AS max_value,\n    min(data_value) AS min_value\n   FROM raw_data\n  GROUP BY category;",
+              "indexes": [
+                {
+                  "name": "idx_data_summary_category",
+                  "expressions": [
+                    "category"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE MATERIALIZED VIEW "public"."data_summary" AS
+     SELECT category,
+        count(*) AS count,
+        avg(data_value) AS avg_value,
+        max(data_value) AS max_value,
+        min(data_value) AS min_value
+       FROM raw_data
+      GROUP BY category
+      WITH NO DATA;
+
+    CREATE INDEX "idx_data_summary_category" ON "public"."data_summary" (category);
+
+    CREATE TABLE "public"."raw_data" (
+        "id" integer DEFAULT nextval('raw_data_id_seq'::regclass) NOT NULL,
+        "data_value" numeric NOT NULL,
+        "category" character varying(50) NOT NULL,
+        "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER TABLE ONLY "public"."raw_data" ADD CONSTRAINT "raw_data_pkey" PRIMARY KEY (id);
+
+- description: comprehensive_views
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "customers",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('customers_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "active",
+                  "position": 4,
+                  "default": "true",
+                  "nullable": true,
+                  "type": "boolean"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "customers_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "customers_email_key",
+                  "expressions": [
+                    "email"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "is_constraint": true
+                }
+              ]
+            },
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('orders_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "customer_id",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "total_amount",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "order_date",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp without time zone"
+                },
+                {
+                  "name": "status",
+                  "position": 5,
+                  "default": "'pending'::character varying",
+                  "nullable": true,
+                  "type": "character varying(20)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "orders_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "orders_customer_id_fkey",
+                  "columns": [
+                    "customer_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "customers",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "active_customer_orders",
+              "definition": " SELECT c.id AS customer_id,\n    c.name,\n    c.email,\n    o.id AS order_id,\n    o.total_amount,\n    o.order_date\n   FROM (customers c\n     JOIN orders o ON ((c.id = o.customer_id)))\n  WHERE ((c.active = true) AND ((o.status)::text = 'completed'::text));"
+            },
+            {
+              "name": "customer_summary",
+              "definition": " SELECT id,\n    name,\n    email,\n    ( SELECT count(*) AS count\n           FROM orders\n          WHERE (orders.customer_id = customers.id)) AS order_count\n   FROM customers\n  WHERE (active = true);"
+            }
+          ],
+          "materialized_views": [
+            {
+              "name": "monthly_sales_summary",
+              "definition": " SELECT date_trunc('month'::text, order_date) AS month,\n    count(*) AS order_count,\n    sum(total_amount) AS total_revenue,\n    avg(total_amount) AS avg_order_value,\n    count(DISTINCT customer_id) AS unique_customers\n   FROM orders\n  WHERE ((status)::text = 'completed'::text)\n  GROUP BY (date_trunc('month'::text, order_date))\n  ORDER BY (date_trunc('month'::text, order_date));",
+              "indexes": [
+                {
+                  "name": "idx_monthly_sales_month",
+                  "expressions": [
+                    "month"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE VIEW "public"."active_customer_orders" AS
+     SELECT c.id AS customer_id,
+        c.name,
+        c.email,
+        o.id AS order_id,
+        o.total_amount,
+        o.order_date
+       FROM (customers c
+         JOIN orders o ON ((c.id = o.customer_id)))
+      WHERE ((c.active = true) AND ((o.status)::text = 'completed'::text));
+
+    CREATE VIEW "public"."customer_summary" AS
+     SELECT id,
+        name,
+        email,
+        ( SELECT count(*) AS count
+               FROM orders
+              WHERE (orders.customer_id = customers.id)) AS order_count
+       FROM customers
+      WHERE (active = true);
+
+    CREATE TABLE "public"."customers" (
+        "id" integer DEFAULT nextval('customers_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "email" character varying(100),
+        "active" boolean DEFAULT true,
+        "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER TABLE ONLY "public"."customers" ADD CONSTRAINT "customers_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE ONLY "public"."customers" ADD CONSTRAINT "customers_email_key" UNIQUE (email);
+
+    CREATE MATERIALIZED VIEW "public"."monthly_sales_summary" AS
+     SELECT date_trunc('month'::text, order_date) AS month,
+        count(*) AS order_count,
+        sum(total_amount) AS total_revenue,
+        avg(total_amount) AS avg_order_value,
+        count(DISTINCT customer_id) AS unique_customers
+       FROM orders
+      WHERE ((status)::text = 'completed'::text)
+      GROUP BY (date_trunc('month'::text, order_date))
+      ORDER BY (date_trunc('month'::text, order_date))
+      WITH NO DATA;
+
+    CREATE UNIQUE INDEX "idx_monthly_sales_month" ON "public"."monthly_sales_summary" (month);
+
+    CREATE TABLE "public"."orders" (
+        "id" integer DEFAULT nextval('orders_id_seq'::regclass) NOT NULL,
+        "customer_id" integer,
+        "total_amount" numeric(10,2) NOT NULL,
+        "order_date" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+        "status" character varying(20) DEFAULT 'pending'::character varying
+    );
+
+    ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE "public"."orders"
+        ADD CONSTRAINT "orders_customer_id_fkey" FOREIGN KEY ("customer_id")
+        REFERENCES "public"."customers" ("id");
+
+- description: triggers
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "accounts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('accounts_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "balance",
+                  "position": 3,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "last_modified",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "accounts_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            },
+            {
+              "name": "audit_log",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('audit_log_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "table_name",
+                  "position": 2,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "operation",
+                  "position": 3,
+                  "type": "character varying(10)"
+                },
+                {
+                  "name": "user_name",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "timestamp",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "audit_log_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "log_account_changes",
+              "definition": "CREATE OR REPLACE FUNCTION public.log_account_changes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    INSERT INTO audit_log (table_name, operation, user_name)\n    VALUES ('accounts', TG_OP, current_user);\n    RETURN NEW;\nEND;\n$function$\n",
+              "signature": "public.log_account_changes()"
+            },
+            {
+              "name": "update_last_modified",
+              "definition": "CREATE OR REPLACE FUNCTION public.update_last_modified()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    NEW.last_modified = CURRENT_TIMESTAMP;\n    RETURN NEW;\nEND;\n$function$\n",
+              "signature": "public.update_last_modified()"
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."accounts" (
+        "id" integer DEFAULT nextval('accounts_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "balance" numeric(10,2) DEFAULT 0,
+        "last_modified" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER TABLE ONLY "public"."accounts" ADD CONSTRAINT "accounts_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."audit_log" (
+        "id" integer DEFAULT nextval('audit_log_id_seq'::regclass) NOT NULL,
+        "table_name" character varying(50) NOT NULL,
+        "operation" character varying(10) NOT NULL,
+        "user_name" character varying(50),
+        "timestamp" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER TABLE ONLY "public"."audit_log" ADD CONSTRAINT "audit_log_pkey" PRIMARY KEY (id);
+
+    CREATE OR REPLACE FUNCTION public.log_account_changes()
+     RETURNS trigger
+     LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+        INSERT INTO audit_log (table_name, operation, user_name)
+        VALUES ('accounts', TG_OP, current_user);
+        RETURN NEW;
+    END;
+    $function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.update_last_modified()
+     RETURNS trigger
+     LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+        NEW.last_modified = CURRENT_TIMESTAMP;
+        RETURN NEW;
+    END;
+    $function$
+    ;
+
+- description: foreign_key_on_delete_cascade
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "categories",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('categories_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "categories_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            },
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('orders_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "product_id",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "quantity",
+                  "position": 3,
+                  "default": "1",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "orders_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "fk_product_cascade",
+                  "columns": [
+                    "product_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "products",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ]
+            },
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('products_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "category_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "products_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "fk_category",
+                  "columns": [
+                    "category_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "categories",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."categories" (
+        "id" integer DEFAULT nextval('categories_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL
+    );
+
+    ALTER TABLE ONLY "public"."categories" ADD CONSTRAINT "categories_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."orders" (
+        "id" integer DEFAULT nextval('orders_id_seq'::regclass) NOT NULL,
+        "product_id" integer,
+        "quantity" integer DEFAULT 1
+    );
+
+    ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."products" (
+        "id" integer DEFAULT nextval('products_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "category_id" integer
+    );
+
+    ALTER TABLE ONLY "public"."products" ADD CONSTRAINT "products_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE "public"."orders"
+        ADD CONSTRAINT "fk_product_cascade" FOREIGN KEY ("product_id")
+        REFERENCES "public"."products" ("id")
+        ON DELETE SET NULL;
+
+    ALTER TABLE "public"."products"
+        ADD CONSTRAINT "fk_category" FOREIGN KEY ("category_id")
+        REFERENCES "public"."categories" ("id")
+        ON DELETE CASCADE;
+
+- description: foreign_key_on_update_actions
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "departments",
+              "columns": [
+                {
+                  "name": "code",
+                  "position": 1,
+                  "type": "character varying(10)"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "departments_pkey",
+                  "expressions": [
+                    "code"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ]
+            },
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('employees_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "dept_code",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(10)"
+                },
+                {
+                  "name": "manager_id",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "employees_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "fk_dept_restrict",
+                  "columns": [
+                    "dept_code"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "code"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "RESTRICT",
+                  "match_type": "SIMPLE"
+                },
+                {
+                  "name": "fk_manager_cascade",
+                  "columns": [
+                    "manager_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "employees",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "CASCADE",
+                  "match_type": "SIMPLE"
+                }
+              ]
+            },
+            {
+              "name": "projects",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('projects_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "lead_emp_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "dept_code",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "character varying(10)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "projects_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "fk_lead_setnull",
+                  "columns": [
+                    "lead_emp_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "employees",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "SET NULL",
+                  "match_type": "SIMPLE"
+                },
+                {
+                  "name": "fk_proj_dept",
+                  "columns": [
+                    "dept_code"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "code"
+                  ],
+                  "on_delete": "RESTRICT",
+                  "on_update": "RESTRICT",
+                  "match_type": "SIMPLE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."departments" (
+        "code" character varying(10) NOT NULL,
+        "name" character varying(100) NOT NULL
+    );
+
+    ALTER TABLE ONLY "public"."departments" ADD CONSTRAINT "departments_pkey" PRIMARY KEY (code);
+
+    CREATE TABLE "public"."employees" (
+        "id" integer DEFAULT nextval('employees_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "dept_code" character varying(10),
+        "manager_id" integer
+    );
+
+    ALTER TABLE ONLY "public"."employees" ADD CONSTRAINT "employees_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."projects" (
+        "id" integer DEFAULT nextval('projects_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "lead_emp_id" integer,
+        "dept_code" character varying(10)
+    );
+
+    ALTER TABLE ONLY "public"."projects" ADD CONSTRAINT "projects_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE "public"."employees"
+        ADD CONSTRAINT "fk_dept_restrict" FOREIGN KEY ("dept_code")
+        REFERENCES "public"."departments" ("code")
+        ON DELETE SET NULL
+        ON UPDATE RESTRICT;
+
+    ALTER TABLE "public"."employees"
+        ADD CONSTRAINT "fk_manager_cascade" FOREIGN KEY ("manager_id")
+        REFERENCES "public"."employees" ("id")
+        ON DELETE CASCADE
+        ON UPDATE CASCADE;
+
+    ALTER TABLE "public"."projects"
+        ADD CONSTRAINT "fk_lead_setnull" FOREIGN KEY ("lead_emp_id")
+        REFERENCES "public"."employees" ("id")
+        ON DELETE SET NULL
+        ON UPDATE SET NULL;
+
+    ALTER TABLE "public"."projects"
+        ADD CONSTRAINT "fk_proj_dept" FOREIGN KEY ("dept_code")
+        REFERENCES "public"."departments" ("code")
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT;
+
+- description: foreign_key_no_action
+  metadata: |
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "cities",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('cities_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "state_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "cities_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "fk_state_implicit",
+                  "columns": [
+                    "state_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "states",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ]
+            },
+            {
+              "name": "countries",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('countries_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "code",
+                  "position": 2,
+                  "type": "character varying(3)"
+                },
+                {
+                  "name": "name",
+                  "position": 3,
+                  "type": "character varying(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "countries_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "countries_code_key",
+                  "expressions": [
+                    "code"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "is_constraint": true
+                }
+              ]
+            },
+            {
+              "name": "states",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('states_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "country_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "states_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "fk_country_explicit",
+                  "columns": [
+                    "country_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "countries",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."cities" (
+        "id" integer DEFAULT nextval('cities_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "state_id" integer
+    );
+
+    ALTER TABLE ONLY "public"."cities" ADD CONSTRAINT "cities_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."countries" (
+        "id" integer DEFAULT nextval('countries_id_seq'::regclass) NOT NULL,
+        "code" character varying(3) NOT NULL,
+        "name" character varying(100) NOT NULL
+    );
+
+    ALTER TABLE ONLY "public"."countries" ADD CONSTRAINT "countries_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE ONLY "public"."countries" ADD CONSTRAINT "countries_code_key" UNIQUE (code);
+
+    CREATE TABLE "public"."states" (
+        "id" integer DEFAULT nextval('states_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "country_id" integer
+    );
+
+    ALTER TABLE ONLY "public"."states" ADD CONSTRAINT "states_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE "public"."cities"
+        ADD CONSTRAINT "fk_state_implicit" FOREIGN KEY ("state_id")
+        REFERENCES "public"."states" ("id");
+
+    ALTER TABLE "public"."states"
+        ADD CONSTRAINT "fk_country_explicit" FOREIGN KEY ("country_id")
+        REFERENCES "public"."countries" ("id");
+

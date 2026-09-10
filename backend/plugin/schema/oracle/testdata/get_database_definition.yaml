@@ -1,0 +1,251 @@
+- description: Basic tables with primary keys, foreign keys, unique constraints, check constraints, and indexes
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "DEPARTMENTS",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "is_identity": true
+                },
+                {
+                  "name": "NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "BUDGET",
+                  "position": 3,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER(12, 2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_DEPARTMENTS",
+                  "expressions": [
+                    "ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ]
+            },
+            {
+              "name": "EMPLOYEES",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "is_identity": true
+                },
+                {
+                  "name": "NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "EMAIL",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "DEPARTMENT_ID",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "SALARY",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "NUMBER(10, 2)"
+                },
+                {
+                  "name": "HIRE_DATE",
+                  "position": 6,
+                  "default": "SYSDATE",
+                  "nullable": true,
+                  "type": "DATE"
+                },
+                {
+                  "name": "IS_ACTIVE",
+                  "position": 7,
+                  "default": "1",
+                  "nullable": true,
+                  "type": "NUMBER(1)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_EMPLOYEES",
+                  "expressions": [
+                    "ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UK_EMPLOYEES_EMAIL",
+                  "expressions": [
+                    "EMAIL"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "visible": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "IDX_EMP_DEPT",
+                  "expressions": [
+                    "DEPARTMENT_ID"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "IDX_EMP_NAME",
+                  "expressions": [
+                    "NAME"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "FK_DEPT",
+                  "columns": [
+                    "DEPARTMENT_ID"
+                  ],
+                  "referenced_table": "DEPARTMENTS",
+                  "referenced_columns": [
+                    "ID"
+                  ]
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "CHK_EMPLOYEES_IS_ACTIVE",
+                  "expression": "IS_ACTIVEIN(0,1)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    CREATE TABLE "DEPARTMENTS" (
+      "ID" NUMBER NOT NULL,
+      "NAME" VARCHAR2(100 BYTE) NOT NULL,
+      "BUDGET" NUMBER(12, 2) DEFAULT 0,
+      CONSTRAINT "PK_DEPARTMENTS" PRIMARY KEY ("ID")
+    );
+
+    CREATE TABLE "EMPLOYEES" (
+      "ID" NUMBER NOT NULL,
+      "NAME" VARCHAR2(100 BYTE) NOT NULL,
+      "EMAIL" VARCHAR2(100 BYTE),
+      "DEPARTMENT_ID" NUMBER,
+      "SALARY" NUMBER(10, 2),
+      "HIRE_DATE" DATE DEFAULT SYSDATE,
+      "IS_ACTIVE" NUMBER(1) DEFAULT 1,
+      CONSTRAINT "PK_EMPLOYEES" PRIMARY KEY ("ID"),
+      CONSTRAINT "UK_EMPLOYEES_EMAIL" UNIQUE ("EMAIL"),
+      CONSTRAINT "CHK_EMPLOYEES_IS_ACTIVE" CHECK (IS_ACTIVEIN(0,1)),
+      CONSTRAINT "FK_DEPT" FOREIGN KEY ("DEPARTMENT_ID") REFERENCES "DEPARTMENTS" ("ID")
+    );
+
+    CREATE INDEX "IDX_EMP_DEPT" ON "EMPLOYEES" ("DEPARTMENT_ID" ASC);
+
+    CREATE INDEX "IDX_EMP_NAME" ON "EMPLOYEES" ("NAME" ASC);
+
+- description: A view whose INSTEAD OF trigger must survive the definition round trip
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "EMPLOYEES",
+              "columns": [
+                {
+                  "name": "EMP_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "EMAIL",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_EMPLOYEES",
+                  "expressions": [
+                    "EMP_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "EMPLOYEE_VIEW",
+              "definition": "SELECT EMP_ID, EMAIL\nFROM EMPLOYEES",
+              "triggers": [
+                {
+                  "name": "EMPLOYEE_VIEW_INSERT_TRG",
+                  "body": "CREATE OR REPLACE TRIGGER EMPLOYEE_VIEW_INSERT_TRG\nINSTEAD OF INSERT ON EMPLOYEE_VIEW\nFOR EACH ROW\nBEGIN\n    INSERT INTO EMPLOYEES (EMP_ID, EMAIL) VALUES (:NEW.EMP_ID, :NEW.EMAIL);\nEND;"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  expected: |+
+    CREATE TABLE "EMPLOYEES" (
+      "EMP_ID" NUMBER NOT NULL,
+      "EMAIL" VARCHAR2(100 BYTE),
+      CONSTRAINT "PK_EMPLOYEES" PRIMARY KEY ("EMP_ID")
+    );
+
+    CREATE VIEW "EMPLOYEE_VIEW" AS SELECT EMP_ID, EMAIL
+    FROM EMPLOYEES;
+
+    CREATE OR REPLACE TRIGGER EMPLOYEE_VIEW_INSERT_TRG
+    INSTEAD OF INSERT ON EMPLOYEE_VIEW
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO EMPLOYEES (EMP_ID, EMAIL) VALUES (:NEW.EMP_ID, :NEW.EMAIL);
+    END;
+

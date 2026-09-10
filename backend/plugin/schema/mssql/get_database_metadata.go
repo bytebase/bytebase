@@ -11,7 +11,17 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
+
+func init() {
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_MSSQL, GetDatabaseMetadata)
+}
+
+type tableKey struct {
+	schema string
+	table  string
+}
 
 const noAction = "NO ACTION"
 

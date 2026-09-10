@@ -1,0 +1,3355 @@
+- description: basic_table_creation1
+  schema: |2
+                CREATE TABLE users(
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    name varchar(220)
+                );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(220)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: basic_table_creation2
+  schema: |2
+                CREATE TABLE users(
+                    id INT PRIMARY KEY AUTO_INCREMENT
+                );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: basic_tables_with_constraints
+  schema: |
+    CREATE TABLE users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE posts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published BOOLEAN DEFAULT false,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_user_id (user_id),
+        INDEX idx_published (published)
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "posts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "title",
+                  "position": 3,
+                  "type": "varchar(200)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "content",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "published",
+                  "position": 5,
+                  "default": "'0'",
+                  "nullable": true,
+                  "type": "tinyint(1)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_user_id",
+                  "expressions": [
+                    "user_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_published",
+                  "expressions": [
+                    "published"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "fk_user",
+                  "columns": [
+                    "user_id"
+                  ],
+                  "referenced_table": "users",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            },
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "username",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "updated_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "on_update": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "username",
+                  "expressions": [
+                    "username"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: table_with_various_data_types
+  schema: |
+    CREATE TABLE data_types_test (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tiny_int_col TINYINT,
+        small_int_col SMALLINT,
+        medium_int_col MEDIUMINT,
+        int_col INT,
+        big_int_col BIGINT,
+        decimal_col DECIMAL(10, 2),
+        float_col FLOAT,
+        double_col DOUBLE,
+        bit_col BIT(8),
+        bool_col BOOLEAN,
+        char_col CHAR(10),
+        varchar_col VARCHAR(255),
+        binary_col BINARY(16),
+        varbinary_col VARBINARY(255),
+        tinyblob_col TINYBLOB,
+        blob_col BLOB,
+        mediumblob_col MEDIUMBLOB,
+        longblob_col LONGBLOB,
+        tinytext_col TINYTEXT,
+        text_col TEXT,
+        mediumtext_col MEDIUMTEXT,
+        longtext_col LONGTEXT,
+        enum_col ENUM('small', 'medium', 'large'),
+        set_col SET('red', 'green', 'blue'),
+        date_col DATE,
+        time_col TIME,
+        datetime_col DATETIME,
+        timestamp_col TIMESTAMP,
+        year_col YEAR,
+        json_col JSON
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "data_types_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "tiny_int_col",
+                  "position": 2,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "tinyint"
+                },
+                {
+                  "name": "small_int_col",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "smallint"
+                },
+                {
+                  "name": "medium_int_col",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "mediumint"
+                },
+                {
+                  "name": "int_col",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "big_int_col",
+                  "position": 6,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "bigint"
+                },
+                {
+                  "name": "decimal_col",
+                  "position": 7,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "float_col",
+                  "position": 8,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "float"
+                },
+                {
+                  "name": "double_col",
+                  "position": 9,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "double"
+                },
+                {
+                  "name": "bit_col",
+                  "position": 10,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "bit(8)"
+                },
+                {
+                  "name": "bool_col",
+                  "position": 11,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "tinyint(1)"
+                },
+                {
+                  "name": "char_col",
+                  "position": 12,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "char(10)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "varchar_col",
+                  "position": 13,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(255)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "binary_col",
+                  "position": 14,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "binary(16)"
+                },
+                {
+                  "name": "varbinary_col",
+                  "position": 15,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varbinary(255)"
+                },
+                {
+                  "name": "tinyblob_col",
+                  "position": 16,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "tinyblob"
+                },
+                {
+                  "name": "blob_col",
+                  "position": 17,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "blob"
+                },
+                {
+                  "name": "mediumblob_col",
+                  "position": 18,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "mediumblob"
+                },
+                {
+                  "name": "longblob_col",
+                  "position": 19,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "longblob"
+                },
+                {
+                  "name": "tinytext_col",
+                  "position": 20,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "tinytext",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "text_col",
+                  "position": 21,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "mediumtext_col",
+                  "position": 22,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "mediumtext",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "longtext_col",
+                  "position": 23,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "longtext",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "enum_col",
+                  "position": 24,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "enum('small','medium','large')",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "set_col",
+                  "position": 25,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "set('red','green','blue')",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "date_col",
+                  "position": 26,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "date"
+                },
+                {
+                  "name": "time_col",
+                  "position": 27,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "time"
+                },
+                {
+                  "name": "datetime_col",
+                  "position": 28,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "datetime"
+                },
+                {
+                  "name": "timestamp_col",
+                  "position": 29,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "year_col",
+                  "position": 30,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "year"
+                },
+                {
+                  "name": "json_col",
+                  "position": 31,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "json"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: views_and_generated_columns
+  schema: |
+    CREATE TABLE employees (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        first_name VARCHAR(50) NOT NULL,
+        last_name VARCHAR(50) NOT NULL,
+        full_name VARCHAR(101) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
+        email VARCHAR(100) GENERATED ALWAYS AS (CONCAT(LOWER(first_name), '.', LOWER(last_name), '@company.com')) VIRTUAL,
+        department VARCHAR(50),
+        salary DECIMAL(10, 2)
+    );
+
+    CREATE VIEW active_employees AS
+    SELECT id, first_name, last_name, full_name, department
+    FROM employees
+    WHERE department IS NOT NULL;
+
+    CREATE VIEW high_earners AS
+    SELECT id, full_name, salary
+    FROM employees
+    WHERE salary > 100000;
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "first_name",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "last_name",
+                  "position": 3,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "full_name",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(101)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "generation": {
+                    "type": 2,
+                    "expression": "concat(`first_name`,_utf8mb4' ',`last_name`)"
+                  }
+                },
+                {
+                  "name": "email",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "generation": {
+                    "type": 1,
+                    "expression": "concat(lower(`first_name`),_utf8mb4'.',lower(`last_name`),_utf8mb4'@company.com')"
+                  }
+                },
+                {
+                  "name": "department",
+                  "position": 6,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "salary",
+                  "position": 7,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ],
+          "views": [
+            {
+              "name": "active_employees",
+              "definition": "select `employees`.`id` AS `id`,`employees`.`first_name` AS `first_name`,`employees`.`last_name` AS `last_name`,`employees`.`full_name` AS `full_name`,`employees`.`department` AS `department` from `employees` where (`employees`.`department` is not null)"
+            },
+            {
+              "name": "high_earners",
+              "definition": "select `employees`.`id` AS `id`,`employees`.`full_name` AS `full_name`,`employees`.`salary` AS `salary` from `employees` where (`employees`.`salary` \u003e 100000)"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: functions_and_procedures
+  schema: |
+    DELIMITER //
+
+    CREATE FUNCTION get_employee_count(dept VARCHAR(50))
+    RETURNS INT
+    DETERMINISTIC
+    READS SQL DATA
+    BEGIN
+        DECLARE emp_count INT;
+        SELECT COUNT(*) INTO emp_count
+        FROM employees
+        WHERE department = dept;
+        RETURN emp_count;
+    END//
+
+    CREATE PROCEDURE update_employee_salary(
+        IN emp_id INT,
+        IN new_salary DECIMAL(10, 2)
+    )
+    BEGIN
+        UPDATE employees
+        SET salary = new_salary
+        WHERE id = emp_id;
+    END//
+
+    DELIMITER ;
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "functions": [
+            {
+              "name": "get_employee_count",
+              "definition": "BEGIN\n    DECLARE emp_count INT;\n    SELECT COUNT(*) INTO emp_count\n    FROM employees\n    WHERE department = dept;\n    RETURN emp_count;\nEND"
+            }
+          ],
+          "procedures": [
+            {
+              "name": "update_employee_salary",
+              "definition": "BEGIN\n    UPDATE employees\n    SET salary = new_salary\n    WHERE id = emp_id;\nEND"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: partitioned_tables
+  schema: |
+    CREATE TABLE sales (
+        id INT AUTO_INCREMENT,
+        sale_date DATE NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        region VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id, sale_date)
+    ) PARTITION BY RANGE (YEAR(sale_date)) (
+        PARTITION p2021 VALUES LESS THAN (2022),
+        PARTITION p2022 VALUES LESS THAN (2023),
+        PARTITION p2023 VALUES LESS THAN (2024),
+        PARTITION p2024 VALUES LESS THAN (2025)
+    );
+
+    CREATE TABLE user_logs (
+        id INT AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        log_date DATE NOT NULL,
+        action VARCHAR(100),
+        PRIMARY KEY (id, user_id)
+    ) PARTITION BY HASH(user_id) PARTITIONS 4;
+
+    CREATE TABLE regions (
+        id INT AUTO_INCREMENT,
+        region_code VARCHAR(10) NOT NULL,
+        region_name VARCHAR(100),
+        PRIMARY KEY (id, region_code)
+    ) PARTITION BY KEY(region_code) PARTITIONS 3;
+
+    CREATE TABLE products (
+        id INT AUTO_INCREMENT,
+        category VARCHAR(50) NOT NULL,
+        name VARCHAR(100),
+        price DECIMAL(10, 2),
+        PRIMARY KEY (id, category)
+    ) PARTITION BY LIST COLUMNS(category) (
+        PARTITION p_electronics VALUES IN ('laptop', 'phone', 'tablet'),
+        PARTITION p_clothing VALUES IN ('shirt', 'pants', 'shoes'),
+        PARTITION p_food VALUES IN ('fruit', 'vegetable', 'meat')
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "category",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "name",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "price",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id",
+                    "category"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p_electronics",
+                  "type": 4,
+                  "expression": "category",
+                  "value": "'laptop','phone','tablet'"
+                },
+                {
+                  "name": "p_clothing",
+                  "type": 4,
+                  "expression": "category",
+                  "value": "'shirt','pants','shoes'"
+                },
+                {
+                  "name": "p_food",
+                  "type": 4,
+                  "expression": "category",
+                  "value": "'fruit','vegetable','meat'"
+                }
+              ]
+            },
+            {
+              "name": "regions",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "region_code",
+                  "position": 2,
+                  "type": "varchar(10)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "region_name",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id",
+                    "region_code"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p0",
+                  "type": 7,
+                  "expression": "region_code"
+                },
+                {
+                  "name": "p1",
+                  "type": 7,
+                  "expression": "region_code"
+                },
+                {
+                  "name": "p2",
+                  "type": 7,
+                  "expression": "region_code"
+                }
+              ]
+            },
+            {
+              "name": "sales",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "region",
+                  "position": 4,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id",
+                    "sale_date"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p2021",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2022"
+                },
+                {
+                  "name": "p2022",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2023"
+                },
+                {
+                  "name": "p2023",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2024"
+                },
+                {
+                  "name": "p2024",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2025"
+                }
+              ]
+            },
+            {
+              "name": "user_logs",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "log_date",
+                  "position": 3,
+                  "type": "date"
+                },
+                {
+                  "name": "action",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id",
+                    "user_id"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p0",
+                  "type": 5,
+                  "expression": "`user_id`"
+                },
+                {
+                  "name": "p1",
+                  "type": 5,
+                  "expression": "`user_id`"
+                },
+                {
+                  "name": "p2",
+                  "type": 5,
+                  "expression": "`user_id`"
+                },
+                {
+                  "name": "p3",
+                  "type": 5,
+                  "expression": "`user_id`"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: indexes_with_various_types
+  schema: |
+    CREATE TABLE orders (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        customer_id INT NOT NULL,
+        order_date DATE NOT NULL,
+        total_amount DECIMAL(10, 2) NOT NULL,
+        status VARCHAR(20),
+        notes TEXT,
+        INDEX idx_customer (customer_id),
+        INDEX idx_date_desc (order_date DESC),
+        INDEX idx_customer_date (customer_id ASC, order_date DESC),
+        UNIQUE INDEX idx_unique_customer_status (customer_id, status),
+        FULLTEXT INDEX idx_fulltext_notes (notes)
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "customer_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "order_date",
+                  "position": 3,
+                  "type": "date"
+                },
+                {
+                  "name": "total_amount",
+                  "position": 4,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "status",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "notes",
+                  "position": 6,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_customer",
+                  "expressions": [
+                    "customer_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_date_desc",
+                  "expressions": [
+                    "order_date"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    true
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_customer_date",
+                  "expressions": [
+                    "customer_id",
+                    "order_date"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    true
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_unique_customer_status",
+                  "expressions": [
+                    "customer_id",
+                    "status"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_fulltext_notes",
+                  "expressions": [
+                    "notes"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "FULLTEXT",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: check_constraints
+  schema: |
+    CREATE TABLE products_with_checks (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        quantity INT NOT NULL,
+        category VARCHAR(50),
+        CONSTRAINT chk_price CHECK (price > 0),
+        CONSTRAINT chk_quantity CHECK (quantity >= 0),
+        CONSTRAINT chk_category CHECK (category IN ('electronics', 'clothing', 'food', 'other'))
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "products_with_checks",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "price",
+                  "position": 3,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "quantity",
+                  "position": 4,
+                  "type": "int"
+                },
+                {
+                  "name": "category",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "check_constraints": [
+                {
+                  "name": "chk_price",
+                  "expression": "(`price` \u003e 0)"
+                },
+                {
+                  "name": "chk_quantity",
+                  "expression": "(`quantity` \u003e= 0)"
+                },
+                {
+                  "name": "chk_category",
+                  "expression": "(`category` in ('electronics','clothing','food','other'))"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: triggers
+  schema: |
+    CREATE TABLE users (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE audit_log (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        table_name VARCHAR(100),
+        action VARCHAR(10),
+        user VARCHAR(100),
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    DELIMITER //
+
+    CREATE TRIGGER users_after_insert
+    AFTER INSERT ON users
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO audit_log (table_name, action, user)
+        VALUES ('users', 'INSERT', USER());
+    END//
+
+    CREATE TRIGGER users_after_update
+    AFTER UPDATE ON users
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO audit_log (table_name, action, user)
+        VALUES ('users', 'UPDATE', USER());
+    END//
+
+    DELIMITER ;
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "audit_log",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "table_name",
+                  "position": 2,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "action",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "user",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "timestamp",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            },
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "username",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "triggers": [
+                {
+                  "name": "users_after_insert",
+                  "event": "INSERT",
+                  "timing": "AFTER",
+                  "body": "BEGIN\n    INSERT INTO audit_log (table_name, action, user)\n    VALUES ('users', 'INSERT', USER());\nEND"
+                },
+                {
+                  "name": "users_after_update",
+                  "event": "UPDATE",
+                  "timing": "AFTER",
+                  "body": "BEGIN\n    INSERT INTO audit_log (table_name, action, user)\n    VALUES ('users', 'UPDATE', USER());\nEND"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: table_with_comments
+  schema: |
+    CREATE TABLE documented_table (
+        id INT AUTO_INCREMENT PRIMARY KEY COMMENT 'Unique identifier',
+        name VARCHAR(100) NOT NULL COMMENT 'The name of the item',
+        description TEXT COMMENT 'Detailed description',
+        price DECIMAL(10, 2) COMMENT 'Price in USD',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation timestamp',
+        INDEX idx_name (name) COMMENT 'Index on name for faster lookups'
+    ) COMMENT='This table stores documented items';
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "documented_table",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int",
+                  "comment": "Unique identifier"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "comment": "The name of the item"
+                },
+                {
+                  "name": "description",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "comment": "Detailed description"
+                },
+                {
+                  "name": "price",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)",
+                  "comment": "Price in USD"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp",
+                  "comment": "Creation timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true,
+                  "comment": "Index on name for faster lookups"
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "comment": "This table stores documented items"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: complex_foreign_keys
+  schema: |
+    CREATE TABLE departments (
+        dept_id INT PRIMARY KEY,
+        dept_name VARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE employees_fk (
+        emp_id INT PRIMARY KEY,
+        emp_name VARCHAR(100) NOT NULL,
+        dept_id INT,
+        manager_id INT,
+        CONSTRAINT fk_dept FOREIGN KEY (dept_id) REFERENCES departments(dept_id) ON DELETE SET NULL ON UPDATE CASCADE,
+        CONSTRAINT fk_manager FOREIGN KEY (manager_id) REFERENCES employees_fk(emp_id) ON DELETE RESTRICT ON UPDATE RESTRICT
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "departments",
+              "columns": [
+                {
+                  "name": "dept_id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "dept_name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "dept_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            },
+            {
+              "name": "employees_fk",
+              "columns": [
+                {
+                  "name": "emp_id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "emp_name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "dept_id",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "manager_id",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "emp_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "fk_dept",
+                  "expressions": [
+                    "dept_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "fk_manager",
+                  "expressions": [
+                    "manager_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "fk_dept",
+                  "columns": [
+                    "dept_id"
+                  ],
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "dept_id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "CASCADE"
+                },
+                {
+                  "name": "fk_manager",
+                  "columns": [
+                    "manager_id"
+                  ],
+                  "referenced_table": "employees_fk",
+                  "referenced_columns": [
+                    "emp_id"
+                  ],
+                  "on_delete": "RESTRICT",
+                  "on_update": "RESTRICT"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: advanced_column_attributes
+  schema: |
+    CREATE TABLE advanced_columns (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        unsigned_int INT UNSIGNED NOT NULL,
+        zerofill_int INT(8) ZEROFILL,
+        unsigned_zerofill INT UNSIGNED ZEROFILL,
+        tiny_unsigned TINYINT UNSIGNED,
+        big_unsigned BIGINT UNSIGNED,
+        decimal_unsigned DECIMAL(10,2) UNSIGNED,
+        float_unsigned FLOAT UNSIGNED,
+        double_unsigned DOUBLE UNSIGNED,
+        bit_field BIT(16),
+        char_binary CHAR(10) BINARY,
+        varchar_binary VARCHAR(50) BINARY,
+        text_collate TEXT COLLATE utf8mb4_unicode_ci,
+        varchar_collate VARCHAR(100) COLLATE utf8mb4_bin,
+        datetime_precision DATETIME(6),
+        timestamp_precision TIMESTAMP(3),
+        time_precision TIME(2)
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "advanced_columns",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "unsigned_int",
+                  "position": 2,
+                  "type": "int unsigned"
+                },
+                {
+                  "name": "zerofill_int",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int(8) unsigned zerofill"
+                },
+                {
+                  "name": "unsigned_zerofill",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int(10) unsigned zerofill"
+                },
+                {
+                  "name": "tiny_unsigned",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "tinyint unsigned"
+                },
+                {
+                  "name": "big_unsigned",
+                  "position": 6,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "bigint unsigned"
+                },
+                {
+                  "name": "decimal_unsigned",
+                  "position": 7,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2) unsigned"
+                },
+                {
+                  "name": "float_unsigned",
+                  "position": 8,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "float unsigned"
+                },
+                {
+                  "name": "double_unsigned",
+                  "position": 9,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "double unsigned"
+                },
+                {
+                  "name": "bit_field",
+                  "position": 10,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "bit(16)"
+                },
+                {
+                  "name": "char_binary",
+                  "position": 11,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "char(10)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_bin"
+                },
+                {
+                  "name": "varchar_binary",
+                  "position": 12,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_bin"
+                },
+                {
+                  "name": "text_collate",
+                  "position": 13,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_unicode_ci"
+                },
+                {
+                  "name": "varchar_collate",
+                  "position": 14,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_bin"
+                },
+                {
+                  "name": "datetime_precision",
+                  "position": 15,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "datetime(6)"
+                },
+                {
+                  "name": "timestamp_precision",
+                  "position": 16,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "timestamp(3)"
+                },
+                {
+                  "name": "time_precision",
+                  "position": 17,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "time(2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: spatial_data_types
+  schema: |
+    CREATE TABLE spatial_test (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        location GEOMETRY NOT NULL,
+        point_col POINT NOT NULL,
+        line_col LINESTRING NOT NULL,
+        polygon_col POLYGON NOT NULL,
+        multipoint_col MULTIPOINT NOT NULL,
+        multiline_col MULTILINESTRING NOT NULL,
+        multipolygon_col MULTIPOLYGON NOT NULL,
+        geocollection_col GEOMETRYCOLLECTION NOT NULL,
+        SPATIAL INDEX idx_location (location),
+        SPATIAL INDEX idx_point (point_col)
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "spatial_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "location",
+                  "position": 2,
+                  "type": "geometry"
+                },
+                {
+                  "name": "point_col",
+                  "position": 3,
+                  "type": "point"
+                },
+                {
+                  "name": "line_col",
+                  "position": 4,
+                  "type": "linestring"
+                },
+                {
+                  "name": "polygon_col",
+                  "position": 5,
+                  "type": "polygon"
+                },
+                {
+                  "name": "multipoint_col",
+                  "position": 6,
+                  "type": "multipoint"
+                },
+                {
+                  "name": "multiline_col",
+                  "position": 7,
+                  "type": "multilinestring"
+                },
+                {
+                  "name": "multipolygon_col",
+                  "position": 8,
+                  "type": "multipolygon"
+                },
+                {
+                  "name": "geocollection_col",
+                  "position": 9,
+                  "type": "geomcollection"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_location",
+                  "expressions": [
+                    "location"
+                  ],
+                  "key_length": [
+                    32
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL",
+                  "visible": true
+                },
+                {
+                  "name": "idx_point",
+                  "expressions": [
+                    "point_col"
+                  ],
+                  "key_length": [
+                    32
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: mysql8_invisible_indexes
+  schema: |
+    CREATE TABLE invisible_index_test (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100),
+        status VARCHAR(20),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_name (name),
+        INDEX idx_email (email) INVISIBLE,
+        INDEX idx_status_invisible (status) INVISIBLE,
+        INDEX idx_composite (name, email) INVISIBLE
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "invisible_index_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "status",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_email",
+                  "expressions": [
+                    "email"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE"
+                },
+                {
+                  "name": "idx_status_invisible",
+                  "expressions": [
+                    "status"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE"
+                },
+                {
+                  "name": "idx_composite",
+                  "expressions": [
+                    "name",
+                    "email"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE"
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: advanced_indexes
+  schema: |
+    CREATE TABLE advanced_index_test (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        price DECIMAL(10,2),
+        category VARCHAR(50),
+        tags JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_name_prefix (name(10)),
+        INDEX idx_price_desc (price DESC),
+        INDEX idx_composite_mixed (category ASC, price DESC),
+        UNIQUE INDEX idx_unique_name_category (name, category),
+        FULLTEXT INDEX idx_fulltext_desc (description),
+        INDEX idx_expression ((YEAR(created_at)))
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "advanced_index_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "description",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "price",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "category",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "tags",
+                  "position": 6,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "json"
+                },
+                {
+                  "name": "created_at",
+                  "position": 7,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_name_prefix",
+                  "expressions": [
+                    "name"
+                  ],
+                  "key_length": [
+                    10
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_price_desc",
+                  "expressions": [
+                    "price"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    true
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_composite_mixed",
+                  "expressions": [
+                    "category",
+                    "price"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    true
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_unique_name_category",
+                  "expressions": [
+                    "name",
+                    "category"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_fulltext_desc",
+                  "expressions": [
+                    "description"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "FULLTEXT",
+                  "visible": true
+                },
+                {
+                  "name": "idx_expression",
+                  "expressions": [
+                    "year(`created_at`)"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: table_level_options
+  schema: |
+    CREATE TABLE table_options_test (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        data TEXT
+    ) ENGINE=InnoDB
+      DEFAULT CHARSET=utf8mb4
+      COLLATE=utf8mb4_unicode_ci
+      ROW_FORMAT=DYNAMIC
+      AUTO_INCREMENT=1000
+      COMMENT='Table with various options';
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "table_options_test",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_unicode_ci"
+                },
+                {
+                  "name": "data",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_unicode_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "collation": "utf8mb4_unicode_ci",
+              "charset": "utf8mb4",
+              "comment": "Table with various options"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: advanced_partitioning_maxvalue
+  schema: |
+    CREATE TABLE sales_maxvalue (
+        id INT AUTO_INCREMENT,
+        sale_date DATE NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        region VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id, sale_date)
+    ) PARTITION BY RANGE (YEAR(sale_date)) (
+        PARTITION p2021 VALUES LESS THAN (2022),
+        PARTITION p2022 VALUES LESS THAN (2023),
+        PARTITION p2023 VALUES LESS THAN (2024),
+        PARTITION p_future VALUES LESS THAN MAXVALUE
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "sales_maxvalue",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "region",
+                  "position": 4,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id",
+                    "sale_date"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p2021",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2022"
+                },
+                {
+                  "name": "p2022",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2023"
+                },
+                {
+                  "name": "p2023",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2024"
+                },
+                {
+                  "name": "p_future",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "MAXVALUE"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: multi_column_partitioning
+  schema: |
+    CREATE TABLE multi_column_partition (
+        id INT AUTO_INCREMENT,
+        year_col INT NOT NULL,
+        month_col INT NOT NULL,
+        data VARCHAR(100),
+        PRIMARY KEY (id, year_col, month_col)
+    ) PARTITION BY RANGE COLUMNS(year_col, month_col) (
+        PARTITION p202101 VALUES LESS THAN (2021, 7),
+        PARTITION p202107 VALUES LESS THAN (2022, 1),
+        PARTITION p202201 VALUES LESS THAN (2022, 7),
+        PARTITION p202207 VALUES LESS THAN (2023, 1)
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "multi_column_partition",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "year_col",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "month_col",
+                  "position": 3,
+                  "type": "int"
+                },
+                {
+                  "name": "data",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id",
+                    "year_col",
+                    "month_col"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p202101",
+                  "type": 2,
+                  "expression": "year_col,month_col",
+                  "value": "2021,7"
+                },
+                {
+                  "name": "p202107",
+                  "type": 2,
+                  "expression": "year_col,month_col",
+                  "value": "2022,1"
+                },
+                {
+                  "name": "p202201",
+                  "type": 2,
+                  "expression": "year_col,month_col",
+                  "value": "2022,7"
+                },
+                {
+                  "name": "p202207",
+                  "type": 2,
+                  "expression": "year_col,month_col",
+                  "value": "2023,1"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: self_referencing_foreign_keys
+  schema: |
+    CREATE TABLE hierarchical_data (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        parent_id INT,
+        manager_id INT,
+        CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES hierarchical_data(id) ON DELETE CASCADE,
+        CONSTRAINT fk_manager FOREIGN KEY (manager_id) REFERENCES hierarchical_data(id) ON DELETE SET NULL
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "hierarchical_data",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "parent_id",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "manager_id",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "fk_parent",
+                  "expressions": [
+                    "parent_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "fk_manager",
+                  "expressions": [
+                    "manager_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "fk_parent",
+                  "columns": [
+                    "parent_id"
+                  ],
+                  "referenced_table": "hierarchical_data",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION"
+                },
+                {
+                  "name": "fk_manager",
+                  "columns": [
+                    "manager_id"
+                  ],
+                  "referenced_table": "hierarchical_data",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: complex_generated_columns
+  schema: |
+    CREATE TABLE complex_generated (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        first_name VARCHAR(50) NOT NULL,
+        last_name VARCHAR(50) NOT NULL,
+        birth_date DATE NOT NULL,
+        salary DECIMAL(10,2),
+        full_name VARCHAR(101) GENERATED ALWAYS AS (CONCAT(first_name, ' ', last_name)) STORED,
+        email VARCHAR(150) GENERATED ALWAYS AS (CONCAT(LOWER(first_name), '.', LOWER(last_name), '@company.com')) VIRTUAL,
+        age_years INT GENERATED ALWAYS AS (TIMESTAMPDIFF(YEAR, birth_date, '2024-01-01')) VIRTUAL,
+        salary_category VARCHAR(20) GENERATED ALWAYS AS (
+            CASE
+                WHEN salary < 50000 THEN 'junior'
+                WHEN salary < 100000 THEN 'mid'
+                ELSE 'senior'
+            END
+        ) STORED,
+        INDEX idx_full_name (full_name),
+        INDEX idx_age (age_years),
+        INDEX idx_salary_cat (salary_category)
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "complex_generated",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "first_name",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "last_name",
+                  "position": 3,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "birth_date",
+                  "position": 4,
+                  "type": "date"
+                },
+                {
+                  "name": "salary",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "full_name",
+                  "position": 6,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(101)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "generation": {
+                    "type": 2,
+                    "expression": "concat(`first_name`,_utf8mb4' ',`last_name`)"
+                  }
+                },
+                {
+                  "name": "email",
+                  "position": 7,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(150)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "generation": {
+                    "type": 1,
+                    "expression": "concat(lower(`first_name`),_utf8mb4'.',lower(`last_name`),_utf8mb4'@company.com')"
+                  }
+                },
+                {
+                  "name": "age_years",
+                  "position": 8,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int",
+                  "generation": {
+                    "type": 1,
+                    "expression": "timestampdiff(YEAR,`birth_date`,_utf8mb4'2024-01-01')"
+                  }
+                },
+                {
+                  "name": "salary_category",
+                  "position": 9,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "generation": {
+                    "type": 2,
+                    "expression": "(?)"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_full_name",
+                  "expressions": [
+                    "full_name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_age",
+                  "expressions": [
+                    "age_years"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_salary_cat",
+                  "expressions": [
+                    "salary_category"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: quoted_identifiers_special_chars
+  schema: |
+    CREATE TABLE `special-table` (
+        `id-field` INT AUTO_INCREMENT PRIMARY KEY,
+        `first name` VARCHAR(50) NOT NULL,
+        `email@domain` VARCHAR(100),
+        `order` INT COMMENT 'Reserved keyword as column name',
+        `group` VARCHAR(50) COMMENT 'Another reserved keyword',
+        INDEX `idx-name` (`first name`),
+        UNIQUE INDEX `idx-email` (`email@domain`)
+    ) COMMENT='Table with special characters in identifiers';
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "special-table",
+              "columns": [
+                {
+                  "name": "id-field",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "first name",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "email@domain",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "order",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int",
+                  "comment": "Reserved keyword as column name"
+                },
+                {
+                  "name": "group",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "comment": "Another reserved keyword"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id-field"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx-name",
+                  "expressions": [
+                    "first name"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx-email",
+                  "expressions": [
+                    "email@domain"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "comment": "Table with special characters in identifiers"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+- description: json_and_array_features
+  schema: |
+    CREATE TABLE json_features (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        metadata JSON,
+        config JSON,
+        tags JSON,
+        name_from_json VARCHAR(100) GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.name'))) STORED,
+        tag_count INT GENERATED ALWAYS AS (JSON_LENGTH(tags)) VIRTUAL,
+        CHECK (JSON_VALID(metadata)),
+        CHECK (JSON_VALID(config)),
+        INDEX idx_name_json (name_from_json),
+        INDEX idx_tag_count (tag_count)
+    );
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "json_features",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "metadata",
+                  "position": 2,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "json"
+                },
+                {
+                  "name": "config",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "json"
+                },
+                {
+                  "name": "tags",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "json"
+                },
+                {
+                  "name": "name_from_json",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci",
+                  "generation": {
+                    "type": 2,
+                    "expression": "json_unquote(json_extract(`metadata`,_utf8mb4'$.name'))"
+                  }
+                },
+                {
+                  "name": "tag_count",
+                  "position": 6,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int",
+                  "generation": {
+                    "type": 1,
+                    "expression": "json_length(`tags`)"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_name_json",
+                  "expressions": [
+                    "name_from_json"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_tag_count",
+                  "expressions": [
+                    "tag_count"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "check_constraints": [
+                {
+                  "name": "json_features_chk_1",
+                  "expression": "json_valid(`metadata`)"
+                },
+                {
+                  "name": "json_features_chk_2",
+                  "expression": "json_valid(`config`)"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }

@@ -1236,7 +1236,7 @@ func writeMaterializedView(out io.Writer, schema string, view *storepb.Materiali
 	if _, err := io.WriteString(out, view.Name); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, "\" AS \n"); err != nil {
+	if _, err := io.WriteString(out, "\" AS\n"); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, strings.TrimRight(view.Definition, ";")); err != nil {
@@ -1307,7 +1307,7 @@ func writeView(out io.Writer, schema string, view *storepb.ViewMetadata) error {
 	if _, err := io.WriteString(out, view.Name); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, "\" AS \n"); err != nil {
+	if _, err := io.WriteString(out, "\" AS\n"); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, view.Definition); err != nil {

@@ -1,0 +1,1615 @@
+- description: Basic table operations with columns, constraints, and indexes
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT true,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username),
+        INDEX idx_email_active (email, is_active)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+    );
+
+    CREATE TABLE comments (
+        id INT NOT NULL AUTO_INCREMENT,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_post_user (post_id, user_id),
+        CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  expected: |+
+    DROP TABLE IF EXISTS `comments`;
+
+    ALTER TABLE `posts` DROP CHECK `chk_title_length`;
+
+    DROP INDEX `idx_email_active` ON `users`;
+
+    ALTER TABLE `users` DROP COLUMN `is_active`;
+
+
+- description: Reverse of basic table operations - dropping columns, constraints, and indexes
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT true,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username),
+        INDEX idx_email_active (email, is_active)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+    );
+
+    CREATE TABLE comments (
+        id INT NOT NULL AUTO_INCREMENT,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_post_user (post_id, user_id),
+        CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  expected: |
+    CREATE TABLE IF NOT EXISTS `comments` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `post_id` int NOT NULL,
+      `user_id` int NOT NULL,
+      `content` text NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;
+    CREATE INDEX `idx_post_user` ON `comments` (`post_id`, `user_id`);
+    CREATE INDEX `fk_comment_user` ON `comments` (`user_id`);
+    ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
+    ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+    ALTER TABLE `posts` ADD CONSTRAINT `chk_title_length` CHECK (CHAR_LENGTH(`title`)>0);
+    ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1) DEFAULT TRUE;
+    CREATE INDEX `idx_email_active` ON `users` (`email`, `is_active`);
+- description: TiDB specific features like AUTO_RANDOM and clustered index
+  oldSchema: |
+    CREATE TABLE products (
+        id BIGINT NOT NULL AUTO_RANDOM,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        category VARCHAR(50) DEFAULT 'general',
+        PRIMARY KEY (id),
+        INDEX idx_name (name)
+    );
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id BIGINT NOT NULL,
+        quantity INT NOT NULL,
+        total DECIMAL(10, 2),
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+    );
+
+    CREATE VIEW product_inventory AS
+    SELECT
+        p.id,
+        p.name,
+        p.price,
+        p.stock,
+        COALESCE(SUM(o.quantity), 0) AS total_ordered
+    FROM products p
+    LEFT JOIN orders o ON p.id = o.product_id
+    GROUP BY p.id, p.name, p.price, p.stock;
+  newSchema: |
+    CREATE TABLE products (
+        id BIGINT NOT NULL AUTO_RANDOM,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        PRIMARY KEY (id),
+        INDEX idx_name (name)
+    );
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id BIGINT NOT NULL,
+        quantity INT NOT NULL,
+        total DECIMAL(10, 2),
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+    );
+  expected: |+
+    CREATE OR REPLACE VIEW `product_inventory` AS SELECT 1;
+    DROP VIEW IF EXISTS `product_inventory`;
+
+    ALTER TABLE `products` DROP COLUMN `category`;
+
+
+- description: Reverse of TiDB specific features - dropping views and columns
+  oldSchema: |
+    CREATE TABLE products (
+        id BIGINT NOT NULL AUTO_RANDOM,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        PRIMARY KEY (id),
+        INDEX idx_name (name)
+    );
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id BIGINT NOT NULL,
+        quantity INT NOT NULL,
+        total DECIMAL(10, 2),
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+    );
+  newSchema: |
+    CREATE TABLE products (
+        id BIGINT NOT NULL AUTO_RANDOM,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        stock INT DEFAULT 0,
+        category VARCHAR(50) DEFAULT 'general',
+        PRIMARY KEY (id),
+        INDEX idx_name (name)
+    );
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id BIGINT NOT NULL,
+        quantity INT NOT NULL,
+        total DECIMAL(10, 2),
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
+    );
+
+    CREATE VIEW product_inventory AS
+    SELECT
+        p.id,
+        p.name,
+        p.price,
+        p.stock,
+        COALESCE(SUM(o.quantity), 0) AS total_ordered
+    FROM products p
+    LEFT JOIN orders o ON p.id = o.product_id
+    GROUP BY p.id, p.name, p.price, p.stock;
+  expected: |
+    ALTER TABLE `products` ADD COLUMN `category` varchar(50) DEFAULT _UTF8MB4'general';
+    CREATE VIEW `product_inventory` AS SELECT
+        p.id,
+        p.name,
+        p.price,
+        p.stock,
+        COALESCE(SUM(o.quantity), 0) AS total_ordered
+    FROM products p
+    LEFT JOIN orders o ON p.id = o.product_id
+    GROUP BY p.id, p.name, p.price, p.stock;
+- description: Views and stored routines
+  oldSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_name VARCHAR(100) NOT NULL,
+        sale_amount DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_name, sale_date)
+    );
+
+    CREATE VIEW monthly_sales AS
+    SELECT
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(sale_amount) AS total_sales
+    FROM sales
+    GROUP BY YEAR(sale_date), MONTH(sale_date);
+
+    CREATE VIEW top_products AS
+    SELECT
+        product_name,
+        COUNT(*) AS sale_count,
+        SUM(sale_amount) AS total_revenue
+    FROM sales
+    GROUP BY product_name
+    ORDER BY SUM(sale_amount) DESC;
+
+    CREATE TABLE sales_reports (
+        id INT NOT NULL AUTO_INCREMENT,
+        report_type VARCHAR(50) NOT NULL,
+        report_data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_type (report_type)
+    );
+  newSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_name VARCHAR(100) NOT NULL,
+        sale_amount DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_name, sale_date)
+    );
+  expected: |+
+    CREATE OR REPLACE VIEW `monthly_sales` AS SELECT 1;
+    CREATE OR REPLACE VIEW `top_products` AS SELECT 1;
+    DROP VIEW IF EXISTS `monthly_sales`;
+
+    DROP VIEW IF EXISTS `top_products`;
+
+    DROP TABLE IF EXISTS `sales_reports`;
+
+- description: Reverse of views and procedures - dropping views and tables
+  oldSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_name VARCHAR(100) NOT NULL,
+        sale_amount DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_name, sale_date)
+    );
+  newSchema: |
+    CREATE TABLE sales (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_name VARCHAR(100) NOT NULL,
+        sale_amount DECIMAL(10, 2) NOT NULL,
+        sale_date DATE NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_product_date (product_name, sale_date)
+    );
+
+    CREATE VIEW monthly_sales AS
+    SELECT
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(sale_amount) AS total_sales
+    FROM sales
+    GROUP BY YEAR(sale_date), MONTH(sale_date);
+
+    CREATE VIEW top_products AS
+    SELECT
+        product_name,
+        COUNT(*) AS sale_count,
+        SUM(sale_amount) AS total_revenue
+    FROM sales
+    GROUP BY product_name
+    ORDER BY SUM(sale_amount) DESC;
+
+    CREATE TABLE sales_reports (
+        id INT NOT NULL AUTO_INCREMENT,
+        report_type VARCHAR(50) NOT NULL,
+        report_data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_type (report_type)
+    );
+  expected: |
+    CREATE TABLE IF NOT EXISTS `sales_reports` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `report_type` varchar(50) NOT NULL,
+      `report_data` json CHARACTER SET binary,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;
+    CREATE INDEX `idx_type` ON `sales_reports` (`report_type`);
+    CREATE VIEW `monthly_sales` AS SELECT
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(sale_amount) AS total_sales
+    FROM sales
+    GROUP BY YEAR(sale_date), MONTH(sale_date);
+    CREATE VIEW `top_products` AS SELECT
+        product_name,
+        COUNT(*) AS sale_count,
+        SUM(sale_amount) AS total_revenue
+    FROM sales
+    GROUP BY product_name
+    ORDER BY SUM(sale_amount) DESC;
+- description: Drop operations for views, functions, indexes, and constraints
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2),
+        sku VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_sku (sku),
+        INDEX idx_name (name),
+        CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3)
+    );
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category VARCHAR(50),
+        price DECIMAL(10, 2),
+        sku VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_sku (sku),
+        INDEX idx_name (name),
+        INDEX idx_category (category),
+        INDEX idx_price (price),
+        CONSTRAINT chk_price_positive CHECK (price > 0),
+        CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3)
+    );
+
+    CREATE VIEW product_summary AS
+    SELECT category, COUNT(*) as count, AVG(price) as avg_price
+    FROM products
+    GROUP BY category;
+
+    CREATE TABLE product_stats (
+        id INT NOT NULL AUTO_INCREMENT,
+        category VARCHAR(50) NOT NULL,
+        product_count INT DEFAULT 0,
+        avg_price DECIMAL(10, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_category (category)
+    );
+  expected: |
+    CREATE TABLE IF NOT EXISTS `product_stats` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `category` varchar(50) NOT NULL,
+      `product_count` int DEFAULT 0,
+      `avg_price` decimal(10,2),
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_category` (`category`)
+    ) ENGINE=InnoDB;
+    ALTER TABLE `products` ADD COLUMN `category` varchar(50);
+    CREATE INDEX `idx_category` ON `products` (`category`);
+    CREATE INDEX `idx_price` ON `products` (`price`);
+    ALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK (`price`>0);
+    CREATE VIEW `product_summary` AS SELECT category, COUNT(*) as count, AVG(price) as avg_price
+    FROM products
+    GROUP BY category;
+- description: Reverse of drop operations - creating views, indexes, and constraints
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category VARCHAR(50),
+        price DECIMAL(10, 2),
+        sku VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_sku (sku),
+        INDEX idx_name (name),
+        INDEX idx_category (category),
+        INDEX idx_price (price),
+        CONSTRAINT chk_price_positive CHECK (price > 0),
+        CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3)
+    );
+
+    CREATE VIEW product_summary AS
+    SELECT category, COUNT(*) as count, AVG(price) as avg_price
+    FROM products
+    GROUP BY category;
+
+    CREATE TABLE product_stats (
+        id INT NOT NULL AUTO_INCREMENT,
+        category VARCHAR(50) NOT NULL,
+        product_count INT DEFAULT 0,
+        avg_price DECIMAL(10, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_category (category)
+    );
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2),
+        sku VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_sku (sku),
+        INDEX idx_name (name),
+        CONSTRAINT chk_name_length CHECK (CHAR_LENGTH(name) >= 3)
+    );
+  expected: |+
+    CREATE OR REPLACE VIEW `product_summary` AS SELECT 1;
+    DROP VIEW IF EXISTS `product_summary`;
+
+    DROP TABLE IF EXISTS `product_stats`;
+
+    ALTER TABLE `products` DROP CHECK `chk_price_positive`;
+
+    DROP INDEX `idx_category` ON `products`;
+
+    DROP INDEX `idx_price` ON `products`;
+
+    ALTER TABLE `products` DROP COLUMN `category`;
+
+
+- description: Various ALTER TABLE operations
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        age INT,
+        phone VARCHAR(20),
+        address TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_email (email),
+        INDEX idx_name (name),
+        INDEX idx_age (age),
+        CONSTRAINT chk_age_positive CHECK (age > 0),
+        CONSTRAINT uk_phone UNIQUE (phone)
+    );
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        email VARCHAR(100),
+        age INT,
+        PRIMARY KEY (id),
+        INDEX idx_email (email)
+    );
+  expected: |
+    ALTER TABLE `users` DROP CHECK `chk_age_positive`;
+
+    DROP INDEX `idx_age` ON `users`;
+
+    DROP INDEX `idx_name` ON `users`;
+
+    DROP INDEX `uk_phone` ON `users`;
+
+    ALTER TABLE `users` DROP COLUMN `phone`;
+
+    ALTER TABLE `users` DROP COLUMN `address`;
+
+    ALTER TABLE `users` DROP COLUMN `created_at`;
+
+
+    ALTER TABLE `users` MODIFY COLUMN `name` varchar(50) NOT NULL;
+    ALTER TABLE `users` MODIFY COLUMN `email` varchar(100);
+- description: Reverse of ALTER TABLE operations - dropping columns and constraints
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        email VARCHAR(100),
+        age INT,
+        PRIMARY KEY (id),
+        INDEX idx_email (email)
+    );
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(150) NOT NULL,
+        age INT,
+        phone VARCHAR(20),
+        address TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_email (email),
+        INDEX idx_name (name),
+        INDEX idx_age (age),
+        CONSTRAINT chk_age_positive CHECK (age > 0),
+        CONSTRAINT uk_phone UNIQUE (phone)
+    );
+  expected: |
+    ALTER TABLE `users` ADD COLUMN `phone` varchar(20);
+    ALTER TABLE `users` ADD COLUMN `address` text;
+    ALTER TABLE `users` ADD COLUMN `created_at` timestamp DEFAULT CURRENT_TIMESTAMP;
+    ALTER TABLE `users` MODIFY COLUMN `name` varchar(100) NOT NULL;
+    ALTER TABLE `users` MODIFY COLUMN `email` varchar(150) NOT NULL;
+    CREATE INDEX `idx_age` ON `users` (`age`);
+    CREATE INDEX `idx_name` ON `users` (`name`);
+    ALTER TABLE `users` ADD UNIQUE KEY `uk_phone` (`phone`);
+    ALTER TABLE `users` ADD CONSTRAINT `chk_age_positive` CHECK (`age`>0);
+- description: Complex table relationships with triggers
+  oldSchema: |
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        parent_id INT,
+        description TEXT,
+        PRIMARY KEY (id),
+        INDEX idx_parent (parent_id),
+        CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES categories(id)
+    );
+
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category_id INT,
+        price DECIMAL(10, 2),
+        weight DECIMAL(8, 3),
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id),
+        CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id)
+    );
+
+    CREATE TABLE product_attributes (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        attribute_name VARCHAR(100) NOT NULL,
+        attribute_value VARCHAR(200),
+        PRIMARY KEY (id),
+        INDEX idx_product_attr (product_id, attribute_name),
+        CONSTRAINT fk_product_attr FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
+  newSchema: |
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        parent_id INT,
+        PRIMARY KEY (id),
+        INDEX idx_parent (parent_id)
+    );
+
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category_id INT,
+        price DECIMAL(10, 2),
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id)
+    );
+
+    -- Add foreign keys
+    ALTER TABLE categories ADD CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES categories(id);
+    ALTER TABLE products ADD CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id);
+  expected: |+
+    ALTER TABLE `categories` DROP FOREIGN KEY `fk_parent`;
+
+    ALTER TABLE `products` DROP FOREIGN KEY `fk_category`;
+
+    DROP TABLE IF EXISTS `product_attributes`;
+
+    ALTER TABLE `categories` DROP COLUMN `description`;
+
+    ALTER TABLE `products` DROP COLUMN `weight`;
+
+
+- description: Reverse of complex relationships - dropping tables and columns
+  oldSchema: |
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        parent_id INT,
+        PRIMARY KEY (id),
+        INDEX idx_parent (parent_id)
+    );
+
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category_id INT,
+        price DECIMAL(10, 2),
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id)
+    );
+
+    -- Add foreign keys
+    ALTER TABLE categories ADD CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES categories(id);
+    ALTER TABLE products ADD CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id);
+  newSchema: |
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        parent_id INT,
+        description TEXT,
+        PRIMARY KEY (id),
+        INDEX idx_parent (parent_id),
+        CONSTRAINT fk_parent FOREIGN KEY (parent_id) REFERENCES categories(id)
+    );
+
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        category_id INT,
+        price DECIMAL(10, 2),
+        weight DECIMAL(8, 3),
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id),
+        CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id)
+    );
+
+    CREATE TABLE product_attributes (
+        id INT NOT NULL AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        attribute_name VARCHAR(100) NOT NULL,
+        attribute_value VARCHAR(200),
+        PRIMARY KEY (id),
+        INDEX idx_product_attr (product_id, attribute_name),
+        CONSTRAINT fk_product_attr FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    );
+  expected: |
+    CREATE TABLE IF NOT EXISTS `product_attributes` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `product_id` int NOT NULL,
+      `attribute_name` varchar(100) NOT NULL,
+      `attribute_value` varchar(200),
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;
+    CREATE INDEX `idx_product_attr` ON `product_attributes` (`product_id`, `attribute_name`);
+    ALTER TABLE `product_attributes` ADD CONSTRAINT `fk_product_attr` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE;
+    ALTER TABLE `categories` ADD COLUMN `description` text;
+    ALTER TABLE `categories` ADD CONSTRAINT `fk_parent` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`);
+    ALTER TABLE `products` ADD COLUMN `weight` decimal(8,3);
+    ALTER TABLE `products` ADD CONSTRAINT `fk_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`);
+- description: Operations on partitioned tables
+  oldSchema: |
+    CREATE TABLE sales_data (
+        id INT NOT NULL AUTO_INCREMENT,
+        sale_date DATE NOT NULL,
+        customer_id INT NOT NULL,
+        product_id INT NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        region VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id, sale_date),
+        INDEX idx_customer (customer_id),
+        INDEX idx_product (product_id),
+        INDEX idx_region_date (region, sale_date),
+        CONSTRAINT chk_amount_positive CHECK (amount > 0)
+    );
+
+    CREATE VIEW regional_sales AS
+    SELECT
+        region,
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(amount) AS total_sales,
+        COUNT(DISTINCT customer_id) AS unique_customers
+    FROM sales_data
+    GROUP BY region, YEAR(sale_date), MONTH(sale_date);
+  newSchema: |
+    CREATE TABLE sales_data (
+        id INT NOT NULL AUTO_INCREMENT,
+        sale_date DATE NOT NULL,
+        customer_id INT NOT NULL,
+        product_id INT NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        region VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id, sale_date)
+    );
+  expected: |+
+    CREATE OR REPLACE VIEW `regional_sales` AS SELECT 1;
+    DROP VIEW IF EXISTS `regional_sales`;
+
+    ALTER TABLE `sales_data` DROP CHECK `chk_amount_positive`;
+
+    DROP INDEX `idx_customer` ON `sales_data`;
+
+    DROP INDEX `idx_product` ON `sales_data`;
+
+    DROP INDEX `idx_region_date` ON `sales_data`;
+
+
+- description: Reverse of partitioned table operations - dropping indexes and views
+  oldSchema: |
+    CREATE TABLE sales_data (
+        id INT NOT NULL AUTO_INCREMENT,
+        sale_date DATE NOT NULL,
+        customer_id INT NOT NULL,
+        product_id INT NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        region VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id, sale_date)
+    );
+  newSchema: |
+    CREATE TABLE sales_data (
+        id INT NOT NULL AUTO_INCREMENT,
+        sale_date DATE NOT NULL,
+        customer_id INT NOT NULL,
+        product_id INT NOT NULL,
+        amount DECIMAL(10, 2) NOT NULL,
+        region VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id, sale_date),
+        INDEX idx_customer (customer_id),
+        INDEX idx_product (product_id),
+        INDEX idx_region_date (region, sale_date),
+        CONSTRAINT chk_amount_positive CHECK (amount > 0)
+    );
+
+    CREATE VIEW regional_sales AS
+    SELECT
+        region,
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(amount) AS total_sales,
+        COUNT(DISTINCT customer_id) AS unique_customers
+    FROM sales_data
+    GROUP BY region, YEAR(sale_date), MONTH(sale_date);
+  expected: |
+    CREATE INDEX `idx_customer` ON `sales_data` (`customer_id`);
+    CREATE INDEX `idx_product` ON `sales_data` (`product_id`);
+    CREATE INDEX `idx_region_date` ON `sales_data` (`region`, `sale_date`);
+    ALTER TABLE `sales_data` ADD CONSTRAINT `chk_amount_positive` CHECK (`amount`>0);
+    CREATE VIEW `regional_sales` AS SELECT
+        region,
+        YEAR(sale_date) AS year,
+        MONTH(sale_date) AS month,
+        SUM(amount) AS total_sales,
+        COUNT(DISTINCT customer_id) AS unique_customers
+    FROM sales_data
+    GROUP BY region, YEAR(sale_date), MONTH(sale_date);
+- description: Create tables with foreign key constraints
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  expected: |
+    CREATE TABLE IF NOT EXISTS `posts` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `user_id` int NOT NULL,
+      `title` varchar(200) NOT NULL,
+      `content` text,
+      `published_at` datetime,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;
+    CREATE INDEX `idx_user_id` ON `posts` (`user_id`);
+    CREATE TABLE IF NOT EXISTS `users` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) NOT NULL,
+      `email` varchar(100) NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_email` (`email`)
+    ) ENGINE=InnoDB;
+    CREATE INDEX `idx_username` ON `users` (`username`);
+    ALTER TABLE `posts` ADD CONSTRAINT `fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+- description: Reverse of create tables with foreign key constraints - creating from empty
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  newSchema: ""
+  expected: |+
+    DROP TABLE IF EXISTS `posts`;
+
+    DROP TABLE IF EXISTS `users`;
+
+- description: Tables with multiple foreign key constraints
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT true,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username),
+        INDEX idx_email_active (email, is_active)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+    );
+
+    CREATE TABLE comments (
+        id INT NOT NULL AUTO_INCREMENT,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_post_user (post_id, user_id),
+        CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  expected: |+
+    DROP TABLE IF EXISTS `comments`;
+
+    ALTER TABLE `posts` DROP CHECK `chk_title_length`;
+
+    DROP INDEX `idx_email_active` ON `users`;
+
+    ALTER TABLE `users` DROP COLUMN `is_active`;
+
+
+- description: Reverse of multiple foreign keys - dropping tables and constraints
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(50) NOT NULL,
+        email VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_active BOOLEAN DEFAULT true,
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_username (username),
+        INDEX idx_email_active (email, is_active)
+    );
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        content TEXT,
+        published_at DATETIME,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) > 0)
+    );
+
+    CREATE TABLE comments (
+        id INT NOT NULL AUTO_INCREMENT,
+        post_id INT NOT NULL,
+        user_id INT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_post_user (post_id, user_id),
+        CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        CONSTRAINT fk_comment_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+  expected: |
+    CREATE TABLE IF NOT EXISTS `comments` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `post_id` int NOT NULL,
+      `user_id` int NOT NULL,
+      `content` text NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;
+    CREATE INDEX `idx_post_user` ON `comments` (`post_id`, `user_id`);
+    CREATE INDEX `fk_comment_user` ON `comments` (`user_id`);
+    ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
+    ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+    ALTER TABLE `posts` ADD CONSTRAINT `chk_title_length` CHECK (CHAR_LENGTH(`title`)>0);
+    ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1) DEFAULT TRUE;
+    CREATE INDEX `idx_email_active` ON `users` (`email`, `is_active`);
+- description: Drop and recreate foreign key constraints with different options
+  oldSchema: |
+    CREATE TABLE authors (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email)
+    );
+
+    CREATE TABLE books (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        author_id INT NOT NULL,
+        isbn VARCHAR(20),
+        published_year INT,
+        price DECIMAL(8, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_isbn (isbn),
+        INDEX idx_author (author_id),
+        INDEX idx_year (published_year),
+        CONSTRAINT fk_author_new FOREIGN KEY (author_id) REFERENCES authors(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT chk_year_extended CHECK (published_year >= 1000 AND published_year <= 2030),
+        CONSTRAINT chk_price_positive CHECK (price > 0),
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) >= 3)
+    );
+  newSchema: |
+    CREATE TABLE authors (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email)
+    );
+
+    CREATE TABLE books (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        author_id INT NOT NULL,
+        isbn VARCHAR(20),
+        published_year INT,
+        price DECIMAL(8, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_isbn (isbn),
+        INDEX idx_author (author_id),
+        INDEX idx_year (published_year),
+        CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors(id),
+        CONSTRAINT chk_year_valid CHECK (published_year >= 1000 AND published_year <= 2100),
+        CONSTRAINT chk_price_positive CHECK (price > 0)
+    );
+  expected: |
+    ALTER TABLE `books` DROP FOREIGN KEY `fk_author_new`;
+
+    ALTER TABLE `books` DROP CHECK `chk_title_length`;
+
+    ALTER TABLE `books` DROP CHECK `chk_year_extended`;
+
+
+    ALTER TABLE `books` ADD CONSTRAINT `chk_year_valid` CHECK (`published_year`>=1000 AND `published_year`<=2100);
+    ALTER TABLE `books` ADD CONSTRAINT `fk_author` FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`);
+- description: Reverse of drop and recreate foreign key constraints - restoring original constraints
+  oldSchema: |
+    CREATE TABLE authors (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email)
+    );
+
+    CREATE TABLE books (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        author_id INT NOT NULL,
+        isbn VARCHAR(20),
+        published_year INT,
+        price DECIMAL(8, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_isbn (isbn),
+        INDEX idx_author (author_id),
+        INDEX idx_year (published_year),
+        CONSTRAINT fk_author FOREIGN KEY (author_id) REFERENCES authors(id),
+        CONSTRAINT chk_year_valid CHECK (published_year >= 1000 AND published_year <= 2100),
+        CONSTRAINT chk_price_positive CHECK (price > 0)
+    );
+  newSchema: |
+    CREATE TABLE authors (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (email)
+    );
+
+    CREATE TABLE books (
+        id INT NOT NULL AUTO_INCREMENT,
+        title VARCHAR(200) NOT NULL,
+        author_id INT NOT NULL,
+        isbn VARCHAR(20),
+        published_year INT,
+        price DECIMAL(8, 2),
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_isbn (isbn),
+        INDEX idx_author (author_id),
+        INDEX idx_year (published_year),
+        CONSTRAINT fk_author_new FOREIGN KEY (author_id) REFERENCES authors(id) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT chk_year_extended CHECK (published_year >= 1000 AND published_year <= 2030),
+        CONSTRAINT chk_price_positive CHECK (price > 0),
+        CONSTRAINT chk_title_length CHECK (CHAR_LENGTH(title) >= 3)
+    );
+  expected: |
+    ALTER TABLE `books` DROP FOREIGN KEY `fk_author`;
+
+    ALTER TABLE `books` DROP CHECK `chk_year_valid`;
+
+
+    ALTER TABLE `books` ADD CONSTRAINT `chk_title_length` CHECK (CHAR_LENGTH(`title`)>=3);
+    ALTER TABLE `books` ADD CONSTRAINT `chk_year_extended` CHECK (`published_year`>=1000 AND `published_year`<=2030);
+    ALTER TABLE `books` ADD CONSTRAINT `fk_author_new` FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;
+- description: Circular foreign key dependencies
+  oldSchema: |
+    CREATE TABLE customers (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        preferred_order_id INT,
+        PRIMARY KEY (id)
+    );
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        customer_id INT NOT NULL,
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        total_amount DECIMAL(10, 2),
+        PRIMARY KEY (id)
+    );
+
+    ALTER TABLE customers ADD CONSTRAINT fk_preferred_order FOREIGN KEY (preferred_order_id) REFERENCES orders(id) ON DELETE SET NULL;
+    ALTER TABLE orders ADD CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+
+    CREATE TABLE order_items (
+        id INT NOT NULL AUTO_INCREMENT,
+        order_id INT NOT NULL,
+        product_name VARCHAR(100) NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_order (order_id),
+        CONSTRAINT fk_order_item FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    );
+  newSchema: |
+    CREATE TABLE customers (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        preferred_order_id INT,
+        PRIMARY KEY (id)
+    );
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        customer_id INT NOT NULL,
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        total_amount DECIMAL(10, 2),
+        PRIMARY KEY (id)
+    );
+  expected: |+
+    DROP TABLE IF EXISTS `order_items`;
+
+- description: Reverse of circular foreign key dependencies - dropping tables and foreign keys
+  oldSchema: |
+    CREATE TABLE customers (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        preferred_order_id INT,
+        PRIMARY KEY (id)
+    );
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        customer_id INT NOT NULL,
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        total_amount DECIMAL(10, 2),
+        PRIMARY KEY (id)
+    );
+  newSchema: |
+    CREATE TABLE customers (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        preferred_order_id INT,
+        PRIMARY KEY (id)
+    );
+
+    CREATE TABLE orders (
+        id INT NOT NULL AUTO_INCREMENT,
+        customer_id INT NOT NULL,
+        order_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+        total_amount DECIMAL(10, 2),
+        PRIMARY KEY (id)
+    );
+
+    ALTER TABLE customers ADD CONSTRAINT fk_preferred_order FOREIGN KEY (preferred_order_id) REFERENCES orders(id) ON DELETE SET NULL;
+    ALTER TABLE orders ADD CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE;
+
+    CREATE TABLE order_items (
+        id INT NOT NULL AUTO_INCREMENT,
+        order_id INT NOT NULL,
+        product_name VARCHAR(100) NOT NULL,
+        quantity INT NOT NULL,
+        unit_price DECIMAL(10, 2) NOT NULL,
+        PRIMARY KEY (id),
+        INDEX idx_order (order_id),
+        CONSTRAINT fk_order_item FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+    );
+  expected: |
+    CREATE TABLE IF NOT EXISTS `order_items` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `order_id` int NOT NULL,
+      `product_name` varchar(100) NOT NULL,
+      `quantity` int NOT NULL,
+      `unit_price` decimal(10,2) NOT NULL,
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;
+    CREATE INDEX `idx_order` ON `order_items` (`order_id`);
+    ALTER TABLE `order_items` ADD CONSTRAINT `fk_order_item` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE;
+- description: Adding comments to tables and columns using TiDB COMMENT syntax
+  oldSchema: |
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL COMMENT 'Category name',
+        PRIMARY KEY (id)
+    ) COMMENT = 'Product categories for organization';
+
+    CREATE TABLE suppliers (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Unique supplier identifier',
+        company_name VARCHAR(100) NOT NULL COMMENT 'Official company name',
+        contact_email VARCHAR(150) COMMENT 'Primary contact email address',
+        phone VARCHAR(20) COMMENT 'Contact phone number',
+        address TEXT COMMENT 'Full business address',
+        is_active BOOLEAN DEFAULT true COMMENT 'Supplier active status',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (contact_email),
+        INDEX idx_active (is_active)
+    ) COMMENT = 'Supplier information and contact details';
+
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL COMMENT 'Product display name',
+        price DECIMAL(10, 2) NOT NULL COMMENT 'Product price in USD',
+        description TEXT COMMENT 'Detailed product description',
+        category_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        supplier_id INT COMMENT 'Reference to supplier table',
+        weight DECIMAL(8, 3) COMMENT 'Product weight in kilograms',
+        in_stock BOOLEAN DEFAULT true COMMENT 'Current stock availability',
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id),
+        CONSTRAINT fk_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
+    ) COMMENT = 'Product catalog table storing all available products';
+  newSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        description TEXT,
+        category_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id)
+    );
+
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id)
+    );
+  expected: |+
+    ALTER TABLE `products` DROP FOREIGN KEY `fk_supplier`;
+
+    DROP TABLE IF EXISTS `suppliers`;
+
+    DROP INDEX `fk_supplier` ON `products`;
+
+    ALTER TABLE `products` DROP COLUMN `supplier_id`;
+
+    ALTER TABLE `products` DROP COLUMN `weight`;
+
+    ALTER TABLE `products` DROP COLUMN `in_stock`;
+
+
+    ALTER TABLE `categories` COMMENT = '';
+
+    ALTER TABLE `products` COMMENT = '';
+
+- description: Reverse of table and column comments - removing comments and dropping tables
+  oldSchema: |
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        description TEXT,
+        category_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id)
+    );
+
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL,
+        PRIMARY KEY (id)
+    );
+  newSchema: |
+    CREATE TABLE categories (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(50) NOT NULL COMMENT 'Category name',
+        PRIMARY KEY (id)
+    ) COMMENT = 'Product categories for organization';
+
+    CREATE TABLE suppliers (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Unique supplier identifier',
+        company_name VARCHAR(100) NOT NULL COMMENT 'Official company name',
+        contact_email VARCHAR(150) COMMENT 'Primary contact email address',
+        phone VARCHAR(20) COMMENT 'Contact phone number',
+        address TEXT COMMENT 'Full business address',
+        is_active BOOLEAN DEFAULT true COMMENT 'Supplier active status',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation timestamp',
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_email (contact_email),
+        INDEX idx_active (is_active)
+    ) COMMENT = 'Supplier information and contact details';
+
+    CREATE TABLE products (
+        id INT NOT NULL AUTO_INCREMENT,
+        name VARCHAR(100) NOT NULL COMMENT 'Product display name',
+        price DECIMAL(10, 2) NOT NULL COMMENT 'Product price in USD',
+        description TEXT COMMENT 'Detailed product description',
+        category_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        supplier_id INT COMMENT 'Reference to supplier table',
+        weight DECIMAL(8, 3) COMMENT 'Product weight in kilograms',
+        in_stock BOOLEAN DEFAULT true COMMENT 'Current stock availability',
+        PRIMARY KEY (id),
+        INDEX idx_category (category_id),
+        CONSTRAINT fk_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
+    ) COMMENT = 'Product catalog table storing all available products';
+  expected: |
+    CREATE TABLE IF NOT EXISTS `suppliers` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `company_name` varchar(100) NOT NULL,
+      `contact_email` varchar(150),
+      `phone` varchar(20),
+      `address` text,
+      `is_active` tinyint(1) DEFAULT TRUE,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_email` (`contact_email`)
+    ) ENGINE=InnoDB COMMENT='Supplier information and contact details';
+    CREATE INDEX `idx_active` ON `suppliers` (`is_active`);
+    ALTER TABLE `categories` COMMENT = 'Product categories for organization';
+
+    ALTER TABLE `products` COMMENT = 'Product catalog table storing all available products';
+
+    ALTER TABLE `products` ADD COLUMN `supplier_id` int;
+    ALTER TABLE `products` ADD COLUMN `weight` decimal(8,3);
+    ALTER TABLE `products` ADD COLUMN `in_stock` tinyint(1) DEFAULT TRUE;
+    CREATE INDEX `fk_supplier` ON `products` (`supplier_id`);
+    ALTER TABLE `products` ADD CONSTRAINT `fk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL;
+- description: Modifying existing comments and removing comments from tables and columns
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary key identifier',
+        username VARCHAR(50) NOT NULL COMMENT 'Updated: Unique username for authentication and display',
+        email VARCHAR(100) NOT NULL COMMENT 'User email address',
+        full_name VARCHAR(100),
+        bio TEXT COMMENT 'Updated: Extended user biography with rich text support',
+        status ENUM('active', 'inactive', 'suspended', 'pending') DEFAULT 'active' COMMENT 'Updated: Account status with pending verification',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Account creation date',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+        avatar_url VARCHAR(255) COMMENT 'Profile picture URL',
+        last_login DATETIME COMMENT 'Last successful login timestamp',
+        login_count INT DEFAULT 0 COMMENT 'Total number of logins',
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_username (username),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_status (status)
+    ) COMMENT = 'Updated user account information with enhanced profile features';
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Post unique identifier',
+        user_id INT NOT NULL COMMENT 'Author user ID reference',
+        title VARCHAR(200) NOT NULL COMMENT 'Post title with SEO optimization',
+        content TEXT COMMENT 'Rich text post content with markdown support',
+        status ENUM('draft', 'published', 'archived') DEFAULT 'draft' COMMENT 'Post publication status',
+        published_at DATETIME COMMENT 'Publication timestamp',
+        view_count INT DEFAULT 0,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status),
+        CONSTRAINT fk_post_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) COMMENT = 'Blog posts with analytics and engagement tracking';
+
+    CREATE TABLE user_preferences (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Preference record identifier',
+        user_id INT NOT NULL COMMENT 'User ID foreign key reference',
+        preference_key VARCHAR(100) NOT NULL COMMENT 'Configuration key name',
+        preference_value TEXT COMMENT 'Configuration value in JSON format',
+        is_public BOOLEAN DEFAULT false COMMENT 'Whether preference is publicly visible',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Preference creation time',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last modification time',
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_user_key (user_id, preference_key),
+        INDEX idx_key (preference_key),
+        INDEX idx_public (is_public),
+        CONSTRAINT fk_pref_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) COMMENT = 'User-specific configuration and preference settings';
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary key identifier',
+        username VARCHAR(50) NOT NULL COMMENT 'Unique username for login',
+        email VARCHAR(100) NOT NULL COMMENT 'User email address',
+        full_name VARCHAR(100) COMMENT 'User full display name',
+        bio TEXT COMMENT 'User biography or description',
+        status ENUM('active', 'inactive', 'suspended') DEFAULT 'active' COMMENT 'Account status',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Account creation date',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_username (username),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_status (status)
+    ) COMMENT = 'User account information and profile data';
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Post unique identifier',
+        user_id INT NOT NULL COMMENT 'Author user ID reference',
+        title VARCHAR(200) NOT NULL COMMENT 'Post title',
+        content TEXT COMMENT 'Post content body',
+        status ENUM('draft', 'published', 'archived') DEFAULT 'draft' COMMENT 'Post publication status',
+        published_at DATETIME COMMENT 'Publication timestamp',
+        view_count INT DEFAULT 0 COMMENT 'Number of views',
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status),
+        CONSTRAINT fk_post_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) COMMENT = 'Blog posts and articles';
+  expected: |
+    DROP TABLE IF EXISTS `user_preferences`;
+
+    ALTER TABLE `users` DROP COLUMN `avatar_url`;
+
+    ALTER TABLE `users` DROP COLUMN `last_login`;
+
+    ALTER TABLE `users` DROP COLUMN `login_count`;
+
+
+    ALTER TABLE `posts` COMMENT = 'Blog posts and articles';
+
+    ALTER TABLE `users` COMMENT = 'User account information and profile data';
+
+    ALTER TABLE `users` MODIFY COLUMN `status` enum('active','inactive','suspended') DEFAULT _UTF8MB4'active';
+- description: Reverse of modify and drop comments - restoring original comments and dropping new table
+  oldSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary key identifier',
+        username VARCHAR(50) NOT NULL COMMENT 'Unique username for login',
+        email VARCHAR(100) NOT NULL COMMENT 'User email address',
+        full_name VARCHAR(100) COMMENT 'User full display name',
+        bio TEXT COMMENT 'User biography or description',
+        status ENUM('active', 'inactive', 'suspended') DEFAULT 'active' COMMENT 'Account status',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Account creation date',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_username (username),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_status (status)
+    ) COMMENT = 'User account information and profile data';
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Post unique identifier',
+        user_id INT NOT NULL COMMENT 'Author user ID reference',
+        title VARCHAR(200) NOT NULL COMMENT 'Post title',
+        content TEXT COMMENT 'Post content body',
+        status ENUM('draft', 'published', 'archived') DEFAULT 'draft' COMMENT 'Post publication status',
+        published_at DATETIME COMMENT 'Publication timestamp',
+        view_count INT DEFAULT 0 COMMENT 'Number of views',
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status),
+        CONSTRAINT fk_post_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) COMMENT = 'Blog posts and articles';
+  newSchema: |
+    CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Primary key identifier',
+        username VARCHAR(50) NOT NULL COMMENT 'Updated: Unique username for authentication and display',
+        email VARCHAR(100) NOT NULL COMMENT 'User email address',
+        full_name VARCHAR(100),
+        bio TEXT COMMENT 'Updated: Extended user biography with rich text support',
+        status ENUM('active', 'inactive', 'suspended', 'pending') DEFAULT 'active' COMMENT 'Updated: Account status with pending verification',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Account creation date',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update timestamp',
+        avatar_url VARCHAR(255) COMMENT 'Profile picture URL',
+        last_login DATETIME COMMENT 'Last successful login timestamp',
+        login_count INT DEFAULT 0 COMMENT 'Total number of logins',
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_username (username),
+        UNIQUE KEY uk_email (email),
+        INDEX idx_status (status)
+    ) COMMENT = 'Updated user account information with enhanced profile features';
+
+    CREATE TABLE posts (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Post unique identifier',
+        user_id INT NOT NULL COMMENT 'Author user ID reference',
+        title VARCHAR(200) NOT NULL COMMENT 'Post title with SEO optimization',
+        content TEXT COMMENT 'Rich text post content with markdown support',
+        status ENUM('draft', 'published', 'archived') DEFAULT 'draft' COMMENT 'Post publication status',
+        published_at DATETIME COMMENT 'Publication timestamp',
+        view_count INT DEFAULT 0,
+        PRIMARY KEY (id),
+        INDEX idx_user_id (user_id),
+        INDEX idx_status (status),
+        CONSTRAINT fk_post_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) COMMENT = 'Blog posts with analytics and engagement tracking';
+
+    CREATE TABLE user_preferences (
+        id INT NOT NULL AUTO_INCREMENT COMMENT 'Preference record identifier',
+        user_id INT NOT NULL COMMENT 'User ID foreign key reference',
+        preference_key VARCHAR(100) NOT NULL COMMENT 'Configuration key name',
+        preference_value TEXT COMMENT 'Configuration value in JSON format',
+        is_public BOOLEAN DEFAULT false COMMENT 'Whether preference is publicly visible',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Preference creation time',
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last modification time',
+        PRIMARY KEY (id),
+        UNIQUE KEY uk_user_key (user_id, preference_key),
+        INDEX idx_key (preference_key),
+        INDEX idx_public (is_public),
+        CONSTRAINT fk_pref_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) COMMENT = 'User-specific configuration and preference settings';
+  expected: |
+    CREATE TABLE IF NOT EXISTS `user_preferences` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `user_id` int NOT NULL,
+      `preference_key` varchar(100) NOT NULL,
+      `preference_value` text,
+      `is_public` tinyint(1) DEFAULT FALSE,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_user_key` (`user_id`, `preference_key`)
+    ) ENGINE=InnoDB COMMENT='User-specific configuration and preference settings';
+    CREATE INDEX `idx_key` ON `user_preferences` (`preference_key`);
+    CREATE INDEX `idx_public` ON `user_preferences` (`is_public`);
+    ALTER TABLE `user_preferences` ADD CONSTRAINT `fk_pref_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+    ALTER TABLE `posts` COMMENT = 'Blog posts with analytics and engagement tracking';
+
+    ALTER TABLE `users` COMMENT = 'Updated user account information with enhanced profile features';
+
+    ALTER TABLE `users` ADD COLUMN `avatar_url` varchar(255);
+    ALTER TABLE `users` ADD COLUMN `last_login` datetime;
+    ALTER TABLE `users` ADD COLUMN `login_count` int DEFAULT 0;
+    ALTER TABLE `users` MODIFY COLUMN `status` enum('active','inactive','suspended','pending') DEFAULT _UTF8MB4'active';
+- description: Testing comments with special characters, quotes, Unicode, multi-line text, and edge cases
+  oldSchema: "CREATE TABLE test_table (\n    id INT NOT NULL AUTO_INCREMENT,\n    simple_field VARCHAR(100),\n    field_with_quotes VARCHAR(100) COMMENT 'Field with \"double\" and ''single'' quotes',\n    field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:\";''<>?,./ and more!',\n    field_with_unicode VARCHAR(100) COMMENT 'Unicode test: 你好世界 \U0001F30D café naïve résumé Москва العالم 한국어',\n    field_multiline TEXT COMMENT 'Multi-line comment:\nLine 1 with regular text\nLine 2 with \"quotes\" and symbols @#$\nLine 3 with unicode: 测试 \U0001F680 café\nFinal line with mixed content',\n    field_with_sql VARCHAR(100) COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE \"%test%\"',\n    field_with_html VARCHAR(100) COMMENT 'HTML content: <div class=\"test\">Hello & \"World\"</div> <!-- comment -->',\n    field_with_json VARCHAR(100) COMMENT 'JSON example: {\"name\": \"test\", \"value\": 123, \"nested\": {\"key\": \"value with spaces\"}}',\n    field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \\n \\t \\r \" '' \\\\',\n    PRIMARY KEY (id)\n) COMMENT = 'Table with \"double quotes\" and ''single quotes'' in comment';\n\nCREATE TABLE special_comments_table (\n    id BIGINT NOT NULL AUTO_RANDOM COMMENT 'ID with \"quotes\", symbols @#$, unicode 测试\U0001F31F, and\nmulti-line\ncontent',\n    data_field JSON COMMENT 'Updated JSON field: {\"new\": \"structure\", \"with\": [\"array\", \"of\", \"strings\"], \"escapes\": \"\\n\\t\\r\"}',\n    html_field TEXT,\n    sql_field VARCHAR(255) COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',\n    unicode_field VARCHAR(200) COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',\n    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:\";''<>?,./ plus tab    and newline\ntest',\n    url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2=\"quoted value\"&param3=50%+discount',\n    regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$ for email validation',\n    PRIMARY KEY (id),\n    INDEX idx_unicode (unicode_field)\n) COMMENT = 'Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: ''test''\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\n"
+  newSchema: |
+    CREATE TABLE test_table (
+        id INT NOT NULL AUTO_INCREMENT,
+        simple_field VARCHAR(100),
+        PRIMARY KEY (id)
+    );
+  expected: |+
+    DROP TABLE IF EXISTS `special_comments_table`;
+
+    ALTER TABLE `test_table` DROP COLUMN `field_with_quotes`;
+
+    ALTER TABLE `test_table` DROP COLUMN `field_with_symbols`;
+
+    ALTER TABLE `test_table` DROP COLUMN `field_with_unicode`;
+
+    ALTER TABLE `test_table` DROP COLUMN `field_multiline`;
+
+    ALTER TABLE `test_table` DROP COLUMN `field_with_sql`;
+
+    ALTER TABLE `test_table` DROP COLUMN `field_with_html`;
+
+    ALTER TABLE `test_table` DROP COLUMN `field_with_json`;
+
+    ALTER TABLE `test_table` DROP COLUMN `field_with_escape`;
+
+
+    ALTER TABLE `test_table` COMMENT = '';
+
+- description: Reverse of comments with special characters - removing all special character comments
+  oldSchema: |
+    CREATE TABLE test_table (
+        id INT NOT NULL AUTO_INCREMENT,
+        simple_field VARCHAR(100),
+        PRIMARY KEY (id)
+    );
+  newSchema: "CREATE TABLE test_table (\n    id INT NOT NULL AUTO_INCREMENT,\n    simple_field VARCHAR(100),\n    field_with_quotes VARCHAR(100) COMMENT 'Field with \"double\" and ''single'' quotes',\n    field_with_symbols VARCHAR(100) COMMENT 'Field with symbols: @#$%^&*()_+-={}[]|:\";''<>?,./ and more!',\n    field_with_unicode VARCHAR(100) COMMENT 'Unicode test: 你好世界 \U0001F30D café naïve résumé Москва العالم 한국어',\n    field_multiline TEXT COMMENT 'Multi-line comment:\nLine 1 with regular text\nLine 2 with \"quotes\" and symbols @#$\nLine 3 with unicode: 测试 \U0001F680 café\nFinal line with mixed content',\n    field_with_sql VARCHAR(100) COMMENT 'Comment with SQL-like content: SELECT * FROM table WHERE id = ''123'' AND name LIKE \"%test%\"',\n    field_with_html VARCHAR(100) COMMENT 'HTML content: <div class=\"test\">Hello & \"World\"</div> <!-- comment -->',\n    field_with_json VARCHAR(100) COMMENT 'JSON example: {\"name\": \"test\", \"value\": 123, \"nested\": {\"key\": \"value with spaces\"}}',\n    field_with_escape VARCHAR(100) COMMENT 'Escape sequences: \\n \\t \\r \" '' \\\\',\n    PRIMARY KEY (id)\n) COMMENT = 'Table with \"double quotes\" and ''single quotes'' in comment';\n\nCREATE TABLE special_comments_table (\n    id BIGINT NOT NULL AUTO_RANDOM COMMENT 'ID with \"quotes\", symbols @#$, unicode 测试\U0001F31F, and\nmulti-line\ncontent',\n    data_field JSON COMMENT 'Updated JSON field: {\"new\": \"structure\", \"with\": [\"array\", \"of\", \"strings\"], \"escapes\": \"\\n\\t\\r\"}',\n    html_field TEXT,\n    sql_field VARCHAR(255) COMMENT 'SQL patterns: SELECT * FROM users WHERE name = ''O''Brien'' AND age > 21',\n    unicode_field VARCHAR(200) COMMENT '多语言支持: English, 中文, العربية, Русский, 日本語, 한국어, Français, Español',\n    symbols_field VARCHAR(100) COMMENT 'All symbols: !@#$%^&*()_+-={}[]|:\";''<>?,./ plus tab    and newline\ntest',\n    url_field VARCHAR(300) COMMENT 'URL with params: https://example.com/path?param1=value1&param2=\"quoted value\"&param3=50%+discount',\n    regex_field VARCHAR(150) COMMENT 'Regex pattern: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\\\.[a-zA-Z]{2,}$ for email validation',\n    PRIMARY KEY (id),\n    INDEX idx_unicode (unicode_field)\n) COMMENT = 'Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: ''test''\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\n"
+  expected: "CREATE TABLE IF NOT EXISTS `special_comments_table` (\n  `id` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM */,\n  `data_field` json CHARACTER SET binary,\n  `html_field` text,\n  `sql_field` varchar(255),\n  `unicode_field` varchar(200),\n  `symbols_field` varchar(100),\n  `url_field` varchar(300),\n  `regex_field` varchar(150),\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB COMMENT='Special characters test table with:\n- Double quotes: \"test\"\n- Single quotes: 'test'\n- Unicode: 特殊字符测试表 \U0001F3AF\n- Symbols: @#$%^&*()\n- HTML: <div>content</div>\n- JSON: {\"key\": \"value\"}\n- URLs: https://example.com\n- Multi-line content with various encodings';\nCREATE INDEX `idx_unicode` ON `special_comments_table` (`unicode_field`);\nALTER TABLE `test_table` COMMENT = 'Table with \"double quotes\" and 'single quotes' in comment';\n\nALTER TABLE `test_table` ADD COLUMN `field_with_quotes` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_symbols` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_unicode` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_multiline` text;\nALTER TABLE `test_table` ADD COLUMN `field_with_sql` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_html` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_json` varchar(100);\nALTER TABLE `test_table` ADD COLUMN `field_with_escape` varchar(100);\n"

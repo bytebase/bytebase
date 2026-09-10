@@ -1,0 +1,2190 @@
+- description: basic_table
+  schema: |
+    CREATE TABLE TEST_TABLE (
+        ID NUMBER PRIMARY KEY,
+        NAME VARCHAR2(50) NOT NULL
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "TEST_TABLE",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(50 BYTE)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_TEST_TABLE",
+                  "expressions": [
+                    "ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- description: table_with_sequence
+  schema: |
+    CREATE TABLE EMPLOYEES (
+        ID NUMBER PRIMARY KEY,
+        NAME VARCHAR2(100) NOT NULL
+    );
+
+    CREATE SEQUENCE EMP_SEQ START WITH 1 INCREMENT BY 1;
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "EMPLOYEES",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(100 BYTE)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_EMPLOYEES",
+                  "expressions": [
+                    "ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "sequences": [
+            {
+              "name": "EMP_SEQ",
+              "start": "1"
+            }
+          ]
+        }
+      ]
+    }
+- description: table_with_view
+  schema: |
+    CREATE TABLE PRODUCTS (
+        ID NUMBER PRIMARY KEY,
+        NAME VARCHAR2(100) NOT NULL,
+        PRICE NUMBER(10,2)
+    );
+
+    CREATE VIEW EXPENSIVE_PRODUCTS AS
+    SELECT ID, NAME, PRICE
+    FROM PRODUCTS
+    WHERE PRICE > 100;
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "PRODUCTS",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "PRICE",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "NUMBER(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_PRODUCTS",
+                  "expressions": [
+                    "ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "EXPENSIVE_PRODUCTS",
+              "definition": "SELECT ID, NAME, PRICE\nFROM PRODUCTS\nWHERE PRICE \u003e 100"
+            }
+          ]
+        }
+      ]
+    }
+- description: comprehensive_data_types
+  schema: |
+    CREATE TABLE DATA_TYPES_COMPREHENSIVE (
+        ID NUMBER PRIMARY KEY,
+        -- Numeric types
+        NUMBER_COL NUMBER,
+        NUMBER_PRECISION NUMBER(10),
+        NUMBER_SCALE NUMBER(10,2),
+        FLOAT_COL FLOAT,
+        BINARY_FLOAT_COL BINARY_FLOAT,
+        BINARY_DOUBLE_COL BINARY_DOUBLE,
+        -- Character types
+        VARCHAR2_COL VARCHAR2(4000),
+        NVARCHAR2_COL NVARCHAR2(2000),
+        CHAR_COL CHAR(100),
+        NCHAR_COL NCHAR(100),
+        -- Date and time types
+        DATE_COL DATE,
+        TIMESTAMP_COL TIMESTAMP,
+        TIMESTAMP_TZ_COL TIMESTAMP WITH TIME ZONE,
+        TIMESTAMP_LTZ_COL TIMESTAMP WITH LOCAL TIME ZONE,
+        INTERVAL_YM_COL INTERVAL YEAR TO MONTH,
+        INTERVAL_DS_COL INTERVAL DAY TO SECOND,
+        -- Large object types
+        CLOB_COL CLOB,
+        NCLOB_COL NCLOB,
+        BLOB_COL BLOB,
+        -- Binary types
+        RAW_COL RAW(2000),
+        LONG_RAW_COL LONG RAW,
+        -- Row identifier
+        ROWID_COL ROWID,
+        UROWID_COL UROWID
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "DATA_TYPES_COMPREHENSIVE",
+              "columns": [
+                {
+                  "name": "ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "NUMBER_COL",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "NUMBER_PRECISION",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "NUMBER(10)"
+                },
+                {
+                  "name": "NUMBER_SCALE",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "FLOAT_COL",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "FLOAT(126)"
+                },
+                {
+                  "name": "BINARY_FLOAT_COL",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "BINARY_FLOAT"
+                },
+                {
+                  "name": "BINARY_DOUBLE_COL",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "BINARY_DOUBLE"
+                },
+                {
+                  "name": "VARCHAR2_COL",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "VARCHAR2(4000 BYTE)"
+                },
+                {
+                  "name": "NVARCHAR2_COL",
+                  "position": 9,
+                  "nullable": true,
+                  "type": "NVARCHAR2(4000)"
+                },
+                {
+                  "name": "CHAR_COL",
+                  "position": 10,
+                  "nullable": true,
+                  "type": "CHAR(100 BYTE)"
+                },
+                {
+                  "name": "NCHAR_COL",
+                  "position": 11,
+                  "nullable": true,
+                  "type": "NCHAR(200)"
+                },
+                {
+                  "name": "DATE_COL",
+                  "position": 12,
+                  "nullable": true,
+                  "type": "DATE"
+                },
+                {
+                  "name": "TIMESTAMP_COL",
+                  "position": 13,
+                  "nullable": true,
+                  "type": "TIMESTAMP(6)"
+                },
+                {
+                  "name": "TIMESTAMP_TZ_COL",
+                  "position": 14,
+                  "nullable": true,
+                  "type": "TIMESTAMP(6) WITH TIME ZONE"
+                },
+                {
+                  "name": "TIMESTAMP_LTZ_COL",
+                  "position": 15,
+                  "nullable": true,
+                  "type": "TIMESTAMP(6) WITH LOCAL TIME ZONE"
+                },
+                {
+                  "name": "INTERVAL_YM_COL",
+                  "position": 16,
+                  "nullable": true,
+                  "type": "INTERVAL YEAR(2) TO MONTH"
+                },
+                {
+                  "name": "INTERVAL_DS_COL",
+                  "position": 17,
+                  "nullable": true,
+                  "type": "INTERVAL DAY(2) TO SECOND(6)"
+                },
+                {
+                  "name": "CLOB_COL",
+                  "position": 18,
+                  "nullable": true,
+                  "type": "CLOB"
+                },
+                {
+                  "name": "NCLOB_COL",
+                  "position": 19,
+                  "nullable": true,
+                  "type": "NCLOB"
+                },
+                {
+                  "name": "BLOB_COL",
+                  "position": 20,
+                  "nullable": true,
+                  "type": "BLOB"
+                },
+                {
+                  "name": "RAW_COL",
+                  "position": 21,
+                  "nullable": true,
+                  "type": "RAW(2000)"
+                },
+                {
+                  "name": "LONG_RAW_COL",
+                  "position": 22,
+                  "nullable": true,
+                  "type": "LONG RAW"
+                },
+                {
+                  "name": "ROWID_COL",
+                  "position": 23,
+                  "nullable": true,
+                  "type": "ROWID"
+                },
+                {
+                  "name": "UROWID_COL",
+                  "position": 24,
+                  "nullable": true,
+                  "type": "UROWID(4000)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_DATA_TYPES_COMPREHENSIVE",
+                  "expressions": [
+                    "ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- description: complex_constraints
+  schema: |
+    CREATE TABLE ORDERS (
+        ORDER_ID NUMBER PRIMARY KEY,
+        CUSTOMER_ID NUMBER NOT NULL,
+        ORDER_DATE DATE DEFAULT SYSDATE,
+        STATUS VARCHAR2(20) DEFAULT 'PENDING',
+        TOTAL_AMOUNT NUMBER(12,2) NOT NULL,
+        DISCOUNT_PERCENT NUMBER(5,2) DEFAULT 0,
+        SHIP_DATE DATE,
+        NOTES VARCHAR2(4000),
+        CREATED_BY VARCHAR2(100) DEFAULT USER,
+        CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UPDATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        -- Check constraints
+        CONSTRAINT chk_status CHECK (STATUS IN ('PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED')),
+        CONSTRAINT chk_total_positive CHECK (TOTAL_AMOUNT > 0),
+        CONSTRAINT chk_discount_range CHECK (DISCOUNT_PERCENT BETWEEN 0 AND 100),
+        CONSTRAINT chk_ship_after_order CHECK (SHIP_DATE IS NULL OR SHIP_DATE >= ORDER_DATE),
+        -- Unique constraints
+        CONSTRAINT uk_order_customer_date UNIQUE (CUSTOMER_ID, ORDER_DATE)
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "ORDERS",
+              "columns": [
+                {
+                  "name": "ORDER_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "CUSTOMER_ID",
+                  "position": 2,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "ORDER_DATE",
+                  "position": 3,
+                  "default": "SYSDATE",
+                  "nullable": true,
+                  "type": "DATE"
+                },
+                {
+                  "name": "STATUS",
+                  "position": 4,
+                  "default": "'PENDING'",
+                  "nullable": true,
+                  "type": "VARCHAR2(20 BYTE)"
+                },
+                {
+                  "name": "TOTAL_AMOUNT",
+                  "position": 5,
+                  "type": "NUMBER(12,2)"
+                },
+                {
+                  "name": "DISCOUNT_PERCENT",
+                  "position": 6,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER(5,2)"
+                },
+                {
+                  "name": "SHIP_DATE",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "DATE"
+                },
+                {
+                  "name": "NOTES",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "VARCHAR2(4000 BYTE)"
+                },
+                {
+                  "name": "CREATED_BY",
+                  "position": 9,
+                  "default": "USER",
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "CREATED_AT",
+                  "position": 10,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "TIMESTAMP(6)"
+                },
+                {
+                  "name": "UPDATED_AT",
+                  "position": 11,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "TIMESTAMP(6)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_ORDERS",
+                  "expressions": [
+                    "ORDER_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UK_ORDER_CUSTOMER_DATE",
+                  "expressions": [
+                    "CUSTOMER_ID",
+                    "ORDER_DATE"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "is_constraint": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "CHK_STATUS",
+                  "expression": "STATUSIN('PENDING','PROCESSING','SHIPPED','DELIVERED','CANCELLED')"
+                },
+                {
+                  "name": "CHK_TOTAL_POSITIVE",
+                  "expression": "TOTAL_AMOUNT\u003e0"
+                },
+                {
+                  "name": "CHK_DISCOUNT_RANGE",
+                  "expression": "DISCOUNT_PERCENTBETWEEN0AND100"
+                },
+                {
+                  "name": "CHK_SHIP_AFTER_ORDER",
+                  "expression": "SHIP_DATEISNULLORSHIP_DATE\u003e=ORDER_DATE"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- description: foreign_keys_and_references
+  schema: |
+    CREATE TABLE DEPARTMENTS (
+        DEPT_ID NUMBER PRIMARY KEY,
+        DEPT_NAME VARCHAR2(100) NOT NULL UNIQUE,
+        MANAGER_ID NUMBER,
+        LOCATION VARCHAR2(100),
+        BUDGET NUMBER(15,2)
+    );
+
+    CREATE TABLE EMPLOYEES_FK (
+        EMP_ID NUMBER PRIMARY KEY,
+        FIRST_NAME VARCHAR2(50) NOT NULL,
+        LAST_NAME VARCHAR2(50) NOT NULL,
+        EMAIL VARCHAR2(100) UNIQUE,
+        PHONE VARCHAR2(20),
+        HIRE_DATE DATE DEFAULT SYSDATE,
+        SALARY NUMBER(10,2),
+        COMMISSION_PCT NUMBER(4,2),
+        DEPT_ID NUMBER,
+        MANAGER_ID NUMBER,
+        -- Foreign key constraints
+        CONSTRAINT fk_emp_dept FOREIGN KEY (DEPT_ID) REFERENCES DEPARTMENTS(DEPT_ID) ON DELETE SET NULL,
+        CONSTRAINT fk_emp_manager FOREIGN KEY (MANAGER_ID) REFERENCES EMPLOYEES_FK(EMP_ID) ON DELETE SET NULL,
+        -- Check constraints
+        CONSTRAINT chk_salary_positive CHECK (SALARY > 0),
+        CONSTRAINT chk_commission_range CHECK (COMMISSION_PCT BETWEEN 0 AND 1),
+        CONSTRAINT chk_email_format CHECK (EMAIL LIKE '%@%.%')
+    );
+
+    -- Self-referencing foreign key for department manager
+    ALTER TABLE DEPARTMENTS ADD CONSTRAINT fk_dept_manager
+        FOREIGN KEY (MANAGER_ID) REFERENCES EMPLOYEES_FK(EMP_ID) ON DELETE SET NULL;
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "DEPARTMENTS",
+              "columns": [
+                {
+                  "name": "DEPT_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "DEPT_NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "MANAGER_ID",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "LOCATION",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "BUDGET",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "NUMBER(15,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_DEPARTMENTS",
+                  "expressions": [
+                    "DEPT_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UK_DEPARTMENTS_DEPT_NAME",
+                  "expressions": [
+                    "DEPT_NAME"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "FK_DEPT_MANAGER",
+                  "columns": [
+                    "MANAGER_ID"
+                  ],
+                  "referenced_table": "EMPLOYEES_FK",
+                  "referenced_columns": [
+                    "EMP_ID"
+                  ],
+                  "on_delete": "SET NULL"
+                }
+              ]
+            },
+            {
+              "name": "EMPLOYEES_FK",
+              "columns": [
+                {
+                  "name": "EMP_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "FIRST_NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "LAST_NAME",
+                  "position": 3,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "EMAIL",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "PHONE",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "VARCHAR2(20 BYTE)"
+                },
+                {
+                  "name": "HIRE_DATE",
+                  "position": 6,
+                  "default": "SYSDATE",
+                  "nullable": true,
+                  "type": "DATE"
+                },
+                {
+                  "name": "SALARY",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "COMMISSION_PCT",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "NUMBER(4,2)"
+                },
+                {
+                  "name": "DEPT_ID",
+                  "position": 9,
+                  "nullable": true,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "MANAGER_ID",
+                  "position": 10,
+                  "nullable": true,
+                  "type": "NUMBER"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_EMPLOYEES_FK",
+                  "expressions": [
+                    "EMP_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UK_EMPLOYEES_FK_EMAIL",
+                  "expressions": [
+                    "EMAIL"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ],
+              "foreign_keys": [
+                {
+                  "name": "FK_EMP_DEPT",
+                  "columns": [
+                    "DEPT_ID"
+                  ],
+                  "referenced_table": "DEPARTMENTS",
+                  "referenced_columns": [
+                    "DEPT_ID"
+                  ],
+                  "on_delete": "SET NULL"
+                },
+                {
+                  "name": "FK_EMP_MANAGER",
+                  "columns": [
+                    "MANAGER_ID"
+                  ],
+                  "referenced_table": "EMPLOYEES_FK",
+                  "referenced_columns": [
+                    "EMP_ID"
+                  ],
+                  "on_delete": "SET NULL"
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "CHK_SALARY_POSITIVE",
+                  "expression": "SALARY\u003e0"
+                },
+                {
+                  "name": "CHK_COMMISSION_RANGE",
+                  "expression": "COMMISSION_PCTBETWEEN0AND1"
+                },
+                {
+                  "name": "CHK_EMAIL_FORMAT",
+                  "expression": "EMAILLIKE'%@%.%'"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- description: indexes_comprehensive
+  schema: |
+    CREATE TABLE CUSTOMER_ORDERS (
+        ORDER_ID NUMBER PRIMARY KEY,
+        CUSTOMER_ID NUMBER NOT NULL,
+        ORDER_DATE DATE NOT NULL,
+        PRODUCT_CODE VARCHAR2(50) NOT NULL,
+        QUANTITY NUMBER NOT NULL,
+        UNIT_PRICE NUMBER(10,2) NOT NULL,
+        TOTAL_AMOUNT NUMBER(12,2) NOT NULL,
+        STATUS VARCHAR2(20) DEFAULT 'ACTIVE',
+        DESCRIPTION CLOB,
+        TAGS VARCHAR2(1000),
+        CREATED_AT TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Various index types
+    CREATE INDEX idx_customer_date ON CUSTOMER_ORDERS(CUSTOMER_ID, ORDER_DATE);
+    CREATE INDEX idx_product_status ON CUSTOMER_ORDERS(PRODUCT_CODE, STATUS);
+    CREATE INDEX idx_order_date_desc ON CUSTOMER_ORDERS(ORDER_DATE DESC);
+    CREATE INDEX idx_total_amount ON CUSTOMER_ORDERS(TOTAL_AMOUNT);
+    CREATE UNIQUE INDEX idx_customer_product_unique ON CUSTOMER_ORDERS(CUSTOMER_ID, PRODUCT_CODE, ORDER_DATE);
+    CREATE BITMAP INDEX idx_status_bitmap ON CUSTOMER_ORDERS(STATUS);
+    CREATE INDEX idx_upper_product ON CUSTOMER_ORDERS(UPPER(PRODUCT_CODE));
+    CREATE INDEX idx_created_year ON CUSTOMER_ORDERS(EXTRACT(YEAR FROM CREATED_AT));
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "CUSTOMER_ORDERS",
+              "columns": [
+                {
+                  "name": "ORDER_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "CUSTOMER_ID",
+                  "position": 2,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "ORDER_DATE",
+                  "position": 3,
+                  "type": "DATE"
+                },
+                {
+                  "name": "PRODUCT_CODE",
+                  "position": 4,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "QUANTITY",
+                  "position": 5,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "UNIT_PRICE",
+                  "position": 6,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "TOTAL_AMOUNT",
+                  "position": 7,
+                  "type": "NUMBER(12,2)"
+                },
+                {
+                  "name": "STATUS",
+                  "position": 8,
+                  "default": "'ACTIVE'",
+                  "nullable": true,
+                  "type": "VARCHAR2(20 BYTE)"
+                },
+                {
+                  "name": "DESCRIPTION",
+                  "position": 9,
+                  "nullable": true,
+                  "type": "CLOB"
+                },
+                {
+                  "name": "TAGS",
+                  "position": 10,
+                  "nullable": true,
+                  "type": "VARCHAR2(1000 BYTE)"
+                },
+                {
+                  "name": "CREATED_AT",
+                  "position": 11,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "TIMESTAMP(6)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_CUSTOMER_ORDERS",
+                  "expressions": [
+                    "ORDER_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "IDX_CUSTOMER_DATE",
+                  "expressions": [
+                    "CUSTOMER_ID",
+                    "ORDER_DATE"
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "IDX_PRODUCT_STATUS",
+                  "expressions": [
+                    "PRODUCT_CODE",
+                    "STATUS"
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "IDX_ORDER_DATE_DESC",
+                  "expressions": [
+                    "ORDER_DATE"
+                  ],
+                  "descending": [
+                    true
+                  ],
+                  "type": "FUNCTION-BASED NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "IDX_TOTAL_AMOUNT",
+                  "expressions": [
+                    "TOTAL_AMOUNT"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "IDX_CUSTOMER_PRODUCT_UNIQUE",
+                  "expressions": [
+                    "CUSTOMER_ID",
+                    "PRODUCT_CODE",
+                    "ORDER_DATE"
+                  ],
+                  "descending": [
+                    false,
+                    false,
+                    false
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "IDX_STATUS_BITMAP",
+                  "expressions": [
+                    "STATUS"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BITMAP",
+                  "visible": true
+                },
+                {
+                  "name": "IDX_UPPER_PRODUCT",
+                  "expressions": [
+                    "UPPER(PRODUCT_CODE)"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "FUNCTION-BASED NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "IDX_CREATED_YEAR",
+                  "expressions": [
+                    "EXTRACT(YEAR FROM CREATED_AT)"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "FUNCTION-BASED NORMAL",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- description: sequences_and_triggers
+  schema: |
+    CREATE TABLE AUDIT_LOG (
+        LOG_ID NUMBER PRIMARY KEY,
+        TABLE_NAME VARCHAR2(128) NOT NULL,
+        OPERATION VARCHAR2(10) NOT NULL,
+        OLD_VALUES CLOB,
+        NEW_VALUES CLOB,
+        USER_NAME VARCHAR2(128) DEFAULT USER,
+        TIMESTAMP TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        SESSION_ID VARCHAR2(128) DEFAULT SYS_CONTEXT('USERENV', 'SESSIONID')
+    );
+
+    CREATE SEQUENCE audit_log_seq
+        START WITH 1000
+        INCREMENT BY 1
+        MAXVALUE 999999999999999999
+        MINVALUE 1
+        NOCYCLE
+        CACHE 20;
+
+    CREATE OR REPLACE TRIGGER audit_log_trigger
+        BEFORE INSERT ON AUDIT_LOG
+        FOR EACH ROW
+    BEGIN
+        IF :NEW.LOG_ID IS NULL THEN
+            SELECT audit_log_seq.NEXTVAL INTO :NEW.LOG_ID FROM DUAL;
+        END IF;
+    END;
+    /
+
+    CREATE TABLE INVENTORY (
+        ITEM_ID NUMBER PRIMARY KEY,
+        ITEM_CODE VARCHAR2(50) UNIQUE NOT NULL,
+        DESCRIPTION VARCHAR2(200),
+        QUANTITY_ON_HAND NUMBER DEFAULT 0,
+        UNIT_COST NUMBER(10,2),
+        LAST_UPDATED TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE SEQUENCE inventory_seq START WITH 1 INCREMENT BY 1;
+
+    CREATE OR REPLACE TRIGGER inventory_audit_trigger
+        AFTER INSERT OR UPDATE OR DELETE ON INVENTORY
+        FOR EACH ROW
+    BEGIN
+        IF INSERTING THEN
+            INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, NEW_VALUES)
+            VALUES ('INVENTORY', 'INSERT', 'ID=' || :NEW.ITEM_ID || ',CODE=' || :NEW.ITEM_CODE);
+        ELSIF UPDATING THEN
+            INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, OLD_VALUES, NEW_VALUES)
+            VALUES ('INVENTORY', 'UPDATE',
+                    'ID=' || :OLD.ITEM_ID || ',QTY=' || :OLD.QUANTITY_ON_HAND,
+                    'ID=' || :NEW.ITEM_ID || ',QTY=' || :NEW.QUANTITY_ON_HAND);
+        ELSIF DELETING THEN
+            INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, OLD_VALUES)
+            VALUES ('INVENTORY', 'DELETE', 'ID=' || :OLD.ITEM_ID || ',CODE=' || :OLD.ITEM_CODE);
+        END IF;
+    END;
+    /
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "AUDIT_LOG",
+              "columns": [
+                {
+                  "name": "LOG_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "TABLE_NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(128 BYTE)"
+                },
+                {
+                  "name": "OPERATION",
+                  "position": 3,
+                  "type": "VARCHAR2(10 BYTE)"
+                },
+                {
+                  "name": "OLD_VALUES",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "CLOB"
+                },
+                {
+                  "name": "NEW_VALUES",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "CLOB"
+                },
+                {
+                  "name": "USER_NAME",
+                  "position": 6,
+                  "default": "USER",
+                  "nullable": true,
+                  "type": "VARCHAR2(128 BYTE)"
+                },
+                {
+                  "name": "TIMESTAMP",
+                  "position": 7,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "TIMESTAMP(6)"
+                },
+                {
+                  "name": "SESSION_ID",
+                  "position": 8,
+                  "default": "SYS_CONTEXT('USERENV', 'SESSIONID')",
+                  "nullable": true,
+                  "type": "VARCHAR2(128 BYTE)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_AUDIT_LOG",
+                  "expressions": [
+                    "LOG_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ],
+              "triggers": [
+                {
+                  "name": "AUDIT_LOG_TRIGGER",
+                  "body": "CREATE OR REPLACE TRIGGER audit_log_trigger\n    BEFORE INSERT ON AUDIT_LOG\n    FOR EACH ROW\nBEGIN\n    IF :NEW.LOG_ID IS NULL THEN\n        SELECT audit_log_seq.NEXTVAL INTO :NEW.LOG_ID FROM DUAL;\n    END IF;\nEND;"
+                }
+              ]
+            },
+            {
+              "name": "INVENTORY",
+              "columns": [
+                {
+                  "name": "ITEM_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "ITEM_CODE",
+                  "position": 2,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "DESCRIPTION",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "VARCHAR2(200 BYTE)"
+                },
+                {
+                  "name": "QUANTITY_ON_HAND",
+                  "position": 4,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "UNIT_COST",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "LAST_UPDATED",
+                  "position": 6,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "TIMESTAMP(6)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_INVENTORY",
+                  "expressions": [
+                    "ITEM_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UK_INVENTORY_ITEM_CODE",
+                  "expressions": [
+                    "ITEM_CODE"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ],
+              "triggers": [
+                {
+                  "name": "INVENTORY_AUDIT_TRIGGER",
+                  "body": "CREATE OR REPLACE TRIGGER inventory_audit_trigger\n    AFTER INSERT OR UPDATE OR DELETE ON INVENTORY\n    FOR EACH ROW\nBEGIN\n    IF INSERTING THEN\n        INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, NEW_VALUES)\n        VALUES ('INVENTORY', 'INSERT', 'ID=' || :NEW.ITEM_ID || ',CODE=' || :NEW.ITEM_CODE);\n    ELSIF UPDATING THEN\n        INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, OLD_VALUES, NEW_VALUES)\n        VALUES ('INVENTORY', 'UPDATE',\n                'ID=' || :OLD.ITEM_ID || ',QTY=' || :OLD.QUANTITY_ON_HAND,\n                'ID=' || :NEW.ITEM_ID || ',QTY=' || :NEW.QUANTITY_ON_HAND);\n    ELSIF DELETING THEN\n        INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, OLD_VALUES)\n        VALUES ('INVENTORY', 'DELETE', 'ID=' || :OLD.ITEM_ID || ',CODE=' || :OLD.ITEM_CODE);\n    END IF;\nEND;"
+                }
+              ]
+            }
+          ],
+          "sequences": [
+            {
+              "name": "AUDIT_LOG_SEQ",
+              "start": "1000"
+            },
+            {
+              "name": "INVENTORY_SEQ",
+              "start": "1"
+            }
+          ]
+        }
+      ]
+    }
+- description: views_complex
+  schema: |
+    CREATE TABLE SALES_TRANSACTIONS (
+        TRANSACTION_ID NUMBER PRIMARY KEY,
+        CUSTOMER_ID NUMBER NOT NULL,
+        PRODUCT_ID NUMBER NOT NULL,
+        SALE_DATE DATE NOT NULL,
+        QUANTITY NUMBER NOT NULL,
+        UNIT_PRICE NUMBER(10,2) NOT NULL,
+        DISCOUNT_AMOUNT NUMBER(10,2) DEFAULT 0,
+        TAX_AMOUNT NUMBER(10,2) DEFAULT 0,
+        TOTAL_AMOUNT NUMBER(12,2) NOT NULL,
+        SALES_REP_ID NUMBER,
+        REGION VARCHAR2(50)
+    );
+
+    -- Complex view with aggregations
+    CREATE VIEW MONTHLY_SALES_SUMMARY AS
+    SELECT
+        TO_CHAR(SALE_DATE, 'YYYY-MM') AS SALES_MONTH,
+        REGION,
+        COUNT(*) AS TRANSACTION_COUNT,
+        SUM(QUANTITY) AS TOTAL_QUANTITY,
+        SUM(TOTAL_AMOUNT) AS TOTAL_REVENUE,
+        AVG(TOTAL_AMOUNT) AS AVG_TRANSACTION_VALUE,
+        MIN(SALE_DATE) AS FIRST_SALE_DATE,
+        MAX(SALE_DATE) AS LAST_SALE_DATE
+    FROM SALES_TRANSACTIONS
+    WHERE SALE_DATE >= ADD_MONTHS(SYSDATE, -12)
+    GROUP BY TO_CHAR(SALE_DATE, 'YYYY-MM'), REGION
+    HAVING SUM(TOTAL_AMOUNT) > 1000
+    ORDER BY SALES_MONTH DESC, REGION;
+
+    -- View with joins and complex expressions
+    CREATE VIEW CUSTOMER_SALES_ANALYSIS AS
+    SELECT
+        st.CUSTOMER_ID,
+        COUNT(DISTINCT st.TRANSACTION_ID) AS TOTAL_TRANSACTIONS,
+        COUNT(DISTINCT TO_CHAR(st.SALE_DATE, 'YYYY-MM')) AS ACTIVE_MONTHS,
+        SUM(st.TOTAL_AMOUNT) AS LIFETIME_VALUE,
+        AVG(st.TOTAL_AMOUNT) AS AVG_TRANSACTION_VALUE,
+        MAX(st.SALE_DATE) AS LAST_PURCHASE_DATE,
+        CASE
+            WHEN MAX(st.SALE_DATE) >= SYSDATE - 30 THEN 'ACTIVE'
+            WHEN MAX(st.SALE_DATE) >= SYSDATE - 90 THEN 'RECENT'
+            ELSE 'INACTIVE'
+        END AS CUSTOMER_STATUS,
+        ROUND(SUM(st.TOTAL_AMOUNT) / NULLIF(COUNT(DISTINCT TO_CHAR(st.SALE_DATE, 'YYYY-MM')), 0), 2) AS MONTHLY_SPEND_RATE
+    FROM SALES_TRANSACTIONS st
+    WHERE st.SALE_DATE >= ADD_MONTHS(SYSDATE, -24)
+    GROUP BY st.CUSTOMER_ID
+    HAVING COUNT(*) >= 3;
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "SALES_TRANSACTIONS",
+              "columns": [
+                {
+                  "name": "TRANSACTION_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "CUSTOMER_ID",
+                  "position": 2,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "PRODUCT_ID",
+                  "position": 3,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "SALE_DATE",
+                  "position": 4,
+                  "type": "DATE"
+                },
+                {
+                  "name": "QUANTITY",
+                  "position": 5,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "UNIT_PRICE",
+                  "position": 6,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "DISCOUNT_AMOUNT",
+                  "position": 7,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "TAX_AMOUNT",
+                  "position": 8,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER(10,2)"
+                },
+                {
+                  "name": "TOTAL_AMOUNT",
+                  "position": 9,
+                  "type": "NUMBER(12,2)"
+                },
+                {
+                  "name": "SALES_REP_ID",
+                  "position": 10,
+                  "nullable": true,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "REGION",
+                  "position": 11,
+                  "nullable": true,
+                  "type": "VARCHAR2(50 BYTE)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_SALES_TRANSACTIONS",
+                  "expressions": [
+                    "TRANSACTION_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "CUSTOMER_SALES_ANALYSIS",
+              "definition": "SELECT\n    st.CUSTOMER_ID,\n    COUNT(DISTINCT st.TRANSACTION_ID) AS TOTAL_TRANSACTIONS,\n    COUNT(DISTINCT TO_CHAR(st.SALE_DATE, 'YYYY-MM')) AS ACTIVE_MONTHS,\n    SUM(st.TOTAL_AMOUNT) AS LIFETIME_VALUE,\n    AVG(st.TOTAL_AMOUNT) AS AVG_TRANSACTION_VALUE,\n    MAX(st.SALE_DATE) AS LAST_PURCHASE_DATE,\n    CASE\n        WHEN MAX(st.SALE_DATE) \u003e= SYSDATE - 30 THEN 'ACTIVE'\n        WHEN MAX(st.SALE_DATE) \u003e= SYSDATE - 90 THEN 'RECENT'\n        ELSE 'INACTIVE'\n    END AS CUSTOMER_STATUS,\n    ROUND(SUM(st.TOTAL_AMOUNT) / NULLIF(COUNT(DISTINCT TO_CHAR(st.SALE_DATE, 'YYYY-MM')), 0), 2) AS MONTHLY_SPEND_RATE\nFROM SALES_TRANSACTIONS st\nWHERE st.SALE_DATE \u003e= ADD_MONTHS(SYSDATE, -24)\nGROUP BY st.CUSTOMER_ID\nHAVING COUNT(*) \u003e= 3"
+            },
+            {
+              "name": "MONTHLY_SALES_SUMMARY",
+              "definition": "SELECT\n    TO_CHAR(SALE_DATE, 'YYYY-MM') AS SALES_MONTH,\n    REGION,\n    COUNT(*) AS TRANSACTION_COUNT,\n    SUM(QUANTITY) AS TOTAL_QUANTITY,\n    SUM(TOTAL_AMOUNT) AS TOTAL_REVENUE,\n    AVG(TOTAL_AMOUNT) AS AVG_TRANSACTION_VALUE,\n    MIN(SALE_DATE) AS FIRST_SALE_DATE,\n    MAX(SALE_DATE) AS LAST_SALE_DATE\nFROM SALES_TRANSACTIONS\nWHERE SALE_DATE \u003e= ADD_MONTHS(SYSDATE, -12)\nGROUP BY TO_CHAR(SALE_DATE, 'YYYY-MM'), REGION\nHAVING SUM(TOTAL_AMOUNT) \u003e 1000\nORDER BY SALES_MONTH DESC, REGION"
+            }
+          ]
+        }
+      ]
+    }
+- description: materialized_views
+  schema: |
+    CREATE TABLE PRODUCT_SALES_DAILY (
+        SALE_DATE DATE NOT NULL,
+        PRODUCT_ID NUMBER NOT NULL,
+        CATEGORY VARCHAR2(50) NOT NULL,
+        SALES_AMOUNT NUMBER(12,2) NOT NULL,
+        UNITS_SOLD NUMBER NOT NULL,
+        COST_OF_GOODS NUMBER(12,2) NOT NULL
+    );
+
+    -- Materialized view for performance (simplified for query rewrite support)
+    CREATE MATERIALIZED VIEW PRODUCT_PERFORMANCE_MV
+    BUILD IMMEDIATE
+    REFRESH COMPLETE ON DEMAND
+    AS
+    SELECT
+        PRODUCT_ID,
+        CATEGORY,
+        COUNT(*) AS SALES_DAYS,
+        SUM(SALES_AMOUNT) AS TOTAL_REVENUE,
+        SUM(UNITS_SOLD) AS TOTAL_UNITS,
+        SUM(COST_OF_GOODS) AS TOTAL_COST,
+        SUM(SALES_AMOUNT) - SUM(COST_OF_GOODS) AS TOTAL_PROFIT,
+        AVG(SALES_AMOUNT) AS AVG_DAILY_REVENUE,
+        MIN(SALE_DATE) AS FIRST_SALE_DATE,
+        MAX(SALE_DATE) AS LAST_SALE_DATE
+    FROM PRODUCT_SALES_DAILY
+    WHERE SALE_DATE >= ADD_MONTHS(SYSDATE, -12)
+    GROUP BY PRODUCT_ID, CATEGORY;
+
+    -- Create index on materialized view
+    CREATE INDEX idx_mv_category ON PRODUCT_PERFORMANCE_MV(CATEGORY);
+    CREATE INDEX idx_mv_total_profit ON PRODUCT_PERFORMANCE_MV(TOTAL_PROFIT);
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "PRODUCT_SALES_DAILY",
+              "columns": [
+                {
+                  "name": "SALE_DATE",
+                  "position": 1,
+                  "type": "DATE"
+                },
+                {
+                  "name": "PRODUCT_ID",
+                  "position": 2,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "CATEGORY",
+                  "position": 3,
+                  "type": "VARCHAR2(50 BYTE)"
+                },
+                {
+                  "name": "SALES_AMOUNT",
+                  "position": 4,
+                  "type": "NUMBER(12,2)"
+                },
+                {
+                  "name": "UNITS_SOLD",
+                  "position": 5,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "COST_OF_GOODS",
+                  "position": 6,
+                  "type": "NUMBER(12,2)"
+                }
+              ]
+            }
+          ],
+          "materialized_views": [
+            {
+              "name": "PRODUCT_PERFORMANCE_MV",
+              "definition": "SELECT\n    PRODUCT_ID,\n    CATEGORY,\n    COUNT(*) AS SALES_DAYS,\n    SUM(SALES_AMOUNT) AS TOTAL_REVENUE,\n    SUM(UNITS_SOLD) AS TOTAL_UNITS,\n    SUM(COST_OF_GOODS) AS TOTAL_COST,\n    SUM(SALES_AMOUNT) - SUM(COST_OF_GOODS) AS TOTAL_PROFIT,\n    AVG(SALES_AMOUNT) AS AVG_DAILY_REVENUE,\n    MIN(SALE_DATE) AS FIRST_SALE_DATE,\n    MAX(SALE_DATE) AS LAST_SALE_DATE\nFROM PRODUCT_SALES_DAILY\nWHERE SALE_DATE \u003e= ADD_MONTHS(SYSDATE, -12)\nGROUP BY PRODUCT_ID, CATEGORY\n",
+              "indexes": [
+                {
+                  "name": "IDX_MV_CATEGORY",
+                  "expressions": [
+                    "CATEGORY"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                },
+                {
+                  "name": "IDX_MV_TOTAL_PROFIT",
+                  "expressions": [
+                    "TOTAL_PROFIT"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NORMAL",
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+- description: procedures_and_functions
+  schema: |
+    CREATE TABLE CUSTOMER_ACCOUNTS (
+        ACCOUNT_ID NUMBER PRIMARY KEY,
+        CUSTOMER_NAME VARCHAR2(100) NOT NULL,
+        ACCOUNT_TYPE VARCHAR2(20) NOT NULL,
+        BALANCE NUMBER(15,2) DEFAULT 0,
+        CREDIT_LIMIT NUMBER(15,2) DEFAULT 0,
+        STATUS VARCHAR2(20) DEFAULT 'ACTIVE',
+        CREATED_DATE DATE DEFAULT SYSDATE
+    );
+
+    -- Function to calculate available credit
+    CREATE OR REPLACE FUNCTION get_available_credit(p_account_id NUMBER)
+    RETURN NUMBER
+    DETERMINISTIC
+    IS
+        v_balance NUMBER;
+        v_credit_limit NUMBER;
+        v_available_credit NUMBER;
+    BEGIN
+        SELECT BALANCE, CREDIT_LIMIT
+        INTO v_balance, v_credit_limit
+        FROM CUSTOMER_ACCOUNTS
+        WHERE ACCOUNT_ID = p_account_id;
+
+        v_available_credit := v_credit_limit - v_balance;
+
+        RETURN GREATEST(v_available_credit, 0);
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RETURN 0;
+        WHEN OTHERS THEN
+            RETURN -1;
+    END;
+    /
+
+    -- Procedure to update account balance
+    CREATE OR REPLACE PROCEDURE update_account_balance(
+        p_account_id IN NUMBER,
+        p_amount IN NUMBER,
+        p_transaction_type IN VARCHAR2,
+        p_result OUT VARCHAR2
+    )
+    IS
+        v_current_balance NUMBER;
+        v_new_balance NUMBER;
+        v_credit_limit NUMBER;
+    BEGIN
+        -- Get current balance and credit limit
+        SELECT BALANCE, CREDIT_LIMIT
+        INTO v_current_balance, v_credit_limit
+        FROM CUSTOMER_ACCOUNTS
+        WHERE ACCOUNT_ID = p_account_id
+        FOR UPDATE;
+
+        -- Calculate new balance
+        IF p_transaction_type = 'CREDIT' THEN
+            v_new_balance := v_current_balance + p_amount;
+        ELSIF p_transaction_type = 'DEBIT' THEN
+            v_new_balance := v_current_balance - p_amount;
+
+            -- Check credit limit
+            IF v_new_balance < (v_credit_limit * -1) THEN
+                p_result := 'ERROR: Transaction would exceed credit limit';
+                ROLLBACK;
+                RETURN;
+            END IF;
+        ELSE
+            p_result := 'ERROR: Invalid transaction type';
+            RETURN;
+        END IF;
+
+        -- Update balance
+        UPDATE CUSTOMER_ACCOUNTS
+        SET BALANCE = v_new_balance,
+            STATUS = CASE
+                WHEN v_new_balance < 0 THEN 'OVERDRAWN'
+                WHEN v_new_balance >= 0 THEN 'ACTIVE'
+            END
+        WHERE ACCOUNT_ID = p_account_id;
+
+        COMMIT;
+        p_result := 'SUCCESS: Balance updated to ' || v_new_balance;
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            p_result := 'ERROR: Account not found';
+        WHEN OTHERS THEN
+            p_result := 'ERROR: ' || SQLERRM;
+            ROLLBACK;
+    END;
+    /
+
+    -- Function with complex logic
+    CREATE OR REPLACE FUNCTION calculate_account_risk_score(p_account_id NUMBER)
+    RETURN NUMBER
+    IS
+        v_balance NUMBER;
+        v_credit_limit NUMBER;
+        v_account_age NUMBER;
+        v_transaction_count NUMBER;
+        v_risk_score NUMBER := 0;
+    BEGIN
+        SELECT
+            BALANCE,
+            CREDIT_LIMIT,
+            SYSDATE - CREATED_DATE,
+            (SELECT COUNT(*) FROM AUDIT_LOG WHERE TABLE_NAME = 'CUSTOMER_ACCOUNTS')
+        INTO v_balance, v_credit_limit, v_account_age, v_transaction_count
+        FROM CUSTOMER_ACCOUNTS
+        WHERE ACCOUNT_ID = p_account_id;
+
+        -- Calculate risk based on multiple factors
+        -- Balance utilization (higher utilization = higher risk)
+        IF v_credit_limit > 0 THEN
+            v_risk_score := v_risk_score + (ABS(v_balance) / v_credit_limit) * 40;
+        END IF;
+
+        -- Account age (newer accounts = higher risk)
+        IF v_account_age < 30 THEN
+            v_risk_score := v_risk_score + 30;
+        ELSIF v_account_age < 90 THEN
+            v_risk_score := v_risk_score + 20;
+        ELSIF v_account_age < 365 THEN
+            v_risk_score := v_risk_score + 10;
+        END IF;
+
+        -- Transaction frequency (too few or too many = higher risk)
+        IF v_transaction_count < 5 THEN
+            v_risk_score := v_risk_score + 20;
+        ELSIF v_transaction_count > 100 THEN
+            v_risk_score := v_risk_score + 15;
+        END IF;
+
+        -- Negative balance penalty
+        IF v_balance < 0 THEN
+            v_risk_score := v_risk_score + 25;
+        END IF;
+
+        RETURN LEAST(v_risk_score, 100); -- Cap at 100
+
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RETURN 100; -- Max risk for non-existent accounts
+        WHEN OTHERS THEN
+            RETURN 50;  -- Default moderate risk on errors
+    END;
+    /
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "CUSTOMER_ACCOUNTS",
+              "columns": [
+                {
+                  "name": "ACCOUNT_ID",
+                  "position": 1,
+                  "type": "NUMBER"
+                },
+                {
+                  "name": "CUSTOMER_NAME",
+                  "position": 2,
+                  "type": "VARCHAR2(100 BYTE)"
+                },
+                {
+                  "name": "ACCOUNT_TYPE",
+                  "position": 3,
+                  "type": "VARCHAR2(20 BYTE)"
+                },
+                {
+                  "name": "BALANCE",
+                  "position": 4,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER(15,2)"
+                },
+                {
+                  "name": "CREDIT_LIMIT",
+                  "position": 5,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER(15,2)"
+                },
+                {
+                  "name": "STATUS",
+                  "position": 6,
+                  "default": "'ACTIVE'",
+                  "nullable": true,
+                  "type": "VARCHAR2(20 BYTE)"
+                },
+                {
+                  "name": "CREATED_DATE",
+                  "position": 7,
+                  "default": "SYSDATE",
+                  "nullable": true,
+                  "type": "DATE"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_CUSTOMER_ACCOUNTS",
+                  "expressions": [
+                    "ACCOUNT_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "CALCULATE_ACCOUNT_RISK_SCORE",
+              "definition": "FUNCTION calculate_account_risk_score(p_account_id NUMBER)\nRETURN NUMBER\nIS\n    v_balance NUMBER;\n    v_credit_limit NUMBER;\n    v_account_age NUMBER;\n    v_transaction_count NUMBER;\n    v_risk_score NUMBER := 0;\nBEGIN\n    SELECT\n        BALANCE,\n        CREDIT_LIMIT,\n        SYSDATE - CREATED_DATE,\n        (SELECT COUNT(*) FROM AUDIT_LOG WHERE TABLE_NAME = 'CUSTOMER_ACCOUNTS')\n    INTO v_balance, v_credit_limit, v_account_age, v_transaction_count\n    FROM CUSTOMER_ACCOUNTS\n    WHERE ACCOUNT_ID = p_account_id;\n\n    -- Calculate risk based on multiple factors\n    -- Balance utilization (higher utilization = higher risk)\n    IF v_credit_limit \u003e 0 THEN\n        v_risk_score := v_risk_score + (ABS(v_balance) / v_credit_limit) * 40;\n    END IF;\n\n    -- Account age (newer accounts = higher risk)\n    IF v_account_age \u003c 30 THEN\n        v_risk_score := v_risk_score + 30;\n    ELSIF v_account_age \u003c 90 THEN\n        v_risk_score := v_risk_score + 20;\n    ELSIF v_account_age \u003c 365 THEN\n        v_risk_score := v_risk_score + 10;\n    END IF;\n\n    -- Transaction frequency (too few or too many = higher risk)\n    IF v_transaction_count \u003c 5 THEN\n        v_risk_score := v_risk_score + 20;\n    ELSIF v_transaction_count \u003e 100 THEN\n        v_risk_score := v_risk_score + 15;\n    END IF;\n\n    -- Negative balance penalty\n    IF v_balance \u003c 0 THEN\n        v_risk_score := v_risk_score + 25;\n    END IF;\n\n    RETURN LEAST(v_risk_score, 100); -- Cap at 100\n\nEXCEPTION\n    WHEN NO_DATA_FOUND THEN\n        RETURN 100; -- Max risk for non-existent accounts\n    WHEN OTHERS THEN\n        RETURN 50;  -- Default moderate risk on errors\nEND;"
+            },
+            {
+              "name": "GET_AVAILABLE_CREDIT",
+              "definition": "FUNCTION get_available_credit(p_account_id NUMBER)\nRETURN NUMBER\nDETERMINISTIC\nIS\n    v_balance NUMBER;\n    v_credit_limit NUMBER;\n    v_available_credit NUMBER;\nBEGIN\n    SELECT BALANCE, CREDIT_LIMIT\n    INTO v_balance, v_credit_limit\n    FROM CUSTOMER_ACCOUNTS\n    WHERE ACCOUNT_ID = p_account_id;\n\n    v_available_credit := v_credit_limit - v_balance;\n\n    RETURN GREATEST(v_available_credit, 0);\nEXCEPTION\n    WHEN NO_DATA_FOUND THEN\n        RETURN 0;\n    WHEN OTHERS THEN\n        RETURN -1;\nEND;"
+            }
+          ],
+          "procedures": [
+            {
+              "name": "UPDATE_ACCOUNT_BALANCE",
+              "definition": "CREATE OR REPLACE PROCEDURE update_account_balance(\n    p_account_id IN NUMBER,\n    p_amount IN NUMBER,\n    p_transaction_type IN VARCHAR2,\n    p_result OUT VARCHAR2\n)\nIS\n    v_current_balance NUMBER;\n    v_new_balance NUMBER;\n    v_credit_limit NUMBER;\nBEGIN\n    -- Get current balance and credit limit\n    SELECT BALANCE, CREDIT_LIMIT\n    INTO v_current_balance, v_credit_limit\n    FROM CUSTOMER_ACCOUNTS\n    WHERE ACCOUNT_ID = p_account_id\n    FOR UPDATE;\n\n    -- Calculate new balance\n    IF p_transaction_type = 'CREDIT' THEN\n        v_new_balance := v_current_balance + p_amount;\n    ELSIF p_transaction_type = 'DEBIT' THEN\n        v_new_balance := v_current_balance - p_amount;\n\n        -- Check credit limit\n        IF v_new_balance \u003c (v_credit_limit * -1) THEN\n            p_result := 'ERROR: Transaction would exceed credit limit';\n            ROLLBACK;\n            RETURN;\n        END IF;\n    ELSE\n        p_result := 'ERROR: Invalid transaction type';\n        RETURN;\n    END IF;\n\n    -- Update balance\n    UPDATE CUSTOMER_ACCOUNTS\n    SET BALANCE = v_new_balance,\n        STATUS = CASE\n            WHEN v_new_balance \u003c 0 THEN 'OVERDRAWN'\n            WHEN v_new_balance \u003e= 0 THEN 'ACTIVE'\n        END\n    WHERE ACCOUNT_ID = p_account_id;\n\n    COMMIT;\n    p_result := 'SUCCESS: Balance updated to ' || v_new_balance;\n\nEXCEPTION\n    WHEN NO_DATA_FOUND THEN\n        p_result := 'ERROR: Account not found';\n    WHEN OTHERS THEN\n        p_result := 'ERROR: ' || SQLERRM;\n        ROLLBACK;\nEND;"
+            }
+          ]
+        }
+      ]
+    }
+- description: packages_comprehensive
+  schema: |
+    -- Package specification
+    CREATE OR REPLACE PACKAGE financial_utils AS
+        -- Constants
+        c_max_overdraft CONSTANT NUMBER := 5000;
+        c_default_interest_rate CONSTANT NUMBER := 0.05;
+
+        -- Types
+        TYPE account_summary_type IS RECORD (
+            account_id NUMBER,
+            balance NUMBER,
+            available_credit NUMBER,
+            risk_score NUMBER,
+            status VARCHAR2(20)
+        );
+
+        TYPE account_list_type IS TABLE OF account_summary_type;
+
+        -- Procedures
+        PROCEDURE calculate_interest(
+            p_account_id IN NUMBER,
+            p_days IN NUMBER DEFAULT 30,
+            p_interest_amount OUT NUMBER
+        );
+
+        PROCEDURE generate_statement(
+            p_account_id IN NUMBER,
+            p_statement_date IN DATE DEFAULT SYSDATE,
+            p_statement_text OUT CLOB
+        );
+
+        -- Functions
+        FUNCTION get_account_summary(p_account_id NUMBER) RETURN account_summary_type;
+
+        FUNCTION get_high_risk_accounts(p_risk_threshold NUMBER DEFAULT 70)
+            RETURN account_list_type PIPELINED;
+
+        FUNCTION format_currency(p_amount NUMBER) RETURN VARCHAR2;
+
+        FUNCTION validate_account_number(p_account_id NUMBER) RETURN BOOLEAN;
+
+        -- Overloaded functions
+        FUNCTION calculate_fee(p_transaction_type VARCHAR2) RETURN NUMBER;
+        FUNCTION calculate_fee(p_transaction_type VARCHAR2, p_amount NUMBER) RETURN NUMBER;
+
+    END financial_utils;
+    /
+
+    -- Package body
+    CREATE OR REPLACE PACKAGE BODY financial_utils AS
+
+        PROCEDURE calculate_interest(
+            p_account_id IN NUMBER,
+            p_days IN NUMBER DEFAULT 30,
+            p_interest_amount OUT NUMBER
+        ) IS
+            v_balance NUMBER;
+            v_daily_rate NUMBER;
+        BEGIN
+            SELECT BALANCE INTO v_balance
+            FROM CUSTOMER_ACCOUNTS
+            WHERE ACCOUNT_ID = p_account_id;
+
+            v_daily_rate := c_default_interest_rate / 365;
+
+            IF v_balance < 0 THEN
+                p_interest_amount := ABS(v_balance) * v_daily_rate * p_days;
+            ELSE
+                p_interest_amount := 0;
+            END IF;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                p_interest_amount := 0;
+        END calculate_interest;
+
+        PROCEDURE generate_statement(
+            p_account_id IN NUMBER,
+            p_statement_date IN DATE DEFAULT SYSDATE,
+            p_statement_text OUT CLOB
+        ) IS
+            v_account account_summary_type;
+        BEGIN
+            v_account := get_account_summary(p_account_id);
+
+            p_statement_text := 'ACCOUNT STATEMENT' || CHR(10) ||
+                               'Account ID: ' || v_account.account_id || CHR(10) ||
+                               'Statement Date: ' || TO_CHAR(p_statement_date, 'DD-MON-YYYY') || CHR(10) ||
+                               'Current Balance: ' || format_currency(v_account.balance) || CHR(10) ||
+                               'Available Credit: ' || format_currency(v_account.available_credit) || CHR(10) ||
+                               'Account Status: ' || v_account.status || CHR(10) ||
+                               'Risk Score: ' || v_account.risk_score;
+        END generate_statement;
+
+        FUNCTION get_account_summary(p_account_id NUMBER) RETURN account_summary_type IS
+            v_summary account_summary_type;
+        BEGIN
+            SELECT ACCOUNT_ID, BALANCE, STATUS
+            INTO v_summary.account_id, v_summary.balance, v_summary.status
+            FROM CUSTOMER_ACCOUNTS
+            WHERE ACCOUNT_ID = p_account_id;
+
+            v_summary.available_credit := get_available_credit(p_account_id);
+            v_summary.risk_score := calculate_account_risk_score(p_account_id);
+
+            RETURN v_summary;
+        END get_account_summary;
+
+        FUNCTION get_high_risk_accounts(p_risk_threshold NUMBER DEFAULT 70)
+            RETURN account_list_type PIPELINED IS
+            v_summary account_summary_type;
+        BEGIN
+            FOR rec IN (SELECT ACCOUNT_ID FROM CUSTOMER_ACCOUNTS WHERE STATUS = 'ACTIVE') LOOP
+                v_summary := get_account_summary(rec.ACCOUNT_ID);
+                IF v_summary.risk_score >= p_risk_threshold THEN
+                    PIPE ROW(v_summary);
+                END IF;
+            END LOOP;
+            RETURN;
+        END get_high_risk_accounts;
+
+        FUNCTION format_currency(p_amount NUMBER) RETURN VARCHAR2 IS
+        BEGIN
+            RETURN TO_CHAR(p_amount, 'FM$999,999,990.00');
+        END format_currency;
+
+        FUNCTION validate_account_number(p_account_id NUMBER) RETURN BOOLEAN IS
+            v_count NUMBER;
+        BEGIN
+            SELECT COUNT(*) INTO v_count
+            FROM CUSTOMER_ACCOUNTS
+            WHERE ACCOUNT_ID = p_account_id;
+
+            RETURN v_count > 0;
+        END validate_account_number;
+
+        FUNCTION calculate_fee(p_transaction_type VARCHAR2) RETURN NUMBER IS
+        BEGIN
+            CASE p_transaction_type
+                WHEN 'TRANSFER' THEN RETURN 2.50;
+                WHEN 'WITHDRAWAL' THEN RETURN 1.00;
+                WHEN 'DEPOSIT' THEN RETURN 0;
+                ELSE RETURN 5.00;
+            END CASE;
+        END calculate_fee;
+
+        FUNCTION calculate_fee(p_transaction_type VARCHAR2, p_amount NUMBER) RETURN NUMBER IS
+            v_base_fee NUMBER;
+            v_percentage_fee NUMBER;
+        BEGIN
+            v_base_fee := calculate_fee(p_transaction_type);
+
+            -- Add percentage-based fee for large amounts
+            IF p_amount > 10000 THEN
+                v_percentage_fee := p_amount * 0.001; -- 0.1%
+                RETURN v_base_fee + v_percentage_fee;
+            ELSE
+                RETURN v_base_fee;
+            END IF;
+        END calculate_fee;
+
+    END financial_utils;
+    /
+  metadata: |
+    {
+      "schemas": [
+        {
+          "packages": [
+            {
+              "name": "FINANCIAL_UTILS",
+              "definition": "CREATE OR REPLACE PACKAGE financial_utils AS\n    -- Constants\n    c_max_overdraft CONSTANT NUMBER := 5000;\n    c_default_interest_rate CONSTANT NUMBER := 0.05;\n\n    -- Types\n    TYPE account_summary_type IS RECORD (\n        account_id NUMBER,\n        balance NUMBER,\n        available_credit NUMBER,\n        risk_score NUMBER,\n        status VARCHAR2(20)\n    );\n\n    TYPE account_list_type IS TABLE OF account_summary_type;\n\n    -- Procedures\n    PROCEDURE calculate_interest(\n        p_account_id IN NUMBER,\n        p_days IN NUMBER DEFAULT 30,\n        p_interest_amount OUT NUMBER\n    );\n\n    PROCEDURE generate_statement(\n        p_account_id IN NUMBER,\n        p_statement_date IN DATE DEFAULT SYSDATE,\n        p_statement_text OUT CLOB\n    );\n\n    -- Functions\n    FUNCTION get_account_summary(p_account_id NUMBER) RETURN account_summary_type;\n\n    FUNCTION get_high_risk_accounts(p_risk_threshold NUMBER DEFAULT 70)\n        RETURN account_list_type PIPELINED;\n\n    FUNCTION format_currency(p_amount NUMBER) RETURN VARCHAR2;\n\n    FUNCTION validate_account_number(p_account_id NUMBER) RETURN BOOLEAN;\n\n    -- Overloaded functions\n    FUNCTION calculate_fee(p_transaction_type VARCHAR2) RETURN NUMBER;\n    FUNCTION calculate_fee(p_transaction_type VARCHAR2, p_amount NUMBER) RETURN NUMBER;\n\nEND financial_utils;\n\nCREATE OR REPLACE PACKAGE BODY financial_utils AS\n\n    PROCEDURE calculate_interest(\n        p_account_id IN NUMBER,\n        p_days IN NUMBER DEFAULT 30,\n        p_interest_amount OUT NUMBER\n    ) IS\n        v_balance NUMBER;\n        v_daily_rate NUMBER;\n    BEGIN\n        SELECT BALANCE INTO v_balance\n        FROM CUSTOMER_ACCOUNTS\n        WHERE ACCOUNT_ID = p_account_id;\n\n        v_daily_rate := c_default_interest_rate / 365;\n\n        IF v_balance \u003c 0 THEN\n            p_interest_amount := ABS(v_balance) * v_daily_rate * p_days;\n        ELSE\n            p_interest_amount := 0;\n        END IF;\n    EXCEPTION\n        WHEN NO_DATA_FOUND THEN\n            p_interest_amount := 0;\n    END calculate_interest;\n\n    PROCEDURE generate_statement(\n        p_account_id IN NUMBER,\n        p_statement_date IN DATE DEFAULT SYSDATE,\n        p_statement_text OUT CLOB\n    ) IS\n        v_account account_summary_type;\n    BEGIN\n        v_account := get_account_summary(p_account_id);\n\n        p_statement_text := 'ACCOUNT STATEMENT' || CHR(10) ||\n                           'Account ID: ' || v_account.account_id || CHR(10) ||\n                           'Statement Date: ' || TO_CHAR(p_statement_date, 'DD-MON-YYYY') || CHR(10) ||\n                           'Current Balance: ' || format_currency(v_account.balance) || CHR(10) ||\n                           'Available Credit: ' || format_currency(v_account.available_credit) || CHR(10) ||\n                           'Account Status: ' || v_account.status || CHR(10) ||\n                           'Risk Score: ' || v_account.risk_score;\n    END generate_statement;\n\n    FUNCTION get_account_summary(p_account_id NUMBER) RETURN account_summary_type IS\n        v_summary account_summary_type;\n    BEGIN\n        SELECT ACCOUNT_ID, BALANCE, STATUS\n        INTO v_summary.account_id, v_summary.balance, v_summary.status\n        FROM CUSTOMER_ACCOUNTS\n        WHERE ACCOUNT_ID = p_account_id;\n\n        v_summary.available_credit := get_available_credit(p_account_id);\n        v_summary.risk_score := calculate_account_risk_score(p_account_id);\n\n        RETURN v_summary;\n    END get_account_summary;\n\n    FUNCTION get_high_risk_accounts(p_risk_threshold NUMBER DEFAULT 70)\n        RETURN account_list_type PIPELINED IS\n        v_summary account_summary_type;\n    BEGIN\n        FOR rec IN (SELECT ACCOUNT_ID FROM CUSTOMER_ACCOUNTS WHERE STATUS = 'ACTIVE') LOOP\n            v_summary := get_account_summary(rec.ACCOUNT_ID);\n            IF v_summary.risk_score \u003e= p_risk_threshold THEN\n                PIPE ROW(v_summary);\n            END IF;\n        END LOOP;\n        RETURN;\n    END get_high_risk_accounts;\n\n    FUNCTION format_currency(p_amount NUMBER) RETURN VARCHAR2 IS\n    BEGIN\n        RETURN TO_CHAR(p_amount, 'FM$999,999,990.00');\n    END format_currency;\n\n    FUNCTION validate_account_number(p_account_id NUMBER) RETURN BOOLEAN IS\n        v_count NUMBER;\n    BEGIN\n        SELECT COUNT(*) INTO v_count\n        FROM CUSTOMER_ACCOUNTS\n        WHERE ACCOUNT_ID = p_account_id;\n\n        RETURN v_count \u003e 0;\n    END validate_account_number;\n\n    FUNCTION calculate_fee(p_transaction_type VARCHAR2) RETURN NUMBER IS\n    BEGIN\n        CASE p_transaction_type\n            WHEN 'TRANSFER' THEN RETURN 2.50;\n            WHEN 'WITHDRAWAL' THEN RETURN 1.00;\n            WHEN 'DEPOSIT' THEN RETURN 0;\n            ELSE RETURN 5.00;\n        END CASE;\n    END calculate_fee;\n\n    FUNCTION calculate_fee(p_transaction_type VARCHAR2, p_amount NUMBER) RETURN NUMBER IS\n        v_base_fee NUMBER;\n        v_percentage_fee NUMBER;\n    BEGIN\n        v_base_fee := calculate_fee(p_transaction_type);\n\n        -- Add percentage-based fee for large amounts\n        IF p_amount \u003e 10000 THEN\n            v_percentage_fee := p_amount * 0.001; -- 0.1%\n            RETURN v_base_fee + v_percentage_fee;\n        ELSE\n            RETURN v_base_fee;\n        END IF;\n    END calculate_fee;\n\nEND financial_utils;"
+            }
+          ]
+        }
+      ]
+    }
+- description: table_comments_and_documentation
+  schema: |
+    CREATE TABLE PRODUCT_CATALOG (
+        PRODUCT_ID NUMBER PRIMARY KEY,
+        SKU VARCHAR2(50) UNIQUE NOT NULL,
+        PRODUCT_NAME VARCHAR2(200) NOT NULL,
+        DESCRIPTION CLOB,
+        CATEGORY_ID NUMBER NOT NULL,
+        PRICE NUMBER(10,2) NOT NULL,
+        COST NUMBER(10,2),
+        WEIGHT NUMBER(8,3),
+        DIMENSIONS VARCHAR2(100),
+        COLOR VARCHAR2(50),
+        PRODUCT_SIZE VARCHAR2(20),
+        BRAND VARCHAR2(100),
+        SUPPLIER_ID NUMBER,
+        IS_ACTIVE NUMBER(1) DEFAULT 1,
+        STOCK_QUANTITY NUMBER DEFAULT 0,
+        REORDER_LEVEL NUMBER DEFAULT 10,
+        CREATED_DATE DATE DEFAULT SYSDATE,
+        CREATED_BY VARCHAR2(100) DEFAULT USER,
+        LAST_UPDATED DATE DEFAULT SYSDATE,
+        UPDATED_BY VARCHAR2(100) DEFAULT USER,
+        VERSION_NUMBER NUMBER DEFAULT 1
+    );
+
+    -- Table comments
+    COMMENT ON TABLE PRODUCT_CATALOG IS 'Master catalog of all products available for sale. Contains detailed product information including pricing, inventory, and supplier details.';
+
+    -- Column comments
+    COMMENT ON COLUMN PRODUCT_CATALOG.PRODUCT_ID IS 'Unique identifier for the product. Primary key generated from sequence.';
+    COMMENT ON COLUMN PRODUCT_CATALOG.SKU IS 'Stock Keeping Unit - unique alphanumeric code for inventory tracking';
+    COMMENT ON COLUMN PRODUCT_CATALOG.PRODUCT_NAME IS 'Display name of the product as shown to customers';
+    COMMENT ON COLUMN PRODUCT_CATALOG.DESCRIPTION IS 'Detailed product description including features and specifications';
+    COMMENT ON COLUMN PRODUCT_CATALOG.CATEGORY_ID IS 'Foreign key reference to PRODUCT_CATEGORIES table';
+    COMMENT ON COLUMN PRODUCT_CATALOG.PRICE IS 'Current selling price in base currency (USD)';
+    COMMENT ON COLUMN PRODUCT_CATALOG.COST IS 'Cost of goods sold - used for profit margin calculations';
+    COMMENT ON COLUMN PRODUCT_CATALOG.WEIGHT IS 'Product weight in kilograms - used for shipping calculations';
+    COMMENT ON COLUMN PRODUCT_CATALOG.DIMENSIONS IS 'Product dimensions in format: Length x Width x Height (cm)';
+    COMMENT ON COLUMN PRODUCT_CATALOG.COLOR IS 'Primary color of the product';
+    COMMENT ON COLUMN PRODUCT_CATALOG.PRODUCT_SIZE IS 'Size designation (S, M, L, XL, etc.)';
+    COMMENT ON COLUMN PRODUCT_CATALOG.BRAND IS 'Brand or manufacturer name';
+    COMMENT ON COLUMN PRODUCT_CATALOG.SUPPLIER_ID IS 'Reference to primary supplier in SUPPLIERS table';
+    COMMENT ON COLUMN PRODUCT_CATALOG.IS_ACTIVE IS 'Flag indicating if product is active (1) or discontinued (0)';
+    COMMENT ON COLUMN PRODUCT_CATALOG.STOCK_QUANTITY IS 'Current inventory quantity on hand';
+    COMMENT ON COLUMN PRODUCT_CATALOG.REORDER_LEVEL IS 'Minimum stock level that triggers reorder process';
+    COMMENT ON COLUMN PRODUCT_CATALOG.CREATED_DATE IS 'Date when product record was first created';
+    COMMENT ON COLUMN PRODUCT_CATALOG.CREATED_BY IS 'Username of person who created the record';
+    COMMENT ON COLUMN PRODUCT_CATALOG.LAST_UPDATED IS 'Date of most recent update to any field';
+    COMMENT ON COLUMN PRODUCT_CATALOG.UPDATED_BY IS 'Username of person who last modified the record';
+    COMMENT ON COLUMN PRODUCT_CATALOG.VERSION_NUMBER IS 'Optimistic locking version number for concurrent update control';
+
+    CREATE TABLE ORDER_LINE_ITEMS (
+        LINE_ITEM_ID NUMBER PRIMARY KEY,
+        ORDER_ID NUMBER NOT NULL,
+        PRODUCT_ID NUMBER NOT NULL,
+        QUANTITY NUMBER NOT NULL,
+        UNIT_PRICE NUMBER(10,2) NOT NULL,
+        DISCOUNT_AMOUNT NUMBER(10,2) DEFAULT 0,
+        TAX_AMOUNT NUMBER(10,2) DEFAULT 0,
+        LINE_TOTAL NUMBER(12,2) NOT NULL,
+        SPECIAL_INSTRUCTIONS VARCHAR2(500),
+        FULFILLMENT_STATUS VARCHAR2(20) DEFAULT 'PENDING'
+    );
+
+    COMMENT ON TABLE ORDER_LINE_ITEMS IS 'Individual line items for customer orders. Each row represents one product within an order.';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.LINE_ITEM_ID IS 'Unique identifier for this line item';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.ORDER_ID IS 'Reference to parent order in ORDERS table';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.PRODUCT_ID IS 'Reference to product in PRODUCT_CATALOG table';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.QUANTITY IS 'Number of units ordered';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.UNIT_PRICE IS 'Price per unit at time of order (may differ from current catalog price)';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.DISCOUNT_AMOUNT IS 'Total discount applied to this line item';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.TAX_AMOUNT IS 'Total tax amount for this line item';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.LINE_TOTAL IS 'Calculated total: (quantity * unit_price) - discount + tax';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.SPECIAL_INSTRUCTIONS IS 'Customer-specific instructions for this item';
+    COMMENT ON COLUMN ORDER_LINE_ITEMS.FULFILLMENT_STATUS IS 'Status: PENDING, PICKED, PACKED, SHIPPED, DELIVERED, RETURNED';
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "ORDER_LINE_ITEMS",
+              "columns": [
+                {
+                  "name": "LINE_ITEM_ID",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "comment": "Unique identifier for this line item"
+                },
+                {
+                  "name": "ORDER_ID",
+                  "position": 2,
+                  "type": "NUMBER",
+                  "comment": "Reference to parent order in ORDERS table"
+                },
+                {
+                  "name": "PRODUCT_ID",
+                  "position": 3,
+                  "type": "NUMBER",
+                  "comment": "Reference to product in PRODUCT_CATALOG table"
+                },
+                {
+                  "name": "QUANTITY",
+                  "position": 4,
+                  "type": "NUMBER",
+                  "comment": "Number of units ordered"
+                },
+                {
+                  "name": "UNIT_PRICE",
+                  "position": 5,
+                  "type": "NUMBER(10,2)",
+                  "comment": "Price per unit at time of order (may differ from current catalog price)"
+                },
+                {
+                  "name": "DISCOUNT_AMOUNT",
+                  "position": 6,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER(10,2)",
+                  "comment": "Total discount applied to this line item"
+                },
+                {
+                  "name": "TAX_AMOUNT",
+                  "position": 7,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER(10,2)",
+                  "comment": "Total tax amount for this line item"
+                },
+                {
+                  "name": "LINE_TOTAL",
+                  "position": 8,
+                  "type": "NUMBER(12,2)",
+                  "comment": "Calculated total: (quantity * unit_price) - discount + tax"
+                },
+                {
+                  "name": "SPECIAL_INSTRUCTIONS",
+                  "position": 9,
+                  "nullable": true,
+                  "type": "VARCHAR2(500 BYTE)",
+                  "comment": "Customer-specific instructions for this item"
+                },
+                {
+                  "name": "FULFILLMENT_STATUS",
+                  "position": 10,
+                  "default": "'PENDING'",
+                  "nullable": true,
+                  "type": "VARCHAR2(20 BYTE)",
+                  "comment": "Status: PENDING, PICKED, PACKED, SHIPPED, DELIVERED, RETURNED"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_ORDER_LINE_ITEMS",
+                  "expressions": [
+                    "LINE_ITEM_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ],
+              "comment": "Individual line items for customer orders. Each row represents one product within an order."
+            },
+            {
+              "name": "PRODUCT_CATALOG",
+              "columns": [
+                {
+                  "name": "PRODUCT_ID",
+                  "position": 1,
+                  "type": "NUMBER",
+                  "comment": "Unique identifier for the product. Primary key generated from sequence."
+                },
+                {
+                  "name": "SKU",
+                  "position": 2,
+                  "type": "VARCHAR2(50 BYTE)",
+                  "comment": "Stock Keeping Unit - unique alphanumeric code for inventory tracking"
+                },
+                {
+                  "name": "PRODUCT_NAME",
+                  "position": 3,
+                  "type": "VARCHAR2(200 BYTE)",
+                  "comment": "Display name of the product as shown to customers"
+                },
+                {
+                  "name": "DESCRIPTION",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "CLOB",
+                  "comment": "Detailed product description including features and specifications"
+                },
+                {
+                  "name": "CATEGORY_ID",
+                  "position": 5,
+                  "type": "NUMBER",
+                  "comment": "Foreign key reference to PRODUCT_CATEGORIES table"
+                },
+                {
+                  "name": "PRICE",
+                  "position": 6,
+                  "type": "NUMBER(10,2)",
+                  "comment": "Current selling price in base currency (USD)"
+                },
+                {
+                  "name": "COST",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "NUMBER(10,2)",
+                  "comment": "Cost of goods sold - used for profit margin calculations"
+                },
+                {
+                  "name": "WEIGHT",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "NUMBER(8,3)",
+                  "comment": "Product weight in kilograms - used for shipping calculations"
+                },
+                {
+                  "name": "DIMENSIONS",
+                  "position": 9,
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)",
+                  "comment": "Product dimensions in format: Length x Width x Height (cm)"
+                },
+                {
+                  "name": "COLOR",
+                  "position": 10,
+                  "nullable": true,
+                  "type": "VARCHAR2(50 BYTE)",
+                  "comment": "Primary color of the product"
+                },
+                {
+                  "name": "PRODUCT_SIZE",
+                  "position": 11,
+                  "nullable": true,
+                  "type": "VARCHAR2(20 BYTE)",
+                  "comment": "Size designation (S, M, L, XL, etc.)"
+                },
+                {
+                  "name": "BRAND",
+                  "position": 12,
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)",
+                  "comment": "Brand or manufacturer name"
+                },
+                {
+                  "name": "SUPPLIER_ID",
+                  "position": 13,
+                  "nullable": true,
+                  "type": "NUMBER",
+                  "comment": "Reference to primary supplier in SUPPLIERS table"
+                },
+                {
+                  "name": "IS_ACTIVE",
+                  "position": 14,
+                  "default": "1",
+                  "nullable": true,
+                  "type": "NUMBER(1)",
+                  "comment": "Flag indicating if product is active (1) or discontinued (0)"
+                },
+                {
+                  "name": "STOCK_QUANTITY",
+                  "position": 15,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "NUMBER",
+                  "comment": "Current inventory quantity on hand"
+                },
+                {
+                  "name": "REORDER_LEVEL",
+                  "position": 16,
+                  "default": "10",
+                  "nullable": true,
+                  "type": "NUMBER",
+                  "comment": "Minimum stock level that triggers reorder process"
+                },
+                {
+                  "name": "CREATED_DATE",
+                  "position": 17,
+                  "default": "SYSDATE",
+                  "nullable": true,
+                  "type": "DATE",
+                  "comment": "Date when product record was first created"
+                },
+                {
+                  "name": "CREATED_BY",
+                  "position": 18,
+                  "default": "USER",
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)",
+                  "comment": "Username of person who created the record"
+                },
+                {
+                  "name": "LAST_UPDATED",
+                  "position": 19,
+                  "default": "SYSDATE",
+                  "nullable": true,
+                  "type": "DATE",
+                  "comment": "Date of most recent update to any field"
+                },
+                {
+                  "name": "UPDATED_BY",
+                  "position": 20,
+                  "default": "USER",
+                  "nullable": true,
+                  "type": "VARCHAR2(100 BYTE)",
+                  "comment": "Username of person who last modified the record"
+                },
+                {
+                  "name": "VERSION_NUMBER",
+                  "position": 21,
+                  "default": "1",
+                  "nullable": true,
+                  "type": "NUMBER",
+                  "comment": "Optimistic locking version number for concurrent update control"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK_PRODUCT_CATALOG",
+                  "expressions": [
+                    "PRODUCT_ID"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UK_PRODUCT_CATALOG_SKU",
+                  "expressions": [
+                    "SKU"
+                  ],
+                  "type": "NORMAL",
+                  "unique": true,
+                  "visible": true,
+                  "is_constraint": true
+                }
+              ],
+              "comment": "Master catalog of all products available for sale. Contains detailed product information including pricing, inventory, and supplier details."
+            }
+          ]
+        }
+      ]
+    }

@@ -11,6 +11,7 @@ Bytebase is the standard for database development. Every product and engineering
 - Before exploring domain behavior, read [domain guidance](docs/agents/domain.md).
 - For frontend work, read [frontend/AGENTS.md](frontend/AGENTS.md); before changing UI, also read the [UX contract](docs/agents/frontend-ux.md).
 - Before adding or modifying metadata SQL, pagination, or multi-row transactions anywhere in the repo, read [backend/store/AGENTS.md](backend/store/AGENTS.md). This includes CEL-to-SQL filters and raw reads in tests.
+- Before changing metadata/DDL conversions or their golden fixtures, read [backend/plugin/schema/AGENTS.md](backend/plugin/schema/AGENTS.md). It covers what these packages test and the `record` process for regenerating fixtures.
 - For issue operations, read [issue-tracker.md](docs/agents/issue-tracker.md). Linear is the tracker; agent-created issues go to team `BOT`. For triage, also read [triage-labels.md](docs/agents/triage-labels.md).
 - Before creating a PR, complete [docs/pre-pr-checklist.md](docs/pre-pr-checklist.md).
 - `AGENTS.md` files are the instruction source of truth; `CLAUDE.md` files import them.

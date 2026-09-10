@@ -2,6 +2,8 @@ package mysql
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -171,17 +173,22 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 		}
 	}
 
-	// Execute the deduplicated drop operations
-	for tableName, drops := range dropsPerTable {
+	// Execute the deduplicated drop operations. Every map here is walked in name
+	// order: the same diff has to produce the same DDL, byte for byte, or a
+	// generated migration is unreviewable and unrepeatable.
+	for _, tableName := range slices.Sorted(maps.Keys(dropsPerTable)) {
+		drops := dropsPerTable[tableName]
+
 		// Drop check constraints
-		for constraintName := range drops.checkConstraints {
+		for _, constraintName := range slices.Sorted(maps.Keys(drops.checkConstraints)) {
 			if err := writeDropCheckConstraint(buf, tableName, constraintName); err != nil {
 				return err
 			}
 		}
 
 		// Drop indexes (handle primary key specially)
-		for _, index := range drops.indexes {
+		for _, indexName := range slices.Sorted(maps.Keys(drops.indexes)) {
+			index := drops.indexes[indexName]
 			if index.Primary {
 				if err := writeDropPrimaryKey(buf, tableName); err != nil {
 					return err
@@ -194,7 +201,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 		}
 
 		// Drop columns
-		for columnName := range drops.columns {
+		for _, columnName := range slices.Sorted(maps.Keys(drops.columns)) {
 			if err := writeDropColumn(buf, tableName, columnName); err != nil {
 				return err
 			}
@@ -220,7 +227,8 @@ func dropTablesInDependencyOrder(diff *schema.MetadataDiff, buf *strings.Builder
 
 	// Add edges for foreign key dependencies
 	// Edge from table with FK to referenced table (for dropping order)
-	for _, tableDiff := range tablesToDrop {
+	for _, name := range slices.Sorted(maps.Keys(tablesToDrop)) {
+		tableDiff := tablesToDrop[name]
 		if tableDiff.OldTable != nil {
 			for _, fk := range tableDiff.OldTable.ForeignKeys {
 				if _, exists := tablesToDrop[fk.ReferencedTable]; exists {
@@ -237,7 +245,8 @@ func dropTablesInDependencyOrder(diff *schema.MetadataDiff, buf *strings.Builder
 	if err != nil {
 		// If there's a cycle, fall back to dropping foreign keys first
 		// Drop all foreign keys from tables being dropped
-		for _, tableDiff := range tablesToDrop {
+		for _, name := range slices.Sorted(maps.Keys(tablesToDrop)) {
+			tableDiff := tablesToDrop[name]
 			if tableDiff.OldTable != nil {
 				for _, fk := range tableDiff.OldTable.ForeignKeys {
 					if err := writeDropForeignKey(buf, tableDiff.TableName, fk.Name); err != nil {
@@ -247,9 +256,9 @@ func dropTablesInDependencyOrder(diff *schema.MetadataDiff, buf *strings.Builder
 			}
 		}
 
-		// Then drop tables in any order
-		for _, tableDiff := range tablesToDrop {
-			if err := writeDropTable(buf, tableDiff.TableName); err != nil {
+		// Then drop tables in name order; the cycle leaves no better one.
+		for _, name := range slices.Sorted(maps.Keys(tablesToDrop)) {
+			if err := writeDropTable(buf, tablesToDrop[name].TableName); err != nil {
 				return err
 			}
 		}
