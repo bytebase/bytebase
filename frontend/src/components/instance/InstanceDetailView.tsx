@@ -566,7 +566,7 @@ export function InstanceDetailView({
     <div className="p-4 flex flex-col gap-y-2">
       {/* Archive banner */}
       {instance.state === State.DELETED && (
-        <div className="bg-gray-700 text-white text-center py-2 rounded-sm text-sm font-medium">
+        <div className="bg-main-hover text-main-text text-center py-2 rounded-sm text-sm font-medium">
           {t("common.archived")}
         </div>
       )}

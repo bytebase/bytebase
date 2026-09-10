@@ -59,7 +59,7 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
                 <span className="text-error">
                   {t("database.sync-status-failed")}
                 </span>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-control-light">
                   {database.syncError}
                 </p>
               </>

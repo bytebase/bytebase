@@ -143,7 +143,7 @@ export function ProjectReleaseDetailPage({
   return (
     <div className="flex flex-col items-start gap-y-4 p-4 relative">
       {isDeleted && (
-        <div className="h-8 w-full text-base font-medium bg-gray-700 text-white flex justify-center items-center">
+        <div className="h-8 w-full text-base font-medium bg-main-hover text-main-text flex justify-center items-center">
           {t("common.archived")}
         </div>
       )}

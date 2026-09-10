@@ -128,7 +128,7 @@ export function ProjectRouteShell({
 
   if (!ready || !project) {
     return (
-      <div className="fixed inset-0 bg-white flex flex-col items-center justify-center">
+      <div className="fixed inset-0 bg-background flex flex-col items-center justify-center">
         <LoaderCircle className="size-5 animate-spin text-control-light" />
       </div>
     );
@@ -139,7 +139,7 @@ export function ProjectRouteShell({
   return (
     <>
       {project.state === State.DELETED && (
-        <div className="h-8 w-full text-base font-medium bg-control text-white flex justify-center items-center py-2 mb-4">
+        <div className="h-8 w-full text-base font-medium bg-control text-main-text flex justify-center items-center py-2 mb-4">
           {t("common.archived")}
         </div>
       )}

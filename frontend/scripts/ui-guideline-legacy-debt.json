@@ -31,12 +31,6 @@
       "count": 1
     },
     {
-      "path": "src/app/layouts/SplashLayout.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/components/AccountMultiSelect.tsx",
       "rule": "no-literal-color",
       "token": "#3B82F6",
@@ -289,12 +283,6 @@
       "count": 1
     },
     {
-      "path": "src/components/DashboardFrameShell.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/components/DashboardSidebar.tsx",
       "rule": "no-raw-color",
       "token": "border-gray-300",
@@ -310,12 +298,6 @@
       "path": "src/components/DashboardSidebar.tsx",
       "rule": "no-raw-color",
       "token": "text-gray-700",
-      "count": 1
-    },
-    {
-      "path": "src/components/database/DatabaseOverviewInfo.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
       "count": 1
     },
     {
@@ -511,18 +493,6 @@
       "count": 1
     },
     {
-      "path": "src/components/instance/InstanceDetailView.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-700",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/InstanceDetailView.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
-    },
-    {
       "path": "src/components/instance/InstanceFormBody.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -571,12 +541,6 @@
       "count": 1
     },
     {
-      "path": "src/components/LabelsDisplay.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-100",
-      "count": 1
-    },
-    {
       "path": "src/components/MarkdownEditor/MarkdownEditor.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -622,18 +586,6 @@
       "path": "src/components/plan-check/PlanCheckSection.tsx",
       "rule": "no-raw-color",
       "token": "hover:bg-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/ProjectRouteShell.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/components/ProjectRouteShell.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
       "count": 1
     },
     {
@@ -694,18 +646,6 @@
       "path": "src/components/ResourceIdField.tsx",
       "rule": "no-raw-color",
       "token": "text-yellow-600",
-      "count": 1
-    },
-    {
-      "path": "src/components/revision/RevisionDetailPanel.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/components/revision/RevisionDetailPanel.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-400",
       "count": 1
     },
     {
@@ -787,18 +727,6 @@
       "count": 1
     },
     {
-      "path": "src/components/sql-review/TabsByEngine.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-200",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/TabsByEngine.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-800",
-      "count": 1
-    },
-    {
       "path": "src/components/sql-review/TemplateSelector.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -815,12 +743,6 @@
       "rule": "no-raw-color",
       "token": "text-white",
       "count": 2
-    },
-    {
-      "path": "src/components/UserAvatar.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
     },
     {
       "path": "src/components/Watermark.tsx",
@@ -922,12 +844,6 @@
       "path": "src/modules/agent/components/AgentWindow.tsx",
       "rule": "no-raw-color",
       "token": "data-highlighted:bg-red-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/ToolCallCard.tsx",
-      "rule": "no-raw-color",
-      "token": "text-amber-600",
       "count": 1
     },
     {
@@ -1042,12 +958,6 @@
       "path": "src/modules/schema-diagram/Navigator/Navigator.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/SchemaDiagram.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white/40",
       "count": 1
     },
     {
@@ -1429,12 +1339,6 @@
       "count": 1
     },
     {
-      "path": "src/modules/sql-editor/components/TreeNodeSuffix.tsx",
-      "rule": "no-raw-color",
-      "token": "text-yellow-400",
-      "count": 1
-    },
-    {
       "path": "src/routes/auth/MultiFactorPage.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -1459,12 +1363,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/auth/PasswordForgotPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/auth/PasswordResetPage.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -1475,18 +1373,6 @@
       "rule": "no-raw-color",
       "token": "bg-white",
       "count": 1
-    },
-    {
-      "path": "src/routes/auth/SigninPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
-    },
-    {
-      "path": "src/routes/auth/SignupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
     },
     {
       "path": "src/routes/project/database-detail/DatabaseDetailHeader.tsx",
@@ -1552,18 +1438,6 @@
       "path": "src/routes/project/database-detail/revision/ImportRevisionSheet.tsx",
       "rule": "no-native-control",
       "token": "select",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/DatabaseChangelogDetailPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailAccessGrantDetails.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
       "count": 1
     },
     {
@@ -1747,12 +1621,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/issue-detail/components/IssueDetailTaskRolloutActionPanel.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white/50",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx",
       "rule": "no-raw-color",
       "token": "bg-gray-50",
@@ -1795,12 +1663,6 @@
       "count": 2
     },
     {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployStageCard.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-400",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/plan-detail/components/deploy/DeployTaskFilter.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -1817,12 +1679,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 2
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskItem.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
     },
     {
       "path": "src/routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx",
@@ -1903,12 +1759,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/plan-detail/components/PlanDetailMeta.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -1957,12 +1807,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/plan-detail/components/PlanDetailTaskRolloutActionPanel.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white/50",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/plan-detail/ProjectPlanDetailPage.tsx",
       "rule": "no-raw-color",
       "token": "bg-gray-50",
@@ -1994,12 +1838,6 @@
     },
     {
       "path": "src/routes/project/ProjectAccessGrantsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectDatabaseGroupsPage.tsx",
       "rule": "no-raw-color",
       "token": "text-white",
       "count": 1
@@ -2131,18 +1969,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/ProjectReleaseDetailPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-700",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectReleaseDetailPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/ProjectSettingsPage.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -2213,12 +2039,6 @@
       "rule": "no-raw-color",
       "token": "text-gray-600",
       "count": 2
-    },
-    {
-      "path": "src/routes/workspace/general/AccountSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 1
     },
     {
       "path": "src/routes/workspace/general/BrandingSection.tsx",
@@ -2419,12 +2239,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/workspace/profile/AccountSettingsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/workspace/profile/UserPasswordSection.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -2482,12 +2296,6 @@
       "path": "src/routes/workspace/ServiceAccountsPage.tsx",
       "rule": "no-native-control",
       "token": "input",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/RecoveryCodesView.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
       "count": 1
     },
     {

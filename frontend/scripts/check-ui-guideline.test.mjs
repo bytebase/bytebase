@@ -62,6 +62,35 @@ const microLayoutPaths = [
   "src/routes/workspace/PurchaseSection.tsx",
   "src/routes/workspace/two-factor/RecoveryCodesView.tsx",
 ];
+const isolatedColorPaths = [
+  "src/app/layouts/SplashLayout.tsx",
+  "src/components/DashboardFrameShell.tsx",
+  "src/components/database/DatabaseOverviewInfo.tsx",
+  "src/components/instance/InstanceDetailView.tsx",
+  "src/components/LabelsDisplay.tsx",
+  "src/components/ProjectRouteShell.tsx",
+  "src/components/revision/RevisionDetailPanel.tsx",
+  "src/components/sql-review/TabsByEngine.tsx",
+  "src/components/UserAvatar.tsx",
+  "src/modules/agent/components/ToolCallCard.tsx",
+  "src/modules/schema-diagram/SchemaDiagram.tsx",
+  "src/modules/sql-editor/components/TreeNodeSuffix.tsx",
+  "src/routes/auth/PasswordForgotPage.tsx",
+  "src/routes/auth/SigninPage.tsx",
+  "src/routes/auth/SignupPage.tsx",
+  "src/routes/project/DatabaseChangelogDetailPage.tsx",
+  "src/routes/project/issue-detail/components/IssueDetailAccessGrantDetails.tsx",
+  "src/routes/project/issue-detail/components/IssueDetailTaskRolloutActionPanel.tsx",
+  "src/routes/project/plan-detail/components/deploy/DeployStageCard.tsx",
+  "src/routes/project/plan-detail/components/deploy/DeployTaskItem.tsx",
+  "src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx",
+  "src/routes/project/plan-detail/components/PlanDetailTaskRolloutActionPanel.tsx",
+  "src/routes/project/ProjectDatabaseGroupsPage.tsx",
+  "src/routes/project/ProjectReleaseDetailPage.tsx",
+  "src/routes/workspace/general/AccountSection.tsx",
+  "src/routes/workspace/profile/AccountSettingsPage.tsx",
+  "src/routes/workspace/two-factor/RecoveryCodesView.tsx",
+];
 
 describe("check-ui-guideline", () => {
   test("has no remaining micro-layout legacy debt", () => {
@@ -70,6 +99,17 @@ describe("check-ui-guideline", () => {
         readFileSync(join(import.meta.dirname, "..", path), "utf8"),
         path
       ).filter((violation) => microLayoutRules.has(violation.rule))
+    );
+
+    expect(violations).toEqual([]);
+  });
+
+  test("has no remaining isolated semantic-color legacy debt", () => {
+    const violations = isolatedColorPaths.flatMap((path) =>
+      scanSource(
+        readFileSync(join(import.meta.dirname, "..", path), "utf8"),
+        path
+      ).filter((violation) => violation.rule === "no-raw-color")
     );
 
     expect(violations).toEqual([]);

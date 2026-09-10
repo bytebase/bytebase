@@ -483,7 +483,7 @@ export function DatabaseChangelogDetailPage({
             </div>
 
             {showDiff ? (
-              <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+              <div className="overflow-hidden rounded-sm border border-control-border bg-background">
                 <ReadonlyDiffMonaco
                   original={previousChangelog?.schema ?? ""}
                   modified={resolvedChangelog.schema}
@@ -491,7 +491,7 @@ export function DatabaseChangelogDetailPage({
                 />
               </div>
             ) : resolvedChangelog.schema ? (
-              <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+              <div className="overflow-hidden rounded-sm border border-control-border bg-background">
                 <ReadonlyMonaco
                   content={resolvedChangelog.schema}
                   className="relative h-auto max-h-[600px] min-h-[120px]"

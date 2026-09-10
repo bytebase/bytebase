@@ -225,12 +225,12 @@ export function SignupPage() {
 
         {!needsInitialSetup && (
           <AuthDivider className="mt-6">
-            <span className="pl-2 bg-white text-control">
+            <span className="pl-2 bg-background text-control">
               {t("auth.sign-up.existing-user")}
             </span>
             <RouterLink
               to={{ name: AUTH_SIGNIN_MODULE, query }}
-              className="accent-link px-2 bg-white"
+              className="accent-link px-2 bg-background"
             >
               {t("common.sign-in")}
             </RouterLink>
