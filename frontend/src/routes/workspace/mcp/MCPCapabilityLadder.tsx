@@ -8,6 +8,7 @@ import type {
 import {
   isRowServed,
   MCP_CAPABILITY_TIERS,
+  mcpRowKey,
   rowsInTier,
 } from "@/components/mcp/mcpCapabilityRows";
 import {
@@ -15,6 +16,7 @@ import {
   type MCPServingMode,
   mcpModeKey,
 } from "@/components/mcp/mcpPolicy";
+import type { BadgeProps } from "@/components/ui/badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +26,14 @@ import {
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+
+// A table for the same reason SERVES is one: a ternary over the tiers that
+// exist today keeps compiling when a third is added, and picks a variant for it
+// by accident.
+const TIER_VARIANT: Record<MCPCapabilityTier, BadgeProps["variant"]> = {
+  read: "success",
+  write: "warning",
+};
 
 interface Props {
   readonly mode: MCPServingMode;
@@ -172,11 +182,11 @@ function LadderRow({
               served ? "font-medium text-main" : "text-control-light"
             )}
           >
-            {t(`settings.mcp.ladder.row.${row.id}.title`)}
+            {t(mcpRowKey(row, "title"))}
           </span>
           {served && (
             <Badge
-              variant={row.tier === "read" ? "success" : "warning"}
+              variant={TIER_VARIANT[row.tier]}
               className="px-2 py-0 text-xs"
             >
               {t(`settings.mcp.ladder.tier.${row.tier}`)}
@@ -190,7 +200,7 @@ function LadderRow({
               served ? "text-control" : "text-control-light"
             )}
           >
-            {t(`settings.mcp.ladder.row.${row.id}.details`)}
+            {t(mcpRowKey(row, "details"))}
           </p>
         )}
       </div>

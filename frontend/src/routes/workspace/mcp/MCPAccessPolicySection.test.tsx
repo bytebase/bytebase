@@ -97,6 +97,15 @@ const deferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
+const storePolicy = (
+  capability: MCPSetting_Capability,
+  ignoreMaskingExemptions = false
+) => {
+  mocks.serverInfo.value = { mcpSetting: { capability, ignoreMaskingExemptions } };
+  mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+  mocks.refreshServerInfo.mockResolvedValue(mocks.serverInfo.value);
+};
+
 const maskingSwitch = (container: HTMLElement) =>
   container.querySelector(
     '[aria-label="settings.mcp.policy.masking.title"]'
@@ -208,12 +217,7 @@ describe("MCPAccessPolicySection", () => {
   });
 
   test("repairs an unspecified capability reported by actuator info", async () => {
-    mocks.serverInfo.value = {
-      mcpSetting: {
-        capability: MCPSetting_Capability.CAPABILITY_UNSPECIFIED,
-        ignoreMaskingExemptions: false,
-      },
-    };
+    storePolicy(MCPSetting_Capability.CAPABILITY_UNSPECIFIED);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -450,13 +454,7 @@ describe("MCPAccessPolicySection", () => {
   // Disabled has no list, so red means "no capability" on both surfaces: the
   // plain sentence in view, the static line in the disclosure slot in edit.
   test("Disabled says its one sentence in view and its static line in edit", async () => {
-    mocks.serverInfo.value = {
-      mcpSetting: {
-        capability: MCPSetting_Capability.DISABLED,
-        ignoreMaskingExemptions: false,
-      },
-    };
-    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    storePolicy(MCPSetting_Capability.DISABLED);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -504,7 +502,8 @@ describe("MCPAccessPolicySection", () => {
   });
 
   // The flag is inert under Disabled but still stored, so an explicit choice is
-  // kept for when MCP is turned back on rather than quietly rolled back.
+  // kept for when MCP is turned back on rather than quietly rolled back — and
+  // the footer says so, since the control that made it is off screen.
   test("saving Disabled still carries a masking edit the admin made", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
@@ -519,6 +518,10 @@ describe("MCPAccessPolicySection", () => {
 
     clickText(container, "settings.mcp.policy.mode.disabled.title");
     await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.masking-pending"
+    );
+
     clickText(container, "settings.mcp.policy.save");
     await flush();
 
@@ -533,13 +536,7 @@ describe("MCPAccessPolicySection", () => {
 
   // Picking back to the stored mode with no other edit leaves nothing to write.
   test("returning to the stored mode with no edit cannot save", async () => {
-    mocks.serverInfo.value = {
-      mcpSetting: {
-        capability: MCPSetting_Capability.DISABLED,
-        ignoreMaskingExemptions: false,
-      },
-    };
-    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    storePolicy(MCPSetting_Capability.DISABLED);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -590,13 +587,7 @@ describe("MCPAccessPolicySection", () => {
   // unrelated edit. Withholding the control where it governs nothing is not a
   // reason to discard what the admin set with it.
   test("the masking draft survives a detour through Disabled", async () => {
-    mocks.serverInfo.value = {
-      mcpSetting: {
-        capability: MCPSetting_Capability.READ_WRITE,
-        ignoreMaskingExemptions: true,
-      },
-    };
-    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    storePolicy(MCPSetting_Capability.READ_WRITE, true);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -632,13 +623,7 @@ describe("MCPAccessPolicySection", () => {
   // With no mode picked, nothing is known to serve, so the control that
   // configures a session has nothing to configure.
   test("the masking toggle is withheld when no mode is picked", async () => {
-    mocks.serverInfo.value = {
-      mcpSetting: {
-        capability: MCPSetting_Capability.CAPABILITY_UNSPECIFIED,
-        ignoreMaskingExemptions: false,
-      },
-    };
-    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    storePolicy(MCPSetting_Capability.CAPABILITY_UNSPECIFIED);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -658,13 +643,7 @@ describe("MCPAccessPolicySection", () => {
   });
 
   test("the masking badge reports a stored restriction", async () => {
-    mocks.serverInfo.value = {
-      mcpSetting: {
-        capability: MCPSetting_Capability.READ_ONLY,
-        ignoreMaskingExemptions: true,
-      },
-    };
-    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    storePolicy(MCPSetting_Capability.READ_ONLY, true);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -676,45 +655,37 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Deliberately still shown without a masking license: the chip reports what
-  // is stored, and the editor beside it says masking is unlicensed. Hiding it
-  // would leave a set flag with nowhere to see it.
-  test("the masking badge still reports a stored restriction unlicensed", async () => {
+  // Still shown without a license — hiding it would leave a stored flag with
+  // nowhere to see it — but it must not assert a restriction nothing applies.
+  // The editor's "not licensed" note is a different branch, behind
+  // bb.settings.set, which a reader of this page may never reach.
+  test("the masking badge says so when masking is unlicensed", async () => {
     mocks.dataMaskingAvailable.value = false;
-    mocks.serverInfo.value = {
-      mcpSetting: {
-        capability: MCPSetting_Capability.READ_ONLY,
-        ignoreMaskingExemptions: true,
-      },
-    };
-    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    storePolicy(MCPSetting_Capability.READ_ONLY, true);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
     render();
     await flush();
     expect(container.textContent).toContain(
-      "settings.mcp.policy.masking.badge"
+      "settings.mcp.policy.masking.badge-unlicensed"
     );
     unmount();
   });
 
-  test("the masking badge is withheld on a disabled policy", async () => {
-    mocks.serverInfo.value = {
-      mcpSetting: {
-        capability: MCPSetting_Capability.DISABLED,
-        ignoreMaskingExemptions: true,
-      },
-    };
-    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+  // Storable under Disabled, so it needs a view there rather than a hole: the
+  // badge says the flag is set and that MCP is off, instead of asserting a
+  // restriction on sessions that cannot exist.
+  test("the masking badge says MCP is off on a disabled policy", async () => {
+    storePolicy(MCPSetting_Capability.DISABLED, true);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
     render();
     await flush();
 
-    expect(container.textContent).not.toContain(
-      "settings.mcp.policy.masking.badge"
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.masking.badge-disabled"
     );
     unmount();
   });

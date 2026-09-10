@@ -1614,7 +1614,7 @@
         },
         "line": {
           "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza también se registra",
-          "capped": "Limitado por sus propios permisos de Bytebase y por lo que permita cada motor de base de datos",
+          "capped": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase puede comprobar en cada motor: en algunos, ninguna consulta puede demostrarse que sea una lectura, y no se ejecuta ninguna",
           "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
           "no-write": "Sin cambios, despliegues ni exportaciones"
         },
@@ -2661,7 +2661,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una conexión de administración, examinar el SQL guardado de todos ni enviar datos a un tercero."
+          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una conexión de administración, leer el historial de consultas de otra persona ni enviar datos a un tercero."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -2724,10 +2724,13 @@
         "loading": "Leyendo la política de acceso…",
         "masking": {
           "badge": "Exenciones de enmascaramiento ignoradas",
+          "badge-disabled": "Exenciones de enmascaramiento ignoradas — MCP está desactivado",
+          "badge-unlicensed": "Exenciones de enmascaramiento ignoradas — enmascaramiento sin licencia",
           "description": "Si se activa, los datos enmascarados siguen enmascarados en las sesiones MCP incluso para usuarios con exenciones o permisos de desenmascarado. La cobertura depende del motor: donde Bytebase no enmascara, esto no cambia nada. La consola no se ve afectada.",
           "title": "Ignorar las exenciones de enmascaramiento",
           "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
         },
+        "masking-pending": "Su cambio en las exenciones de enmascaramiento se guarda junto con esto y se aplica cuando MCP vuelva a activarse.",
         "mode": {
           "disabled": {
             "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",

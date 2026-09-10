@@ -1614,7 +1614,7 @@
         },
         "line": {
           "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
-          "capped": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì mỗi engine cơ sở dữ liệu cho phép",
+          "capped": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì Bytebase có thể kiểm tra trên từng engine — trên một số engine, không truy vấn nào có thể được chứng minh là đọc, và không truy vấn nào chạy",
           "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
           "no-write": "Không thay đổi, triển khai hay xuất dữ liệu"
         },
@@ -2661,7 +2661,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở kết nối quản trị, duyệt SQL đã lưu của tất cả mọi người, hoặc gửi dữ liệu cho bên thứ ba."
+          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở kết nối quản trị, đọc lịch sử truy vấn của người khác, hoặc gửi dữ liệu cho bên thứ ba."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -2724,10 +2724,13 @@
         "loading": "Đang đọc chính sách truy cập…",
         "masking": {
           "badge": "Đã bỏ qua miễn trừ che dữ liệu",
+          "badge-disabled": "Bỏ qua miễn trừ che dữ liệu — MCP đang tắt",
+          "badge-unlicensed": "Bỏ qua miễn trừ che dữ liệu — chưa có bản quyền che dữ liệu",
           "description": "Nếu bật, dữ liệu đã che vẫn được che trong phiên MCP kể cả với người dùng có miễn trừ hoặc quyền bỏ che. Phạm vi phụ thuộc vào engine: ở nơi Bytebase không che, điều này không thay đổi gì. Console không bị ảnh hưởng.",
           "title": "Bỏ qua miễn trừ che dữ liệu",
           "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
         },
+        "masking-pending": "Thay đổi của bạn về miễn trừ che dữ liệu cũng được lưu cùng, và sẽ áp dụng khi MCP được bật lại.",
         "mode": {
           "disabled": {
             "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",

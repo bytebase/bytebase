@@ -4,8 +4,17 @@ import esES from "@/locales/es-ES.json";
 import jaJP from "@/locales/ja-JP.json";
 import viVN from "@/locales/vi-VN.json";
 import zhCN from "@/locales/zh-CN.json";
-import { MCP_CAPABILITY_ROWS, MCP_CAPABILITY_TIERS } from "./mcpCapabilityRows";
-import { MCP_CAPABILITY_CHOICES, MCP_MODE_PRESENTATION } from "./mcpPolicy";
+import {
+  MCP_CAPABILITY_ROWS,
+  MCP_CAPABILITY_TIERS,
+  mcpRowKey,
+} from "./mcpCapabilityRows";
+import {
+  isServingMode,
+  MCP_CAPABILITY_CHOICES,
+  MCP_MODE_PRESENTATION,
+  mcpModeKey,
+} from "./mcpPolicy";
 
 /**
  * The row table keys its copy by row id through a template literal, which
@@ -41,13 +50,13 @@ describe("capability row copy", () => {
       test("every row has a title and a details line", () => {
         for (const row of MCP_CAPABILITY_ROWS) {
           for (const field of ["title", "details"] as const) {
-            const value = read(
-              tree as Tree,
-              `settings.mcp.ladder.row.${row.id}.${field}`
-            );
+            // Through the same helper the product renders with, so this proves
+            // the shape the ladder asks for — not a shape retyped here.
+            const key = mcpRowKey(row, field);
+            const value = read(tree as Tree, key);
             expect(
               typeof value === "string" && value.length > 0,
-              `settings.mcp.ladder.row.${row.id}.${field} is missing in ${locale}`
+              `${key} is missing in ${locale}`
             ).toBe(true);
           }
         }
@@ -71,14 +80,12 @@ describe("capability row copy", () => {
       // The ladder renders one summary per serving mode; Disabled has no list
       // and takes the static line instead.
       test("every serving mode has a collapsed summary", () => {
-        for (const modeKey of ["read-only", "read-write"]) {
-          const value = read(
-            tree as Tree,
-            `settings.mcp.ladder.summary.${modeKey}`
-          );
+        for (const mode of MCP_CAPABILITY_CHOICES.filter(isServingMode)) {
+          const key = `settings.mcp.ladder.summary.${MCP_MODE_PRESENTATION[mode].key}`;
+          const value = read(tree as Tree, key);
           expect(
             typeof value === "string" && value.length > 0,
-            `settings.mcp.ladder.summary.${modeKey} is missing in ${locale}`
+            `${key} is missing in ${locale}`
           ).toBe(true);
         }
       });
@@ -89,7 +96,7 @@ describe("capability row copy", () => {
       test("every mode has a title, a caption and a Best for line", () => {
         for (const mode of MCP_CAPABILITY_CHOICES) {
           for (const part of ["title", "caption", "best-for"] as const) {
-            const key = `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[mode].key}.${part}`;
+            const key = mcpModeKey(mode, part);
             const value = read(tree as Tree, key);
             expect(
               typeof value === "string" && value.length > 0,
@@ -99,12 +106,26 @@ describe("capability row copy", () => {
         }
       });
 
-      // A stale row whose id was renamed leaves copy nothing renders.
-      test("no row copy is left behind by a renamed row", () => {
-        const rows = read(tree as Tree, "settings.mcp.ladder.row") as Tree;
-        expect(Object.keys(rows).sort()).toEqual(
-          MCP_CAPABILITY_ROWS.map((row) => row.id).sort()
-        );
+      // Copy for an id nobody renders any more is copy nothing keeps true.
+      // Every exempt subtree is checked, not only the rows.
+      test("no copy is left behind by a rename", () => {
+        const subtrees: [string, string[]][] = [
+          ["settings.mcp.ladder.row", MCP_CAPABILITY_ROWS.map((row) => row.id)],
+          ["settings.mcp.ladder.tier", [...MCP_CAPABILITY_TIERS]],
+          ["settings.mcp.ladder.stops", [...MCP_CAPABILITY_TIERS]],
+          [
+            "settings.mcp.ladder.summary",
+            MCP_CAPABILITY_CHOICES.filter(isServingMode).map(
+              (mode) => MCP_MODE_PRESENTATION[mode].key
+            ),
+          ],
+        ];
+        for (const [path, expected] of subtrees) {
+          const node = read(tree as Tree, path) as Tree;
+          expect(Object.keys(node).sort(), `${path} in ${locale}`).toEqual(
+            [...expected].sort()
+          );
+        }
       });
     });
   }

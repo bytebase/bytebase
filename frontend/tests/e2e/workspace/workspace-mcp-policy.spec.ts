@@ -26,18 +26,13 @@ let originalMCPSetting: Record<string, unknown>;
 
 // The eight row titles, in list order. They are the product's claim about what
 // a mode allows, and the same strings the consent page reuses.
-const READ_ROWS = [
-  "Read schemas and metadata",
-  "Read data by running queries",
-  "Read the change workflow",
-];
-const WRITE_ROWS = [
-  "Propose changes",
-  "Run rollouts and tasks",
-  "Run DML and DDL statements",
-  "Export query results",
-  "Manage database housekeeping",
-];
+const rowTitle = (id: keyof typeof COPY.ladder.row) => COPY.ladder.row[id].title;
+const READ_ROWS = (
+  ["read-schemas", "read-data", "read-workflow"] as const
+).map(rowTitle);
+const WRITE_ROWS = (
+  ["propose", "run-rollouts", "run-statements", "export", "manage"] as const
+).map(rowTitle);
 
 const READ_ONLY_SUMMARY = COPY.ladder.summary["read-only"];
 const READ_WRITE_SUMMARY = COPY.ladder.summary["read-write"];
@@ -159,6 +154,12 @@ test.describe("MCP access policy capability ladder", () => {
       page.getByText("MCP policy denials are recorded in the audit log.")
     ).toHaveCount(0);
     await expect(page.getByText(COPY.policy.description)).toBeVisible();
+    // Pinned as a literal, not read from the locale: this page's only audit
+    // disclosure moved into that description, so the claim has to survive a
+    // copy edit that keeps the sentence and drops the clause.
+    await expect(
+      page.getByText(/policy refusals are audited/)
+    ).toBeVisible();
 
     // D9: the alert's two sentences already existed elsewhere on the page, and
     // the one clause worth keeping moved into Connect a client.

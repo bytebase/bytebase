@@ -13,6 +13,13 @@ import {
 interface Line {
   readonly key: string;
   readonly icon: ReactNode;
+  /**
+   * What the mark means, for a reader who cannot see it. Allowed and refused
+   * are otherwise carried by a green check against a red cross — colour and
+   * glyph, both visual — on the screen where someone decides whether to hand an
+   * agent access.
+   */
+  readonly mark?: string;
   readonly text: string;
 }
 
@@ -52,6 +59,7 @@ export function MCPConsentCeiling({
     ...servedRows(mode).map((row) => ({
       key: row.id,
       icon: <Check className="size-4 text-success" />,
+      mark: t("settings.mcp.ladder.mark.allowed"),
       text: t(mcpRowKey(row, "title")),
     })),
     // One line for the whole unserved tier rather than five muted rows: this
@@ -63,6 +71,7 @@ export function MCPConsentCeiling({
           {
             key: "no-write",
             icon: <X className="size-4 text-error" />,
+            mark: t("settings.mcp.ladder.mark.refused"),
             text: t("oauth2.consent.mcp.line.no-write"),
           },
         ]),
@@ -103,7 +112,10 @@ export function MCPConsentCeiling({
         <ul className="text-sm text-main flex flex-col gap-2">
           {lines.map((line) => (
             <li key={line.key} className="flex items-start gap-2">
-              <span className="mt-0.5 shrink-0">{line.icon}</span>
+              <span className="mt-0.5 shrink-0" aria-hidden="true">
+                {line.icon}
+              </span>
+              {line.mark && <span className="sr-only">{line.mark}</span>}
               <span>{line.text}</span>
             </li>
           ))}

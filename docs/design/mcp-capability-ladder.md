@@ -67,16 +67,16 @@ the product.
 | Tier | Row | Sub-items shown | Classified methods the wording must cover |
 |---|---|---|---|
 | read | Read schemas and metadata | Schemas · Databases and instances · Projects and database groups · Catalogs, changelogs and revisions · SQL review configs · Your own session and workspace facts | 31 READ methods: `DatabaseService` reads, projects, instances, database groups, catalogs, changelogs, revisions, review configs, session facts |
-| read | Read data by running queries | Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Your own saved queries and sheets | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
+| read | Read data by running queries | Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Saved queries and sheets you have access to | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 16 READ methods: issue, plan, rollout and release reads |
 | — | *Read-only stops here* | | 56 methods |
 | write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create and delete releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
-| write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, where the engine allows it and the user may run it. On engines Bytebase does not gate per statement, queries stay read-only whatever the mode | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
+| write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
 | write | Manage database housekeeping | Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries | 14 WRITE methods: sync, `UpdateDatabase`, database groups, saved-query writes |
 | — | *Read-write stops here* | | 97 methods |
-| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, read other people's SQL, or send data to a third party. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
+| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, read anyone else's query history, or send data to a third party. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
@@ -325,15 +325,16 @@ reference.
 
 ## Copy
 
-All strings, so the change and the locale files have one source. Keys under
+The strings as decided, with the reasoning that picked them. The locale files are what ships and
+what to edit; this section is the record of why, and a copy edit is expected to update both. Keys
+under
 `settings.mcp.ladder.*` are new; the rest replace existing `settings.mcp.*` and
 `oauth2.consent.mcp.*` values.
 
 - Section description: "The most any MCP session may do here. Sessions are also capped by each
   user's permissions, and policy refusals are audited."
-- Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; statements
-  that write are refused, nothing is exported". Read-write: "Read schemas, data and the change
-  workflow; propose, run, export and manage".
+- Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported". Read-write: "Read schemas, data and the change
+  Read-write: "Read schemas, data and the change workflow; propose, run, export and manage".
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
   "Nothing is allowed; no MCP session can connect."
@@ -344,8 +345,14 @@ All strings, so the change and the locale files have one source. Keys under
   "making database changes through an AI agent, still capped by each user's own permissions".
 - Row titles and sub-items: the table above, verbatim.
 - Dividers: "Read-only stops here", "Read-write stops here".
-- Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, read other people's SQL, or send data to a third party." The six verbs are chosen to cover every denial reason in the classification, not to be short: three families —
-  READS_OTHER_USERS_SQL, OPENS_AN_ADMIN_CONNECTION and SENDS_DATA_TO_A_THIRD_PARTY — sat outside an earlier three-verb draft, leaving seven refused methods the line silently did not cover.
+- Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, read anyone else's query history, or send data to a third party."
+  The verbs cover every denial reason, and claim only what is refused **whatever the caller's
+  permissions**. That second rule cost three drafts. MCP's ceiling removes methods by class; it
+  never adds per-row privacy, so an ownership claim — "never read other people's SQL", then
+  "never browse everyone's saved SQL" — is false at whatever permission level makes it true in the
+  console: `GetSavedQuery` reaches SQL shared by a binding, and `searchScope` drops all scoping for
+  a caller holding project-wide `bb.savedQueries.get`. Query history is the one that qualifies,
+  because `SearchQueryHistories` pins the creator and nothing widens it.
 - Tier badges: "read", "write".
 - Masking toggle: the three sentences in D8, including the engine-coverage limit.
 - Footer, clean: "Applies to every running session's next request." Dirty: "{from} → {to} applies

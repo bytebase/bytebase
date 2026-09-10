@@ -20,9 +20,9 @@ describe("Popover", () => {
     await act(async () => {
       root.render(
         <Popover>
-          {/* The trigger renders the button itself, as every product call site
-              uses it. Nesting one inside it produced button-in-button, which
-              the parser resolves by closing the outer element early. */}
+          {/* The trigger renders the button itself. Nesting one inside it
+              produced button-in-button, which the parser resolves by closing
+              the outer element early. */}
           <PopoverTrigger>Open</PopoverTrigger>
           <PopoverContent>Popover body</PopoverContent>
         </Popover>

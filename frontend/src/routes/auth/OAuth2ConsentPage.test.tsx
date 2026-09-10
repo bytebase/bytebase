@@ -613,6 +613,20 @@ describe("OAuth2ConsentPage", () => {
     unmount();
   });
 
+  // D10 rests the card's truthfulness on this line: the row titles carry no
+  // caveats, so it is the only thing bounding the check marks.
+  test("both ceilings bound the list and disclose auditing", async () => {
+    for (const capability of [3, 4]) {
+      const { container, unmount } = await renderWithCeiling({
+        capability,
+        ignoreMaskingExemptions: false,
+      });
+      expect(container.textContent).toContain("oauth2.consent.mcp.line.capped");
+      expect(container.textContent).toContain("oauth2.consent.mcp.line.audit");
+      unmount();
+    }
+  });
+
   test("a read-write ceiling adds the write line and the caution", async () => {
     const { container, unmount } = await renderWithCeiling({
       capability: 4,

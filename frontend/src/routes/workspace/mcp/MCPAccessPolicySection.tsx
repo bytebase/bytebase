@@ -186,6 +186,20 @@ export function MCPAccessPolicySection() {
         })
       : t("settings.mcp.policy.tightening");
 
+  // A masking edit survives a pick that hides its control, and is written with
+  // the rest. Nothing else on the card would say so, so the footer does.
+  const maskingPending = maskingChanged && !maskingApplies;
+
+  // Whether the stored flag is doing anything, and if not, why not.
+  const maskingInEffect = isServingMode(storedMode) && dataMaskingAvailable;
+  // Resolved here rather than threaded as a key, so each stays a literal
+  // translation call the unused-key checker can trace.
+  const maskingBadgeText = !isServingMode(storedMode)
+    ? t("settings.mcp.policy.masking.badge-disabled")
+    : dataMaskingAvailable
+      ? t("settings.mcp.policy.masking.badge")
+      : t("settings.mcp.policy.masking.badge-unlicensed");
+
   // Three states share this slot and only the last renders a policy. Early
   // returns rather than a ternary chain, so each state is named where it is
   // decided and the card reads as the ordinary case it is.
@@ -224,17 +238,17 @@ export function MCPAccessPolicySection() {
                     mode: modeLabel(storedMode),
                   })}
                 />
-                {/* Withheld under Disabled for the same reason the toggle is:
-                    there are no sessions to restrict. NOT withheld on an
-                    unlicensed workspace, deliberately — the chip reports what
-                    is stored, the editor beside it says masking is unlicensed,
-                    and hiding it would leave a set flag with nowhere to see it.
-                    The consent page withholds its masking line in that case
-                    instead, because its reader sees neither the setting nor the
-                    caveat and would read it as "my data is covered". */}
-                {storedIgnoreMasking && isServingMode(storedMode) && (
-                  <Badge variant="secondary">
-                    {t("settings.mcp.policy.masking.badge")}
+                {/* Shown wherever the flag is stored, including the states
+                    where it does nothing — hiding it would leave a set flag
+                    with nowhere to see it, and a masking edit survives a pick
+                    that hides its control, so Disabled is a state it reaches.
+                    Each inert case says why it is inert: the reasons live in
+                    the editor and in the Disabled sentence, and the editor is a
+                    different branch behind bb.settings.set that a reader of
+                    this page may never reach. */}
+                {storedIgnoreMasking && (
+                  <Badge variant={maskingInEffect ? "secondary" : "default"}>
+                    {maskingBadgeText}
                   </Badge>
                 )}
               </div>
@@ -365,7 +379,14 @@ export function MCPAccessPolicySection() {
 
             <Separator />
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="textinfolabel">{footerSentence()}</p>
+              <div className="flex flex-col gap-1">
+                <p className="textinfolabel">{footerSentence()}</p>
+                {maskingPending && (
+                  <p className="textinfolabel">
+                    {t("settings.mcp.policy.masking-pending")}
+                  </p>
+                )}
+              </div>
               <div className="flex shrink-0 gap-x-2">
                 <Button
                   appearance="outline"

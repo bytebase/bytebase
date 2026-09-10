@@ -1614,7 +1614,7 @@
         },
         "line": {
           "audit": "Audited actions carry an MCP tag, and anything the policy refuses is recorded",
-          "capped": "Capped by your own Bytebase permissions, and by what each database engine allows",
+          "capped": "Capped by your own Bytebase permissions, and by what Bytebase can check on each engine — on some, no query can be shown to be a read, and none runs",
           "masking": "Your masking exemptions do not apply to this session",
           "no-write": "No changes, rollouts or exports"
         },
@@ -2661,7 +2661,7 @@
         "disabled": "Nothing is allowed; no MCP session can connect.",
         "floor": {
           "label": "Never, in any mode:",
-          "text": "approve issues, administer the workspace, handle credentials, open an admin connection, browse everyone's saved SQL, or send data to a third party."
+          "text": "approve issues, administer the workspace, handle credentials, open an admin connection, read anyone else's query history, or send data to a third party."
         },
         "heading": "{{mode}} allows",
         "hide-details": "Hide details",
@@ -2724,10 +2724,13 @@
         "loading": "Reading the access policy…",
         "masking": {
           "badge": "Masking exemptions ignored",
+          "badge-disabled": "Masking exemptions ignored — MCP is off",
+          "badge-unlicensed": "Masking exemptions ignored — masking not licensed",
           "description": "If enabled, masked data stays masked in MCP sessions even for users with exemptions or unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing. The console is unaffected.",
           "title": "Ignore masking exemptions",
           "unavailable": "Data masking is not licensed for this workspace, so nothing is masked whatever this is set to."
         },
+        "masking-pending": "Your change to masking exemptions is saved with it, and applies when MCP is enabled again.",
         "mode": {
           "disabled": {
             "best-for": "Best for: keeping MCP off until you are ready to turn it on.",

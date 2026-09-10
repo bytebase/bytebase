@@ -7,7 +7,9 @@ import {
 } from "@/types/proto-es/v1/setting_service_pb";
 import {
   isMCPMode,
+  isServingMode,
   MCP_CAPABILITY_CHOICES,
+  mcpModeKey,
   readConsentCeiling,
 } from "./mcpPolicy";
 
@@ -83,6 +85,38 @@ describe("readConsentCeiling", () => {
   test("a tier a newer release wrote is undisclosable", () => {
     expect(readConsentCeiling(settingWith(5))).toEqual({
       kind: "undisclosable",
+    });
+  });
+
+  // The predicate exists so "there is a session to describe" is answered once,
+  // including for the value a mode variable holds before anyone has picked:
+  // an unreadable stored ceiling leaves the editor with none.
+  describe("isServingMode", () => {
+    test("admits exactly the ceilings that serve a session", () => {
+      expect(isServingMode(MCPSetting_Capability.READ_ONLY)).toBe(true);
+      expect(isServingMode(MCPSetting_Capability.READ_WRITE)).toBe(true);
+      expect(isServingMode(MCPSetting_Capability.DISABLED)).toBe(false);
+    });
+
+    test("refuses the values that are not a ceiling at all", () => {
+      expect(isServingMode(undefined)).toBe(false);
+      expect(isServingMode(MCPSetting_Capability.CAPABILITY_UNSPECIFIED)).toBe(
+        false
+      );
+      // The reserved 2, and anything a newer release writes.
+      expect(isServingMode(2 as MCPSetting_Capability)).toBe(false);
+      expect(isServingMode(99 as MCPSetting_Capability)).toBe(false);
+    });
+  });
+
+  describe("mcpModeKey", () => {
+    test("builds the locale key each mode's copy is stored under", () => {
+      expect(mcpModeKey(MCPSetting_Capability.READ_WRITE, "title")).toBe(
+        "settings.mcp.policy.mode.read-write.title"
+      );
+      expect(mcpModeKey(MCPSetting_Capability.DISABLED, "best-for")).toBe(
+        "settings.mcp.policy.mode.disabled.best-for"
+      );
     });
   });
 });
