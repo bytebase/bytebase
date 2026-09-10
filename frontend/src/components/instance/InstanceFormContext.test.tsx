@@ -12,6 +12,7 @@ import {
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
+  SyncDatabasesSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -28,7 +29,29 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   createInstance: vi.fn(),
   isSaaSMode: false,
+  listInstanceDatabases: vi.fn(async () => ({
+    databases: ["app", "analytics"],
+  })),
 }));
+
+vi.mock("@/components/EngineIcon", () => ({ EngineIcon: () => null }));
+vi.mock("@/components/EnvironmentSelect", () => ({
+  EnvironmentSelect: () => null,
+}));
+vi.mock("@/components/FeatureBadge", () => ({ FeatureBadge: () => null }));
+vi.mock("@/components/LabelListEditor", () => ({
+  LabelListEditor: () => null,
+}));
+vi.mock("@/components/LearnMoreLink", () => ({ LearnMoreLink: () => null }));
+vi.mock("@/components/ResourceIdField", () => ({
+  ResourceIdField: () => null,
+}));
+vi.mock("@/components/RouterLink", () => ({ RouterLink: () => null }));
+vi.mock("./DataSourceForm", () => ({
+  DataSourceForm: () => null,
+  RedisSentinelFields: () => null,
+}));
+vi.mock("./DataSourceSection", () => ({ DataSourceSection: () => null }));
 
 vi.mock("./permission", () => ({
   hasInstancePermission: mocks.hasInstancePermission,
@@ -54,6 +77,7 @@ vi.mock(
 );
 
 vi.mock("@/types", () => ({
+  DATASOURCE_ADMIN_USER_NAME: "bytebase",
   UNKNOWN_INSTANCE_NAME: "instances/-",
   unknownDataSource: () => ({
     id: "admin",
@@ -78,6 +102,7 @@ vi.mock("@/stores/app", () => {
   const appState = () => ({
     createDataSource: vi.fn(),
     createInstance: mocks.createInstance,
+    listInstanceDatabases: mocks.listInstanceDatabases,
     updateDataSource: vi.fn(),
     getEnvironmentByName: (name: string) => ({ name }),
     hasInstanceFeature: () => false,
@@ -227,6 +252,159 @@ describe("InstanceFormProvider", () => {
     mocks.createInstance.mockResolvedValue(create(InstanceSchema, {}));
     mockEnvironmentList = [];
     vi.useRealTimers();
+  });
+
+  test.each([0, 1])(
+    "keeps the database list mounted when toggling database %i",
+    async (index) => {
+      const { SyncDatabases } = await import("./InstanceFormBody");
+      const Selector = () => {
+        const { basicInfo, setBasicInfo } = useInstanceFormContext();
+        return (
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={basicInfo.syncDatabases}
+            onSyncDatabasesChange={(databases, syncAll) => {
+              setBasicInfo((prev) => ({
+                ...prev,
+                syncDatabases: syncAll
+                  ? undefined
+                  : create(SyncDatabasesSchema, { databases }),
+              }));
+            }}
+          />
+        );
+      };
+      vi.useFakeTimers();
+      const harness = renderIntoContainer();
+      try {
+        await harness.render(
+          <InstanceFormProvider
+            instance={create(InstanceSchema, {
+              name: "instances/prod",
+              engine: Engine.POSTGRES,
+              syncDatabases: { databases: ["app"] },
+            })}
+          >
+            <Probe />
+            <Selector />
+          </InstanceFormProvider>
+        );
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(300);
+        });
+        const checkbox =
+          harness.container.querySelectorAll<HTMLElement>('[role="checkbox"]')[
+            index
+          ];
+        expect(checkbox).toBeDefined();
+        mocks.listInstanceDatabases.mockClear();
+        mocks.listInstanceDatabases.mockImplementation(
+          () => new Promise(() => {})
+        );
+        await act(async () => {
+          checkbox.click();
+        });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(300);
+        });
+
+        expect(harness.container.contains(checkbox)).toBe(true);
+        expect(harness.container.textContent).not.toContain("common.loading");
+        expect(mocks.listInstanceDatabases).not.toHaveBeenCalled();
+        expect(
+          harness.container.firstElementChild?.getAttribute(
+            "data-value-changed"
+          )
+        ).toBe("true");
+
+        await act(async () => {
+          checkbox.click();
+        });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(300);
+        });
+        expect(harness.container.contains(checkbox)).toBe(true);
+        expect(mocks.listInstanceDatabases).not.toHaveBeenCalled();
+        expect(
+          harness.container.firstElementChild?.getAttribute(
+            "data-value-changed"
+          )
+        ).toBe("false");
+      } finally {
+        harness.unmount();
+        vi.useRealTimers();
+        mocks.listInstanceDatabases.mockResolvedValue({
+          databases: ["app", "analytics"],
+        });
+      }
+    }
+  );
+
+  test("refreshes database previews when the create connection changes", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    const CreateSelector = () => {
+      const { setDataSourceEditState } = useInstanceFormContext();
+      return (
+        <>
+          <button
+            type="button"
+            data-testid="change-host"
+            onClick={() => {
+              setDataSourceEditState((prev) => ({
+                ...prev,
+                dataSources: prev.dataSources.map((ds) => ({
+                  ...ds,
+                  host: "new-host",
+                })),
+              }));
+            }}
+          >
+            Change host
+          </button>
+          <SyncDatabases
+            isCreating
+            showLabel={false}
+            allowEdit
+            syncDatabases={create(SyncDatabasesSchema, {})}
+            onSyncDatabasesChange={() => {}}
+          />
+        </>
+      );
+    };
+    vi.useFakeTimers();
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <CreateSelector />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      mocks.listInstanceDatabases.mockClear();
+      await act(async () => {
+        harness.container
+          .querySelector<HTMLButtonElement>('[data-testid="change-host"]')
+          ?.click();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      expect(mocks.listInstanceDatabases).toHaveBeenCalledTimes(1);
+      expect(mocks.listInstanceDatabases).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          dataSources: [expect.objectContaining({ host: "new-host" })],
+        })
+      );
+    } finally {
+      harness.unmount();
+      vi.useRealTimers();
+    }
   });
 
   test("uses project ownership for create names and permissions", async () => {

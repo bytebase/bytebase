@@ -471,7 +471,7 @@ function ScanIntervalInput({
 
 const MAX_VISIBLE_DATABASES = 100;
 
-function SyncDatabases({
+export function SyncDatabases({
   isCreating: isCreatingProp,
   showLabel,
   allowEdit,
@@ -524,11 +524,15 @@ function SyncDatabases({
     onSyncDatabasesChangeRef.current(syncAll ? [] : [...selectedSet], syncAll);
   }, [syncAll, selectedSet]);
 
+  const databaseListInstance = isCreatingProp
+    ? pendingCreateInstance
+    : instance;
+
   useEffect(() => {
     if (syncAll) return;
     let cancelled = false;
     const fetchDatabases = async () => {
-      const inst = isCreatingProp ? pendingCreateInstance : instance;
+      const inst = databaseListInstance;
       if (!inst) return;
       setLoading(true);
       try {
@@ -546,7 +550,7 @@ function SyncDatabases({
     return () => {
       cancelled = true;
     };
-  }, [syncAll, isCreatingProp, pendingCreateInstance, instance]);
+  }, [syncAll, isCreatingProp, databaseListInstance]);
 
   useEffect(() => {
     setVisibleDatabaseCount(MAX_VISIBLE_DATABASES);

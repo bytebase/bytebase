@@ -233,17 +233,6 @@ describe("InstanceFormBody", () => {
     );
   });
 
-  test("refetches database previews when pending create instance changes", () => {
-    const source = readFileSync(
-      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
-      "utf-8"
-    );
-
-    expect(source).toContain(
-      "}, [syncAll, isCreatingProp, pendingCreateInstance, instance]);"
-    );
-  });
-
   test("distinguishes sync-all from empty selected database list", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
