@@ -26,7 +26,6 @@ export function ActionBar() {
           <Button
             appearance="secondary"
             size="sm"
-            className="h-7 px-1.5"
             onClick={() => setShowHistoryDialog(true)}
             aria-label={t("plugin.ai.conversation.view-history-conversations")}
           >
@@ -40,7 +39,6 @@ export function ActionBar() {
           <Button
             appearance="secondary"
             size="sm"
-            className="h-7 px-1.5"
             onClick={() => events.emit("new-conversation", { input: "" })}
             aria-label={t("plugin.ai.conversation.new-conversation")}
           >

@@ -91,6 +91,42 @@ const isolatedColorPaths = [
   "src/routes/workspace/profile/AccountSettingsPage.tsx",
   "src/routes/workspace/two-factor/RecoveryCodesView.tsx",
 ];
+const buttonSizeOnlyPaths = [
+  "src/components/auth/UserPasswordFields.tsx",
+  "src/components/instance/InstanceDashboard.tsx",
+  "src/modules/ai/components/ActionBar.tsx",
+  "src/modules/schema-editor/Panels/IndexesEditor/IndexesEditor.tsx",
+  "src/modules/schema-editor/Panels/PartitionsEditor/PartitionsEditor.tsx",
+  "src/modules/schema-editor/Panels/TableColumnEditor/TableColumnEditor.tsx",
+  "src/modules/schema-editor/Panels/TableList/TableList.tsx",
+  "src/modules/sql-editor/components/AccessGrantItem.tsx",
+  "src/modules/sql-editor/components/AdminModeButton.tsx",
+  "src/modules/sql-editor/components/AsidePanel/ActionBarTabItem.tsx",
+  "src/modules/sql-editor/components/ConnectionChooserButton.tsx",
+  "src/modules/sql-editor/components/ConnectionPanel.tsx",
+  "src/modules/sql-editor/components/EditorAction.tsx",
+  "src/modules/sql-editor/components/HistoryPane.tsx",
+  "src/modules/sql-editor/components/Panels/common/CodeViewer.tsx",
+  "src/modules/sql-editor/components/Panels/ExternalTablesPanel/ExternalTablesPanel.tsx",
+  "src/modules/sql-editor/components/Panels/FunctionsPanel/FunctionsPanel.tsx",
+  "src/modules/sql-editor/components/Panels/PackagesPanel/PackagesPanel.tsx",
+  "src/modules/sql-editor/components/Panels/ProceduresPanel/ProceduresPanel.tsx",
+  "src/modules/sql-editor/components/Panels/TablesPanel/TableDetail.tsx",
+  "src/modules/sql-editor/components/Panels/TriggersPanel/TriggersPanel.tsx",
+  "src/modules/sql-editor/components/Panels/ViewsPanel/ViewDetail.tsx",
+  "src/modules/sql-editor/components/ResultView/BinaryFormatButton.tsx",
+  "src/modules/sql-editor/components/ResultView/DataExplorerResultView.tsx",
+  "src/modules/sql-editor/components/ResultView/DetailPanel.tsx",
+  "src/modules/sql-editor/components/ResultView/DocumentJSONView.tsx",
+  "src/modules/sql-editor/components/ResultView/SingleResultView.tsx",
+  "src/modules/sql-editor/components/ResultView/TableCell.tsx",
+  "src/modules/sql-editor/components/ResultView/TextSearchControl.tsx",
+  "src/modules/sql-editor/components/ResultView/VirtualDataBlock.tsx",
+  "src/modules/sql-editor/components/SchemaPane/FlatTableList.tsx",
+  "src/modules/sql-editor/components/TabItem.tsx",
+  "src/routes/workspace/general/sql-editor-theme/ThemePreview.tsx",
+  "src/routes/workspace/PurchaseSection.tsx",
+];
 
 describe("check-ui-guideline", () => {
   test("has no remaining micro-layout legacy debt", () => {
@@ -110,6 +146,17 @@ describe("check-ui-guideline", () => {
         readFileSync(join(import.meta.dirname, "..", path), "utf8"),
         path
       ).filter((violation) => violation.rule === "no-raw-color")
+    );
+
+    expect(violations).toEqual([]);
+  });
+
+  test("has no remaining isolated Button-size legacy debt", () => {
+    const violations = buttonSizeOnlyPaths.flatMap((path) =>
+      scanSource(
+        readFileSync(join(import.meta.dirname, "..", path), "utf8"),
+        path
+      ).filter((violation) => violation.rule === "no-button-dimension-override")
     );
 
     expect(violations).toEqual([]);

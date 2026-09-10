@@ -62,7 +62,8 @@ export function ExternalTablesPanel() {
           <div className="w-full h-9 flex flex-row gap-x-2 justify-between items-center">
             <Button
               appearance="secondary"
-              className="h-8 px-1 text-sm"
+              size="md"
+              className="px-1"
               onClick={() => clearDetail()}
             >
               <ChevronLeft className="size-5" />

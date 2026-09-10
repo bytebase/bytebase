@@ -209,8 +209,8 @@ export function HistoryPane() {
         <div className="flex items-center gap-x-1">
           <Button
             appearance="secondary"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-control-bg-hover"
+            size="xs"
+            className="w-6 p-0 hover:bg-control-bg-hover"
             data-copy-link-btn
             onClick={(e) => {
               e.stopPropagation();
@@ -225,8 +225,8 @@ export function HistoryPane() {
           </Button>
           <Button
             appearance="secondary"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-control-bg-hover"
+            size="xs"
+            className="w-6 p-0 hover:bg-control-bg-hover"
             data-copy-btn
             onClick={(e) => {
               e.stopPropagation();
@@ -268,8 +268,8 @@ export function HistoryPane() {
               </div>
               <Button
                 appearance="secondary"
-                size="sm"
-                className="h-5 w-5 p-0 text-accent hover:bg-accent/10 hover:text-accent"
+                size="xs"
+                className="w-6 p-0 text-accent hover:bg-accent/10 hover:text-accent"
                 data-dismiss-linked-history
                 onClick={() => setLinkedQueryHistory(undefined)}
                 aria-label={t("common.close")}

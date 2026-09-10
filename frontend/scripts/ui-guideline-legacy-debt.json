@@ -127,12 +127,6 @@
       "count": 1
     },
     {
-      "path": "src/components/auth/UserPasswordFields.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 2
-    },
-    {
       "path": "src/components/BannersWrapper.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -484,12 +478,6 @@
       "path": "src/components/instance/InfoPanel.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/InstanceDashboard.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-5",
       "count": 1
     },
     {
@@ -847,12 +835,6 @@
       "count": 1
     },
     {
-      "path": "src/modules/ai/components/ActionBar.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-7",
-      "count": 2
-    },
-    {
       "path": "src/modules/ai/components/ChatView/ChatView.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -961,18 +943,6 @@
       "count": 1
     },
     {
-      "path": "src/modules/schema-editor/Panels/IndexesEditor/IndexesEditor.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-editor/Panels/PartitionsEditor/PartitionsEditor.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 2
-    },
-    {
       "path": "src/modules/schema-editor/Panels/PreviewPane.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -985,42 +955,12 @@
       "count": 1
     },
     {
-      "path": "src/modules/schema-editor/Panels/TableColumnEditor/TableColumnEditor.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 2
-    },
-    {
-      "path": "src/modules/schema-editor/Panels/TableList/TableList.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 2
-    },
-    {
       "path": "src/modules/schema-editor/TabsContainer.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
     },
     {
-      "path": "src/modules/sql-editor/components/AccessGrantItem.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-6",
-      "count": 2
-    },
-    {
-      "path": "src/modules/sql-editor/components/AdminModeButton.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-7",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/AsidePanel/ActionBarTabItem.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
       "path": "src/modules/sql-editor/components/ConnectChooser.tsx",
       "rule": "no-button-dimension-override",
       "token": "h-7",
@@ -1030,12 +970,6 @@
       "path": "src/modules/sql-editor/components/ConnectChooser.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ConnectionChooserButton.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
       "count": 1
     },
     {
@@ -1051,40 +985,10 @@
       "count": 1
     },
     {
-      "path": "src/modules/sql-editor/components/ConnectionPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/EditorAction.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-7",
-      "count": 2
-    },
-    {
-      "path": "src/modules/sql-editor/components/EditorAction.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
       "path": "src/modules/sql-editor/components/FolderForm.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/HistoryPane.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-5",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/HistoryPane.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-6",
-      "count": 2
     },
     {
       "path": "src/modules/sql-editor/components/HistorySearchInput.tsx",
@@ -1099,60 +1003,12 @@
       "count": 1
     },
     {
-      "path": "src/modules/sql-editor/components/Panels/common/CodeViewer.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
       "path": "src/modules/sql-editor/components/Panels/common/PanelSearchBox.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
     },
     {
-      "path": "src/modules/sql-editor/components/Panels/ExternalTablesPanel/ExternalTablesPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/Panels/FunctionsPanel/FunctionsPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/Panels/PackagesPanel/PackagesPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/Panels/ProceduresPanel/ProceduresPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/Panels/TablesPanel/TableDetail.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 2
-    },
-    {
-      "path": "src/modules/sql-editor/components/Panels/TriggersPanel/TriggersPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/Panels/ViewsPanel/ViewDetail.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-8",
-      "count": 1
-    },
-    {
       "path": "src/modules/sql-editor/components/ResultPanel/BatchQuerySelect.tsx",
       "rule": "no-button-dimension-override",
       "token": "h-7",
@@ -1162,42 +1018,6 @@
       "path": "src/modules/sql-editor/components/ResultPanel/BatchQuerySelect.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/BinaryFormatButton.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-5",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/DataExplorerResultView.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/DetailPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-6",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/DetailPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-7",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/DetailPanel.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/DocumentJSONView.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-6",
       "count": 1
     },
     {
@@ -1213,42 +1033,6 @@
       "count": 1
     },
     {
-      "path": "src/modules/sql-editor/components/ResultView/SingleResultView.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-7",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/SingleResultView.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/SingleResultView.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-9",
-      "count": 2
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/TableCell.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-6",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/TextSearchControl.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 3
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/VirtualDataBlock.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-7",
-      "count": 1
-    },
-    {
       "path": "src/modules/sql-editor/components/ResultView/VirtualDataTable.tsx",
       "rule": "no-button-dimension-override",
       "token": "size-6",
@@ -1258,12 +1042,6 @@
       "path": "src/modules/sql-editor/components/ResultView/VirtualDataTable.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/SchemaPane/FlatTableList.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-5",
       "count": 1
     },
     {
@@ -1312,12 +1090,6 @@
       "path": "src/modules/sql-editor/components/StandardPanel/SQLUploadButton.tsx",
       "rule": "no-native-control",
       "token": "input",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/TabItem.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "size-10",
       "count": 1
     },
     {
@@ -2113,12 +1885,6 @@
       "count": 2
     },
     {
-      "path": "src/routes/workspace/general/sql-editor-theme/ThemePreview.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-7",
-      "count": 4
-    },
-    {
       "path": "src/routes/workspace/GlobalMaskingPage.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -2255,12 +2021,6 @@
       "rule": "no-raw-color",
       "token": "text-red-400",
       "count": 1
-    },
-    {
-      "path": "src/routes/workspace/PurchaseSection.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-full",
-      "count": 2
     },
     {
       "path": "src/routes/workspace/RolesPage.tsx",

@@ -18,8 +18,9 @@ export function ConnectionChooserButton({
     <Button
       type="button"
       appearance="outline"
+      size="sm"
       className={cn(
-        "h-8 justify-end gap-1 px-2",
+        "justify-end gap-1 px-2",
         "border-accent text-accent hover:bg-accent/5 focus:bg-accent/5",
         // Joined group: square inner edges, only the group's outer corners
         // round, and inner borders collapse so adjacent segments share one.

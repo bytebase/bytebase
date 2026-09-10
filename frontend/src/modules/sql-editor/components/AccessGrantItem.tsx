@@ -194,9 +194,8 @@ export function AccessGrantItem({
           <div>
             {isActive && (
               <Button
-                size="sm"
+                size="xs"
                 variant="default"
-                className="h-6 text-xs"
                 data-run-btn
                 onClick={(e) => {
                   e.stopPropagation();
@@ -211,8 +210,7 @@ export function AccessGrantItem({
             {isRejectedOrCanceled && (
               <Button
                 appearance="secondary"
-                size="sm"
-                className="h-6 text-xs"
+                size="xs"
                 data-re-request-btn
                 onClick={(e) => {
                   e.stopPropagation();

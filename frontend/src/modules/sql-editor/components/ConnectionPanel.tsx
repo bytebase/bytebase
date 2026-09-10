@@ -75,7 +75,7 @@ export function ConnectionPanel() {
                   <Button
                     appearance="secondary"
                     size="sm"
-                    className={cn("size-7 p-1")}
+                    className={cn("w-7 p-1")}
                     aria-label={t("sql-editor.manage-connections")}
                     // Match Vue: just navigate. The route change unmounts
                     // the SQL editor; pre-closing the drawer added an

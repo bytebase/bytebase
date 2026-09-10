@@ -23,7 +23,7 @@ type AdminModeButtonProps = {
  * in SAVED_QUERY mode. Clicking switches the tab to ADMIN mode.
  */
 export function AdminModeButton({
-  size = "default",
+  size = "sm",
   hideText = false,
   onEnter,
 }: AdminModeButtonProps) {
@@ -54,7 +54,7 @@ export function AdminModeButton({
         disabled={isDisconnected}
         onClick={handleClick}
         className={cn(
-          "h-7 px-1.5 gap-1",
+          "gap-1",
           "border-warning text-warning hover:bg-warning/5 hover:text-warning"
         )}
       >

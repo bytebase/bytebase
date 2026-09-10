@@ -549,8 +549,8 @@ function SingleResultViewInner({
                   onValueChange={setDocumentViewMode}
                   ariaLabel={t("sql-editor.result-view-mode")}
                   appearance="soft"
-                  className="h-7 flex-nowrap"
-                  size="xs"
+                  className="flex-nowrap"
+                  size="sm"
                 />
               ) : supportsTableViewToggle ? (
                 <div className="flex items-center gap-x-1">
@@ -575,7 +575,7 @@ function SingleResultViewInner({
                 <Button
                   size="sm"
                   appearance="outline"
-                  className="h-7 px-2 text-control border-control-border hover:bg-control-bg-hover"
+                  className="px-2 text-control border-control-border hover:bg-control-bg-hover"
                   onClick={handleCopyJSON}
                 >
                   <CopyIcon className="size-4" />
@@ -677,7 +677,7 @@ function SingleResultViewInner({
                     <Button
                       size="sm"
                       appearance="secondary"
-                      className="size-7 p-0"
+                      className="w-7 p-0"
                       onClick={clearSearchCandidate}
                     >
                       <XIcon className="size-4" />
@@ -689,9 +689,9 @@ function SingleResultViewInner({
                   <Tooltip content={t("sql-editor.scroll-to-top")}>
                     <div className="rounded-full shadow bg-background">
                       <Button
-                        size="sm"
+                        size="md"
                         appearance="secondary"
-                        className="size-9 p-0 rounded-full"
+                        className="w-9 p-0 rounded-full"
                         onClick={() => scrollToRow(0)}
                       >
                         <ArrowUpIcon className="size-4" />
@@ -701,9 +701,9 @@ function SingleResultViewInner({
                   <Tooltip content={t("sql-editor.scroll-to-bottom")}>
                     <div className="rounded-full shadow bg-background">
                       <Button
-                        size="sm"
+                        size="md"
                         appearance="secondary"
-                        className="size-9 p-0 rounded-full"
+                        className="w-9 p-0 rounded-full"
                         onClick={() => scrollToRow(rows.length - 1)}
                       >
                         <ArrowDownIcon className="size-4" />

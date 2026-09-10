@@ -49,7 +49,7 @@ export function ActionBarTabItem({ action, disabled }: Props) {
         disabled={disabled}
         onClick={handleClick}
         className={cn(
-          "h-8 w-9 px-1 flex items-center justify-center",
+          "w-9 px-1 flex items-center justify-center",
           active && "bg-accent/10 text-accent hover:bg-accent/15"
         )}
       >
