@@ -35,7 +35,7 @@ func (*DisallowFuncAndCalculationsAdvisor) Check(_ context.Context, checkCtx adv
 		rule.dbMetadata = model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MSSQL, checkCtx.IsObjectCaseSensitive)
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type disallowFuncAndCalcOmniRule struct {

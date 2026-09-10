@@ -4,8 +4,7 @@ import "github.com/bytebase/omni/mssql/ast"
 
 // collectOmniPredicateColumnRefs walks an omni expression tree rooted at a
 // boolean context (WHERE, HAVING, JOIN ON) and returns every *ast.ColumnRef
-// reachable through predicate paths. It mirrors the traversal performed by
-// the ANTLR-based helpers in query_span_predicate.go.
+// reachable through predicate paths.
 //
 // Scope it covers:
 //   - direct column references in the expression

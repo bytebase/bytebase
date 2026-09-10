@@ -28,9 +28,9 @@ func (a *OmniAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ParsePLSQLOmni parses SQL using omni's parser and returns an ast.List.
+// ParsePLSQL parses SQL using omni's parser and returns an ast.List.
 // This is the recommended entry point for new Oracle code that needs omni AST nodes.
-func ParsePLSQLOmni(sql string) (*ast.List, error) {
+func ParsePLSQL(sql string) (*ast.List, error) {
 	statements, err := SplitSQL(sql)
 	if err != nil {
 		return nil, err

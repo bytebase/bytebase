@@ -484,7 +484,7 @@ func omniCharLength(dt *omniast.DataType) int {
 // defensive alias even though omni pre-normalizes INTEGER → INT per
 // cumulative #7). Cumulative #20 documents the TINYINT/BOOLEAN split.
 //
-// NOTE: this diverges from `mysql/utils_omni.go`'s `omniIsIntegerType`,
+// NOTE: this diverges from `mysql/utils.go`'s `omniIsIntegerType`,
 // which currently omits "BOOLEAN". Pre-omni mysql ANTLR did not treat
 // BOOL as TINYINT — that's a long-standing mysql behavior gap, NOT a
 // regression introduced by mysql's omni migration. Out of scope here.
@@ -527,7 +527,7 @@ func omniConstraintAdviceName(c *omniast.Constraint) string {
 
 // omniDataTypeNameCompact returns a compact, lowercase type-name string
 // for use in advice content + allowlist comparisons. Mirrors the mysql
-// helper of the same name (mysql/utils_omni.go). Length/scale info is
+// helper of the same name (mysql/utils.go). Length/scale info is
 // intentionally omitted — pingcap's `tidbparser.TypeString` and the
 // canonical fixture rendering both elide it (e.g. `varchar(5)` → "varchar").
 func omniDataTypeNameCompact(dt *omniast.DataType) string {

@@ -35,7 +35,7 @@ func (*NamingIdentifierNoKeywordAdvisor) Check(_ context.Context, checkCtx advis
 
 	rule := NewNamingIdentifierNoKeywordRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // NamingIdentifierNoKeywordRule is the rule implementation for identifier naming convention without keyword.

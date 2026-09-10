@@ -115,7 +115,7 @@ func TestFileNameAllocatorReservesGeneratedSuffix(t *testing.T) {
 // yields one entry per file.
 //
 // Shared helpers (liveServers, loadRealWorld, dumpSDL, statementCount, realWorldSchemas,
-// objectCounts) are declared in sdl_migration_omni_test.go.
+// objectCounts) are declared in sdl_migration_test.go.
 
 // concatMultiFile reproduces the declarative rollout concatenation from
 // action/command/file.go: sort files by path lexically, then join contents with a single

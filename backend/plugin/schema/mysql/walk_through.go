@@ -19,12 +19,12 @@ import (
 )
 
 func init() {
-	schema.RegisterWalkThroughWithContext(storepb.Engine_MYSQL, WalkThroughOmni)
-	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, WalkThroughOmni)
-	schema.RegisterWalkThroughWithContext(storepb.Engine_OCEANBASE, WalkThroughOmni)
+	schema.RegisterWalkThroughWithContext(storepb.Engine_MYSQL, WalkThroughWithContext)
+	schema.RegisterWalkThroughWithContext(storepb.Engine_MARIADB, WalkThroughWithContext)
+	schema.RegisterWalkThroughWithContext(storepb.Engine_OCEANBASE, WalkThroughWithContext)
 }
 
-// WalkThroughOmni performs DDL simulation using the omni MySQL catalog.
+// WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
 // Flow:
 //  1. Create the catalog and select the target database.
 //  2. loadWalkThroughCatalog: install each object individually with per-object
@@ -33,7 +33,7 @@ func init() {
 //  3. catalog.Exec(userSQL) → execute user DDL
 //  4. Map errors → *storepb.Advice
 //  5. Convert updated catalog → DatabaseMetadata (for downstream rules)
-func WalkThroughOmni(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
+func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
 	if ctx.RawSQL == "" {
 		return nil
 	}

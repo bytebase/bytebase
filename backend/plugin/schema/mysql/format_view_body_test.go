@@ -272,7 +272,7 @@ func TestMultiFileViewSDLPretty(t *testing.T) {
 }
 
 // TestGetDatabaseMetadataParsesPrettyView proves the SDL→metadata parsers accept the
-// pretty-printed view statement: the omni catalog path (GetDatabaseMetadataOmni, the
+// pretty-printed view statement: the omni catalog path (GetDatabaseMetadata, the
 // registered production entry) parses a writeViewSDL-produced multi-line
 // CREATE OR REPLACE VIEW.
 func TestGetDatabaseMetadataParsesPrettyView(t *testing.T) {
@@ -286,7 +286,7 @@ func TestGetDatabaseMetadataParsesPrettyView(t *testing.T) {
 	require.Contains(t, sdl, "AS\nselect\n  `t1`.`a` AS `a`,", "fixture must actually be pretty-printed")
 
 	t.Run("omni", func(t *testing.T) {
-		meta, err := GetDatabaseMetadataOmni(sdl)
+		meta, err := GetDatabaseMetadata(sdl)
 		require.NoError(t, err)
 		require.Len(t, meta.Schemas, 1)
 		require.Len(t, meta.Schemas[0].Views, 1)

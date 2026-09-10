@@ -530,8 +530,8 @@ CREATE TABLE json_features (
 			require.NoError(t, err)
 
 			// Get metadata from the omni parser, the function registered for
-			// the production diff path (see get_database_metadata_omni.go).
-			parsedMetadata, err := GetDatabaseMetadataOmni(tc.ddl)
+			// the production diff path (see get_database_metadata.go).
+			parsedMetadata, err := GetDatabaseMetadata(tc.ddl)
 			require.NoError(t, err)
 
 			// Compare metadata

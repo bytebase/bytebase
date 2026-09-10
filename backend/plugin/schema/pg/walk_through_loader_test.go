@@ -172,9 +172,9 @@ func TestClone_SearchPath(t *testing.T) {
 	require.True(t, foundAliceTable, "diff should show alice.my_table as added")
 }
 
-// TestClone_WalkThroughOmniFunction tests the actual WalkThroughOmni function
+// TestClone_WalkThroughFunction tests the actual WalkThroughWithContext function
 // using Clone (if enabled) produces correct FinalMetadata.
-func TestClone_WalkThroughOmniFunction(t *testing.T) {
+func TestClone_WalkThroughFunction(t *testing.T) {
 	meta := &storepb.DatabaseSchemaMetadata{
 		Name: "postgres",
 		Schemas: []*storepb.SchemaMetadata{
@@ -201,7 +201,7 @@ func TestClone_WalkThroughOmniFunction(t *testing.T) {
 		RawSQL: `CREATE TABLE public.new_table (id int PRIMARY KEY, val text);`,
 	}
 
-	advice := WalkThroughOmni(ctx, state, nil)
+	advice := WalkThroughWithContext(ctx, state, nil)
 	require.Nil(t, advice, "walk-through should succeed")
 
 	// Check FinalMetadata has the new table

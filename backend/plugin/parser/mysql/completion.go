@@ -623,7 +623,7 @@ func (c *Completer) extractCTETables(pos int) []*base.VirtualTableReference {
 		} else {
 			wrappedSQL = followingText + suffix
 		}
-		parsed, err := ParseMySQLOmni(wrappedSQL)
+		parsed, err := ParseMySQL(wrappedSQL)
 		if err != nil || parsed == nil || len(parsed.Items) == 0 {
 			continue
 		}
@@ -956,7 +956,7 @@ func (c *Completer) parseTableReferences(fromClause string) {
 		} else {
 			wrappedSQL = prefix + fromClause
 		}
-		parsed, err := ParseMySQLOmni(wrappedSQL)
+		parsed, err := ParseMySQL(wrappedSQL)
 		if err != nil || parsed == nil || len(parsed.Items) == 0 {
 			continue
 		}

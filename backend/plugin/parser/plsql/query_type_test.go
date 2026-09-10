@@ -49,7 +49,7 @@ func TestOracleOmniQueryTypeDDLClassification(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			list, err := ParsePLSQLOmni(test.statement)
+			list, err := ParsePLSQL(test.statement)
 			require.NoError(t, err)
 			require.Len(t, list.Items, 1)
 			raw, ok := list.Items[0].(*oracleast.RawStmt)

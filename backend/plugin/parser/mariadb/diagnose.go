@@ -34,7 +34,7 @@ func parseMariaDBStatement(statement string) *base.SyntaxError {
 		statement += ";"
 	}
 
-	_, err := ParseMariaDBOmni(statement)
+	_, err := ParseMariaDB(statement)
 	if err == nil {
 		return nil
 	}

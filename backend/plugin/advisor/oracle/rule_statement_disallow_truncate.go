@@ -44,7 +44,7 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 	rule := &StatementDisallowTruncateRule{BaseRule: NewBaseRule(level, checkCtx.Rule.Type.String(), 0)}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 type StatementDisallowTruncateRule struct{ BaseRule }

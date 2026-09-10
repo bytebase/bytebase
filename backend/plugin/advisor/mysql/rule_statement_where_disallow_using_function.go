@@ -41,7 +41,7 @@ func (*StatementWhereDisallowUsingFunctionAdvisor) Check(_ context.Context, chec
 		rule.dbMetadata = model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type whereDisallowFuncOmniRule struct {

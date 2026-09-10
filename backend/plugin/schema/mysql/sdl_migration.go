@@ -328,7 +328,7 @@ func mysqlLineCommentEnd(sql string, i int) int {
 
 // mysqlSDLDropAdvices analyzes the version-aware SDL migration plan from the current
 // (dumped) schema to the user SDL and emits a WARNING advice for each destructive or
-// in-place-replace operation, mirroring pg/sdl_migration_omni.go's pgSDLDropAdvices.
+// in-place-replace operation, mirroring pg/sdl_migration.go's pgSDLDropAdvices.
 // engineVersion is threaded so the plan is built against the version-correct stored form
 // (a 5.7 schema is not phantom-diffed by the utf8mb4 default-collation gap), keeping the
 // drop set free of false positives.

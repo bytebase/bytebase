@@ -38,7 +38,7 @@ func (*StatementAddColumnWithoutPositionAdvisor) Check(_ context.Context, checkC
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type addColumnWithoutPositionOmniRule struct {

@@ -17,7 +17,7 @@ func init() {
 // Only SELECT, EXPLAIN, SHOW, SET, and DESCRIBE are allowed in read-only mode.
 // EXPLAIN ANALYZE is treated as non-read-only since it actually executes the query.
 func validateQuery(statement string) (bool, bool, error) {
-	stmts, err := ParseMySQLOmni(statement)
+	stmts, err := ParseMySQL(statement)
 	if err != nil {
 		return false, false, convertOmniError(err, base.Statement{Text: statement})
 	}

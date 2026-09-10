@@ -17,7 +17,7 @@ import (
 const testDBName = "testdb"
 
 // newLoaderTestCatalog returns a catalog with the test database created and
-// selected, matching the setup WalkThroughOmni performs before the loader runs.
+// selected, matching the setup WalkThroughWithContext performs before the loader runs.
 func newLoaderTestCatalog(t *testing.T) *catalog.Catalog {
 	t.Helper()
 	c := catalog.New()

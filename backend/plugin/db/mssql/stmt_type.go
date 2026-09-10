@@ -16,7 +16,7 @@ const (
 )
 
 func getStmtType(stmt string) (stmtType, error) {
-	stmts, err := parser.ParseTSQLOmni(stmt)
+	stmts, err := parser.ParseTSQL(stmt)
 	if err != nil {
 		return stmtTypeUnknown, err
 	}

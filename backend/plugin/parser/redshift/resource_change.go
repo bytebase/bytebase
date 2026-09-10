@@ -48,7 +48,7 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 }
 
 func extractOmniSampleDMLs(statement string) ([]string, error) {
-	stmts, err := ParseRedshiftOmni(statement)
+	stmts, err := ParseRedshift(statement)
 	if err != nil {
 		return nil, err
 	}

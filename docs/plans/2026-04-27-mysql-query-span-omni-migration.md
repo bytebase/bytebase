@@ -38,7 +38,7 @@ The final MySQL query-span implementation should look like this:
 GetQuerySpan
   -> newQuerySpanExtractor(...)
   -> q.getQuerySpan(ctx, stmt.Text)
-      -> ParseMySQLOmni(stmt)
+      -> ParseMySQL(stmt)
       -> collectOmniAccessTables(root)
       -> isMixedQuery(...)
       -> classifyOmniQueryType(root, allSystems)

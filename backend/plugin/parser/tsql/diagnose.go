@@ -34,7 +34,7 @@ func parseTSQLStatement(statement string) *base.SyntaxError {
 		statement += ";"
 	}
 
-	_, err := ParseTSQLOmni(statement)
+	_, err := ParseTSQL(statement)
 	if err == nil {
 		return nil
 	}

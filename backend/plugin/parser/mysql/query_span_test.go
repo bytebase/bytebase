@@ -170,7 +170,7 @@ func TestExtractTableRefs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		parseResult, err := ParseMySQLOmni(test.statement)
+		parseResult, err := ParseMySQL(test.statement)
 		require.NoError(t, err, "failed to parse statement: %s", test.statement)
 		require.Len(t, parseResult.Items, 1, "expected one parse result for statement: %s", test.statement)
 

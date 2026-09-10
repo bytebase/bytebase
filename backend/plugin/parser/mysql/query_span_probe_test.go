@@ -60,7 +60,7 @@ func probeMySQLOmniFixtureParseCoverage(t *testing.T) {
 				continue
 			}
 			total++
-			list, err := ParseMySQLOmni(entry.Statement)
+			list, err := ParseMySQL(entry.Statement)
 			if err != nil {
 				failures = append(failures, failure{
 					fixture:   path,
@@ -218,7 +218,7 @@ func probeMySQLOmniStructuralInvariants(t *testing.T) {
 
 func mustMySQLOmniNode(t *testing.T, sql string) ast.Node {
 	t.Helper()
-	list, err := ParseMySQLOmni(sql)
+	list, err := ParseMySQL(sql)
 	require.NoError(t, err)
 	require.NotNil(t, list)
 	require.Len(t, list.Items, 1)

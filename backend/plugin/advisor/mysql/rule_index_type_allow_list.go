@@ -41,7 +41,7 @@ func (*IndexTypeAllowListAdvisor) Check(_ context.Context, checkCtx advisor.Cont
 		allowList: stringArrayPayload.List,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type indexTypeAllowListOmniRule struct {
