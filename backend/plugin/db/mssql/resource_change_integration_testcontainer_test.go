@@ -3,7 +3,6 @@ package mssql
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -32,27 +31,25 @@ import (
 //nolint:tparallel
 func TestResourceChangeIntegrationMSSQL(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestMSSQLContainer(ctx, t)
-	defer container.Close(ctx)
+	container := testcontainer.SharedMSSQLContainer(t)
 
 	host := container.GetHost()
-	portInt, err := strconv.Atoi(container.GetPort())
-	require.NoError(t, err)
+	port := container.GetPort()
 
 	dbName := fmt.Sprintf("resource_change_%d", time.Now().UnixNano())
-	driver := openMSSQL(ctx, t, host, portInt, "master")
-	_, err = driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", dbName), db.ExecuteOptions{CreateDatabase: true})
+	driver := openMSSQL(ctx, t, host, port, "master")
+	_, err := driver.Execute(ctx, fmt.Sprintf("CREATE DATABASE [%s]", dbName), db.ExecuteOptions{CreateDatabase: true})
 	require.NoError(t, err)
 	driver.Close(ctx)
 
 	defer func() {
-		cleanup := openMSSQL(ctx, t, host, portInt, "master")
+		cleanup := openMSSQL(ctx, t, host, port, "master")
 		defer cleanup.Close(ctx)
 		_, _ = cleanup.Execute(ctx, fmt.Sprintf("ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", dbName), db.ExecuteOptions{CreateDatabase: true})
 		_, _ = cleanup.Execute(ctx, fmt.Sprintf("DROP DATABASE [%s]", dbName), db.ExecuteOptions{CreateDatabase: true})
 	}()
 
-	driver = openMSSQL(ctx, t, host, portInt, dbName)
+	driver = openMSSQL(ctx, t, host, port, dbName)
 	defer driver.Close(ctx)
 	mssqlDriver, ok := driver.(*Driver)
 	require.True(t, ok, "expected *Driver")
@@ -158,7 +155,7 @@ func summarize(t *testing.T, sql string) *parserbase.ChangeSummary {
 	return summary
 }
 
-func openMSSQL(ctx context.Context, t *testing.T, host string, port int, database string) db.Driver {
+func openMSSQL(ctx context.Context, t *testing.T, host, port, database string) db.Driver {
 	t.Helper()
 	driverInstance := &Driver{}
 	cfg := db.ConnectionConfig{
@@ -166,7 +163,7 @@ func openMSSQL(ctx context.Context, t *testing.T, host string, port int, databas
 			Type:     storepb.DataSourceType_ADMIN,
 			Username: "sa",
 			Host:     host,
-			Port:     strconv.Itoa(port),
+			Port:     port,
 			Database: database,
 		},
 		Password: "Test123!",
