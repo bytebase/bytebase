@@ -38,7 +38,7 @@ func (*MigrationCompatibilityAdvisor) Check(_ context.Context, checkCtx advisor.
 		newSchemas:      make(map[string]any),
 		newDatabases:    make(map[string]any),
 	}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type migrationCompatibilityOmniRule struct {

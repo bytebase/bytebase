@@ -36,7 +36,7 @@ func (*StatementMaximumStatementsInTransactionAdvisor) Check(_ context.Context, 
 	}
 
 	// This rule was a no-op in ANTLR (OnEnter only stored text, no advice generated).
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type maxStmtsInTxnOmniRule struct {

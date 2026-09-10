@@ -38,7 +38,7 @@ func (*TableRequirePkAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		tableBaseLine: make(map[string]int),
 	}
 
-	advice := RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	advice := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 	advice = append(advice, rule.generateFinalAdvice()...)
 	return advice, nil
 }

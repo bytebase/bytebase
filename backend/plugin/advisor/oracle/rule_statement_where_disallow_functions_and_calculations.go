@@ -48,7 +48,7 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 		checkCtx.IsObjectCaseSensitive,
 	)
 	rule.currentDatabase = checkCtx.CurrentDatabase
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ---- Types ---------------------------------------------------------------

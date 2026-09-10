@@ -62,7 +62,7 @@ func TestCollectOmniSelectPredicateColumnRefs(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			stmts, err := ParseTSQLOmni(tc.sql)
+			stmts, err := ParseTSQL(tc.sql)
 			require.NoError(t, err, "parse failed for %s", tc.sql)
 			require.NotEmpty(t, stmts)
 			sel, ok := stmts[0].AST.(*ast.SelectStmt)
@@ -85,7 +85,7 @@ func TestCollectOmniPredicateColumnRefs_QualifiedRefs(t *testing.T) {
 	// Ensure qualified column refs (db.schema.table.col) are returned with
 	// all qualifier fields intact so the extractor can resolve them later.
 	sql := "SELECT * FROM db1.dbo.t WHERE db1.dbo.t.a = 1"
-	stmts, err := ParseTSQLOmni(sql)
+	stmts, err := ParseTSQL(sql)
 	require.NoError(t, err)
 	sel, ok := stmts[0].AST.(*ast.SelectStmt)
 	require.True(t, ok)
@@ -101,7 +101,7 @@ func TestCollectOmniPredicateColumnRefs_QualifiedRefs(t *testing.T) {
 func TestCollectOmniPredicateColumnRefs_Directly(t *testing.T) {
 	// Exercise the non-Select entry point: caller hands in a bare ExprNode.
 	sql := "SELECT * FROM t WHERE a > b AND c IS NULL"
-	stmts, err := ParseTSQLOmni(sql)
+	stmts, err := ParseTSQL(sql)
 	require.NoError(t, err)
 	sel, ok := stmts[0].AST.(*ast.SelectStmt)
 	require.True(t, ok)

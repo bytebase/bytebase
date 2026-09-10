@@ -227,7 +227,7 @@ func TestGetAccessTables(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		results, err := ParsePLSQLOmni(test.statement)
+		results, err := ParsePLSQL(test.statement)
 		require.NoError(t, err)
 		require.NotEmpty(t, results)
 		require.NotEmpty(t, results.Items)

@@ -46,7 +46,7 @@ func (*FunctionDisallowedListAdvisor) Check(_ context.Context, checkCtx advisor.
 		disallowList: disallowList,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type functionDisallowedListOmniRule struct {

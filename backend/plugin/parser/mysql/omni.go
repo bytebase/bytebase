@@ -25,9 +25,9 @@ func (a *OmniAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ParseMySQLOmni parses SQL using omni's parser and returns an ast.List.
+// ParseMySQL parses SQL using omni's parser and returns an ast.List.
 // This is the recommended entry point for new code that needs omni AST nodes.
-func ParseMySQLOmni(sql string) (*ast.List, error) {
+func ParseMySQL(sql string) (*ast.List, error) {
 	return mysqlparser.Parse(sql)
 }
 

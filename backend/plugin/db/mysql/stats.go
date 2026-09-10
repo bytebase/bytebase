@@ -111,7 +111,7 @@ func capAffectedRowsByLimit(count int64, statement string) int64 {
 }
 
 func affectedRowsLimit(statement string) (int64, bool) {
-	list, err := mysqlparser.ParseMySQLOmni(statement)
+	list, err := mysqlparser.ParseMySQL(statement)
 	if err != nil || list == nil || len(list.Items) != 1 {
 		return 0, false
 	}

@@ -98,18 +98,17 @@ func TestRedshiftOmniQuerySpanSupportedShapes(t *testing.T) {
 }
 
 func TestRedshiftQuerySpanEntrypointDoesNotDependOnANTLR(t *testing.T) {
-	for _, path := range []string{"query_span.go", "query_span_extractor_omni.go"} {
+	for _, path := range []string{"query_span.go", "query_span_extractor.go"} {
 		content, err := os.ReadFile(path)
 		require.NoError(t, err)
 		source := string(content)
 		require.NotContains(t, source, "github.com/antlr4-go/antlr/v4", path)
 		require.NotContains(t, source, "github.com/bytebase/parser/redshift", path)
-		require.NotContains(t, source, "ParseRedshift(", path)
 	}
 }
 
 func TestRedshiftOmniQuerySpanUsesLazyRelationResolver(t *testing.T) {
-	content, err := os.ReadFile("query_span_extractor_omni.go")
+	content, err := os.ReadFile("query_span_extractor.go")
 	require.NoError(t, err)
 	source := string(content)
 	require.Contains(t, source, "SetRelationResolver")

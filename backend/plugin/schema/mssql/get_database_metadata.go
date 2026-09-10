@@ -17,11 +17,7 @@ const noAction = "NO ACTION"
 
 // GetDatabaseMetadata parses the SQL schema text and returns the database metadata.
 func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
-	return getDatabaseMetadataOmni(schemaText)
-}
-
-func getDatabaseMetadataOmni(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
-	stmts, err := tsql.ParseTSQLOmni(schemaText)
+	stmts, err := tsql.ParseTSQL(schemaText)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse SQL schema")
 	}

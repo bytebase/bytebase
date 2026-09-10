@@ -36,7 +36,7 @@ func (IndexNotRedundantAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		curDB:        checkCtx.CurrentDatabase,
 		indexMap:     getIndexMapFromMetadata(checkCtx.DBSchema),
 	}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type indexNotRedundantRule struct {

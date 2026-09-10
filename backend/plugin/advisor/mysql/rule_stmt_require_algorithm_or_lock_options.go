@@ -48,7 +48,7 @@ func (*RequireAlgorithmOrLockOptionAdvisor) Check(_ context.Context, checkCtx ad
 		errorCode:      errorCode,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type requireAlgoLockOmniRule struct {

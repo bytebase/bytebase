@@ -13,8 +13,8 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-func TestGetDatabaseMetadataOmniSequenceUsesExplicitSchema(t *testing.T) {
-	metadata, err := getDatabaseMetadataOmni(`
+func TestGetDatabaseMetadataSequenceUsesExplicitSchema(t *testing.T) {
+	metadata, err := GetDatabaseMetadata(`
 CREATE SCHEMA audit;
 CREATE SEQUENCE audit.EventSeq AS BIGINT;
 `)
@@ -34,8 +34,8 @@ CREATE SEQUENCE audit.EventSeq AS BIGINT;
 	}, metadata.Schemas)
 }
 
-func TestGetDatabaseMetadataOmniColumnForeignKeyUsesTableSchemaFallback(t *testing.T) {
-	metadata, err := getDatabaseMetadataOmni(`
+func TestGetDatabaseMetadataColumnForeignKeyUsesTableSchemaFallback(t *testing.T) {
+	metadata, err := GetDatabaseMetadata(`
 CREATE SCHEMA sales;
 CREATE TABLE sales.customers (
     id INT PRIMARY KEY

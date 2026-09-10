@@ -45,7 +45,7 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		dbMetadata: checkCtx.DBSchema,
 	}
 
-	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 
 	// Generate advice based on collected table information.
 	rule.generateAdvice()

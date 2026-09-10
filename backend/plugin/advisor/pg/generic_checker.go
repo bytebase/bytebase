@@ -1,13 +1,13 @@
-package mssql
+package pg
 
 import (
 	"strings"
 
-	"github.com/bytebase/omni/mssql/ast"
+	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 // OmniRule defines the interface for omni-based SQL validation rules.
@@ -61,12 +61,21 @@ func (r *OmniBaseRule) LocToLine(loc ast.Loc) int32 {
 	if loc.Start < 0 || r.StmtText == "" {
 		return r.ContentStartLine()
 	}
-	pos := tsqlparser.ByteOffsetToRunePosition(r.StmtText, loc.Start)
+	pos := pgparser.ByteOffsetToRunePosition(r.StmtText, loc.Start)
 	return pos.Line
 }
 
+// TrimmedStmtText returns the statement text with leading/trailing whitespace
+// and trailing semicolons removed. This matches the behavior of the ANTLR
+// getTextFromTokens helper that did not include semicolons.
+func (r *OmniBaseRule) TrimmedStmtText() string {
+	return strings.TrimRight(strings.TrimSpace(r.StmtText), ";")
+}
+
 // ContentStartLine returns the 1-based line number of the first non-whitespace
-// character in StmtText. Returns 1 if the text is empty or has no leading newlines.
+// character in StmtText. This accounts for leading newlines that SplitSQL may
+// include in the statement text. Returns 1 if the text is empty or has no
+// leading newlines.
 func (r *OmniBaseRule) ContentStartLine() int32 {
 	idx := strings.IndexFunc(r.StmtText, func(c rune) bool {
 		return c != ' ' && c != '\t' && c != '\n' && c != '\r'
@@ -74,16 +83,17 @@ func (r *OmniBaseRule) ContentStartLine() int32 {
 	if idx <= 0 {
 		return 1
 	}
-	pos := tsqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
+	pos := pgparser.ByteOffsetToRunePosition(r.StmtText, idx)
 	return pos.Line
 }
 
 // ContentEndLine returns the 1-based line number of the last non-whitespace
-// character in StmtText.
+// character in StmtText. This matches ANTLR's GetStop().GetLine() behavior.
 func (r *OmniBaseRule) ContentEndLine() int32 {
 	if r.StmtText == "" {
 		return 1
 	}
+	// Find last non-whitespace character
 	idx := -1
 	for i := len(r.StmtText) - 1; i >= 0; i-- {
 		c := r.StmtText[i]
@@ -95,18 +105,13 @@ func (r *OmniBaseRule) ContentEndLine() int32 {
 	if idx <= 0 {
 		return 1
 	}
-	pos := tsqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
+	pos := pgparser.ByteOffsetToRunePosition(r.StmtText, idx)
 	return pos.Line
-}
-
-// TrimmedStmtText returns the statement text with leading/trailing whitespace
-// and trailing semicolons removed.
-func (r *OmniBaseRule) TrimmedStmtText() string {
-	return strings.TrimRight(strings.TrimSpace(r.StmtText), ";")
 }
 
 // FindLineByName searches for an identifier name in the statement text and returns
 // its 1-based line number. Falls back to ContentStartLine() if not found.
+// This is useful when the AST node's Loc is unknown (-1) but we need a line number.
 func (r *OmniBaseRule) FindLineByName(name string) int32 {
 	if name == "" || r.StmtText == "" {
 		return r.ContentStartLine()
@@ -115,18 +120,18 @@ func (r *OmniBaseRule) FindLineByName(name string) int32 {
 	if idx < 0 {
 		return r.ContentStartLine()
 	}
-	pos := tsqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
+	pos := pgparser.ByteOffsetToRunePosition(r.StmtText, idx)
 	return pos.Line
 }
 
-// RunOmniRules iterates over parsed statements and dispatches each omni AST node to all rules.
+// RunRules iterates over parsed statements and dispatches each omni AST node to all rules.
 // Returns combined advice from all rules. Skips statements without omni AST.
-func RunOmniRules(stmts []base.ParsedStatement, rules []OmniRule) []*storepb.Advice {
+func RunRules(stmts []base.ParsedStatement, rules []OmniRule) []*storepb.Advice {
 	for _, stmt := range stmts {
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := tsqlparser.GetOmniNode(stmt.AST)
+		node, ok := pgparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}

@@ -38,7 +38,7 @@ func (*TableRequireCollationAdvisor) Check(_ context.Context, checkCtx advisor.C
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type tableRequireCollationOmniRule struct {

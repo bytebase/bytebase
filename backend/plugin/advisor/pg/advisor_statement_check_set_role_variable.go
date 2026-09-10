@@ -34,7 +34,7 @@ func (*StatementCheckSetRoleVariable) Check(_ context.Context, checkCtx advisor.
 		},
 	}
 
-	advice := RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	advice := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 
 	if !rule.hasSetRole {
 		advice = append(advice, &storepb.Advice{

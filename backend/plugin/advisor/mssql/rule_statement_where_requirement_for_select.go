@@ -22,7 +22,7 @@ func (*WhereRequirementForSelectAdvisor) Check(_ context.Context, checkCtx advis
 		return nil, err
 	}
 	rule := &whereRequirementForSelectRule{OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type whereRequirementForSelectRule struct {

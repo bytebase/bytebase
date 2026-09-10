@@ -58,7 +58,7 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 		maxLength: maxLength,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingAutoIncrementColumnOmniRule struct {

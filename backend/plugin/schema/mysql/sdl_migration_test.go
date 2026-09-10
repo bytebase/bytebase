@@ -3018,14 +3018,14 @@ func TestSDLStressDropHeavy(t *testing.T) {
 }
 
 // TestSDLStressDropAdvicesViewRoutineGap PINS a third real (B) bug found by the stress
-// test: mysqlSDLDropAdvices (backend/plugin/schema/mysql/sdl_migration_omni.go) emits NO
+// test: mysqlSDLDropAdvices (backend/plugin/schema/mysql/sdl_migration.go) emits NO
 // advice at all for any view / function / procedure / trigger / event operation — neither a
 // DROP advice for a standalone drop nor a REPLACE advice for a redefinition. So a
 // declarative release that drops or replaces a view/routine/trigger/event gives the user
 // ZERO destructive-operation warning. Affects both 5.7 and 8.0; the generated migration DDL
 // itself is correct (it does drop/replace) — only the advice walker is wrong.
 //
-// Two compounding faults in the replace-pair detection (sdl_migration_omni.go L205-294):
+// Two compounding faults in the replace-pair detection (sdl_migration.go L205-294):
 //
 //  1. The premise is wrong for this omni build. The code assumes a redefinition is rendered
 //     as an OpDrop<Obj> followed by an OpCreate<Obj> of the same name, and classifies the

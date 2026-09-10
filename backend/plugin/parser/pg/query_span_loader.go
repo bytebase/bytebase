@@ -546,7 +546,7 @@ func minSortKey(scc []*objectEntry) string {
 //
 // Functions are a special case: when a function's real install fails, we
 // deliberately leave the slot empty. Query span has a dedicated fallback for
-// user functions (`tryMetadataFuncLookup` in query_span_omni.go) that
+// user functions (`tryMetadataFuncLookup` in query_span.go) that
 // reconstructs a synthetic proc from metadata at query time. Installing a
 // text-backed pseudo function would crowd out that path, producing wrong
 // overload resolution and losing body-level lineage. Tables/views/types are

@@ -1066,7 +1066,7 @@ func generateColumnCommentSQL(action, schemaName, tableName, columnName, comment
 func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 	// Parse the CREATE VIEW statement to extract the query properly
 	// We need to find the AS keyword that's part of CREATE VIEW, not column aliases.
-	stmts, err := tsql.ParseTSQLOmni(viewDef)
+	stmts, err := tsql.ParseTSQL(viewDef)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse view definition")
 	}

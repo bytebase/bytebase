@@ -25,9 +25,9 @@ func (a *OmniAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ParseTSQLOmni parses SQL using omni's parser and returns omni Statement objects directly.
+// ParseTSQL parses SQL using omni's parser and returns omni Statement objects directly.
 // This is the recommended entry point for new code that needs omni AST nodes.
-func ParseTSQLOmni(sql string) ([]omnimssql.Statement, error) {
+func ParseTSQL(sql string) ([]omnimssql.Statement, error) {
 	return omnimssql.Parse(sql)
 }
 

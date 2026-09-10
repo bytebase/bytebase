@@ -1,13 +1,13 @@
-package mysql
+package mssql
 
 import (
 	"strings"
 
-	"github.com/bytebase/omni/mysql/ast"
+	"github.com/bytebase/omni/mssql/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 // OmniRule defines the interface for omni-based SQL validation rules.
@@ -56,26 +56,13 @@ func (r *OmniBaseRule) AddAdviceAbsolute(advice *storepb.Advice) {
 }
 
 // LocToLine converts an omni Loc byte offset to a 1-based line number
-// within the current statement text. The returned value includes any leading
-// newlines in StmtText, matching ANTLR's GetStart().GetLine() behavior when
-// ANTLR parses the same text. Suitable for: BaseLine + LocToLine(loc).
+// relative to the current statement (suitable for AddAdvice which adds BaseLine).
 func (r *OmniBaseRule) LocToLine(loc ast.Loc) int32 {
 	if loc.Start < 0 || r.StmtText == "" {
 		return r.ContentStartLine()
 	}
-	pos := mysqlparser.ByteOffsetToRunePosition(r.StmtText, loc.Start)
+	pos := tsqlparser.ByteOffsetToRunePosition(r.StmtText, loc.Start)
 	return pos.Line
-}
-
-// QueryText returns the statement text with leading/trailing whitespace trimmed.
-func (r *OmniBaseRule) QueryText() string {
-	return strings.TrimSpace(r.StmtText)
-}
-
-// TrimmedStmtText returns the statement text with leading/trailing whitespace
-// and trailing semicolons removed.
-func (r *OmniBaseRule) TrimmedStmtText() string {
-	return strings.TrimRight(strings.TrimSpace(r.StmtText), ";")
 }
 
 // ContentStartLine returns the 1-based line number of the first non-whitespace
@@ -87,7 +74,7 @@ func (r *OmniBaseRule) ContentStartLine() int32 {
 	if idx <= 0 {
 		return 1
 	}
-	pos := mysqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
+	pos := tsqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
 	return pos.Line
 }
 
@@ -108,8 +95,14 @@ func (r *OmniBaseRule) ContentEndLine() int32 {
 	if idx <= 0 {
 		return 1
 	}
-	pos := mysqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
+	pos := tsqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
 	return pos.Line
+}
+
+// TrimmedStmtText returns the statement text with leading/trailing whitespace
+// and trailing semicolons removed.
+func (r *OmniBaseRule) TrimmedStmtText() string {
+	return strings.TrimRight(strings.TrimSpace(r.StmtText), ";")
 }
 
 // FindLineByName searches for an identifier name in the statement text and returns
@@ -122,18 +115,18 @@ func (r *OmniBaseRule) FindLineByName(name string) int32 {
 	if idx < 0 {
 		return r.ContentStartLine()
 	}
-	pos := mysqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
+	pos := tsqlparser.ByteOffsetToRunePosition(r.StmtText, idx)
 	return pos.Line
 }
 
-// RunOmniRules iterates over parsed statements and dispatches each omni AST node to all rules.
+// RunRules iterates over parsed statements and dispatches each omni AST node to all rules.
 // Returns combined advice from all rules. Skips statements without omni AST.
-func RunOmniRules(stmts []base.ParsedStatement, rules []OmniRule) []*storepb.Advice {
+func RunRules(stmts []base.ParsedStatement, rules []OmniRule) []*storepb.Advice {
 	for _, stmt := range stmts {
 		if stmt.AST == nil {
 			continue
 		}
-		node, ok := mysqlparser.GetOmniNode(stmt.AST)
+		node, ok := tsqlparser.GetOmniNode(stmt.AST)
 		if !ok {
 			continue
 		}

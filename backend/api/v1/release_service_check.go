@@ -901,7 +901,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 // COMMENT statements to declare the desired schema. ALTER SEQUENCE is allowed for
 // setting ownership (OWNED BY). CREATE TRIGGER is deliberately shared: both SDL
 // pipelines fully manage triggers — the PostgreSQL dump emits CREATE TRIGGER and the pg
-// omni differ handles OpDropTrigger with a drop advice (pg/sdl_migration_omni.go), the
+// omni differ handles OpDropTrigger with a drop advice (pg/sdl_migration.go), the
 // same as MySQL — so a declared trigger is legal SDL on both engines.
 // STATEMENT_TYPE_UNSPECIFIED is (and must stay) absent from every allowlist so that a
 // parsed-but-unclassified statement fails CLOSED as disallowed.

@@ -49,7 +49,7 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpan(ctx context.Context, statement
 }
 
 func (q *omniQuerySpanExtractor) getOmniQuerySpanWithFunctionStack(ctx context.Context, statement string, functionStack map[string]bool) (*base.QuerySpan, error) {
-	stmts, err := ParseRedshiftOmni(statement)
+	stmts, err := ParseRedshift(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -376,7 +376,7 @@ type redshiftSchemaQualificationEdit struct {
 }
 
 func qualifyRedshiftViewDefinition(definition, schemaName string, metadata *model.DatabaseMetadata) string {
-	stmts, err := ParseRedshiftOmni(definition)
+	stmts, err := ParseRedshift(definition)
 	if err != nil || len(stmts) != 1 {
 		return definition
 	}
@@ -996,7 +996,7 @@ func omniFunctionCallName(list *redshiftast.List) (string, string) {
 }
 
 func omniFunctionParameterCount(definition string) (int, bool) {
-	stmts, err := ParseRedshiftOmni(definition)
+	stmts, err := ParseRedshift(definition)
 	if err != nil || len(stmts) != 1 {
 		return 0, false
 	}
@@ -1008,7 +1008,7 @@ func omniFunctionParameterCount(definition string) (int, bool) {
 }
 
 func extractOmniSQLFunctionBody(definition string) (string, bool, error) {
-	stmts, err := ParseRedshiftOmni(definition)
+	stmts, err := ParseRedshift(definition)
 	if err != nil {
 		return "", false, errors.Wrapf(err, "failed to parse function definition")
 	}

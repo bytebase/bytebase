@@ -11,13 +11,13 @@ import (
 )
 
 func init() {
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_MYSQL, GetDatabaseMetadataOmni)
-	schema.RegisterGetDatabaseMetadata(storepb.Engine_OCEANBASE, GetDatabaseMetadataOmni)
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_MYSQL, GetDatabaseMetadata)
+	schema.RegisterGetDatabaseMetadata(storepb.Engine_OCEANBASE, GetDatabaseMetadata)
 }
 
-// GetDatabaseMetadataOmni parses MySQL schema DDL text and returns database metadata
-// using the omni catalog. This replaces the ANTLR-based GetDatabaseMetadata.
-func GetDatabaseMetadataOmni(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+// GetDatabaseMetadata parses MySQL schema DDL text and returns database metadata
+// using the omni catalog.
+func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
 	if schemaText == "" {
 		return &storepb.DatabaseSchemaMetadata{}, nil
 	}

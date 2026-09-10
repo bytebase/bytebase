@@ -57,7 +57,7 @@ func TestWalkThrough(t *testing.T) {
 
 		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, test.Statement)
 		asts := base.ExtractASTs(stmts)
-		advice := WalkThroughOmni(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
+		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if advice != nil {
 			// Compare the advice fields
 			require.NotNil(t, test.Advice, "unexpected advice for statement %q: %+v", test.Statement, advice)
@@ -84,7 +84,7 @@ func TestWalkThrough(t *testing.T) {
 	}
 }
 
-func TestWalkThroughOmniCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
+func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	originDatabase := &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 		Schemas: []*storepb.SchemaMetadata{
@@ -118,17 +118,17 @@ func TestWalkThroughOmniCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	require.True(t, ok)
 	require.True(t, createTable.IfNotExists)
 
-	advice := WalkThroughOmni(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t1"))
 }
 
-// TestWalkThroughOmniSRIDInvisible verifies the omni catalog -> storepb.ColumnMetadata
+// TestWalkThroughSRIDInvisible verifies the omni catalog -> storepb.ColumnMetadata
 // conversion (tableToProto) carries the spatial SRID (presence + value, including the
-// valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughOmni
+// valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughWithContext
 // simulation path — used to compute the schema a changeset would produce — would silently
 // drop these attributes, mirroring the v1-converter gap.
-func TestWalkThroughOmniSRIDInvisible(t *testing.T) {
+func TestWalkThroughSRIDInvisible(t *testing.T) {
 	state := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MYSQL, true)
 	statement := "CREATE TABLE t (" +
 		"id INT PRIMARY KEY, " +
@@ -140,7 +140,7 @@ func TestWalkThroughOmniSRIDInvisible(t *testing.T) {
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
 	asts := base.ExtractASTs(stmts)
 
-	advice := WalkThroughOmni(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 
 	cols := map[string]*storepb.ColumnMetadata{}
@@ -161,14 +161,14 @@ func TestWalkThroughOmniSRIDInvisible(t *testing.T) {
 	require.False(t, cols["g4326"].IsInvisible)
 }
 
-// TestWalkThroughOmniSRIDInvisibleSeeded verifies the reverse leg of the WalkThroughOmni
+// TestWalkThroughSRIDInvisibleSeeded verifies the reverse leg of the WalkThroughWithContext
 // round-trip: when the walk-through starts from already-synced metadata that carries SRID
 // / INVISIBLE columns, the proto->catalog seeding (wtBuildColumnDef) must install those
 // attributes into the omni catalog so that running an UNRELATED DDL does not strip them
 // from the resulting proto. Without seeding, the pre-existing columns load as
 // plain/no-SRID and — because columnsEqual now compares these fields — surface as phantom
 // changes.
-func TestWalkThroughOmniSRIDInvisibleSeeded(t *testing.T) {
+func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
 	origin := &storepb.DatabaseSchemaMetadata{
 		Name: "test",
 		Schemas: []*storepb.SchemaMetadata{{
@@ -195,7 +195,7 @@ func TestWalkThroughOmniSRIDInvisibleSeeded(t *testing.T) {
 	sm := sheet.NewManager()
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
 	asts := base.ExtractASTs(stmts)
-	advice := WalkThroughOmni(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 
 	geo := state.GetSchemaMetadata("").GetTable("geo")
