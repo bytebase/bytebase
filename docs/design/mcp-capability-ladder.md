@@ -140,15 +140,29 @@ checks the statement at all. The conditional pointed its reassurance exactly whe
 weakest. **If negating the condition yields a promise the product does not keep, drop the condition
 or state the bound unconditionally.**
 
-Dropping it unconditionally was the next round's defect, and it is the more useful half of this
-entry. "This mode does not require a statement to be a read" is what the MCP ceiling does — the
-clamp is off — but not what the product does: `Query` runs `validateQueryRequest` under every mode
-for engines outside `EngineSupportQueryNewACL`, and 13 of those 14 have a registered validator, so a
-Read-write session there is still refused a write. The repair for the complement axis had removed
-the engine axis from the one line that carried it, on a screen that renders no row details. **A line
-being fixed on one axis is still a line, and has to be rechecked against every axis — the one being
-repaired crowds out the rest.** The wording that holds on both states the bound and the consequence:
-"Capped by your own Bytebase permissions, and by what Bytebase supports on each database engine — this mode lifts the read-only limit where it can, and refuses the write outright where it cannot".
+Dropping it unconditionally was the next round's defect, and the two rounds after that are the more
+useful half of this entry. "This mode does not require a statement to be a read" is what the MCP
+ceiling does — the clamp is off — but not what the product does: `Query` runs `validateQueryRequest`
+under every mode for engines outside `EngineSupportQueryNewACL`, and 13 of those 14 have a
+registered validator, so a Read-write session there is still refused a write. The repair for the
+complement axis had removed the engine axis from the one line that carried it, on a screen that
+renders no row details. **A line being fixed on one axis is still a line, and has to be rechecked
+against every axis — the one being repaired crowds out the rest.**
+
+**Method.** The replacement kept the engine axis and named a consequence — lifted where Bytebase can
+check, refused where it cannot — and that is still one variable too few. `Query` and `Export` do not
+share a gate: `Query` skips the check for the ten `EngineSupportQueryNewACL` engines, while `Export`
+skips it only for MySQL. So on PostgreSQL under Read-write the same write runs through `Query` and is
+refused through `Export`, and Export is a served row on the same card. The fourteenth engine breaks
+it the other way: Databricks is outside the ACL set *and* registers no validator, so
+`ValidateSQLForEditor` returns its permissive default, `GetQuerySpan` returns no spans, and the
+access check falls back to `bb.sql.select` — a `DELETE` that runs unrefused, unclassified, and
+authorized by a read permission. **The same statement, mode and engine can get different answers from
+different RPCs; a claim about what runs has to name the operation as well as the engine.**
+
+Four wordings later, the line states the bound and stops: "Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation".
+Its Read-only sibling keeps a consequence because there the clamp really is one rule with one
+outcome. Parallelism between the two is broken on purpose.
 
 Two choices in the wording are deliberate. Row 2 says *Read data by running queries* rather than
 "Run queries" so the verb stays Read and the sub-item carries the rule that keeps it true under
@@ -358,7 +372,7 @@ was useful: "Add Bytebase to your AI client and start asking. On first connectio
 approve access in the browser."
 
 **D10 — The consent page uses the row titles, and bounds them once.** "This session may" lists the served rows with ✓,
-one ✕ line for the unserved tier under Read-only ("No changes, rollouts or exports"), then the
+one ✕ line for the unserved tier under Read-only ( + NO_WRITE + ), then the
 existing capped, masking and audit lines. Read-write keeps its caution. Its mode chip carries the
 same icon as the settings page's. One wording table serves both surfaces.
 
@@ -368,11 +382,10 @@ so on a workspace whose engine refuses every statement, an unqualified "Read dat
 stay an approval screen, so it bounds the whole list once instead, on the line that already limits it
 by the reader's own permissions. That bound is per mode, because the statement clamp it describes
 runs only under Read-only: "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all" against
-"Capped by your own Bytebase permissions. This mode does not require a statement to be a read". The Read-only line carries the engine axis
-because the clamp genuinely consults `HasQueryValidator`; the Read-write line carries it because
-`validateQueryRequest` still refuses a write on the engines outside `EngineSupportQueryNewACL`. What
-it must not carry is a *condition* — that points its reassurance at the engines Bytebase parses best
-and checks least (see the complement axis in The rows). One line either way, and the ✓ marks
+"Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation". The Read-only line names a
+consequence because the clamp is one rule with one outcome. The Read-write line does not: what runs
+there varies by engine *and* by operation, and every consequence clause written for it has been false
+once (see the complement and method axes in The rows). It states the bound and stops. One line either way, and the ✓ marks
 read as what the policy admits rather than what will succeed. It carries a neutral glyph and no
 "Allowed" mark, so a bound is not counted as a further grant.
 
@@ -408,7 +421,7 @@ reference.
 | View · Disabled | Chip line, with the masking chip naming MCP as off when the flag is stored (D7); "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
 | Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). No masking chip: in edit the toggle is the flag's disclosure (D7). |
-| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot; NO masking toggle and NO masking chip (D7); separator; footer — the mode sentence, plus, once the form is saveable, the line naming what Save writes for the masking flag — Cancel, Save. |
+| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot; NO masking toggle and NO masking chip (D7); separator; footer — the mode sentence, plus, once the form is saveable and the flag is set on either side of the edit, the line naming what Save writes for it — Cancel, Save. |
 | Edit · nothing picked | Only reachable from an unreadable or unserved ceiling: icon cards with no selection; "Pick a mode to save this policy." in the disclosure slot; no masking toggle, no masking chip, and no pending line, because nothing can be saved yet; Cancel, Save disabled. |
 | Consent page | Served row titles with ✓, the ✕ line under Read-only, then the existing constants and caution. |
 
@@ -454,14 +467,14 @@ under
 - Masking chip, by what the stored flag is doing: "Masking exemptions ignored",
   "Masking exemptions ignored — masking not licensed",
   "Masking exemptions ignored — MCP is off".
-- Footer, once the form is saveable under a Disabled pick, naming what Save writes and not when it
-  takes effect:
+- Footer, once the form is saveable under a pick that withholds the toggle and the flag is set
+  before or after the edit, naming what Save writes and not when it takes effect:
   "This policy will be saved with masking exemptions ignored."
   and "This policy will be saved with masking exemptions applied.".
 - Footer, clean: "Applies to every running session's next request." Dirty: "{from} → {to} applies
   to every running session's next request."
 - Connect a client: the sentence in D9.
-- Consent: row titles; "No changes, rollouts or exports"; the two capped lines above.
+- Consent: row titles; "No changes, rollouts, exports or database management"; the two capped lines above.
 
 ## Implementation
 
@@ -529,11 +542,15 @@ promise. What to do:
 2. If none covers it, reword a row or add one. The copy is `settings.mcp.ladder.row.*` in
    `frontend/src/locales/` — all five files — and the order and tier are in
    `frontend/src/components/mcp/mcpCapabilityRows.ts`. Update the table above in the same change.
-3. Check the new wording on all four axes in The rows — mode, engine, effect and complement —
-   against their rules: state the bound and never the behavior, name the feature and never the
-   mechanism, and claim only what holds whatever the caller's permissions. A line you are changing
-   to fix one axis still has to hold on the other three; every regression this page has shipped came
-   from checking only the axis that prompted the edit.
+3. Check the new wording on all five axes in The rows — mode, engine, effect, complement and
+   method — against their rules: state the bound and never the behavior, name the feature and never
+   the mechanism, and claim only what holds whatever the caller's permissions. A line you are
+   changing to fix one axis still has to hold on the other four; every regression this page has
+   shipped came from checking only the axis that prompted the edit.
+4. For any claim of the form "refused where X", check `HasQueryValidator` and
+   `EngineSupportQueryNewACL` as a conjunction rather than either alone, and check each RPC that
+   executes statements separately — `SQLService/Query` and `SQLService/Export` gate on different
+   conditions, so a sentence true of one is not thereby true of the other.
 
 The consent screen renders row titles only, so a caveat that belongs to one mode or one engine has
 to live in the bound line there (D10), not in a row's sub-items.
@@ -548,9 +565,16 @@ to live in the bound line there (D10), not in a row's sub-items.
   On MySQL it skips statement validation and the driver executes non-query statements, and the
   clamp today lives only in `SQLService/Query`. Under the presets Export is served only alongside
   the DML/DDL row, so there is no exposure until then. That clamp is an MCP implementation change,
-  tracked separately from this doc.
+  tracked separately from this doc. The same split is why the consent card's Read-write bound names
+  the operation as well as the engine (the method axis in The rows).
 - A docs page listing the methods per row, generated from the inventory. Worth doing; not linked
   from the card until it exists.
+- Making the collapsed list findable by the browser's find-in-page. Base UI unmounts a closed panel,
+  so the rows and the floor line are absent from the DOM until the disclosure is opened, and
+  `hiddenUntilFound` would keep them mounted instead. Declined: collapsing by default is D1's
+  decision, the summary line states what the mode allows and the trigger is beside it, and the
+  attribute's browser support is uneven — the unmount also keeps eight rows out of the accessibility
+  tree while they are not shown. Revisit if the list stops being a disclosure.
 - Per-engine read-only depth and masking coverage. The removed drawer showed both; they belong in
   docs, not on the policy card.
 - The ceiling gate itself, the classification, and the consent flow's mechanics.

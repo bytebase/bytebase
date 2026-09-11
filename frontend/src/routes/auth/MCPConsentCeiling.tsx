@@ -53,10 +53,10 @@ export function MCPConsentCeiling({
             text: t("oauth2.consent.mcp.line.no-write"),
           },
         ]),
-    // A bound, not a grant: neutral glyph and no mark, so four green checks
-    // are not read as four granted capabilities. Scoped by mode because the
-    // statement clamp it describes runs only under Read-only — under
-    // Read-write the same engines execute unverified instead.
+    // A bound, not a grant: neutral glyph and no mark, so it is not counted
+    // among the rows above it. Scoped by mode because Read-only's statement
+    // clamp is one rule with one consequence, while Read-write's answer varies
+    // by engine and by operation — so that line states the bound and stops.
     {
       key: "capped",
       icon: <Info className="size-4 text-control-light" />,

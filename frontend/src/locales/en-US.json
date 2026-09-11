@@ -1615,9 +1615,9 @@
         "line": {
           "audit": "Audited actions carry an MCP tag, and anything the policy refuses is recorded",
           "capped-read-only": "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all",
-          "capped-read-write": "Capped by your own Bytebase permissions, and by what Bytebase supports on each database engine — this mode lifts the read-only limit where it can, and refuses the write outright where it cannot",
+          "capped-read-write": "Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation",
           "masking": "Your masking exemptions do not apply to this session",
-          "no-write": "No changes, rollouts or exports"
+          "no-write": "No changes, rollouts, exports or database management"
         },
         "title": "This session may",
         "undisclosed": {

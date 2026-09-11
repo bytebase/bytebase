@@ -1615,9 +1615,9 @@
         "line": {
           "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza también se registra",
           "capped-read-only": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase puede comprobar en cada motor: donde no puede demostrar que una sentencia es de lectura, no se ejecuta ninguna consulta",
-          "capped-read-write": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase admite en cada motor de base de datos: este modo levanta el límite de solo lectura donde puede y rechaza la escritura por completo donde no puede",
+          "capped-read-write": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase admite para cada motor de base de datos y cada operación",
           "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
-          "no-write": "Sin cambios, despliegues ni exportaciones"
+          "no-write": "Sin cambios, despliegues, exportaciones ni administración de bases de datos"
         },
         "title": "Esta sesión puede",
         "undisclosed": {

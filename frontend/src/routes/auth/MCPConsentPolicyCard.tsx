@@ -24,10 +24,8 @@ interface Props {
 
 /**
  * The panel each consent screen shows: the workspace's policy, and what it
- * means for the session being approved.
- *
- * Shared because the two screens had already drifted while hand-assembling the
- * same markup — one hid its glyphs from a screen reader and the other did not.
+ * means for the session being approved. Shared so the three screens cannot
+ * drift, which they were doing while hand-assembling the same markup.
  */
 export function MCPConsentPolicyCard({ label, mode, lines }: Props) {
   return (
@@ -36,7 +34,7 @@ export function MCPConsentPolicyCard({ label, mode, lines }: Props) {
         <p className="text-sm text-control-light">{label}</p>
         {mode !== undefined && <MCPModeBadge mode={mode} />}
       </div>
-      <ul className="text-sm text-main flex flex-col gap-2">
+      <ul role="list" className="text-sm text-main flex flex-col gap-2">
         {lines.map((line) => (
           <li key={line.key} className="flex items-start gap-2">
             <span className="mt-0.5 shrink-0" aria-hidden="true">

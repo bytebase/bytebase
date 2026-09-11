@@ -97,9 +97,8 @@ describe("RadioGroupItem", () => {
 
   // The cursor follows the radio's resolved disabled state rather than this
   // component's own prop, because Base UI resolves that state from the group
-  // too. Asserted through the control's `disabled` and the variant that keys
-  // off it: which of the two cursor rules wins is the selector's job, and a
-  // class string cannot show it.
+  // too. Asserted on the attribute the CSS selects: `[data-disabled]` on the
+  // radio, as a direct child of the label.
   test.each([
     ["the option's own prop", { group: false }],
     ["the group's disabled state", { group: true }],
@@ -120,10 +119,29 @@ describe("RadioGroupItem", () => {
       )
     );
 
-    expect(container.querySelector("label")?.className).toContain(
-      "has-[:disabled]:cursor-not-allowed"
+    expect(container.querySelector("label > [data-disabled]")).not.toBeNull();
+
+    unmount();
+  });
+
+  // The selector is scoped to the direct child because an item may wrap a
+  // disabled control of its own — InstanceFormBody's "Custom" option holds a
+  // number input that is disabled until that option is picked.
+  test("a disabled control inside an option does not disable the option", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        RadioGroup,
+        { value: "default", onValueChange: () => undefined },
+        createElement(
+          RadioGroupItem,
+          { value: "custom" },
+          createElement("input", { type: "number", disabled: true })
+        )
+      )
     );
-    expect(container.querySelector("[disabled]")).not.toBeNull();
+
+    expect(container.querySelector("input:disabled")).not.toBeNull();
+    expect(container.querySelector("label > [data-disabled]")).toBeNull();
 
     unmount();
   });

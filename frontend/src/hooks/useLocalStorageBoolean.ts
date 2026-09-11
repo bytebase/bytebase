@@ -9,6 +9,10 @@ import { useCallback, useState } from "react";
  *
  * Reads and writes are guarded because storage throws outright in a locked-down
  * profile, and a preference is never worth failing a render over.
+ *
+ * `key` must be stable for the life of the component: it is read once, in the
+ * initializer, so a key that changes would render the old key's value while
+ * writing to the new one.
  */
 export function useLocalStorageBoolean(
   key: string,

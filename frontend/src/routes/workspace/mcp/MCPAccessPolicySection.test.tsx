@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   dataMaskingAvailable: { value: true },
   permissionDisabled: { value: false },
   permissionGuard: vi.fn(),
+  pushNotification: vi.fn(),
 }));
 
 vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
@@ -43,7 +44,7 @@ vi.mock("@/components/PermissionGuard", () => ({
   },
 }));
 
-vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
+vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
 
 vi.mock("@/stores/app", () => {
   const state = {
@@ -665,6 +666,56 @@ describe("MCPAccessPolicySection", () => {
     expect(container.textContent).not.toContain(
       "settings.mcp.policy.masking-pending"
     );
+    unmount();
+  });
+
+  // The write landed but the card can no longer read it back. Closing the
+  // editor would present the pre-save policy as current, so the editor stays
+  // open with the pick intact and saving again is the same write.
+  test("a failed re-read keeps the editor open and claims no success", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+
+    mocks.refreshServerInfo.mockRejectedValue(new Error("read failed"));
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+
+    expect(mocks.upsertSetting).toHaveBeenCalledOnce();
+    expect(mocks.pushNotification).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("settings.mcp.policy.save");
+    expect(
+      [...container.querySelectorAll("button")].find((button) =>
+        button.textContent?.includes("settings.mcp.policy.save")
+      )
+    ).toHaveProperty("disabled", false);
+    unmount();
+  });
+
+  test("a failed save closes nothing and reports no success", async () => {
+    mocks.upsertSetting.mockRejectedValue(new Error("write failed"));
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+
+    expect(mocks.pushNotification).not.toHaveBeenCalled();
+    expect(mocks.refreshServerInfo).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("settings.mcp.policy.save");
     unmount();
   });
 

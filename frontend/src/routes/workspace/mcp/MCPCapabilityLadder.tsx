@@ -107,7 +107,10 @@ export function MCPCapabilityLadder({
             row's position in it survives without sight — the prefix the design
             rests on. Each divider is a presentational sibling of the rows it
             closes, never content inside the last of them. */}
-        <ul className="flex flex-col">
+        {/* Tailwind's preflight removes the marker from every `ul`, and Safari
+            drops list semantics from an unstyled list — so the position
+            announcement this list depends on needs the role stated. */}
+        <ul role="list" className="flex flex-col">
           {MCP_CAPABILITY_TIERS.map((tier) => (
             <Fragment key={tier}>
               {rowsInTier(tier).map((row) => (

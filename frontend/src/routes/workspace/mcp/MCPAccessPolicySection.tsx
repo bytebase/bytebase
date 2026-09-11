@@ -179,15 +179,13 @@ export function MCPAccessPolicySection() {
         })
       : t("settings.mcp.policy.tightening");
 
-  // Disabled is the one pick that withholds the toggle and can still be saved,
-  // so it is the one state where the footer is the flag's only disclosure. It
-  // names the value Save writes whenever that value will be set, not only when
-  // this edit changed it — and says nothing about when the value takes effect,
-  // which depends on a masking license this line cannot see.
+  // Where the pick withholds the toggle and the form can still be saved, the
+  // footer is the flag's only disclosure. It names the value Save writes
+  // whenever that value will be set, not only when this edit changed it — and
+  // says nothing about when the value takes effect, which depends on a masking
+  // license this line cannot see.
   const maskingPending =
-    canSave &&
-    pick === MCPSetting_Capability.DISABLED &&
-    (ignoreMasking || storedIgnoreMasking)
+    canSave && !maskingApplies && (ignoreMasking || storedIgnoreMasking)
       ? ignoreMasking
         ? t("settings.mcp.policy.masking-pending.ignored")
         : t("settings.mcp.policy.masking-pending.applied")

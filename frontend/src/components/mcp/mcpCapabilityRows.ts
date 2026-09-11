@@ -9,9 +9,24 @@ import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
  */
 export type MCPCapabilityTier = "read" | "write";
 
+/**
+ * The rows, by the id their copy is keyed under. A union rather than `string`
+ * so a row with no locale entry is a compile error at every consumer that
+ * indexes the copy by id, rather than a missing key found at render.
+ */
+export type MCPCapabilityRowId =
+  | "read-schemas"
+  | "read-data"
+  | "read-workflow"
+  | "propose"
+  | "run-rollouts"
+  | "run-statements"
+  | "export"
+  | "manage";
+
 export interface MCPCapabilityRow {
   /** Keys the row's copy under `settings.mcp.ladder.row.<id>.*`. */
-  readonly id: string;
+  readonly id: MCPCapabilityRowId;
   readonly tier: MCPCapabilityTier;
 }
 

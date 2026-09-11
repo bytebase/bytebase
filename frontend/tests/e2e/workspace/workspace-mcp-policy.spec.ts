@@ -5,6 +5,8 @@
 // later suite's MCP session is allowed to do. This file runs before
 // workspace-seat-limit's license drop (directory order).
 
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { rowsInTier } from "../../../src/components/mcp/mcpCapabilityRows";
 import enUS from "../../../src/locales/en-US.json";
@@ -33,7 +35,7 @@ let originalMCPSetting: Record<string, unknown>;
 // a ninth row must change this spec rather than leave it green against eight.
 const rowTitle = (id: keyof typeof COPY.ladder.row) => COPY.ladder.row[id].title;
 const titlesInTier = (tier: "read" | "write") =>
-  rowsInTier(tier).map((row) => rowTitle(row.id as keyof typeof COPY.ladder.row));
+  rowsInTier(tier).map((row) => rowTitle(row.id));
 const READ_ROWS = titlesInTier("read");
 const WRITE_ROWS = titlesInTier("write");
 
@@ -105,9 +107,22 @@ async function openLadder(page: Page): Promise<void> {
   await expect(row(page, READ_ROWS[0])).toBeVisible();
 }
 
-test.beforeAll(async () => {
+test.beforeAll(async ({}, testInfo) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
+
+  // Captured once per run, not once per attempt. A CI retry restarts the worker
+  // and re-runs this hook, so an attempt that died after M3 persisted
+  // Read-write would otherwise be re-snapshotted as the baseline — and teardown
+  // would pin the shared workspace there, which is the outcome the snapshot
+  // exists to prevent. The project output directory is cleared at the start of
+  // a run and survives its retries.
+  const baselinePath = join(testInfo.project.outputDir, "mcp-baseline.json");
+  if (existsSync(baselinePath)) {
+    originalMCPSetting = JSON.parse(readFileSync(baselinePath, "utf8"));
+    return;
+  }
+
   const setting = (await env.api.getSetting("MCP")) as {
     value?: { mcp?: Record<string, unknown> };
   } | null;
@@ -121,6 +136,8 @@ test.beforeAll(async () => {
     );
   }
   originalMCPSetting = setting.value.mcp;
+  mkdirSync(testInfo.project.outputDir, { recursive: true });
+  writeFileSync(baselinePath, JSON.stringify(originalMCPSetting));
 });
 
 test.afterAll(async () => {
