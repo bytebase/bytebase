@@ -51,7 +51,6 @@ describe("MCPModeBadge", () => {
         `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[mode].key}.title`
       );
       unmount();
-      document.body.innerHTML = "";
     }
     // Three modes, three distinct glyphs: a table wired to one icon for all
     // would still satisfy the per-mode assertions above.

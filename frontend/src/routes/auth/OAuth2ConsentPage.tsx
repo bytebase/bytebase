@@ -318,13 +318,7 @@ export function OAuth2ConsentPage() {
         />
       );
     }
-    // Narrowed here, not inside the card: `kind === "mode"` proved the stored
-    // value is one this bundle can name, and Disabled is the only one of those
-    // that admits no session. Passing the proof on keeps the card from having
-    // to re-derive it with a ternary that would fold any other value into
-    // Read-only.
-    const capability = ceiling.setting.capability;
-    if (!isServingMode(capability)) {
+    if (!isServingMode(ceiling.mode)) {
       return (
         <MCPConsentDisabled
           workspaceTitle={
@@ -348,8 +342,8 @@ export function OAuth2ConsentPage() {
         </div>
         {workspaceCard}
         <MCPConsentCeiling
-          setting={ceiling.setting}
-          mode={capability}
+          mode={ceiling.mode}
+          ignoreMaskingExemptions={ceiling.ignoreMaskingExemptions}
           dataMaskingAvailable={dataMaskingAvailable}
         />
         <form method="POST" action={AUTHORIZE_URL}>

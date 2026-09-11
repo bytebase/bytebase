@@ -22,13 +22,10 @@ export type MCPServingMode =
 
 /**
  * How a mode identifies itself wherever it appears: the locale-key stem, the
- * glyph, and the chip variant.
- *
- * One row per mode rather than parallel tables, because the identity has to be
- * the same on the settings page and on the consent page — an admin who picked
- * the eye is shown the eye when the session asks to connect. The variant is the
- * only place a mode's color appears; the selector cards stay neutral so the
- * accent keeps meaning "selected".
+ * glyph, and the chip variant. One row per mode rather than parallel tables;
+ * `MCPModeBadge` is what renders it, and says why. The variant is the only
+ * place a mode's color appears — the selector cards stay neutral so the accent
+ * keeps meaning "selected".
  */
 export const MCP_MODE_PRESENTATION: Record<
   MCPMode,
@@ -81,10 +78,9 @@ export const isServingMode = (
   capability === MCPSetting_Capability.READ_WRITE;
 
 /**
- * The locale key for one of a mode's strings, assembled in one place so the
- * product and the copy test cannot disagree about its shape.
+ * The locale keys a mode's strings are stored under, assembled in one place so
+ * the product and the copy test cannot disagree about their shape.
  */
-/** The collapsed disclosure line for a mode that serves a session. */
 export const mcpSummaryKey = (mode: MCPServingMode): string =>
   `settings.mcp.ladder.summary.${MCP_MODE_PRESENTATION[mode].key}`;
 
@@ -102,8 +98,13 @@ export const mcpModeKey = (
  * then find an admin (BOT-106).
  */
 export type ConsentCeiling =
-  /** Carries the response, so the disclosure cannot be rendered without it. */
-  | { kind: "mode"; setting: MCPSetting }
+  /**
+   * The disclosable policy: the mode already narrowed to one this bundle can
+   * name, plus the only other field the disclosure reads. The response itself
+   * does not travel, so no consumer can re-derive the mode from it and reach a
+   * different answer.
+   */
+  | { kind: "mode"; mode: MCPMode; ignoreMaskingExemptions: boolean }
   /** Actuator info did not provide a policy. The policy is not known to be anything. */
   | { kind: "unknown" }
   /** A stored ceiling this build has no wording for, whatever wrote it. */
@@ -126,5 +127,9 @@ export const readConsentCeiling = (
   if (!isMCPMode(setting.capability)) {
     return { kind: "undisclosable" };
   }
-  return { kind: "mode", setting };
+  return {
+    kind: "mode",
+    mode: setting.capability,
+    ignoreMaskingExemptions: setting.ignoreMaskingExemptions,
+  };
 };

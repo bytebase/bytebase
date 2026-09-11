@@ -1,32 +1,16 @@
 import { Check, EyeOff, Info, ScrollText, X } from "lucide-react";
-import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
 import { mcpRowKey, servedRows } from "@/components/mcp/mcpCapabilityRows";
 import type { MCPServingMode } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
-import {
-  type MCPSetting,
-  MCPSetting_Capability,
-} from "@/types/proto-es/v1/setting_service_pb";
-
-interface Line {
-  readonly key: string;
-  readonly icon: ReactNode;
-  /**
-   * What the mark means, for a reader who cannot see it. Allowed and refused
-   * are otherwise carried by a green check against a red cross — colour and
-   * glyph, both visual — on the screen where someone decides whether to hand an
-   * agent access.
-   */
-  readonly mark?: string;
-  readonly text: string;
-}
+import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
+import type { MCPConsentLine } from "./MCPConsentPolicyCard";
+import { MCPConsentPolicyCard } from "./MCPConsentPolicyCard";
 
 interface Props {
-  readonly setting: MCPSetting;
   /** The ceiling this session runs at, narrowed by the caller. */
   readonly mode: MCPServingMode;
+  readonly ignoreMaskingExemptions: boolean;
   readonly dataMaskingAvailable: boolean;
 }
 
@@ -41,14 +25,14 @@ interface Props {
  * decision itself.
  */
 export function MCPConsentCeiling({
-  setting,
   mode,
+  ignoreMaskingExemptions,
   dataMaskingAvailable,
 }: Props) {
   const { t } = useTranslation();
 
   const readWrite = mode === MCPSetting_Capability.READ_WRITE;
-  const lines: Line[] = [
+  const lines: MCPConsentLine[] = [
     ...servedRows(mode).map((row) => ({
       key: row.id,
       icon: <Check className="size-4 text-success" />,
@@ -84,7 +68,7 @@ export function MCPConsentCeiling({
     // withholds unmasking exemptions from MCP sessions, which changes nothing
     // where masking does not run at all — asserting it there would tell the
     // person approving that their data is covered when it is not.
-    ...(setting.ignoreMaskingExemptions && dataMaskingAvailable
+    ...(ignoreMaskingExemptions && dataMaskingAvailable
       ? [
           {
             key: "masking",
@@ -102,25 +86,11 @@ export function MCPConsentCeiling({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="bg-control-bg rounded-sm p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-x-2">
-          <p className="text-sm text-control-light">
-            {t("oauth2.consent.mcp.title")}
-          </p>
-          <MCPModeBadge mode={mode} />
-        </div>
-        <ul className="text-sm text-main flex flex-col gap-2">
-          {lines.map((line) => (
-            <li key={line.key} className="flex items-start gap-2">
-              <span className="mt-0.5 shrink-0" aria-hidden="true">
-                {line.icon}
-              </span>
-              {line.mark && <span className="sr-only">{line.mark}</span>}
-              <span>{line.text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <MCPConsentPolicyCard
+        label={t("oauth2.consent.mcp.title")}
+        mode={mode}
+        lines={lines}
+      />
 
       {readWrite && (
         <Alert

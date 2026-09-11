@@ -7,6 +7,10 @@
 
 import { test, expect, type Page } from "@playwright/test";
 import enUS from "../../../src/locales/en-US.json";
+import {
+  STORAGE_KEY_MCP_LADDER_DETAILS,
+  STORAGE_KEY_MCP_LADDER_OPEN,
+} from "../../../src/utils/storage-keys";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
 
@@ -64,7 +68,7 @@ async function gotoMCPPage(page: Page): Promise<void> {
 // Matched on rendered text: an attribute-based locator would pass while no
 // name reached the accessibility tree.
 function chip(page: Page, mode: string) {
-  return page.getByText(`Current policy: ${mode}`);
+  return page.getByText(COPY.policy.current.replace("{{mode}}", mode));
 }
 
 // The disclosure remembers itself per browser, so a case that asserts the
@@ -73,10 +77,13 @@ function chip(page: Page, mode: string) {
 // .auth/state.json, this fails where a silent clear would have masked it.
 async function expectDisclosureUnset(page: Page): Promise<void> {
   expect(
-    await page.evaluate(() => [
-      localStorage.getItem("bb.mcp.ladder.open"),
-      localStorage.getItem("bb.mcp.ladder.details"),
-    ])
+    await page.evaluate(
+      ([open, details]) => [
+        localStorage.getItem(open),
+        localStorage.getItem(details),
+      ],
+      [STORAGE_KEY_MCP_LADDER_OPEN, STORAGE_KEY_MCP_LADDER_DETAILS]
+    )
   ).toEqual([null, null]);
 }
 
@@ -188,12 +195,12 @@ test.describe("MCP access policy capability ladder", () => {
     // appears beside something Read-only allows.
     for (const title of READ_ROWS) {
       await expect(
-        row(page, title).getByText("read", { exact: true })
+        row(page, title).getByText(COPY.ladder.tier.read, { exact: true })
       ).toBeVisible();
     }
     for (const title of WRITE_ROWS) {
       await expect(
-        row(page, title).getByText("write", { exact: true })
+        row(page, title).getByText(COPY.ladder.tier.write, { exact: true })
       ).toHaveCount(0);
     }
     await expect(page.getByText(COPY.ladder.stops.read)).toBeVisible();
@@ -245,7 +252,7 @@ test.describe("MCP access policy capability ladder", () => {
     await openLadder(page);
     for (const title of WRITE_ROWS) {
       await expect(
-        row(page, title).getByText("write", { exact: true })
+        row(page, title).getByText(COPY.ladder.tier.write, { exact: true })
       ).toBeVisible();
     }
 
@@ -275,7 +282,7 @@ test.describe("MCP access policy capability ladder", () => {
     ).toBeVisible();
     for (const title of WRITE_ROWS) {
       await expect(
-        row(page, title).getByText("write", { exact: true })
+        row(page, title).getByText(COPY.ladder.tier.write, { exact: true })
       ).toBeVisible();
     }
   });

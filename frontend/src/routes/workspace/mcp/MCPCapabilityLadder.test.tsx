@@ -51,14 +51,14 @@ const rowItems = (container: HTMLElement) => [
 ];
 
 const servedIds = (container: HTMLElement) =>
-  [...container.querySelectorAll("li")]
+  rowItems(container)
     .filter((item) => item.textContent?.includes("settings.mcp.ladder.tier."))
-    .map((item) =>
-      MCP_CAPABILITY_ROWS.find((row) =>
-        item.textContent?.includes(`row.${row.id}.title`)
-      )
-    )
-    .map((row) => row?.id);
+    .map(
+      (item) =>
+        MCP_CAPABILITY_ROWS.find((row) =>
+          item.textContent?.includes(`row.${row.id}.title`)
+        )?.id
+    );
 
 describe("MCPCapabilityLadder", () => {
   afterEach(() => {

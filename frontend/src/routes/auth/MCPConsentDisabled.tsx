@@ -1,9 +1,9 @@
 import { ScrollText, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
 import { Button } from "@/components/ui/button";
 import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
+import { MCPConsentPolicyCard } from "./MCPConsentPolicyCard";
 
 interface Props {
   readonly workspaceTitle: string;
@@ -51,24 +51,22 @@ export function MCPConsentDisabled({
 
       {workspaceCard}
 
-      <div className="bg-control-bg rounded-sm p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-x-2">
-          <p className="text-sm text-control-light">
-            {t("oauth2.consent.mcp.disabled.policy-label")}
-          </p>
-          <MCPModeBadge mode={MCPSetting_Capability.DISABLED} />
-        </div>
-        <ul className="text-sm text-main flex flex-col gap-2">
-          <li className="flex items-start gap-2">
-            <X className="mt-0.5 size-4 shrink-0 text-error" />
-            <span>{t("oauth2.consent.mcp.disabled.line.no-session")}</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <ScrollText className="mt-0.5 size-4 shrink-0 text-control-light" />
-            <span>{t("oauth2.consent.mcp.disabled.line.recorded")}</span>
-          </li>
-        </ul>
-      </div>
+      <MCPConsentPolicyCard
+        label={t("oauth2.consent.mcp.disabled.policy-label")}
+        mode={MCPSetting_Capability.DISABLED}
+        lines={[
+          {
+            key: "no-session",
+            icon: <X className="size-4 text-error" />,
+            text: t("oauth2.consent.mcp.disabled.line.no-session"),
+          },
+          {
+            key: "recorded",
+            icon: <ScrollText className="size-4 text-control-light" />,
+            text: t("oauth2.consent.mcp.disabled.line.recorded"),
+          },
+        ]}
+      />
 
       <div className="flex flex-col gap-2">
         <Button

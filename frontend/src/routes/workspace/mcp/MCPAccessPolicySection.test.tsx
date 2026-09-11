@@ -87,16 +87,6 @@ const flush = () =>
     await Promise.resolve();
   });
 
-const deferred = <T,>() => {
-  let resolve!: (v: T) => void;
-  let reject!: (e: unknown) => void;
-  const promise = new Promise<T>((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-};
-
 const storePolicy = (
   capability: MCPSetting_Capability,
   ignoreMaskingExemptions = false
@@ -132,14 +122,7 @@ beforeEach(async () => {
   localStorage.clear();
   mocks.permissionDisabled.value = false;
   mocks.dataMaskingAvailable.value = true;
-  mocks.serverInfo.value = {
-    mcpSetting: {
-      capability: MCPSetting_Capability.READ_ONLY,
-      ignoreMaskingExemptions: false,
-    },
-  };
-  mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
-  mocks.refreshServerInfo.mockResolvedValue(mocks.serverInfo.value);
+  storePolicy(MCPSetting_Capability.READ_ONLY);
   mocks.upsertSetting.mockResolvedValue(undefined);
   ({ MCPAccessPolicySection } = await import("./MCPAccessPolicySection"));
 });
@@ -261,7 +244,7 @@ describe("MCPAccessPolicySection", () => {
   });
 
   test("waits for actuator info before offering policy editing", async () => {
-    const pending = deferred<undefined>();
+    const pending = Promise.withResolvers<undefined>();
     mocks.serverInfo.value = undefined;
     mocks.loadServerInfo.mockReturnValue(pending.promise);
 
@@ -324,24 +307,8 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  test("keeps the masking switch intrinsic", async () => {
-    const { container, render, unmount } = renderIntoContainer(
-      <MCPAccessPolicySection />
-    );
-    render();
-    await flush();
-    clickText(container, "settings.mcp.policy.edit");
-    await flush();
-
-    const maskingSwitch = container.querySelector(
-      '[aria-label="settings.mcp.policy.masking.title"]'
-    );
-    expect(maskingSwitch?.classList.contains("shrink-0")).toBe(true);
-    unmount();
-  });
-
   test("the policy inputs are locked while a save is in flight", async () => {
-    const inFlight = deferred<undefined>();
+    const inFlight = Promise.withResolvers<undefined>();
     mocks.upsertSetting.mockReturnValue(inFlight.promise);
 
     const { container, render, unmount } = renderIntoContainer(
@@ -360,17 +327,14 @@ describe("MCPAccessPolicySection", () => {
 
     // The Switch renders a span plus a hidden checkbox, and the checkbox is
     // what carries `disabled`, so the masking control is in this set only while
-    // a serving mode is picked. Its presence is pinned rather than assumed.
+    // a serving mode is picked: three radios and that one checkbox.
     const controls = () =>
       [
         ...container.querySelectorAll(
           'input[type="radio"], input[type="checkbox"]'
         ),
       ] as HTMLInputElement[];
-    expect(
-      container.querySelector('input[type="checkbox"]')
-    ).not.toBeNull();
-    expect(controls().length).toBeGreaterThan(3);
+    expect(controls()).toHaveLength(4);
     expect(controls().every((c) => !c.disabled)).toBe(true);
 
     clickText(container, "settings.mcp.policy.save");
@@ -524,7 +488,7 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.mode.disabled.title");
     await flush();
     expect(container.textContent).toContain(
-      "settings.mcp.policy.masking-pending"
+      "settings.mcp.policy.masking-pending.ignored"
     );
 
     clickText(container, "settings.mcp.policy.save");
@@ -608,8 +572,16 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.mode.disabled.title");
     await flush();
     // The control is withheld — it governs nothing under Disabled — but the
-    // draft behind it is still the admin's.
+    // draft behind it is still the admin's, and the footer names the value Save
+    // will write rather than the one that is stored.
     expect(maskingSwitch(container)).toBeNull();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.masking-pending.applied"
+    );
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.masking-pending.ignored"
+    );
+    expect(maskingBadgeText(container)).toBeUndefined();
 
     clickText(container, "settings.mcp.policy.mode.read-write.title");
     await flush();
@@ -622,6 +594,72 @@ describe("MCPAccessPolicySection", () => {
       "value.mcp.ignore_masking_exemptions",
     ]);
     expect(request.value.value.value.ignoreMaskingExemptions).toBe(false);
+    unmount();
+  });
+
+  // An admin who cannot see the control cannot see the value either, so the
+  // disclosure follows the value being saved rather than the edit that set it.
+  test("a stored flag nobody touched is still named under a pick that hides it", async () => {
+    storePolicy(MCPSetting_Capability.READ_ONLY, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.masking-pending.ignored"
+    );
+
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+    const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
+    expect(request.value.value.value.ignoreMaskingExemptions).toBe(true);
+    unmount();
+  });
+
+  // The chip is the stored flag's disclosure and the toggle is the draft's.
+  // Rendering the chip in the editor asserted a live restriction under a pick
+  // that admits no session, and read the stored pair while Save wrote the
+  // draft.
+  test("the masking chip belongs to the view, never to the editor", async () => {
+    storePolicy(MCPSetting_Capability.READ_ONLY, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    expect(maskingBadgeText(container)).toBe("settings.mcp.policy.masking.badge");
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(maskingBadgeText(container)).toBeUndefined();
+
+    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    await flush();
+    expect(maskingBadgeText(container)).toBeUndefined();
+    unmount();
+  });
+
+  // "MCP is off" is a claim about a mode somebody chose. A ceiling this build
+  // cannot parse is failing closed instead, which has a different remedy.
+  test("an unreadable ceiling is never reported as MCP being off", async () => {
+    storePolicy(MCPSetting_Capability.CAPABILITY_UNSPECIFIED, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    expect(maskingBadgeText(container)).toBeUndefined();
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(maskingBadgeText(container)).toBeUndefined();
+    expect(container.textContent).toContain("settings.mcp.policy.unreadable.pick");
     unmount();
   });
 

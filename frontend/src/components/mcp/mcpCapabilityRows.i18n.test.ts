@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import enUS from "@/locales/en-US.json";
 import esES from "@/locales/es-ES.json";
@@ -13,7 +14,6 @@ import {
 import {
   isServingMode,
   MCP_CAPABILITY_CHOICES,
-  MCP_MODE_PRESENTATION,
   mcpModeKey,
   mcpSummaryKey,
 } from "./mcpPolicy";
@@ -107,31 +107,43 @@ describe("capability row copy", () => {
       });
 
       // Copy for an id nobody renders any more is copy nothing keeps true.
-      // Every exempt subtree is checked, not only the rows.
+      // Compared at full leaf paths, not at the top of each subtree: a stray
+      // `…row.export.subtitle` left by a rename keeps a valid row id, so it
+      // passes an id-level comparison, the cross-locale parity check, and the
+      // unused-key exemption all at once.
       test("no copy is left behind by a rename", () => {
-        const subtrees: [string, string[]][] = [
-          ["settings.mcp.ladder.row", MCP_CAPABILITY_ROWS.map((row) => row.id)],
-          ["settings.mcp.ladder.tier", [...MCP_CAPABILITY_TIERS]],
-          ["settings.mcp.ladder.stops", [...MCP_CAPABILITY_TIERS]],
-          [
-            "settings.mcp.ladder.summary",
-            MCP_CAPABILITY_CHOICES.filter(isServingMode).map(
-              (mode) => MCP_MODE_PRESENTATION[mode].key
-            ),
-          ],
-          [
-            "settings.mcp.policy.mode",
-            MCP_CAPABILITY_CHOICES.map(
-              (mode) => MCP_MODE_PRESENTATION[mode].key
-            ),
-          ],
+        const expected = [
+          ...MCP_CAPABILITY_ROWS.flatMap((row) =>
+            (["title", "details"] as const).map((part) => mcpRowKey(row, part))
+          ),
+          ...MCP_CAPABILITY_TIERS.flatMap((tier) =>
+            (["tier", "stops"] as const).map((part) => mcpTierKey(tier, part))
+          ),
+          ...MCP_CAPABILITY_CHOICES.filter(isServingMode).map(mcpSummaryKey),
+          ...MCP_CAPABILITY_CHOICES.flatMap((mode) =>
+            (["title", "caption", "best-for"] as const).map((part) =>
+              mcpModeKey(mode, part)
+            )
+          ),
+          // The one leaf in these subtrees that no builder assembles: the
+          // Disabled view sentence is a literal `t()` call, because only that
+          // mode has one.
+          "settings.mcp.policy.mode.disabled.description",
         ];
-        for (const [path, expected] of subtrees) {
-          const node = read(tree as Tree, path) as Tree;
-          expect(Object.keys(node).sort(), `${path} in ${locale}`).toEqual(
-            [...expected].sort()
-          );
-        }
+        const leaves = (path: string): string[] => {
+          const node = read(tree as Tree, path);
+          return typeof node === "object" && node !== null
+            ? Object.keys(node).flatMap((key) => leaves(`${path}.${key}`))
+            : [path];
+        };
+        const actual = [
+          "settings.mcp.ladder.row",
+          "settings.mcp.ladder.tier",
+          "settings.mcp.ladder.stops",
+          "settings.mcp.ladder.summary",
+          "settings.mcp.policy.mode",
+        ].flatMap(leaves);
+        expect(actual.sort(), locale).toEqual(expected.sort());
       });
     });
   }

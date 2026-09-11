@@ -43,7 +43,6 @@ export function MCPAccessPolicySection() {
   const [saving, setSaving] = useState(false);
   const [pick, setPick] = useState<MCPMode | undefined>(undefined);
   const [ignoreMasking, setIgnoreMasking] = useState(false);
-  const [readFailed, setReadFailed] = useState(false);
   const [readSettled, setReadSettled] = useState(false);
   // A habit of the person, not a fact about the workspace: an admin who opened
   // the list once wants it open the next time they come to compare.
@@ -63,10 +62,7 @@ export function MCPAccessPolicySection() {
   );
 
   useEffect(() => {
-    void loadServerInfo().then((info) => {
-      setReadFailed(!info?.mcpSetting);
-      setReadSettled(true);
-    });
+    void loadServerInfo().then(() => setReadSettled(true));
   }, [loadServerInfo]);
 
   const storedCapability = serverInfo?.mcpSetting?.capability;
@@ -141,9 +137,7 @@ export function MCPAccessPolicySection() {
     }
   };
 
-  // Disabled has no list, so it says its one sentence instead. Every other mode
-  // discloses the same ladder in view and in edit; picking a mode while editing
-  // renders exactly what the view will show once it is saved.
+  // Disabled has no list, so it says its one sentence instead.
   const disclosure = (mode: MCPMode) => {
     if (!isServingMode(mode)) {
       return editing ? (
@@ -179,43 +173,57 @@ export function MCPAccessPolicySection() {
       : t("settings.mcp.policy.tightening");
 
   // A masking edit survives a pick that hides its control, and is written with
-  // the rest. Nothing else on the card would say so, so the footer does.
-  const maskingPending = maskingChanged && !maskingApplies;
+  // the rest. Under such a pick the footer is the flag's only disclosure, so it
+  // names the value Save writes — whenever that value will be set, not only
+  // when this edit changed it.
+  const maskingPending =
+    !maskingApplies && (ignoreMasking || maskingChanged)
+      ? ignoreMasking
+        ? t("settings.mcp.policy.masking-pending.ignored")
+        : t("settings.mcp.policy.masking-pending.applied")
+      : undefined;
 
-  // What the stored flag is doing, as one decision: a fourth state changes one
-  // arm rather than two expressions that have to agree. Text is resolved here,
-  // not threaded as a key, so each stays a literal call the checker can trace.
-  const maskingBadge = !isServingMode(storedMode)
-    ? {
-        variant: "default" as const,
-        text: t("settings.mcp.policy.masking.badge-disabled"),
-      }
-    : dataMaskingAvailable
-      ? {
-          variant: "secondary" as const,
-          text: t("settings.mcp.policy.masking.badge"),
-        }
-      : {
-          variant: "default" as const,
-          text: t("settings.mcp.policy.masking.badge-unlicensed"),
-        };
+  // The stored flag's chip, and which of three things that flag is doing. The
+  // arm is chosen by naming the mode it means: a negation would also catch the
+  // ceiling this build cannot parse and label a policy nobody turned off as
+  // "MCP is off".
+  const maskingBadge =
+    storedMode === undefined
+      ? undefined
+      : storedMode === MCPSetting_Capability.DISABLED
+        ? {
+            variant: "default" as const,
+            text: t("settings.mcp.policy.masking.badge-disabled"),
+          }
+        : dataMaskingAvailable
+          ? {
+              variant: "secondary" as const,
+              text: t("settings.mcp.policy.masking.badge"),
+            }
+          : {
+              variant: "default" as const,
+              text: t("settings.mcp.policy.masking.badge-unlicensed"),
+            };
 
   // Three states share this slot and only the last renders a policy. Early
   // returns rather than a ternary chain, so each state is named where it is
   // decided and the card reads as the ordinary case it is.
   const policyBody = () => {
-    if (readFailed) {
+    if (!readSettled) {
+      return (
+        <p className="textinfolabel">{t("settings.mcp.policy.loading")}</p>
+      );
+    }
+    // A settled read with no setting is a failed one: loadServerInfo resolves
+    // with what it stored, and a refresh that comes back without the setting
+    // has to land here rather than on a spinner that never clears.
+    if (storedCapability === undefined) {
       return (
         <Alert
           variant="error"
           title={t("settings.mcp.policy.read-failed.title")}
           description={t("settings.mcp.policy.read-failed.description")}
         />
-      );
-    }
-    if (!readSettled || storedCapability === undefined) {
-      return (
-        <p className="textinfolabel">{t("settings.mcp.policy.loading")}</p>
       );
     }
     return (
@@ -238,7 +246,7 @@ export function MCPAccessPolicySection() {
                     mode: modeLabel(storedMode),
                   })}
                 />
-                {storedIgnoreMasking && (
+                {storedIgnoreMasking && maskingBadge && (
                   <Badge variant={maskingBadge.variant}>
                     {maskingBadge.text}
                   </Badge>
@@ -297,6 +305,10 @@ export function MCPAccessPolicySection() {
                   <RadioGroupItem
                     key={capability}
                     value={String(capability)}
+                    // The group's disabled state never reaches the item's own
+                    // prop, so without this the card keeps its pointer and its
+                    // hover while a save swallows the click.
+                    disabled={saving}
                     // The item wraps the whole card in a label, so without this
                     // the radio's name absorbs the caption too.
                     aria-label={modeLabel(capability)}
@@ -304,8 +316,15 @@ export function MCPAccessPolicySection() {
                       "h-full rounded-sm border px-3 py-2",
                       "has-[:focus-visible]:outline-hidden has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2",
                       picked
-                        ? "border-accent bg-accent/5 ring-1 ring-accent"
-                        : "border-control-border hover:border-accent/50 hover:bg-control-bg"
+                        ? // Border, tint and ring are all color, and forced
+                          // colors resolves every one of them to the same
+                          // system value; the outline is what still separates
+                          // the selected card from the other two.
+                          "border-accent bg-accent/5 ring-1 ring-accent forced-colors:outline forced-colors:outline-2"
+                        : "border-control-border",
+                      !picked &&
+                        !saving &&
+                        "hover:border-accent/50 hover:bg-control-bg"
                     )}
                     contentClassName="flex min-w-0 items-center gap-x-2"
                     // Hidden rather than placed: the card is the control, and
@@ -369,22 +388,12 @@ export function MCPAccessPolicySection() {
               </div>
             )}
 
-            {/* The toggle is the flag's view while a serving mode is picked.
-                Under a pick that withholds it, this is. */}
-            {storedIgnoreMasking && !maskingApplies && (
-              <Badge variant={maskingBadge.variant} className="self-start">
-                {maskingBadge.text}
-              </Badge>
-            )}
-
             <Separator />
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex flex-col gap-1">
                 <p className="textinfolabel">{footerSentence}</p>
                 {maskingPending && (
-                  <p className="textinfolabel">
-                    {t("settings.mcp.policy.masking-pending")}
-                  </p>
+                  <p className="textinfolabel">{maskingPending}</p>
                 )}
               </div>
               <div className="flex shrink-0 gap-x-2">

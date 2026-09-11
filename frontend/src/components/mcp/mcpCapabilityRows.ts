@@ -21,14 +21,10 @@ export interface MCPCapabilityRow {
  *
  * Between them these titles claim to cover every READ and WRITE method, and
  * nothing checks that: a method annotated into either class is served the moment
- * it is annotated, whether or not a row names it. Reclassifying an RPC therefore
- * means rereading these rows, which is the rule recorded under Metadata and API
- * conventions in the root AGENTS.md.
- *
- * Which methods each row stands for is NOT here — this file carries only the
- * order and the tier. That mapping is the row table in
- * docs/design/mcp-capability-ladder.md, which is the artifact to read and to
- * update when a classification changes.
+ * it is annotated, whether or not a row names it. Which methods each row stands
+ * for is NOT here — this file carries only the order and the tier. Reclassifying
+ * an RPC means rereading the row table in docs/design/mcp-capability-ladder.md
+ * and updating it in the same change.
  *
  * `run-statements` is the one row backed by no method: it names the statement
  * clamp (`mcp_sql_clamp.go`) that Read-write lifts, which is a real difference
@@ -45,11 +41,7 @@ export const MCP_CAPABILITY_ROWS: readonly MCPCapabilityRow[] = [
   { id: "manage", tier: "write" },
 ];
 
-/**
- * Tier order, and with it the order the "stops here" dividers appear in. The
- * ladder walks the tiers and emits each one's rows followed by its divider, so
- * a row cannot land on the wrong side of the line that closes its tier.
- */
+/** Tier order, and with it the order the "stops here" dividers appear in. */
 export const MCP_CAPABILITY_TIERS: readonly MCPCapabilityTier[] = [
   "read",
   "write",

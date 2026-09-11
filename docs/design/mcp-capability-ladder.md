@@ -76,7 +76,7 @@ the product.
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
 | write | Manage database housekeeping | Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries | 14 WRITE methods: sync, `UpdateDatabase`, database groups, saved-query writes |
 | — | *Read-write stops here* | | 97 methods |
-| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, read anyone else's query history, or send data to a third party. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
+| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, or read anyone else's query history. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
 
 Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
 workspace happens to hold, so **every line on this card must be true on both axes: mode and engine.**
@@ -108,6 +108,28 @@ cannot enumerate, say what limits it — "as far as the engine and the user's ow
 "how deeply that can be checked varies by engine" — and let the reader learn the specifics from the
 docs. An enumeration is wrong the release a driver changes; a universal is wrong the release an
 engine is added.
+
+Two further axes were found in review, each after it had already shipped a false line.
+
+**Effect.** A refusal is a claim about what a session can cause, not about which methods it can
+call, and the two come apart wherever a permitted method has an effect no annotation names.
+`CreateIssue` is an ordinary WRITE; `startIssueWorkflow` calls `emitIssueCreated`, and the webhook
+manager posts the issue title and description to whatever endpoint the workspace configured
+(`backend/component/webhook/manager.go`). A Read-write session can put anything it has read into a
+description, so the floor's "never … send data to a third party" was false while every method it
+reasoned about was classified correctly. Reasoning from the annotation set cannot find this; only
+following the effect can. **Check a claim about effects against effects, including the ones no
+annotation names.**
+
+**Complement.** A conditional line also asserts something about its complement, and a reader takes
+the reassuring half. "Where Bytebase cannot check a statement, it is not verified before it runs" is
+true as written and implies that where Bytebase can check, it does — but Read-write leaves
+`mcpReadOnlyClampApplies` false and skips `validateQueryRequest` for every engine in
+`EngineSupportQueryNewACL`, so on PostgreSQL, the engine with the most complete parser, nothing
+checks the statement at all. The conditional pointed its reassurance exactly where the product is
+weakest. **If negating the condition yields a promise the product does not keep, drop the condition
+and state the bound unconditionally** — here, that this mode does not require a statement to be a
+read, which is the lifted bound itself and cannot rot as engines change.
 
 Two choices in the wording are deliberate. Row 2 says *Read data by running queries* rather than
 "Run queries" so the verb stays Read and the sub-item carries the rule that keeps it true under
@@ -259,15 +281,31 @@ their descriptions must not silently undo an unrelated edit, and under Disabled 
 inert rather than wrong, so writing it costs nothing now and honors the choice when MCP is turned
 back on.
 
-The "Masking exemptions ignored" chip reports the stored flag wherever a policy is readable, and
-says which of three things it is doing: in effect, stored but unlicensed, or stored with MCP off.
-Withholding it was tried and is wrong in both inert cases — the flag is storable under Disabled,
-which preserving the draft makes reachable by design, and hiding it leaves a set flag with nowhere
-to see it. The reasons it might be inert live in the editor and in the Disabled sentence, and the
-editor is a different branch behind `bb.settings.set`, so a reader of this page may never reach
-them; the chip therefore carries the reason itself. The consent page still withholds its masking
-line without a license, because its reader sees neither the setting nor any caveat and would read
-the line as "my data is covered".
+The "Masking exemptions ignored" chip belongs to the **view**. It reports the stored flag in the
+present tense and says which of three things that flag is doing: in effect, stored but unlicensed,
+or stored with MCP off. Withholding it was tried and is wrong in both inert cases — the flag is
+storable under Disabled, which preserving the draft makes reachable by design, and hiding it leaves
+a set flag with nowhere to see it. The reasons it might be inert live in the editor and in the
+Disabled sentence, and the editor is a different branch behind `bb.settings.set`, so a reader of
+this page may never reach them; the chip therefore carries the reason itself. Its inventory is
+therefore (Disabled | Read-only | Read-write) × licensed, and the arm is chosen by naming the modes
+it admits: `!isServingMode(storedMode)` also catches the ceiling this build cannot parse, and would
+label a policy nobody turned off as "MCP is off".
+
+The editor does not render it, and an attempt to do so failed three ways at once. A present-tense
+chip under a pick that admits no session states a live restriction directly beneath the red line
+saying nothing can connect — the contradiction this decision withholds the toggle to prevent,
+restated as a chip. Its text came from the stored pair while Save writes the draft, so it could
+assert the opposite of what Save was about to do, in both directions. And gating it on the stored
+flag left the "turned it on, then picked Disabled" case showing nothing at all — the very gap it was
+added to close. **A surface discloses the state it owns: the view reports what is stored, the editor
+reports what Save will write.** Under a pick that withholds the toggle the editor says so in the
+footer, in the future tense, naming the direction — and whenever the saved flag will be set, not
+only when this edit changed it, because an admin who cannot see the control cannot see the value
+either.
+
+The consent page still withholds its masking line without a license, because its reader sees neither
+the setting nor any caveat and would read the line as "my data is covered".
 (Mock E draws the toggle under Disabled; the implementation does not.)
 
 **D8 — Copy that shrinks, but keeps the coverage limit.** The masking toggle's two paragraphs
@@ -298,7 +336,10 @@ so on a workspace whose engine refuses every statement, an unqualified "Read dat
 stay an approval screen, so it bounds the whole list once instead, on the line that already limits it
 by the reader's own permissions. That bound is per mode, because the statement clamp it describes
 runs only under Read-only: "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all" against
-"Capped by your own Bytebase permissions. Where Bytebase cannot check a statement, it is not verified before it runs". One line either way, and the ✓ marks
+"Capped by your own Bytebase permissions. This mode does not require a statement to be a read". The Read-only line carries the engine axis
+because the clamp genuinely consults `HasQueryValidator`; the Read-write line carries none, because
+a condition there points its reassurance at the engines Bytebase parses best and checks least (see
+the complement axis in The rows). One line either way, and the ✓ marks
 read as what the policy admits rather than what will succeed. It carries a neutral glyph and no
 "Allowed" mark, so a bound is not counted as a further grant.
 
@@ -323,11 +364,11 @@ reference.
 
 | State | What the section shows |
 |---|---|
-| View · Read-only or Read-write | Chip line with Edit policy; the disclosure line as the description, collapsed by default. The open state persists per browser (D1), so neither the product nor a test may treat collapsed as an invariant. |
+| View · Read-only or Read-write | Chip line with Edit policy, plus the masking chip when the flag is stored (D7); the disclosure line as the description, collapsed by default. The open state persists per browser (D1), so neither the product nor a test may treat collapsed as an invariant. |
 | View · Disabled | Chip line, with the masking chip naming MCP as off when the flag is stored (D7); "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
-| Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
-| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot; NO masking toggle (D7); separator; footer, Cancel, Save. |
+| Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). No masking chip: in edit the toggle is the flag's disclosure (D7). |
+| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot; NO masking toggle and NO masking chip (D7); separator; footer — the mode sentence, plus the line naming what Save writes for the masking flag when that flag will be set or was changed — Cancel, Save. |
 | Consent page | Served row titles with ✓, the ✕ line under Read-only, then the existing constants and caution. |
 
 ## Copy
@@ -352,21 +393,27 @@ under
   "making database changes through an AI agent, still capped by each user's own permissions".
 - Row titles and sub-items: the table above, verbatim.
 - Dividers: "Read-only stops here", "Read-write stops here".
-- Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, read anyone else's query history, or send data to a third party."
+- Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, or read anyone else's query history."
   The verbs cover every denial reason, and claim only what is refused **whatever the caller's
-  permissions**. That second rule cost three drafts. MCP's ceiling removes methods by class; it
+  permissions** and by **whatever effect** a served method has. That second rule cost three drafts. MCP's ceiling removes methods by class; it
   never adds per-row privacy, so an ownership claim — "never read other people's SQL", then
   "never browse everyone's saved SQL" — is false at whatever permission level makes it true in the
   console: `GetSavedQuery` reaches SQL shared by a binding, and `searchScope` drops all scoping for
   a caller holding project-wide `bb.savedQueries.get`. Query history is the one that qualifies,
-  because `SearchQueryHistories` pins the creator and nothing widens it.
+  because `SearchQueryHistories` pins the creator and nothing widens it. A fourth draft added "or
+  send data to a third party" and was false on the effect axis: `CreateIssue` is served under
+  Read-write and its webhook posts the title and description outward. It is not replaced by a row
+  caveat — the webhook fires identically for an issue a human files in the console, so it is a
+  property of the workspace's notification config rather than of this ceiling, and the "Propose
+  changes" row already says the session can file issues.
 - Tier badges: "read", "write".
 - Masking toggle: the three sentences in D8, including the engine-coverage limit.
 - Masking chip, by what the stored flag is doing: "Masking exemptions ignored",
   "Masking exemptions ignored — masking not licensed",
   "Masking exemptions ignored — MCP is off".
-- Footer, when a masking edit is saved under a pick that withholds its toggle:
-  "Your change to masking exemptions is saved with it, and applies when MCP is enabled again."
+- Footer, under a pick that withholds the masking toggle, naming what Save writes:
+  "This policy will be saved with masking exemptions ignored, which takes effect when MCP is enabled."
+  and "This policy will be saved with masking exemptions applied, as they are outside MCP.".
 - Footer, clean: "Applies to every running session's next request." Dirty: "{from} → {to} applies
   to every running session's next request."
 - Connect a client: the sentence in D9.
@@ -406,9 +453,11 @@ under
 - `MCPPage.tsx`: remove the Authentication Required alert; extend the Connect a client description.
 - `MCPConsentCeiling.tsx`: replace the read, write and workflow lines with the row titles from the
   same table.
-- Locale: keys under `settings.mcp.ladder.*` in all five locale files;
-  `frontend/scripts/check-react-i18n.mjs` guards them. The retired mode-description keys are
-  removed, not left empty.
+- Locale: keys under `settings.mcp.ladder.*` in all five locale files. The retired mode-description
+  keys are removed, not left empty. `frontend/scripts/check-react-i18n.mjs` enforces cross-locale
+  parity over all of them; the four template-keyed families (`ladder.row.`, `.stops.`, `.summary.`,
+  `.tier.`) are registered in its `DYNAMIC_PREFIXES`, which exempts them from the unused-key check
+  as well, so their coverage comes from `mcpCapabilityRows.i18n.test.ts` instead.
 - Tests: the served set per mode; the disclosure collapsed by default, opens, persists, and follows
   the pick; the details toggle reveals sub-items on every row and persists with the open state; the
   "Best for" line follows the selection; Disabled renders the static line in edit and the sentence in

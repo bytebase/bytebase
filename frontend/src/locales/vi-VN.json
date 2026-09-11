@@ -1615,7 +1615,7 @@
         "line": {
           "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
           "capped-read-only": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì Bytebase có thể kiểm tra trên từng engine — nơi không thể chứng minh một câu lệnh là đọc, không truy vấn nào chạy",
-          "capped-read-write": "Giới hạn bởi quyền Bytebase của chính bạn. Ở nơi Bytebase không thể kiểm tra câu lệnh, câu lệnh chạy mà không được xác minh",
+          "capped-read-write": "Giới hạn bởi quyền Bytebase của chính bạn. Chế độ này không yêu cầu câu lệnh phải là thao tác đọc",
           "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
           "no-write": "Không thay đổi, triển khai hay xuất dữ liệu"
         },
@@ -2662,7 +2662,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở kết nối quản trị, đọc lịch sử truy vấn của người khác, hoặc gửi dữ liệu cho bên thứ ba."
+          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở kết nối quản trị, hoặc đọc lịch sử truy vấn của người khác."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -2731,7 +2731,10 @@
           "title": "Bỏ qua miễn trừ che dữ liệu",
           "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
         },
-        "masking-pending": "Thay đổi của bạn về miễn trừ che dữ liệu cũng được lưu cùng, và sẽ áp dụng khi MCP được bật lại.",
+        "masking-pending": {
+          "applied": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu được áp dụng, như bên ngoài MCP.",
+          "ignored": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu bị bỏ qua, có hiệu lực khi MCP được bật."
+        },
         "mode": {
           "disabled": {
             "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",

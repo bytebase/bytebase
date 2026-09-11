@@ -118,7 +118,7 @@ export function MCPCapabilityLadder({
                   details={details}
                 />
               ))}
-              <TierDivider key={`${tier}-divider`} tier={tier} />
+              <TierDivider tier={tier} />
             </Fragment>
           ))}
         </ul>

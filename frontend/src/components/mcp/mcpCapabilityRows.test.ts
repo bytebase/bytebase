@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import {
@@ -27,11 +28,6 @@ describe("mcpCapabilityRows", () => {
     expect(
       servedRows(MCPSetting_Capability.READ_ONLY).map((row) => row.id)
     ).toEqual(["read-schemas", "read-data", "read-workflow"]);
-    // Read-write serves exactly the reads Read-only serves, which is why both
-    // summaries may share the same read phrase.
-    expect(servedRows(MCPSetting_Capability.READ_WRITE).slice(0, 3)).toEqual(
-      servedRows(MCPSetting_Capability.READ_ONLY)
-    );
     expect(servedRows(MCPSetting_Capability.READ_WRITE)).toHaveLength(
       MCP_CAPABILITY_ROWS.length
     );

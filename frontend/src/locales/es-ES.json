@@ -1615,7 +1615,7 @@
         "line": {
           "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza también se registra",
           "capped-read-only": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase puede comprobar en cada motor: donde no puede demostrar que una sentencia es de lectura, no se ejecuta ninguna consulta",
-          "capped-read-write": "Limitado por sus propios permisos de Bytebase. Donde Bytebase no puede comprobar una sentencia, esta se ejecuta sin verificar",
+          "capped-read-write": "Limitado por sus propios permisos de Bytebase. Este modo no exige que una sentencia sea de lectura",
           "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
           "no-write": "Sin cambios, despliegues ni exportaciones"
         },
@@ -2662,7 +2662,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una conexión de administración, leer el historial de consultas de otra persona ni enviar datos a un tercero."
+          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una conexión de administración ni leer el historial de consultas de otra persona."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -2731,7 +2731,10 @@
           "title": "Ignorar las exenciones de enmascaramiento",
           "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
         },
-        "masking-pending": "Su cambio en las exenciones de enmascaramiento se guarda junto con esto y se aplica cuando MCP vuelva a activarse.",
+        "masking-pending": {
+          "applied": "Esta política se guardará con las exenciones de enmascaramiento aplicadas, igual que fuera de MCP.",
+          "ignored": "Esta política se guardará con las exenciones de enmascaramiento ignoradas, lo que surte efecto cuando se active MCP."
+        },
         "mode": {
           "disabled": {
             "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",
