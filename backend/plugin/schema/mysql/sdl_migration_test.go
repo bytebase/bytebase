@@ -425,7 +425,7 @@ const liveOraclePassword = "010424"
 // (literal, CURRENT_TIMESTAMP, ON UPDATE), a secondary index, a foreign key, a
 // STORED generated column, and a view.
 //
-//go:embed testdata/sdl/representative_ddl.sql
+//go:embed testdata/sdl_migration/representative_ddl.sql
 var representativeDDL string
 
 // statementCount counts the non-empty ";"-separated statements in generated DDL.
@@ -1497,7 +1497,7 @@ func TestSDLSessionContextNoChurnLive(t *testing.T) {
 //   - schema.SDLDropAdvices(MYSQL, userSDL, syncedMetadata, engineVersion),
 //   - the real db/mysql sync + schema.MetadataToSDL dumper.
 //
-// The schemas are embedded preprocessed fixtures (testdata/realworld/*.sql) so the test is
+// The schemas are embedded preprocessed fixtures (testdata/sdl_migration/*.sql) so the test is
 // self-contained. Sakila is THE priority: it carries real view / function / procedure /
 // trigger bodies (incl. a SQL SECURITY INVOKER view with fully schema-qualified references),
 // which is where the at-scale view/routine round-trip is won or lost.
@@ -1527,19 +1527,19 @@ func TestSDLSessionContextNoChurnLive(t *testing.T) {
 //                    /*$wgDBTableOptions*/ -> "ENGINE=InnoDB DEFAULT CHARSET=binary",
 //                    /*$wgDBprefix*/ -> empty. 58 tables incl. a MyISAM FULLTEXT searchindex.
 
-//go:embed testdata/realworld/sakila.sql
+//go:embed testdata/sdl_migration/sakila.sql
 var sakilaSchema string
 
-//go:embed testdata/realworld/employees.sql
+//go:embed testdata/sdl_migration/employees.sql
 var employeesSchema string
 
-//go:embed testdata/realworld/employees_part.sql
+//go:embed testdata/sdl_migration/employees_part.sql
 var employeesPartSchema string
 
-//go:embed testdata/realworld/roundcube.sql
+//go:embed testdata/sdl_migration/roundcube.sql
 var roundcubeSchema string
 
-//go:embed testdata/realworld/mediawiki.sql
+//go:embed testdata/sdl_migration/mediawiki.sql
 var mediawikiSchema string
 
 // omniViewParseBug is the precise classification for the (B) omni SDL-parser limitation that
@@ -2452,7 +2452,7 @@ func applyDDL(ctx context.Context, t *testing.T, srv liveServer, dbName, ddl str
 // tables exist (the SDL loader disables foreign_key_checks, but the live setup apply does
 // not).
 //
-//go:embed testdata/sdl/big_schema_core.sql
+//go:embed testdata/sdl_migration/big_schema_core.sql
 var bigSchemaCore string
 
 // circularFKClose closes the department<->employee circular dependency after both
@@ -2515,7 +2515,7 @@ func bigSchemaUserSDL(version string) string {
 // bigSchemaUserSDLCore is the table/routine/trigger body the user authors, sans the
 // version-specific project-load view (appended by bigSchemaUserSDL).
 //
-//go:embed testdata/sdl/big_schema_user_sdl_core.sql
+//go:embed testdata/sdl_migration/big_schema_user_sdl_core.sql
 var bigSchemaUserSDLCore string
 
 // TestSDLStressLargeSchemaIdempotence is the headline at-scale idempotence proof. One
@@ -2842,7 +2842,7 @@ func TestSDLStressTableCreateOptions(t *testing.T) {
 
 // multiChangeBase is the baseline schema for the multi-change release.
 //
-//go:embed testdata/sdl/multi_change_base.sql
+//go:embed testdata/sdl_migration/multi_change_base.sql
 var multiChangeBase string
 
 // multiChangeTarget applies MANY simultaneous changes in ONE diff:
@@ -2858,12 +2858,12 @@ var multiChangeBase string
 //
 // The 8.0 variant includes the CHECK; multiChangeTarget57 omits it.
 //
-//go:embed testdata/sdl/multi_change_target_80.sql
+//go:embed testdata/sdl_migration/multi_change_target_80.sql
 var multiChangeTarget80 string
 
 // multiChangeTarget57 is multiChangeTarget80 without the CHECK constraint (5.7 ignores CHECK).
 //
-//go:embed testdata/sdl/multi_change_target_57.sql
+//go:embed testdata/sdl_migration/multi_change_target_57.sql
 var multiChangeTarget57 string
 
 // indexOf returns the byte index of the first occurrence of substr in s, or -1. Used to
@@ -2953,14 +2953,14 @@ func TestSDLStressMultiChange(t *testing.T) {
 
 // dropHeavyBase has tables, indexes, views, and routines to drop.
 //
-//go:embed testdata/sdl/drop_heavy_base.sql
+//go:embed testdata/sdl_migration/drop_heavy_base.sql
 var dropHeavyBase string
 
 // dropHeavyTarget drops scratch_table (whole table), a.scratch column (+ its index),
 // a.idx_a_name index, the v_a view, f_double function, and p_reset procedure. Table b
 // loses its FK target only if a is dropped — here a survives, b survives.
 //
-//go:embed testdata/sdl/drop_heavy_target.sql
+//go:embed testdata/sdl_migration/drop_heavy_target.sql
 var dropHeavyTarget string
 
 // TestSDLStressDropHeavy asserts SDLDropAdvices emits WARNING advices for each destructive
@@ -3087,12 +3087,12 @@ CREATE FUNCTION f(x INT) RETURNS INT DETERMINISTIC RETURN x*2;`
 // divergeSchema authors constructs whose stored form diverges by version: bare utf8mb4
 // (collation), utf8 (mb3 on 8.0), int widths, and a CHECK (8.0 only).
 //
-//go:embed testdata/sdl/diverge_schema.sql
+//go:embed testdata/sdl_migration/diverge_schema.sql
 var divergeSchema string
 
 // divergeSchemaWithCheck adds a CHECK (8.0 honors it; 5.7 parses-and-ignores).
 //
-//go:embed testdata/sdl/diverge_schema_with_check.sql
+//go:embed testdata/sdl_migration/diverge_schema_with_check.sql
 var divergeSchemaWithCheck string
 
 // TestSDLStressVersionDivergence confirms each version is idempotent against its OWN
@@ -3932,26 +3932,26 @@ func (s chainStep) target(version string) string {
 
 // chainS0: a small starting schema — customer + order with an FK, one view.
 //
-//go:embed testdata/sdl/chain_s0.sql
+//go:embed testdata/sdl_migration/chain_s0.sql
 var chainS0 string
 
 // chainS1: add table `order_item` + FK to ord (and to a new `product` table).
 //
-//go:embed testdata/sdl/chain_s1_common.sql
+//go:embed testdata/sdl_migration/chain_s1_common.sql
 var chainS1Common string
 
 // chainS2: add a column (customer.loyalty_points) + an index (ord.idx_ord_created) + a
 // generated column (order_item.line_total references qty — but needs price; keep it simple:
 // generated col on product: price_with_tax).
 //
-//go:embed testdata/sdl/chain_s2_common.sql
+//go:embed testdata/sdl_migration/chain_s2_common.sql
 var chainS2Common string
 
 // chainS3: modify a column type (ord.total DECIMAL(10,2)->DECIMAL(14,4)) + widen a VARCHAR
 // (customer.name VARCHAR(100)->VARCHAR(200)) + change a default (customer.loyalty_points
 // DEFAULT 0 -> DEFAULT 100).
 //
-//go:embed testdata/sdl/chain_s3_common.sql
+//go:embed testdata/sdl_migration/chain_s3_common.sql
 var chainS3Common string
 
 // chainS4: drop a column WITH its index (drop product.price_with_tax generated col), drop a
@@ -3964,7 +3964,7 @@ var chainS3Common string
 // S4 also changes order_item to remove product linkage, replaces v_cust_orders, adds a
 // trigger on ord, and (8.0) adds a CHECK on ord.total.
 //
-//go:embed testdata/sdl/chain_s4_base.sql
+//go:embed testdata/sdl_migration/chain_s4_base.sql
 var chainS4Base string
 
 func chainSteps() []chainStep {
@@ -4285,16 +4285,16 @@ func TestSDLDeepScale(t *testing.T) {
 //                 paren-subquery operand continuation #366) — both fixed and pinned.
 // ----------------------------------------------------------------------------
 
-//go:embed testdata/enterprise/zabbix.sql
+//go:embed testdata/sdl_migration/zabbix.sql
 var entZabbixSQL string
 
-//go:embed testdata/enterprise/prestashop.sql
+//go:embed testdata/sdl_migration/prestashop.sql
 var entPrestashopSQL string
 
-//go:embed testdata/enterprise/openemr.sql
+//go:embed testdata/sdl_migration/openemr.sql
 var entOpenemrSQL string
 
-//go:embed testdata/enterprise/sys.sql
+//go:embed testdata/sdl_migration/sys.sql
 var entSysSQL string
 
 // entCorpus is one embedded enterprise schema.
@@ -4803,7 +4803,7 @@ func TestSDLEnterpriseBaseline(t *testing.T) {
 // entA1Aux seeds the slice with one object of each kind that needs a pre-existing
 // instance to modify/drop, plus a RANGE-partitioned table for the partition kind.
 //
-//go:embed testdata/sdl/ent_a1_aux.sql
+//go:embed testdata/sdl_migration/ent_a1_aux.sql
 var entA1Aux string
 
 // entCRUDPhase is one oracle round (create / modify / drop) within a kind.
@@ -5877,7 +5877,7 @@ CREATE TABLE ent_ab_t (
 
 // entA5cAux seeds the view/function the combined release modifies.
 //
-//go:embed testdata/sdl/ent_a5c_aux.sql
+//go:embed testdata/sdl_migration/ent_a5c_aux.sql
 var entA5cAux string
 
 //nolint:tparallel
@@ -6367,7 +6367,7 @@ func TestSDLEnterpriseCrossVersionUpgrade(t *testing.T) {
 // them faithfully (0xFF61 on 8.0; a significant trailing NUL, 0x6100, on 5.7).
 // ----------------------------------------------------------------------------
 
-//go:embed testdata/sdl/ent_upg_binary_default_ddl.sql
+//go:embed testdata/sdl_migration/ent_upg_binary_default_ddl.sql
 var entUpgBinaryDefaultDDL string
 
 //nolint:tparallel
@@ -6478,7 +6478,7 @@ var entFuzzSliceTables = append(append([]string{}, entSliceCoreTables...),
 // entFuzzAux seeds the droppable/modifiable object pool the menu needs: two views, one
 // function, one procedure, and a partitioned table (the departition target).
 //
-//go:embed testdata/sdl/ent_fuzz_aux.sql
+//go:embed testdata/sdl_migration/ent_fuzz_aux.sql
 var entFuzzAux string
 
 // entFzProtectedTables are never touched by column-level mutations: the changelog
@@ -7412,10 +7412,10 @@ const (
 // INVISIBLE, CHECK) and is appended on 8.0 only.
 // ----------------------------------------------------------------------------
 
-//go:embed testdata/sdl/ent_sf_aux_common.sql
+//go:embed testdata/sdl_migration/ent_sf_aux_common.sql
 var entSfAuxCommon string
 
-//go:embed testdata/sdl/ent_sf_aux_80.sql
+//go:embed testdata/sdl_migration/ent_sf_aux_80.sql
 var entSfAux80 string
 
 func entSfBaseDDL(t *testing.T, srv liveServer) string {

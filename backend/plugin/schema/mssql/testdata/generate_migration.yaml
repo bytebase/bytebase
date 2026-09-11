@@ -1,0 +1,3859 @@
+- description: Create new table
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      [created_at] datetime NOT NULL DEFAULT GETDATE(),
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      [created_at] datetime NOT NULL DEFAULT GETDATE(),
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+- description: Drop table
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: ""
+  expected: |
+    DROP TABLE [dbo].[users];
+- description: Add column to existing table
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [email] nvarchar(255) NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] ADD [email] nvarchar(255) NULL;
+
+- description: Drop column from table
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [email] nvarchar(255) NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] DROP COLUMN [email];
+
+- description: Alter column type
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(50) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] ALTER COLUMN [name] nvarchar(100) NOT NULL;
+
+- description: Change column nullability
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [email] nvarchar(255) NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] ALTER COLUMN [email] nvarchar(255) NULL;
+
+- description: Add default constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL DEFAULT 1,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] ADD CONSTRAINT [DF_users_status] DEFAULT 1 FOR [status];
+
+- description: Create table with check constraint
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [CK_products_price] CHECK ([price] > 0)
+    );
+  expected: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [CK_products_price] CHECK ([price] > 0)
+    );
+- description: Remove default constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL DEFAULT 1,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: ""
+- description: Change default constraint value
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL DEFAULT 1,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [status] int NOT NULL DEFAULT 2,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] ADD CONSTRAINT [DF_users_status] DEFAULT 2 FOR [status];
+
+- description: Create regular index
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE NONCLUSTERED INDEX [IX_users_email] ON [dbo].[users] ([email]);
+  expected: |+
+    CREATE NONCLUSTERED INDEX [IX_users_email] ON [dbo].[users] ([email]);
+
+- description: Drop index
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE NONCLUSTERED INDEX [IX_users_email] ON [dbo].[users] ([email]);
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    DROP INDEX [IX_users_email] ON [dbo].[users];
+
+- description: Create unique index
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE UNIQUE NONCLUSTERED INDEX [UX_users_email] ON [dbo].[users] ([email]);
+  expected: |+
+    CREATE UNIQUE NONCLUSTERED INDEX [UX_users_email] ON [dbo].[users] ([email]);
+
+- description: Create unique constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [email] nvarchar(255) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [UQ_users_email] UNIQUE NONCLUSTERED ([email])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] ADD CONSTRAINT [UQ_users_email] UNIQUE NONCLUSTERED ([email]);
+
+- description: Create clustered columnstore index
+  oldSchema: |
+    CREATE TABLE [dbo].[sales_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[sales_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL
+    );
+    CREATE CLUSTERED COLUMNSTORE INDEX [CCI_sales_data] ON [dbo].[sales_data];
+  expected: |+
+    CREATE CLUSTERED COLUMNSTORE INDEX [CCI_sales_data] ON [dbo].[sales_data];
+
+- description: Create nonclustered columnstore index with columns
+  oldSchema: |
+    CREATE TABLE [dbo].[analytics_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL,
+      [region] nvarchar(50) NOT NULL,
+      CONSTRAINT [PK_analytics_data] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[analytics_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL,
+      [region] nvarchar(50) NOT NULL,
+      CONSTRAINT [PK_analytics_data] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_analytics_data] ON [dbo].[analytics_data] ([product_id], [sale_date], [amount]);
+  expected: |+
+    CREATE NONCLUSTERED COLUMNSTORE INDEX [NCCI_analytics_data] ON [dbo].[analytics_data] ([product_id], [sale_date], [amount]);
+
+- description: Drop columnstore index
+  oldSchema: |
+    CREATE TABLE [dbo].[sales_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL
+    );
+    CREATE CLUSTERED COLUMNSTORE INDEX [CCI_sales_data] ON [dbo].[sales_data];
+  newSchema: |
+    CREATE TABLE [dbo].[sales_data] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [sale_date] datetime NOT NULL,
+      [amount] decimal(10,2) NOT NULL
+    );
+  expected: |+
+    DROP INDEX [CCI_sales_data] ON [dbo].[sales_data];
+
+- description: Add foreign key constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_departments] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [department_id] int NOT NULL,
+      CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_departments] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [department_id] int NOT NULL,
+      CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[employees] ADD CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+- description: Drop foreign key constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_departments] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [department_id] int NOT NULL,
+      CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [FK_employees_departments] FOREIGN KEY ([department_id]) REFERENCES [dbo].[departments] ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_departments] PRIMARY KEY CLUSTERED ([id])
+    );
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      [department_id] int NOT NULL,
+      CONSTRAINT [PK_employees] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[employees] DROP CONSTRAINT [FK_employees_departments];
+    GO
+
+- description: Add check constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [CK_products_price] CHECK ([price] > 0)
+    );
+  expected: |+
+    ALTER TABLE [dbo].[products] ADD CONSTRAINT [CK_products_price] CHECK ([price] > 0);
+
+- description: Drop check constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [CK_products_price] CHECK ([price] > 0)
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [price] decimal(10,2) NOT NULL,
+      CONSTRAINT [PK_products] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[products] DROP CONSTRAINT [CK_products_price];
+
+- description: Add primary key to existing table
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] ADD CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id]);
+
+- description: Drop primary key constraint
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL,
+      CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
+    );
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NOT NULL
+    );
+  expected: |+
+    ALTER TABLE [dbo].[users] DROP CONSTRAINT [PK_users];
+
+- description: Create scalar function
+  oldSchema: ""
+  newSchema: |
+    CREATE FUNCTION [dbo].[GetFullName]
+    (
+      @FirstName nvarchar(50),
+      @LastName nvarchar(50)
+    )
+    RETURNS nvarchar(101)
+    AS
+    BEGIN
+      RETURN @FirstName + ' ' + @LastName
+    END
+  expected: |
+    CREATE FUNCTION [dbo].[GetFullName]
+    (
+      @FirstName nvarchar(50),
+      @LastName nvarchar(50)
+    )
+    RETURNS nvarchar(101)
+    AS
+    BEGIN
+      RETURN @FirstName + ' ' + @LastName
+    END;
+    GO
+- description: Drop function
+  oldSchema: |
+    CREATE FUNCTION [dbo].[GetFullName]
+    (
+      @FirstName nvarchar(50),
+      @LastName nvarchar(50)
+    )
+    RETURNS nvarchar(101)
+    AS
+    BEGIN
+      RETURN @FirstName + ' ' + @LastName
+    END
+  newSchema: ""
+  expected: |
+    DROP FUNCTION [dbo].[GetFullName];
+    GO
+- description: Create table-valued function
+  oldSchema: ""
+  newSchema: |
+    CREATE FUNCTION [dbo].[GetEmployeesByDepartment]
+    (
+      @DepartmentId int
+    )
+    RETURNS TABLE
+    AS
+    RETURN
+    (
+      SELECT Id, Name, Email
+      FROM Employees
+      WHERE DepartmentId = @DepartmentId
+    )
+  expected: |
+    CREATE FUNCTION [dbo].[GetEmployeesByDepartment]
+    (
+      @DepartmentId int
+    )
+    RETURNS TABLE
+    AS
+    RETURN
+    (
+      SELECT Id, Name, Email
+      FROM Employees
+      WHERE DepartmentId = @DepartmentId
+    );
+    GO
+- description: Create inline table-valued function
+  oldSchema: ""
+  newSchema: |
+    CREATE FUNCTION [dbo].[GetActiveUsers]()
+    RETURNS @Users TABLE
+    (
+      UserId int,
+      UserName nvarchar(100),
+      LastLogin datetime
+    )
+    AS
+    BEGIN
+      INSERT INTO @Users
+      SELECT Id, Name, LastLogin
+      FROM Users
+      WHERE IsActive = 1
+      RETURN
+    END
+  expected: |
+    CREATE FUNCTION [dbo].[GetActiveUsers]()
+    RETURNS @Users TABLE
+    (
+      UserId int,
+      UserName nvarchar(100),
+      LastLogin datetime
+    )
+    AS
+    BEGIN
+      INSERT INTO @Users
+      SELECT Id, Name, LastLogin
+      FROM Users
+      WHERE IsActive = 1
+      RETURN
+    END;
+    GO
+- description: Create simple procedure
+  oldSchema: ""
+  newSchema: |
+    CREATE PROCEDURE [dbo].[GetUserById]
+      @UserId int
+    AS
+    BEGIN
+      SELECT * FROM Users WHERE Id = @UserId
+    END
+  expected: |
+    CREATE PROCEDURE [dbo].[GetUserById]
+      @UserId int
+    AS
+    BEGIN
+      SELECT * FROM Users WHERE Id = @UserId
+    END;
+    GO
+- description: Drop procedure
+  oldSchema: |
+    CREATE PROCEDURE [dbo].[GetUserById]
+      @UserId int
+    AS
+    BEGIN
+      SELECT * FROM Users WHERE Id = @UserId
+    END
+  newSchema: ""
+  expected: |
+    DROP PROCEDURE [dbo].[GetUserById];
+    GO
+- description: Create procedure with output parameters
+  oldSchema: ""
+  newSchema: |
+    CREATE PROCEDURE [dbo].[GetUserCount]
+      @DepartmentId int,
+      @UserCount int OUTPUT
+    AS
+    BEGIN
+      SELECT @UserCount = COUNT(*)
+      FROM Users
+      WHERE DepartmentId = @DepartmentId
+    END
+  expected: |
+    CREATE PROCEDURE [dbo].[GetUserCount]
+      @DepartmentId int,
+      @UserCount int OUTPUT
+    AS
+    BEGIN
+      SELECT @UserCount = COUNT(*)
+      FROM Users
+      WHERE DepartmentId = @DepartmentId
+    END;
+    GO
+- description: Alter procedure
+  oldSchema: |
+    CREATE PROCEDURE [dbo].[UpdateUser]
+      @UserId int,
+      @Name nvarchar(100)
+    AS
+    BEGIN
+      UPDATE Users SET Name = @Name WHERE Id = @UserId
+    END
+  newSchema: |
+    CREATE PROCEDURE [dbo].[UpdateUser]
+      @UserId int,
+      @Name nvarchar(100),
+      @Email nvarchar(255)
+    AS
+    BEGIN
+      UPDATE Users
+      SET Name = @Name, Email = @Email
+      WHERE Id = @UserId
+    END
+  expected: |
+    DROP PROCEDURE [dbo].[UpdateUser];
+    GO
+    CREATE PROCEDURE [dbo].[UpdateUser]
+      @UserId int,
+      @Name nvarchar(100),
+      @Email nvarchar(255)
+    AS
+    BEGIN
+      UPDATE Users
+      SET Name = @Name, Email = @Email
+      WHERE Id = @UserId
+    END;
+    GO
+- description: Create procedure with transaction
+  oldSchema: ""
+  newSchema: |
+    CREATE PROCEDURE [dbo].[TransferFunds]
+      @FromAccount int,
+      @ToAccount int,
+      @Amount decimal(10,2)
+    AS
+    BEGIN
+      BEGIN TRANSACTION
+      BEGIN TRY
+        UPDATE Accounts SET Balance = Balance - @Amount WHERE Id = @FromAccount
+        UPDATE Accounts SET Balance = Balance + @Amount WHERE Id = @ToAccount
+        COMMIT TRANSACTION
+      END TRY
+      BEGIN CATCH
+        ROLLBACK TRANSACTION
+        THROW
+      END CATCH
+    END
+  expected: |
+    CREATE PROCEDURE [dbo].[TransferFunds]
+      @FromAccount int,
+      @ToAccount int,
+      @Amount decimal(10,2)
+    AS
+    BEGIN
+      BEGIN TRANSACTION
+      BEGIN TRY
+        UPDATE Accounts SET Balance = Balance - @Amount WHERE Id = @FromAccount
+        UPDATE Accounts SET Balance = Balance + @Amount WHERE Id = @ToAccount
+        COMMIT TRANSACTION
+      END TRY
+      BEGIN CATCH
+        ROLLBACK TRANSACTION
+        THROW
+      END CATCH
+    END;
+    GO
+- description: Create single view
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+  expected: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+- description: Create views with dependencies - deterministic order
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      [amount] decimal(10,2) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_orders_with_users] AS
+    SELECT o.id, o.user_id, o.amount, v.name
+    FROM [dbo].[orders] o
+    JOIN [dbo].[v_users] v ON o.user_id = v.id;
+    GO
+    CREATE VIEW [dbo].[v_user_order_summary] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[v_users] u
+    LEFT JOIN [dbo].[v_orders_with_users] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+  expected: |
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      [amount] decimal(10,2) NULL
+    );
+
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_orders_with_users] AS
+    SELECT o.id, o.user_id, o.amount, v.name
+    FROM [dbo].[orders] o
+    JOIN [dbo].[v_users] v ON o.user_id = v.id;
+    GO
+    CREATE VIEW [dbo].[v_user_order_summary] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[v_users] u
+    LEFT JOIN [dbo].[v_orders_with_users] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+- description: Drop views with dependencies - deterministic order
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      [amount] decimal(10,2) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_orders_with_users] AS
+    SELECT o.id, o.user_id, o.amount, v.name
+    FROM [dbo].[orders] o
+    JOIN [dbo].[v_users] v ON o.user_id = v.id;
+    GO
+    CREATE VIEW [dbo].[v_user_order_summary] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[v_users] u
+    LEFT JOIN [dbo].[v_orders_with_users] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      [amount] decimal(10,2) NULL
+    );
+    GO
+  expected: |
+    DROP VIEW [dbo].[v_user_order_summary];
+    GO
+    DROP VIEW [dbo].[v_orders_with_users];
+    GO
+    DROP VIEW [dbo].[v_users];
+    GO
+- description: Alter view - drop and recreate
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      [email] nvarchar(200) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name, email FROM [dbo].[users];
+    GO
+  expected: |
+    DROP VIEW [dbo].[v_users];
+    GO
+
+    ALTER TABLE [dbo].[users] ADD [email] nvarchar(200) NULL;
+
+
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name, email FROM [dbo].[users];
+    GO
+- description: Alter multiple views with dependencies
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_active_users] AS
+    SELECT * FROM [dbo].[v_users] WHERE id > 0;
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      [status] nvarchar(50) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name, status FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_active_users] AS
+    SELECT * FROM [dbo].[v_users] WHERE status = 'active';
+    GO
+  expected: |
+    DROP VIEW [dbo].[v_active_users];
+    GO
+    DROP VIEW [dbo].[v_users];
+    GO
+
+    ALTER TABLE [dbo].[users] ADD [status] nvarchar(50) NULL;
+
+
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name, status FROM [dbo].[users];
+    GO
+    CREATE VIEW [dbo].[v_active_users] AS
+    SELECT * FROM [dbo].[v_users] WHERE status = 'active';
+    GO
+- description: Create views in different schemas
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+  newSchema: |
+    CREATE SCHEMA [reporting];
+    GO
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [reporting].[v_user_report] AS
+    SELECT * FROM [dbo].[v_users];
+    GO
+  expected: |
+    CREATE SCHEMA [reporting];
+    GO
+
+    CREATE VIEW [dbo].[v_users] AS
+    SELECT id, name FROM [dbo].[users];
+    GO
+    CREATE VIEW [reporting].[v_user_report] AS
+    SELECT * FROM [dbo].[v_users];
+    GO
+- description: Complex view dependencies across schemas
+  oldSchema: ""
+  newSchema: |
+    CREATE SCHEMA [sales];
+    GO
+    CREATE SCHEMA [reporting];
+    GO
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      [price] decimal(10,2) NULL
+    );
+    GO
+    CREATE TABLE [sales].[orders] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [quantity] int NOT NULL
+    );
+    GO
+    CREATE VIEW [sales].[v_order_details] AS
+    SELECT o.id, o.product_id, o.quantity, p.name, p.price
+    FROM [sales].[orders] o
+    JOIN [dbo].[products] p ON o.product_id = p.id;
+    GO
+    CREATE VIEW [reporting].[v_sales_summary] AS
+    SELECT product_id, SUM(quantity) as total_quantity, SUM(quantity * price) as total_revenue
+    FROM [sales].[v_order_details]
+    GROUP BY product_id;
+    GO
+  expected: |
+    CREATE SCHEMA [reporting];
+    GO
+    CREATE SCHEMA [sales];
+    GO
+
+    CREATE TABLE [dbo].[products] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      [price] decimal(10,2) NULL
+    );
+    CREATE TABLE [sales].[orders] (
+      [id] int NOT NULL,
+      [product_id] int NOT NULL,
+      [quantity] int NOT NULL
+    );
+
+    GO
+    CREATE VIEW [sales].[v_order_details] AS
+    SELECT o.id, o.product_id, o.quantity, p.name, p.price
+    FROM [sales].[orders] o
+    JOIN [dbo].[products] p ON o.product_id = p.id;
+    GO
+    CREATE VIEW [reporting].[v_sales_summary] AS
+    SELECT product_id, SUM(quantity) as total_quantity, SUM(quantity * price) as total_revenue
+    FROM [sales].[v_order_details]
+    GROUP BY product_id;
+    GO
+- description: Safe order - drop dependent objects before tables
+  oldSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL PRIMARY KEY,
+      [user_id] int NOT NULL,
+      CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users]([id])
+    );
+    GO
+    CREATE INDEX [IX_orders_user_id] ON [dbo].[orders]([user_id]);
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[users] u
+    LEFT JOIN [dbo].[orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+    CREATE PROCEDURE [dbo].[sp_get_user_orders]
+      @user_id int
+    AS
+    BEGIN
+      SELECT * FROM [dbo].[v_user_orders] WHERE id = @user_id;
+    END;
+    GO
+  newSchema: ""
+  expected: |
+    ALTER TABLE [dbo].[orders] DROP CONSTRAINT [FK_orders_users];
+    DROP PROCEDURE [dbo].[sp_get_user_orders];
+    GO
+    DROP VIEW [dbo].[v_user_orders];
+    GO
+    DROP TABLE [dbo].[orders];
+    DROP TABLE [dbo].[users];
+- description: Safe order - create tables before dependent objects
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL PRIMARY KEY,
+      [user_id] int NOT NULL,
+      CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users]([id])
+    );
+    GO
+    CREATE INDEX [IX_orders_user_id] ON [dbo].[orders]([user_id]);
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[users] u
+    LEFT JOIN [dbo].[orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+    CREATE PROCEDURE [dbo].[sp_get_user_orders]
+      @user_id int
+    AS
+    BEGIN
+      SELECT * FROM [dbo].[v_user_orders] WHERE id = @user_id;
+    END;
+    GO
+  expected: |
+    CREATE TABLE [dbo].[users] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL,
+      CONSTRAINT [PK_users_1] PRIMARY KEY ([id])
+    );
+    CREATE TABLE [dbo].[orders] (
+      [id] int NOT NULL,
+      [user_id] int NOT NULL,
+      CONSTRAINT [PK_orders_2] PRIMARY KEY ([id])
+    );
+    CREATE INDEX [IX_orders_user_id] ON [dbo].[orders] ([user_id]);
+    ALTER TABLE [dbo].[orders] ADD CONSTRAINT [FK_orders_users] FOREIGN KEY ([user_id]) REFERENCES [dbo].[users] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+    GO
+    CREATE VIEW [dbo].[v_user_orders] AS
+    SELECT u.id, u.name, COUNT(o.id) as order_count
+    FROM [dbo].[users] u
+    LEFT JOIN [dbo].[orders] o ON u.id = o.user_id
+    GROUP BY u.id, u.name;
+    GO
+    CREATE PROCEDURE [dbo].[sp_get_user_orders]
+      @user_id int
+    AS
+    BEGIN
+      SELECT * FROM [dbo].[v_user_orders] WHERE id = @user_id;
+    END;
+    GO
+- description: Safe order - complex view dependencies with drops and creates
+  oldSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL,
+      [dept_id] int NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_departments] AS
+    SELECT id, name FROM [dbo].[departments];
+    GO
+    CREATE VIEW [dbo].[v_employees] AS
+    SELECT e.id, e.name, e.dept_id, d.name as dept_name
+    FROM [dbo].[employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    GO
+    CREATE VIEW [dbo].[v_employee_dept] AS
+    SELECT id, name, dept_name
+    FROM [dbo].[v_employees];
+    GO
+  newSchema: |
+    CREATE TABLE [dbo].[departments] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL,
+      [location] nvarchar(200) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[employees] (
+      [id] int NOT NULL PRIMARY KEY,
+      [name] nvarchar(100) NULL,
+      [dept_id] int NULL,
+      [salary] decimal(10,2) NULL
+    );
+    GO
+    CREATE VIEW [dbo].[v_departments] AS
+    SELECT id, name, location FROM [dbo].[departments];
+    GO
+    CREATE VIEW [dbo].[v_employees] AS
+    SELECT e.id, e.name, e.dept_id, e.salary, d.name as dept_name, d.location
+    FROM [dbo].[employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    GO
+    CREATE VIEW [dbo].[v_employee_dept] AS
+    SELECT id, name, salary, dept_name, location
+    FROM [dbo].[v_employees];
+    GO
+    CREATE VIEW [dbo].[v_dept_summary] AS
+    SELECT dept_name, location, COUNT(*) as emp_count, AVG(salary) as avg_salary
+    FROM [dbo].[v_employee_dept]
+    GROUP BY dept_name, location;
+    GO
+  expected: |
+    DROP VIEW [dbo].[v_employee_dept];
+    GO
+    DROP VIEW [dbo].[v_employees];
+    GO
+    DROP VIEW [dbo].[v_departments];
+    GO
+
+    ALTER TABLE [dbo].[departments] ADD [location] nvarchar(200) NULL;
+
+    ALTER TABLE [dbo].[employees] ADD [salary] decimal(10,2) NULL;
+
+
+    GO
+    CREATE VIEW [dbo].[v_departments] AS
+    SELECT id, name, location FROM [dbo].[departments];
+    GO
+    CREATE VIEW [dbo].[v_employees] AS
+    SELECT e.id, e.name, e.dept_id, e.salary, d.name as dept_name, d.location
+    FROM [dbo].[employees] e
+    LEFT JOIN [dbo].[v_departments] d ON e.dept_id = d.id;
+    GO
+    CREATE VIEW [dbo].[v_employee_dept] AS
+    SELECT id, name, salary, dept_name, location
+    FROM [dbo].[v_employees];
+    GO
+    CREATE VIEW [dbo].[v_dept_summary] AS
+    SELECT dept_name, location, COUNT(*) as emp_count, AVG(salary) as avg_salary
+    FROM [dbo].[v_employee_dept]
+    GROUP BY dept_name, location;
+    GO
+- description: Safe order - circular view dependency fallback
+  oldSchema: ""
+  newSchema: |
+    CREATE TABLE [dbo].[table1] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    GO
+    CREATE TABLE [dbo].[table2] (
+      [id] int NOT NULL,
+      [value] nvarchar(100) NULL
+    );
+    GO
+    -- Note: These views create a circular dependency which should fall back to original order
+    CREATE VIEW [dbo].[v_circular1] AS
+    SELECT t1.id, t1.name, t2.value
+    FROM [dbo].[table1] t1
+    JOIN [dbo].[table2] t2 ON t1.id = t2.id
+    WHERE EXISTS (SELECT 1 FROM [dbo].[v_circular2] v WHERE v.id = t1.id);
+    GO
+    CREATE VIEW [dbo].[v_circular2] AS
+    SELECT t2.id, t2.value, t1.name
+    FROM [dbo].[table2] t2
+    JOIN [dbo].[table1] t1 ON t2.id = t1.id
+    WHERE EXISTS (SELECT 1 FROM [dbo].[v_circular1] v WHERE v.id = t2.id);
+    GO
+  expected: |
+    CREATE TABLE [dbo].[table1] (
+      [id] int NOT NULL,
+      [name] nvarchar(100) NULL
+    );
+    CREATE TABLE [dbo].[table2] (
+      [id] int NOT NULL,
+      [value] nvarchar(100) NULL
+    );
+
+    GO
+    CREATE VIEW [dbo].[v_circular1] AS
+    SELECT t1.id, t1.name, t2.value
+    FROM [dbo].[table1] t1
+    JOIN [dbo].[table2] t2 ON t1.id = t2.id
+    WHERE EXISTS (SELECT 1 FROM [dbo].[v_circular2] v WHERE v.id = t1.id);
+    GO
+    CREATE VIEW [dbo].[v_circular2] AS
+    SELECT t2.id, t2.value, t1.name
+    FROM [dbo].[table2] t2
+    JOIN [dbo].[table1] t1 ON t2.id = t1.id
+    WHERE EXISTS (SELECT 1 FROM [dbo].[v_circular1] v WHERE v.id = t2.id);
+    GO
+- description: Basic table operations with foreign keys, indexes, and constraints
+  oldSchema: |
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [app].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        [status] NVARCHAR(20),
+        CONSTRAINT [uk_users_email] UNIQUE ([email]),
+        CONSTRAINT [ck_users_status] CHECK ([status] IN ('active', 'inactive', 'suspended'))
+    );
+
+    CREATE INDEX [idx_users_username] ON [app].[users] ([username]);
+
+    CREATE TABLE [app].[posts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NTEXT,
+        [published_at] DATETIME2,
+        CONSTRAINT [fk_posts_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id]) ON DELETE CASCADE
+    );
+
+    CREATE INDEX [idx_posts_user_id] ON [app].[posts] ([user_id]);
+
+    CREATE TABLE [app].[comments] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [post_id] INT NOT NULL,
+        [user_id] INT NOT NULL,
+        [content] NTEXT NOT NULL,
+        [created_at] DATETIME2,
+        CONSTRAINT [fk_comments_post] FOREIGN KEY ([post_id]) REFERENCES [app].[posts]([id]) ON DELETE CASCADE,
+        CONSTRAINT [fk_comments_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id])
+    );
+
+    CREATE INDEX [idx_comments_post_id] ON [app].[comments] ([post_id]);
+  newSchema: |
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [app].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        CONSTRAINT [uk_users_email] UNIQUE ([email])
+    );
+
+    CREATE INDEX [idx_users_username] ON [app].[users] ([username]);
+
+    CREATE TABLE [app].[posts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NTEXT,
+        [published_at] DATETIME2,
+        CONSTRAINT [fk_posts_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id]) ON DELETE CASCADE
+    );
+
+    CREATE INDEX [idx_posts_user_id] ON [app].[posts] ([user_id]);
+  expected: |+
+    ALTER TABLE [app].[comments] DROP CONSTRAINT [fk_comments_post];
+    ALTER TABLE [app].[comments] DROP CONSTRAINT [fk_comments_user];
+    ALTER TABLE [app].[users] DROP CONSTRAINT [ck_users_status];
+    ALTER TABLE [app].[users] DROP COLUMN [status];
+    GO
+    DROP TABLE [app].[comments];
+
+- description: Cross-schema operations with new schema creation
+  oldSchema: |
+    CREATE SCHEMA [sales];
+    GO
+
+    CREATE SCHEMA [inventory];
+    GO
+
+    CREATE TABLE [sales].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100)
+    );
+
+    CREATE TABLE [sales].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [customer_id] INT NOT NULL,
+        [order_date] DATE,
+        [total] DECIMAL(10,2),
+        [product_id] INT,
+        CONSTRAINT [fk_orders_customer] FOREIGN KEY ([customer_id]) REFERENCES [sales].[customers]([id])
+    );
+
+    CREATE TABLE [inventory].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [category_id] INT,
+        CONSTRAINT [ck_products_price] CHECK ([price] > 0)
+    );
+
+    ALTER TABLE [sales].[orders] ADD CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [inventory].[products]([id]);
+  newSchema: |
+    CREATE SCHEMA [sales];
+    GO
+
+    CREATE TABLE [sales].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100)
+    );
+
+    CREATE TABLE [sales].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [customer_id] INT NOT NULL,
+        [order_date] DATE,
+        [total] DECIMAL(10,2),
+        CONSTRAINT [fk_orders_customer] FOREIGN KEY ([customer_id]) REFERENCES [sales].[customers]([id])
+    );
+  expected: |+
+    ALTER TABLE [sales].[orders] DROP COLUMN [product_id];
+    DROP TABLE [inventory].[products];
+    DROP SCHEMA [inventory];
+    GO
+
+- description: View creation with dependencies
+  oldSchema: |
+    CREATE SCHEMA [reporting];
+    GO
+
+    CREATE TABLE [reporting].[sales_data] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [product_name] NVARCHAR(100) NOT NULL,
+        [quantity] INT NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [sale_date] DATE
+    );
+
+    CREATE TABLE [reporting].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [region] NVARCHAR(50)
+    );
+    GO
+
+    CREATE VIEW [reporting].[product_summary] AS
+    SELECT
+        [product_name],
+        COUNT(*) as [sale_count],
+        SUM([quantity]) as [total_quantity],
+        AVG([price]) as [avg_price]
+    FROM [reporting].[sales_data]
+    GROUP BY [product_name];
+    GO
+
+    CREATE VIEW [reporting].[top_products] AS
+    SELECT TOP 10
+        [product_name],
+        [total_quantity]
+    FROM [reporting].[product_summary]
+    WHERE [total_quantity] > 100
+    ORDER BY [total_quantity] DESC;
+    GO
+  newSchema: |
+    CREATE SCHEMA [reporting];
+    GO
+
+    CREATE TABLE [reporting].[sales_data] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [product_name] NVARCHAR(100) NOT NULL,
+        [quantity] INT NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [sale_date] DATE
+    );
+
+    CREATE TABLE [reporting].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [region] NVARCHAR(50)
+    );
+  expected: |
+    DROP VIEW [reporting].[top_products];
+    GO
+    DROP VIEW [reporting].[product_summary];
+    GO
+- description: Functions and procedures creation
+  oldSchema: |
+    CREATE SCHEMA [calc];
+    GO
+
+    CREATE TABLE [calc].[numbers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [value] INT NOT NULL,
+        [category] NVARCHAR(20)
+    );
+    GO
+
+    CREATE FUNCTION [calc].[square](@input INT)
+    RETURNS INT
+    AS
+    BEGIN
+        RETURN @input * @input;
+    END;
+    GO
+
+    CREATE FUNCTION [calc].[get_numbers_by_category](@category NVARCHAR(20))
+    RETURNS TABLE
+    AS
+    RETURN (
+        SELECT [id], [value], [category]
+        FROM [calc].[numbers]
+        WHERE [category] = @category
+    );
+    GO
+
+    CREATE PROCEDURE [calc].[add_number]
+        @value INT,
+        @category NVARCHAR(20)
+    AS
+    BEGIN
+        INSERT INTO [calc].[numbers] ([value], [category])
+        VALUES (@value, @category);
+    END;
+    GO
+  newSchema: |
+    CREATE SCHEMA [calc];
+    GO
+
+    CREATE TABLE [calc].[numbers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [value] INT NOT NULL,
+        [category] NVARCHAR(20)
+    );
+  expected: |
+    DROP PROCEDURE [calc].[add_number];
+    GO
+    DROP FUNCTION [calc].[get_numbers_by_category];
+    GO
+    DROP FUNCTION [calc].[square];
+    GO
+- description: Various index types including filtered and computed column indexes
+  oldSchema: |
+    CREATE SCHEMA [perf];
+    GO
+
+    CREATE TABLE [perf].[events] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [event_name] NVARCHAR(100) NOT NULL,
+        [event_data] NVARCHAR(MAX),
+        [timestamp] DATETIME2,
+        [user_id] INT,
+        [category] NVARCHAR(50),
+        [event_month] AS DATEPART(MONTH, [timestamp])
+    );
+
+    CREATE INDEX [idx_events_timestamp] ON [perf].[events] ([timestamp]);
+    CREATE INDEX [idx_events_user_category] ON [perf].[events] ([user_id], [category]);
+    CREATE UNIQUE INDEX [idx_events_name_timestamp] ON [perf].[events] ([event_name], [timestamp]);
+
+    CREATE INDEX [idx_events_recent] ON [perf].[events] ([event_name])
+    WHERE [timestamp] >= '2023-01-01';
+
+    CREATE INDEX [idx_events_month] ON [perf].[events] ([event_month]);
+  newSchema: |
+    CREATE SCHEMA [perf];
+    GO
+
+    CREATE TABLE [perf].[events] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [event_name] NVARCHAR(100) NOT NULL,
+        [event_data] NVARCHAR(MAX),
+        [timestamp] DATETIME2,
+        [user_id] INT,
+        [category] NVARCHAR(50)
+    );
+  expected: |+
+    DROP INDEX [idx_events_month] ON [perf].[events];
+    DROP INDEX [idx_events_name_timestamp] ON [perf].[events];
+    DROP INDEX [idx_events_recent] ON [perf].[events];
+    DROP INDEX [idx_events_timestamp] ON [perf].[events];
+    DROP INDEX [idx_events_user_category] ON [perf].[events];
+    GO
+    ALTER TABLE [perf].[events] DROP COLUMN [event_month];
+
+- description: Complex constraints with multiple check constraints and foreign keys
+  oldSchema: |
+    CREATE SCHEMA [finance];
+    GO
+
+    CREATE TABLE [finance].[accounts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [account_number] NVARCHAR(20) NOT NULL,
+        [balance] DECIMAL(15,2),
+        [account_type] NVARCHAR(20) NOT NULL,
+        [created_at] DATETIME2 DEFAULT GETDATE(),
+        CONSTRAINT [ck_accounts_balance] CHECK ([balance] >= 0),
+        CONSTRAINT [ck_accounts_type] CHECK ([account_type] IN ('CHECKING', 'SAVINGS', 'CREDIT')),
+        CONSTRAINT [uk_accounts_number] UNIQUE ([account_number])
+    );
+
+    CREATE TABLE [finance].[transactions] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [account_id] INT NOT NULL,
+        [amount] DECIMAL(15,2) NOT NULL,
+        [transaction_type] NVARCHAR(20) NOT NULL,
+        [transaction_date] DATETIME2,
+        CONSTRAINT [fk_transactions_account] FOREIGN KEY ([account_id]) REFERENCES [finance].[accounts]([id]),
+        CONSTRAINT [ck_transactions_amount] CHECK ([amount] != 0),
+        CONSTRAINT [ck_transactions_type] CHECK ([transaction_type] IN ('DEBIT', 'CREDIT'))
+    );
+  newSchema: |
+    CREATE SCHEMA [finance];
+    GO
+
+    CREATE TABLE [finance].[accounts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [account_number] NVARCHAR(20) NOT NULL,
+        [balance] DECIMAL(15,2),
+        [account_type] NVARCHAR(20) NOT NULL,
+        [created_at] DATETIME2 DEFAULT GETDATE()
+    );
+  expected: |+
+    ALTER TABLE [finance].[transactions] DROP CONSTRAINT [fk_transactions_account];
+    ALTER TABLE [finance].[accounts] DROP CONSTRAINT [ck_accounts_balance];
+    ALTER TABLE [finance].[accounts] DROP CONSTRAINT [ck_accounts_type];
+    ALTER TABLE [finance].[accounts] DROP CONSTRAINT [uk_accounts_number];
+    DROP TABLE [finance].[transactions];
+
+- description: Column additions and self-referencing foreign keys
+  oldSchema: |
+    CREATE SCHEMA [hr];
+    GO
+
+    CREATE TABLE [hr].[departments] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [budget] DECIMAL(15,2)
+    );
+
+    CREATE TABLE [hr].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [first_name] NVARCHAR(50),
+        [last_name] NVARCHAR(50),
+        [email] NVARCHAR(100),
+        [phone] VARCHAR(20),
+        [hire_date] DATE,
+        [salary] DECIMAL(10,2),
+        [department_id] INT,
+        [manager_id] INT,
+        [status] NVARCHAR(20),
+        CONSTRAINT [fk_employees_department] FOREIGN KEY ([department_id]) REFERENCES [hr].[departments]([id]),
+        CONSTRAINT [fk_employees_manager] FOREIGN KEY ([manager_id]) REFERENCES [hr].[employees]([id]),
+        CONSTRAINT [ck_employees_salary] CHECK ([salary] > 0),
+        CONSTRAINT [ck_employees_status] CHECK ([status] IN ('ACTIVE', 'INACTIVE', 'TERMINATED'))
+    );
+  newSchema: |
+    CREATE SCHEMA [hr];
+    GO
+
+    CREATE TABLE [hr].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [first_name] NVARCHAR(50),
+        [last_name] NVARCHAR(50),
+        [email] NVARCHAR(100),
+        [phone] VARCHAR(20),
+        [hire_date] DATE,
+        [salary] DECIMAL(10,2)
+    );
+  expected: |+
+    ALTER TABLE [hr].[employees] DROP CONSTRAINT [fk_employees_department];
+    GO
+    ALTER TABLE [hr].[employees] DROP CONSTRAINT [fk_employees_manager];
+    GO
+    ALTER TABLE [hr].[employees] DROP CONSTRAINT [ck_employees_salary];
+    ALTER TABLE [hr].[employees] DROP CONSTRAINT [ck_employees_status];
+    ALTER TABLE [hr].[employees] DROP CONSTRAINT [PK_employees_2];
+    GO
+    ALTER TABLE [hr].[employees] DROP COLUMN [department_id];
+    ALTER TABLE [hr].[employees] DROP COLUMN [manager_id];
+    ALTER TABLE [hr].[employees] DROP COLUMN [status];
+    GO
+    DROP TABLE [hr].[departments];
+
+    ALTER TABLE [hr].[employees] ADD CONSTRAINT [PK_employees_1] PRIMARY KEY ([id]);
+
+- description: Multiple schema dependencies with cross-schema foreign keys
+  oldSchema: |
+    CREATE SCHEMA [core];
+    GO
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [core].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE [core].[roles] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(50) NOT NULL
+    );
+
+    CREATE TABLE [core].[user_roles] (
+        [user_id] INT NOT NULL,
+        [role_id] INT NOT NULL,
+        [assigned_at] DATETIME2,
+        CONSTRAINT [pk_user_roles] PRIMARY KEY ([user_id], [role_id]),
+        CONSTRAINT [fk_user_roles_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id]) ON DELETE CASCADE,
+        CONSTRAINT [fk_user_roles_role] FOREIGN KEY ([role_id]) REFERENCES [core].[roles]([id]) ON DELETE CASCADE
+    );
+
+    CREATE TABLE [app].[sessions] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [token] NVARCHAR(255) NOT NULL,
+        [expires_at] DATETIME2 NOT NULL,
+        CONSTRAINT [fk_sessions_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id]) ON DELETE CASCADE
+    );
+
+    CREATE TABLE [app].[audit_log] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT,
+        [action] NVARCHAR(100) NOT NULL,
+        [timestamp] DATETIME2,
+        [details] NVARCHAR(MAX),
+        CONSTRAINT [fk_audit_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id])
+    );
+  newSchema: |
+    CREATE SCHEMA [core];
+    GO
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [core].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE [core].[roles] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(50) NOT NULL
+    );
+  expected: |
+    ALTER TABLE [app].[audit_log] DROP CONSTRAINT [fk_audit_user];
+    ALTER TABLE [app].[sessions] DROP CONSTRAINT [fk_sessions_user];
+    ALTER TABLE [core].[user_roles] DROP CONSTRAINT [fk_user_roles_user];
+    ALTER TABLE [core].[user_roles] DROP CONSTRAINT [fk_user_roles_role];
+    DROP TABLE [app].[audit_log];
+    DROP TABLE [app].[sessions];
+    DROP TABLE [core].[user_roles];
+- description: Computed columns with indexes
+  oldSchema: |
+    CREATE SCHEMA [ecommerce];
+    GO
+
+    CREATE TABLE [ecommerce].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [tax_rate] DECIMAL(5,4),
+        [price_with_tax] AS ([price] * (1 + [tax_rate])),
+        [price_category] AS (
+            CASE
+                WHEN [price] < 10 THEN 'Budget'
+                WHEN [price] < 100 THEN 'Standard'
+                ELSE 'Premium'
+            END
+        )
+    );
+    GO
+
+    CREATE INDEX [idx_products_price_category] ON [ecommerce].[products] ([price_category]);
+    CREATE INDEX [idx_products_price_with_tax] ON [ecommerce].[products] ([price_with_tax]);
+
+    CREATE TABLE [ecommerce].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [product_id] INT NOT NULL,
+        [quantity] INT NOT NULL,
+        [unit_price] DECIMAL(10,2) NOT NULL,
+        [total] DECIMAL(15,2),
+        [order_date] DATETIME2,
+        [computed_total] AS ([quantity] * [unit_price]),
+        CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [ecommerce].[products]([id])
+    );
+    GO
+  newSchema: |
+    CREATE SCHEMA [ecommerce];
+    GO
+
+    CREATE TABLE [ecommerce].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [tax_rate] DECIMAL(5,4)
+    );
+  expected: |+
+    ALTER TABLE [ecommerce].[orders] DROP CONSTRAINT [fk_orders_product];
+    DROP INDEX [idx_products_price_category] ON [ecommerce].[products];
+    DROP INDEX [idx_products_price_with_tax] ON [ecommerce].[products];
+    GO
+    ALTER TABLE [ecommerce].[products] DROP COLUMN [price_with_tax];
+    ALTER TABLE [ecommerce].[products] DROP COLUMN [price_category];
+    GO
+    DROP TABLE [ecommerce].[orders];
+
+- description: Create tables with foreign key constraints
+  oldSchema: ""
+  newSchema: |
+    CREATE SCHEMA [test];
+    GO
+
+    CREATE TABLE [test].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        CONSTRAINT [uk_email] UNIQUE ([email])
+    );
+
+    CREATE INDEX [idx_username] ON [test].[users] ([username]);
+
+    CREATE TABLE [test].[posts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [published_at] DATETIME2,
+        CONSTRAINT [fk_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE CASCADE
+    );
+
+    CREATE INDEX [idx_user_id] ON [test].[posts] ([user_id]);
+  expected: |
+    CREATE SCHEMA [test];
+    GO
+
+    CREATE TABLE [test].[users] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [username] NVARCHAR(50) NOT NULL,
+      [email] NVARCHAR(100) NOT NULL,
+      [created_at] DATETIME2 NULL,
+      CONSTRAINT [PK_users_1] PRIMARY KEY ([id]),
+      CONSTRAINT [uk_email] UNIQUE ([email])
+    );
+    CREATE INDEX [idx_username] ON [test].[users] ([username]);
+    CREATE TABLE [test].[posts] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [user_id] INT NOT NULL,
+      [title] NVARCHAR(200) NOT NULL,
+      [content] NVARCHAR(MAX) NULL,
+      [published_at] DATETIME2 NULL,
+      CONSTRAINT [PK_posts_2] PRIMARY KEY ([id])
+    );
+    CREATE INDEX [idx_user_id] ON [test].[posts] ([user_id]);
+    ALTER TABLE [test].[posts] ADD CONSTRAINT [fk_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users] ([id]) ON DELETE CASCADE ON UPDATE NO ACTION;
+- description: Tables with multiple foreign key constraints
+  oldSchema: |
+    CREATE SCHEMA [test];
+    GO
+
+    CREATE TABLE [test].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        [is_active] BIT,
+        CONSTRAINT [uk_email] UNIQUE ([email])
+    );
+    GO
+
+    CREATE INDEX [idx_username] ON [test].[users] ([username]);
+    GO
+
+    CREATE INDEX [idx_email_active] ON [test].[users] ([email], [is_active]);
+    GO
+
+    CREATE TABLE [test].[posts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [published_at] DATETIME2,
+        CONSTRAINT [fk_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE CASCADE,
+        CONSTRAINT [chk_title_length] CHECK (LEN([title]) > 0)
+    );
+    GO
+
+    CREATE INDEX [idx_user_id] ON [test].[posts] ([user_id]);
+    GO
+
+    CREATE TABLE [test].[comments] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [post_id] INT NOT NULL,
+        [user_id] INT NOT NULL,
+        [content] NVARCHAR(MAX) NOT NULL,
+        [created_at] DATETIME2,
+        CONSTRAINT [fk_comment_post] FOREIGN KEY ([post_id]) REFERENCES [test].[posts]([id]) ON DELETE CASCADE,
+        CONSTRAINT [fk_comment_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE NO ACTION
+    );
+    GO
+
+    CREATE INDEX [idx_post_user] ON [test].[comments] ([post_id], [user_id]);
+    GO
+  newSchema: |
+    CREATE SCHEMA [test];
+    GO
+
+    CREATE TABLE [test].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        CONSTRAINT [uk_email] UNIQUE ([email])
+    );
+    GO
+
+    CREATE INDEX [idx_username] ON [test].[users] ([username]);
+    GO
+
+    CREATE TABLE [test].[posts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [published_at] DATETIME2,
+        CONSTRAINT [fk_user] FOREIGN KEY ([user_id]) REFERENCES [test].[users]([id]) ON DELETE CASCADE
+    );
+    GO
+
+    CREATE INDEX [idx_user_id] ON [test].[posts] ([user_id]);
+    GO
+  expected: |+
+    ALTER TABLE [test].[comments] DROP CONSTRAINT [fk_comment_post];
+    ALTER TABLE [test].[comments] DROP CONSTRAINT [fk_comment_user];
+    ALTER TABLE [test].[posts] DROP CONSTRAINT [chk_title_length];
+    DROP INDEX [idx_email_active] ON [test].[users];
+    GO
+    ALTER TABLE [test].[users] DROP COLUMN [is_active];
+    GO
+    DROP TABLE [test].[comments];
+
+- description: Drop and recreate foreign key constraints with different options
+  oldSchema: |
+    CREATE SCHEMA [library];
+    GO
+
+    CREATE TABLE [library].[authors] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100),
+        CONSTRAINT [uk_email] UNIQUE ([email])
+    );
+
+    CREATE TABLE [library].[books] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [author_id] INT NOT NULL,
+        [isbn] NVARCHAR(20),
+        [published_year] INT,
+        [price] DECIMAL(8, 2),
+        CONSTRAINT [fk_author_new] FOREIGN KEY ([author_id]) REFERENCES [library].[authors]([id]) ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT [chk_year_extended] CHECK ([published_year] >= 1000 AND [published_year] <= 2030),
+        CONSTRAINT [chk_price_positive] CHECK ([price] > 0),
+        CONSTRAINT [chk_title_length] CHECK (LEN([title]) >= 3),
+        CONSTRAINT [uk_isbn] UNIQUE ([isbn])
+    );
+
+    CREATE INDEX [idx_author] ON [library].[books] ([author_id]);
+    CREATE INDEX [idx_year] ON [library].[books] ([published_year]);
+  newSchema: |
+    CREATE SCHEMA [library];
+    GO
+
+    CREATE TABLE [library].[authors] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100),
+        CONSTRAINT [uk_email] UNIQUE ([email])
+    );
+
+    CREATE TABLE [library].[books] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [author_id] INT NOT NULL,
+        [isbn] NVARCHAR(20),
+        [published_year] INT,
+        [price] DECIMAL(8, 2),
+        CONSTRAINT [fk_author] FOREIGN KEY ([author_id]) REFERENCES [library].[authors]([id]),
+        CONSTRAINT [chk_year_valid] CHECK ([published_year] >= 1000 AND [published_year] <= 2100),
+        CONSTRAINT [chk_price_positive] CHECK ([price] > 0),
+        CONSTRAINT [uk_isbn] UNIQUE ([isbn])
+    );
+
+    CREATE INDEX [idx_author] ON [library].[books] ([author_id]);
+    CREATE INDEX [idx_year] ON [library].[books] ([published_year]);
+  expected: |+
+    ALTER TABLE [library].[books] DROP CONSTRAINT [fk_author_new];
+    GO
+    ALTER TABLE [library].[books] DROP CONSTRAINT [chk_title_length];
+    ALTER TABLE [library].[books] DROP CONSTRAINT [chk_year_extended];
+
+    ALTER TABLE [library].[books] ADD CONSTRAINT [chk_year_valid] CHECK ([published_year] >= 1000 AND [published_year] <= 2100);
+    ALTER TABLE [library].[books] ADD CONSTRAINT [fk_author] FOREIGN KEY ([author_id]) REFERENCES [library].[authors] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+- description: Self-referencing foreign keys and complex view dependencies
+  oldSchema: |
+    CREATE SCHEMA [company];
+    GO
+
+    CREATE TABLE [company].[departments] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [manager_id] INT
+    );
+
+    CREATE TABLE [company].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [department_id] INT,
+        [salary] DECIMAL(10, 2),
+        [hire_date] DATE,
+        CONSTRAINT [fk_dept] FOREIGN KEY ([department_id]) REFERENCES [company].[departments]([id])
+    );
+
+    CREATE INDEX [idx_dept] ON [company].[employees] ([department_id]);
+
+    -- Add self-referencing foreign key
+    ALTER TABLE [company].[departments] ADD CONSTRAINT [fk_manager] FOREIGN KEY ([manager_id]) REFERENCES [company].[employees]([id]);
+
+    -- Create base view
+    CREATE VIEW [company].[dept_employee_count] AS
+    SELECT d.[id] AS dept_id, d.[name] AS dept_name, COUNT(e.[id]) AS emp_count
+    FROM [company].[departments] d
+    LEFT JOIN [company].[employees] e ON d.[id] = e.[department_id]
+    GROUP BY d.[id], d.[name];
+    GO
+
+    -- Create dependent view
+    CREATE VIEW [company].[dept_summary] AS
+    SELECT
+        dept_id,
+        dept_name,
+        emp_count,
+        0 AS avg_salary,
+        0 AS max_salary,
+        0 AS min_salary
+    FROM [company].[dept_employee_count];
+    GO
+
+    -- Create highly dependent view
+    CREATE VIEW [company].[dept_manager_summary] AS
+    SELECT
+        ds.dept_id,
+        ds.dept_name,
+        ds.emp_count,
+        ds.avg_salary,
+        m.[name] AS manager_name
+    FROM [company].[dept_summary] ds
+    JOIN [company].[departments] d ON ds.dept_id = d.[id]
+    LEFT JOIN [company].[employees] m ON d.[manager_id] = m.[id];
+    GO
+
+    -- Create stored procedure using views
+    CREATE PROCEDURE [company].[GetDepartmentReport]
+        @dept_name_pattern NVARCHAR(100)
+    AS
+    BEGIN
+        SELECT * FROM [company].[dept_manager_summary]
+        WHERE dept_name LIKE '%' + @dept_name_pattern + '%';
+    END;
+  newSchema: |
+    CREATE SCHEMA [company];
+    GO
+
+    CREATE TABLE [company].[departments] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [manager_id] INT
+    );
+
+    CREATE TABLE [company].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [department_id] INT,
+        [salary] DECIMAL(10, 2),
+        [hire_date] DATE,
+        CONSTRAINT [fk_dept] FOREIGN KEY ([department_id]) REFERENCES [company].[departments]([id])
+    );
+
+    CREATE INDEX [idx_dept] ON [company].[employees] ([department_id]);
+
+    -- Add self-referencing foreign key
+    ALTER TABLE [company].[departments] ADD CONSTRAINT [fk_manager] FOREIGN KEY ([manager_id]) REFERENCES [company].[employees]([id]);
+  expected: |
+    DROP PROCEDURE [company].[GetDepartmentReport];
+    GO
+    DROP VIEW [company].[dept_manager_summary];
+    GO
+    DROP VIEW [company].[dept_summary];
+    GO
+    DROP VIEW [company].[dept_employee_count];
+    GO
+- description: Adding comments to tables and columns using SQL Server extended properties
+  oldSchema: |
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [app].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        [status] NVARCHAR(20)
+    );
+
+    CREATE TABLE [app].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [category] NVARCHAR(50)
+    );
+
+    CREATE INDEX [idx_users_email] ON [app].[users] ([email]);
+    CREATE INDEX [idx_products_category] ON [app].[products] ([category]);
+
+    CREATE TABLE [app].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [product_id] INT NOT NULL,
+        [quantity] INT NOT NULL,
+        [order_date] DATETIME2,
+        CONSTRAINT [fk_orders_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id]),
+        CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [app].[products]([id])
+    );
+    GO
+
+    -- Add table comments using extended properties
+    EXEC sp_addextendedproperty 'MS_Description', 'User accounts and profile information', 'SCHEMA', 'app', 'TABLE', 'users';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product catalog with pricing information', 'SCHEMA', 'app', 'TABLE', 'products';
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer orders tracking system', 'SCHEMA', 'app', 'TABLE', 'orders';
+    GO
+
+    -- Add column comments for users table
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique identifier for each user', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique username for login authentication', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'username';
+    EXEC sp_addextendedproperty 'MS_Description', 'User email address for notifications', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'email';
+    EXEC sp_addextendedproperty 'MS_Description', 'Timestamp when the user account was created', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'created_at';
+    EXEC sp_addextendedproperty 'MS_Description', 'Current status: active, inactive, or suspended', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'status';
+    GO
+
+    -- Add column comments for products table
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique product identifier', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product display name', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'name';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product price in USD', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'price';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product category classification', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'category';
+    GO
+
+    -- Add comments to orders table
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique order identifier', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Reference to the user who placed the order', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'user_id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Reference to the ordered product', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'product_id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Number of items ordered', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'quantity';
+    EXEC sp_addextendedproperty 'MS_Description', 'When the order was placed', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'order_date';
+  newSchema: |
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [app].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        [status] NVARCHAR(20)
+    );
+
+    CREATE TABLE [app].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [category] NVARCHAR(50)
+    );
+
+    CREATE INDEX [idx_users_email] ON [app].[users] ([email]);
+    CREATE INDEX [idx_products_category] ON [app].[products] ([category]);
+  expected: |
+    ALTER TABLE [app].[orders] DROP CONSTRAINT [fk_orders_user];
+    ALTER TABLE [app].[orders] DROP CONSTRAINT [fk_orders_product];
+    DROP TABLE [app].[orders];
+
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'products';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'id';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'name';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'price';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'category';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'users';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'id';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'username';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'email';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'created_at';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'status';
+    GO
+- description: Modifying existing comments and removing comments using extended properties
+  oldSchema: |
+    CREATE SCHEMA [test];
+    GO
+
+    CREATE TABLE [test].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100),
+        [phone] NVARCHAR(20),
+        [created_at] DATETIME2 DEFAULT GETDATE()
+    );
+    GO
+
+    EXEC sp_addextendedproperty 'MS_Description', 'Complete customer database with contact details and preferences', 'SCHEMA', 'test', 'TABLE', 'customers';
+    EXEC sp_addextendedproperty 'MS_Description', 'Primary key - auto-generated customer identifier', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer business or personal name', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'name';
+    EXEC sp_addextendedproperty 'MS_Description', 'Primary email address for communications and billing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'email';
+    EXEC sp_addextendedproperty 'MS_Description', 'Account creation timestamp for auditing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'created_at';
+    GO
+
+    CREATE TABLE [test].[invoices] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [customer_id] INT NOT NULL,
+        [amount] DECIMAL(10,2) NOT NULL,
+        [invoice_date] DATE,
+        [payment_status] NVARCHAR(20),
+        CONSTRAINT [fk_invoices_customer] FOREIGN KEY ([customer_id]) REFERENCES [test].[customers]([id])
+    );
+    GO
+
+    EXEC sp_addextendedproperty 'MS_Description', 'Financial invoice tracking and billing system', 'SCHEMA', 'test', 'TABLE', 'invoices';
+    EXEC sp_addextendedproperty 'MS_Description', 'Current payment status: pending, paid, overdue, cancelled', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'payment_status';
+  newSchema: |
+    CREATE SCHEMA [test];
+    GO
+
+    CREATE TABLE [test].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100),
+        [phone] NVARCHAR(20),
+        [created_at] DATETIME2 DEFAULT GETDATE()
+    );
+    GO
+
+    -- Add initial comments
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer information database', 'SCHEMA', 'test', 'TABLE', 'customers';
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer unique ID', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer full name', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'name';
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer email for marketing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'email';
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer contact number', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'phone';
+    GO
+
+    CREATE TABLE [test].[invoices] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [customer_id] INT NOT NULL,
+        [amount] DECIMAL(10,2) NOT NULL,
+        [invoice_date] DATE,
+        CONSTRAINT [fk_invoices_customer] FOREIGN KEY ([customer_id]) REFERENCES [test].[customers]([id])
+    );
+    GO
+
+    -- Add comments to invoices table
+    EXEC sp_addextendedproperty 'MS_Description', 'Invoice records for billing', 'SCHEMA', 'test', 'TABLE', 'invoices';
+    EXEC sp_addextendedproperty 'MS_Description', 'Invoice number', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Link to customer', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'customer_id';
+  expected: |
+    ALTER TABLE [test].[invoices] DROP COLUMN [payment_status];
+
+    EXEC sp_updateextendedproperty 'MS_Description', 'Customer information database', 'SCHEMA', 'test', 'TABLE', 'customers';
+    EXEC sp_updateextendedproperty 'MS_Description', 'Customer unique ID', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'id';
+    EXEC sp_updateextendedproperty 'MS_Description', 'Customer full name', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'name';
+    EXEC sp_updateextendedproperty 'MS_Description', 'Customer email for marketing', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'email';
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer contact number', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'phone';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'test', 'TABLE', 'customers', 'COLUMN', 'created_at';
+    EXEC sp_updateextendedproperty 'MS_Description', 'Invoice records for billing', 'SCHEMA', 'test', 'TABLE', 'invoices';
+    EXEC sp_addextendedproperty 'MS_Description', 'Invoice number', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Link to customer', 'SCHEMA', 'test', 'TABLE', 'invoices', 'COLUMN', 'customer_id';
+    GO
+- description: Comments with special characters, quotes, multiline text, and Unicode
+  oldSchema: |
+    CREATE SCHEMA [special];
+    GO
+
+    CREATE TABLE [special].[documents] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [author] NVARCHAR(100),
+        [created_date] DATETIME2,
+        [metadata] NVARCHAR(500)
+    );
+
+    CREATE TABLE [special].[translations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [document_id] INT NOT NULL,
+        [lang_code] NVARCHAR(10) NOT NULL,
+        [translated_title] NVARCHAR(200),
+        [translated_content] NVARCHAR(MAX),
+        CONSTRAINT [fk_translations_doc] FOREIGN KEY ([document_id]) REFERENCES [special].[documents]([id])
+    );
+
+    CREATE TABLE [special].[test_extreme] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [data] NVARCHAR(MAX)
+    );
+    GO
+
+    -- Add table comments with special characters and quotes
+    EXEC sp_addextendedproperty 'MS_Description', 'Document storage system - handles files, "metadata", & special chars: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'documents';
+    GO
+
+    -- Add multiline comment with special formatting
+    EXEC sp_addextendedproperty 'MS_Description',
+    'Translation table for international support:
+    - Supports Unicode characters: αβγδε, 中文, العربية, русский
+    - Handles quotes: "double quotes" and ''single quotes''
+    - Special symbols: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'translations';
+    GO
+
+    -- Column comments with various special cases
+    EXEC sp_addextendedproperty 'MS_Description', 'Primary key (auto-increment) - unique ID for each document', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Document title - may contain "quotes", ''apostrophes'', and symbols: @#$%', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'title';
+    GO
+
+    -- Multiline comment with technical details
+    EXEC sp_addextendedproperty 'MS_Description',
+    'Document content field:
+      • Supports rich text formatting
+      • HTML tags like <p>, <div>, <span>
+      • Special characters: © ® ™ § ¶ † ‡ • ‰ ′ ″
+      • Mathematical: ± × ÷ ≠ ≤ ≥ ∞ ∑ ∏ ∫
+      • Currency: $ € £ ¥ ₹ ₽
+      • Arrows: ← → ↑ ↓ ↔ ⇐ ⇒ ⇔', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'content';
+    GO
+
+    -- Comment with SQL injection attempt (should be safely handled)
+    EXEC sp_addextendedproperty 'MS_Description', 'Author name field - prevents SQL injection like ''; DROP TABLE users; --', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'author';
+    GO
+
+    -- Comment with JSON-like structure
+    EXEC sp_addextendedproperty 'MS_Description', 'Metadata JSON: {"version": "1.0", "tags": ["important", "draft"], "settings": {"public": false}}', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'metadata';
+    GO
+
+    -- Unicode characters in comments
+    EXEC sp_addextendedproperty 'MS_Description', 'Language code: en-US, fr-FR, de-DE, ja-JP, zh-CN, ar-SA, ru-RU, hi-IN, 한국어, ไทย', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'lang_code';
+    GO
+
+    -- Comment with URLs and file paths
+    EXEC sp_addextendedproperty 'MS_Description', 'Translated content - may reference URLs like https://example.com/path?param=value&other=123 or file paths C:\Users\Name\Documents\file.txt', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'translated_content';
+    GO
+
+    -- Extremely long comment to test limits
+    EXEC sp_addextendedproperty 'MS_Description',
+    'This is an extremely long comment designed to test the limits of extended property storage in SQL Server. It contains multiple lines of text with various formatting, special characters, and technical information. The purpose is to verify that the migration system can properly handle, store, and retrieve complex comment data without truncation or corruption. This comment includes: numbers (123456789), symbols (!@#$%^&*()_+-={}[]|\:";''<>?,./ ), Unicode characters (αβγδε中文العربيةрусский한국어), and structured data like JSON {"key": "value", "array": [1, 2, 3], "nested": {"deep": true}}. Additionally, it tests SQL-like syntax: SELECT * FROM table WHERE column = ''value'' AND other_column IN (1, 2, 3); as well as HTML markup: <html><body><p class="test">Content</p></body></html> and XML: <?xml version="1.0"?><root><item id="1">Test</item></root>. The comment system should preserve all these characters and structures exactly as written, demonstrating robust handling of complex metadata in database schema documentation.', 'SCHEMA', 'special', 'TABLE', 'test_extreme';
+  newSchema: |
+    CREATE SCHEMA [special];
+    GO
+
+    CREATE TABLE [special].[documents] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [author] NVARCHAR(100),
+        [created_date] DATETIME2,
+        [metadata] NVARCHAR(500)
+    );
+
+    CREATE TABLE [special].[translations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [document_id] INT NOT NULL,
+        [lang_code] NVARCHAR(10) NOT NULL,
+        [translated_title] NVARCHAR(200),
+        [translated_content] NVARCHAR(MAX),
+        CONSTRAINT [fk_translations_doc] FOREIGN KEY ([document_id]) REFERENCES [special].[documents]([id])
+    );
+  expected: |
+    DROP TABLE [special].[test_extreme];
+
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'documents';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'id';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'title';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'content';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'author';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'metadata';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'translations';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'lang_code';
+    EXEC sp_dropextendedproperty 'MS_Description', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'translated_content';
+    GO
+- description: Default constraint operations including add, remove, modify with various data types and expressions
+  oldSchema: |
+    CREATE SCHEMA [defaults];
+    GO
+
+    CREATE TABLE [defaults].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [hire_date] DATE NOT NULL DEFAULT GETDATE(),
+        [status] NVARCHAR(20) NOT NULL CONSTRAINT [DF_employees_status_new] DEFAULT 'pending',
+        [is_active] BIT NOT NULL DEFAULT 1,
+        [salary] DECIMAL(10,2) DEFAULT 50000.00,
+        [department_id] INT DEFAULT 1,
+        [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+        [updated_at] DATETIME2,
+        [vacation_days] INT NOT NULL DEFAULT 15,
+        [bonus_percentage] DECIMAL(5,2) DEFAULT (CASE WHEN MONTH(GETDATE()) = 12 THEN 10.0 ELSE 5.0 END)
+    );
+
+    CREATE TABLE [defaults].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        [stock] INT NOT NULL DEFAULT 0,
+        [is_available] BIT DEFAULT 1,
+        [cost] DECIMAL(10,2) NOT NULL
+    );
+
+    CREATE TABLE [defaults].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [order_number] NVARCHAR(50) NOT NULL DEFAULT CONCAT('ORD-', YEAR(GETDATE()), '-', FORMAT(GETDATE(), 'MMdd')),
+        [order_date] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [status] NVARCHAR(20) NOT NULL DEFAULT 'pending',
+        [total] DECIMAL(10,2) NOT NULL DEFAULT 0,
+        [discount] DECIMAL(5,2) DEFAULT NULL,
+        [is_paid] BIT NOT NULL DEFAULT 0,
+        [notes] NVARCHAR(MAX) DEFAULT 'No notes'
+    );
+  newSchema: |
+    CREATE SCHEMA [defaults];
+    GO
+
+    CREATE TABLE [defaults].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [hire_date] DATE NOT NULL DEFAULT GETDATE(),
+        [status] NVARCHAR(20) NOT NULL DEFAULT 'active',
+        [is_active] BIT NOT NULL DEFAULT 1,
+        [salary] DECIMAL(10,2) DEFAULT 50000.00,
+        [department_id] INT DEFAULT 1,
+        [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+        [updated_at] DATETIME2
+    );
+
+    CREATE TABLE [defaults].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        [stock] INT NOT NULL DEFAULT 0,
+        [is_available] BIT DEFAULT 1
+    );
+  expected: |+
+    ALTER TABLE [defaults].[employees] DROP COLUMN [vacation_days];
+    ALTER TABLE [defaults].[employees] DROP COLUMN [bonus_percentage];
+    ALTER TABLE [defaults].[products] DROP COLUMN [cost];
+    GO
+    DROP TABLE [defaults].[orders];
+
+    ALTER TABLE [defaults].[employees] ADD CONSTRAINT [DF_employees_status] DEFAULT 'active' FOR [status];
+
+- description: Complex default expressions using system functions, variables, and conditional logic
+  oldSchema: |
+    CREATE SCHEMA [complex];
+    GO
+
+    CREATE TABLE [complex].[audit_log] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [event_type] NVARCHAR(50) NOT NULL,
+        [user_name] NVARCHAR(100) NOT NULL DEFAULT SYSTEM_USER,
+        [event_time] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [ip_address] NVARCHAR(45),
+        [session_id] UNIQUEIDENTIFIER DEFAULT NEWID(),
+        [server_name] NVARCHAR(100) DEFAULT @@SERVERNAME,
+        [database_name] NVARCHAR(100) DEFAULT DB_NAME(),
+        [schema_name] NVARCHAR(100) DEFAULT SCHEMA_NAME()
+    );
+
+    CREATE TABLE [complex].[documents] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [version] INT NOT NULL DEFAULT 1,
+        [created_date] DATE DEFAULT CAST(GETDATE() AS DATE),
+        [expiry_date] DATE DEFAULT DATEADD(YEAR, 1, CAST(GETDATE() AS DATE)),
+        [document_code] NVARCHAR(50) DEFAULT CONCAT('DOC-', FORMAT(GETDATE(), 'yyyyMMdd'), '-', NEWID()),
+        [priority] INT DEFAULT
+            CASE
+                WHEN DATEPART(HOUR, GETDATE()) < 12 THEN 1
+                WHEN DATEPART(HOUR, GETDATE()) < 18 THEN 2
+                ELSE 3
+            END
+    );
+
+    CREATE TABLE [complex].[calculations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [value1] DECIMAL(10,2) NOT NULL,
+        [value2] DECIMAL(10,2) NOT NULL,
+        [pi_value] DECIMAL(10,8) DEFAULT PI(),
+        [random_value] FLOAT DEFAULT RAND(),
+        [checksum_value] INT DEFAULT CHECKSUM(NEWID()),
+        [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+        [created_offset] DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+    );
+  newSchema: |
+    CREATE SCHEMA [complex];
+    GO
+
+    CREATE TABLE [complex].[audit_log] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [event_type] NVARCHAR(50) NOT NULL,
+        [user_name] NVARCHAR(100) NOT NULL DEFAULT SYSTEM_USER,
+        [event_time] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [ip_address] NVARCHAR(45),
+        [session_id] UNIQUEIDENTIFIER DEFAULT NEWID()
+    );
+
+    CREATE TABLE [complex].[documents] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [version] INT NOT NULL DEFAULT 1,
+        [created_date] DATE DEFAULT CAST(GETDATE() AS DATE),
+        [expiry_date] DATE DEFAULT DATEADD(YEAR, 1, CAST(GETDATE() AS DATE))
+    );
+  expected: |+
+    ALTER TABLE [complex].[audit_log] DROP COLUMN [server_name];
+    ALTER TABLE [complex].[audit_log] DROP COLUMN [database_name];
+    ALTER TABLE [complex].[audit_log] DROP COLUMN [schema_name];
+    ALTER TABLE [complex].[documents] DROP COLUMN [document_code];
+    ALTER TABLE [complex].[documents] DROP COLUMN [priority];
+    GO
+    DROP TABLE [complex].[calculations];
+
+- description: Edge cases for default constraints including special characters, unicode, extreme values
+  oldSchema: "CREATE SCHEMA [edge];\nGO\n\nCREATE TABLE [edge].[test_defaults] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [nullable_with_default] INT CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84,\n    [string_default] NVARCHAR(50) DEFAULT N'Default''s value',\n    [empty_string] NVARCHAR(50) DEFAULT '',\n    [zero_default] INT DEFAULT 0,\n    [negative_default] INT DEFAULT -1,\n    [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789,\n    [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2',\n    [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 \U0001F30D',\n    [max_int] BIGINT DEFAULT 9223372036854775807,\n    [min_int] BIGINT DEFAULT -9223372036854775808,\n    [json_config] NVARCHAR(MAX) DEFAULT N'{\"enabled\": true, \"count\": 0}'\n);\n\nCREATE TABLE [edge].[flags] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [is_enabled] BIT NOT NULL DEFAULT 1,\n    [is_deleted] BIT NOT NULL DEFAULT 0,\n    [is_visible] BIT DEFAULT 1,\n    [is_archived] BIT DEFAULT 0\n);\n"
+  newSchema: |
+    CREATE SCHEMA [edge];
+    GO
+
+    CREATE TABLE [edge].[test_defaults] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [nullable_with_default] INT DEFAULT 42,
+        [string_default] NVARCHAR(50) DEFAULT N'Default''s value',
+        [empty_string] NVARCHAR(50) DEFAULT '',
+        [zero_default] INT DEFAULT 0,
+        [negative_default] INT DEFAULT -1,
+        [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789
+    );
+  expected: |+
+    ALTER TABLE [edge].[test_defaults] DROP COLUMN [special_chars];
+    ALTER TABLE [edge].[test_defaults] DROP COLUMN [unicode_default];
+    ALTER TABLE [edge].[test_defaults] DROP COLUMN [max_int];
+    ALTER TABLE [edge].[test_defaults] DROP COLUMN [min_int];
+    ALTER TABLE [edge].[test_defaults] DROP COLUMN [json_config];
+    GO
+    DROP TABLE [edge].[flags];
+
+    ALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_with_default] DEFAULT 42 FOR [nullable_with_default];
+
+- description: Reverse of basic table operations - dropping column, table, index, and constraint
+  oldSchema: |
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [app].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        CONSTRAINT [uk_users_email] UNIQUE ([email])
+    );
+
+    CREATE INDEX [idx_users_username] ON [app].[users] ([username]);
+
+    CREATE TABLE [app].[posts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NTEXT,
+        [published_at] DATETIME2,
+        CONSTRAINT [fk_posts_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id]) ON DELETE CASCADE
+    );
+
+    CREATE INDEX [idx_posts_user_id] ON [app].[posts] ([user_id]);
+  newSchema: |
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [app].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        [status] NVARCHAR(20),
+        CONSTRAINT [uk_users_email] UNIQUE ([email]),
+        CONSTRAINT [ck_users_status] CHECK ([status] IN ('active', 'inactive', 'suspended'))
+    );
+
+    CREATE INDEX [idx_users_username] ON [app].[users] ([username]);
+
+    CREATE TABLE [app].[posts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NTEXT,
+        [published_at] DATETIME2,
+        CONSTRAINT [fk_posts_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id]) ON DELETE CASCADE
+    );
+
+    CREATE INDEX [idx_posts_user_id] ON [app].[posts] ([user_id]);
+
+    CREATE TABLE [app].[comments] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [post_id] INT NOT NULL,
+        [user_id] INT NOT NULL,
+        [content] NTEXT NOT NULL,
+        [created_at] DATETIME2,
+        CONSTRAINT [fk_comments_post] FOREIGN KEY ([post_id]) REFERENCES [app].[posts]([id]) ON DELETE CASCADE,
+        CONSTRAINT [fk_comments_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id])
+    );
+
+    CREATE INDEX [idx_comments_post_id] ON [app].[comments] ([post_id]);
+  expected: |
+    CREATE TABLE [app].[comments] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [post_id] INT NOT NULL,
+      [user_id] INT NOT NULL,
+      [content] NTEXT NOT NULL,
+      [created_at] DATETIME2 NULL,
+      CONSTRAINT [PK_comments_3] PRIMARY KEY ([id])
+    );
+    CREATE INDEX [idx_comments_post_id] ON [app].[comments] ([post_id]);
+    ALTER TABLE [app].[users] ADD [status] NVARCHAR(20) NULL;
+    ALTER TABLE [app].[users] ADD CONSTRAINT [ck_users_status] CHECK ([status] IN ('active', 'inactive', 'suspended'));
+
+    ALTER TABLE [app].[comments] ADD CONSTRAINT [fk_comments_post] FOREIGN KEY ([post_id]) REFERENCES [app].[posts] ([id]) ON DELETE CASCADE ON UPDATE NO ACTION;
+    ALTER TABLE [app].[comments] ADD CONSTRAINT [fk_comments_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+- description: Reverse of schema operations - dropping cross-schema foreign key, table, and schema
+  oldSchema: |
+    CREATE SCHEMA [sales];
+    GO
+
+    CREATE TABLE [sales].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100)
+    );
+
+    CREATE TABLE [sales].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [customer_id] INT NOT NULL,
+        [order_date] DATE,
+        [total] DECIMAL(10,2),
+        CONSTRAINT [fk_orders_customer] FOREIGN KEY ([customer_id]) REFERENCES [sales].[customers]([id])
+    );
+  newSchema: |
+    CREATE SCHEMA [sales];
+    GO
+
+    CREATE SCHEMA [inventory];
+    GO
+
+    CREATE TABLE [sales].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100)
+    );
+
+    CREATE TABLE [sales].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [customer_id] INT NOT NULL,
+        [order_date] DATE,
+        [total] DECIMAL(10,2),
+        [product_id] INT,
+        CONSTRAINT [fk_orders_customer] FOREIGN KEY ([customer_id]) REFERENCES [sales].[customers]([id])
+    );
+
+    CREATE TABLE [inventory].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [category_id] INT,
+        CONSTRAINT [ck_products_price] CHECK ([price] > 0)
+    );
+
+    ALTER TABLE [sales].[orders] ADD CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [inventory].[products]([id]);
+  expected: |+
+    CREATE SCHEMA [inventory];
+    GO
+
+    CREATE TABLE [inventory].[products] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [name] NVARCHAR(100) NOT NULL,
+      [price] DECIMAL(10,2) NOT NULL,
+      [category_id] INT NULL,
+      CONSTRAINT [PK_products_3] PRIMARY KEY ([id]),
+      CONSTRAINT [ck_products_price] CHECK ([price] > 0)
+    );
+    ALTER TABLE [sales].[orders] ADD [product_id] INT NULL;
+
+- description: Reverse of view operations - dropping views in correct dependency order
+  oldSchema: |
+    CREATE SCHEMA [reporting];
+    GO
+
+    CREATE TABLE [reporting].[sales_data] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [product_name] NVARCHAR(100) NOT NULL,
+        [quantity] INT NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [sale_date] DATE
+    );
+
+    CREATE TABLE [reporting].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [region] NVARCHAR(50)
+    );
+  newSchema: |
+    CREATE SCHEMA [reporting];
+    GO
+
+    CREATE TABLE [reporting].[sales_data] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [product_name] NVARCHAR(100) NOT NULL,
+        [quantity] INT NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [sale_date] DATE
+    );
+
+    CREATE TABLE [reporting].[customers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [region] NVARCHAR(50)
+    );
+    GO
+
+    CREATE VIEW [reporting].[product_summary] AS
+    SELECT
+        [product_name],
+        COUNT(*) as [sale_count],
+        SUM([quantity]) as [total_quantity],
+        AVG([price]) as [avg_price]
+    FROM [reporting].[sales_data]
+    GROUP BY [product_name];
+    GO
+
+    CREATE VIEW [reporting].[top_products] AS
+    SELECT TOP 10
+        [product_name],
+        [total_quantity]
+    FROM [reporting].[product_summary]
+    WHERE [total_quantity] > 100
+    ORDER BY [total_quantity] DESC;
+    GO
+  expected: |
+    CREATE VIEW [reporting].[product_summary] AS
+    SELECT
+        [product_name],
+        COUNT(*) as [sale_count],
+        SUM([quantity]) as [total_quantity],
+        AVG([price]) as [avg_price]
+    FROM [reporting].[sales_data]
+    GROUP BY [product_name];
+    GO
+    CREATE VIEW [reporting].[top_products] AS
+    SELECT TOP 10
+        [product_name],
+        [total_quantity]
+    FROM [reporting].[product_summary]
+    WHERE [total_quantity] > 100
+    ORDER BY [total_quantity] DESC;
+    GO
+- description: Reverse of function and procedure operations - dropping procedures and functions
+  oldSchema: |
+    CREATE SCHEMA [calc];
+    GO
+
+    CREATE TABLE [calc].[numbers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [value] INT NOT NULL,
+        [category] NVARCHAR(20)
+    );
+  newSchema: |
+    CREATE SCHEMA [calc];
+    GO
+
+    CREATE TABLE [calc].[numbers] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [value] INT NOT NULL,
+        [category] NVARCHAR(20)
+    );
+    GO
+
+    CREATE FUNCTION [calc].[square](@input INT)
+    RETURNS INT
+    AS
+    BEGIN
+        RETURN @input * @input;
+    END;
+    GO
+
+    CREATE FUNCTION [calc].[get_numbers_by_category](@category NVARCHAR(20))
+    RETURNS TABLE
+    AS
+    RETURN (
+        SELECT [id], [value], [category]
+        FROM [calc].[numbers]
+        WHERE [category] = @category
+    );
+    GO
+
+    CREATE PROCEDURE [calc].[add_number]
+        @value INT,
+        @category NVARCHAR(20)
+    AS
+    BEGIN
+        INSERT INTO [calc].[numbers] ([value], [category])
+        VALUES (@value, @category);
+    END;
+    GO
+  expected: |
+    CREATE FUNCTION [calc].[get_numbers_by_category](@category NVARCHAR(20))
+    RETURNS TABLE
+    AS
+    RETURN (
+        SELECT [id], [value], [category]
+        FROM [calc].[numbers]
+        WHERE [category] = @category
+    );
+    GO
+    CREATE FUNCTION [calc].[square](@input INT)
+    RETURNS INT
+    AS
+    BEGIN
+        RETURN @input * @input;
+    END;
+    GO
+    CREATE PROCEDURE [calc].[add_number]
+        @value INT,
+        @category NVARCHAR(20)
+    AS
+    BEGIN
+        INSERT INTO [calc].[numbers] ([value], [category])
+        VALUES (@value, @category);
+    END;
+    GO
+- description: Reverse of index operations - dropping various index types including filtered and computed column indexes
+  oldSchema: |
+    CREATE SCHEMA [perf];
+    GO
+
+    CREATE TABLE [perf].[events] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [event_name] NVARCHAR(100) NOT NULL,
+        [event_data] NVARCHAR(MAX),
+        [timestamp] DATETIME2,
+        [user_id] INT,
+        [category] NVARCHAR(50)
+    );
+  newSchema: |
+    CREATE SCHEMA [perf];
+    GO
+
+    CREATE TABLE [perf].[events] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [event_name] NVARCHAR(100) NOT NULL,
+        [event_data] NVARCHAR(MAX),
+        [timestamp] DATETIME2,
+        [user_id] INT,
+        [category] NVARCHAR(50),
+        [event_month] AS DATEPART(MONTH, [timestamp])
+    );
+
+    CREATE INDEX [idx_events_timestamp] ON [perf].[events] ([timestamp]);
+    CREATE INDEX [idx_events_user_category] ON [perf].[events] ([user_id], [category]);
+    CREATE UNIQUE INDEX [idx_events_name_timestamp] ON [perf].[events] ([event_name], [timestamp]);
+
+    CREATE INDEX [idx_events_recent] ON [perf].[events] ([event_name])
+    WHERE [timestamp] >= '2023-01-01';
+
+    CREATE INDEX [idx_events_month] ON [perf].[events] ([event_month]);
+  expected: |+
+    ALTER TABLE [perf].[events] ADD [event_month]  NULL;
+    CREATE INDEX [idx_events_month] ON [perf].[events] ([event_month]);
+    CREATE UNIQUE INDEX [idx_events_name_timestamp] ON [perf].[events] ([event_name], [timestamp]);
+    CREATE INDEX [idx_events_recent] ON [perf].[events] ([event_name]);
+    CREATE INDEX [idx_events_timestamp] ON [perf].[events] ([timestamp]);
+    CREATE INDEX [idx_events_user_category] ON [perf].[events] ([user_id], [category]);
+
+- description: Reverse of complex constraints - dropping tables with foreign keys and removing constraints
+  oldSchema: |
+    CREATE SCHEMA [finance];
+    GO
+
+    CREATE TABLE [finance].[accounts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [account_number] NVARCHAR(20) NOT NULL,
+        [balance] DECIMAL(15,2),
+        [account_type] NVARCHAR(20) NOT NULL,
+        [created_at] DATETIME2 DEFAULT GETDATE()
+    );
+  newSchema: |
+    CREATE SCHEMA [finance];
+    GO
+
+    CREATE TABLE [finance].[accounts] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [account_number] NVARCHAR(20) NOT NULL,
+        [balance] DECIMAL(15,2),
+        [account_type] NVARCHAR(20) NOT NULL,
+        [created_at] DATETIME2 DEFAULT GETDATE(),
+        CONSTRAINT [ck_accounts_balance] CHECK ([balance] >= 0),
+        CONSTRAINT [ck_accounts_type] CHECK ([account_type] IN ('CHECKING', 'SAVINGS', 'CREDIT')),
+        CONSTRAINT [uk_accounts_number] UNIQUE ([account_number])
+    );
+
+    CREATE TABLE [finance].[transactions] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [account_id] INT NOT NULL,
+        [amount] DECIMAL(15,2) NOT NULL,
+        [transaction_type] NVARCHAR(20) NOT NULL,
+        [transaction_date] DATETIME2,
+        CONSTRAINT [fk_transactions_account] FOREIGN KEY ([account_id]) REFERENCES [finance].[accounts]([id]),
+        CONSTRAINT [ck_transactions_amount] CHECK ([amount] != 0),
+        CONSTRAINT [ck_transactions_type] CHECK ([transaction_type] IN ('DEBIT', 'CREDIT'))
+    );
+  expected: |
+    CREATE TABLE [finance].[transactions] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [account_id] INT NOT NULL,
+      [amount] DECIMAL(15,2) NOT NULL,
+      [transaction_type] NVARCHAR(20) NOT NULL,
+      [transaction_date] DATETIME2 NULL,
+      CONSTRAINT [PK_transactions_2] PRIMARY KEY ([id]),
+      CONSTRAINT [ck_transactions_amount] CHECK ([amount] != 0),
+      CONSTRAINT [ck_transactions_type] CHECK ([transaction_type] IN ('DEBIT', 'CREDIT'))
+    );
+    ALTER TABLE [finance].[accounts] ADD CONSTRAINT [uk_accounts_number] UNIQUE ([account_number]);
+    ALTER TABLE [finance].[accounts] ADD CONSTRAINT [ck_accounts_balance] CHECK ([balance] >= 0);
+    ALTER TABLE [finance].[accounts] ADD CONSTRAINT [ck_accounts_type] CHECK ([account_type] IN ('CHECKING', 'SAVINGS', 'CREDIT'));
+
+    ALTER TABLE [finance].[transactions] ADD CONSTRAINT [fk_transactions_account] FOREIGN KEY ([account_id]) REFERENCES [finance].[accounts] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+- description: Reverse of column modifications - dropping columns, constraints, and related tables
+  oldSchema: |
+    CREATE SCHEMA [hr];
+    GO
+
+    CREATE TABLE [hr].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [first_name] NVARCHAR(50),
+        [last_name] NVARCHAR(50),
+        [email] NVARCHAR(100),
+        [phone] VARCHAR(20),
+        [hire_date] DATE,
+        [salary] DECIMAL(10,2)
+    );
+  newSchema: |
+    CREATE SCHEMA [hr];
+    GO
+
+    CREATE TABLE [hr].[departments] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [budget] DECIMAL(15,2)
+    );
+
+    CREATE TABLE [hr].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [first_name] NVARCHAR(50),
+        [last_name] NVARCHAR(50),
+        [email] NVARCHAR(100),
+        [phone] VARCHAR(20),
+        [hire_date] DATE,
+        [salary] DECIMAL(10,2),
+        [department_id] INT,
+        [manager_id] INT,
+        [status] NVARCHAR(20),
+        CONSTRAINT [fk_employees_department] FOREIGN KEY ([department_id]) REFERENCES [hr].[departments]([id]),
+        CONSTRAINT [fk_employees_manager] FOREIGN KEY ([manager_id]) REFERENCES [hr].[employees]([id]),
+        CONSTRAINT [ck_employees_salary] CHECK ([salary] > 0),
+        CONSTRAINT [ck_employees_status] CHECK ([status] IN ('ACTIVE', 'INACTIVE', 'TERMINATED'))
+    );
+  expected: |+
+    ALTER TABLE [hr].[employees] DROP CONSTRAINT [PK_employees_1];
+
+    CREATE TABLE [hr].[departments] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [name] NVARCHAR(100) NOT NULL,
+      [budget] DECIMAL(15,2) NULL,
+      CONSTRAINT [PK_departments_1] PRIMARY KEY ([id])
+    );
+    ALTER TABLE [hr].[employees] ADD [department_id] INT NULL;
+    ALTER TABLE [hr].[employees] ADD [manager_id] INT NULL;
+    ALTER TABLE [hr].[employees] ADD [status] NVARCHAR(20) NULL;
+    ALTER TABLE [hr].[employees] ADD CONSTRAINT [PK_employees_2] PRIMARY KEY ([id]);
+    ALTER TABLE [hr].[employees] ADD CONSTRAINT [ck_employees_salary] CHECK ([salary] > 0);
+    ALTER TABLE [hr].[employees] ADD CONSTRAINT [ck_employees_status] CHECK ([status] IN ('ACTIVE', 'INACTIVE', 'TERMINATED'));
+    ALTER TABLE [hr].[employees] ADD CONSTRAINT [fk_employees_department] FOREIGN KEY ([department_id]) REFERENCES [hr].[departments] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+    ALTER TABLE [hr].[employees] ADD CONSTRAINT [fk_employees_manager] FOREIGN KEY ([manager_id]) REFERENCES [hr].[employees] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+- description: Reverse of multiple schema dependencies - dropping cross-schema references
+  oldSchema: |
+    CREATE SCHEMA [core];
+    GO
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [core].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE [core].[roles] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(50) NOT NULL
+    );
+  newSchema: |
+    CREATE SCHEMA [core];
+    GO
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [core].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL
+    );
+
+    CREATE TABLE [core].[roles] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(50) NOT NULL
+    );
+
+    CREATE TABLE [core].[user_roles] (
+        [user_id] INT NOT NULL,
+        [role_id] INT NOT NULL,
+        [assigned_at] DATETIME2,
+        CONSTRAINT [pk_user_roles] PRIMARY KEY ([user_id], [role_id]),
+        CONSTRAINT [fk_user_roles_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id]) ON DELETE CASCADE,
+        CONSTRAINT [fk_user_roles_role] FOREIGN KEY ([role_id]) REFERENCES [core].[roles]([id]) ON DELETE CASCADE
+    );
+
+    CREATE TABLE [app].[sessions] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [token] NVARCHAR(255) NOT NULL,
+        [expires_at] DATETIME2 NOT NULL,
+        CONSTRAINT [fk_sessions_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id]) ON DELETE CASCADE
+    );
+
+    CREATE TABLE [app].[audit_log] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT,
+        [action] NVARCHAR(100) NOT NULL,
+        [timestamp] DATETIME2,
+        [details] NVARCHAR(MAX),
+        CONSTRAINT [fk_audit_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users]([id])
+    );
+  expected: |
+    CREATE TABLE [app].[audit_log] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [user_id] INT NULL,
+      [action] NVARCHAR(100) NOT NULL,
+      [timestamp] DATETIME2 NULL,
+      [details] NVARCHAR(MAX) NULL,
+      CONSTRAINT [PK_audit_log_4] PRIMARY KEY ([id])
+    );
+    CREATE TABLE [app].[sessions] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [user_id] INT NOT NULL,
+      [token] NVARCHAR(255) NOT NULL,
+      [expires_at] DATETIME2 NOT NULL,
+      CONSTRAINT [PK_sessions_3] PRIMARY KEY ([id])
+    );
+    CREATE TABLE [core].[user_roles] (
+      [user_id] INT NOT NULL,
+      [role_id] INT NOT NULL,
+      [assigned_at] DATETIME2 NULL,
+      CONSTRAINT [pk_user_roles] PRIMARY KEY ([user_id], [role_id])
+    );
+    ALTER TABLE [app].[audit_log] ADD CONSTRAINT [fk_audit_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+    ALTER TABLE [app].[sessions] ADD CONSTRAINT [fk_sessions_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users] ([id]) ON DELETE CASCADE ON UPDATE NO ACTION;
+    ALTER TABLE [core].[user_roles] ADD CONSTRAINT [fk_user_roles_user] FOREIGN KEY ([user_id]) REFERENCES [core].[users] ([id]) ON DELETE CASCADE ON UPDATE NO ACTION;
+    ALTER TABLE [core].[user_roles] ADD CONSTRAINT [fk_user_roles_role] FOREIGN KEY ([role_id]) REFERENCES [core].[roles] ([id]) ON DELETE CASCADE ON UPDATE NO ACTION;
+- description: Reverse of computed columns - dropping indexes and computed columns
+  oldSchema: |
+    CREATE SCHEMA [ecommerce];
+    GO
+
+    CREATE TABLE [ecommerce].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [tax_rate] DECIMAL(5,4)
+    );
+  newSchema: |
+    CREATE SCHEMA [ecommerce];
+    GO
+
+    CREATE TABLE [ecommerce].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [tax_rate] DECIMAL(5,4),
+        [price_with_tax] AS ([price] * (1 + [tax_rate])),
+        [price_category] AS (
+            CASE
+                WHEN [price] < 10 THEN 'Budget'
+                WHEN [price] < 100 THEN 'Standard'
+                ELSE 'Premium'
+            END
+        )
+    );
+    GO
+
+    CREATE INDEX [idx_products_price_category] ON [ecommerce].[products] ([price_category]);
+    CREATE INDEX [idx_products_price_with_tax] ON [ecommerce].[products] ([price_with_tax]);
+
+    CREATE TABLE [ecommerce].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [product_id] INT NOT NULL,
+        [quantity] INT NOT NULL,
+        [unit_price] DECIMAL(10,2) NOT NULL,
+        [total] DECIMAL(15,2),
+        [order_date] DATETIME2,
+        [computed_total] AS ([quantity] * [unit_price]),
+        CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [ecommerce].[products]([id])
+    );
+    GO
+  expected: |
+    CREATE TABLE [ecommerce].[orders] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [product_id] INT NOT NULL,
+      [quantity] INT NOT NULL,
+      [unit_price] DECIMAL(10,2) NOT NULL,
+      [total] DECIMAL(15,2) NULL,
+      [order_date] DATETIME2 NULL,
+      [computed_total]  NULL,
+      CONSTRAINT [PK_orders_2] PRIMARY KEY ([id])
+    );
+    ALTER TABLE [ecommerce].[products] ADD [price_with_tax]  NULL;
+    ALTER TABLE [ecommerce].[products] ADD [price_category]  NULL;
+    CREATE INDEX [idx_products_price_category] ON [ecommerce].[products] ([price_category]);
+    CREATE INDEX [idx_products_price_with_tax] ON [ecommerce].[products] ([price_with_tax]);
+
+    ALTER TABLE [ecommerce].[orders] ADD CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [ecommerce].[products] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+- description: Reverse of temporal tables - disabling system versioning and dropping history
+  oldSchema: |
+    CREATE SCHEMA [tracking];
+    GO
+
+    CREATE TABLE [tracking].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [last_modified] DATETIME2
+    );
+  newSchema: |
+    CREATE SCHEMA [tracking];
+    GO
+
+    CREATE TABLE [tracking].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [last_modified] DATETIME2,
+        [valid_from] DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+        [valid_to] DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+        PERIOD FOR SYSTEM_TIME ([valid_from], [valid_to])
+    );
+
+    CREATE TABLE [tracking].[products_history] (
+        [id] INT NOT NULL,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [last_modified] DATETIME2,
+        [valid_from] DATETIME2 NOT NULL,
+        [valid_to] DATETIME2 NOT NULL
+    );
+
+    CREATE CLUSTERED INDEX [idx_products_history_period] ON [tracking].[products_history] ([valid_to], [valid_from]);
+
+    ALTER TABLE [tracking].[products] SET (SYSTEM_VERSIONING = ON (HISTORY_TABLE = [tracking].[products_history]));
+  expected: |+
+    CREATE TABLE [tracking].[products_history] (
+      [id] INT NOT NULL,
+      [name] NVARCHAR(100) NOT NULL,
+      [price] DECIMAL(10,2) NOT NULL,
+      [last_modified] DATETIME2 NULL,
+      [valid_from] DATETIME2 NOT NULL,
+      [valid_to] DATETIME2 NOT NULL
+    );
+    CREATE CLUSTERED INDEX [idx_products_history_period] ON [tracking].[products_history] ([valid_to], [valid_from]);
+    ALTER TABLE [tracking].[products] ADD [valid_from] DATETIME2 NOT NULL;
+    ALTER TABLE [tracking].[products] ADD [valid_to] DATETIME2 NOT NULL;
+
+- description: Reverse of table and column comments - dropping extended properties
+  oldSchema: |
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [app].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        [status] NVARCHAR(20)
+    );
+
+    CREATE TABLE [app].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [category] NVARCHAR(50)
+    );
+
+    CREATE INDEX [idx_users_email] ON [app].[users] ([email]);
+    CREATE INDEX [idx_products_category] ON [app].[products] ([category]);
+  newSchema: |
+    CREATE SCHEMA [app];
+    GO
+
+    CREATE TABLE [app].[users] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [username] NVARCHAR(50) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [created_at] DATETIME2,
+        [status] NVARCHAR(20)
+    );
+
+    CREATE TABLE [app].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL,
+        [category] NVARCHAR(50)
+    );
+
+    CREATE INDEX [idx_users_email] ON [app].[users] ([email]);
+    CREATE INDEX [idx_products_category] ON [app].[products] ([category]);
+
+    CREATE TABLE [app].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [user_id] INT NOT NULL,
+        [product_id] INT NOT NULL,
+        [quantity] INT NOT NULL,
+        [order_date] DATETIME2,
+        CONSTRAINT [fk_orders_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users]([id]),
+        CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [app].[products]([id])
+    );
+    GO
+
+    -- Add table comments using extended properties
+    EXEC sp_addextendedproperty 'MS_Description', 'User accounts and profile information', 'SCHEMA', 'app', 'TABLE', 'users';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product catalog with pricing information', 'SCHEMA', 'app', 'TABLE', 'products';
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer orders tracking system', 'SCHEMA', 'app', 'TABLE', 'orders';
+    GO
+
+    -- Add column comments for users table
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique identifier for each user', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique username for login authentication', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'username';
+    EXEC sp_addextendedproperty 'MS_Description', 'User email address for notifications', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'email';
+    EXEC sp_addextendedproperty 'MS_Description', 'Timestamp when the user account was created', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'created_at';
+    EXEC sp_addextendedproperty 'MS_Description', 'Current status: active, inactive, or suspended', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'status';
+    GO
+
+    -- Add column comments for products table
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique product identifier', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product display name', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'name';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product price in USD', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'price';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product category classification', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'category';
+    GO
+
+    -- Add comments to orders table
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique order identifier', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Reference to the user who placed the order', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'user_id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Reference to the ordered product', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'product_id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Number of items ordered', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'quantity';
+    EXEC sp_addextendedproperty 'MS_Description', 'When the order was placed', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'order_date';
+  expected: |
+    CREATE TABLE [app].[orders] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [user_id] INT NOT NULL,
+      [product_id] INT NOT NULL,
+      [quantity] INT NOT NULL,
+      [order_date] DATETIME2 NULL,
+      CONSTRAINT [PK_orders_3] PRIMARY KEY ([id])
+    );
+    ALTER TABLE [app].[orders] ADD CONSTRAINT [fk_orders_user] FOREIGN KEY ([user_id]) REFERENCES [app].[users] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+    ALTER TABLE [app].[orders] ADD CONSTRAINT [fk_orders_product] FOREIGN KEY ([product_id]) REFERENCES [app].[products] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+    EXEC sp_addextendedproperty 'MS_Description', 'Customer orders tracking system', 'SCHEMA', 'app', 'TABLE', 'orders';
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique order identifier', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Reference to the user who placed the order', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'user_id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Reference to the ordered product', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'product_id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Number of items ordered', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'quantity';
+    EXEC sp_addextendedproperty 'MS_Description', 'When the order was placed', 'SCHEMA', 'app', 'TABLE', 'orders', 'COLUMN', 'order_date';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product catalog with pricing information', 'SCHEMA', 'app', 'TABLE', 'products';
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique product identifier', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product display name', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'name';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product price in USD', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'price';
+    EXEC sp_addextendedproperty 'MS_Description', 'Product category classification', 'SCHEMA', 'app', 'TABLE', 'products', 'COLUMN', 'category';
+    EXEC sp_addextendedproperty 'MS_Description', 'User accounts and profile information', 'SCHEMA', 'app', 'TABLE', 'users';
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique identifier for each user', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Unique username for login authentication', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'username';
+    EXEC sp_addextendedproperty 'MS_Description', 'User email address for notifications', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'email';
+    EXEC sp_addextendedproperty 'MS_Description', 'Timestamp when the user account was created', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'created_at';
+    EXEC sp_addextendedproperty 'MS_Description', 'Current status: active, inactive, or suspended', 'SCHEMA', 'app', 'TABLE', 'users', 'COLUMN', 'status';
+    GO
+- description: Reverse of default constraint operations - dropping tables, columns with defaults, and default constraints
+  oldSchema: |
+    CREATE SCHEMA [defaults];
+    GO
+
+    CREATE TABLE [defaults].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [hire_date] DATE NOT NULL DEFAULT GETDATE(),
+        [status] NVARCHAR(20) NOT NULL DEFAULT 'active',
+        [is_active] BIT NOT NULL DEFAULT 1,
+        [salary] DECIMAL(10,2) DEFAULT 50000.00,
+        [department_id] INT DEFAULT 1,
+        [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+        [updated_at] DATETIME2
+    );
+
+    CREATE TABLE [defaults].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        [stock] INT NOT NULL DEFAULT 0,
+        [is_available] BIT DEFAULT 1
+    );
+  newSchema: |
+    CREATE SCHEMA [defaults];
+    GO
+
+    CREATE TABLE [defaults].[employees] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [email] NVARCHAR(100) NOT NULL,
+        [hire_date] DATE NOT NULL DEFAULT GETDATE(),
+        [status] NVARCHAR(20) NOT NULL CONSTRAINT [DF_employees_status_new] DEFAULT 'pending',
+        [is_active] BIT NOT NULL DEFAULT 1,
+        [salary] DECIMAL(10,2) DEFAULT 50000.00,
+        [department_id] INT DEFAULT 1,
+        [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+        [updated_at] DATETIME2,
+        [vacation_days] INT NOT NULL DEFAULT 15,
+        [bonus_percentage] DECIMAL(5,2) DEFAULT (CASE WHEN MONTH(GETDATE()) = 12 THEN 10.0 ELSE 5.0 END)
+    );
+
+    CREATE TABLE [defaults].[products] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [price] DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+        [stock] INT NOT NULL DEFAULT 0,
+        [is_available] BIT DEFAULT 1,
+        [cost] DECIMAL(10,2) NOT NULL
+    );
+
+    CREATE TABLE [defaults].[orders] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [order_number] NVARCHAR(50) NOT NULL DEFAULT CONCAT('ORD-', YEAR(GETDATE()), '-', FORMAT(GETDATE(), 'MMdd')),
+        [order_date] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [status] NVARCHAR(20) NOT NULL DEFAULT 'pending',
+        [total] DECIMAL(10,2) NOT NULL DEFAULT 0,
+        [discount] DECIMAL(5,2) DEFAULT NULL,
+        [is_paid] BIT NOT NULL DEFAULT 0,
+        [notes] NVARCHAR(MAX) DEFAULT 'No notes'
+    );
+  expected: |+
+    CREATE TABLE [defaults].[orders] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [order_number] NVARCHAR(50) NOT NULL DEFAULT CONCAT('ORD-', YEAR(GETDATE()), '-', FORMAT(GETDATE(), 'MMdd')),
+      [order_date] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+      [status] NVARCHAR(20) NOT NULL DEFAULT 'pending',
+      [total] DECIMAL(10,2) NOT NULL DEFAULT 0,
+      [discount] DECIMAL(5,2) NULL DEFAULT NULL,
+      [is_paid] BIT NOT NULL DEFAULT 0,
+      [notes] NVARCHAR(MAX) NULL DEFAULT 'No notes',
+      CONSTRAINT [PK_orders_3] PRIMARY KEY ([id])
+    );
+    ALTER TABLE [defaults].[employees] ADD [vacation_days] INT NOT NULL DEFAULT 15;
+    ALTER TABLE [defaults].[employees] ADD [bonus_percentage] DECIMAL(5,2) NULL DEFAULT (CASE WHEN MONTH(GETDATE()) = 12 THEN 10.0 ELSE 5.0 END);
+    ALTER TABLE [defaults].[employees] ADD CONSTRAINT [DF_employees_status] DEFAULT 'pending' FOR [status];
+
+    ALTER TABLE [defaults].[products] ADD [cost] DECIMAL(10,2) NOT NULL;
+
+- description: Reverse of complex default expressions - dropping columns with system functions and conditional defaults
+  oldSchema: |
+    CREATE SCHEMA [complex];
+    GO
+
+    CREATE TABLE [complex].[audit_log] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [event_type] NVARCHAR(50) NOT NULL,
+        [user_name] NVARCHAR(100) NOT NULL DEFAULT SYSTEM_USER,
+        [event_time] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [ip_address] NVARCHAR(45),
+        [session_id] UNIQUEIDENTIFIER DEFAULT NEWID()
+    );
+
+    CREATE TABLE [complex].[documents] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [version] INT NOT NULL DEFAULT 1,
+        [created_date] DATE DEFAULT CAST(GETDATE() AS DATE),
+        [expiry_date] DATE DEFAULT DATEADD(YEAR, 1, CAST(GETDATE() AS DATE))
+    );
+  newSchema: |
+    CREATE SCHEMA [complex];
+    GO
+
+    CREATE TABLE [complex].[audit_log] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [event_type] NVARCHAR(50) NOT NULL,
+        [user_name] NVARCHAR(100) NOT NULL DEFAULT SYSTEM_USER,
+        [event_time] DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        [ip_address] NVARCHAR(45),
+        [session_id] UNIQUEIDENTIFIER DEFAULT NEWID(),
+        [server_name] NVARCHAR(100) DEFAULT @@SERVERNAME,
+        [database_name] NVARCHAR(100) DEFAULT DB_NAME(),
+        [schema_name] NVARCHAR(100) DEFAULT SCHEMA_NAME()
+    );
+
+    CREATE TABLE [complex].[documents] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [version] INT NOT NULL DEFAULT 1,
+        [created_date] DATE DEFAULT CAST(GETDATE() AS DATE),
+        [expiry_date] DATE DEFAULT DATEADD(YEAR, 1, CAST(GETDATE() AS DATE)),
+        [document_code] NVARCHAR(50) DEFAULT CONCAT('DOC-', FORMAT(GETDATE(), 'yyyyMMdd'), '-', NEWID()),
+        [priority] INT DEFAULT
+            CASE
+                WHEN DATEPART(HOUR, GETDATE()) < 12 THEN 1
+                WHEN DATEPART(HOUR, GETDATE()) < 18 THEN 2
+                ELSE 3
+            END
+    );
+
+    CREATE TABLE [complex].[calculations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [value1] DECIMAL(10,2) NOT NULL,
+        [value2] DECIMAL(10,2) NOT NULL,
+        [pi_value] DECIMAL(10,8) DEFAULT PI(),
+        [random_value] FLOAT DEFAULT RAND(),
+        [checksum_value] INT DEFAULT CHECKSUM(NEWID()),
+        [created_at] DATETIME2 DEFAULT SYSDATETIME(),
+        [created_offset] DATETIMEOFFSET DEFAULT SYSDATETIMEOFFSET()
+    );
+  expected: |+
+    CREATE TABLE [complex].[calculations] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [value1] DECIMAL(10,2) NOT NULL,
+      [value2] DECIMAL(10,2) NOT NULL,
+      [pi_value] DECIMAL(10,8) NULL DEFAULT PI(),
+      [random_value] FLOAT NULL DEFAULT RAND(),
+      [checksum_value] INT NULL DEFAULT CHECKSUM(NEWID()),
+      [created_at] DATETIME2 NULL DEFAULT SYSDATETIME(),
+      [created_offset] DATETIMEOFFSET NULL DEFAULT SYSDATETIMEOFFSET(),
+      CONSTRAINT [PK_calculations_3] PRIMARY KEY ([id])
+    );
+    ALTER TABLE [complex].[audit_log] ADD [server_name] NVARCHAR(100) NULL DEFAULT @@SERVERNAME;
+    ALTER TABLE [complex].[audit_log] ADD [database_name] NVARCHAR(100) NULL DEFAULT DB_NAME();
+    ALTER TABLE [complex].[audit_log] ADD [schema_name] NVARCHAR(100) NULL DEFAULT SCHEMA_NAME();
+
+    ALTER TABLE [complex].[documents] ADD [document_code] NVARCHAR(50) NULL DEFAULT CONCAT('DOC-', FORMAT(GETDATE(), 'yyyyMMdd'), '-', NEWID());
+    ALTER TABLE [complex].[documents] ADD [priority] INT NULL DEFAULT CASE
+                WHEN DATEPART(HOUR, GETDATE()) < 12 THEN 1
+                WHEN DATEPART(HOUR, GETDATE()) < 18 THEN 2
+                ELSE 3
+            END;
+
+- description: Reverse of comments with special characters - dropping comments with quotes, unicode, and special formatting
+  oldSchema: |
+    CREATE SCHEMA [special];
+    GO
+
+    CREATE TABLE [special].[documents] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [author] NVARCHAR(100),
+        [created_date] DATETIME2,
+        [metadata] NVARCHAR(500)
+    );
+
+    CREATE TABLE [special].[translations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [document_id] INT NOT NULL,
+        [lang_code] NVARCHAR(10) NOT NULL,
+        [translated_title] NVARCHAR(200),
+        [translated_content] NVARCHAR(MAX),
+        CONSTRAINT [fk_translations_doc] FOREIGN KEY ([document_id]) REFERENCES [special].[documents]([id])
+    );
+  newSchema: |
+    CREATE SCHEMA [special];
+    GO
+
+    CREATE TABLE [special].[documents] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [title] NVARCHAR(200) NOT NULL,
+        [content] NVARCHAR(MAX),
+        [author] NVARCHAR(100),
+        [created_date] DATETIME2,
+        [metadata] NVARCHAR(500)
+    );
+
+    CREATE TABLE [special].[translations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [document_id] INT NOT NULL,
+        [lang_code] NVARCHAR(10) NOT NULL,
+        [translated_title] NVARCHAR(200),
+        [translated_content] NVARCHAR(MAX),
+        CONSTRAINT [fk_translations_doc] FOREIGN KEY ([document_id]) REFERENCES [special].[documents]([id])
+    );
+
+    CREATE TABLE [special].[test_extreme] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [data] NVARCHAR(MAX)
+    );
+    GO
+
+    -- Add table comments with special characters and quotes
+    EXEC sp_addextendedproperty 'MS_Description', 'Document storage system - handles files, "metadata", & special chars: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'documents';
+    GO
+
+    -- Add multiline comment with special formatting
+    EXEC sp_addextendedproperty 'MS_Description',
+    'Translation table for international support:
+    - Supports Unicode characters: αβγδε, 中文, العربية, русский
+    - Handles quotes: "double quotes" and ''single quotes''
+    - Special symbols: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'translations';
+    GO
+
+    -- Column comments with various special cases
+    EXEC sp_addextendedproperty 'MS_Description', 'Primary key (auto-increment) - unique ID for each document', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Document title - may contain "quotes", ''apostrophes'', and symbols: @#$%', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'title';
+    GO
+
+    -- Multiline comment with technical details
+    EXEC sp_addextendedproperty 'MS_Description',
+    'Document content field:
+      • Supports rich text formatting
+      • HTML tags like <p>, <div>, <span>
+      • Special characters: © ® ™ § ¶ † ‡ • ‰ ′ ″
+      • Mathematical: ± × ÷ ≠ ≤ ≥ ∞ ∑ ∏ ∫
+      • Currency: $ € £ ¥ ₹ ₽
+      • Arrows: ← → ↑ ↓ ↔ ⇐ ⇒ ⇔', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'content';
+    GO
+
+    -- Comment with SQL injection attempt (should be safely handled)
+    EXEC sp_addextendedproperty 'MS_Description', 'Author name field - prevents SQL injection like ''; DROP TABLE users; --', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'author';
+    GO
+
+    -- Comment with JSON-like structure
+    EXEC sp_addextendedproperty 'MS_Description', 'Metadata JSON: {"version": "1.0", "tags": ["important", "draft"], "settings": {"public": false}}', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'metadata';
+    GO
+
+    -- Unicode characters in comments
+    EXEC sp_addextendedproperty 'MS_Description', 'Language code: en-US, fr-FR, de-DE, ja-JP, zh-CN, ar-SA, ru-RU, hi-IN, 한국어, ไทย', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'lang_code';
+    GO
+
+    -- Comment with URLs and file paths
+    EXEC sp_addextendedproperty 'MS_Description', 'Translated content - may reference URLs like https://example.com/path?param=value&other=123 or file paths C:\Users\Name\Documents\file.txt', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'translated_content';
+    GO
+
+    -- Extremely long comment to test limits
+    EXEC sp_addextendedproperty 'MS_Description',
+    'This is an extremely long comment designed to test the limits of extended property storage in SQL Server. It contains multiple lines of text with various formatting, special characters, and technical information. The purpose is to verify that the migration system can properly handle, store, and retrieve complex comment data without truncation or corruption. This comment includes: numbers (123456789), symbols (!@#$%^&*()_+-={}[]|\:";''<>?,./ ), Unicode characters (αβγδε中文العربيةрусский한국어), and structured data like JSON {"key": "value", "array": [1, 2, 3], "nested": {"deep": true}}. Additionally, it tests SQL-like syntax: SELECT * FROM table WHERE column = ''value'' AND other_column IN (1, 2, 3); as well as HTML markup: <html><body><p class="test">Content</p></body></html> and XML: <?xml version="1.0"?><root><item id="1">Test</item></root>. The comment system should preserve all these characters and structures exactly as written, demonstrating robust handling of complex metadata in database schema documentation.', 'SCHEMA', 'special', 'TABLE', 'test_extreme';
+  expected: |
+    CREATE TABLE [special].[test_extreme] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [data] NVARCHAR(MAX) NULL,
+      CONSTRAINT [PK_test_extreme_3] PRIMARY KEY ([id])
+    );
+    EXEC sp_addextendedproperty 'MS_Description', 'Document storage system - handles files, "metadata", & special chars: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'documents';
+    EXEC sp_addextendedproperty 'MS_Description', 'Primary key (auto-increment) - unique ID for each document', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'id';
+    EXEC sp_addextendedproperty 'MS_Description', 'Document title - may contain "quotes", ''apostrophes'', and symbols: @#$%', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'title';
+    EXEC sp_addextendedproperty 'MS_Description', 'Document content field:
+      • Supports rich text formatting
+      • HTML tags like <p>, <div>, <span>
+      • Special characters: © ® ™ § ¶ † ‡ • ‰ ′ ″
+      • Mathematical: ± × ÷ ≠ ≤ ≥ ∞ ∑ ∏ ∫
+      • Currency: $ € £ ¥ ₹ ₽
+      • Arrows: ← → ↑ ↓ ↔ ⇐ ⇒ ⇔', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'content';
+    EXEC sp_addextendedproperty 'MS_Description', 'Author name field - prevents SQL injection like ''; DROP TABLE users; --', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'author';
+    EXEC sp_addextendedproperty 'MS_Description', 'Metadata JSON: {"version": "1.0", "tags": ["important", "draft"], "settings": {"public": false}}', 'SCHEMA', 'special', 'TABLE', 'documents', 'COLUMN', 'metadata';
+    EXEC sp_addextendedproperty 'MS_Description', 'This is an extremely long comment designed to test the limits of extended property storage in SQL Server. It contains multiple lines of text with various formatting, special characters, and technical information. The purpose is to verify that the migration system can properly handle, store, and retrieve complex comment data without truncation or corruption. This comment includes: numbers (123456789), symbols (!@#$%^&*()_+-={}[]|\:";''<>?,./ ), Unicode characters (αβγδε中文العربيةрусский한국어), and structured data like JSON {"key": "value", "array": [1, 2, 3], "nested": {"deep": true}}. Additionally, it tests SQL-like syntax: SELECT * FROM table WHERE column = ''value'' AND other_column IN (1, 2, 3); as well as HTML markup: <html><body><p class="test">Content</p></body></html> and XML: <?xml version="1.0"?><root><item id="1">Test</item></root>. The comment system should preserve all these characters and structures exactly as written, demonstrating robust handling of complex metadata in database schema documentation.', 'SCHEMA', 'special', 'TABLE', 'test_extreme';
+    EXEC sp_addextendedproperty 'MS_Description', 'Translation table for international support:
+    - Supports Unicode characters: αβγδε, 中文, العربية, русский
+    - Handles quotes: "double quotes" and ''single quotes''
+    - Special symbols: @#$%^&*()_+-={}[]|\:";''<>?,./', 'SCHEMA', 'special', 'TABLE', 'translations';
+    EXEC sp_addextendedproperty 'MS_Description', 'Language code: en-US, fr-FR, de-DE, ja-JP, zh-CN, ar-SA, ru-RU, hi-IN, 한국어, ไทย', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'lang_code';
+    EXEC sp_addextendedproperty 'MS_Description', 'Translated content - may reference URLs like https://example.com/path?param=value&other=123 or file paths C:\Users\Name\Documents\file.txt', 'SCHEMA', 'special', 'TABLE', 'translations', 'COLUMN', 'translated_content';
+    GO
+- description: Reverse of edge case defaults - dropping special default constraints and columns
+  oldSchema: |
+    CREATE SCHEMA [edge];
+    GO
+
+    CREATE TABLE [edge].[test_defaults] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [nullable_with_default] INT DEFAULT 42,
+        [string_default] NVARCHAR(50) DEFAULT N'Default''s value',
+        [empty_string] NVARCHAR(50) DEFAULT '',
+        [zero_default] INT DEFAULT 0,
+        [negative_default] INT DEFAULT -1,
+        [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789
+    );
+  newSchema: "CREATE SCHEMA [edge];\nGO\n\nCREATE TABLE [edge].[test_defaults] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [nullable_with_default] INT CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84,\n    [string_default] NVARCHAR(50) DEFAULT N'Default''s value',\n    [empty_string] NVARCHAR(50) DEFAULT '',\n    [zero_default] INT DEFAULT 0,\n    [negative_default] INT DEFAULT -1,\n    [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789,\n    [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2',\n    [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 \U0001F30D',\n    [max_int] BIGINT DEFAULT 9223372036854775807,\n    [min_int] BIGINT DEFAULT -9223372036854775808,\n    [json_config] NVARCHAR(MAX) DEFAULT N'{\"enabled\": true, \"count\": 0}'\n);\n\nCREATE TABLE [edge].[flags] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [is_enabled] BIT NOT NULL DEFAULT 1,\n    [is_deleted] BIT NOT NULL DEFAULT 0,\n    [is_visible] BIT DEFAULT 1,\n    [is_archived] BIT DEFAULT 0\n);\n"
+  expected: "CREATE TABLE [edge].[flags] (\n  [id] INT IDENTITY(1,1) NOT NULL,\n  [is_enabled] BIT NOT NULL DEFAULT 1,\n  [is_deleted] BIT NOT NULL DEFAULT 0,\n  [is_visible] BIT NULL DEFAULT 1,\n  [is_archived] BIT NULL DEFAULT 0,\n  CONSTRAINT [PK_flags_2] PRIMARY KEY ([id])\n);\nALTER TABLE [edge].[test_defaults] ADD [special_chars] NVARCHAR(100) NULL DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2';\nALTER TABLE [edge].[test_defaults] ADD [unicode_default] NVARCHAR(100) NULL DEFAULT N'你好世界 \U0001F30D';\nALTER TABLE [edge].[test_defaults] ADD [max_int] BIGINT NULL DEFAULT 9223372036854775807;\nALTER TABLE [edge].[test_defaults] ADD [min_int] BIGINT NULL DEFAULT -9223372036854775808;\nALTER TABLE [edge].[test_defaults] ADD [json_config] NVARCHAR(MAX) NULL DEFAULT N'{\"enabled\": true, \"count\": 0}';\nALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_with_default] DEFAULT 84 FOR [nullable_with_default];\n\n"
+- description: Spatial index operations with various tessellation schemes and parameters
+  oldSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    -- Enable spatial types
+    CREATE TABLE [geo].[locations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(200) NOT NULL,
+        [geo_point] GEOMETRY NOT NULL,
+        [geo_polygon] GEOMETRY NOT NULL,
+        [geo_location] GEOGRAPHY NOT NULL,
+        [description] NVARCHAR(MAX)
+    );
+
+    -- Add spatial indexes with different configurations
+
+    -- GEOMETRY_GRID index with full parameters
+    CREATE SPATIAL INDEX [idx_geo_point] ON [geo].[locations] ([geo_point])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-180, -90, 180, 90),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 32,
+        PAD_INDEX = ON,
+        FILLFACTOR = 85,
+        SORT_IN_TEMPDB = ON,
+        ALLOW_ROW_LOCKS = ON,
+        ALLOW_PAGE_LOCKS = ON,
+        MAXDOP = 2,
+        DATA_COMPRESSION = PAGE
+    );
+
+    -- GEOMETRY_AUTO_GRID index (requires bounding box)
+    CREATE SPATIAL INDEX [idx_geo_polygon] ON [geo].[locations] ([geo_polygon])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-1000, -1000, 1000, 1000),
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = LOW, LEVEL_3 = LOW, LEVEL_4 = LOW)
+    );
+
+    -- GEOGRAPHY_GRID index with specific grid levels
+    CREATE SPATIAL INDEX [idx_geo_location] ON [geo].[locations] ([geo_location])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 8,
+        FILLFACTOR = 80
+    );
+
+    -- Add another table with spatial columns
+    CREATE TABLE [geo].[boundaries] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [boundary_name] NVARCHAR(100) NOT NULL,
+        [boundary_shape] GEOMETRY NOT NULL,
+        [center_point] GEOMETRY NOT NULL
+    );
+
+    -- Add spatial index on new table
+    CREATE SPATIAL INDEX [idx_boundary_shape] ON [geo].[boundaries] ([boundary_shape])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (0, 0, 1000, 1000),
+        GRIDS = (LEVEL_1 = HIGH, LEVEL_2 = HIGH, LEVEL_3 = LOW, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 64
+    );
+  newSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    -- Enable spatial types
+    CREATE TABLE [geo].[locations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(200) NOT NULL,
+        [geo_point] GEOMETRY NOT NULL,
+        [geo_polygon] GEOMETRY NOT NULL,
+        [geo_location] GEOGRAPHY NOT NULL,
+        [description] NVARCHAR(MAX)
+    );
+  expected: |+
+    DROP INDEX [idx_geo_location] ON [geo].[locations];
+    DROP INDEX [idx_geo_point] ON [geo].[locations];
+    DROP INDEX [idx_geo_polygon] ON [geo].[locations];
+    DROP TABLE [geo].[boundaries];
+
+- description: Reverse spatial table operations - dropping table with spatial indexes
+  oldSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    CREATE TABLE [geo].[regions] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [region_name] NVARCHAR(100) NOT NULL,
+        [boundary] GEOMETRY NOT NULL,
+        [population] INT,
+        [area_sqkm] FLOAT
+    );
+    GO
+  newSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    -- Create table with spatial columns and indexes
+    CREATE TABLE [geo].[locations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(200) NOT NULL,
+        [location] GEOGRAPHY NOT NULL,
+        [area] GEOGRAPHY NOT NULL
+    );
+    GO
+
+    -- Create spatial indexes that will be dropped with the table
+    -- Using GEOGRAPHY_GRID which doesn't require BOUNDING_BOX
+    CREATE SPATIAL INDEX [idx_location] ON [geo].[locations] ([location])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 16
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_area] ON [geo].[locations] ([area])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 8
+    );
+    GO
+
+    CREATE TABLE [geo].[regions] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [region_name] NVARCHAR(100) NOT NULL,
+        [boundary] GEOMETRY NOT NULL
+    );
+    GO
+  expected: |+
+    ALTER TABLE [geo].[regions] DROP CONSTRAINT [PK_regions_1];
+    GO
+    ALTER TABLE [geo].[regions] DROP COLUMN [population];
+    ALTER TABLE [geo].[regions] DROP COLUMN [area_sqkm];
+
+    CREATE TABLE [geo].[locations] (
+      [id] INT IDENTITY(1,1) NOT NULL,
+      [name] NVARCHAR(200) NOT NULL,
+      [location] GEOGRAPHY NOT NULL,
+      [area] GEOGRAPHY NOT NULL,
+      CONSTRAINT [PK_locations_1] PRIMARY KEY ([id])
+    );
+    CREATE SPATIAL INDEX [idx_location] ON [geo].[locations] ([location])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 16,
+        ALLOW_ROW_LOCKS = ON,
+        ALLOW_PAGE_LOCKS = ON
+    );
+    CREATE SPATIAL INDEX [idx_area] ON [geo].[locations] ([area])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 8,
+        ALLOW_ROW_LOCKS = ON,
+        ALLOW_PAGE_LOCKS = ON
+    );
+    ALTER TABLE [geo].[regions] ADD CONSTRAINT [PK_regions_2] PRIMARY KEY ([id]);
+
+- description: Reverse spatial index operations - dropping and recreating spatial indexes
+  oldSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    -- Create table with spatial columns and spatial indexes that can be preserved
+    CREATE TABLE [geo].[locations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(200) NOT NULL,
+        [geo_point] GEOMETRY NOT NULL,
+        [geo_polygon] GEOMETRY NOT NULL,
+        [geo_location] GEOGRAPHY NOT NULL,
+        [description] NVARCHAR(MAX)
+    );
+    GO
+
+    -- Create spatial indexes with basic configuration to avoid preservation issues
+    CREATE SPATIAL INDEX [idx_geo_point] ON [geo].[locations] ([geo_point])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-180, -90, 180, 90),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM)
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_geo_location] ON [geo].[locations] ([geo_location])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM)
+    );
+    GO
+  newSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    -- Create table with spatial columns and spatial indexes that can be preserved
+    CREATE TABLE [geo].[locations] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(200) NOT NULL,
+        [geo_point] GEOMETRY NOT NULL,
+        [geo_polygon] GEOMETRY NOT NULL,
+        [geo_location] GEOGRAPHY NOT NULL,
+        [description] NVARCHAR(MAX)
+    );
+    GO
+
+    -- Create spatial indexes with basic configuration to avoid preservation issues
+    CREATE SPATIAL INDEX [idx_geo_point] ON [geo].[locations] ([geo_point])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-180, -90, 180, 90),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM)
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_geo_location] ON [geo].[locations] ([geo_location])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM)
+    );
+    GO
+  expected: ""
+- description: Spatial index modifications - recreating with different parameters and adding/dropping indexes
+  oldSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    CREATE TABLE [geo].[spatial_data] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [location] GEOMETRY NOT NULL,
+        [region] GEOMETRY,
+        [area] GEOGRAPHY
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_location] ON [geo].[spatial_data] ([location])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-200, -200, 200, 200),
+        GRIDS = (LEVEL_1 = HIGH, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 64,
+        PAD_INDEX = ON,
+        FILLFACTOR = 90,
+        ALLOW_ROW_LOCKS = ON,
+        ALLOW_PAGE_LOCKS = ON
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_region] ON [geo].[spatial_data] ([region])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-500, -500, 500, 500),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 32
+    );
+    GO
+  newSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    CREATE TABLE [geo].[spatial_data] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(100) NOT NULL,
+        [location] GEOMETRY NOT NULL,
+        [region] GEOMETRY,
+        [area] GEOGRAPHY
+    );
+    GO
+
+    -- Create initial spatial indexes
+    CREATE SPATIAL INDEX [idx_location] ON [geo].[spatial_data] ([location])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-100, -100, 100, 100),
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = LOW, LEVEL_3 = LOW, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 16
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_area] ON [geo].[spatial_data] ([area])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 32
+    );
+    GO
+  expected: |+
+    DROP INDEX [idx_location] ON [geo].[spatial_data];
+    DROP INDEX [idx_region] ON [geo].[spatial_data];
+
+    CREATE SPATIAL INDEX [idx_area] ON [geo].[spatial_data] ([area])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 32,
+        ALLOW_ROW_LOCKS = ON,
+        ALLOW_PAGE_LOCKS = ON
+    );
+    CREATE SPATIAL INDEX [idx_location] ON [geo].[spatial_data] ([location])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-100, -100, 100, 100),
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = LOW, LEVEL_3 = LOW, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 16,
+        ALLOW_ROW_LOCKS = ON,
+        ALLOW_PAGE_LOCKS = ON
+    );
+
+- description: Spatial table schema changes - adding columns and indexes while preserving existing spatial indexes
+  oldSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    CREATE TABLE [geo].[points] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [name] NVARCHAR(50) NOT NULL,
+        [location] GEOMETRY NOT NULL,
+        [altitude] FLOAT,
+        [boundary] GEOMETRY,
+        [geo_location] GEOGRAPHY,
+        [created_at] DATETIME2 DEFAULT GETDATE()
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_points_location] ON [geo].[points] ([location])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (0, 0, 100, 100),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM)
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_points_boundary] ON [geo].[points] ([boundary])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-50, -50, 150, 150),
+        GRIDS = (LEVEL_1 = HIGH, LEVEL_2 = LOW, LEVEL_3 = LOW, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 8
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_points_geo_location] ON [geo].[points] ([geo_location])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = HIGH, LEVEL_2 = HIGH, LEVEL_3 = HIGH, LEVEL_4 = HIGH),
+        CELLS_PER_OBJECT = 16
+    );
+    GO
+  newSchema: |
+    CREATE SCHEMA [geo];
+    GO
+
+    CREATE TABLE [geo].[points] (
+        [id] INT IDENTITY(1,1) PRIMARY KEY,
+        [point_name] NVARCHAR(50) NOT NULL,
+        [location] GEOMETRY NOT NULL
+    );
+    GO
+
+    CREATE SPATIAL INDEX [idx_points_location] ON [geo].[points] ([location])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (0, 0, 100, 100),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = MEDIUM, LEVEL_3 = MEDIUM, LEVEL_4 = MEDIUM)
+    );
+    GO
+  expected: |+
+    DROP INDEX [idx_points_boundary] ON [geo].[points];
+    DROP INDEX [idx_points_geo_location] ON [geo].[points];
+    GO
+    ALTER TABLE [geo].[points] DROP COLUMN [name];
+    ALTER TABLE [geo].[points] DROP COLUMN [altitude];
+    ALTER TABLE [geo].[points] DROP COLUMN [boundary];
+    ALTER TABLE [geo].[points] DROP COLUMN [geo_location];
+    ALTER TABLE [geo].[points] DROP COLUMN [created_at];
+
+    ALTER TABLE [geo].[points] ADD [point_name] NVARCHAR(50) NOT NULL;
+
