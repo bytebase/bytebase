@@ -41,20 +41,8 @@ function readResetPassword(email: string): boolean {
   }
 }
 
-/**
- * Returns true if the user should be prompted to set up their profile.
- * First-time login with an auto-generated name (email local-part or full
- * email). Ported verbatim from the legacy Pinia auth store.
- */
-function needsProfileSetup(user: User): boolean {
-  if (user.profile?.lastLoginTime) return false;
-  const name = user.title;
-  const email = user.email;
-  if (!name || !email) return false;
-  if (name === email) return true;
-  const atIndex = email.indexOf("@");
-  if (atIndex > 0 && name === email.substring(0, atIndex)) return true;
-  return false;
+function isFirstLogin(user: User): boolean {
+  return !user.profile?.lastLoginTime;
 }
 
 export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
@@ -210,7 +198,7 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       });
       return;
     }
-    if (resp.user && needsProfileSetup(resp.user)) {
+    if (resp.user && isFirstLogin(resp.user)) {
       set({ workspacePolicy: undefined });
       await get()
         .fetchWorkspaceIamPolicy(true)
