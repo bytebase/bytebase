@@ -27,7 +27,7 @@ func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni catalog.
-//  1. loadWalkThroughCatalog(metadata) → load existing schema into catalog
+//  1. catalog.LoadMetadata(metadata) → load existing schema into catalog
 //  2. catalog.Exec(userSQL) → execute user DDL, collect per-statement Changes
 //  3. Map exec errors → *storepb.Advice
 //  4. Merge Changes into original metadata → FinalMetadata for downstream rules
@@ -46,7 +46,7 @@ func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMeta
 	if searchPath := getConfiguredSearchPath(d); len(searchPath) > 0 {
 		catBefore.SetSearchPath(searchPath)
 	}
-	if err := loadWalkThroughCatalog(context.Background(), catBefore, d.GetProto()); err != nil {
+	if _, err := catBefore.LoadMetadata(context.Background(), d.GetProto(), catalog.LoadMetadataOptions{Full: true}); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.DDLSimulationFailed.Int32(),

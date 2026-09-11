@@ -877,3 +877,11 @@ func quoteWalkThroughIdent(name string) string {
 	}
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
+
+func wtIsSystemSchema(s string) bool {
+	switch s {
+	case "pg_catalog", "pg_toast", "information_schema":
+		return true
+	}
+	return strings.HasPrefix(s, "pg_")
+}
