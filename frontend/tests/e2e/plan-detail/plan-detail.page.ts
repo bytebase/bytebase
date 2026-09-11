@@ -390,11 +390,20 @@ export class PlanDetailPage {
   }
 
   // Scroll the editor clear of the sticky page header, which otherwise
-  // intercepts pointer actions on its top lines.
+  // intercepts pointer actions on its top lines. The dashboard body, not the
+  // window, owns the page scroll, so walk up to the nearest scrolling
+  // ancestor.
   private async scrollEditorClearOfHeader(): Promise<void> {
     await this.statementEditor.evaluate((node) => {
       const top = node.getBoundingClientRect().top;
-      if (top < 96) window.scrollBy({ top: top - 96 });
+      if (top >= 96) return;
+      let owner: HTMLElement | null = node.parentElement;
+      while (owner) {
+        const overflowY = getComputedStyle(owner).overflowY;
+        if ((overflowY === "auto" || overflowY === "scroll") && owner.scrollHeight > owner.clientHeight) break;
+        owner = owner.parentElement;
+      }
+      (owner ?? window).scrollBy({ top: top - 96 });
     });
   }
 

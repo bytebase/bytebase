@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 
 // Touch has no hover and keeps focus on the tapped arrow, so coarse pointers
 // get no ring: the flash on the target card is the feedback there.
+// Size comes from the shared "sm" button, whose 28px height is the strip's.
 const ARROW_CLASS =
-  "h-auto w-7 rounded-none border-l border-control-border px-0 text-control-light hover:text-control focus-visible:ring-inset focus-visible:ring-offset-0 pointer-coarse:focus-visible:ring-0";
+  "rounded-none border-l border-control-border text-control-light hover:text-control focus-visible:ring-inset focus-visible:ring-offset-0 pointer-coarse:focus-visible:ring-0";
 
 // Steps through the unresolved threads placed on the displayed statement.
 // `count` is what the arrows can visit; `remainder` is how many unresolved
@@ -47,7 +48,7 @@ export function StatementThreadWalker({
         aria-label={t("plan.review.thread.walker.previous")}
         className={ARROW_CLASS}
         onClick={onPrevious}
-        size="xs"
+        size="sm"
       >
         <ChevronUp className="size-4" />
       </Button>
@@ -56,7 +57,7 @@ export function StatementThreadWalker({
         aria-label={t("plan.review.thread.walker.next")}
         className={ARROW_CLASS}
         onClick={onNext}
-        size="xs"
+        size="sm"
       >
         <ChevronDown className="size-4" />
       </Button>
