@@ -1,8 +1,7 @@
 import { type DragEvent, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
-import { FormField, ResponsiveFormLayout } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { ResponsiveFormLayout } from "@/components/ui/form";
 import {
   SegmentedControl,
   type SegmentedControlOption,
@@ -27,6 +26,11 @@ import {
   type LocalTlsClientCertSource,
   type LocalTlsPosture,
 } from "./tls";
+import {
+  ValidationField as FormField,
+  ValidationInput as Input,
+  ValidationTextarea as Textarea,
+} from "./ValidationField";
 
 interface SslCertificateFormProps {
   useSsl?: boolean;
@@ -73,11 +77,13 @@ function DroppableTextarea({
   onChange,
   disabled,
   placeholder,
+  label,
 }: {
   value: string;
   onChange: (val: string) => void;
   disabled?: boolean;
   placeholder: string;
+  label: string;
 }) {
   const handleDrop = useCallback(
     (e: DragEvent<HTMLTextAreaElement>) => {
@@ -100,14 +106,15 @@ function DroppableTextarea({
   }, []);
 
   return (
-    <textarea
+    <Textarea
+      aria-label={label}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       disabled={disabled}
       placeholder={placeholder}
-      className="w-full h-24 whitespace-pre-wrap resize-none rounded-xs border border-control-border bg-background px-3 py-2 text-sm focus:outline-hidden focus:border-accent disabled:cursor-not-allowed disabled:opacity-50"
+      className="w-full whitespace-pre-wrap resize-none"
     />
   );
 }
@@ -399,9 +406,13 @@ export function SslCertificateForm({
 
     if (resolvedCaSource === LOCAL_TLS_CA_SOURCE_FILE_PATH) {
       return (
-        <FormField title={renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}>
+        <FormField
+          validationField="sslCaPath"
+          title={renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}
+        >
           <Input
             data-testid="tls-ca-path-input"
+            aria-label={resolvedCaPathLabel}
             value={caPath}
             onChange={(e) => onCaPathChange?.(e.target.value)}
             disabled={disabled || isSaaSMode}
@@ -412,11 +423,15 @@ export function SslCertificateForm({
     }
 
     return (
-      <FormField title={renderLabel(resolvedCaLabel, hasCa, ca)}>
+      <FormField
+        validationField="sslCa"
+        title={renderLabel(resolvedCaLabel, hasCa, ca)}
+      >
         <DroppableTextarea
           value={ca}
           onChange={(val) => onCaChange?.(val)}
           disabled={disabled}
+          label={resolvedCaLabel}
           placeholder={resolvedCaPlaceholder}
         />
       </FormField>
@@ -434,10 +449,12 @@ export function SslCertificateForm({
       return (
         <div className="flex flex-col gap-4">
           <FormField
+            validationField="sslCertPath"
             title={renderLabel(resolvedCertPathLabel, hasCertPath, certPath)}
           >
             <Input
               data-testid="tls-cert-path-input"
+              aria-label={resolvedCertPathLabel}
               value={certPath}
               onChange={(e) => onCertPathChange?.(e.target.value)}
               disabled={disabled || isSaaSMode}
@@ -445,10 +462,12 @@ export function SslCertificateForm({
             />
           </FormField>
           <FormField
+            validationField="sslKeyPath"
             title={renderLabel(resolvedKeyPathLabel, hasKeyPath, keyPath)}
           >
             <Input
               data-testid="tls-key-path-input"
+              aria-label={resolvedKeyPathLabel}
               value={keyPath}
               onChange={(e) => onKeyPathChange?.(e.target.value)}
               disabled={disabled || isSaaSMode}
@@ -461,19 +480,27 @@ export function SslCertificateForm({
 
     return (
       <div className="flex flex-col gap-4">
-        <FormField title={renderLabel(resolvedCertLabel, hasCert, cert)}>
+        <FormField
+          validationField="sslCert"
+          title={renderLabel(resolvedCertLabel, hasCert, cert)}
+        >
           <DroppableTextarea
             value={cert}
             onChange={(val) => onCertChange?.(val)}
             disabled={disabled}
+            label={resolvedCertLabel}
             placeholder={resolvedCertPlaceholder}
           />
         </FormField>
-        <FormField title={renderLabel(resolvedKeyLabel, hasKey, sslKey)}>
+        <FormField
+          validationField="sslKey"
+          title={renderLabel(resolvedKeyLabel, hasKey, sslKey)}
+        >
           <DroppableTextarea
             value={sslKey}
             onChange={(val) => onKeyChange?.(val)}
             disabled={disabled}
+            label={resolvedKeyLabel}
             placeholder={resolvedKeyPlaceholder}
           />
         </FormField>
@@ -486,10 +513,12 @@ export function SslCertificateForm({
       return (
         <div className="flex flex-col gap-4">
           <FormField
+            validationField="sslCaPath"
             title={renderLabel(resolvedCaPathLabel, hasCaPath, caPath)}
           >
             <Input
               data-testid="tls-ca-path-input"
+              aria-label={resolvedCaPathLabel}
               value={caPath}
               onChange={(e) => onCaPathChange?.(e.target.value)}
               disabled={disabled || isSaaSMode}
@@ -498,10 +527,12 @@ export function SslCertificateForm({
           </FormField>
           {showKeyAndCertFields && (
             <FormField
+              validationField="sslCertPath"
               title={renderLabel(resolvedCertPathLabel, hasCertPath, certPath)}
             >
               <Input
                 data-testid="tls-cert-path-input"
+                aria-label={resolvedCertPathLabel}
                 value={certPath}
                 onChange={(e) => onCertPathChange?.(e.target.value)}
                 disabled={disabled || isSaaSMode}
@@ -511,10 +542,12 @@ export function SslCertificateForm({
           )}
           {showKeyAndCertFields && (
             <FormField
+              validationField="sslKeyPath"
               title={renderLabel(resolvedKeyPathLabel, hasKeyPath, keyPath)}
             >
               <Input
                 data-testid="tls-key-path-input"
+                aria-label={resolvedKeyPathLabel}
                 value={keyPath}
                 onChange={(e) => onKeyPathChange?.(e.target.value)}
                 disabled={disabled || isSaaSMode}
@@ -569,6 +602,7 @@ export function SslCertificateForm({
             value={ca}
             onChange={(val) => onCaChange?.(val)}
             disabled={disabled}
+            label={resolvedCaLabel}
             placeholder={resolvedCaPlaceholder}
           />
         </TabsPanel>
@@ -578,6 +612,7 @@ export function SslCertificateForm({
               value={sslKey}
               onChange={(val) => onKeyChange?.(val)}
               disabled={disabled}
+              label={resolvedKeyLabel}
               placeholder={resolvedKeyPlaceholder}
             />
           </TabsPanel>
@@ -588,6 +623,7 @@ export function SslCertificateForm({
               value={cert}
               onChange={(val) => onCertChange?.(val)}
               disabled={disabled}
+              label={resolvedCertLabel}
               placeholder={resolvedCertPlaceholder}
             />
           </TabsPanel>

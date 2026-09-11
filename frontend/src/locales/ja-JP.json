@@ -1358,6 +1358,22 @@
     "use-sample-instance": "サンプルインスタンスを使用する（7日間利用可能）",
     "use-sample-instance-self-host": "サンプルインスタンスを使用する",
     "users": "ユーザー",
+    "validation": {
+      "absolute-path": "/ で始まる絶対パスを入力してください。",
+      "aws-credential": "アクセスキー ID またはロール ARN を入力してください。",
+      "cloud-sql-host": "インスタンス名を project:region:instance の形式で入力してください。",
+      "forbidden-parameter": "allowAllFiles パラメーターは Bytebase サーバーのファイルを公開するため使用できません。",
+      "gcp-instance": "小文字、数字、ハイフンを使用してください。",
+      "gcp-project": "小文字、数字、ピリオド、コロン、ハイフンを使用してください。",
+      "keytab-resupply": "接続先が変更されたため、keytab ファイルを再度アップロードしてください。",
+      "oracle-service": "サービス名または SID を入力してください。",
+      "pem-certificate": "BEGIN および END CERTIFICATE 行を含む PEM 形式の証明書を入力してください。",
+      "pem-key": "PEM 形式の秘密鍵（PKCS#1、PKCS#8、または EC）を入力してください。",
+      "required": "この項目は必須です。",
+      "specific-credential": "認証情報を指定してください。Bytebase Cloud ではデフォルトの認証情報を使用できません。",
+      "tls-pair": "クライアント証明書と秘密鍵の両方を指定してください。",
+      "tls-source-conflict": "PEM の内容またはファイルパスのいずれか一方を使用してください。"
+    },
     "your-snowflake-account-locator": "Snowflake アカウント ロケーター"
   },
   "issue": {

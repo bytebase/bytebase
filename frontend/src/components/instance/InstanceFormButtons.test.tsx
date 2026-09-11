@@ -202,6 +202,7 @@ beforeEach(() => {
     }),
     setBasicInfo: vi.fn(),
     labelKVList: [],
+    labelErrors: [],
     adminDataSource,
     editingDataSource: adminDataSource,
     readonlyDataSourceList: [],
@@ -235,6 +236,22 @@ beforeEach(() => {
 });
 
 describe("InstanceFormButtons", () => {
+  test.each([
+    { title: "Production", labelErrors: ["invalid label"] },
+    { title: "   ", labelErrors: [] },
+  ])("blocks Update for invalid metadata: %j", async ({title, labelErrors}) => {
+    mocks.context = { ...mocks.context, isCreating: false, instance: create(InstanceSchema, { name: "instances/prod" }), basicInfo: create(InstanceSchema, { title, engine: Engine.POSTGRES }), labelErrors };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => { root.render(<InstanceFormButtons />); });
+    const update = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "common.update")!;
+    expect(update.disabled).toBe(true);
+    await act(async () => { update.click(); });
+    expect(mocks.updateInstance).not.toHaveBeenCalled();
+    expect(mocks.context.testConnection).not.toHaveBeenCalled();
+    await act(async () => { root.unmount(); });
+  });
+
   test("invalidates provider drafts only after a successful server-backed save", async () => {
     const saved = create(InstanceSchema, {
       name: "instances/prod",

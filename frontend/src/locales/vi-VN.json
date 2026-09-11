@@ -1358,6 +1358,22 @@
     "use-sample-instance": "Sử dụng phiên bản mẫu (Có sẵn trong 7 ngày)",
     "use-sample-instance-self-host": "Sử dụng phiên bản mẫu",
     "users": "Người dùng",
+    "validation": {
+      "absolute-path": "Nhập đường dẫn tuyệt đối bắt đầu bằng /.",
+      "aws-credential": "Nhập ID khóa truy cập hoặc ARN của vai trò.",
+      "cloud-sql-host": "Nhập tên phiên bản theo định dạng project:region:instance.",
+      "forbidden-parameter": "Tham số allowAllFiles không được phép vì làm lộ các tệp trên máy chủ Bytebase.",
+      "gcp-instance": "Sử dụng chữ thường, số hoặc dấu gạch nối.",
+      "gcp-project": "Sử dụng chữ thường, số, dấu chấm, dấu hai chấm hoặc dấu gạch nối.",
+      "keytab-resupply": "Tải lại tệp keytab cho đích kết nối mới.",
+      "oracle-service": "Nhập tên dịch vụ hoặc SID.",
+      "pem-certificate": "Nhập chứng chỉ PEM, bao gồm các dòng BEGIN và END CERTIFICATE.",
+      "pem-key": "Nhập khóa riêng PEM (PKCS#1, PKCS#8 hoặc EC).",
+      "required": "Trường này là bắt buộc.",
+      "specific-credential": "Cung cấp thông tin xác thực cụ thể. Bytebase Cloud không hỗ trợ thông tin xác thực mặc định.",
+      "tls-pair": "Cung cấp cả chứng chỉ máy khách và khóa riêng.",
+      "tls-source-conflict": "Sử dụng nội dung PEM hoặc đường dẫn tệp, không dùng cả hai."
+    },
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },
   "issue": {

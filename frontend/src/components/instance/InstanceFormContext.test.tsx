@@ -783,6 +783,23 @@ describe("InstanceFormProvider", () => {
     harness.unmount();
   });
 
+  test.each([Engine.BIGQUERY, Engine.SPANNER])("requires resource ID and valid labels when creating GCP engine %s", async (engine) => {
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Capture = () => { context = useInstanceFormContext(); return null; };
+    const harness = renderIntoContainer();
+    await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
+    await act(async () => {
+      context.setBasicInfo((previous) => ({ ...previous, engine, title: "Production" }));
+      context.setDataSourceEditState((previous) => ({ ...previous, dataSources: [wrapEditDataSource(create(DataSourceSchema, { id: "admin", type: DataSourceType.ADMIN, projectId: "valid-project", instanceId: "valid-instance" }))] }));
+    });
+    expect(context.allowCreate).toBe(false);
+    await act(async () => { context.setResourceIdValidated(true); });
+    expect(context.allowCreate).toBe(true);
+    await act(async () => { context.setLabelErrors(["invalid label"]); });
+    expect(context.allowCreate).toBe(false);
+    harness.unmount();
+  });
+
   describe("checkDataSource AWS region requirement", () => {
     const awsDataSource = (region: string, withCredential: boolean) => {
       const ds = wrapEditDataSource(
@@ -790,6 +807,7 @@ describe("InstanceFormProvider", () => {
           id: "admin",
           type: DataSourceType.ADMIN,
           authenticationType: DataSource_AuthenticationType.AWS_RDS_IAM,
+          host: "db.example.com",
           region,
         })
       );

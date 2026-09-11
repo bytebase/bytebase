@@ -1358,6 +1358,22 @@
     "use-sample-instance": "Usar instancia de ejemplo (Disponible durante 7 días)",
     "use-sample-instance-self-host": "Usar instancia de ejemplo",
     "users": "Usuarios",
+    "validation": {
+      "absolute-path": "Introduce una ruta absoluta que comience por /.",
+      "aws-credential": "Introduce un ID de clave de acceso o un ARN de rol.",
+      "cloud-sql-host": "Introduce el nombre de la instancia como project:region:instance.",
+      "forbidden-parameter": "El parámetro allowAllFiles no está permitido porque expone archivos del servidor Bytebase.",
+      "gcp-instance": "Usa letras minúsculas, números o guiones.",
+      "gcp-project": "Usa letras minúsculas, números, puntos, dos puntos o guiones.",
+      "keytab-resupply": "Vuelve a cargar el archivo keytab para el nuevo destino de conexión.",
+      "oracle-service": "Introduce un nombre de servicio o SID.",
+      "pem-certificate": "Introduce un certificado PEM, incluidas las líneas BEGIN y END CERTIFICATE.",
+      "pem-key": "Introduce una clave privada PEM (PKCS#1, PKCS#8 o EC).",
+      "required": "Este campo es obligatorio.",
+      "specific-credential": "Proporciona credenciales específicas. Las credenciales predeterminadas no están disponibles en Bytebase Cloud.",
+      "tls-pair": "Proporciona tanto el certificado de cliente como la clave privada.",
+      "tls-source-conflict": "Usa contenido PEM o una ruta de archivo, pero no ambos."
+    },
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },
   "issue": {
