@@ -25,6 +25,7 @@ import {
 } from "./InstanceFormContext";
 
 const mocks = vi.hoisted(() => ({
+  translate: (key: string) => key,
   hasInstancePermission: vi.fn(() => true),
   pushNotification: vi.fn(),
   createInstance: vi.fn(),
@@ -59,13 +60,13 @@ vi.mock("./permission", () => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: mocks.translate,
   }),
 }));
 
 vi.mock("@/lib/i18n", () => ({
   default: {
-    t: (key: string) => key,
+    t: mocks.translate,
   },
 }));
 
@@ -121,6 +122,7 @@ vi.mock("@/stores/app", () => {
 });
 
 vi.mock("@/utils", () => ({
+  MAX_LABEL_VALUE_LENGTH: 63,
   calcUpdateMask: () => [],
   convertKVListToLabels: (list: { key: string; value: string }[]) =>
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
@@ -781,6 +783,50 @@ describe("InstanceFormProvider", () => {
     ).toBeNull();
 
     harness.unmount();
+  });
+
+  test("clears errors when deleting the final invalid label unmounts its editor", async () => {
+    const { LabelListEditor } = await vi.importActual<
+      typeof import("@/components/LabelListEditor")
+    >("@/components/LabelListEditor");
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Labels = () => {
+      context = useInstanceFormContext();
+      return context.labelKVList.length > 0 ? (
+        <LabelListEditor
+          kvList={context.labelKVList}
+          onChange={context.setLabelKVList}
+          onErrorsChange={context.setLabelErrors}
+          readonly={false}
+          showErrors
+        />
+      ) : null;
+    };
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(
+        <InstanceFormProvider
+          instance={create(InstanceSchema, {
+            name: "instances/prod",
+            labels: { team: "platform" },
+            engine: Engine.POSTGRES,
+          })}
+        >
+          <Labels />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        context.setLabelKVList([{ key: "team", value: "" }]);
+      });
+      expect(context.labelErrors).toEqual(["label.error.value-necessary"]);
+      const remove = harness.container.querySelector<HTMLButtonElement>("button")!;
+      await act(async () => { remove.click(); });
+      expect(context.labelKVList).toEqual([]);
+      expect(harness.container.querySelector("input")).toBeNull();
+      expect(context.labelErrors).toEqual([]);
+    } finally {
+      harness.unmount();
+    }
   });
 
   test.each([Engine.BIGQUERY, Engine.SPANNER])("requires resource ID and valid labels when creating GCP engine %s", async (engine) => {

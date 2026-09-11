@@ -196,6 +196,13 @@ export function InstanceFormProvider({
   const isCreating = instance === undefined;
 
   useEffect(() => {
+    // Removing the final label unmounts the editor before it can clear errors.
+    if (labelKVList.length === 0) {
+      setLabelErrors((errors) => (errors.length > 0 ? [] : errors));
+    }
+  }, [labelKVList.length]);
+
+  useEffect(() => {
     const previous = syncedInstanceRef.current;
     const next = {
       name: instance?.name,
