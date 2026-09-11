@@ -642,7 +642,7 @@
       "ssh-key": "Khóa SSH",
       "user": "Người dùng"
     },
-    "ssh-connection": "Kết nối SSH",
+    "ssh-connection": "Đường hầm SSH",
     "ssh-type": {
       "none": "Không có",
       "tunnel-and-private-key": "Đường hầm + Khóa riêng"
@@ -673,7 +673,7 @@
       "client-key-path": "Đường dẫn khóa riêng",
       "client-key-placeholder": "Nhập hoặc kéo thả YOUR_CLIENT_KEY",
       "configured": "Đã cấu hình",
-      "connection-security": "Bảo mật kết nối",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "TLS lẫn nhau không khả dụng cho engine này.",
       "posture": {
         "disabled": "Đã tắt",
@@ -685,7 +685,7 @@
       "verification-disabled-description": "Xác minh đã tắt. Kết nối vẫn được mã hóa nhưng danh tính máy chủ không được xác minh; cài đặt CA bị bỏ qua. Điều này không an toàn. Hãy bật xác minh để bảo đảm kết nối an toàn; chỉ tạm tắt khi phát triển hoặc khắc phục sự cố.",
       "verify-certificate": "Xác minh chứng chỉ máy chủ"
     },
-    "ssl-connection": "Kết nối SSL"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "Bạn không có quyền truy cập cơ sở dữ liệu này.",

@@ -642,7 +642,7 @@
       "ssh-key": "SSHキー",
       "user": "ユーザー名"
     },
-    "ssh-connection": "SSH接続",
+    "ssh-connection": "SSH トンネル",
     "ssh-type": {
       "none": "なし",
       "tunnel-and-private-key": "トンネル + 秘密鍵"
@@ -673,7 +673,7 @@
       "client-key-path": "秘密鍵のパス",
       "client-key-placeholder": "YOUR_CLIENT_KEYを入力またはドラッグ＆ドロップ",
       "configured": "設定済み",
-      "connection-security": "接続セキュリティ",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "このエンジンでは相互 TLS は利用できません。",
       "posture": {
         "disabled": "無効",
@@ -685,7 +685,7 @@
       "verification-disabled-description": "検証が無効です。接続は暗号化されますが、サーバーの身元は検証されず、CA 設定は無視されます。これは安全ではありません。安全な接続のために検証を有効にし、開発やトラブルシューティング時にのみ一時的に無効にしてください。",
       "verify-certificate": "サーバー証明書を検証"
     },
-    "ssl-connection": "SSL接続"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "データベースにアクセスする権限がありません",
