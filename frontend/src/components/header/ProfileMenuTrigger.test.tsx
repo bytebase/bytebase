@@ -302,7 +302,7 @@ describe("ProfileMenuTrigger", () => {
     unmount();
   });
 
-  test("resumes the selected guide", () => {
+  test("records a selected guide opening", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
     );
@@ -315,11 +315,18 @@ describe("ProfileMenuTrigger", () => {
     expect(gettingStartedButton).not.toBeUndefined();
     act(() => gettingStartedButton?.click());
     expect(mocks.resumeQuickstart).toHaveBeenCalledTimes(1);
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide opened",
+      properties: {
+        journey: "query-data",
+        scenario: "query-data",
+        collaboration_type: "unselected",
+      },
+    });
     unmount();
   });
 
-  test("resumes the generic setup journey without scenario analytics", () => {
+  test("records a generic guide opening", () => {
     mocks.scenarioId = undefined;
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
@@ -332,7 +339,14 @@ describe("ProfileMenuTrigger", () => {
     ).find((button) => button.textContent === "Getting started");
     act(() => gettingStartedButton?.click());
     expect(mocks.resumeQuickstart).toHaveBeenCalledTimes(1);
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide opened",
+      properties: {
+        journey: "workspace-setup",
+        scenario: "unselected",
+        collaboration_type: "unselected",
+      },
+    });
     unmount();
   });
 

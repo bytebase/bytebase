@@ -9,10 +9,12 @@ import {
   storageKeyWorkspaceSetupGuideScenario,
   storageKeyWorkspaceSetupGuideWorkspaceUsage,
 } from "@/utils/storage-keys";
+import { GUIDE_SCENARIO_REGISTRY } from "./scenarios";
 import type { GuideScenarioId, GuideWorkspaceUsage } from "./types";
 
 export const isGuideScenarioId = (value: unknown): value is GuideScenarioId =>
-  value === "query-data" || value === "create-database-change";
+  typeof value === "string" &&
+  Object.prototype.hasOwnProperty.call(GUIDE_SCENARIO_REGISTRY, value);
 
 export const isGuideWorkspaceUsage = (
   value: unknown

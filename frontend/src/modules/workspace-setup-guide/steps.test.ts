@@ -19,6 +19,12 @@ import {
 import { GUIDE_STEP_REGISTRY } from "./steps";
 import type { GuideContext, GuideStepId } from "./types";
 
+const getStepDefinition = (id: GuideStepId) => {
+  const definition = GUIDE_STEP_REGISTRY.find((step) => step.id === id);
+  if (!definition) throw new Error(`Missing step definition: ${id}`);
+  return definition;
+};
+
 const createContext = (
   overrides: Partial<GuideContext> = {}
 ): GuideContext => ({
@@ -40,7 +46,7 @@ const createContext = (
 
 describe("GUIDE_STEP_REGISTRY", () => {
   test("contains only reusable resource and customer-action definitions", () => {
-    expect(Object.keys(GUIDE_STEP_REGISTRY)).toEqual([
+    expect(GUIDE_STEP_REGISTRY.map(({ id }) => id)).toEqual([
       "create-project",
       "connect-instance",
       "explore-database",
@@ -65,14 +71,14 @@ describe("GUIDE_STEP_REGISTRY", () => {
     ["create-database-change", { hasCreatedChangeIssue: true }],
     ["add-member", { hasOtherWorkspaceMember: true }],
   ] as const)("uses observable evidence for %s", (stepId, completed) => {
-    expect(
-      GUIDE_STEP_REGISTRY[stepId].isComplete(createContext(completed))
-    ).toBe(true);
+    expect(getStepDefinition(stepId).isComplete(createContext(completed))).toBe(
+      true
+    );
   });
 
   test("keeps database exploration incomplete without a concrete target", () => {
     expect(
-      GUIDE_STEP_REGISTRY["explore-database"].isComplete(
+      getStepDefinition("explore-database").isComplete(
         createContext({ hasExploredDatabase: true })
       )
     ).toBe(false);
@@ -82,7 +88,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
     "always opens the workspace project list with the create highlight",
     (context) => {
       expect(
-        GUIDE_STEP_REGISTRY["create-project"].resolveActions(context)
+        getStepDefinition("create-project").resolveActions(context)
       ).toEqual({
         select: {
           type: "navigate",
@@ -107,7 +113,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
     "always opens the project instance list with the create highlight",
     (context) => {
       expect(
-        GUIDE_STEP_REGISTRY["connect-instance"].resolveActions(context)
+        getStepDefinition("connect-instance").resolveActions(context)
       ).toEqual({
         select: {
           type: "navigate",
@@ -125,7 +131,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
 
   test("keeps the connect action fixed while its project dependency is blocked", () => {
     expect(
-      GUIDE_STEP_REGISTRY["connect-instance"].resolveActions(createContext())
+      getStepDefinition("connect-instance").resolveActions(createContext())
     ).toEqual({
       select: {
         type: "navigate",
@@ -149,7 +155,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
     }),
   ])("always opens the project database page with its highlight", (context) => {
     expect(
-      GUIDE_STEP_REGISTRY["explore-database"].resolveActions(context)
+      getStepDefinition("explore-database").resolveActions(context)
     ).toEqual({
       select: {
         type: "navigate",
@@ -168,7 +174,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
     "always queries the discovered database when completion is %s",
     (hasRunStatement) => {
       expect(
-        GUIDE_STEP_REGISTRY["query-data"].resolveActions(
+        getStepDefinition("query-data").resolveActions(
           createContext({
             hasRunStatement,
             databaseName: "instances/sample/databases/employee",
@@ -191,7 +197,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
     "always starts a database change when completion is %s",
     (hasCreatedChangeIssue) => {
       expect(
-        GUIDE_STEP_REGISTRY["create-database-change"].resolveActions(
+        getStepDefinition("create-database-change").resolveActions(
           createContext({
             hasCreatedChangeIssue,
             databaseName: "instances/sample/databases/employee",
@@ -211,7 +217,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
   test("opens Users when self-host has no other human user", () => {
     const context = createContext();
 
-    expect(GUIDE_STEP_REGISTRY["add-member"].resolveActions(context)).toEqual({
+    expect(getStepDefinition("add-member").resolveActions(context)).toEqual({
       select: {
         type: "navigate",
         target: {
@@ -228,7 +234,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
     createContext({ isSaaS: true }),
     createContext({ hasOtherHumanUser: true }),
   ])("opens Members when the teammate can be granted access", (context) => {
-    expect(GUIDE_STEP_REGISTRY["add-member"].resolveActions(context)).toEqual({
+    expect(getStepDefinition("add-member").resolveActions(context)).toEqual({
       select: {
         type: "navigate",
         target: {
@@ -251,7 +257,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
     ["add-member", WORKSPACE_ROUTE_MEMBERS, true],
   ] as const)("matches %s on %s", (stepId, name, expected) => {
     expect(
-      GUIDE_STEP_REGISTRY[stepId as GuideStepId].matchesRoute({
+      getStepDefinition(stepId as GuideStepId).matchesRoute({
         name,
         params: {},
       })

@@ -1,6 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import {
   ACCOUNT_ROUTE,
   isSqlEditorRouteName,
@@ -239,6 +241,15 @@ export function ProfileMenuTrigger({
           {workspaceSetupGuideEnabled ? (
             <DropdownMenuItem
               onClick={() => {
+                behaviorAnalytics.captureMetric(
+                  createBehaviorMetric("workspace setup guide opened", {
+                    properties: {
+                      journey: journey.id,
+                      scenario: scenarioId ?? "unselected",
+                      collaboration_type: workspaceUsage ?? "unselected",
+                    },
+                  })
+                );
                 resumeWorkspaceSetupGuide();
                 setOpen(false);
               }}

@@ -10,7 +10,6 @@ import type {
   GuideJourney,
   GuideStepDefinition,
   GuideStepId,
-  GuideStepRegistry,
 } from "./types";
 
 const STEP_IDS: GuideStepId[] = [
@@ -52,7 +51,6 @@ const completionById: Record<GuideStepId, keyof GuideContext> = {
 
 const definition = (id: GuideStepId): GuideStepDefinition => ({
   id,
-  analyticsKey: id === "add-member" ? "add-teammate" : id,
   labelKey: `label.${id}`,
   descriptionKey: `description.${id}`,
   isComplete: (context) => Boolean(context[completionById[id]]),
@@ -60,9 +58,7 @@ const definition = (id: GuideStepId): GuideStepDefinition => ({
   resolveActions: () => ({}),
 });
 
-const registry = Object.fromEntries(
-  STEP_IDS.map((id) => [id, definition(id)])
-) as GuideStepRegistry;
+const definitions = STEP_IDS.map(definition);
 
 const generic: GuideJourney = {
   id: "workspace-setup",
@@ -100,8 +96,8 @@ const queryData: GuideJourney = {
 
 describe("validateGuideJourney", () => {
   test("accepts selected and generic graphs", () => {
-    expect(() => validateGuideJourney(generic, registry)).not.toThrow();
-    expect(() => validateGuideJourney(queryData, registry)).not.toThrow();
+    expect(() => validateGuideJourney(generic, definitions)).not.toThrow();
+    expect(() => validateGuideJourney(queryData, definitions)).not.toThrow();
   });
 
   test.each([
@@ -137,14 +133,23 @@ describe("validateGuideJourney", () => {
     ],
   ])("rejects an %s graph", (_name, journey, message) => {
     expect(() =>
-      validateGuideJourney(journey as GuideJourney, registry)
+      validateGuideJourney(journey as GuideJourney, definitions)
     ).toThrow(message);
   });
 
   test("rejects duplicate journey ids", () => {
-    expect(() => validateGuideJourneys([generic, generic], registry)).toThrow(
-      "duplicate journey"
-    );
+    expect(() =>
+      validateGuideJourneys([generic, generic], definitions)
+    ).toThrow("duplicate journey");
+  });
+
+  test("rejects duplicate step definitions", () => {
+    expect(() =>
+      validateGuideJourneys(
+        [generic],
+        [...definitions, definition("create-project")]
+      )
+    ).toThrow("duplicate step definition");
   });
 });
 
@@ -152,7 +157,7 @@ describe("resolveGuide", () => {
   test("uses generic setup order and dependencies", () => {
     const guide = resolveGuide({
       journey: generic,
-      registry,
+      definitions,
       context: createContext(),
     });
     expect(guide.steps.map((step) => step.definition.id)).toEqual([
@@ -166,7 +171,7 @@ describe("resolveGuide", () => {
   test("keeps satisfied prerequisites visible", () => {
     const guide = resolveGuide({
       journey: queryData,
-      registry,
+      definitions,
       context: createContext({
         hasProject: true,
         hasInstance: true,
@@ -186,7 +191,7 @@ describe("resolveGuide", () => {
   test("shows the full chain and blocks on missing prerequisites", () => {
     const guide = resolveGuide({
       journey: queryData,
-      registry,
+      definitions,
       context: createContext(),
     });
     expect(guide.steps.map((step) => step.definition.id)).toEqual([
@@ -202,7 +207,7 @@ describe("resolveGuide", () => {
   test("allows a completed visible prerequisite to stay selected", () => {
     const guide = resolveGuide({
       journey: queryData,
-      registry,
+      definitions,
       context: createContext({ hasProject: true }),
       selectedStepId: "create-project",
     });
@@ -213,7 +218,7 @@ describe("resolveGuide", () => {
   test("returns completion without an active action", () => {
     const guide = resolveGuide({
       journey: queryData,
-      registry,
+      definitions,
       context: createContext({
         hasProject: true,
         hasInstance: true,

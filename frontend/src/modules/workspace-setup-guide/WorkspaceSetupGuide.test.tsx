@@ -269,9 +269,9 @@ describe("WorkspaceSetupGuide", () => {
       "setup-step-connect-instance",
       "setup-step-explore-database",
       "setup-step-query-data",
-      "setup-step-add-teammate",
+      "setup-step-add-member",
     ]);
-    expect(screen.getByTestId("setup-step-add-teammate")).toBeEnabled();
+    expect(screen.getByTestId("setup-step-add-member")).toBeEnabled();
   });
 
   test("acknowledges a completed multi-member team journey when closed", () => {
@@ -309,7 +309,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     render(<WorkspaceSetupGuide />);
 
-    fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
+    fireEvent.click(screen.getByTestId("setup-step-add-member"));
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.users",
@@ -329,7 +329,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     render(<WorkspaceSetupGuide />);
 
-    fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
+    fireEvent.click(screen.getByTestId("setup-step-add-member"));
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.members",
@@ -350,7 +350,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     render(<WorkspaceSetupGuide />);
 
-    fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
+    fireEvent.click(screen.getByTestId("setup-step-add-member"));
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.members",
@@ -543,22 +543,73 @@ describe("WorkspaceSetupGuide", () => {
     );
   });
 
-  test("routes generic actions without recording guide analytics", () => {
+  test("records a selected guide step action", () => {
     render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
     fireEvent.click(screen.getByTestId("setup-step-create-project"));
 
     expect(mocks.routerPush).toHaveBeenCalled();
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide step action selected",
+      properties: {
+        journey: "workspace-setup",
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        completed_steps: [],
+        completed_step_count: 0,
+        total_step_count: 3,
+        next_step: "create-project",
+        step: "create-project",
+        action_type: "navigate",
+      },
+    });
   });
 
-  test("dismisses the selected guide without recording analytics", () => {
+  test("records the active SQL Editor action", () => {
+    mocks.scenarioId = "query-data";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+    });
+    render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
+
+    fireEvent.click(screen.getByTestId("active-action"));
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide step action selected",
+      properties: {
+        journey: "query-data",
+        scenario: "query-data",
+        collaboration_type: "unselected",
+        completed_steps: [
+          "create-project",
+          "connect-instance",
+          "explore-database",
+        ],
+        completed_step_count: 3,
+        total_step_count: 4,
+        next_step: "query-data",
+        step: "query-data",
+        action_type: "open-sql-editor",
+      },
+    });
+  });
+
+  test("records final progress when selected guide dismissed", () => {
     mocks.scenarioId = "create-database-change";
     mocks.guideContext = guideContext({
       hasProject: true,
       hasInstance: true,
       hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
     });
     render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
 
     fireEvent.click(screen.getByTestId("dismiss-guide"));
 
@@ -566,7 +617,82 @@ describe("WorkspaceSetupGuide", () => {
       key: GUIDE_PROGRESS_KEYS.dismissed,
       newState: true,
     });
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide dismissed",
+      properties: {
+        journey: "create-database-change",
+        scenario: "create-database-change",
+        collaboration_type: "unselected",
+        completed_steps: [
+          "create-project",
+          "connect-instance",
+          "explore-database",
+        ],
+        completed_step_count: 3,
+        total_step_count: 4,
+        next_step: "create-database-change",
+      },
+    });
+  });
+
+  test("records a step completion only when guide progress changes", () => {
+    const { rerender } = render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
+
+    mocks.guideContext = guideContext({ hasProject: true });
+    rerender(<WorkspaceSetupGuide />);
+    rerender(<WorkspaceSetupGuide />);
+
+    expect(mocks.captureMetric).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide step completed",
+      properties: {
+        journey: "workspace-setup",
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        completed_steps: ["create-project"],
+        completed_step_count: 1,
+        total_step_count: 3,
+        next_step: "connect-instance",
+        step: "create-project",
+      },
+    });
+  });
+
+  test("records journey completion after visible guide becomes complete", () => {
+    mocks.scenarioId = "query-data";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+    });
+    const { rerender } = render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
+
+    mocks.guideContext = guideContext({
+      ...mocks.guideContext,
+      hasRunStatement: true,
+    });
+    rerender(<WorkspaceSetupGuide />);
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide completed",
+      properties: {
+        journey: "query-data",
+        scenario: "query-data",
+        collaboration_type: "unselected",
+        completed_steps: [
+          "create-project",
+          "connect-instance",
+          "explore-database",
+          "query-data",
+        ],
+        completed_step_count: 4,
+        total_step_count: 4,
+      },
+    });
   });
 
   test("shows generic completion with both next actions", () => {
@@ -696,7 +822,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(screen.queryByText("workspace-setup-guide.actions.change")).not.toBeInTheDocument();
   });
 
-  test("does not record scenario guide lifecycle analytics", () => {
+  test("records the initial guide progress once", () => {
     mocks.scenarioId = "create-database-change";
     mocks.guideContext = guideContext({
       hasProject: true,
@@ -704,6 +830,38 @@ describe("WorkspaceSetupGuide", () => {
       hasExploredDatabase: true,
       hasCreatedChangeIssue: true,
     });
+
+    render(<WorkspaceSetupGuide />);
+
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: "workspace-setup-guide.progress-observed.create-database-change.v1",
+      newState: true,
+    });
+    expect(mocks.captureMetric).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide progress observed",
+      properties: {
+        journey: "create-database-change",
+        scenario: "create-database-change",
+        collaboration_type: "unselected",
+        completed_steps: [
+          "create-project",
+          "connect-instance",
+          "create-database-change",
+        ],
+        completed_step_count: 3,
+        total_step_count: 4,
+        next_step: "explore-database",
+        observation: "initial",
+      },
+    });
+  });
+
+  test("does not record initial guide progress after it was observed", () => {
+    mocks.scenarioId = "create-database-change";
+    mocks.introState[
+      "workspace-setup-guide.progress-observed.create-database-change.v1"
+    ] = true;
 
     render(<WorkspaceSetupGuide />);
 
