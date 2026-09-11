@@ -211,3 +211,45 @@ func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
 	require.Equal(t, uint32(4326), *cols["pt"].Srid)
 	require.True(t, cols["secret"].IsInvisible, "seeded INVISIBLE must survive")
 }
+
+func TestWalkThroughKeepsSeededIndexTypes(t *testing.T) {
+	origin := &metadatapb.DatabaseSchemaMetadata{
+		Name: "test",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{
+				{
+					Name:    "disk",
+					Engine:  "InnoDB",
+					Columns: []*metadatapb.ColumnMetadata{{Name: "a", Position: 1, Type: "int"}},
+					Indexes: []*metadatapb.IndexMetadata{{Name: "k", Expressions: []string{"a"}, Type: "BTREE", Visible: true}},
+				},
+				{
+					Name:    "mem",
+					Engine:  "MEMORY",
+					Columns: []*metadatapb.ColumnMetadata{{Name: "a", Position: 1, Type: "int"}},
+					Indexes: []*metadatapb.IndexMetadata{
+						{Name: "k_hash", Expressions: []string{"a"}, Type: "HASH", Visible: true},
+						{Name: "k_btree", Expressions: []string{"a"}, Type: "BTREE", Visible: true},
+					},
+				},
+			},
+		}},
+	}
+	state := model.NewDatabaseMetadata(origin, nil, nil, storepb.Engine_MYSQL, true)
+
+	statement := "CREATE TABLE unrelated (x INT PRIMARY KEY);"
+	sm := sheet.NewManager()
+	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
+	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+	require.Nil(t, advice)
+
+	// Each index reports its effective access method, the engine's default one
+	// included.
+	types := map[string]string{}
+	for _, name := range []string{"disk", "mem"} {
+		for _, idx := range state.GetSchemaMetadata("").GetTable(name).GetProto().GetIndexes() {
+			types[name+"."+idx.GetName()] = idx.GetType()
+		}
+	}
+	require.Equal(t, map[string]string{"disk.k": "BTREE", "mem.k_hash": "HASH", "mem.k_btree": "BTREE"}, types)
+}

@@ -777,7 +777,11 @@ func tableToProto(t *catalog.Table) *metadatapb.TableMetadata {
 	for _, idx := range t.Indexes {
 		indexType := strings.ToUpper(idx.IndexType)
 		if indexType == "" {
+			// A key without USING gets the engine's default access method.
 			indexType = "BTREE"
+			if strings.EqualFold(t.Engine, "MEMORY") || strings.EqualFold(t.Engine, "HEAP") {
+				indexType = "HASH"
+			}
 		}
 		idxMeta := &metadatapb.IndexMetadata{
 			Name:    idx.Name,
