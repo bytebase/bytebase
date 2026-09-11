@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -31,11 +32,11 @@ func (d *poolTestDriver) Open(context.Context, storepb.Engine, db.ConnectionConf
 
 func (*poolTestDriver) Close(context.Context) error { return nil }
 
-func (*poolTestDriver) SyncDBSchema(context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	return &storepb.DatabaseSchemaMetadata{Name: "app"}, nil
+func (*poolTestDriver) SyncDBSchema(context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	return &metadatapb.DatabaseSchemaMetadata{Name: "app"}, nil
 }
 
-func (*poolTestDriver) Dump(context.Context, io.Writer, *storepb.DatabaseSchemaMetadata) error {
+func (*poolTestDriver) Dump(context.Context, io.Writer, *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }
 

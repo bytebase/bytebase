@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -91,13 +91,13 @@ func runOracleOmniGoldenCase(
 	crossDatabaseMetadataText string,
 	defaultDatabase string,
 ) (*base.YamlQuerySpan, error) {
-	metadata := &storepb.DatabaseSchemaMetadata{}
+	metadata := &metadatapb.DatabaseSchemaMetadata{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(metadataText), metadata); err != nil {
 		return nil, err
 	}
-	list := []*storepb.DatabaseSchemaMetadata{metadata}
+	list := []*metadatapb.DatabaseSchemaMetadata{metadata}
 	if crossDatabaseMetadataText != "" {
-		crossDatabase := &storepb.DatabaseSchemaMetadata{}
+		crossDatabase := &metadatapb.DatabaseSchemaMetadata{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(crossDatabaseMetadataText), crossDatabase); err != nil {
 			return nil, err
 		}
@@ -733,9 +733,9 @@ func oracleOmniLongTailTestContext(t *testing.T) base.GetQuerySpanContext {
 	}]
 }`
 
-	metadata := &storepb.DatabaseSchemaMetadata{}
+	metadata := &metadatapb.DatabaseSchemaMetadata{}
 	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(metadataText), metadata))
-	databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	return base.GetQuerySpanContext{
 		InstanceID:                    instanceIDA,
 		GetDatabaseMetadataFunc:       databaseMetadataGetter,

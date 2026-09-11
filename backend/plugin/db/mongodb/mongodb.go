@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/bytebase/gomongo"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -120,7 +121,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }
 

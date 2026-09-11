@@ -5,13 +5,12 @@ import (
 	"testing"
 	"unicode/utf8"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestHasPrefixes(t *testing.T) {
@@ -403,7 +402,7 @@ func TestSanitizeUTF8MessageCoversEveryStringField(t *testing.T) {
 	rawGBK := "\xb2\xe2\xca\xd4\xb1"
 	require.False(t, utf8.ValidString(rawGBK))
 
-	metadata := &storepb.DatabaseSchemaMetadata{}
+	metadata := &metadatapb.DatabaseSchemaMetadata{}
 	fillAllStringFields(metadata.ProtoReflect(), rawGBK, 8)
 
 	invalidBefore := countInvalidStringFields(metadata.ProtoReflect())
@@ -427,13 +426,13 @@ func TestSanitizeUTF8MessageCoversEveryStringField(t *testing.T) {
 // after sanitization, and valid names must pass through untouched.
 func TestSanitizeUTF8MessageNameFields(t *testing.T) {
 	rawGBK := "AB\xe6"
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: rawGBK,
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: rawGBK,
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: rawGBK,
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: rawGBK, Type: rawGBK, Default: rawGBK},
 					{Name: "测试列", Type: "VARCHAR2(50)"},
 				},

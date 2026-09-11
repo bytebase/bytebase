@@ -5,9 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/catalog"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // These tests exercise loadWalkThroughCatalog against synthetic metadata.
@@ -30,7 +29,7 @@ func newLoaderTestCatalog(t *testing.T) *catalog.Catalog {
 	return c
 }
 
-func runLoader(t *testing.T, c *catalog.Catalog, meta *storepb.DatabaseSchemaMetadata) {
+func runLoader(t *testing.T, c *catalog.Catalog, meta *metadatapb.DatabaseSchemaMetadata) {
 	t.Helper()
 	if err := loadWalkThroughCatalog(context.Background(), c, testDBName, meta); err != nil {
 		t.Fatalf("loadWalkThroughCatalog: %v", err)
@@ -171,13 +170,13 @@ func TestWtParseExpr_Failures(t *testing.T) {
 // ----------------------------------------------------------------------
 
 func TestLoader_TableBasic(t *testing.T) {
-	meta := schemaWithTables(&storepb.TableMetadata{
+	meta := schemaWithTables(&metadatapb.TableMetadata{
 		Name:      "users",
 		Engine:    "InnoDB",
 		Charset:   "utf8mb4",
 		Collation: "utf8mb4_0900_ai_ci",
 		Comment:   "users table",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{
 				Name:     "id",
 				Type:     "bigint unsigned",
@@ -205,7 +204,7 @@ func TestLoader_TableBasic(t *testing.T) {
 				Comment:  "free form text",
 			},
 		},
-		Indexes: []*storepb.IndexMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
 			{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 			{Name: "uniq_email", Type: "BTREE", Unique: true, Expressions: []string{"email"}},
 		},
@@ -290,14 +289,14 @@ func TestLoader_TableBasic(t *testing.T) {
 // ----------------------------------------------------------------------
 
 func TestLoader_FulltextAndSpatialIndex(t *testing.T) {
-	meta := schemaWithTables(&storepb.TableMetadata{
+	meta := schemaWithTables(&metadatapb.TableMetadata{
 		Name: "t",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "bigint unsigned", Nullable: false, Default: autoIncrementSentinel},
 			{Name: "body", Type: "text", Nullable: true},
 			{Name: "location", Type: "geometry", Nullable: false},
 		},
-		Indexes: []*storepb.IndexMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
 			{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 			{Name: "ft_body", Type: "FULLTEXT", Expressions: []string{"body"}},
 			{Name: "sp_location", Type: "SPATIAL", Expressions: []string{"location"}},
@@ -339,26 +338,26 @@ func TestLoader_FulltextAndSpatialIndex(t *testing.T) {
 
 func TestLoader_ForeignKeyAcrossTables(t *testing.T) {
 	meta := schemaWithTables(
-		&storepb.TableMetadata{
+		&metadatapb.TableMetadata{
 			Name: "parent",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint unsigned", Nullable: false, Default: autoIncrementSentinel},
 			},
-			Indexes: []*storepb.IndexMetadata{
+			Indexes: []*metadatapb.IndexMetadata{
 				{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 			},
 		},
-		&storepb.TableMetadata{
+		&metadatapb.TableMetadata{
 			Name: "child",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint unsigned", Nullable: false, Default: autoIncrementSentinel},
 				{Name: "parent_id", Type: "bigint unsigned", Nullable: false},
 			},
-			Indexes: []*storepb.IndexMetadata{
+			Indexes: []*metadatapb.IndexMetadata{
 				{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 				{Name: "idx_parent_id", Type: "BTREE", Expressions: []string{"parent_id"}},
 			},
-			ForeignKeys: []*storepb.ForeignKeyMetadata{
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 				{
 					Name:              "fk_child_parent",
 					Columns:           []string{"parent_id"},
@@ -398,17 +397,17 @@ func TestLoader_ForeignKeyAcrossTables(t *testing.T) {
 // ----------------------------------------------------------------------
 
 func TestLoader_GeneratedColumn(t *testing.T) {
-	meta := schemaWithTables(&storepb.TableMetadata{
+	meta := schemaWithTables(&metadatapb.TableMetadata{
 		Name: "t",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "a", Type: "int", Nullable: true},
 			{Name: "b", Type: "int", Nullable: true},
 			{
 				Name:     "c",
 				Type:     "int",
 				Nullable: true,
-				Generation: &storepb.GenerationMetadata{
-					Type:       storepb.GenerationMetadata_TYPE_STORED,
+				Generation: &metadatapb.GenerationMetadata{
+					Type:       metadatapb.GenerationMetadata_TYPE_STORED,
 					Expression: "a + b",
 				},
 			},
@@ -436,24 +435,24 @@ func TestLoader_GeneratedColumn(t *testing.T) {
 // ----------------------------------------------------------------------
 
 func TestLoader_ViewReal(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: testDBName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "bigint unsigned", Nullable: false, Default: autoIncrementSentinel},
 							{Name: "name", Type: "varchar(255)", Nullable: true},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "v_users",
 						Definition: "SELECT id, name FROM users",
@@ -482,9 +481,9 @@ func TestLoader_ViewReal(t *testing.T) {
 func TestLoader_PseudoTable(t *testing.T) {
 	c := newLoaderTestCatalog(t)
 	// Minimal metadata — just column names.
-	tblMeta := &storepb.TableMetadata{
+	tblMeta := &metadatapb.TableMetadata{
 		Name: "pt",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "a"},
 			{Name: "b"},
 			{Name: "c"},
@@ -506,7 +505,7 @@ func TestLoader_PseudoTable(t *testing.T) {
 
 func TestLoader_PseudoTable_EmptyColumns(t *testing.T) {
 	c := newLoaderTestCatalog(t)
-	if err := wtInstallPseudoTable(c, testDBName, &storepb.TableMetadata{Name: "empty"}); err != nil {
+	if err := wtInstallPseudoTable(c, testDBName, &metadatapb.TableMetadata{Name: "empty"}); err != nil {
 		t.Fatalf("wtInstallPseudoTable(no columns): %v", err)
 	}
 	tbl := mustGetTable(t, c, "empty")
@@ -520,9 +519,9 @@ func TestLoader_PseudoTable_EmptyColumns(t *testing.T) {
 
 func TestLoader_PseudoView(t *testing.T) {
 	c := newLoaderTestCatalog(t)
-	if err := wtInstallPseudoView(c, testDBName, &storepb.ViewMetadata{
+	if err := wtInstallPseudoView(c, testDBName, &metadatapb.ViewMetadata{
 		Name: "pv",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "x"},
 			{Name: "y"},
 		},
@@ -541,9 +540,9 @@ func TestLoader_PseudoView(t *testing.T) {
 // ----------------------------------------------------------------------
 
 func TestLoader_RealFailsFallsBackToPseudo(t *testing.T) {
-	meta := schemaWithTables(&storepb.TableMetadata{
+	meta := schemaWithTables(&metadatapb.TableMetadata{
 		Name: "broken",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "good", Type: "int"},
 			// Type with unbalanced parens — wtParseTypeName returns an error
 			// for this, so wtBuildCreateTableStmt propagates and install_real
@@ -576,17 +575,17 @@ func TestLoader_ForwardFKInstallsViaFKChecksOff(t *testing.T) {
 	// after. Because the loader flips foreign_key_checks off during bulk
 	// install, this must succeed.
 	meta := schemaWithTables(
-		&storepb.TableMetadata{
+		&metadatapb.TableMetadata{
 			Name: "child",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint unsigned", Nullable: false, Default: autoIncrementSentinel},
 				{Name: "parent_id", Type: "bigint unsigned", Nullable: false},
 			},
-			Indexes: []*storepb.IndexMetadata{
+			Indexes: []*metadatapb.IndexMetadata{
 				{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 				{Name: "idx_pid", Type: "BTREE", Expressions: []string{"parent_id"}},
 			},
-			ForeignKeys: []*storepb.ForeignKeyMetadata{
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 				{
 					Name:              "fk_fwd",
 					Columns:           []string{"parent_id"},
@@ -595,12 +594,12 @@ func TestLoader_ForwardFKInstallsViaFKChecksOff(t *testing.T) {
 				},
 			},
 		},
-		&storepb.TableMetadata{
+		&metadatapb.TableMetadata{
 			Name: "parent",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint unsigned", Nullable: false, Default: autoIncrementSentinel},
 			},
-			Indexes: []*storepb.IndexMetadata{
+			Indexes: []*metadatapb.IndexMetadata{
 				{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 			},
 		},
@@ -625,10 +624,10 @@ func TestLoader_ForwardFKInstallsViaFKChecksOff(t *testing.T) {
 
 // schemaWithTables wraps tables into a DatabaseSchemaMetadata with the
 // expected single empty-named schema that MySQL uses.
-func schemaWithTables(tables ...*storepb.TableMetadata) *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func schemaWithTables(tables ...*metadatapb.TableMetadata) *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: testDBName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:   "",
 				Tables: tables,
@@ -638,10 +637,10 @@ func schemaWithTables(tables ...*storepb.TableMetadata) *storepb.DatabaseSchemaM
 }
 
 // schemaWithEvents wraps events into a DatabaseSchemaMetadata.
-func schemaWithEvents(events ...*storepb.EventMetadata) *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func schemaWithEvents(events ...*metadatapb.EventMetadata) *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: testDBName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "", Events: events},
 		},
 	}
@@ -657,11 +656,11 @@ func schemaWithEvents(events ...*storepb.EventMetadata) *storepb.DatabaseSchemaM
 
 // accountTableForTriggers builds the `account` table used by the canonical
 // trigger examples in the MySQL docs.
-func accountTableForTriggers() *storepb.TableMetadata {
-	return &storepb.TableMetadata{
+func accountTableForTriggers() *metadatapb.TableMetadata {
+	return &metadatapb.TableMetadata{
 		Name:   "account",
 		Engine: "InnoDB",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "acct_num", Type: "int", Nullable: true},
 			{Name: "amount", Type: "decimal(10,2)", Nullable: true},
 		},
@@ -673,7 +672,7 @@ func TestLoader_Trigger_SimpleSetSum(t *testing.T) {
 	//
 	//   CREATE TRIGGER ins_sum BEFORE INSERT ON account
 	//     FOR EACH ROW SET @sum = @sum + NEW.amount;
-	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &metadatapb.TriggerMetadata{
 		Name:   "ins_sum",
 		Timing: "BEFORE",
 		Event:  "INSERT",
@@ -717,7 +716,7 @@ func TestLoader_Trigger_BeginEndWithIfElse(t *testing.T) {
             SET NEW.amount = 100;
         END IF;
     END`
-	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &metadatapb.TriggerMetadata{
 		Name:   "upd_check",
 		Timing: "BEFORE",
 		Event:  "UPDATE",
@@ -750,7 +749,7 @@ func TestLoader_Trigger_AfterUpdateWithSignal(t *testing.T) {
                 SET MESSAGE_TEXT = 'Negative amount not allowed';
         END IF;
     END`
-	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &metadatapb.TriggerMetadata{
 		Name:   "validate_amount",
 		Timing: "AFTER",
 		Event:  "UPDATE",
@@ -777,7 +776,7 @@ func TestLoader_Trigger_PseudoOnMissingFields(t *testing.T) {
 	// metadata has only Name (+ Body) — Timing and Event empty. Real install
 	// should fail (DefineTrigger rejects empty Timing/Event / empty Body
 	// couldn't parse). Pseudo fills defaults.
-	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &metadatapb.TriggerMetadata{
 		Name: "trg_needs_defaults",
 		// Timing / Event / Body intentionally empty.
 	}))
@@ -802,7 +801,7 @@ func TestLoader_Trigger_PseudoOnUnparseableBody(t *testing.T) {
 	// Body=nil + BodyText populated (DefineTrigger tolerates nil Body), or
 	// falls back to pseudo with body "BEGIN END". Either way the trigger
 	// must exist in the catalog.
-	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &storepb.TriggerMetadata{
+	meta := schemaWithTables(withTriggers(accountTableForTriggers(), &metadatapb.TriggerMetadata{
 		Name:   "trg_bad_body",
 		Timing: "BEFORE",
 		Event:  "INSERT",
@@ -821,14 +820,14 @@ func TestLoader_Trigger_PseudoOnUnparseableBody(t *testing.T) {
 func TestLoader_Trigger_OnPseudoParentTable(t *testing.T) {
 	// Parent table has a bad column type → real install fails, pseudo
 	// installs TEXT-column table. The trigger must still attach.
-	parent := &storepb.TableMetadata{
+	parent := &metadatapb.TableMetadata{
 		Name: "account",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "int"},
 			{Name: "bad", Type: "varchar((("}, // forces real install to fail
 		},
 	}
-	meta := schemaWithTables(withTriggers(parent, &storepb.TriggerMetadata{
+	meta := schemaWithTables(withTriggers(parent, &metadatapb.TriggerMetadata{
 		Name:   "ins_stub",
 		Timing: "BEFORE",
 		Event:  "INSERT",
@@ -866,7 +865,7 @@ func TestLoader_Event_OneShotAT(t *testing.T) {
 		"DO UPDATE mytable SET mycol = mycol + 1"
 
 	c := newLoaderTestCatalog(t)
-	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+	runLoader(t, c, schemaWithEvents(&metadatapb.EventMetadata{
 		Name:       "myevent",
 		Definition: def,
 	}))
@@ -891,7 +890,7 @@ func TestLoader_Event_RecurringEveryWithComment(t *testing.T) {
 		"DO DELETE FROM site_activity.sessions"
 
 	c := newLoaderTestCatalog(t)
-	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+	runLoader(t, c, schemaWithEvents(&metadatapb.EventMetadata{
 		Name:       "e_hourly",
 		Definition: def,
 	}))
@@ -928,7 +927,7 @@ func TestLoader_Event_DailyBeginEndBody(t *testing.T) {
 		"END"
 
 	c := newLoaderTestCatalog(t)
-	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+	runLoader(t, c, schemaWithEvents(&metadatapb.EventMetadata{
 		Name:       "e_daily",
 		Definition: def,
 	}))
@@ -945,7 +944,7 @@ func TestLoader_Event_DailyBeginEndBody(t *testing.T) {
 
 func TestLoader_Event_PseudoOnEmptyDefinition(t *testing.T) {
 	c := newLoaderTestCatalog(t)
-	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+	runLoader(t, c, schemaWithEvents(&metadatapb.EventMetadata{
 		Name: "e_empty",
 		// Definition intentionally empty — real install fails, pseudo kicks in.
 	}))
@@ -954,7 +953,7 @@ func TestLoader_Event_PseudoOnEmptyDefinition(t *testing.T) {
 
 func TestLoader_Event_PseudoOnGarbageDefinition(t *testing.T) {
 	c := newLoaderTestCatalog(t)
-	runLoader(t, c, schemaWithEvents(&storepb.EventMetadata{
+	runLoader(t, c, schemaWithEvents(&metadatapb.EventMetadata{
 		Name:       "e_broken",
 		Definition: "this is definitely not a CREATE EVENT statement $$",
 	}))
@@ -962,7 +961,7 @@ func TestLoader_Event_PseudoOnGarbageDefinition(t *testing.T) {
 }
 
 // withTriggers is a tiny builder that attaches triggers to a given table.
-func withTriggers(tbl *storepb.TableMetadata, triggers ...*storepb.TriggerMetadata) *storepb.TableMetadata {
+func withTriggers(tbl *metadatapb.TableMetadata, triggers ...*metadatapb.TriggerMetadata) *metadatapb.TableMetadata {
 	tbl.Triggers = append(tbl.Triggers, triggers...)
 	return tbl
 }
@@ -975,9 +974,9 @@ func withTriggers(tbl *storepb.TableMetadata, triggers ...*storepb.TriggerMetada
 // ----------------------------------------------------------------------
 
 func TestLoader_DefaultNull_OnBlobJsonGeometry_StaysReal(t *testing.T) {
-	meta := schemaWithTables(&storepb.TableMetadata{
+	meta := schemaWithTables(&metadatapb.TableMetadata{
 		Name: "t",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "int", Nullable: false, Default: autoIncrementSentinel},
 			// All three of these are nullable — sync fills Default="NULL"
 			// for them. MySQL grammar does NOT accept DEFAULT on these
@@ -1036,13 +1035,13 @@ func TestLoader_FunctionalIndex_ParenthesizedExpression(t *testing.T) {
 	//     col1 INT, col2 INT,
 	//     INDEX func_index ((ABS(col1)))
 	//   );
-	meta := schemaWithTables(&storepb.TableMetadata{
+	meta := schemaWithTables(&metadatapb.TableMetadata{
 		Name: "t1",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "col1", Type: "int", Nullable: true},
 			{Name: "col2", Type: "int", Nullable: true},
 		},
-		Indexes: []*storepb.IndexMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
 			{
 				Name:        "func_index",
 				Type:        "BTREE",
@@ -1078,13 +1077,13 @@ func TestLoader_FunctionalIndex_FunctionCallForm(t *testing.T) {
 	// Same thing but key part is stored as bare function-call text
 	// (lower(name) without outer parens) — another shape the proto comment
 	// explicitly calls out.
-	meta := schemaWithTables(&storepb.TableMetadata{
+	meta := schemaWithTables(&metadatapb.TableMetadata{
 		Name: "t",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "int", Nullable: false, Default: autoIncrementSentinel},
 			{Name: "name", Type: "varchar(255)", Nullable: true},
 		},
-		Indexes: []*storepb.IndexMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
 			{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 			{Name: "idx_lower_name", Type: "BTREE", Expressions: []string{"lower(`name`)"}},
 		},
@@ -1112,14 +1111,14 @@ func TestLoader_FunctionalIndex_FunctionCallForm(t *testing.T) {
 // test: when one key part is an expression and another is a bare column, the
 // whole index must still install — all parts route through IndexColumns.
 func TestLoader_FunctionalIndex_MixedWithBareColumns(t *testing.T) {
-	meta := schemaWithTables(&storepb.TableMetadata{
+	meta := schemaWithTables(&metadatapb.TableMetadata{
 		Name: "t",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "int", Nullable: false, Default: autoIncrementSentinel},
 			{Name: "tag", Type: "varchar(64)", Nullable: true},
 			{Name: "name", Type: "varchar(255)", Nullable: true},
 		},
-		Indexes: []*storepb.IndexMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
 			{Name: "PRIMARY", Type: "BTREE", Primary: true, Unique: true, Expressions: []string{"id"}},
 			{
 				Name:        "idx_mixed",

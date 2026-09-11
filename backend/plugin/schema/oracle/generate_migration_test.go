@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -64,7 +65,7 @@ func TestGenerateMigration(t *testing.T) {
 func parseMetadata(t *testing.T, encoded string) *model.DatabaseMetadata {
 	t.Helper()
 
-	metadata := &storepb.DatabaseSchemaMetadata{}
+	metadata := &metadatapb.DatabaseSchemaMetadata{}
 	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(encoded), metadata))
 	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_ORACLE, false)
 }
@@ -84,13 +85,13 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:     schema.MetadataDiffActionCreate,
 						SchemaName: "TESTUSER",
 						TableName:  "ORDERS",
-						NewTable: &storepb.TableMetadata{
+						NewTable: &metadatapb.TableMetadata{
 							Name: "ORDERS",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{Name: "ID", Type: "NUMBER", Nullable: false},
 								{Name: "CUSTOMER_ID", Type: "NUMBER", Nullable: false},
 							},
-							ForeignKeys: []*storepb.ForeignKeyMetadata{
+							ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 								{
 									Name:              "FK_ORDERS_CUSTOMER",
 									Columns:           []string{"CUSTOMER_ID"},
@@ -106,9 +107,9 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:     schema.MetadataDiffActionCreate,
 						SchemaName: "TESTUSER",
 						TableName:  "CUSTOMERS",
-						NewTable: &storepb.TableMetadata{
+						NewTable: &metadatapb.TableMetadata{
 							Name: "CUSTOMERS",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{Name: "ID", Type: "NUMBER", Nullable: false},
 								{Name: "NAME", Type: "VARCHAR2(100)", Nullable: false},
 							},
@@ -126,9 +127,9 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:     schema.MetadataDiffActionCreate,
 						SchemaName: "TESTUSER",
 						TableName:  "USERS",
-						NewTable: &storepb.TableMetadata{
+						NewTable: &metadatapb.TableMetadata{
 							Name: "USERS",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{Name: "ID", Type: "NUMBER", Nullable: false},
 								{Name: "NAME", Type: "VARCHAR2(100)", Nullable: false},
 							},
@@ -138,9 +139,9 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:     schema.MetadataDiffActionCreate,
 						SchemaName: "TESTUSER",
 						TableName:  "ORDERS",
-						NewTable: &storepb.TableMetadata{
+						NewTable: &metadatapb.TableMetadata{
 							Name: "ORDERS",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{Name: "ID", Type: "NUMBER", Nullable: false},
 								{Name: "USER_ID", Type: "NUMBER", Nullable: false},
 							},
@@ -152,10 +153,10 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:     schema.MetadataDiffActionCreate,
 						SchemaName: "TESTUSER",
 						ViewName:   "USER_ORDERS",
-						NewView: &storepb.ViewMetadata{
+						NewView: &metadatapb.ViewMetadata{
 							Name:       "USER_ORDERS",
 							Definition: "SELECT u.NAME, o.ID FROM USERS u JOIN ORDERS o ON u.ID = o.USER_ID",
-							DependencyColumns: []*storepb.DependencyColumn{
+							DependencyColumns: []*metadatapb.DependencyColumn{
 								{Schema: "TESTUSER", Table: "USERS", Column: "ID"},
 								{Schema: "TESTUSER", Table: "USERS", Column: "NAME"},
 								{Schema: "TESTUSER", Table: "ORDERS", Column: "ID"},
@@ -179,7 +180,7 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						ColumnChanges: []*schema.ColumnDiff{
 							{
 								Action: schema.MetadataDiffActionCreate,
-								NewColumn: &storepb.ColumnMetadata{
+								NewColumn: &metadatapb.ColumnMetadata{
 									Name:     "CUSTOMER_REF",
 									Type:     "NUMBER",
 									Nullable: true,
@@ -195,7 +196,7 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						ColumnChanges: []*schema.ColumnDiff{
 							{
 								Action: schema.MetadataDiffActionCreate,
-								NewColumn: &storepb.ColumnMetadata{
+								NewColumn: &metadatapb.ColumnMetadata{
 									Name:     "STATUS",
 									Type:     "VARCHAR2(20)",
 									Nullable: true,
@@ -215,9 +216,9 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:     schema.MetadataDiffActionCreate,
 						SchemaName: "TESTUSER",
 						TableName:  "PRODUCTS",
-						NewTable: &storepb.TableMetadata{
+						NewTable: &metadatapb.TableMetadata{
 							Name: "PRODUCTS",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{Name: "ID", Type: "NUMBER", Nullable: false},
 								{Name: "NAME", Type: "VARCHAR2(100)", Nullable: false},
 								{Name: "PRICE", Type: "NUMBER(10,2)", Nullable: false},
@@ -230,10 +231,10 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:     schema.MetadataDiffActionCreate,
 						SchemaName: "TESTUSER",
 						ViewName:   "EXPENSIVE_PRODUCTS",
-						NewView: &storepb.ViewMetadata{
+						NewView: &metadatapb.ViewMetadata{
 							Name:       "EXPENSIVE_PRODUCTS",
 							Definition: "SELECT * FROM PRODUCTS WHERE PRICE > 100",
-							DependencyColumns: []*storepb.DependencyColumn{
+							DependencyColumns: []*metadatapb.DependencyColumn{
 								{Schema: "TESTUSER", Table: "PRODUCTS", Column: "ID"},
 								{Schema: "TESTUSER", Table: "PRODUCTS", Column: "NAME"},
 								{Schema: "TESTUSER", Table: "PRODUCTS", Column: "PRICE"},
@@ -246,10 +247,10 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:               schema.MetadataDiffActionCreate,
 						SchemaName:           "TESTUSER",
 						MaterializedViewName: "EXPENSIVE_PRODUCTS_MV",
-						NewMaterializedView: &storepb.MaterializedViewMetadata{
+						NewMaterializedView: &metadatapb.MaterializedViewMetadata{
 							Name:       "EXPENSIVE_PRODUCTS_MV",
 							Definition: "SELECT NAME FROM EXPENSIVE_PRODUCTS",
-							DependencyColumns: []*storepb.DependencyColumn{
+							DependencyColumns: []*metadatapb.DependencyColumn{
 								{Schema: "TESTUSER", Table: "EXPENSIVE_PRODUCTS", Column: "NAME"},
 							},
 						},
@@ -266,9 +267,9 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:     schema.MetadataDiffActionCreate,
 						SchemaName: "TESTUSER",
 						TableName:  "EMPLOYEES",
-						NewTable: &storepb.TableMetadata{
+						NewTable: &metadatapb.TableMetadata{
 							Name: "EMPLOYEES",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{Name: "ID", Type: "NUMBER", Nullable: false},
 								{Name: "SALARY", Type: "NUMBER(10,2)", Nullable: false},
 							},
@@ -280,10 +281,10 @@ func TestTopologicalOrderCreateObjects(t *testing.T) {
 						Action:       schema.MetadataDiffActionCreate,
 						SchemaName:   "TESTUSER",
 						FunctionName: "GET_AVG_SALARY",
-						NewFunction: &storepb.FunctionMetadata{
+						NewFunction: &metadatapb.FunctionMetadata{
 							Name:       "GET_AVG_SALARY",
 							Definition: "CREATE OR REPLACE FUNCTION GET_AVG_SALARY RETURN NUMBER IS avg_sal NUMBER; BEGIN SELECT AVG(SALARY) INTO avg_sal FROM EMPLOYEES; RETURN avg_sal; END;",
-							DependencyTables: []*storepb.DependencyTable{
+							DependencyTables: []*metadatapb.DependencyTable{
 								{Schema: "TESTUSER", Table: "EMPLOYEES"},
 							},
 						},
@@ -364,13 +365,13 @@ func TestTopologicalOrderWithCycles(t *testing.T) {
 				Action:     schema.MetadataDiffActionCreate,
 				SchemaName: "TESTUSER",
 				TableName:  "TABLE_A",
-				NewTable: &storepb.TableMetadata{
+				NewTable: &metadatapb.TableMetadata{
 					Name: "TABLE_A",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "ID", Type: "NUMBER", Nullable: false},
 						{Name: "B_ID", Type: "NUMBER", Nullable: true},
 					},
-					ForeignKeys: []*storepb.ForeignKeyMetadata{
+					ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 						{
 							Name:              "FK_A_TO_B",
 							Columns:           []string{"B_ID"},
@@ -385,13 +386,13 @@ func TestTopologicalOrderWithCycles(t *testing.T) {
 				Action:     schema.MetadataDiffActionCreate,
 				SchemaName: "TESTUSER",
 				TableName:  "TABLE_B",
-				NewTable: &storepb.TableMetadata{
+				NewTable: &metadatapb.TableMetadata{
 					Name: "TABLE_B",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "ID", Type: "NUMBER", Nullable: false},
 						{Name: "A_ID", Type: "NUMBER", Nullable: true},
 					},
-					ForeignKeys: []*storepb.ForeignKeyMetadata{
+					ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 						{
 							Name:              "FK_B_TO_A",
 							Columns:           []string{"A_ID"},

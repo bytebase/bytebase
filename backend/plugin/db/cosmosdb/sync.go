@@ -3,10 +3,10 @@ package cosmosdb
 import (
 	"context"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -17,7 +17,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return d.syncInstanceViaREST()
 	}
 
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	queryPager := d.client.NewQueryDatabasesPager("select * from dbs d", nil)
 	for queryPager.More() {
 		queryResponse, err := queryPager.NextPage(ctx)
@@ -25,7 +25,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			return nil, errors.Wrapf(err, "failed to get next page in database list")
 		}
 		for _, database := range queryResponse.Databases {
-			databases = append(databases, &storepb.DatabaseSchemaMetadata{
+			databases = append(databases, &metadatapb.DatabaseSchemaMetadata{
 				Name: database.ID,
 			})
 		}
@@ -44,9 +44,9 @@ func (d *Driver) syncInstanceViaREST() (*db.InstanceMetadata, error) {
 	if err != nil {
 		return nil, err
 	}
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	for _, name := range names {
-		databases = append(databases, &storepb.DatabaseSchemaMetadata{
+		databases = append(databases, &metadatapb.DatabaseSchemaMetadata{
 			Name: name,
 		})
 	}
@@ -56,13 +56,13 @@ func (d *Driver) syncInstanceViaREST() (*db.InstanceMetadata, error) {
 }
 
 // SyncDBSchema syncs the database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	endpoint := d.connCfg.DataSource.Host
 	if common.IsDev() && isLocalhostEndpoint(endpoint) {
 		return d.syncDBSchemaViaREST()
 	}
 
-	var containers []*storepb.TableMetadata
+	var containers []*metadatapb.TableMetadata
 	database, err := d.client.NewDatabase(d.databaseName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database %q", d.databaseName)
@@ -74,14 +74,14 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, errors.Wrapf(err, "failed to get next page in container list")
 		}
 		for _, container := range queryResponse.Containers {
-			containers = append(containers, &storepb.TableMetadata{
+			containers = append(containers, &metadatapb.TableMetadata{
 				Name: container.ID,
 			})
 		}
 	}
-	return &storepb.DatabaseSchemaMetadata{
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: d.databaseName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Tables: containers,
 			},
@@ -89,7 +89,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}, nil
 }
 
-func (d *Driver) syncDBSchemaViaREST() (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) syncDBSchemaViaREST() (*metadatapb.DatabaseSchemaMetadata, error) {
 	client, err := newEmulatorRESTClient(d.connCfg.DataSource.Host)
 	if err != nil {
 		return nil, err
@@ -98,15 +98,15 @@ func (d *Driver) syncDBSchemaViaREST() (*storepb.DatabaseSchemaMetadata, error) 
 	if err != nil {
 		return nil, err
 	}
-	var containers []*storepb.TableMetadata
+	var containers []*metadatapb.TableMetadata
 	for _, name := range names {
-		containers = append(containers, &storepb.TableMetadata{
+		containers = append(containers, &metadatapb.TableMetadata{
 			Name: name,
 		})
 	}
-	return &storepb.DatabaseSchemaMetadata{
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: d.databaseName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Tables: containers,
 			},

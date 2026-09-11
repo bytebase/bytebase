@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -420,8 +421,8 @@ JSON_TABLE(product_info, '$' COLUMNS (
 }
 
 func TestOmniQuerySpanPhase9_ResourceNotFoundFailOpen(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{Name: "db"}
-	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	metadata := &metadatapb.DatabaseSchemaMetadata{Name: "db"}
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	span, err := newOmniQuerySpanExtractor("db", base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: databaseMetadataGetter,
 		ListDatabaseNamesFunc:   databaseNameLister,
@@ -1449,21 +1450,21 @@ func sourceColumnSetFromResources(resources []base.ColumnResource) base.SourceCo
 }
 
 func newOmniViewTestQuerySpanContext() base.GetQuerySpanContext {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "a"},
 							{Name: "b"},
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "v",
 						Definition: "SELECT a AS va, b FROM t",
@@ -1480,7 +1481,7 @@ func newOmniViewTestQuerySpanContext() base.GetQuerySpanContext {
 			},
 		},
 	}
-	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	return base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: databaseMetadataGetter,
 		ListDatabaseNamesFunc:   databaseNameLister,
@@ -1489,15 +1490,15 @@ func newOmniViewTestQuerySpanContext() base.GetQuerySpanContext {
 }
 
 func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "a"},
 							{Name: "b"},
 							{Name: "c"},
@@ -1505,7 +1506,7 @@ func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
 					},
 					{
 						Name: "t1",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "a"},
 							{Name: "b"},
 							{Name: "c"},
@@ -1513,7 +1514,7 @@ func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
 					},
 					{
 						Name: "t2",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "a"},
 							{Name: "b"},
 							{Name: "c"},
@@ -1521,27 +1522,27 @@ func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
 					},
 					{
 						Name: "galleries",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id"},
 							{Name: "city"},
 						},
 					},
 					{
 						Name: "paintings",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id"},
 							{Name: "gallery_id"},
 						},
 					},
 					{
 						Name: "products",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "product_info"},
 						},
 					},
 					{
 						Name: "keyword_table",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "select"},
 							{Name: "Camel"},
 						},
@@ -1550,7 +1551,7 @@ func newOmniTestQuerySpanContext() base.GetQuerySpanContext {
 			},
 		},
 	}
-	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	return base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: databaseMetadataGetter,
 		ListDatabaseNamesFunc:   databaseNameLister,
@@ -1565,15 +1566,15 @@ func newOmniStarRocksTestQuerySpanContext() base.GetQuerySpanContext {
 }
 
 func newOmniCaseCollisionTestQuerySpanContext() base.GetQuerySpanContext {
-	dbMetadata := &storepb.DatabaseSchemaMetadata{
+	dbMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "a"},
 						},
 					},
@@ -1581,15 +1582,15 @@ func newOmniCaseCollisionTestQuerySpanContext() base.GetQuerySpanContext {
 			},
 		},
 	}
-	upperMetadata := &storepb.DatabaseSchemaMetadata{
+	upperMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "DB",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "a"},
 						},
 					},
@@ -1597,7 +1598,7 @@ func newOmniCaseCollisionTestQuerySpanContext() base.GetQuerySpanContext {
 			},
 		},
 	}
-	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{dbMetadata, upperMetadata})
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{dbMetadata, upperMetadata})
 	return base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: databaseMetadataGetter,
 		ListDatabaseNamesFunc:   databaseNameLister,

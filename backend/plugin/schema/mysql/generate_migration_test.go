@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 
@@ -67,7 +68,7 @@ func TestGenerateMigration(t *testing.T) {
 func parseSchema(t *testing.T, text string) *model.DatabaseMetadata {
 	t.Helper()
 
-	metadata := &storepb.DatabaseSchemaMetadata{Schemas: []*storepb.SchemaMetadata{{}}}
+	metadata := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{}}}
 	if text != "" {
 		parsed, err := GetDatabaseMetadata(text)
 		require.NoError(t, err)
@@ -76,36 +77,36 @@ func parseSchema(t *testing.T, text string) *model.DatabaseMetadata {
 	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_MYSQL, false)
 }
 
-func partitionedTable(partitionCount int) *storepb.TableMetadata {
-	table := &storepb.TableMetadata{
+func partitionedTable(partitionCount int) *metadatapb.TableMetadata {
+	table := &metadatapb.TableMetadata{
 		Name:      "ads_member_asset_by_account_channel_d",
 		Engine:    "InnoDB",
 		Charset:   "utf8mb4",
 		Collation: "utf8mb4_general_ci",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "dt", Type: "date", Nullable: false},
 			{Name: "member_id", Type: "bigint", Nullable: false},
 			{Name: "account_type", Type: "varchar(50)", Nullable: false},
 		},
-		Indexes: []*storepb.IndexMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
 			{Name: "PRIMARY", Expressions: []string{"dt", "member_id", "account_type"}, Primary: true, Unique: true, Visible: true, Type: "BTREE"},
 			{Name: "sindex", Expressions: []string{"dt", "member_id", "account_type"}, Visible: true, Type: "BTREE"},
 		},
 	}
 	for i := range partitionCount {
-		table.Partitions = append(table.Partitions, &storepb.TablePartitionMetadata{
+		table.Partitions = append(table.Partitions, &metadatapb.TablePartitionMetadata{
 			Name:       fmt.Sprintf("p%d", i),
-			Type:       storepb.TablePartitionMetadata_RANGE,
+			Type:       metadatapb.TablePartitionMetadata_RANGE,
 			Expression: "to_days(`dt`)",
 			Value:      fmt.Sprintf("%d", 739000+i),
 		})
 	}
 	return table
 }
-func databaseOf(tables ...*storepb.TableMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+func databaseOf(tables ...*metadatapb.TableMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name:    "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: tables}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: tables}},
 	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
 }
 
@@ -122,7 +123,7 @@ func TestDiffMigrationPartitionedTableEmittedOnce(t *testing.T) {
 			a.Equal(1, strings.Count(migration, "CREATE INDEX `sindex`"), "sindex must be emitted once:\n%s", migration)
 
 			// Target has the table but neither the primary key nor the index: the 1068 shape.
-			bare := &storepb.TableMetadata{
+			bare := &metadatapb.TableMetadata{
 				Name:      source.Name,
 				Engine:    source.Engine,
 				Charset:   source.Charset,
@@ -181,9 +182,9 @@ func TestDiffMigrationPartitionEngineMatchesTable(t *testing.T) {
 func TestDiffMigrationQuotesPartitionNames(t *testing.T) {
 	a := require.New(t)
 	source := partitionedTable(0)
-	source.Partitions = []*storepb.TablePartitionMetadata{
-		{Name: "select", Type: storepb.TablePartitionMetadata_RANGE, Expression: "to_days(`dt`)", Value: "739000"},
-		{Name: "order", Type: storepb.TablePartitionMetadata_RANGE, Expression: "to_days(`dt`)", Value: "MAXVALUE"},
+	source.Partitions = []*metadatapb.TablePartitionMetadata{
+		{Name: "select", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "to_days(`dt`)", Value: "739000"},
+		{Name: "order", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "to_days(`dt`)", Value: "MAXVALUE"},
 	}
 
 	migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(source))
@@ -206,18 +207,18 @@ func tableAction(diff *schema.MetadataDiff, name string) schema.MetadataDiffActi
 // some other table may carry that name, and resolving it as if it were the table makes the
 // differ miss a drop and mistake a create for a modification of the partition's owner.
 func TestDiffMigrationPartitionAliasDoesNotMaskTableExistence(t *testing.T) {
-	archive := &storepb.TableMetadata{
+	archive := &metadatapb.TableMetadata{
 		Name: "archive", Engine: "InnoDB",
-		Columns: []*storepb.ColumnMetadata{{Name: "archive_col", Type: "int"}},
+		Columns: []*metadatapb.ColumnMetadata{{Name: "archive_col", Type: "int"}},
 	}
-	events := func(partitions ...*storepb.TablePartitionMetadata) *storepb.TableMetadata {
-		return &storepb.TableMetadata{
+	events := func(partitions ...*metadatapb.TablePartitionMetadata) *metadatapb.TableMetadata {
+		return &metadatapb.TableMetadata{
 			Name: "events", Engine: "InnoDB",
-			Columns:    []*storepb.ColumnMetadata{{Name: "events_col", Type: "int"}},
+			Columns:    []*metadatapb.ColumnMetadata{{Name: "events_col", Type: "int"}},
 			Partitions: partitions,
 		}
 	}
-	alias := &storepb.TablePartitionMetadata{Name: "archive", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"}
+	alias := &metadatapb.TablePartitionMetadata{Name: "archive", Type: metadatapb.TablePartitionMetadata_RANGE, Expression: "dt"}
 
 	t.Run("drop", func(t *testing.T) {
 		a := require.New(t)

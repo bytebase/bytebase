@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
@@ -66,7 +67,7 @@ func executeBatches(ctx context.Context, t *testing.T, driver *Driver, script st
 	}
 }
 
-func requireTable(t *testing.T, metadata *storepb.DatabaseSchemaMetadata, schemaName, tableName string) *storepb.TableMetadata {
+func requireTable(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata, schemaName, tableName string) *metadatapb.TableMetadata {
 	t.Helper()
 
 	for _, schema := range metadata.Schemas {

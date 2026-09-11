@@ -4,10 +4,9 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/pg/catalog"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // TestLoaderInstallsCompositeTypes proves the query-span catalog loader
@@ -15,40 +14,40 @@ import (
 // order (aa_nested sorts before its dependency zz_base alphabetically), and
 // that tables typed with them install cleanly.
 func TestLoaderInstallsCompositeTypes(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "status", Values: []string{"a", "b"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						// References zz_base only through an array suffix.
 						Name: "aa_array_only",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "items", Type: "public.zz_base[]"},
 						},
 					},
 					{
 						Name: "aa_nested",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "home", Type: "public.zz_base"},
 							{Name: "s", Type: "public.status"},
 						},
 					},
 					{
 						Name: "zz_base",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text"},
 							{Name: "city", Type: "character varying(50)"},
 						},
 					},
 				},
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "home", Type: "public.zz_base", Nullable: true},
 						},
@@ -98,14 +97,14 @@ func TestLoaderInstallsCompositeTypes(t *testing.T) {
 // fallback via a domain-typed attribute (domains are not loader objects) and
 // asserts the fallback keeps the metadata attribute names.
 func TestLoaderCompositeFallbackPreservesAttributeNames(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "with_domain",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "p", Type: "public.pos_int"},
 							{Name: "note", Type: "text"},
 						},
@@ -138,22 +137,22 @@ func TestLoaderCompositeFallbackPreservesAttributeNames(t *testing.T) {
 // not expand a standalone composite type as a FROM source — PostgreSQL
 // rejects composite types as table sources.
 func TestRangeVarFallbackSkipsCompositeTypes(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text"},
 						},
 					},
 				},
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},

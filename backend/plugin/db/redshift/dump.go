@@ -5,10 +5,10 @@ import (
 	"context"
 	"io"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	metadatapb "github.com/bytebase/omni/metadata"
 )
 
 // Dump dumps the database to the writer. But not implemented yet.
-func (*Driver) Dump(context.Context, io.Writer, *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(context.Context, io.Writer, *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }

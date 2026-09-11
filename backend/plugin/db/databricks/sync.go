@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 type tableUnion struct {
-	externalTable *storepb.ExternalTableMetadata
-	table         *storepb.TableMetadata
-	view          *storepb.ViewMetadata
-	materialView  *storepb.MaterializedViewMetadata
+	externalTable *metadatapb.ExternalTableMetadata
+	table         *metadatapb.TableMetadata
+	view          *metadatapb.ViewMetadata
+	materialView  *metadatapb.MaterializedViewMetadata
 	typeName      catalog.TableType
 	name          string
 }
@@ -25,7 +25,7 @@ type databricksSchemaMap = map[string][]*tableUnion
 type databricksCatalogMap = map[string]databricksSchemaMap
 
 // sync catalog.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	// return nothing if no catalogs are specified.
 	if d.curCatalog == "" {
 		return nil, nil
@@ -37,7 +37,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, err
 	}
 
-	dbMetadataMeta := storepb.DatabaseSchemaMetadata{}
+	dbMetadataMeta := metadatapb.DatabaseSchemaMetadata{}
 	schemaMap, ok := (catalogMap)[d.curCatalog]
 	if !ok {
 		return nil, errors.Errorf("cannot find metadata for catalog '%s'", d.curCatalog)
@@ -74,7 +74,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 
 	for catalogName, schemaMap := range catalogMap {
-		dbMetadataMeta := storepb.DatabaseSchemaMetadata{}
+		dbMetadataMeta := metadatapb.DatabaseSchemaMetadata{}
 		schemas := convertToStorepbSchemas(schemaMap)
 		dbMetadataMeta.Name = catalogName
 		dbMetadataMeta.Schemas = schemas
@@ -147,24 +147,24 @@ func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.Ta
 
 		switch tableInfo.TableType {
 		case catalog.TableTypeView:
-			table.view = &storepb.ViewMetadata{
+			table.view = &metadatapb.ViewMetadata{
 				Name:              table.name,
 				Definition:        tableInfo.ViewDefinition,
 				Comment:           tableInfo.Comment,
 				DependencyColumns: convertToDependencyColumns(tableInfo.SchemaName, tableInfo.Name, tableInfo.Columns),
 			}
 		case catalog.TableTypeMaterializedView:
-			table.materialView = &storepb.MaterializedViewMetadata{
+			table.materialView = &metadatapb.MaterializedViewMetadata{
 				Name:       table.name,
 				Definition: tableInfo.ViewDefinition,
 				Comment:    tableInfo.Comment,
 			}
 		case catalog.TableTypeExternal:
-			table.externalTable = &storepb.ExternalTableMetadata{
+			table.externalTable = &metadatapb.ExternalTableMetadata{
 				Name: table.name,
 			}
 		case catalog.TableTypeManaged:
-			table.table = &storepb.TableMetadata{
+			table.table = &metadatapb.TableMetadata{
 				Name:    table.name,
 				Columns: convertToColumnMetadata(tableInfo.Columns),
 				Comment: tableInfo.Comment,
@@ -185,10 +185,10 @@ func appendSchemaTables(catalogMap databricksCatalogMap, tablesInfo []catalog.Ta
 	return nil
 }
 
-func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnMetadata {
-	columns := []*storepb.ColumnMetadata{}
+func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*metadatapb.ColumnMetadata {
+	columns := []*metadatapb.ColumnMetadata{}
 	for _, col := range columnInfo {
-		columns = append(columns, &storepb.ColumnMetadata{
+		columns = append(columns, &metadatapb.ColumnMetadata{
 			Name:     col.Name,
 			Position: int32(col.Position),
 			Nullable: col.Nullable,
@@ -199,10 +199,10 @@ func convertToColumnMetadata(columnInfo []catalog.ColumnInfo) []*storepb.ColumnM
 	return columns
 }
 
-func convertToDependencyColumns(schema, table string, columnInfo []catalog.ColumnInfo) []*storepb.DependencyColumn {
-	columns := []*storepb.DependencyColumn{}
+func convertToDependencyColumns(schema, table string, columnInfo []catalog.ColumnInfo) []*metadatapb.DependencyColumn {
+	columns := []*metadatapb.DependencyColumn{}
 	for _, col := range columnInfo {
-		columns = append(columns, &storepb.DependencyColumn{
+		columns = append(columns, &metadatapb.DependencyColumn{
 			Schema: schema,
 			Table:  table,
 			Column: col.Name,
@@ -211,10 +211,10 @@ func convertToDependencyColumns(schema, table string, columnInfo []catalog.Colum
 	return columns
 }
 
-func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*storepb.SchemaMetadata {
-	schemas := []*storepb.SchemaMetadata{}
+func convertToStorepbSchemas(schemaMap databricksSchemaMap) []*metadatapb.SchemaMetadata {
+	schemas := []*metadatapb.SchemaMetadata{}
 	for schemaName, tableList := range schemaMap {
-		schemaMetadata := &storepb.SchemaMetadata{
+		schemaMetadata := &metadatapb.SchemaMetadata{
 			Name: schemaName,
 		}
 

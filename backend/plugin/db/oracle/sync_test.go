@@ -5,10 +5,9 @@ import (
 	"log/slog"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // corruptedVietnamese simulates Vietnamese text encoded in Windows-1258
@@ -23,12 +22,12 @@ func TestOracleDefinitionSanitizedUTF8MarshalSuccess(t *testing.T) {
 	defer slog.SetDefault(originalLogger)
 	corruptedDefinition := corruptedVietnamese + "\nSELECT 1 FROM DUAL"
 
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "TESTDB",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "TEST_SCHEMA",
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name: "V_CUSTOMER",
 						Definition: sanitizeOracleDefinition(
@@ -39,7 +38,7 @@ func TestOracleDefinitionSanitizedUTF8MarshalSuccess(t *testing.T) {
 						),
 					},
 				},
-				MaterializedViews: []*storepb.MaterializedViewMetadata{
+				MaterializedViews: []*metadatapb.MaterializedViewMetadata{
 					{
 						Name: "MV_CUSTOMER",
 						Definition: sanitizeOracleDefinition(
@@ -50,7 +49,7 @@ func TestOracleDefinitionSanitizedUTF8MarshalSuccess(t *testing.T) {
 						),
 					},
 				},
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name: "FN_VALIDATE",
 						Definition: sanitizeOracleDefinition(
@@ -61,7 +60,7 @@ func TestOracleDefinitionSanitizedUTF8MarshalSuccess(t *testing.T) {
 						),
 					},
 				},
-				Procedures: []*storepb.ProcedureMetadata{
+				Procedures: []*metadatapb.ProcedureMetadata{
 					{
 						Name: "PR_VALIDATE",
 						Definition: sanitizeOracleDefinition(
@@ -72,7 +71,7 @@ func TestOracleDefinitionSanitizedUTF8MarshalSuccess(t *testing.T) {
 						),
 					},
 				},
-				Packages: []*storepb.PackageMetadata{
+				Packages: []*metadatapb.PackageMetadata{
 					{
 						Name: "PKG_VALIDATE",
 						Definition: sanitizeOracleDefinition(
@@ -106,15 +105,15 @@ func TestOracleTriggerBodySanitizedUTF8MarshalSuccess(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewTextHandler(&logBuf, &slog.HandlerOptions{Level: slog.LevelWarn})))
 	defer slog.SetDefault(originalLogger)
 
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "TESTDB",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "TEST_SCHEMA",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "CUSTOMER",
-						Triggers: []*storepb.TriggerMetadata{
+						Triggers: []*metadatapb.TriggerMetadata{
 							{
 								Name: "TRG_CUSTOMER",
 								Body: sanitizeOracleMetadataString(

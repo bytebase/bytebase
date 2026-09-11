@@ -7,6 +7,7 @@ import (
 	"slices"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -93,13 +94,13 @@ func TestMariaDBTransformDMLToSelectRegistration(t *testing.T) {
 }
 
 func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
-	schemaMetadata := []*store.SchemaMetadata{
+	schemaMetadata := []*metadatapb.SchemaMetadata{
 		{
 			Name: "",
-			Tables: []*store.TableMetadata{
+			Tables: []*metadatapb.TableMetadata{
 				{
 					Name: "t_generated",
-					Columns: []*store.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{
 							Name: "a",
 						},
@@ -108,12 +109,12 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 						},
 						{
 							Name: "c_generated",
-							Generation: &store.GenerationMetadata{
+							Generation: &metadatapb.GenerationMetadata{
 								Expression: "a + b",
 							},
 						},
 					},
-					Indexes: []*store.IndexMetadata{
+					Indexes: []*metadatapb.IndexMetadata{
 						{
 							Name:    "PRIMARY",
 							Primary: true,
@@ -133,7 +134,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 				},
 				{
 					Name: "t1",
-					Columns: []*store.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{
 							Name: "a",
 						},
@@ -147,7 +148,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 				},
 				{
 					Name: "t2",
-					Columns: []*store.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{
 							Name: "a",
 						},
@@ -161,7 +162,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 				},
 				{
 					Name: "test",
-					Columns: []*store.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{
 							Name: "a",
 						},
@@ -172,7 +173,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 							Name: "c",
 						},
 					},
-					Indexes: []*store.IndexMetadata{
+					Indexes: []*metadatapb.IndexMetadata{
 						{
 							Name:    "PRIMARY",
 							Primary: true,
@@ -191,7 +192,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 				},
 				{
 					Name: "test2",
-					Columns: []*store.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{
 							Name: "a",
 						},
@@ -205,7 +206,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 				},
 				{
 					Name: "t3",
-					Columns: []*store.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{
 							Name: "a",
 						},
@@ -221,7 +222,7 @@ func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFu
 		},
 	}
 	return func(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
-			return database, model.NewDatabaseMetadata(&store.DatabaseSchemaMetadata{
+			return database, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 				Name:    database,
 				Schemas: schemaMetadata,
 			}, nil, nil, store.Engine_MYSQL, true /* isObjectCaseSensitive */), nil

@@ -7,9 +7,9 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
@@ -28,7 +28,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		}
 	}
 
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	rows, err := d.db.QueryContext(ctx, "SELECT name, collation_name FROM sys.databases WHERE name NOT IN ('master', 'model', 'msdb', 'tempdb', 'rdscore')")
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	defer rows.Close()
 
 	for rows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
+		database := &metadatapb.DatabaseSchemaMetadata{}
 		var collation sql.NullString
 		if err := rows.Scan(&database.Name, &collation); err != nil {
 			return nil, err
@@ -57,7 +57,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	txn, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -117,11 +117,11 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, err
 	}
 
-	databaseMetadata := &storepb.DatabaseSchemaMetadata{
+	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: d.databaseName,
 	}
 	for _, schemaName := range schemaNames {
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &metadatapb.SchemaMetadata{
 			Name:       schemaName,
 			Tables:     tableMap[schemaName],
 			Views:      viewMap[schemaName],
@@ -159,7 +159,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
+func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata) (map[string][]*metadatapb.TableMetadata, error) {
 	indexMap, err := getKeyAndIndexes(txn, schemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
@@ -250,7 +250,7 @@ func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*store
 		}
 	}
 
-	tableMap := make(map[string][]*storepb.TableMetadata)
+	tableMap := make(map[string][]*metadatapb.TableMetadata)
 	query := `
 		SELECT
 			t.object_id,
@@ -265,7 +265,7 @@ func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*store
 	defer rows.Close()
 
 	for rows.Next() {
-		table := &storepb.TableMetadata{}
+		table := &metadatapb.TableMetadata{}
 		var objectID int
 		var schemaName string
 		if err := rows.Scan(&objectID, &schemaName, &table.Name); err != nil {
@@ -295,8 +295,8 @@ func getTables(txn *sql.Tx, schemas []string, columnMap map[db.TableKey][]*store
 	return tableMap, nil
 }
 
-func getChecks(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
-	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
+func getChecks(txn *sql.Tx, schemas []string) (map[db.TableKey][]*metadatapb.CheckConstraintMetadata, error) {
+	checkMap := make(map[db.TableKey][]*metadatapb.CheckConstraintMetadata)
 
 	// Get check constraint comments separately
 	checkCommentsMap := make(map[int]string)
@@ -381,7 +381,7 @@ func getChecks(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.CheckC
 			continue
 		}
 		key := db.TableKey{Schema: obj.Schema, Table: obj.Table}
-		check := &storepb.CheckConstraintMetadata{
+		check := &metadatapb.CheckConstraintMetadata{
 			Name:       checkName.String,
 			Expression: definition.String,
 		}
@@ -416,8 +416,8 @@ func referentialAction(action int) string {
 	}
 }
 
-func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
-	fkMap := make(map[db.TableKey]map[string]*storepb.ForeignKeyMetadata)
+func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
+	fkMap := make(map[db.TableKey]map[string]*metadatapb.ForeignKeyMetadata)
 
 	// Get foreign key comments separately
 	fkCommentsMap := make(map[int]string)
@@ -485,11 +485,11 @@ func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.F
 		}
 		outerKey := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		if _, ok := fkMap[outerKey]; !ok {
-			fkMap[outerKey] = make(map[string]*storepb.ForeignKeyMetadata)
+			fkMap[outerKey] = make(map[string]*metadatapb.ForeignKeyMetadata)
 		}
 
 		if _, ok := fkMap[outerKey][fkName.String]; !ok {
-			fk := &storepb.ForeignKeyMetadata{
+			fk := &metadatapb.ForeignKeyMetadata{
 				Name:             fkName.String,
 				ReferencedSchema: referencedSchemaName.String,
 				ReferencedTable:  referencedTableName.String,
@@ -522,7 +522,7 @@ func getForeignKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.F
 	}
 
 	// Aggregate the map to a slice.
-	result := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	result := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
 	for k, m := range fkMap {
 		var foreignkeyNames []string
 		for _, v := range m {
@@ -550,8 +550,8 @@ func quoteList(schemas []string) string {
 }
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
-	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*metadatapb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 
 	// Get column comments separately
 	columnCommentsMap := make(map[struct{ ObjectID, ColumnID int }]string)
@@ -680,7 +680,7 @@ func getTableColumns(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.
 		if !schemaName.Valid || !tableName.Valid || !columnName.Valid || !typeName.Valid {
 			continue
 		}
-		column := &storepb.ColumnMetadata{
+		column := &metadatapb.ColumnMetadata{
 			Name: columnName.String,
 		}
 
@@ -797,9 +797,9 @@ func getColumnType(definition, typeName sql.NullString, isComputed, isPersisted 
 	return buf.String(), nil
 }
 
-func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*metadatapb.IndexMetadata, error) {
 	// MSSQL doesn't support function-based indexes.
-	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
+	indexMap := make(map[db.TableKey]map[string]*metadatapb.IndexMetadata)
 
 	// Get index comments separately
 	indexCommentsMap := make(map[struct{ ObjectID, IndexID int }]string)
@@ -868,12 +868,12 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 
 		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		if _, ok := indexMap[key]; !ok {
-			indexMap[key] = make(map[string]*storepb.IndexMetadata)
+			indexMap[key] = make(map[string]*metadatapb.IndexMetadata)
 		}
 		if _, ok := indexMap[key][indexName.String]; !ok {
 			// This query excludes primary keys and unique constraints, which are
 			// reported separately, so is_unique here means a CREATE UNIQUE INDEX.
-			index := &storepb.IndexMetadata{
+			index := &metadatapb.IndexMetadata{
 				Name:         indexName.String,
 				Unique:       isUnique.Valid && isUnique.Bool,
 				Primary:      false,
@@ -883,13 +883,13 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 				index.Type = typeDesc.String
 				// If this is a spatial index, populate basic spatial config
 				if typeDesc.String == "SPATIAL" {
-					index.SpatialConfig = &storepb.SpatialIndexConfig{
+					index.SpatialConfig = &metadatapb.SpatialIndexConfig{
 						Method: "SPATIAL",
-						Tessellation: &storepb.TessellationConfig{
+						Tessellation: &metadatapb.TessellationConfig{
 							Scheme: "UNKNOWN", // Will be updated by getSpatialIndexes if available
 						},
-						Storage: &storepb.StorageConfig{},
-						Dimensional: &storepb.DimensionalConfig{
+						Storage: &metadatapb.StorageConfig{},
+						Dimensional: &metadatapb.DimensionalConfig{
 							DataType:   "GEOMETRY", // Default, will be updated if available
 							Dimensions: 2,
 						},
@@ -916,12 +916,12 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 		return nil, err
 	}
 
-	tableIndexes := make(map[db.TableKey][]*storepb.IndexMetadata)
+	tableIndexes := make(map[db.TableKey][]*metadatapb.IndexMetadata)
 	for k, m := range indexMap {
 		for _, v := range m {
 			tableIndexes[k] = append(tableIndexes[k], v)
 		}
-		slices.SortFunc(tableIndexes[k], func(a, b *storepb.IndexMetadata) int {
+		slices.SortFunc(tableIndexes[k], func(a, b *metadatapb.IndexMetadata) int {
 			if a.Name < b.Name {
 				return -1
 			}
@@ -938,7 +938,7 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 	spatialIndexes, err := getSpatialIndexes(txn, schemas)
 	if err != nil {
 		// Ignore error - spatial indexes might have been found by regular index query
-		spatialIndexes = make(map[db.TableKey][]*storepb.IndexMetadata)
+		spatialIndexes = make(map[db.TableKey][]*metadatapb.IndexMetadata)
 	}
 
 	// Merge spatial indexes with regular indexes
@@ -947,11 +947,11 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 	for k, spatialIdxs := range spatialIndexes {
 		// Process table spatial indexes
 		if _, ok := tableIndexes[k]; !ok {
-			tableIndexes[k] = make([]*storepb.IndexMetadata, 0)
+			tableIndexes[k] = make([]*metadatapb.IndexMetadata, 0)
 		}
 
 		// Remove any spatial indexes from regular indexes first
-		var nonSpatialIndexes []*storepb.IndexMetadata
+		var nonSpatialIndexes []*metadatapb.IndexMetadata
 		for _, idx := range tableIndexes[k] {
 			if idx.Type != "SPATIAL" {
 				nonSpatialIndexes = append(nonSpatialIndexes, idx)
@@ -966,8 +966,8 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 	return tableIndexes, nil
 }
 
-func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
-	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
+func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*metadatapb.IndexMetadata, error) {
+	indexMap := make(map[db.TableKey]map[string]*metadatapb.IndexMetadata)
 
 	// Get spatial index comments separately
 	spatialCommentsMap := make(map[struct{ ObjectID, IndexID int }]string)
@@ -1103,17 +1103,17 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 
 		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		if _, ok := indexMap[key]; !ok {
-			indexMap[key] = make(map[string]*storepb.IndexMetadata)
+			indexMap[key] = make(map[string]*metadatapb.IndexMetadata)
 		}
 
 		if _, ok := indexMap[key][indexName.String]; !ok {
 			// Create new spatial index metadata
-			index := &storepb.IndexMetadata{
+			index := &metadatapb.IndexMetadata{
 				Name:    indexName.String,
 				Type:    "SPATIAL",
 				Unique:  false,
 				Primary: false,
-				SpatialConfig: &storepb.SpatialIndexConfig{
+				SpatialConfig: &metadatapb.SpatialIndexConfig{
 					Method: "SPATIAL",
 				},
 			}
@@ -1137,7 +1137,7 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 			}
 
 			// Configure tessellation with complete metadata
-			index.SpatialConfig.Tessellation = &storepb.TessellationConfig{}
+			index.SpatialConfig.Tessellation = &metadatapb.TessellationConfig{}
 
 			if tessellationScheme.Valid {
 				index.SpatialConfig.Tessellation.Scheme = tessellationScheme.String
@@ -1153,7 +1153,7 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 					// Add bounding box (for GEOMETRY indexes or when explicitly provided)
 					if tessData.BoundingBox[0] != 0 || tessData.BoundingBox[1] != 0 ||
 						tessData.BoundingBox[2] != 0 || tessData.BoundingBox[3] != 0 {
-						index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
+						index.SpatialConfig.Tessellation.BoundingBox = &metadatapb.BoundingBox{
 							Xmin: tessData.BoundingBox[0],
 							Ymin: tessData.BoundingBox[1],
 							Xmax: tessData.BoundingBox[2],
@@ -1162,10 +1162,10 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 					}
 
 					// Add grid levels with proper descriptions
-					gridLevels := []*storepb.GridLevel{}
+					gridLevels := []*metadatapb.GridLevel{}
 					for i, level := range tessData.GridLevels {
 						if level != "" {
-							gridLevels = append(gridLevels, &storepb.GridLevel{Level: int32(i + 1), Density: level})
+							gridLevels = append(gridLevels, &metadatapb.GridLevel{Level: int32(i + 1), Density: level})
 						}
 					}
 					index.SpatialConfig.Tessellation.GridLevels = gridLevels
@@ -1178,7 +1178,7 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 			}
 
 			// Configure storage options - always create storage config
-			index.SpatialConfig.Storage = &storepb.StorageConfig{}
+			index.SpatialConfig.Storage = &metadatapb.StorageConfig{}
 
 			if fillFactor.Valid && fillFactor.Int32 > 0 {
 				index.SpatialConfig.Storage.Fillfactor = fillFactor.Int32
@@ -1197,7 +1197,7 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 			}
 
 			// Configure dimensional properties
-			index.SpatialConfig.Dimensional = &storepb.DimensionalConfig{
+			index.SpatialConfig.Dimensional = &metadatapb.DimensionalConfig{
 				DataType:   dataType,
 				Dimensions: 2, // SQL Server spatial indexes are always 2D
 			}
@@ -1218,7 +1218,7 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 	}
 
 	// Convert to slice format
-	tableIndexes := make(map[db.TableKey][]*storepb.IndexMetadata)
+	tableIndexes := make(map[db.TableKey][]*metadatapb.IndexMetadata)
 	for k, m := range indexMap {
 		for _, v := range m {
 			tableIndexes[k] = append(tableIndexes[k], v)
@@ -1239,7 +1239,7 @@ func getSpatialIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storep
 
 // enhanceSpatialIndexesWithXMLPlan attempts to extract additional spatial index options
 // that are not available in system tables but might be visible in execution plans
-func enhanceSpatialIndexesWithXMLPlan(txn *sql.Tx, spatialIndexes map[db.TableKey][]*storepb.IndexMetadata) error {
+func enhanceSpatialIndexesWithXMLPlan(txn *sql.Tx, spatialIndexes map[db.TableKey][]*metadatapb.IndexMetadata) error {
 	// This is a best-effort function, so we ignore errors
 	// Collect all spatial indexes that need enhancement
 	type indexKey struct {
@@ -1247,7 +1247,7 @@ func enhanceSpatialIndexesWithXMLPlan(txn *sql.Tx, spatialIndexes map[db.TableKe
 		table  string
 		index  string
 	}
-	indexMap := make(map[indexKey]*storepb.IndexMetadata)
+	indexMap := make(map[indexKey]*metadatapb.IndexMetadata)
 
 	for tableKey, indexes := range spatialIndexes {
 		for _, index := range indexes {
@@ -1310,7 +1310,7 @@ func enhanceSpatialIndexesWithXMLPlan(txn *sql.Tx, spatialIndexes map[db.TableKe
 			// If we don't have storage config yet, create a basic one
 			// These properties give us hints about the index creation context
 			if (ansiNulls.Valid || quotedIdent.Valid) && index.SpatialConfig.Storage == nil {
-				index.SpatialConfig.Storage = &storepb.StorageConfig{}
+				index.SpatialConfig.Storage = &metadatapb.StorageConfig{}
 				// These are indirect indicators but better than nothing
 				index.SpatialConfig.Storage.AllowRowLocks = true
 				index.SpatialConfig.Storage.AllowPageLocks = true
@@ -1323,8 +1323,8 @@ func enhanceSpatialIndexesWithXMLPlan(txn *sql.Tx, spatialIndexes map[db.TableKe
 	return nil
 }
 
-func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
-	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
+func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*metadatapb.IndexMetadata, error) {
+	indexMap := make(map[db.TableKey]map[string]*metadatapb.IndexMetadata)
 	dumpKeySQL := fmt.Sprintf(`
 	SELECT
 		s.name AS schema_name,
@@ -1365,10 +1365,10 @@ func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMet
 		}
 		key := db.TableKey{Schema: schemaName.String, Table: tableName.String}
 		if _, ok := indexMap[key]; !ok {
-			indexMap[key] = make(map[string]*storepb.IndexMetadata)
+			indexMap[key] = make(map[string]*metadatapb.IndexMetadata)
 		}
 		if _, ok := indexMap[key][indexName.String]; !ok {
-			index := &storepb.IndexMetadata{
+			index := &metadatapb.IndexMetadata{
 				Name:         indexName.String,
 				Unique:       false,
 				Primary:      false,
@@ -1401,12 +1401,12 @@ func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMet
 		return nil, err
 	}
 
-	tableIndexes := make(map[db.TableKey][]*storepb.IndexMetadata)
+	tableIndexes := make(map[db.TableKey][]*metadatapb.IndexMetadata)
 	for k, m := range indexMap {
 		for _, v := range m {
 			tableIndexes[k] = append(tableIndexes[k], v)
 		}
-		slices.SortFunc(tableIndexes[k], func(a, b *storepb.IndexMetadata) int {
+		slices.SortFunc(tableIndexes[k], func(a, b *metadatapb.IndexMetadata) int {
 			if a.Name < b.Name {
 				return -1
 			}
@@ -1420,7 +1420,7 @@ func getKeys(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMet
 }
 
 // getIndexes gets all indices of a database.
-func getKeyAndIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+func getKeyAndIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*metadatapb.IndexMetadata, error) {
 	keys, err := getKeys(txn, schemas)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get keys")
@@ -1436,8 +1436,8 @@ func getKeyAndIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb
 }
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
-	viewMap := make(map[string][]*storepb.ViewMetadata)
+func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata) (map[string][]*metadatapb.ViewMetadata, error) {
+	viewMap := make(map[string][]*metadatapb.ViewMetadata)
 
 	// Get view comments separately
 	viewCommentsMap := make(map[int]string)
@@ -1482,7 +1482,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 	}
 	defer rows.Close()
 	for rows.Next() {
-		view := &storepb.ViewMetadata{}
+		view := &metadatapb.ViewMetadata{}
 		var schemaName string
 		var objectID sql.NullInt32
 		var definition sql.NullString
@@ -1521,7 +1521,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 	return viewMap, nil
 }
 
-func getTriggers(txn *sql.Tx) (map[db.TableKey][]*storepb.TriggerMetadata, map[db.TableKey][]*storepb.TriggerMetadata, error) {
+func getTriggers(txn *sql.Tx) (map[db.TableKey][]*metadatapb.TriggerMetadata, map[db.TableKey][]*metadatapb.TriggerMetadata, error) {
 	// Get trigger comments separately
 	triggerCommentsMap := make(map[int]string)
 	commentsQuery := `
@@ -1577,8 +1577,8 @@ JOIN sys.schemas AS ss ON so.schema_id = ss.schema_id
 WHERE st.is_disabled = 0 AND st.is_ms_shipped = 0 AND st.parent_id <> 0 AND so.type IN ('U', 'V')
 ORDER BY st.name;
 `
-	tableTriggers := make(map[db.TableKey][]*storepb.TriggerMetadata)
-	viewTriggers := make(map[db.TableKey][]*storepb.TriggerMetadata)
+	tableTriggers := make(map[db.TableKey][]*metadatapb.TriggerMetadata)
+	viewTriggers := make(map[db.TableKey][]*metadatapb.TriggerMetadata)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, nil, err
@@ -1599,7 +1599,7 @@ ORDER BY st.name;
 		if parentType == "V" {
 			m = viewTriggers
 		}
-		trigger := &storepb.TriggerMetadata{
+		trigger := &metadatapb.TriggerMetadata{
 			Name:   name,
 			Event:  events,
 			Timing: timing,
@@ -1621,7 +1621,7 @@ ORDER BY st.name;
 }
 
 // getSequences gets all sequences of a database.
-func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
+func getSequences(txn *sql.Tx) (map[string][]*metadatapb.SequenceMetadata, error) {
 	query := `
 	SELECT
 		s.name,
@@ -1645,9 +1645,9 @@ func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
 	}
 	defer rows.Close()
 
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	sequenceMap := make(map[string][]*metadatapb.SequenceMetadata)
 	for rows.Next() {
-		sequence := &storepb.SequenceMetadata{}
+		sequence := &metadatapb.SequenceMetadata{}
 		var schemaName string
 		var comment sql.NullString
 		if err := rows.Scan(&schemaName, &sequence.Name, &sequence.DataType, &comment); err != nil {
@@ -1665,8 +1665,8 @@ func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
 	return sequenceMap, nil
 }
 
-func getProcedures(txn *sql.Tx) (map[string][]*storepb.ProcedureMetadata, error) {
-	procedureMap := make(map[string][]*storepb.ProcedureMetadata)
+func getProcedures(txn *sql.Tx) (map[string][]*metadatapb.ProcedureMetadata, error) {
+	procedureMap := make(map[string][]*metadatapb.ProcedureMetadata)
 
 	query := `
 	SELECT
@@ -1692,7 +1692,7 @@ func getProcedures(txn *sql.Tx) (map[string][]*storepb.ProcedureMetadata, error)
 	}
 	defer rows.Close()
 	for rows.Next() {
-		procedure := &storepb.ProcedureMetadata{}
+		procedure := &metadatapb.ProcedureMetadata{}
 		var schemaName string
 		var definition sql.NullString
 		if err := rows.Scan(&schemaName, &procedure.Name, &definition); err != nil {
@@ -1718,8 +1718,8 @@ func getProcedures(txn *sql.Tx) (map[string][]*storepb.ProcedureMetadata, error)
 	return procedureMap, nil
 }
 
-func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
-	funcMap := make(map[string][]*storepb.FunctionMetadata)
+func getFunctions(txn *sql.Tx) (map[string][]*metadatapb.FunctionMetadata, error) {
+	funcMap := make(map[string][]*metadatapb.FunctionMetadata)
 
 	// The CAST(...) = 0 means the function is not a system function.
 	query := `
@@ -1751,7 +1751,7 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		function := &storepb.FunctionMetadata{}
+		function := &metadatapb.FunctionMetadata{}
 		var schemaName string
 		var definition, comment sql.NullString
 		if err := rows.Scan(&schemaName, &function.Name, &definition, &comment); err != nil {

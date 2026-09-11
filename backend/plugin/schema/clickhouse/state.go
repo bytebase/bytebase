@@ -6,7 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
@@ -21,7 +22,7 @@ func newDatabaseState() *databaseState {
 	}
 }
 
-func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseState {
+func convertToDatabaseState(database *metadatapb.DatabaseSchemaMetadata) *databaseState {
 	state := newDatabaseState()
 	state.name = database.Name
 	for _, schema := range database.Schemas {
@@ -43,7 +44,7 @@ func newSchemaState() *schemaState {
 	}
 }
 
-func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
+func convertToSchemaState(schema *metadatapb.SchemaMetadata) *schemaState {
 	state := newSchemaState()
 	state.name = schema.Name
 	for i, table := range schema.Tables {
@@ -137,7 +138,7 @@ func newTableState(id int, name string) *tableState {
 	}
 }
 
-func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
+func convertToTableState(id int, table *metadatapb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
 	state.comment = table.Comment
 	state.engine = table.Engine
@@ -215,7 +216,7 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	return nil
 }
 
-func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
+func convertToColumnState(id int, column *metadatapb.ColumnMetadata) *columnState {
 	result := &columnState{
 		id:       id,
 		name:     column.Name,
@@ -258,7 +259,7 @@ type viewState struct {
 	comment    string
 }
 
-func convertToViewState(id int, view *storepb.ViewMetadata) *viewState {
+func convertToViewState(id int, view *metadatapb.ViewMetadata) *viewState {
 	return &viewState{
 		id:         id,
 		name:       view.Name,

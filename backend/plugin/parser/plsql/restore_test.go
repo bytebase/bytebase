@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -199,15 +200,15 @@ func restoreBackupItem(startLine, endLine int32) *store.PriorBackupDetail_Item {
 }
 
 func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
-	return database, model.NewDatabaseMetadata(&store.DatabaseSchemaMetadata{
+	return database, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: database,
-		Schemas: []*store.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*store.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "T_GENERATED",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},
@@ -215,7 +216,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 								Name: "B",
 							},
 						},
-						Indexes: []*store.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "T_GENERATED_PK",
 								Expressions: []string{"B"},
@@ -231,7 +232,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 					},
 					{
 						Name: "T1",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},
@@ -245,7 +246,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 					},
 					{
 						Name: "T2",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},
@@ -259,7 +260,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 					},
 					{
 						Name: "TEST",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},
@@ -270,7 +271,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 								Name: "C",
 							},
 						},
-						Indexes: []*store.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "TEST_PK",
 								Expressions: []string{"A"},
@@ -281,7 +282,7 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 					},
 					{
 						Name: "TEST2",
-						Columns: []*store.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "A",
 							},

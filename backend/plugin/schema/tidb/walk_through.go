@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
@@ -391,7 +392,7 @@ func tidbAlterTable(d *model.DatabaseMetadata, node *tidbast.AlterTableStmt) *st
 			// Sort and renumber columns after adding
 			// CreateColumn appends to end, but tidbReorderColumn sets position values
 			tableProto := table.GetProto()
-			slices.SortFunc(tableProto.Columns, func(a, b *storepb.ColumnMetadata) int {
+			slices.SortFunc(tableProto.Columns, func(a, b *metadatapb.ColumnMetadata) int {
 				if a.Position < b.Position {
 					return -1
 				} else if a.Position > b.Position {
@@ -744,7 +745,7 @@ func tidbCompleteTableChangeColumn(t *model.TableMetadata, oldName string, newCo
 	// CreateColumn appends to the end, but tidbReorderColumn sets position values,
 	// so we need to sort the array to match the position values
 	tableProto := t.GetProto()
-	slices.SortFunc(tableProto.Columns, func(a, b *storepb.ColumnMetadata) int {
+	slices.SortFunc(tableProto.Columns, func(a, b *metadatapb.ColumnMetadata) int {
 		if a.Position < b.Position {
 			return -1
 		} else if a.Position > b.Position {
@@ -888,7 +889,7 @@ func tidbCopyTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *st
 
 	// Copy columns and indexes from the target table
 	for _, col := range targetTable.GetProto().GetColumns() {
-		colCopy, ok := proto.Clone(col).(*storepb.ColumnMetadata)
+		colCopy, ok := proto.Clone(col).(*metadatapb.ColumnMetadata)
 		if !ok {
 			return &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
@@ -909,7 +910,7 @@ func tidbCopyTable(d *model.DatabaseMetadata, node *tidbast.CreateTableStmt) *st
 		}
 	}
 	for _, idx := range targetTable.GetProto().Indexes {
-		idxCopy, ok := proto.Clone(idx).(*storepb.IndexMetadata)
+		idxCopy, ok := proto.Clone(idx).(*metadatapb.IndexMetadata)
 		if !ok {
 			return &storepb.Advice{
 				Status:        storepb.Advice_ERROR,
@@ -1180,7 +1181,7 @@ func tidbCreateColumnHelper(t *model.TableMetadata, column *tidbast.ColumnDef, p
 		}
 	}
 
-	col := &storepb.ColumnMetadata{
+	col := &metadatapb.ColumnMetadata{
 		Name:         column.Name.Name.L,
 		Position:     int32(pos),
 		Default:      "",
@@ -1334,7 +1335,7 @@ func tidbCreateIndexHelper(t *model.TableMetadata, name string, keyList []string
 
 	visible := option == nil || option.Visibility != tidbast.IndexVisibilityInvisible
 
-	index := &storepb.IndexMetadata{
+	index := &metadatapb.IndexMetadata{
 		Name:        name,
 		Expressions: keyList,
 		Type:        tp,
@@ -1367,7 +1368,7 @@ func tidbCreatePrimaryKeyHelper(t *model.TableMetadata, keys []string, tp string
 		}
 	}
 
-	pk := &storepb.IndexMetadata{
+	pk := &metadatapb.IndexMetadata{
 		Name:        PrimaryKeyName,
 		Expressions: keys,
 		Type:        tp,

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -33,15 +34,15 @@ type testData struct {
 }
 
 func TestWalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
+	originDatabase := &metadatapb.DatabaseSchemaMetadata{
 		Name: "postgres",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "test",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "int",
@@ -57,11 +58,11 @@ func TestWalkThrough(t *testing.T) {
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "v1",
 						Definition: "SELECT id, name FROM test",
-						DependencyColumns: []*storepb.DependencyColumn{
+						DependencyColumns: []*metadatapb.DependencyColumn{
 							{
 								Schema: "public",
 								Table:  "test",
@@ -94,7 +95,7 @@ func TestWalkThrough(t *testing.T) {
 	for i := range tests {
 		test := &tests[i]
 		// Make a deep copy to avoid mutation across tests
-		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
+		protoData, ok := proto.Clone(originDatabase).(*metadatapb.DatabaseSchemaMetadata)
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
@@ -118,29 +119,29 @@ func TestWalkThrough(t *testing.T) {
 			continue
 		}
 
-		want := &storepb.DatabaseSchemaMetadata{}
+		want := &metadatapb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
-			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
-			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
-			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+			protocmp.SortRepeatedFields(&metadatapb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&metadatapb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&metadatapb.TableMetadata{}, "indexes", "columns"),
 		)
 		require.Empty(t, diff)
 	}
 }
 
 func TestWalkThroughANTLR(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
+	originDatabase := &metadatapb.DatabaseSchemaMetadata{
 		Name: "postgres",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "test",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "int",
@@ -156,11 +157,11 @@ func TestWalkThroughANTLR(t *testing.T) {
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "v1",
 						Definition: "SELECT id, name FROM test",
-						DependencyColumns: []*storepb.DependencyColumn{
+						DependencyColumns: []*metadatapb.DependencyColumn{
 							{
 								Schema: "public",
 								Table:  "test",
@@ -192,7 +193,7 @@ func TestWalkThroughANTLR(t *testing.T) {
 	for i := range tests {
 		test := &tests[i]
 		// Make a deep copy to avoid mutation across tests
-		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
+		protoData, ok := proto.Clone(originDatabase).(*metadatapb.DatabaseSchemaMetadata)
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
@@ -221,14 +222,14 @@ func TestWalkThroughANTLR(t *testing.T) {
 			continue
 		}
 
-		want := &storepb.DatabaseSchemaMetadata{}
+		want := &metadatapb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
-			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
-			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
-			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+			protocmp.SortRepeatedFields(&metadatapb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&metadatapb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&metadatapb.TableMetadata{}, "indexes", "columns"),
 		)
 		require.Empty(t, diff)
 	}
@@ -332,21 +333,21 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 }
 
 func newSearchPathTestState(searchPath string) *model.DatabaseMetadata {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "postgres",
 		SearchPath: searchPath,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "alice"},
 			{Name: "bob"},
 			{
 				Name: "app",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					newSearchPathTestTable("dup"),
 				},
 			},
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					newSearchPathTestTable("dup"),
 				},
 			},
@@ -355,10 +356,10 @@ func newSearchPathTestState(searchPath string) *model.DatabaseMetadata {
 	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newSearchPathTestTable(name string) *storepb.TableMetadata {
-	return &storepb.TableMetadata{
+func newSearchPathTestTable(name string) *metadatapb.TableMetadata {
+	return &metadatapb.TableMetadata{
 		Name: name,
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{
 				Name:     "id",
 				Type:     "int",

@@ -564,7 +564,7 @@ This is where dependency ordering happens. **Both metadata mode and AST-only mod
     // For tables with foreign keys depending on other tables
     for tableID, tableDiff := range tableMap {
         if tableDiff.Action == schema.MetadataDiffActionCreate {
-            var foreignKeys []*storepb.ForeignKeyMetadata
+            var foreignKeys []*metadatapb.ForeignKeyMetadata
 
             if tableDiff.NewTable != nil {
                 // Metadata mode: use ForeignKeys from metadata
@@ -586,7 +586,7 @@ This is where dependency ordering happens. **Both metadata mode and AST-only mod
 
     // For views depending on tables/views
     for viewID, viewDiff := range viewMap {
-        var dependencies []*storepb.DependencyColumn
+        var dependencies []*metadatapb.DependencyColumn
 
         if viewDiff.NewView != nil {
             // Metadata mode: use metadata
@@ -608,7 +608,7 @@ This is where dependency ordering happens. **Both metadata mode and AST-only mod
     // ✅ For materialized views depending on tables/views
     // ⚠️ THIS IS THE MOST CRITICAL PART - both metadata and AST mode required!
     for mvID, mvDiff := range materializedViewMap {
-        var dependencies []*storepb.DependencyColumn
+        var dependencies []*metadatapb.DependencyColumn
 
         if mvDiff.NewMaterializedView != nil {
             // Metadata mode: use metadata
@@ -651,9 +651,9 @@ This function extracts dependencies from AST nodes in SDL mode:
 
 ```go
 // getMaterializedViewDependenciesFromAST extracts table/view dependencies from a materialized view's AST node
-func getMaterializedViewDependenciesFromAST(astNode any, schemaName string, _ *storepb.DatabaseSchemaMetadata) []*storepb.DependencyColumn {
+func getMaterializedViewDependenciesFromAST(astNode any, schemaName string, _ *metadatapb.DatabaseSchemaMetadata) []*metadatapb.DependencyColumn {
     if astNode == nil {
-        return []*storepb.DependencyColumn{}
+        return []*metadatapb.DependencyColumn{}
     }
 
     var selectStatement string
@@ -678,7 +678,7 @@ func getMaterializedViewDependenciesFromAST(astNode any, schemaName string, _ *s
     }
 
     if selectStatement == "" {
-        return []*storepb.DependencyColumn{}
+        return []*metadatapb.DependencyColumn{}
     }
 
     queryStatement := strings.TrimSpace(selectStatement)
@@ -690,11 +690,11 @@ func getMaterializedViewDependenciesFromAST(astNode any, schemaName string, _ *s
         SkipMetadataValidation: true,  // Important: we don't have full metadata in SDL mode
     })
     if err != nil {
-        return []*storepb.DependencyColumn{}
+        return []*metadatapb.DependencyColumn{}
     }
 
     // Build dependency list
-    dependencyMap := make(map[string]*storepb.DependencyColumn)
+    dependencyMap := make(map[string]*metadatapb.DependencyColumn)
     for _, resource := range accessTables {
         // Skip system catalogs
         if resource.Schema == "pg_catalog" || resource.Schema == "information_schema" {
@@ -708,7 +708,7 @@ func getMaterializedViewDependenciesFromAST(astNode any, schemaName string, _ *s
 
         key := fmt.Sprintf("%s.%s", resourceSchema, resource.Table)
         if _, exists := dependencyMap[key]; !exists {
-            dependencyMap[key] = &storepb.DependencyColumn{
+            dependencyMap[key] = &metadatapb.DependencyColumn{
                 Schema: resourceSchema,
                 Table:  resource.Table,
                 Column: "*",  // Table-level dependencies
@@ -716,7 +716,7 @@ func getMaterializedViewDependenciesFromAST(astNode any, schemaName string, _ *s
         }
     }
 
-    var dependencies []*storepb.DependencyColumn
+    var dependencies []*metadatapb.DependencyColumn
     for _, dep := range dependencyMap {
         dependencies = append(dependencies, dep)
     }
@@ -908,7 +908,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 ```go
     // For views depending on tables/views
     for viewID, viewDiff := range viewMap {
-        var dependencies []*storepb.DependencyColumn
+        var dependencies []*metadatapb.DependencyColumn
 
         if viewDiff.OldView != nil {
             // Metadata mode: use metadata
@@ -931,7 +931,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
     // ✅ For materialized views depending on tables/views
     // ⚠️ CRITICAL: Must support both metadata and AST mode for DROP too!
     for mvID, mvDiff := range materializedViewMap {
-        var dependencies []*storepb.DependencyColumn
+        var dependencies []*metadatapb.DependencyColumn
 
         if mvDiff.OldMaterializedView != nil {
             // Metadata mode: use metadata
@@ -967,7 +967,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) {
 
     // For tables with foreign keys
     for tableID, tableDiff := range tableMap {
-        var foreignKeys []*storepb.ForeignKeyMetadata
+        var foreignKeys []*metadatapb.ForeignKeyMetadata
 
         if tableDiff.OldTable != nil {
             // Metadata mode: use ForeignKeys from metadata
@@ -1253,7 +1253,7 @@ func GetMultiFileDatabaseDefinition(dbSchema *model.DatabaseSchema, schemaVersio
 ```go
 // writeMaterializedViewSDL writes the SDL (simple) version
 // No indexes, no comments, no WITH NO DATA - just the core CREATE statement
-func writeMaterializedViewSDL(out io.Writer, schemaName string, mv *storepb.MaterializedViewMetadata) error {
+func writeMaterializedViewSDL(out io.Writer, schemaName string, mv *metadatapb.MaterializedViewMetadata) error {
     if _, err := io.WriteString(out, `CREATE MATERIALIZED VIEW "`); err != nil {
         return err
     }
@@ -1295,7 +1295,7 @@ func writeMaterializedViewSDL(out io.Writer, schemaName string, mv *storepb.Mate
 
 ```go
 // nolint:unused
-func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, mv *storepb.MaterializedViewMetadata) error {
+func writeMaterializedViewCommentSDL(out io.Writer, schemaName string, mv *metadatapb.MaterializedViewMetadata) error {
     if len(mv.Comment) == 0 {
         return nil
     }
@@ -1883,7 +1883,7 @@ for mvID, mvDiff := range materializedViewMap {
 **✅ Correct** (supports both modes):
 ```go
 for mvID, mvDiff := range materializedViewMap {
-    var dependencies []*storepb.DependencyColumn
+    var dependencies []*metadatapb.DependencyColumn
 
     if mvDiff.NewMaterializedView != nil {
         dependencies = mvDiff.NewMaterializedView.DependencyColumns

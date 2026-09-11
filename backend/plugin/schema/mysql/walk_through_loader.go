@@ -8,11 +8,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/bytebase/omni/mysql/catalog"
 	mysqlparser "github.com/bytebase/omni/mysql/parser"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // autoIncrementSentinel matches the value that MySQL sync writes into
@@ -34,7 +33,7 @@ const autoIncrementSentinel = "AUTO_INCREMENT"
 // Preconditions: the caller must already have created and selected the target
 // database. This loader mutates foreign_key_checks to allow forward FK
 // references during bulk load.
-func loadWalkThroughCatalog(ctx context.Context, cat *catalog.Catalog, dbName string, meta *storepb.DatabaseSchemaMetadata) error {
+func loadWalkThroughCatalog(ctx context.Context, cat *catalog.Catalog, dbName string, meta *metadatapb.DatabaseSchemaMetadata) error {
 	if cat == nil {
 		return errors.New("loadWalkThroughCatalog: nil catalog")
 	}
@@ -83,12 +82,12 @@ type wtObjectEntry struct {
 	parentTable string
 
 	// Exactly one of the following is set based on kind.
-	tableMeta   *storepb.TableMetadata
-	viewMeta    *storepb.ViewMetadata
-	funcMeta    *storepb.FunctionMetadata
-	procMeta    *storepb.ProcedureMetadata
-	triggerMeta *storepb.TriggerMetadata
-	eventMeta   *storepb.EventMetadata
+	tableMeta   *metadatapb.TableMetadata
+	viewMeta    *metadatapb.ViewMetadata
+	funcMeta    *metadatapb.FunctionMetadata
+	procMeta    *metadatapb.ProcedureMetadata
+	triggerMeta *metadatapb.TriggerMetadata
+	eventMeta   *metadatapb.EventMetadata
 }
 
 func (e *wtObjectEntry) key() string {
@@ -141,7 +140,7 @@ func wtKindLabel(k wtObjectKind) string {
 
 // wtCollectObjects flattens DatabaseSchemaMetadata into wtObjectEntry values.
 // MySQL metadata uses a single empty-named schema, so we look only at the first.
-func wtCollectObjects(_ string, meta *storepb.DatabaseSchemaMetadata) []*wtObjectEntry {
+func wtCollectObjects(_ string, meta *metadatapb.DatabaseSchemaMetadata) []*wtObjectEntry {
 	var out []*wtObjectEntry
 	for _, sm := range meta.Schemas {
 		for _, tbl := range sm.Tables {
@@ -475,7 +474,7 @@ func wtInstallReal(cat *catalog.Catalog, obj *wtObjectEntry) error {
 // Expression-bearing fields (DEFAULT, ON UPDATE, GENERATED, CHECK) go through
 // wtParseExpr, which tolerates parse failures by silently dropping the
 // affected feature rather than failing the whole table.
-func wtBuildCreateTableStmt(tbl *storepb.TableMetadata) (*ast.CreateTableStmt, error) {
+func wtBuildCreateTableStmt(tbl *metadatapb.TableMetadata) (*ast.CreateTableStmt, error) {
 	if tbl == nil || tbl.Name == "" {
 		return nil, errors.New("wtBuildCreateTableStmt: empty table")
 	}
@@ -539,7 +538,7 @@ func wtBuildCreateTableStmt(tbl *storepb.TableMetadata) (*ast.CreateTableStmt, e
 	return stmt, nil
 }
 
-func wtBuildColumnDef(col *storepb.ColumnMetadata) (*ast.ColumnDef, error) {
+func wtBuildColumnDef(col *metadatapb.ColumnMetadata) (*ast.ColumnDef, error) {
 	typeName, err := wtParseTypeName(col.Type)
 	if err != nil {
 		return nil, err
@@ -608,14 +607,14 @@ func wtBuildColumnDef(col *storepb.ColumnMetadata) (*ast.ColumnDef, error) {
 		if expr, err := wtParseExpr(col.Generation.Expression); err == nil {
 			def.Generated = &ast.GeneratedColumn{
 				Expr:   expr,
-				Stored: col.Generation.Type == storepb.GenerationMetadata_TYPE_STORED,
+				Stored: col.Generation.Type == metadatapb.GenerationMetadata_TYPE_STORED,
 			}
 		}
 	}
 	return def, nil
 }
 
-func wtBuildIndexConstraint(idx *storepb.IndexMetadata) *ast.Constraint {
+func wtBuildIndexConstraint(idx *metadatapb.IndexMetadata) *ast.Constraint {
 	// IndexMetadata.Type mixes two axes: the constraint kind (FULLTEXT /
 	// SPATIAL) and the access method (BTREE / HASH). Pick them apart so
 	// the resulting ast.Constraint sets Type and IndexType correctly.
@@ -713,7 +712,7 @@ func wtTypeSupportsDefault(typeStr string) bool {
 	return true
 }
 
-func wtBuildFKConstraint(fk *storepb.ForeignKeyMetadata) *ast.Constraint {
+func wtBuildFKConstraint(fk *metadatapb.ForeignKeyMetadata) *ast.Constraint {
 	return &ast.Constraint{
 		Type:       ast.ConstrForeignKey,
 		Name:       fk.Name,
@@ -743,7 +742,7 @@ func wtFKAction(s string) ast.ReferenceAction {
 	}
 }
 
-func wtBuildCheckConstraint(chk *storepb.CheckConstraintMetadata) *ast.Constraint {
+func wtBuildCheckConstraint(chk *metadatapb.CheckConstraintMetadata) *ast.Constraint {
 	if chk.Expression == "" {
 		return nil
 	}
@@ -762,7 +761,7 @@ func wtBuildCheckConstraint(chk *storepb.CheckConstraintMetadata) *ast.Constrain
 // parsed from VIEW_DEFINITION (a MySQL-produced string, not our deparse).
 // DefineView tolerates a nil Select, so forward references, cyclic views and
 // body-parse failures are all survivable.
-func wtBuildCreateViewStmt(view *storepb.ViewMetadata) (*ast.CreateViewStmt, error) {
+func wtBuildCreateViewStmt(view *metadatapb.ViewMetadata) (*ast.CreateViewStmt, error) {
 	if view == nil || view.Name == "" {
 		return nil, errors.New("wtBuildCreateViewStmt: empty view")
 	}
@@ -894,7 +893,7 @@ func wtUnquoteIdent(s string) string {
 // wtInstallPseudoTable installs a degraded table with all-TEXT columns and no
 // constraints. Built as an AST and handed to DefineTable directly — no SQL
 // string and no parser on the critical path.
-func wtInstallPseudoTable(cat *catalog.Catalog, _ string, tbl *storepb.TableMetadata) error {
+func wtInstallPseudoTable(cat *catalog.Catalog, _ string, tbl *metadatapb.TableMetadata) error {
 	if tbl == nil || tbl.Name == "" {
 		return errors.New("pseudo table: missing name")
 	}
@@ -928,7 +927,7 @@ func wtInstallPseudoTable(cat *catalog.Catalog, _ string, tbl *storepb.TableMeta
 // wtInstallPseudoView installs a degraded view whose SELECT list is a series
 // of NULL literals aliased to the original view's column names. Built in AST
 // form and installed via DefineView directly.
-func wtInstallPseudoView(cat *catalog.Catalog, _ string, view *storepb.ViewMetadata) error {
+func wtInstallPseudoView(cat *catalog.Catalog, _ string, view *metadatapb.ViewMetadata) error {
 	if view == nil || view.Name == "" {
 		return errors.New("pseudo view: missing name")
 	}
@@ -978,7 +977,7 @@ func wtPseudoTextType() *ast.DataType {
 // Name/Timing/Event/Table/BodyText directly. Body is a parsed sp_proc_stmt —
 // best-effort only; on parse failure we still hand DefineTrigger a usable
 // stmt with BodyText populated.
-func wtBuildCreateTriggerStmt(tm *storepb.TriggerMetadata, tableName string) *ast.CreateTriggerStmt {
+func wtBuildCreateTriggerStmt(tm *metadatapb.TriggerMetadata, tableName string) *ast.CreateTriggerStmt {
 	stmt := &ast.CreateTriggerStmt{
 		Name:     tm.Name,
 		Timing:   tm.Timing,
@@ -1027,7 +1026,7 @@ func wtParseTriggerBody(tableName, timing, event, body string) ast.Node {
 // table name was empty in metadata). The stub preserves Name and routing
 // (Timing/Event/Table) so references still resolve; Body collapses to the
 // trivial no-op "BEGIN END".
-func wtInstallPseudoTrigger(cat *catalog.Catalog, tm *storepb.TriggerMetadata, tableName string) error {
+func wtInstallPseudoTrigger(cat *catalog.Catalog, tm *metadatapb.TriggerMetadata, tableName string) error {
 	if tm == nil || tm.Name == "" {
 		return errors.New("pseudo trigger: missing name")
 	}
@@ -1074,7 +1073,7 @@ func wtParseCreateEventStmt(definition string) (*ast.CreateEventStmt, error) {
 
 // wtInstallPseudoEvent installs a bare name-only event when the real install
 // path fails (Definition was empty, malformed, or rejected by DefineEvent).
-func wtInstallPseudoEvent(cat *catalog.Catalog, em *storepb.EventMetadata) error {
+func wtInstallPseudoEvent(cat *catalog.Catalog, em *metadatapb.EventMetadata) error {
 	if em == nil || em.Name == "" {
 		return errors.New("pseudo event: missing name")
 	}

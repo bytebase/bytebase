@@ -3,6 +3,7 @@ package starrocks
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -15,7 +16,7 @@ import (
 // driver previously only matched Doris's 'BASE TABLE' rows, so StarRocks MVs were
 // dropped. Membership in the materialized-view set is the authoritative signal.
 func TestIsMaterializedView(t *testing.T) {
-	mvMap := map[db.TableKey]*storepb.MaterializedViewMetadata{
+	mvMap := map[db.TableKey]*metadatapb.MaterializedViewMetadata{
 		{Schema: "", Table: "mv_async"}: {Name: "mv_async"},
 	}
 	mvKey := db.TableKey{Schema: "", Table: "mv_async"}

@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/catalog"
 	"github.com/stretchr/testify/require"
 
@@ -438,18 +439,18 @@ func TestOmniSDLMigration_MultipleChanges(t *testing.T) {
 // bbdataarchive schema are excluded from migration output.
 func TestOmniFilter_BbdataarchiveSchemaFiltered(t *testing.T) {
 	// Source has tables in both public and bbdataarchive schemas.
-	sourceMetadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	sourceMetadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
-					{Name: "users", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "users", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
 				},
 			},
 			{
 				Name: "bbdataarchive",
-				Tables: []*storepb.TableMetadata{
-					{Name: "archived_users", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "archived_users", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
 				},
 			},
 		},
@@ -474,18 +475,18 @@ func TestOmniFilter_BbdataarchiveSchemaFiltered(t *testing.T) {
 // TestOmniFilter_SkipBackupSchemaInSDLGeneration verifies that MetadataToSDL
 // excludes the backup schema entirely from generated SDL text.
 func TestOmniFilter_SkipBackupSchemaInSDLGeneration(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
-					{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
 				},
 			},
 			{
 				Name: "bbdataarchive",
-				Tables: []*storepb.TableMetadata{
-					{Name: "backup_t1", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "backup_t1", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
 				},
 			},
 		},
@@ -503,15 +504,15 @@ func TestOmniFilter_SkipBackupSchemaInSDLGeneration(t *testing.T) {
 // TestOmniFilter_SkipDumpObjectsExcluded verifies that objects marked with
 // SkipDump (e.g., extension-created objects) are excluded from SDL generation.
 func TestOmniFilter_SkipDumpObjectsExcluded(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
-					{Name: "user_table", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}}},
-					{Name: "ext_table", SkipDump: true, Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "user_table", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+					{Name: "ext_table", SkipDump: true, Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
 				},
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{Name: "my_func", Definition: "CREATE FUNCTION my_func() RETURNS void LANGUAGE sql AS $$ SELECT 1 $$;"},
 					{Name: "ext_func", SkipDump: true, Definition: "CREATE FUNCTION ext_func() RETURNS void LANGUAGE sql AS $$ SELECT 1 $$;"},
 				},
@@ -541,18 +542,18 @@ func TestOmniFilter_ExtensionPreservedWhenArchiveFiltered(t *testing.T) {
 // schemas with backup objects produce no migration (backup objects are
 // excluded from both sides consistently).
 func TestOmniFilter_NoChangesForIdenticalSchemas(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
-					{Name: "users", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "users", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
 				},
 			},
 			{
 				Name: "bbdataarchive",
-				Tables: []*storepb.TableMetadata{
-					{Name: "old_users", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "old_users", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}}},
 				},
 			},
 		},

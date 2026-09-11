@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -16,7 +17,7 @@ import (
 // the access check rejects a QueryTypeUnknown span as "disallowed query type",
 // so a missing Type makes every Spanner SELECT fail in normal (non-admin) mode.
 func TestQuerySpanTypeForSelect(t *testing.T) {
-	getter, lister := googlesqltest.BuildMockDatabaseMetadataGetter(storepb.Engine_SPANNER, []*storepb.DatabaseSchemaMetadata{{Name: "db"}})
+	getter, lister := googlesqltest.BuildMockDatabaseMetadataGetter(storepb.Engine_SPANNER, []*metadatapb.DatabaseSchemaMetadata{{Name: "db"}})
 	result, err := GetQuerySpan(
 		context.Background(),
 		base.GetQuerySpanContext{

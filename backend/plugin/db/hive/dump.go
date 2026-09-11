@@ -8,9 +8,8 @@ import (
 
 	// Import gohive v2 driver for database/sql registration.
 	_ "github.com/beltran/gohive/v2"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 const (
@@ -56,7 +55,7 @@ type MaterializedViewDDLOptions struct {
 	as             string
 }
 
-func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (d *Driver) Dump(ctx context.Context, out io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	if d.db == nil {
 		return errors.New("connection not initialized")
 	}

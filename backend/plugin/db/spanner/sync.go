@@ -6,6 +6,7 @@ import (
 
 	"cloud.google.com/go/spanner"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,13 +14,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	iter := d.dbClient.ListDatabases(ctx, &databasepb.ListDatabasesRequest{
 		Parent: d.instancePath(),
 	})
@@ -45,7 +45,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 			return nil, errors.Wrapf(err, "failed to get database name from %s", database.Name)
 		}
 
-		databases = append(databases, &storepb.DatabaseSchemaMetadata{Name: databaseName})
+		databases = append(databases, &metadatapb.DatabaseSchemaMetadata{Name: databaseName})
 	}
 
 	return &db.InstanceMetadata{
@@ -54,7 +54,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	notFound, err := d.notFoundDatabase(ctx, d.databaseName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to check if database exists")
@@ -66,7 +66,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	tx := d.client.ReadOnlyTransaction()
 	defer tx.Close()
 
-	databaseMetadata := &storepb.DatabaseSchemaMetadata{
+	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: d.databaseName,
 	}
 	columnMap, err := getColumn(ctx, tx)
@@ -95,7 +95,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	slices.Sort(schemaNames)
 	for _, schemaName := range schemaNames {
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &metadatapb.SchemaMetadata{
 			Name:   schemaName,
 			Tables: tableMap[schemaName],
 			Views:  viewMap[schemaName],
@@ -117,7 +117,7 @@ func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (boo
 	return false, nil
 }
 
-func getTable(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
+func getTable(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata) (map[string][]*metadatapb.TableMetadata, error) {
 	indexMap, err := getIndex(ctx, tx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
@@ -126,7 +126,7 @@ func getTable(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap ma
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get foreign keys")
 	}
-	tableMap := make(map[string][]*storepb.TableMetadata)
+	tableMap := make(map[string][]*metadatapb.TableMetadata)
 	query := `
     SELECT
       TABLE_SCHEMA,
@@ -144,7 +144,7 @@ func getTable(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap ma
 		if err != nil {
 			return nil, err
 		}
-		var table storepb.TableMetadata
+		var table metadatapb.TableMetadata
 		var schema string
 		if err := row.Columns(&schema, &table.Name); err != nil {
 			return nil, err
@@ -159,8 +159,8 @@ func getTable(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap ma
 	return tableMap, nil
 }
 
-func getColumn(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
-	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+func getColumn(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.TableKey][]*metadatapb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 	query := `
     SELECT 
       TABLE_SCHEMA,
@@ -183,7 +183,7 @@ func getColumn(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tab
 		if err != nil {
 			return nil, err
 		}
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		var (
 			schemaName string
 			tableName  string
@@ -204,7 +204,7 @@ func getColumn(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tab
 	return columnsMap, nil
 }
 
-func getIndex(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.TableKey][]*storepb.IndexMetadata, error) {
+func getIndex(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.TableKey][]*metadatapb.IndexMetadata, error) {
 	query := `
     SELECT
       TABLE_SCHEMA,
@@ -222,7 +222,7 @@ func getIndex(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tabl
     ORDER BY TABLE_SCHEMA, TABLE_NAME, INDEX_NAME
   `
 
-	keyIndexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
+	keyIndexMap := make(map[db.TableKey][]*metadatapb.IndexMetadata)
 
 	iter := tx.Query(ctx, spanner.NewStatement(query))
 	for {
@@ -233,7 +233,7 @@ func getIndex(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tabl
 		if err != nil {
 			return nil, err
 		}
-		var idx storepb.IndexMetadata
+		var idx metadatapb.IndexMetadata
 		var schema, table string
 		if err := row.Columns(
 			&schema,
@@ -252,8 +252,8 @@ func getIndex(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.Tabl
 	return keyIndexMap, nil
 }
 
-func getForeignKey(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
-	foreignKeyMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+func getForeignKey(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
+	foreignKeyMap := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
 	query := `
     WITH t AS (
       SELECT DISTINCT
@@ -308,7 +308,7 @@ func getForeignKey(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db
 		if err != nil {
 			return nil, err
 		}
-		var fk storepb.ForeignKeyMetadata
+		var fk metadatapb.ForeignKeyMetadata
 		var schema, table string
 		var columns, referencedColumns []string
 		if err := row.Columns(
@@ -331,8 +331,8 @@ func getForeignKey(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db
 	return foreignKeyMap, nil
 }
 
-func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
-	viewMap := make(map[string][]*storepb.ViewMetadata)
+func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata) (map[string][]*metadatapb.ViewMetadata, error) {
+	viewMap := make(map[string][]*metadatapb.ViewMetadata)
 	query := `
   SELECT
     TABLE_SCHEMA,
@@ -361,7 +361,7 @@ func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map
 
 		key := db.TableKey{Schema: schema, Table: name}
 
-		viewMap[schema] = append(viewMap[schema], &storepb.ViewMetadata{
+		viewMap[schema] = append(viewMap[schema], &metadatapb.ViewMetadata{
 			Name:       name,
 			Definition: definition,
 			Columns:    columnMap[key],

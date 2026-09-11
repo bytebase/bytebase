@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -33,13 +34,13 @@ func TestPGMetadataDiffRawViewAlterUsesMetadataDefinition(t *testing.T) {
 }
 
 func TestCockroachMetadataDiffIdenticalRawViewDoesNotLoadSDL(t *testing.T) {
-	source := newDatabaseMetadataWithEngine(storepb.Engine_COCKROACHDB, nil, []*storepb.ViewMetadata{
+	source := newDatabaseMetadataWithEngine(storepb.Engine_COCKROACHDB, nil, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: "SELECT @@@omni_unsupported@@@",
 		},
 	})
-	target := newDatabaseMetadataWithEngine(storepb.Engine_COCKROACHDB, nil, []*storepb.ViewMetadata{
+	target := newDatabaseMetadataWithEngine(storepb.Engine_COCKROACHDB, nil, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: "SELECT @@@omni_unsupported@@@",
@@ -57,10 +58,10 @@ func TestCockroachMetadataDiffUsesCockroachFunctionComparer(t *testing.T) {
 	t.Cleanup(func() {
 		schema.RegisterFunctionComparer(storepb.Engine_COCKROACHDB, &schema.DefaultFunctionComparer{})
 	})
-	source := newCockroachDatabaseMetadataWithFunctions([]*storepb.FunctionMetadata{
+	source := newCockroachDatabaseMetadataWithFunctions([]*metadatapb.FunctionMetadata{
 		newPGFunctionMetadata("SELECT 1"),
 	})
-	target := newCockroachDatabaseMetadataWithFunctions([]*storepb.FunctionMetadata{
+	target := newCockroachDatabaseMetadataWithFunctions([]*metadatapb.FunctionMetadata{
 		newPGFunctionMetadata("SELECT 2"),
 	})
 
@@ -72,10 +73,10 @@ func TestCockroachMetadataDiffUsesCockroachFunctionComparer(t *testing.T) {
 
 func TestPGMetadataDiffCreateTableFromMetadata(t *testing.T) {
 	source := newPGDatabaseMetadata(nil, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{
 					Name:     "id",
 					Type:     "integer",
@@ -100,15 +101,15 @@ func TestPGMetadataDiffCreateTableFromMetadata(t *testing.T) {
 
 func TestPGMetadataDiffCreateTableWithGeneratedAndIdentityColumnsFromMetadata(t *testing.T) {
 	source := newPGDatabaseMetadata(nil, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{
 					Name:               "id",
 					Type:               "bigint",
 					Nullable:           false,
-					IdentityGeneration: storepb.ColumnMetadata_BY_DEFAULT,
+					IdentityGeneration: metadatapb.ColumnMetadata_BY_DEFAULT,
 				},
 				{
 					Name:     "name",
@@ -119,8 +120,8 @@ func TestPGMetadataDiffCreateTableWithGeneratedAndIdentityColumnsFromMetadata(t 
 					Name:     "name_key",
 					Type:     "text",
 					Nullable: false,
-					Generation: &storepb.GenerationMetadata{
-						Type:       storepb.GenerationMetadata_TYPE_STORED,
+					Generation: &metadatapb.GenerationMetadata{
+						Type:       metadatapb.GenerationMetadata_TYPE_STORED,
 						Expression: "lower(name)",
 					},
 				},
@@ -136,10 +137,10 @@ func TestPGMetadataDiffCreateTableWithGeneratedAndIdentityColumnsFromMetadata(t 
 }
 
 func TestPGMetadataDiffAlterTableAddColumnFromMetadata(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{
 					Name:     "id",
 					Type:     "integer",
@@ -148,10 +149,10 @@ func TestPGMetadataDiffAlterTableAddColumnFromMetadata(t *testing.T) {
 			},
 		},
 	}, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{
 					Name:     "id",
 					Type:     "integer",
@@ -173,31 +174,31 @@ func TestPGMetadataDiffAlterTableAddColumnFromMetadata(t *testing.T) {
 }
 
 func TestPGMetadataDiffAlterTableAddGeneratedAndIdentityColumnsFromMetadata(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "name", Type: "text", Nullable: false},
 			},
 		},
 	}, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "name", Type: "text", Nullable: false},
 				{
 					Name:               "id",
 					Type:               "bigint",
 					Nullable:           false,
-					IdentityGeneration: storepb.ColumnMetadata_ALWAYS,
+					IdentityGeneration: metadatapb.ColumnMetadata_ALWAYS,
 				},
 				{
 					Name:     "name_key",
 					Type:     "text",
 					Nullable: false,
-					Generation: &storepb.GenerationMetadata{
-						Type:       storepb.GenerationMetadata_TYPE_STORED,
+					Generation: &metadatapb.GenerationMetadata{
+						Type:       metadatapb.GenerationMetadata_TYPE_STORED,
 						Expression: "lower(name)",
 					},
 				},
@@ -213,18 +214,18 @@ func TestPGMetadataDiffAlterTableAddGeneratedAndIdentityColumnsFromMetadata(t *t
 }
 
 func TestPGMetadataDiffAlterColumnTypeUsesUsingForIncompatibleCast(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "events",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "payload", Type: "text", Nullable: true},
 			},
 		},
 	}, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "events",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "payload", Type: "integer", Nullable: true},
 			},
 		},
@@ -237,19 +238,19 @@ func TestPGMetadataDiffAlterColumnTypeUsesUsingForIncompatibleCast(t *testing.T)
 }
 
 func TestPGMetadataDiffAlterTableDropsColumnOnce(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 				{Name: "legacy", Type: "text", Nullable: true},
 			},
 		},
 	}, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 			},
 		},
@@ -262,10 +263,10 @@ func TestPGMetadataDiffAlterTableDropsColumnOnce(t *testing.T) {
 }
 
 func TestPGMetadataDiffAlterTableObjectsFromMetadata(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "accounts",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{
 					Name:     "id",
 					Type:     "integer",
@@ -275,7 +276,7 @@ func TestPGMetadataDiffAlterTableObjectsFromMetadata(t *testing.T) {
 		},
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{
 					Name:     "id",
 					Type:     "integer",
@@ -294,10 +295,10 @@ func TestPGMetadataDiffAlterTableObjectsFromMetadata(t *testing.T) {
 			},
 		},
 	}, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "accounts",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{
 					Name:     "id",
 					Type:     "integer",
@@ -308,7 +309,7 @@ func TestPGMetadataDiffAlterTableObjectsFromMetadata(t *testing.T) {
 		{
 			Name:    "users",
 			Comment: "Application users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{
 					Name:     "id",
 					Type:     "integer",
@@ -326,7 +327,7 @@ func TestPGMetadataDiffAlterTableObjectsFromMetadata(t *testing.T) {
 					Comment:  "Login email",
 				},
 			},
-			Indexes: []*storepb.IndexMetadata{
+			Indexes: []*metadatapb.IndexMetadata{
 				{
 					Name:         "users_pkey",
 					Expressions:  []string{"id"},
@@ -346,7 +347,7 @@ func TestPGMetadataDiffAlterTableObjectsFromMetadata(t *testing.T) {
 					Type:        "btree",
 				},
 			},
-			ForeignKeys: []*storepb.ForeignKeyMetadata{
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 				{
 					Name:              "users_account_id_fkey",
 					Columns:           []string{"account_id"},
@@ -356,13 +357,13 @@ func TestPGMetadataDiffAlterTableObjectsFromMetadata(t *testing.T) {
 					OnDelete:          "CASCADE",
 				},
 			},
-			CheckConstraints: []*storepb.CheckConstraintMetadata{
+			CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 				{
 					Name:       "users_email_check",
 					Expression: "(email <> '')",
 				},
 			},
-			Triggers: []*storepb.TriggerMetadata{
+			Triggers: []*metadatapb.TriggerMetadata{
 				{
 					Name: "users_touch_updated_at",
 					Body: "CREATE TRIGGER users_touch_updated_at BEFORE UPDATE ON public.users " +
@@ -389,21 +390,21 @@ func TestPGMetadataDiffAlterTableObjectsFromMetadata(t *testing.T) {
 }
 
 func TestPGMetadataDiffCreateIndexUsesFullDefinitionFromMetadata(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "email", Type: "text", Nullable: false},
 			},
 		},
 	}, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "email", Type: "text", Nullable: false},
 			},
-			Indexes: []*storepb.IndexMetadata{
+			Indexes: []*metadatapb.IndexMetadata{
 				{
 					Name:        "idx_users_email",
 					Expressions: []string{"email"},
@@ -422,14 +423,14 @@ func TestPGMetadataDiffCreateIndexUsesFullDefinitionFromMetadata(t *testing.T) {
 
 func TestPGMetadataDiffCreateTableForeignKeysAfterAllTables(t *testing.T) {
 	source := newPGDatabaseMetadata(nil, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "child",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 				{Name: "parent_id", Type: "integer", Nullable: false},
 			},
-			ForeignKeys: []*storepb.ForeignKeyMetadata{
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 				{
 					Name:              "child_parent_id_fkey",
 					Columns:           []string{"parent_id"},
@@ -441,7 +442,7 @@ func TestPGMetadataDiffCreateTableForeignKeysAfterAllTables(t *testing.T) {
 		},
 		{
 			Name: "parent",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 			},
 		},
@@ -461,20 +462,20 @@ func TestPGMetadataDiffCreateTableForeignKeysAfterAllTables(t *testing.T) {
 }
 
 func TestPGMetadataDiffDropTablesInForeignKeyDependencyOrder(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "parent",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 			},
 		},
 		{
 			Name: "child",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 				{Name: "parent_id", Type: "integer", Nullable: false},
 			},
-			ForeignKeys: []*storepb.ForeignKeyMetadata{
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 				{
 					Name:              "child_parent_id_fkey",
 					Columns:           []string{"parent_id"},
@@ -498,14 +499,14 @@ func TestPGMetadataDiffDropTablesInForeignKeyDependencyOrder(t *testing.T) {
 }
 
 func TestPGMetadataDiffDropTableSkipsOwnedSequenceDrop(t *testing.T) {
-	source := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadataWithTablesAndSequences([]*metadatapb.TableMetadata{
 		{
 			Name: "orders",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 			},
 		},
-	}, []*storepb.SequenceMetadata{
+	}, []*metadatapb.SequenceMetadata{
 		{
 			Name:        "orders_id_seq",
 			DataType:    "bigint",
@@ -528,14 +529,14 @@ func TestPGMetadataDiffDropTableSkipsOwnedSequenceDrop(t *testing.T) {
 }
 
 func TestPGMetadataDiffDropCyclicForeignKeyTablesDropsForeignKeysFirst(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "a",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 				{Name: "b_id", Type: "integer", Nullable: false},
 			},
-			ForeignKeys: []*storepb.ForeignKeyMetadata{
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 				{
 					Name:              "a_b_id_fkey",
 					Columns:           []string{"b_id"},
@@ -547,11 +548,11 @@ func TestPGMetadataDiffDropCyclicForeignKeyTablesDropsForeignKeysFirst(t *testin
 		},
 		{
 			Name: "b",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 				{Name: "a_id", Type: "integer", Nullable: false},
 			},
-			ForeignKeys: []*storepb.ForeignKeyMetadata{
+			ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 				{
 					Name:              "b_a_id_fkey",
 					Columns:           []string{"a_id"},
@@ -577,13 +578,13 @@ func TestPGMetadataDiffDropCyclicForeignKeyTablesDropsForeignKeysFirst(t *testin
 }
 
 func TestPGMetadataDiffDropSchemaDropsViewsBeforeTablesWithoutDependencyMetadata(t *testing.T) {
-	source := newPGDatabaseMetadataWithSchemas([]*storepb.SchemaMetadata{
+	source := newPGDatabaseMetadataWithSchemas([]*metadatapb.SchemaMetadata{
 		{
 			Name: "analytics",
-			Tables: []*storepb.TableMetadata{
-				{Name: "a", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}}},
+			Tables: []*metadatapb.TableMetadata{
+				{Name: "a", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}}},
 			},
-			Views: []*storepb.ViewMetadata{
+			Views: []*metadatapb.ViewMetadata{
 				{Name: "z", Definition: "SELECT id FROM analytics.a"},
 			},
 		},
@@ -601,36 +602,36 @@ func TestPGMetadataDiffDropSchemaDropsViewsBeforeTablesWithoutDependencyMetadata
 }
 
 func TestPGMetadataDiffDropAlteredViewBeforeDependentTableAlter(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 			},
 		},
-	}, []*storepb.ViewMetadata{
+	}, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: "SELECT id FROM public.users",
 			Comment:    "user ids",
-			DependencyColumns: []*storepb.DependencyColumn{
+			DependencyColumns: []*metadatapb.DependencyColumn{
 				{Schema: "public", Table: "users"},
 			},
 		},
 	})
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint", Nullable: false},
 			},
 		},
-	}, []*storepb.ViewMetadata{
+	}, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: "SELECT id::bigint AS id FROM public.users",
 			Comment:    "user ids",
-			DependencyColumns: []*storepb.DependencyColumn{
+			DependencyColumns: []*metadatapb.DependencyColumn{
 				{Schema: "public", Table: "users"},
 			},
 		},
@@ -653,38 +654,38 @@ func TestPGMetadataDiffDropAlteredViewBeforeDependentTableAlter(t *testing.T) {
 }
 
 func TestPGMetadataDiffDropUnchangedDependentViewBeforeTableAlter(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 				{Name: "name", Type: "text", Nullable: false},
 			},
 		},
-	}, []*storepb.ViewMetadata{
+	}, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: "SELECT id FROM public.users",
 			Comment:    "user ids",
-			DependencyColumns: []*storepb.DependencyColumn{
+			DependencyColumns: []*metadatapb.DependencyColumn{
 				{Schema: "public", Table: "users", Column: "id"},
 			},
 		},
 	})
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint", Nullable: false},
 				{Name: "name", Type: "text", Nullable: false},
 			},
 		},
-	}, []*storepb.ViewMetadata{
+	}, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: "SELECT id FROM public.users",
 			Comment:    "user ids",
-			DependencyColumns: []*storepb.DependencyColumn{
+			DependencyColumns: []*metadatapb.DependencyColumn{
 				{Schema: "public", Table: "users", Column: "id"},
 			},
 		},
@@ -707,40 +708,40 @@ func TestPGMetadataDiffDropUnchangedDependentViewBeforeTableAlter(t *testing.T) 
 }
 
 func TestPGMetadataDiffDropAlteredViewBeforeDroppedReferencedTable(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "legacy_users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 			},
 		},
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 			},
 		},
-	}, []*storepb.ViewMetadata{
+	}, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: "SELECT id FROM public.legacy_users",
-			DependencyColumns: []*storepb.DependencyColumn{
+			DependencyColumns: []*metadatapb.DependencyColumn{
 				{Schema: "public", Table: "legacy_users", Column: "id"},
 			},
 		},
 	})
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
 		{
 			Name: "users",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "integer", Nullable: false},
 			},
 		},
-	}, []*storepb.ViewMetadata{
+	}, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: "SELECT id FROM public.users",
-			DependencyColumns: []*storepb.DependencyColumn{
+			DependencyColumns: []*metadatapb.DependencyColumn{
 				{Schema: "public", Table: "users", Column: "id"},
 			},
 		},
@@ -760,14 +761,14 @@ func TestPGMetadataDiffDropAlteredViewBeforeDroppedReferencedTable(t *testing.T)
 }
 
 func TestPGMetadataDiffAlterTablePartitionChangesFromMetadata(t *testing.T) {
-	source := newPGDatabaseMetadata([]*storepb.TableMetadata{
-		newPGPartitionedOrdersTable([]*storepb.TablePartitionMetadata{
+	source := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
+		newPGPartitionedOrdersTable([]*metadatapb.TablePartitionMetadata{
 			newPGOrdersPartition("orders_2023", "FOR VALUES FROM ('2023-01-01') TO ('2024-01-01')"),
 			newPGOrdersPartition("orders_2024", "FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')"),
 		}),
 	}, nil)
-	target := newPGDatabaseMetadata([]*storepb.TableMetadata{
-		newPGPartitionedOrdersTable([]*storepb.TablePartitionMetadata{
+	target := newPGDatabaseMetadata([]*metadatapb.TableMetadata{
+		newPGPartitionedOrdersTable([]*metadatapb.TablePartitionMetadata{
 			newPGOrdersPartition("orders_2024", "FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')"),
 			newPGOrdersPartition("orders_2025", "FOR VALUES FROM ('2025-01-01') TO ('2026-01-01')"),
 		}),
@@ -788,11 +789,11 @@ func TestPGMetadataDiffAlterTablePartitionChangesFromMetadata(t *testing.T) {
 
 func TestPGMetadataDiffCreateViewsInDependencyOrder(t *testing.T) {
 	source := newPGDatabaseMetadata(nil, nil)
-	target := newPGDatabaseMetadata(nil, []*storepb.ViewMetadata{
+	target := newPGDatabaseMetadata(nil, []*metadatapb.ViewMetadata{
 		{
 			Name:       "b",
 			Definition: "SELECT * FROM a",
-			DependencyColumns: []*storepb.DependencyColumn{
+			DependencyColumns: []*metadatapb.DependencyColumn{
 				{Schema: "public", Table: "a"},
 			},
 		},
@@ -813,26 +814,26 @@ func TestPGMetadataDiffCreateViewsInDependencyOrder(t *testing.T) {
 }
 
 func TestPGMetadataDiffCreateFunctionAfterNewDependencyView(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "active_users",
 						Definition: "SELECT 1 AS id",
 					},
 				},
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name:      "get_active_users",
 						Signature: "get_active_users()",
 						Definition: "CREATE FUNCTION public.get_active_users() RETURNS SETOF public.active_users LANGUAGE sql AS $$ " +
 							"SELECT * FROM public.active_users $$",
-						DependencyTables: []*storepb.DependencyTable{
+						DependencyTables: []*metadatapb.DependencyTable{
 							{Schema: "public", Table: "active_users"},
 						},
 					},
@@ -854,14 +855,14 @@ func TestPGMetadataDiffCreateFunctionAfterNewDependencyView(t *testing.T) {
 func TestPGMetadataDiffEnumObjectChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   []*storepb.EnumTypeMetadata
-		target   []*storepb.EnumTypeMetadata
+		source   []*metadatapb.EnumTypeMetadata
+		target   []*metadatapb.EnumTypeMetadata
 		contains []string
 	}{
 		{
 			name:   "create enum",
 			source: nil,
-			target: []*storepb.EnumTypeMetadata{
+			target: []*metadatapb.EnumTypeMetadata{
 				{
 					Name:   "status",
 					Values: []string{"active", "archived"},
@@ -871,7 +872,7 @@ func TestPGMetadataDiffEnumObjectChanges(t *testing.T) {
 		},
 		{
 			name: "drop enum",
-			source: []*storepb.EnumTypeMetadata{
+			source: []*metadatapb.EnumTypeMetadata{
 				{
 					Name:   "status",
 					Values: []string{"active"},
@@ -882,13 +883,13 @@ func TestPGMetadataDiffEnumObjectChanges(t *testing.T) {
 		},
 		{
 			name: "append enum value",
-			source: []*storepb.EnumTypeMetadata{
+			source: []*metadatapb.EnumTypeMetadata{
 				{
 					Name:   "status",
 					Values: []string{"active"},
 				},
 			},
-			target: []*storepb.EnumTypeMetadata{
+			target: []*metadatapb.EnumTypeMetadata{
 				{
 					Name:   "status",
 					Values: []string{"active", "archived"},
@@ -898,13 +899,13 @@ func TestPGMetadataDiffEnumObjectChanges(t *testing.T) {
 		},
 		{
 			name: "insert enum value before existing value",
-			source: []*storepb.EnumTypeMetadata{
+			source: []*metadatapb.EnumTypeMetadata{
 				{
 					Name:   "status",
 					Values: []string{"active", "archived"},
 				},
 			},
-			target: []*storepb.EnumTypeMetadata{
+			target: []*metadatapb.EnumTypeMetadata{
 				{
 					Name:   "status",
 					Values: []string{"active", "pending", "archived"},
@@ -914,13 +915,13 @@ func TestPGMetadataDiffEnumObjectChanges(t *testing.T) {
 		},
 		{
 			name: "removed enum value emits warning",
-			source: []*storepb.EnumTypeMetadata{
+			source: []*metadatapb.EnumTypeMetadata{
 				{
 					Name:   "status",
 					Values: []string{"active", "archived"},
 				},
 			},
-			target: []*storepb.EnumTypeMetadata{
+			target: []*metadatapb.EnumTypeMetadata{
 				{
 					Name:   "status",
 					Values: []string{"active"},
@@ -948,21 +949,21 @@ func TestPGMetadataDiffEnumObjectChanges(t *testing.T) {
 func TestPGMetadataDiffSequenceObjectChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   []*storepb.SequenceMetadata
-		target   []*storepb.SequenceMetadata
+		source   []*metadatapb.SequenceMetadata
+		target   []*metadatapb.SequenceMetadata
 		contains []string
 	}{
 		{
 			name:   "create sequence",
 			source: nil,
-			target: []*storepb.SequenceMetadata{
+			target: []*metadatapb.SequenceMetadata{
 				newPGSequenceMetadata(),
 			},
 			contains: []string{`CREATE SEQUENCE "public"."order_seq"`, "START WITH 1", "INCREMENT BY 1"},
 		},
 		{
 			name: "drop sequence",
-			source: []*storepb.SequenceMetadata{
+			source: []*metadatapb.SequenceMetadata{
 				newPGSequenceMetadata(),
 			},
 			target:   nil,
@@ -970,10 +971,10 @@ func TestPGMetadataDiffSequenceObjectChanges(t *testing.T) {
 		},
 		{
 			name: "alter sequence",
-			source: []*storepb.SequenceMetadata{
+			source: []*metadatapb.SequenceMetadata{
 				newPGSequenceMetadata(),
 			},
-			target: []*storepb.SequenceMetadata{
+			target: []*metadatapb.SequenceMetadata{
 				{
 					Name:      "order_seq",
 					DataType:  "bigint",
@@ -1004,7 +1005,7 @@ func TestPGMetadataDiffSequenceObjectChanges(t *testing.T) {
 }
 
 func TestPGMetadataDiffAlterSequenceDropsOwnershipFromMetadata(t *testing.T) {
-	source := newPGDatabaseMetadataWithSequences([]*storepb.SequenceMetadata{
+	source := newPGDatabaseMetadataWithSequences([]*metadatapb.SequenceMetadata{
 		{
 			Name:        "order_seq",
 			DataType:    "bigint",
@@ -1017,7 +1018,7 @@ func TestPGMetadataDiffAlterSequenceDropsOwnershipFromMetadata(t *testing.T) {
 			OwnerColumn: "id",
 		},
 	})
-	target := newPGDatabaseMetadataWithSequences([]*storepb.SequenceMetadata{
+	target := newPGDatabaseMetadataWithSequences([]*metadatapb.SequenceMetadata{
 		newPGSequenceMetadata(),
 	})
 
@@ -1028,17 +1029,17 @@ func TestPGMetadataDiffAlterSequenceDropsOwnershipFromMetadata(t *testing.T) {
 }
 
 func TestPGMetadataDiffAlterSequenceAttachesOwnershipAfterCreateTable(t *testing.T) {
-	source := newPGDatabaseMetadataWithTablesAndSequences(nil, []*storepb.SequenceMetadata{
+	source := newPGDatabaseMetadataWithTablesAndSequences(nil, []*metadatapb.SequenceMetadata{
 		newPGSequenceMetadata(),
 	})
-	target := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadataWithTablesAndSequences([]*metadatapb.TableMetadata{
 		{
 			Name: "orders",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint", Nullable: false},
 			},
 		},
-	}, []*storepb.SequenceMetadata{
+	}, []*metadatapb.SequenceMetadata{
 		{
 			Name:        "order_seq",
 			DataType:    "bigint",
@@ -1063,25 +1064,25 @@ func TestPGMetadataDiffAlterSequenceAttachesOwnershipAfterCreateTable(t *testing
 }
 
 func TestPGMetadataDiffAlterSequenceAttachesOwnershipAfterAddColumn(t *testing.T) {
-	source := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadataWithTablesAndSequences([]*metadatapb.TableMetadata{
 		{
 			Name: "orders",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "name", Type: "text", Nullable: false},
 			},
 		},
-	}, []*storepb.SequenceMetadata{
+	}, []*metadatapb.SequenceMetadata{
 		newPGSequenceMetadata(),
 	})
-	target := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+	target := newPGDatabaseMetadataWithTablesAndSequences([]*metadatapb.TableMetadata{
 		{
 			Name: "orders",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "name", Type: "text", Nullable: false},
 				{Name: "id", Type: "bigint", Nullable: false},
 			},
 		},
-	}, []*storepb.SequenceMetadata{
+	}, []*metadatapb.SequenceMetadata{
 		{
 			Name:        "order_seq",
 			DataType:    "bigint",
@@ -1106,14 +1107,14 @@ func TestPGMetadataDiffAlterSequenceAttachesOwnershipAfterAddColumn(t *testing.T
 }
 
 func TestPGMetadataDiffAlterSequenceDetachesOwnershipBeforeOwnerTableDrop(t *testing.T) {
-	source := newPGDatabaseMetadataWithTablesAndSequences([]*storepb.TableMetadata{
+	source := newPGDatabaseMetadataWithTablesAndSequences([]*metadatapb.TableMetadata{
 		{
 			Name: "orders",
-			Columns: []*storepb.ColumnMetadata{
+			Columns: []*metadatapb.ColumnMetadata{
 				{Name: "id", Type: "bigint", Nullable: false},
 			},
 		},
-	}, []*storepb.SequenceMetadata{
+	}, []*metadatapb.SequenceMetadata{
 		{
 			Name:        "order_seq",
 			DataType:    "bigint",
@@ -1126,7 +1127,7 @@ func TestPGMetadataDiffAlterSequenceDetachesOwnershipBeforeOwnerTableDrop(t *tes
 			OwnerColumn: "id",
 		},
 	})
-	target := newPGDatabaseMetadataWithTablesAndSequences(nil, []*storepb.SequenceMetadata{
+	target := newPGDatabaseMetadataWithTablesAndSequences(nil, []*metadatapb.SequenceMetadata{
 		newPGSequenceMetadata(),
 	})
 
@@ -1143,21 +1144,21 @@ func TestPGMetadataDiffAlterSequenceDetachesOwnershipBeforeOwnerTableDrop(t *tes
 func TestPGMetadataDiffMaterializedViewObjectChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   []*storepb.MaterializedViewMetadata
-		target   []*storepb.MaterializedViewMetadata
+		source   []*metadatapb.MaterializedViewMetadata
+		target   []*metadatapb.MaterializedViewMetadata
 		contains []string
 	}{
 		{
 			name:   "create materialized view",
 			source: nil,
-			target: []*storepb.MaterializedViewMetadata{
+			target: []*metadatapb.MaterializedViewMetadata{
 				{Name: "active_users_mv", Definition: "SELECT @@@active_users@@@"},
 			},
 			contains: []string{`CREATE MATERIALIZED VIEW "public"."active_users_mv" AS`, "SELECT @@@active_users@@@"},
 		},
 		{
 			name: "drop materialized view",
-			source: []*storepb.MaterializedViewMetadata{
+			source: []*metadatapb.MaterializedViewMetadata{
 				{Name: "active_users_mv", Definition: "SELECT @@@active_users@@@"},
 			},
 			target:   nil,
@@ -1165,10 +1166,10 @@ func TestPGMetadataDiffMaterializedViewObjectChanges(t *testing.T) {
 		},
 		{
 			name: "alter materialized view",
-			source: []*storepb.MaterializedViewMetadata{
+			source: []*metadatapb.MaterializedViewMetadata{
 				{Name: "active_users_mv", Definition: "SELECT @@@old_active_users@@@"},
 			},
-			target: []*storepb.MaterializedViewMetadata{
+			target: []*metadatapb.MaterializedViewMetadata{
 				{Name: "active_users_mv", Definition: "SELECT @@@new_active_users@@@"},
 			},
 			contains: []string{
@@ -1197,26 +1198,26 @@ func TestPGMetadataDiffMaterializedViewObjectChanges(t *testing.T) {
 func TestPGMetadataDiffFunctionObjectChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   []*storepb.FunctionMetadata
-		target   []*storepb.FunctionMetadata
+		source   []*metadatapb.FunctionMetadata
+		target   []*metadatapb.FunctionMetadata
 		contains []string
 	}{
 		{
 			name:     "create function",
 			source:   nil,
-			target:   []*storepb.FunctionMetadata{newPGFunctionMetadata("SELECT 1")},
+			target:   []*metadatapb.FunctionMetadata{newPGFunctionMetadata("SELECT 1")},
 			contains: []string{"CREATE FUNCTION public.calculate_area()", "SELECT 1"},
 		},
 		{
 			name:     "drop function",
-			source:   []*storepb.FunctionMetadata{newPGFunctionMetadata("SELECT 1")},
+			source:   []*metadatapb.FunctionMetadata{newPGFunctionMetadata("SELECT 1")},
 			target:   nil,
 			contains: []string{`DROP FUNCTION "public"."calculate_area"()`},
 		},
 		{
 			name:     "alter function",
-			source:   []*storepb.FunctionMetadata{newPGFunctionMetadata("SELECT 1")},
-			target:   []*storepb.FunctionMetadata{newPGFunctionMetadata("SELECT 2")},
+			source:   []*metadatapb.FunctionMetadata{newPGFunctionMetadata("SELECT 1")},
+			target:   []*metadatapb.FunctionMetadata{newPGFunctionMetadata("SELECT 2")},
 			contains: []string{`DROP FUNCTION "public"."calculate_area"()`, "CREATE FUNCTION public.calculate_area()", "SELECT 2"},
 		},
 	}
@@ -1239,26 +1240,26 @@ func TestPGMetadataDiffFunctionObjectChanges(t *testing.T) {
 func TestPGMetadataDiffProcedureObjectChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   []*storepb.ProcedureMetadata
-		target   []*storepb.ProcedureMetadata
+		source   []*metadatapb.ProcedureMetadata
+		target   []*metadatapb.ProcedureMetadata
 		contains []string
 	}{
 		{
 			name:     "create procedure",
 			source:   nil,
-			target:   []*storepb.ProcedureMetadata{newPGProcedureMetadata("NULL")},
+			target:   []*metadatapb.ProcedureMetadata{newPGProcedureMetadata("NULL")},
 			contains: []string{"CREATE PROCEDURE public.refresh_stats()", "NULL"},
 		},
 		{
 			name:     "drop procedure",
-			source:   []*storepb.ProcedureMetadata{newPGProcedureMetadata("NULL")},
+			source:   []*metadatapb.ProcedureMetadata{newPGProcedureMetadata("NULL")},
 			target:   nil,
 			contains: []string{`DROP PROCEDURE "public"."refresh_stats"()`},
 		},
 		{
 			name:     "alter procedure",
-			source:   []*storepb.ProcedureMetadata{newPGProcedureMetadata("NULL")},
-			target:   []*storepb.ProcedureMetadata{newPGProcedureMetadata("RAISE NOTICE 'refresh'")},
+			source:   []*metadatapb.ProcedureMetadata{newPGProcedureMetadata("NULL")},
+			target:   []*metadatapb.ProcedureMetadata{newPGProcedureMetadata("RAISE NOTICE 'refresh'")},
 			contains: []string{`DROP PROCEDURE "public"."refresh_stats"()`, "CREATE PROCEDURE public.refresh_stats()", "RAISE NOTICE 'refresh'"},
 		},
 	}
@@ -1281,39 +1282,39 @@ func TestPGMetadataDiffProcedureObjectChanges(t *testing.T) {
 func TestPGMetadataDiffSchemaObjectChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   []*storepb.SchemaMetadata
-		target   []*storepb.SchemaMetadata
+		source   []*metadatapb.SchemaMetadata
+		target   []*metadatapb.SchemaMetadata
 		contains []string
 	}{
 		{
 			name:   "create schema",
-			source: []*storepb.SchemaMetadata{{Name: "public"}},
-			target: []*storepb.SchemaMetadata{{Name: "public"}, {Name: "analytics"}},
+			source: []*metadatapb.SchemaMetadata{{Name: "public"}},
+			target: []*metadatapb.SchemaMetadata{{Name: "public"}, {Name: "analytics"}},
 			contains: []string{
 				`CREATE SCHEMA IF NOT EXISTS "analytics"`,
 			},
 		},
 		{
 			name: "drop schema",
-			source: []*storepb.SchemaMetadata{
+			source: []*metadatapb.SchemaMetadata{
 				{Name: "public"},
 				{
 					Name: "analytics",
-					Tables: []*storepb.TableMetadata{
-						{Name: "events", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}}},
+					Tables: []*metadatapb.TableMetadata{
+						{Name: "events", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Nullable: false}}},
 					},
-					Views: []*storepb.ViewMetadata{
+					Views: []*metadatapb.ViewMetadata{
 						{Name: "event_ids", Definition: "SELECT id FROM analytics.events"},
 					},
-					Sequences: []*storepb.SequenceMetadata{
+					Sequences: []*metadatapb.SequenceMetadata{
 						{Name: "event_id_seq", DataType: "bigint"},
 					},
-					EnumTypes: []*storepb.EnumTypeMetadata{
+					EnumTypes: []*metadatapb.EnumTypeMetadata{
 						{Name: "event_status", Values: []string{"active"}},
 					},
 				},
 			},
-			target: []*storepb.SchemaMetadata{{Name: "public"}},
+			target: []*metadatapb.SchemaMetadata{{Name: "public"}},
 			contains: []string{
 				`DROP VIEW "analytics"."event_ids"`,
 				`DROP TABLE "analytics"."events"`,
@@ -1324,7 +1325,7 @@ func TestPGMetadataDiffSchemaObjectChanges(t *testing.T) {
 		},
 		{
 			name:   "drop public schema is ignored",
-			source: []*storepb.SchemaMetadata{{Name: "public"}},
+			source: []*metadatapb.SchemaMetadata{{Name: "public"}},
 			target: nil,
 		},
 	}
@@ -1349,26 +1350,26 @@ func TestPGMetadataDiffSchemaObjectChanges(t *testing.T) {
 func TestPGMetadataDiffExtensionObjectChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   []*storepb.ExtensionMetadata
-		target   []*storepb.ExtensionMetadata
+		source   []*metadatapb.ExtensionMetadata
+		target   []*metadatapb.ExtensionMetadata
 		contains []string
 	}{
 		{
 			name:     "create extension",
 			source:   nil,
-			target:   []*storepb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
+			target:   []*metadatapb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
 			contains: []string{`CREATE EXTENSION IF NOT EXISTS "pg_trgm"`},
 		},
 		{
 			name:     "drop extension",
-			source:   []*storepb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
+			source:   []*metadatapb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
 			target:   nil,
 			contains: []string{`DROP EXTENSION "pg_trgm"`},
 		},
 		{
 			name:     "recreate changed extension",
-			source:   []*storepb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.5"}},
-			target:   []*storepb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
+			source:   []*metadatapb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.5"}},
+			target:   []*metadatapb.ExtensionMetadata{{Name: "pg_trgm", Schema: "public", Version: "1.6"}},
 			contains: []string{`DROP EXTENSION "pg_trgm"`, `CREATE EXTENSION IF NOT EXISTS "pg_trgm"`},
 		},
 	}
@@ -1391,21 +1392,21 @@ func TestPGMetadataDiffExtensionObjectChanges(t *testing.T) {
 func TestPGMetadataDiffEventTriggerObjectChanges(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   []*storepb.EventTriggerMetadata
-		target   []*storepb.EventTriggerMetadata
+		source   []*metadatapb.EventTriggerMetadata
+		target   []*metadatapb.EventTriggerMetadata
 		contains []string
 	}{
 		{
 			name:   "create event trigger",
 			source: nil,
-			target: []*storepb.EventTriggerMetadata{
+			target: []*metadatapb.EventTriggerMetadata{
 				newPGEventTriggerMetadata("ddl_command_end"),
 			},
 			contains: []string{`CREATE EVENT TRIGGER "audit_ddl" ON ddl_command_end`},
 		},
 		{
 			name: "drop event trigger",
-			source: []*storepb.EventTriggerMetadata{
+			source: []*metadatapb.EventTriggerMetadata{
 				newPGEventTriggerMetadata("ddl_command_end"),
 			},
 			target:   nil,
@@ -1413,10 +1414,10 @@ func TestPGMetadataDiffEventTriggerObjectChanges(t *testing.T) {
 		},
 		{
 			name: "recreate changed event trigger",
-			source: []*storepb.EventTriggerMetadata{
+			source: []*metadatapb.EventTriggerMetadata{
 				newPGEventTriggerMetadata("ddl_command_start"),
 			},
-			target: []*storepb.EventTriggerMetadata{
+			target: []*metadatapb.EventTriggerMetadata{
 				newPGEventTriggerMetadata("ddl_command_end"),
 			},
 			contains: []string{`DROP EVENT TRIGGER "audit_ddl"`, `CREATE EVENT TRIGGER "audit_ddl" ON ddl_command_end`},
@@ -1439,7 +1440,7 @@ func TestPGMetadataDiffEventTriggerObjectChanges(t *testing.T) {
 }
 
 func newPGDatabaseMetadataWithView(definition string) *model.DatabaseMetadata {
-	return newPGDatabaseMetadata(nil, []*storepb.ViewMetadata{
+	return newPGDatabaseMetadata(nil, []*metadatapb.ViewMetadata{
 		{
 			Name:       "v",
 			Definition: definition,
@@ -1447,9 +1448,9 @@ func newPGDatabaseMetadataWithView(definition string) *model.DatabaseMetadata {
 	})
 }
 
-func newPGDatabaseMetadataWithEnum(enumTypes []*storepb.EnumTypeMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func newPGDatabaseMetadataWithEnum(enumTypes []*metadatapb.EnumTypeMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:      "public",
 				EnumTypes: enumTypes,
@@ -1458,28 +1459,28 @@ func newPGDatabaseMetadataWithEnum(enumTypes []*storepb.EnumTypeMetadata) *model
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newPGDatabaseMetadataWithSchemas(schemas []*storepb.SchemaMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+func newPGDatabaseMetadataWithSchemas(schemas []*metadatapb.SchemaMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Schemas: schemas,
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newPGDatabaseMetadataWithExtensions(extensions []*storepb.ExtensionMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas:    []*storepb.SchemaMetadata{{Name: "public"}},
+func newPGDatabaseMetadataWithExtensions(extensions []*metadatapb.ExtensionMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas:    []*metadatapb.SchemaMetadata{{Name: "public"}},
 		Extensions: extensions,
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newPGDatabaseMetadataWithEventTriggers(eventTriggers []*storepb.EventTriggerMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas:       []*storepb.SchemaMetadata{{Name: "public"}},
+func newPGDatabaseMetadataWithEventTriggers(eventTriggers []*metadatapb.EventTriggerMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas:       []*metadatapb.SchemaMetadata{{Name: "public"}},
 		EventTriggers: eventTriggers,
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newPGEventTriggerMetadata(event string) *storepb.EventTriggerMetadata {
-	return &storepb.EventTriggerMetadata{
+func newPGEventTriggerMetadata(event string) *metadatapb.EventTriggerMetadata {
+	return &metadatapb.EventTriggerMetadata{
 		Name:           "audit_ddl",
 		Event:          event,
 		FunctionSchema: "public",
@@ -1488,9 +1489,9 @@ func newPGEventTriggerMetadata(event string) *storepb.EventTriggerMetadata {
 	}
 }
 
-func newPGDatabaseMetadataWithRoutines(functions []*storepb.FunctionMetadata, procedures []*storepb.ProcedureMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func newPGDatabaseMetadataWithRoutines(functions []*metadatapb.FunctionMetadata, procedures []*metadatapb.ProcedureMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:       "public",
 				Functions:  functions,
@@ -1500,8 +1501,8 @@ func newPGDatabaseMetadataWithRoutines(functions []*storepb.FunctionMetadata, pr
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newPGFunctionMetadata(body string) *storepb.FunctionMetadata {
-	return &storepb.FunctionMetadata{
+func newPGFunctionMetadata(body string) *metadatapb.FunctionMetadata {
+	return &metadatapb.FunctionMetadata{
 		Name:      "calculate_area",
 		Signature: "calculate_area()",
 		Definition: "CREATE FUNCTION public.calculate_area() RETURNS integer LANGUAGE sql AS $$ " +
@@ -1509,8 +1510,8 @@ func newPGFunctionMetadata(body string) *storepb.FunctionMetadata {
 	}
 }
 
-func newPGProcedureMetadata(body string) *storepb.ProcedureMetadata {
-	return &storepb.ProcedureMetadata{
+func newPGProcedureMetadata(body string) *metadatapb.ProcedureMetadata {
+	return &metadatapb.ProcedureMetadata{
 		Name:      "refresh_stats",
 		Signature: "refresh_stats()",
 		Definition: "CREATE PROCEDURE public.refresh_stats() LANGUAGE plpgsql AS $$ BEGIN " +
@@ -1518,9 +1519,9 @@ func newPGProcedureMetadata(body string) *storepb.ProcedureMetadata {
 	}
 }
 
-func newCockroachDatabaseMetadataWithFunctions(functions []*storepb.FunctionMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func newCockroachDatabaseMetadataWithFunctions(functions []*metadatapb.FunctionMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:      "public",
 				Functions: functions,
@@ -1531,17 +1532,17 @@ func newCockroachDatabaseMetadataWithFunctions(functions []*storepb.FunctionMeta
 
 type alwaysEqualFunctionComparer struct{}
 
-func (*alwaysEqualFunctionComparer) Equal(*storepb.FunctionMetadata, *storepb.FunctionMetadata) bool {
+func (*alwaysEqualFunctionComparer) Equal(*metadatapb.FunctionMetadata, *metadatapb.FunctionMetadata) bool {
 	return true
 }
 
-func (*alwaysEqualFunctionComparer) CompareDetailed(*storepb.FunctionMetadata, *storepb.FunctionMetadata) (*schema.FunctionComparisonResult, error) {
+func (*alwaysEqualFunctionComparer) CompareDetailed(*metadatapb.FunctionMetadata, *metadatapb.FunctionMetadata) (*schema.FunctionComparisonResult, error) {
 	return nil, nil
 }
 
-func newPGDatabaseMetadataWithMaterializedViews(views []*storepb.MaterializedViewMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func newPGDatabaseMetadataWithMaterializedViews(views []*metadatapb.MaterializedViewMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:              "public",
 				MaterializedViews: views,
@@ -1550,13 +1551,13 @@ func newPGDatabaseMetadataWithMaterializedViews(views []*storepb.MaterializedVie
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newPGDatabaseMetadataWithSequences(sequences []*storepb.SequenceMetadata) *model.DatabaseMetadata {
+func newPGDatabaseMetadataWithSequences(sequences []*metadatapb.SequenceMetadata) *model.DatabaseMetadata {
 	return newPGDatabaseMetadataWithTablesAndSequences(nil, sequences)
 }
 
-func newPGDatabaseMetadataWithTablesAndSequences(tables []*storepb.TableMetadata, sequences []*storepb.SequenceMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func newPGDatabaseMetadataWithTablesAndSequences(tables []*metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:      "public",
 				Tables:    tables,
@@ -1566,8 +1567,8 @@ func newPGDatabaseMetadataWithTablesAndSequences(tables []*storepb.TableMetadata
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 }
 
-func newPGSequenceMetadata() *storepb.SequenceMetadata {
-	return &storepb.SequenceMetadata{
+func newPGSequenceMetadata() *metadatapb.SequenceMetadata {
+	return &metadatapb.SequenceMetadata{
 		Name:      "order_seq",
 		DataType:  "bigint",
 		Start:     "1",
@@ -1578,10 +1579,10 @@ func newPGSequenceMetadata() *storepb.SequenceMetadata {
 	}
 }
 
-func newPGPartitionedOrdersTable(partitions []*storepb.TablePartitionMetadata) *storepb.TableMetadata {
-	return &storepb.TableMetadata{
+func newPGPartitionedOrdersTable(partitions []*metadatapb.TablePartitionMetadata) *metadatapb.TableMetadata {
+	return &metadatapb.TableMetadata{
 		Name: "orders",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "integer", Nullable: false},
 			{Name: "created_at", Type: "date", Nullable: false},
 		},
@@ -1589,22 +1590,22 @@ func newPGPartitionedOrdersTable(partitions []*storepb.TablePartitionMetadata) *
 	}
 }
 
-func newPGOrdersPartition(name string, value string) *storepb.TablePartitionMetadata {
-	return &storepb.TablePartitionMetadata{
+func newPGOrdersPartition(name string, value string) *metadatapb.TablePartitionMetadata {
+	return &metadatapb.TablePartitionMetadata{
 		Name:       name,
-		Type:       storepb.TablePartitionMetadata_RANGE,
+		Type:       metadatapb.TablePartitionMetadata_RANGE,
 		Expression: "RANGE (created_at)",
 		Value:      value,
 	}
 }
 
-func newPGDatabaseMetadata(tables []*storepb.TableMetadata, views []*storepb.ViewMetadata) *model.DatabaseMetadata {
+func newPGDatabaseMetadata(tables []*metadatapb.TableMetadata, views []*metadatapb.ViewMetadata) *model.DatabaseMetadata {
 	return newDatabaseMetadataWithEngine(storepb.Engine_POSTGRES, tables, views)
 }
 
-func newDatabaseMetadataWithEngine(engine storepb.Engine, tables []*storepb.TableMetadata, views []*storepb.ViewMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func newDatabaseMetadataWithEngine(engine storepb.Engine, tables []*metadatapb.TableMetadata, views []*metadatapb.ViewMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:   "public",
 				Tables: tables,
@@ -1614,9 +1615,9 @@ func newDatabaseMetadataWithEngine(engine storepb.Engine, tables []*storepb.Tabl
 	}, nil, nil, engine, true)
 }
 
-func newPGDatabaseMetadataWithCompositeTypes(compositeTypes []*storepb.CompositeTypeMetadata) *model.DatabaseMetadata {
-	return model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func newPGDatabaseMetadataWithCompositeTypes(compositeTypes []*metadatapb.CompositeTypeMetadata) *model.DatabaseMetadata {
+	return model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:           "public",
 				CompositeTypes: compositeTypes,
@@ -1628,17 +1629,17 @@ func newPGDatabaseMetadataWithCompositeTypes(compositeTypes []*storepb.Composite
 func TestPGMetadataDiffCreateCompositeTypesInDependencyOrder(t *testing.T) {
 	source := newPGDatabaseMetadataWithCompositeTypes(nil)
 	// aa_nested sorts before zz_base alphabetically but depends on it.
-	target := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	target := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "aa_nested",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "home", Type: "public.zz_base"},
 			},
 		},
 		{
 			Name:    "zz_base",
 			Comment: "base type",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "street", Type: "text", Collation: `"C"`, Comment: "street line"},
 			},
 		},
@@ -1659,16 +1660,16 @@ func TestPGMetadataDiffCreateCompositeTypesInDependencyOrder(t *testing.T) {
 }
 
 func TestPGMetadataDiffDropCompositeTypesInReverseDependencyOrder(t *testing.T) {
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "zz_base",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "x", Type: "integer"},
 			},
 		},
 		{
 			Name: "aa_nested",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "home", Type: "public.zz_base"},
 			},
 		},
@@ -1687,17 +1688,17 @@ func TestPGMetadataDiffDropCompositeTypesInReverseDependencyOrder(t *testing.T) 
 }
 
 func TestPGMetadataDiffCompositeDropsPrecedeEnumDrops(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "status", Values: []string{"a", "b"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "uses_status",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "s", Type: "public.status"},
 						},
 					},
@@ -1717,20 +1718,20 @@ func TestPGMetadataDiffCompositeDropsPrecedeEnumDrops(t *testing.T) {
 }
 
 func TestPGMetadataDiffAlterCompositeTypeAttributes(t *testing.T) {
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "addr",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "street", Type: "text"},
 				{Name: "city", Type: "character varying(50)"},
 				{Name: "dropped_attr", Type: "integer"},
 			},
 		},
 	})
-	target := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	target := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "addr",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "street", Type: "text"},
 				{Name: "city", Type: "character varying(100)"},
 				{Name: "zip", Type: "text", Collation: `"C"`},
@@ -1748,19 +1749,19 @@ func TestPGMetadataDiffAlterCompositeTypeAttributes(t *testing.T) {
 }
 
 func TestPGMetadataDiffCompositeTypeReorderOnlyWarns(t *testing.T) {
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "addr",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "a", Type: "text"},
 				{Name: "b", Type: "integer"},
 			},
 		},
 	})
-	target := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	target := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "addr",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "b", Type: "integer"},
 				{Name: "a", Type: "text"},
 			},
@@ -1776,20 +1777,20 @@ func TestPGMetadataDiffCompositeTypeReorderOnlyWarns(t *testing.T) {
 }
 
 func TestPGMetadataDiffCompositeTypeCommentChanges(t *testing.T) {
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name:    "addr",
 			Comment: "old type comment",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "street", Type: "text", Comment: "old attr comment"},
 			},
 		},
 	})
-	target := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	target := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name:    "addr",
 			Comment: "new type comment",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "street", Type: "text", Comment: "new attr comment"},
 			},
 		},
@@ -1804,11 +1805,11 @@ func TestPGMetadataDiffCompositeTypeCommentChanges(t *testing.T) {
 }
 
 func TestPGMetadataDiffIdenticalCompositeTypesProduceNoMigration(t *testing.T) {
-	composites := []*storepb.CompositeTypeMetadata{
+	composites := []*metadatapb.CompositeTypeMetadata{
 		{
 			Name:    "addr",
 			Comment: "c",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "street", Type: "text", Collation: `"C"`, Comment: "s"},
 			},
 		},
@@ -1823,22 +1824,22 @@ func TestPGMetadataDiffIdenticalCompositeTypesProduceNoMigration(t *testing.T) {
 }
 
 func TestPGMetadataDiffCompositeDropDeferredAfterColumnRetype(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "public.addr", Nullable: true},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text"},
 						},
 					},
@@ -1846,14 +1847,14 @@ func TestPGMetadataDiffCompositeDropDeferredAfterColumnRetype(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "text", Nullable: true},
 						},
 					},
@@ -1874,15 +1875,15 @@ func TestPGMetadataDiffCompositeDropDeferredAfterColumnRetype(t *testing.T) {
 }
 
 func TestPGMetadataDiffSchemaDropIncludesCompositeTypes(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 			{
 				Name: "s",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text"},
 						},
 					},
@@ -1890,8 +1891,8 @@ func TestPGMetadataDiffSchemaDropIncludesCompositeTypes(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
@@ -1907,19 +1908,19 @@ func TestPGMetadataDiffSchemaDropIncludesCompositeTypes(t *testing.T) {
 }
 
 func TestPGMetadataDiffCompositeTypeMiddleInsertWarns(t *testing.T) {
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "addr",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "a", Type: "text"},
 				{Name: "b", Type: "text"},
 			},
 		},
 	})
-	target := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	target := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "addr",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "a", Type: "text"},
 				{Name: "x", Type: "text"},
 				{Name: "b", Type: "text"},
@@ -1936,25 +1937,25 @@ func TestPGMetadataDiffCompositeTypeMiddleInsertWarns(t *testing.T) {
 }
 
 func TestPGMetadataDiffDeferredCompositeDefersReferencedEnumDrop(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "public.addr", Nullable: true},
 						},
 					},
 				},
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "status", Values: []string{"a", "b"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "s", Type: "public.status"},
 						},
 					},
@@ -1962,14 +1963,14 @@ func TestPGMetadataDiffDeferredCompositeDefersReferencedEnumDrop(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "text", Nullable: true},
 						},
 					},
@@ -1992,14 +1993,14 @@ func TestPGMetadataDiffDeferredCompositeDefersReferencedEnumDrop(t *testing.T) {
 }
 
 func TestPGMetadataDiffSchemaDropDeferredWhenCompositeReleasedByRetype(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "s.addr", Nullable: true},
 						},
 					},
@@ -2007,10 +2008,10 @@ func TestPGMetadataDiffSchemaDropDeferredWhenCompositeReleasedByRetype(t *testin
 			},
 			{
 				Name: "s",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text"},
 						},
 					},
@@ -2018,14 +2019,14 @@ func TestPGMetadataDiffSchemaDropDeferredWhenCompositeReleasedByRetype(t *testin
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "text", Nullable: true},
 						},
 					},
@@ -2050,22 +2051,22 @@ func TestPGMetadataDiffSchemaDropDeferredWhenCompositeReleasedByRetype(t *testin
 func TestPGMetadataDiffSchemaDropDeferredWhenDeferredCompositeReferencesItsEnum(t *testing.T) {
 	// public.addr is deferred (public.t.c retyped away from it) and references
 	// s.status; schema s (containing only that enum) must defer its drop too.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "public.addr", Nullable: true},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "st", Type: "s.status"},
 						},
 					},
@@ -2073,20 +2074,20 @@ func TestPGMetadataDiffSchemaDropDeferredWhenDeferredCompositeReferencesItsEnum(
 			},
 			{
 				Name: "s",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "status", Values: []string{"a"}},
 				},
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "text", Nullable: true},
 						},
 					},
@@ -2112,28 +2113,28 @@ func TestPGMetadataDiffDeferredSchemaCompositeDefersReferencedEnumDrop(t *testin
 	// Schema s is deferred (public.t.c retyped away from s.addr); s.addr
 	// references public.status, a top-level dropped enum, which therefore
 	// must also defer until after the schema drop removes s.addr.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "s.addr", Nullable: true},
 						},
 					},
 				},
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "status", Values: []string{"a"}},
 				},
 			},
 			{
 				Name: "s",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "st", Type: "public.status"},
 						},
 					},
@@ -2141,14 +2142,14 @@ func TestPGMetadataDiffDeferredSchemaCompositeDefersReferencedEnumDrop(t *testin
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "text", Nullable: true},
 						},
 					},
@@ -2176,14 +2177,14 @@ func TestPGMetadataDiffCyclicDeferredSchemaDropsGlobalizeTypeDrops(t *testing.T)
 	// Both are deferred (a column retype releases a.ca). Globalized type
 	// drops must remove both composites before either enum, regardless of
 	// the schema-level cycle.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "a.ca", Nullable: true},
 						},
 					},
@@ -2191,13 +2192,13 @@ func TestPGMetadataDiffCyclicDeferredSchemaDropsGlobalizeTypeDrops(t *testing.T)
 			},
 			{
 				Name: "a",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "ea", Values: []string{"x"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "ca",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "v", Type: "b.eb"},
 						},
 					},
@@ -2205,13 +2206,13 @@ func TestPGMetadataDiffCyclicDeferredSchemaDropsGlobalizeTypeDrops(t *testing.T)
 			},
 			{
 				Name: "b",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "eb", Values: []string{"y"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "cb",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "v", Type: "a.ea"},
 						},
 					},
@@ -2219,14 +2220,14 @@ func TestPGMetadataDiffCyclicDeferredSchemaDropsGlobalizeTypeDrops(t *testing.T)
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "text", Nullable: true},
 						},
 					},
@@ -2258,17 +2259,17 @@ func TestPGMetadataDiffImmediateSchemaDropOrdersTypesGlobally(t *testing.T) {
 	// Dropping schema s (whose composite references top-level types) together
 	// with those top-level types: s.child must drop before public.base and
 	// public.status regardless of the schema-drop boundary.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "status", Values: []string{"a"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "base",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 						},
 					},
@@ -2276,10 +2277,10 @@ func TestPGMetadataDiffImmediateSchemaDropOrdersTypesGlobally(t *testing.T) {
 			},
 			{
 				Name: "s",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "child",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "b", Type: "public.base"},
 							{Name: "st", Type: "public.status"},
 						},
@@ -2288,8 +2289,8 @@ func TestPGMetadataDiffImmediateSchemaDropOrdersTypesGlobally(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
@@ -2313,39 +2314,39 @@ func TestPGMetadataDiffImmediateSchemaDropOrdersTypesGlobally(t *testing.T) {
 func TestPGMetadataDiffCompositeCreateWaitsForTableRowType(t *testing.T) {
 	// Creating table t and composites c1(public.t) and c2(c1): both
 	// composites must be created after the table.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c1",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "r", Type: "public.t"},
 						},
 					},
 					{
 						Name: "c2",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "w", Type: "public.c1"},
 						},
 					},
 					{
 						Name: "plain",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 						},
 					},
@@ -2373,28 +2374,28 @@ func TestPGMetadataDiffCompositeCreateWaitsForTableRowType(t *testing.T) {
 func TestPGMetadataDiffDeferredCompositeDefersItsCompositeDependency(t *testing.T) {
 	// child(public.base) is deferred by a column retype; base, also dropped,
 	// must defer too so it drops after child.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "public.child", Nullable: true},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "base",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 						},
 					},
 					{
 						Name: "child",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "b", Type: "public.base"},
 						},
 					},
@@ -2402,14 +2403,14 @@ func TestPGMetadataDiffDeferredCompositeDefersItsCompositeDependency(t *testing.
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "text", Nullable: true},
 						},
 					},
@@ -2434,22 +2435,22 @@ func TestPGMetadataDiffDeferredCompositeDefersItsCompositeDependency(t *testing.
 func TestPGMetadataDiffRowTypeCompositeDropsBeforeTable(t *testing.T) {
 	// Dropping table t and composite c(r public.t): the composite must drop
 	// before the table whose row type it references.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "r", Type: "public.t"},
 						},
 					},
@@ -2457,8 +2458,8 @@ func TestPGMetadataDiffRowTypeCompositeDropsBeforeTable(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
@@ -2476,30 +2477,30 @@ func TestPGMetadataDiffRowTypeCompositeDropsBeforeTable(t *testing.T) {
 func TestPGMetadataDiffCompositeAlterWaitsForNewTableRowType(t *testing.T) {
 	// Existing composite gains an attribute typed with a row type of a table
 	// created in the same migration; the alter must follow CREATE TABLE.
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "c",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "x", Type: "integer"},
 			},
 		},
 	})
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 							{Name: "r", Type: "public.t"},
 						},
@@ -2522,31 +2523,31 @@ func TestPGMetadataDiffCompositeAlterWaitsForNewTableRowType(t *testing.T) {
 func TestPGMetadataDiffCreateSandwichTableCompositeTable(t *testing.T) {
 	// r (row-type provider) -> c (composite using r) -> holder (table using c):
 	// creation order must interleave through the shared graph.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "r",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
 					{
 						Name: "holder",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "x", Type: "public.c", Nullable: true},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "row", Type: "public.r"},
 						},
 					},
@@ -2571,28 +2572,28 @@ func TestPGMetadataDiffCreateSandwichTableCompositeTable(t *testing.T) {
 func TestPGMetadataDiffDropSandwichTableCompositeTable(t *testing.T) {
 	// holder (table using c) -> c (composite using r) -> r: drop order must
 	// interleave through the shared graph.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "r",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
 					{
 						Name: "holder",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "x", Type: "public.c", Nullable: true},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "row", Type: "public.r"},
 						},
 					},
@@ -2600,8 +2601,8 @@ func TestPGMetadataDiffDropSandwichTableCompositeTable(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 
 	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
@@ -2620,22 +2621,22 @@ func TestPGMetadataDiffDropSandwichTableCompositeTable(t *testing.T) {
 func TestPGMetadataDiffDeferredSchemaCompositeDefersTopLevelDependency(t *testing.T) {
 	// Schema s is deferred (retype releases s.child); s.child references
 	// top-level dropped public.base, which must defer too.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "s.child", Nullable: true},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "base",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 						},
 					},
@@ -2643,10 +2644,10 @@ func TestPGMetadataDiffDeferredSchemaCompositeDefersTopLevelDependency(t *testin
 			},
 			{
 				Name: "s",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "child",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "b", Type: "public.base"},
 						},
 					},
@@ -2654,14 +2655,14 @@ func TestPGMetadataDiffDeferredSchemaCompositeDefersTopLevelDependency(t *testin
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c", Type: "text", Nullable: true},
 						},
 					},
@@ -2687,23 +2688,23 @@ func TestPGMetadataDiffCompositeDropDeferredAfterColumnDrop(t *testing.T) {
 	// Dropping the only column using a composite (on a surviving table)
 	// releases it in writeDropAlterTableObjects; the composite drop must
 	// defer past that.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "c", Type: "public.addr", Nullable: true},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text"},
 						},
 					},
@@ -2711,14 +2712,14 @@ func TestPGMetadataDiffCompositeDropDeferredAfterColumnDrop(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
@@ -2741,22 +2742,22 @@ func TestPGMetadataDiffCompositeDropDeferredAfterColumnDrop(t *testing.T) {
 func TestPGMetadataDiffReleasingCompositeAlterPrecedesTableDrop(t *testing.T) {
 	// Retyping c.r away from public.t's row type releases the dropped table;
 	// the releasing ALTER must precede DROP TABLE.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "r", Type: "public.t"},
 						},
 					},
@@ -2764,14 +2765,14 @@ func TestPGMetadataDiffReleasingCompositeAlterPrecedesTableDrop(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "r", Type: "text"},
 						},
 					},
@@ -2795,25 +2796,25 @@ func TestPGMetadataDiffCompositeArrayColumnOrdersCreate(t *testing.T) {
 	// Column sync renders composite-array columns as the bare "_name" form;
 	// the create graph must still order the composite first. zz table name
 	// sorts after the composite to defeat accidental ordering.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "aa_holder",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "xs", Type: "_zz_addr", Nullable: true},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "zz_addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text"},
 						},
 					},
@@ -2833,15 +2834,15 @@ func TestPGMetadataDiffCompositeArrayColumnOrdersCreate(t *testing.T) {
 }
 
 func TestPGMetadataDiffSchemaDropEmitsCompositeDropOnce(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 			{
 				Name: "s",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text"},
 						},
 					},
@@ -2849,8 +2850,8 @@ func TestPGMetadataDiffSchemaDropEmitsCompositeDropOnce(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 
 	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
@@ -2864,22 +2865,22 @@ func TestPGMetadataDiffReleasingRetypeToCreatedTableSplitsDropReadd(t *testing.T
 	// c.r moves from dropped old_t's row type to created new_t's row type:
 	// the drop phase removes the attribute, the create phase re-adds it
 	// after the new table exists.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "old_t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "r", Type: "public.old_t"},
 						},
 					},
@@ -2887,22 +2888,22 @@ func TestPGMetadataDiffReleasingRetypeToCreatedTableSplitsDropReadd(t *testing.T
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "new_t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "r", Type: "public.new_t"},
 						},
 					},
@@ -2928,20 +2929,20 @@ func TestPGMetadataDiffReleasingRetypeToCreatedTableSplitsDropReadd(t *testing.T
 }
 
 func TestPGMetadataDiffCompositeCreateWaitsForViewRowType(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{Name: "v", Definition: "SELECT 1 AS a"},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "row", Type: "public.v"},
 						},
 					},
@@ -2963,24 +2964,24 @@ func TestPGMetadataDiffCompositeCreateWaitsForViewRowType(t *testing.T) {
 func TestPGMetadataDiffCompositeDropReleasedByCompositeAlterDefers(t *testing.T) {
 	// parent's alter (child -> text) releases dropped child only in the
 	// create phase, so child's drop must defer past it.
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "child",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "x", Type: "integer"},
 			},
 		},
 		{
 			Name: "parent",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "c", Type: "public.child"},
 			},
 		},
 	})
-	target := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	target := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "parent",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "c", Type: "text"},
 			},
 		},
@@ -2997,17 +2998,17 @@ func TestPGMetadataDiffCompositeDropReleasedByCompositeAlterDefers(t *testing.T)
 }
 
 func TestPGMetadataDiffEnumDropReleasedByCompositeAlterDefers(t *testing.T) {
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "status", Values: []string{"a"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "addr",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "s", Type: "public.status"},
 						},
 					},
@@ -3015,10 +3016,10 @@ func TestPGMetadataDiffEnumDropReleasedByCompositeAlterDefers(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	target := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "addr",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "s", Type: "text"},
 			},
 		},
@@ -3037,17 +3038,17 @@ func TestPGMetadataDiffEnumDropReleasedByCompositeAlterDefers(t *testing.T) {
 func TestPGMetadataDiffReleasingAlterPrecedesViewDrop(t *testing.T) {
 	// c.row moves off dropped view v's row type; the early alter must
 	// precede DROP VIEW.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{Name: "v", Definition: "SELECT 1 AS a"},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "row", Type: "public.v"},
 						},
 					},
@@ -3055,10 +3056,10 @@ func TestPGMetadataDiffReleasingAlterPrecedesViewDrop(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	target := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "c",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "row", Type: "text"},
 			},
 		},
@@ -3075,25 +3076,25 @@ func TestPGMetadataDiffReleasingAlterPrecedesViewDrop(t *testing.T) {
 }
 
 func TestPGMetadataDiffCompositeAlterWaitsForCreatedViewRowType(t *testing.T) {
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name: "c",
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "x", Type: "integer"},
 			},
 		},
 	})
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{Name: "v", Definition: "SELECT 1 AS a"},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 							{Name: "row", Type: "public.v"},
 						},
@@ -3116,17 +3117,17 @@ func TestPGMetadataDiffCompositeAlterWaitsForCreatedViewRowType(t *testing.T) {
 func TestPGMetadataDiffCompositeDropPrecedesReferencedViewDrop(t *testing.T) {
 	// Dropping both c(row public.v) and v: the composite must drop first
 	// despite the blanket views-before-composites edges.
-	source := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	source := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{Name: "v", Definition: "SELECT 1 AS a"},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "c",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "row", Type: "public.v"},
 						},
 					},
@@ -3134,8 +3135,8 @@ func TestPGMetadataDiffCompositeDropPrecedesReferencedViewDrop(t *testing.T) {
 			},
 		},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
-	target := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+	target := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
 	}, nil, nil, storepb.Engine_POSTGRES, true)
 
 	sql, err := schema.DiffMigration(storepb.Engine_POSTGRES, source, target)
@@ -3163,11 +3164,11 @@ func TestFilterPostgresArchiveSchemaKeepsCompositeTypes(t *testing.T) {
 }
 
 func TestPGMetadataDiffSkipDumpCompositeTypesIgnored(t *testing.T) {
-	source := newPGDatabaseMetadataWithCompositeTypes([]*storepb.CompositeTypeMetadata{
+	source := newPGDatabaseMetadataWithCompositeTypes([]*metadatapb.CompositeTypeMetadata{
 		{
 			Name:     "ext_owned",
 			SkipDump: true,
-			Attributes: []*storepb.CompositeTypeAttribute{
+			Attributes: []*metadatapb.CompositeTypeAttribute{
 				{Name: "x", Type: "integer"},
 			},
 		},

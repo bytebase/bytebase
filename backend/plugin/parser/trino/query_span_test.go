@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -118,7 +119,7 @@ func TestGetQuerySpanFromYAML(t *testing.T) {
 		Statement          string `yaml:"statement,omitempty"`
 		DefaultDatabase    string `yaml:"defaultDatabase,omitempty"`
 		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
-		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
+		// Metadata is the protojson encoded metadatapb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
 		Metadata  string               `yaml:"metadata,omitempty"`
 		QuerySpan *CustomYamlQuerySpan `yaml:"querySpan,omitempty"`
@@ -150,9 +151,9 @@ func TestGetQuerySpanFromYAML(t *testing.T) {
 		a.NoError(yaml.Unmarshal(byteValue, &testCases))
 
 		for i, tc := range testCases {
-			metadata := &storepb.DatabaseSchemaMetadata{}
+			metadata := &metadatapb.DatabaseSchemaMetadata{}
 			a.NoErrorf(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
-			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 				GetDatabaseMetadataFunc: databaseMetadataGetter,
 				ListDatabaseNamesFunc:   databaseNameLister,
@@ -206,7 +207,7 @@ func TestGetQuerySpanFromYAML(t *testing.T) {
 	}
 }
 
-func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {

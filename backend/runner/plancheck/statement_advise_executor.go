@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
@@ -122,7 +123,7 @@ func (e *StatementAdviseExecutor) runReview(
 	originMetadata := model.NewDatabaseMetadata(dbMetadata.GetProto(), nil, nil, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 
 	// Clone metadata for final to avoid modifying the original
-	clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*storepb.DatabaseSchemaMetadata)
+	clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*metadatapb.DatabaseSchemaMetadata)
 	if !ok {
 		return nil, common.Wrapf(errors.New("failed to clone database schema metadata"), common.Internal, "failed to create a catalog")
 	}

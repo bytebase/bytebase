@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 
@@ -19,7 +20,7 @@ func init() {
 
 // GetDatabaseMetadata parses Oracle schema DDL text and returns database metadata
 // using the omni parser AST.
-func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
 	list, err := plsqlparser.ParsePLSQL(schemaText)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse Oracle schema")
@@ -29,14 +30,14 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	extractor := &oracleOmniMetadataExtractor{
-		tables:            make(map[string]*storepb.TableMetadata),
-		views:             make(map[string]*storepb.ViewMetadata),
-		materializedViews: make(map[string]*storepb.MaterializedViewMetadata),
-		functions:         make(map[string]*storepb.FunctionMetadata),
-		procedures:        make(map[string]*storepb.ProcedureMetadata),
-		triggers:          make(map[string]*storepb.TriggerMetadata),
-		sequences:         make(map[string]*storepb.SequenceMetadata),
-		packages:          make(map[string]*storepb.PackageMetadata),
+		tables:            make(map[string]*metadatapb.TableMetadata),
+		views:             make(map[string]*metadatapb.ViewMetadata),
+		materializedViews: make(map[string]*metadatapb.MaterializedViewMetadata),
+		functions:         make(map[string]*metadatapb.FunctionMetadata),
+		procedures:        make(map[string]*metadatapb.ProcedureMetadata),
+		triggers:          make(map[string]*metadatapb.TriggerMetadata),
+		sequences:         make(map[string]*metadatapb.SequenceMetadata),
+		packages:          make(map[string]*metadatapb.PackageMetadata),
 		checkNames:        make(map[string]map[string]bool),
 		checkNameNext:     make(map[string]map[string]int),
 		schemaText:        schemaText,
@@ -56,35 +57,35 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 type oracleOmniMetadataExtractor struct {
 	currentDatabase   string
 	currentSchema     string
-	tables            map[string]*storepb.TableMetadata
-	views             map[string]*storepb.ViewMetadata
-	materializedViews map[string]*storepb.MaterializedViewMetadata
-	functions         map[string]*storepb.FunctionMetadata
-	procedures        map[string]*storepb.ProcedureMetadata
-	triggers          map[string]*storepb.TriggerMetadata
-	sequences         map[string]*storepb.SequenceMetadata
-	packages          map[string]*storepb.PackageMetadata
+	tables            map[string]*metadatapb.TableMetadata
+	views             map[string]*metadatapb.ViewMetadata
+	materializedViews map[string]*metadatapb.MaterializedViewMetadata
+	functions         map[string]*metadatapb.FunctionMetadata
+	procedures        map[string]*metadatapb.ProcedureMetadata
+	triggers          map[string]*metadatapb.TriggerMetadata
+	sequences         map[string]*metadatapb.SequenceMetadata
+	packages          map[string]*metadatapb.PackageMetadata
 	checkNames        map[string]map[string]bool
 	checkNameNext     map[string]map[string]int
 	schemaText        string
 }
 
-func (e *oracleOmniMetadataExtractor) databaseMetadata() *storepb.DatabaseSchemaMetadata {
+func (e *oracleOmniMetadataExtractor) databaseMetadata() *metadatapb.DatabaseSchemaMetadata {
 	e.resolveForeignKeyReferencedColumns()
 
-	schemaMetadata := &storepb.DatabaseSchemaMetadata{
+	schemaMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:    e.currentDatabase,
-		Schemas: []*storepb.SchemaMetadata{},
+		Schemas: []*metadatapb.SchemaMetadata{},
 	}
-	schema := &storepb.SchemaMetadata{
+	schema := &metadatapb.SchemaMetadata{
 		Name:              e.currentSchema,
-		Tables:            []*storepb.TableMetadata{},
-		Views:             []*storepb.ViewMetadata{},
-		MaterializedViews: []*storepb.MaterializedViewMetadata{},
-		Procedures:        []*storepb.ProcedureMetadata{},
-		Functions:         []*storepb.FunctionMetadata{},
-		Sequences:         []*storepb.SequenceMetadata{},
-		Packages:          []*storepb.PackageMetadata{},
+		Tables:            []*metadatapb.TableMetadata{},
+		Views:             []*metadatapb.ViewMetadata{},
+		MaterializedViews: []*metadatapb.MaterializedViewMetadata{},
+		Procedures:        []*metadatapb.ProcedureMetadata{},
+		Functions:         []*metadatapb.FunctionMetadata{},
+		Sequences:         []*metadatapb.SequenceMetadata{},
+		Packages:          []*metadatapb.PackageMetadata{},
 	}
 
 	var tableNames []string
@@ -156,18 +157,18 @@ func (e *oracleOmniMetadataExtractor) databaseMetadata() *storepb.DatabaseSchema
 	return schemaMetadata
 }
 
-func (e *oracleOmniMetadataExtractor) getOrCreateTable(tableName string) *storepb.TableMetadata {
+func (e *oracleOmniMetadataExtractor) getOrCreateTable(tableName string) *metadatapb.TableMetadata {
 	if table, ok := e.tables[tableName]; ok {
 		return table
 	}
-	table := &storepb.TableMetadata{
+	table := &metadatapb.TableMetadata{
 		Name:             tableName,
-		Columns:          []*storepb.ColumnMetadata{},
-		Indexes:          []*storepb.IndexMetadata{},
-		ForeignKeys:      []*storepb.ForeignKeyMetadata{},
-		CheckConstraints: []*storepb.CheckConstraintMetadata{},
-		Triggers:         []*storepb.TriggerMetadata{},
-		Partitions:       []*storepb.TablePartitionMetadata{},
+		Columns:          []*metadatapb.ColumnMetadata{},
+		Indexes:          []*metadatapb.IndexMetadata{},
+		ForeignKeys:      []*metadatapb.ForeignKeyMetadata{},
+		CheckConstraints: []*metadatapb.CheckConstraintMetadata{},
+		Triggers:         []*metadatapb.TriggerMetadata{},
+		Partitions:       []*metadatapb.TablePartitionMetadata{},
 	}
 	e.tables[tableName] = table
 	return table
@@ -187,11 +188,11 @@ func (e *oracleOmniMetadataExtractor) extractStatement(stmt ast.StmtNode) {
 		e.extractCreateSequence(n)
 	case *ast.CreateProcedureStmt:
 		if name := objectName(n.Name); name != "" {
-			e.procedures[name] = &storepb.ProcedureMetadata{Name: name, Definition: e.definitionText(n)}
+			e.procedures[name] = &metadatapb.ProcedureMetadata{Name: name, Definition: e.definitionText(n)}
 		}
 	case *ast.CreateFunctionStmt:
 		if name := objectName(n.Name); name != "" {
-			e.functions[name] = &storepb.FunctionMetadata{Name: name, Definition: e.functionDefinitionText(n)}
+			e.functions[name] = &metadatapb.FunctionMetadata{Name: name, Definition: e.functionDefinitionText(n)}
 		}
 	case *ast.CreatePackageStmt:
 		if name := objectName(n.Name); name != "" {
@@ -246,8 +247,8 @@ func (e *oracleOmniMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt)
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *storepb.TableMetadata) {
-	column := &storepb.ColumnMetadata{
+func (e *oracleOmniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *metadatapb.TableMetadata) {
+	column := &metadatapb.ColumnMetadata{
 		Name:     n.Name,
 		Type:     "VARCHAR2(100)",
 		Nullable: true,
@@ -293,7 +294,7 @@ func (e *oracleOmniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *sto
 	table.Columns = append(table.Columns, column)
 }
 
-func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConstraint, table *storepb.TableMetadata, column *storepb.ColumnMetadata) {
+func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConstraint, table *metadatapb.TableMetadata, column *metadatapb.ColumnMetadata) {
 	switch n.Type {
 	case ast.CONSTRAINT_NOT_NULL:
 		column.Nullable = false
@@ -306,7 +307,7 @@ func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConst
 	case ast.CONSTRAINT_PRIMARY:
 		column.Nullable = false
 		if !hasPrimaryIndex(table) {
-			table.Indexes = append(table.Indexes, &storepb.IndexMetadata{
+			table.Indexes = append(table.Indexes, &metadatapb.IndexMetadata{
 				Name:         fallbackName(n.Name, fmt.Sprintf("PK_%s", table.Name)),
 				Primary:      true,
 				Unique:       true,
@@ -319,7 +320,7 @@ func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConst
 	case ast.CONSTRAINT_UNIQUE:
 		name := fallbackName(n.Name, fmt.Sprintf("UK_%s_%s", table.Name, column.Name))
 		if !hasUniqueIndex(table, []string{column.Name}) {
-			table.Indexes = append(table.Indexes, &storepb.IndexMetadata{
+			table.Indexes = append(table.Indexes, &metadatapb.IndexMetadata{
 				Name:         name,
 				Unique:       true,
 				Type:         "NORMAL",
@@ -336,14 +337,14 @@ func (e *oracleOmniMetadataExtractor) extractColumnConstraint(n *ast.ColumnConst
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) extractTableConstraint(n *ast.TableConstraint, table *storepb.TableMetadata) {
+func (e *oracleOmniMetadataExtractor) extractTableConstraint(n *ast.TableConstraint, table *metadatapb.TableMetadata) {
 	columns := stringList(n.Columns)
 	switch n.Type {
 	case ast.CONSTRAINT_PRIMARY:
 		if len(columns) == 0 {
 			return
 		}
-		table.Indexes = append(table.Indexes, &storepb.IndexMetadata{
+		table.Indexes = append(table.Indexes, &metadatapb.IndexMetadata{
 			Name:         fallbackName(n.Name, fmt.Sprintf("PK_%s", table.Name)),
 			Primary:      true,
 			Unique:       true,
@@ -357,7 +358,7 @@ func (e *oracleOmniMetadataExtractor) extractTableConstraint(n *ast.TableConstra
 		if len(columns) == 0 {
 			return
 		}
-		table.Indexes = append(table.Indexes, &storepb.IndexMetadata{
+		table.Indexes = append(table.Indexes, &metadatapb.IndexMetadata{
 			Name:         fallbackName(n.Name, fmt.Sprintf("UK_%s_%d", table.Name, len(table.Indexes)+1)),
 			Unique:       true,
 			Type:         "NORMAL",
@@ -405,25 +406,25 @@ func (e *oracleOmniMetadataExtractor) extractAlterTable(n *ast.AlterTableStmt) {
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) appendCheckConstraint(table *storepb.TableMetadata, name string, expr ast.ExprNode) {
+func (e *oracleOmniMetadataExtractor) appendCheckConstraint(table *metadatapb.TableMetadata, name string, expr ast.ExprNode) {
 	if expr == nil {
 		return
 	}
 	e.reserveCheckConstraintName(table, name)
-	table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
+	table.CheckConstraints = append(table.CheckConstraints, &metadatapb.CheckConstraintMetadata{
 		Name:       name,
 		Expression: e.exprText(expr),
 	})
 }
 
-func (e *oracleOmniMetadataExtractor) checkConstraintName(table *storepb.TableMetadata, name string, fallback string) string {
+func (e *oracleOmniMetadataExtractor) checkConstraintName(table *metadatapb.TableMetadata, name string, fallback string) string {
 	if name != "" {
 		return name
 	}
 	return e.uniqueCheckConstraintName(table, fallback)
 }
 
-func (e *oracleOmniMetadataExtractor) uniqueCheckConstraintName(table *storepb.TableMetadata, fallback string) string {
+func (e *oracleOmniMetadataExtractor) uniqueCheckConstraintName(table *metadatapb.TableMetadata, fallback string) string {
 	used := e.checkConstraintNameSet(table)
 	if !used[fallback] {
 		return fallback
@@ -443,11 +444,11 @@ func (e *oracleOmniMetadataExtractor) uniqueCheckConstraintName(table *storepb.T
 	}
 }
 
-func (e *oracleOmniMetadataExtractor) reserveCheckConstraintName(table *storepb.TableMetadata, name string) {
+func (e *oracleOmniMetadataExtractor) reserveCheckConstraintName(table *metadatapb.TableMetadata, name string) {
 	e.checkConstraintNameSet(table)[name] = true
 }
 
-func (e *oracleOmniMetadataExtractor) checkConstraintNameSet(table *storepb.TableMetadata) map[string]bool {
+func (e *oracleOmniMetadataExtractor) checkConstraintNameSet(table *metadatapb.TableMetadata) map[string]bool {
 	used := e.checkNames[table.Name]
 	if used != nil {
 		return used
@@ -460,7 +461,7 @@ func (e *oracleOmniMetadataExtractor) checkConstraintNameSet(table *storepb.Tabl
 	return used
 }
 
-func (e *oracleOmniMetadataExtractor) checkConstraintNameNextSet(table *storepb.TableMetadata) map[string]int {
+func (e *oracleOmniMetadataExtractor) checkConstraintNameNextSet(table *metadatapb.TableMetadata) map[string]int {
 	next := e.checkNameNext[table.Name]
 	if next != nil {
 		return next
@@ -470,13 +471,13 @@ func (e *oracleOmniMetadataExtractor) checkConstraintNameNextSet(table *storepb.
 	return next
 }
 
-func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, onDelete string) {
+func (*oracleOmniMetadataExtractor) appendForeignKey(table *metadatapb.TableMetadata, name string, columns []string, refTable *ast.ObjectName, refColumns *ast.List, onDelete string) {
 	referencedTable := objectName(refTable)
 	referencedColumns := stringList(refColumns)
 	if len(columns) == 0 || referencedTable == "" {
 		return
 	}
-	foreignKey := &storepb.ForeignKeyMetadata{
+	foreignKey := &metadatapb.ForeignKeyMetadata{
 		Name:              name,
 		Columns:           columns,
 		ReferencedTable:   referencedTable,
@@ -488,7 +489,7 @@ func (*oracleOmniMetadataExtractor) appendForeignKey(table *storepb.TableMetadat
 
 func (e *oracleOmniMetadataExtractor) resolveForeignKeyReferencedColumns() {
 	for _, table := range e.tables {
-		var foreignKeys []*storepb.ForeignKeyMetadata
+		var foreignKeys []*metadatapb.ForeignKeyMetadata
 		for _, foreignKey := range table.ForeignKeys {
 			if len(foreignKey.ReferencedColumns) == 0 {
 				referencedTable := e.tables[foreignKey.ReferencedTable]
@@ -513,7 +514,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt)
 		e.currentSchema = n.Name.Schema
 	}
 
-	index := &storepb.IndexMetadata{
+	index := &metadatapb.IndexMetadata{
 		Name:        indexName,
 		Unique:      n.Unique,
 		Type:        "NORMAL",
@@ -571,7 +572,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateView(n *ast.CreateViewStmt) {
 
 	definition := e.nodeText(n.Query)
 	if n.Materialized {
-		materializedView := &storepb.MaterializedViewMetadata{
+		materializedView := &metadatapb.MaterializedViewMetadata{
 			Name:       viewName,
 			Definition: definition,
 		}
@@ -587,7 +588,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateView(n *ast.CreateViewStmt) {
 		return
 	}
 
-	view := &storepb.ViewMetadata{
+	view := &metadatapb.ViewMetadata{
 		Name:       viewName,
 		Definition: definition,
 	}
@@ -603,7 +604,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenc
 	if sequenceName == "" {
 		return
 	}
-	sequence := &storepb.SequenceMetadata{Name: sequenceName}
+	sequence := &metadatapb.SequenceMetadata{Name: sequenceName}
 	if start := e.nodeText(n.StartWith); start != "" {
 		sequence.Start = start
 	}
@@ -620,7 +621,7 @@ func (e *oracleOmniMetadataExtractor) extractCreatePackage(name string, n *ast.C
 	}
 	pkg := e.packages[name]
 	if pkg == nil {
-		e.packages[name] = &storepb.PackageMetadata{Name: name, Definition: definition}
+		e.packages[name] = &metadatapb.PackageMetadata{Name: name, Definition: definition}
 		return
 	}
 	if pkg.Definition == "" {
@@ -636,7 +637,7 @@ func (e *oracleOmniMetadataExtractor) extractCreateTrigger(n *ast.CreateTriggerS
 	if triggerName == "" || tableName == "" {
 		return
 	}
-	trigger := &storepb.TriggerMetadata{
+	trigger := &metadatapb.TriggerMetadata{
 		Name: triggerName,
 		Body: e.definitionText(n),
 	}
@@ -859,7 +860,7 @@ func fallbackName(name, fallback string) string {
 	return fallback
 }
 
-func hasPrimaryIndex(table *storepb.TableMetadata) bool {
+func hasPrimaryIndex(table *metadatapb.TableMetadata) bool {
 	for _, index := range table.Indexes {
 		if index.Primary {
 			return true
@@ -868,7 +869,7 @@ func hasPrimaryIndex(table *storepb.TableMetadata) bool {
 	return false
 }
 
-func primaryKeyColumns(table *storepb.TableMetadata) []string {
+func primaryKeyColumns(table *metadatapb.TableMetadata) []string {
 	if table == nil {
 		return nil
 	}
@@ -880,7 +881,7 @@ func primaryKeyColumns(table *storepb.TableMetadata) []string {
 	return nil
 }
 
-func hasUniqueIndex(table *storepb.TableMetadata, columns []string) bool {
+func hasUniqueIndex(table *metadatapb.TableMetadata, columns []string) bool {
 	for _, index := range table.Indexes {
 		if !index.Unique || index.Primary || len(index.Expressions) != len(columns) {
 			continue
@@ -899,7 +900,7 @@ func hasUniqueIndex(table *storepb.TableMetadata, columns []string) bool {
 	return false
 }
 
-func markColumnsNotNull(table *storepb.TableMetadata, columns []string) {
+func markColumnsNotNull(table *metadatapb.TableMetadata, columns []string) {
 	for _, column := range table.Columns {
 		if slices.Contains(columns, column.Name) {
 			column.Nullable = false

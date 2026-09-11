@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -22,7 +23,7 @@ func TestGetQuerySpan(t *testing.T) {
 		Description     string `yaml:"description,omitempty"`
 		Statement       string `yaml:"statement,omitempty"`
 		DefaultDatabase string `yaml:"defaultDatabase,omitempty"`
-		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
+		// Metadata is the protojson encoded metadatapb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
 		Metadata  string              `yaml:"metadata,omitempty"`
 		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
@@ -52,9 +53,9 @@ func TestGetQuerySpan(t *testing.T) {
 		a.NoError(yaml.Unmarshal(byteValue, &testCases))
 
 		for i, tc := range testCases {
-			metadata := &storepb.DatabaseSchemaMetadata{}
+			metadata := &metadatapb.DatabaseSchemaMetadata{}
 			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
-			databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+			databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 				GetDatabaseMetadataFunc: databaseMetadataGetter,
 				ListDatabaseNamesFunc:   databaseNamesLister,
@@ -81,15 +82,15 @@ func TestGetQuerySpanStaleMetadataReturnsNotFoundError(t *testing.T) {
 	a := require.New(t)
 
 	// Metadata omits distribute_level to mimic a stale cache after out-of-band ALTER TABLE ADD COLUMN.
-	staleMetadata := &storepb.DatabaseSchemaMetadata{
+	staleMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "cif",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "byt9385_repro",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id"},
 							{Name: "existing_col"},
 							{Name: "create_time"},
@@ -99,7 +100,7 @@ func TestGetQuerySpanStaleMetadataReturnsNotFoundError(t *testing.T) {
 			},
 		},
 	}
-	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{staleMetadata})
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{staleMetadata})
 
 	span, err := GetQuerySpan(
 		context.TODO(),
@@ -141,13 +142,13 @@ func TestGetQuerySpanMissingTableFallsBackToNotFoundDatabase(t *testing.T) {
 	a := require.New(t)
 
 	// Metadata is missing the table entirely.
-	staleMetadata := &storepb.DatabaseSchemaMetadata{
+	staleMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "cif",
-		Schemas: []*storepb.SchemaMetadata{
-			{Name: "", Tables: []*storepb.TableMetadata{}},
+		Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "", Tables: []*metadatapb.TableMetadata{}},
 		},
 	}
-	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{staleMetadata})
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{staleMetadata})
 
 	span, err := GetQuerySpan(
 		context.TODO(),
@@ -187,21 +188,21 @@ func TestGetQuerySpanMissingTableUnionedWithAccessTables(t *testing.T) {
 	a := require.New(t)
 
 	// Metadata has the "known" table but not the "unknown" one.
-	staleMetadata := &storepb.DatabaseSchemaMetadata{
+	staleMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "cif",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name:    "byt9385_known",
-						Columns: []*storepb.ColumnMetadata{{Name: "a"}},
+						Columns: []*metadatapb.ColumnMetadata{{Name: "a"}},
 					},
 				},
 			},
 		},
 	}
-	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{staleMetadata})
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{staleMetadata})
 
 	span, err := GetQuerySpan(
 		context.TODO(),
@@ -235,19 +236,19 @@ func TestGetQuerySpanMissingTableUnionedWithAccessTables(t *testing.T) {
 // reported as an error rather than recursing until the stack overflows.
 // Ported from the MySQL guard (#20153).
 func TestGetQuerySpanCyclicViewReference(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{Name: "v1", Definition: "SELECT * FROM v2"},
 					{Name: "v2", Definition: "SELECT * FROM v1"},
 				},
 			},
 		},
 	}
-	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 
 	_, err := GetQuerySpan(
 		context.TODO(),
@@ -264,7 +265,7 @@ func TestGetQuerySpanCyclicViewReference(t *testing.T) {
 	require.ErrorContains(t, err, "cyclic view reference")
 }
 
-func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
