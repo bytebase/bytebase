@@ -113,7 +113,7 @@ export const useGuideContext = ({
   route: GuideRoute;
   scenarioId?: GuideScenarioId;
   workspaceUsage?: GuideWorkspaceUsage;
-}): { context: GuideContext; loading: boolean } => {
+}): { context: GuideContext; contextReady: boolean } => {
   const databaseExplored = useIntroStateByKey(
     GUIDE_PROGRESS_KEYS.databaseExplored
   );
@@ -146,7 +146,7 @@ export const useGuideContext = ({
     currentUserName
   );
   const [facts, setFacts] = useState<GuideFacts>(INITIAL_FACTS);
-  const [loading, setLoading] = useState(true);
+  const [contextReady, setContextReady] = useState(false);
   const eventTargetRef = useRef<
     { projectName: string; databaseName: string } | undefined
   >(undefined);
@@ -230,7 +230,7 @@ export const useGuideContext = ({
   useEffect(() => {
     if (dismissed || !enabled) {
       setFacts(INITIAL_FACTS);
-      setLoading(false);
+      setContextReady(false);
       return;
     }
 
@@ -310,7 +310,7 @@ export const useGuideContext = ({
             changeIssueCreated || state.hasCreatedChangeIssue,
         }));
       }
-      setLoading(false);
+      setContextReady(true);
     })();
   }, [
     changeIssueCreated,
@@ -333,5 +333,5 @@ export const useGuideContext = ({
     () => ({ ...facts, isSaaS, hasOtherWorkspaceMember, route }),
     [facts, hasOtherWorkspaceMember, isSaaS, route]
   );
-  return { context, loading };
+  return { context, contextReady };
 };

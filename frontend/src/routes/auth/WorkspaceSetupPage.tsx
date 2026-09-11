@@ -131,10 +131,14 @@ export function WorkspaceSetupPage() {
       return;
     }
     setupPageEnteredRef.current = true;
-    useAppStore.getState().saveIntroStateByKey({
-      key: WORKSPACE_SETUP_PAGE_ENTERED_KEY,
-      newState: true,
-    });
+    try {
+      useAppStore.getState().saveIntroStateByKey({
+        key: WORKSPACE_SETUP_PAGE_ENTERED_KEY,
+        newState: true,
+      });
+    } catch {
+      // Analytics markers must not interrupt workspace setup when storage fails.
+    }
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("workspace setup page entered", {
         properties: { setup_version: WORKSPACE_SETUP_VERSION },
