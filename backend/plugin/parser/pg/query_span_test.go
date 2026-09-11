@@ -375,6 +375,28 @@ func TestLoaderIntegration_SimpleHealthyPath(t *testing.T) {
 	mustHaveExactSource(t, span.Results[1], "users", "email")
 }
 
+func TestLoaderIntegration_PartitionReadKeepsLineage(t *testing.T) {
+	// Masking resolves a partition to its parent table, which needs the read to
+	// trace to the partition's columns.
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{{
+				Name:       "orders",
+				Columns:    []*metadatapb.ColumnMetadata{{Name: "id", Type: "int4"}, {Name: "ssn", Type: "text"}},
+				Partitions: []*metadatapb.TablePartitionMetadata{{Name: "orders_2024"}},
+			}},
+		}},
+	}
+
+	span := mustGetQuerySpan(t, meta, `SELECT ssn FROM orders_2024`)
+	if len(span.Results) != 1 {
+		t.Fatalf("got %d results, want 1", len(span.Results))
+	}
+	mustHaveExactSource(t, span.Results[0], "orders_2024", "ssn")
+}
+
 func TestLoaderIntegration_EnumWorksWhenDeclared(t *testing.T) {
 	// When an enum IS declared in metadata, the table installs as real and
 	// enum-typed columns resolve through their real type. This is the
