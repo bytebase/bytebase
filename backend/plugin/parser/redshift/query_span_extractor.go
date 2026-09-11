@@ -2,7 +2,6 @@ package redshift
 
 import (
 	"context"
-	"slices"
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
@@ -12,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const redshiftGetDatabaseMetadataError = "failed to get database metadata for database: %s"
@@ -85,9 +83,6 @@ func (q *omniQuerySpanExtractor) getOmniQuerySpanWithFunctionStack(ctx context.C
 
 	cat, err := q.newOmniQuerySpanCatalog(ctx)
 	if err != nil {
-		return nil, err
-	}
-	if err := q.installOmniQuerySpanFunctions(ctx, cat); err != nil {
 		return nil, err
 	}
 	omniSpan, err := redshiftanalysis.GetQuerySpan(cat, statement)
@@ -211,35 +206,8 @@ func (q *omniQuerySpanExtractor) newOmniQuerySpanCatalog(ctx context.Context) (*
 	}
 	cat := redshiftcatalog.New()
 	cat.SetSearchPath(q.searchPath)
-	cat.SetRelationResolver(&redshiftQuerySpanRelationResolver{
-		metadata: metadata,
-	})
+	cat.UseMetadata(metadata.GetProto())
 	return cat, nil
-}
-
-func (q *omniQuerySpanExtractor) installOmniQuerySpanFunctions(ctx context.Context, cat *redshiftcatalog.Catalog) error {
-	if q.gCtx.GetDatabaseMetadataFunc == nil {
-		return nil
-	}
-	_, metadata, err := q.gCtx.GetDatabaseMetadataFunc(ctx, q.gCtx.InstanceID, q.defaultDatabase)
-	if err != nil {
-		return errors.Wrapf(err, redshiftGetDatabaseMetadataError, q.defaultDatabase)
-	}
-	if metadata == nil {
-		return nil
-	}
-	for _, schema := range metadata.GetProto().GetSchemas() {
-		for _, function := range schema.GetFunctions() {
-			definition := strings.TrimSpace(function.GetDefinition())
-			if definition == "" {
-				continue
-			}
-			if _, err := cat.Exec(definition, nil); err != nil {
-				continue
-			}
-		}
-	}
-	return nil
 }
 
 type omniFunctionBodySources struct {
@@ -268,256 +236,6 @@ type omniFunctionSourceProjection struct {
 }
 
 type omniFunctionSourceScope map[string]omniFunctionSourceProjection
-
-type redshiftQuerySpanRelationResolver struct {
-	metadata *model.DatabaseMetadata
-}
-
-func (r *redshiftQuerySpanRelationResolver) ResolveRelation(schemaName, relationName string, searchPath []string) (*redshiftcatalog.RelationSpec, error) {
-	if r.metadata == nil {
-		return nil, nil
-	}
-
-	resolvedSchemaName, resolvedRelationName := schemaName, relationName
-	if resolvedSchemaName == "" {
-		resolvedSchemaName, resolvedRelationName = r.metadata.SearchRelation(searchPath, relationName)
-		if resolvedSchemaName == "" && resolvedRelationName == "" {
-			return nil, nil
-		}
-	}
-
-	schema := r.metadata.GetSchemaMetadata(resolvedSchemaName)
-	if schema == nil {
-		return nil, nil
-	}
-	return redshiftRelationSpecFromMetadata(r.metadata, schema, resolvedSchemaName, resolvedRelationName), nil
-}
-
-func redshiftRelationSpecFromMetadata(metadata *model.DatabaseMetadata, schema *model.SchemaMetadata, schemaName, relationName string) *redshiftcatalog.RelationSpec {
-	if table := schema.GetTable(relationName); table != nil {
-		return redshiftTableRelationSpec(schemaName, table.GetProto().GetName(), table.GetProto().GetColumns())
-	}
-	if table := schema.GetExternalTable(relationName); table != nil {
-		return redshiftTableRelationSpec(schemaName, table.GetProto().GetName(), table.GetProto().GetColumns())
-	}
-	if view := schema.GetView(relationName); view != nil {
-		if definition := strings.TrimSpace(view.GetDefinition()); definition != "" {
-			return &redshiftcatalog.RelationSpec{
-				SchemaName: schemaName,
-				Name:       view.GetName(),
-				Kind:       redshiftcatalog.RelationKindView,
-				Definition: qualifyRedshiftViewDefinition(definition, schemaName, metadata),
-			}
-		}
-		return redshiftTableRelationSpec(schemaName, view.GetName(), view.GetColumns())
-	}
-	if view := schema.GetMaterializedView(relationName); view != nil {
-		if definition := strings.TrimSpace(view.GetDefinition()); definition != "" {
-			return &redshiftcatalog.RelationSpec{
-				SchemaName: schemaName,
-				Name:       view.GetName(),
-				Kind:       redshiftcatalog.RelationKindMaterializedView,
-				Definition: qualifyRedshiftViewDefinition(definition, schemaName, metadata),
-			}
-		}
-		return redshiftTableRelationSpec(schemaName, view.GetName(), nil)
-	}
-	if sequence := schema.GetSequence(relationName); sequence != nil {
-		return redshiftSequenceRelationSpec(schemaName, sequence.GetName())
-	}
-	return nil
-}
-
-func redshiftTableRelationSpec(schemaName, tableName string, columns []*metadatapb.ColumnMetadata) *redshiftcatalog.RelationSpec {
-	return &redshiftcatalog.RelationSpec{
-		SchemaName: schemaName,
-		Name:       tableName,
-		Kind:       redshiftcatalog.RelationKindTable,
-		Columns:    redshiftRelationColumnSpecs(columns),
-	}
-}
-
-func redshiftRelationColumnSpecs(columns []*metadatapb.ColumnMetadata) []redshiftcatalog.RelationColumnSpec {
-	result := make([]redshiftcatalog.RelationColumnSpec, 0, len(columns))
-	for _, column := range columns {
-		if column == nil || column.GetName() == "" {
-			continue
-		}
-		result = append(result, redshiftcatalog.RelationColumnSpec{
-			Name: column.GetName(),
-			Type: normalizeCompletionType(column.GetType()),
-		})
-	}
-	if len(result) == 0 {
-		result = append(result, redshiftcatalog.RelationColumnSpec{
-			Name: "__bytebase_query_span_placeholder",
-			Type: "text",
-		})
-	}
-	return result
-}
-
-func redshiftSequenceRelationSpec(schemaName, sequenceName string) *redshiftcatalog.RelationSpec {
-	return &redshiftcatalog.RelationSpec{
-		SchemaName: schemaName,
-		Name:       sequenceName,
-		Kind:       redshiftcatalog.RelationKindTable,
-		Columns: []redshiftcatalog.RelationColumnSpec{
-			{Name: "last_value", Type: "bigint"},
-			{Name: "log_cnt", Type: "bigint"},
-			{Name: "is_called", Type: "boolean"},
-		},
-	}
-}
-
-type redshiftSchemaQualificationEdit struct {
-	offset int
-	schema string
-}
-
-func qualifyRedshiftViewDefinition(definition, schemaName string, metadata *model.DatabaseMetadata) string {
-	stmts, err := ParseRedshift(definition)
-	if err != nil || len(stmts) != 1 {
-		return definition
-	}
-
-	var query redshiftast.Node
-	switch stmt := stmts[0].AST.(type) {
-	case *redshiftast.ViewStmt:
-		query = stmt.Query
-	case *redshiftast.CreateTableAsStmt:
-		query = stmt.Query
-	case *redshiftast.SelectStmt:
-		query = stmt
-	default:
-		return definition
-	}
-	if query == nil {
-		return definition
-	}
-
-	searchPath := normalizeOmniSearchPath([]string{schemaName, "public"})
-	var edits []redshiftSchemaQualificationEdit
-	collectRedshiftSchemaQualificationEdits(metadata, searchPath, query, map[string]bool{}, &edits)
-	if len(edits) == 0 {
-		return definition
-	}
-
-	slices.SortFunc(edits, func(a, b redshiftSchemaQualificationEdit) int {
-		return b.offset - a.offset
-	})
-	result := definition
-	for _, edit := range edits {
-		if edit.offset < 0 || edit.offset > len(result) {
-			continue
-		}
-		result = result[:edit.offset] + quoteIdent(edit.schema) + "." + result[edit.offset:]
-	}
-	return result
-}
-
-func collectRedshiftSchemaQualificationEdits(metadata *model.DatabaseMetadata, searchPath []string, node redshiftast.Node, ctes map[string]bool, edits *[]redshiftSchemaQualificationEdit) {
-	if node == nil {
-		return
-	}
-	if selectStmt, ok := node.(*redshiftast.SelectStmt); ok {
-		collectRedshiftSchemaQualificationEditsFromSelect(metadata, searchPath, selectStmt, ctes, edits)
-		return
-	}
-
-	redshiftast.Inspect(node, func(n redshiftast.Node) bool {
-		if n != node {
-			if selectStmt, ok := n.(*redshiftast.SelectStmt); ok {
-				collectRedshiftSchemaQualificationEditsFromSelect(metadata, searchPath, selectStmt, ctes, edits)
-				return false
-			}
-		}
-		rangeVar, ok := n.(*redshiftast.RangeVar)
-		if !ok || rangeVar == nil || rangeVar.Relname == "" || rangeVar.Schemaname != "" || rangeVar.Catalogname != "" {
-			return true
-		}
-		if isOmniCTEReference(rangeVar, ctes) || rangeVar.Loc.Start < 0 {
-			return true
-		}
-		schemaName, _ := metadata.SearchRelation(searchPath, rangeVar.Relname)
-		if schemaName == "" {
-			return true
-		}
-		*edits = append(*edits, redshiftSchemaQualificationEdit{
-			offset: rangeVar.Loc.Start,
-			schema: schemaName,
-		})
-		return true
-	})
-}
-
-func collectRedshiftSchemaQualificationEditsFromSelect(metadata *model.DatabaseMetadata, searchPath []string, selectStmt *redshiftast.SelectStmt, ctes map[string]bool, edits *[]redshiftSchemaQualificationEdit) {
-	localCTEs := cloneOmniCTENameSet(ctes)
-	if selectStmt.WithClause != nil && selectStmt.WithClause.Ctes != nil {
-		cteScope := cloneOmniCTENameSet(ctes)
-		if selectStmt.WithClause.Recursive {
-			for _, item := range selectStmt.WithClause.Ctes.Items {
-				cte, ok := item.(*redshiftast.CommonTableExpr)
-				if ok && cte.Ctename != "" {
-					cteScope[strings.ToLower(cte.Ctename)] = true
-				}
-			}
-		}
-		for _, item := range selectStmt.WithClause.Ctes.Items {
-			cte, ok := item.(*redshiftast.CommonTableExpr)
-			if !ok || cte.Ctename == "" {
-				continue
-			}
-			collectRedshiftSchemaQualificationEdits(metadata, searchPath, cte.Ctequery, cteScope, edits)
-			name := strings.ToLower(cte.Ctename)
-			cteScope[name] = true
-			localCTEs[name] = true
-		}
-	}
-
-	for _, node := range []redshiftast.Node{
-		selectStmt.WhereClause,
-		selectStmt.HavingClause,
-		selectStmt.QualifyClause,
-		selectStmt.LimitOffset,
-		selectStmt.LimitCount,
-	} {
-		if node != nil {
-			collectRedshiftSchemaQualificationEdits(metadata, searchPath, node, localCTEs, edits)
-		}
-	}
-	if selectStmt.IntoClause != nil {
-		collectRedshiftSchemaQualificationEdits(metadata, searchPath, selectStmt.IntoClause, localCTEs, edits)
-	}
-	if selectStmt.Larg != nil {
-		collectRedshiftSchemaQualificationEdits(metadata, searchPath, selectStmt.Larg, localCTEs, edits)
-	}
-	if selectStmt.Rarg != nil {
-		collectRedshiftSchemaQualificationEdits(metadata, searchPath, selectStmt.Rarg, localCTEs, edits)
-	}
-	for _, list := range []*redshiftast.List{
-		selectStmt.DistinctClause,
-		selectStmt.TargetList,
-		selectStmt.FromClause,
-		selectStmt.GroupClause,
-		selectStmt.WindowClause,
-		selectStmt.ExcludeList,
-		selectStmt.ValuesLists,
-		selectStmt.SortClause,
-		selectStmt.LockingClause,
-	} {
-		collectRedshiftSchemaQualificationEditsFromList(metadata, searchPath, list, localCTEs, edits)
-	}
-}
-
-func collectRedshiftSchemaQualificationEditsFromList(metadata *model.DatabaseMetadata, searchPath []string, list *redshiftast.List, ctes map[string]bool, edits *[]redshiftSchemaQualificationEdit) {
-	if list == nil {
-		return
-	}
-	for _, item := range list.Items {
-		collectRedshiftSchemaQualificationEdits(metadata, searchPath, item, ctes, edits)
-	}
-}
 
 func (q *omniQuerySpanExtractor) collectOmniAccessTables(ctx context.Context, node redshiftast.Node) (base.SourceColumnSet, error) {
 	result := make(base.SourceColumnSet)

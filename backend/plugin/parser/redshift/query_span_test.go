@@ -112,7 +112,7 @@ func TestRedshiftOmniQuerySpanUsesLazyRelationResolver(t *testing.T) {
 	content, err := os.ReadFile("query_span_extractor.go")
 	require.NoError(t, err)
 	source := string(content)
-	require.Contains(t, source, "SetRelationResolver")
+	require.Contains(t, source, "UseMetadata")
 	require.NotContains(t, source, "pendingOmniCatalogView")
 	require.NotContains(t, source, "buildOmniQuerySpanCatalog")
 	require.NotContains(t, source, "orderPendingOmniCatalogViews")
