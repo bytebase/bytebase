@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
@@ -14,7 +14,6 @@ import {
 } from "@/lib/productIntro";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
   Instance,
@@ -24,12 +23,7 @@ import {
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  convertKVListToLabels,
-  extractInstanceResourceName,
-  isValidBigQueryDataSource,
-  isValidSpannerDataSource,
-} from "@/utils";
+import { convertKVListToLabels, extractInstanceResourceName } from "@/utils";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -39,6 +33,7 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { StickyActionFooter } from "../ui/sticky-action-footer";
+import { isIAMAuthentication } from "./authentication";
 import {
   type ConnectionFailureCategory,
   ConnectionRecovery,
@@ -120,7 +115,9 @@ export function InstanceFormButtons({
   const checkExternalSecretFeature = (dataSources: DataSource[]) => {
     if (hasExternalSecretFeature) return true;
     return dataSources.every(
-      (ds) => !ds.externalSecret && !/^{{.+}}$/.test(ds.password)
+      (ds) =>
+        isIAMAuthentication(ds.authenticationType) ||
+        (!ds.externalSecret && !/^{{.+}}$/.test(ds.password))
     );
   };
 
@@ -141,46 +138,14 @@ export function InstanceFormButtons({
     return readonlyDataSourceList.every(checkOne);
   };
 
-  const allowUpdate = useMemo((): boolean => {
-    if (!valueChanged) return false;
-    if (basicInfo.engine === Engine.SPANNER) {
-      if (!isValidSpannerDataSource(adminDataSource)) return false;
-      if (readonlyDataSourceList.length > 0) {
-        if (readonlyDataSourceList.some((ds) => !isValidSpannerDataSource(ds)))
-          return false;
-      }
-      return !!basicInfo.title.trim();
-    }
-    if (basicInfo.engine === Engine.BIGQUERY) {
-      if (!isValidBigQueryDataSource(adminDataSource)) return false;
-      if (readonlyDataSourceList.length > 0) {
-        if (readonlyDataSourceList.some((ds) => !isValidBigQueryDataSource(ds)))
-          return false;
-      }
-      return !!basicInfo.title.trim();
-    }
-    return checkDataSource([adminDataSource, ...readonlyDataSourceList]);
-  }, [
-    valueChanged,
-    basicInfo,
-    adminDataSource,
-    readonlyDataSourceList,
-    checkDataSource,
-  ]);
+  const allowUpdate =
+    valueChanged &&
+    !!basicInfo.title.trim() &&
+    context.labelErrors.length === 0 &&
+    checkDataSource([adminDataSource, ...readonlyDataSourceList]);
 
-  const allowTestConnection = useMemo(() => {
-    if (!allowEdit || !editingDataSource) return false;
-    if (basicInfo.engine === Engine.SPANNER) {
-      return isValidSpannerDataSource(editingDataSource);
-    }
-    if (basicInfo.engine === Engine.BIGQUERY) {
-      return isValidBigQueryDataSource(editingDataSource);
-    }
-    if (basicInfo.engine !== Engine.DYNAMODB && editingDataSource.host === "") {
-      return false;
-    }
-    return checkDataSource([editingDataSource]);
-  }, [allowEdit, basicInfo.engine, checkDataSource, editingDataSource]);
+  const allowTestConnection =
+    allowEdit && !!editingDataSource && checkDataSource([editingDataSource]);
 
   const hasConfiguredConnectionOptions = (ds: EditDataSource): boolean => {
     const hasExtraParameters =
@@ -253,7 +218,7 @@ export function InstanceFormButtons({
   };
 
   const doCreate = async () => {
-    if (!isCreating) return;
+    if (!isCreating || !allowCreate) return;
 
     const payload = buildCreateInstance();
     if (!checkExternalSecretFeature(payload.dataSources)) {
@@ -303,6 +268,7 @@ export function InstanceFormButtons({
   };
 
   const tryCreate = async () => {
+    if (!allowCreate) return;
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("instance create clicked", {
         routeId: router.currentRoute.value.name?.toString(),
@@ -345,7 +311,7 @@ export function InstanceFormButtons({
 
   const doUpdate = async () => {
     const inst = instance;
-    if (!inst) return;
+    if (!inst || !allowUpdate) return;
 
     if (!checkRODataSourceFeature(inst)) {
       setMissingFeature(PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION);
@@ -675,7 +641,11 @@ export function InstanceFormButtons({
           <>
             <Button
               appearance="secondary"
-              disabled={!allowUpdate || state.isRequesting || !allowEdit}
+              disabled={
+                !allowTestConnection ||
+                state.isRequesting ||
+                state.isTestingConnection
+              }
               onClick={testConnectionForCurrentEditingDS}
             >
               {state.isTestingConnection

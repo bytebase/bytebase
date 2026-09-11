@@ -9,10 +9,8 @@ import {
   FormControlGroup,
   FormControlRow,
   FormError,
-  FormField,
   ResponsiveFormLayout,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
@@ -65,6 +63,11 @@ import {
   LOCAL_TLS_POSTURE_TLS,
   type LocalTlsPosture,
 } from "./tls";
+import {
+  ValidationField as FormField,
+  ValidationInput as Input,
+  ValidationProvider,
+} from "./ValidationField";
 
 interface DataSourceFormProps {
   dataSource: EditDataSource;
@@ -120,6 +123,7 @@ export function RedisSentinelFields({
   return (
     <>
       <FormField
+        validationField="masterName"
         title={
           <>
             {t("instance.master-name")} <span className="text-error">*</span>
@@ -853,7 +857,10 @@ export function DataSourceForm({
   );
 
   return (
-    <div className="grid grid-cols-1 gap-y-4 gap-x-4 border-none sm:grid-cols-3">
+    <ValidationProvider
+      className="grid grid-cols-1 gap-y-4 gap-x-4 border-none sm:grid-cols-3"
+      errors={ctx.getDataSourceErrors(dataSource)}
+    >
       {authOnly
         ? authenticationTypeControl
         : !optionsOnly && (
@@ -908,6 +915,10 @@ export function DataSourceForm({
                           className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
                         >
                           <FormField
+                            validationField={[
+                              "saslConfig.primary",
+                              "saslConfig.realm",
+                            ]}
                             title={
                               <>
                                 {t("instance.kerberos-principal")}{" "}
@@ -991,6 +1002,7 @@ export function DataSourceForm({
                             </FormControlRow>
                           </FormField>
                           <FormField
+                            validationField="saslConfig.kdcHost"
                             title={
                               <>
                                 {t("instance.kerberos-kdc")}{" "}
@@ -1082,6 +1094,11 @@ export function DataSourceForm({
                             </FormControlRow>
                           </FormField>
                           <FormField
+                            validationField={
+                              keytabResupplyRequired
+                                ? undefined
+                                : "saslConfig.keytab"
+                            }
                             title={
                               <>
                                 {t("instance.keytab-file")}
@@ -1304,6 +1321,7 @@ export function DataSourceForm({
                                       DataSourceExternalSecret_SecretType.VAULT_KV_V2 && (
                                       <div className="flex flex-col gap-y-4">
                                         <FormField
+                                          validationField="externalSecret.url"
                                           title={
                                             <>
                                               {t(
@@ -1423,6 +1441,7 @@ export function DataSourceForm({
                                             }
                                             return (
                                               <FormField
+                                                validationField="externalSecret.token"
                                                 title={
                                                   <>
                                                     {tokenLabel}{" "}
@@ -1515,6 +1534,7 @@ export function DataSourceForm({
                                           ?.case === "appRole" && (
                                           <div className="flex flex-col gap-y-4">
                                             <FormField
+                                              validationField="externalSecret.roleId"
                                               title={
                                                 <>
                                                   {t(
@@ -1536,7 +1556,9 @@ export function DataSourceForm({
                                                 disabled={!allowEdit}
                                                 placeholder={`${t("instance.external-secret-vault.vault-auth-type.approle.role-id")} - ${t("common.write-only")}`}
                                                 onChange={(e) => {
-                                                  const ds = { ...dataSource };
+                                                  const ds = {
+                                                    ...dataSource,
+                                                  };
                                                   if (
                                                     ds.externalSecret
                                                       ?.authOption?.case ===
@@ -1561,6 +1583,7 @@ export function DataSourceForm({
                                               />
                                             </FormField>
                                             <FormField
+                                              validationField="externalSecret.secretId"
                                               title={
                                                 <>
                                                   {t(
@@ -1640,7 +1663,9 @@ export function DataSourceForm({
                                                 className="mt-2 w-full"
                                                 disabled={!allowEdit}
                                                 onChange={(e) => {
-                                                  const ds = { ...dataSource };
+                                                  const ds = {
+                                                    ...dataSource,
+                                                  };
                                                   if (
                                                     ds.externalSecret
                                                       ?.authOption?.case ===
@@ -1731,6 +1756,7 @@ export function DataSourceForm({
                                         </FormField>
                                         {/* Engine name */}
                                         <FormField
+                                          validationField="externalSecret.engineName"
                                           title={
                                             <>
                                               {t(
@@ -1777,6 +1803,7 @@ export function DataSourceForm({
                                     {passwordType ===
                                       DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
                                       <FormField
+                                        validationField="externalSecret.url"
                                         title={
                                           <>
                                             {t(
@@ -1819,6 +1846,7 @@ export function DataSourceForm({
 
                                     {/* Secret name (common) */}
                                     <FormField
+                                      validationField="externalSecret.secretName"
                                       title={
                                         <>
                                           {secretNameLabel}{" "}
@@ -1853,6 +1881,7 @@ export function DataSourceForm({
                                       passwordType !==
                                         DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT && (
                                         <FormField
+                                          validationField="externalSecret.passwordKeyName"
                                           title={
                                             <>
                                               {secretKeyLabel}{" "}
@@ -2012,6 +2041,7 @@ export function DataSourceForm({
               {basicInfo.engine === Engine.DATABRICKS && (
                 <>
                   <FormField
+                    validationField="warehouseId"
                     title={
                       <>
                         Warehouse ID <span className="text-error">*</span>
@@ -2025,6 +2055,7 @@ export function DataSourceForm({
                     />
                   </FormField>
                   <FormField
+                    validationField="updatedToken"
                     title={
                       <>
                         Token <span className="text-error">*</span>
@@ -2063,7 +2094,9 @@ export function DataSourceForm({
                     disabled={!allowEdit}
                     value={dataSource.authenticationDatabase ?? ""}
                     onChange={(e) =>
-                      update({ authenticationDatabase: e.target.value.trim() })
+                      update({
+                        authenticationDatabase: e.target.value.trim(),
+                      })
                     }
                   />
                 </FormField>
@@ -2075,6 +2108,7 @@ export function DataSourceForm({
                   <>
                     {hasReadonlyReplicaHost && (
                       <FormField
+                        validationField="host"
                         className="sm:col-span-3 sm:col-start-1"
                         title={<>{t("data-source.read-replica-host")}</>}
                       >
@@ -2133,7 +2167,7 @@ export function DataSourceForm({
       {!authOnly && !hideOptions && (
         <>
           {/* SSL */}
-          {showSSL && isPasswordAuth && (
+          {showSSL && (isPasswordAuth || dataSource.useSsl) && (
             <FormField
               className="sm:col-span-3 sm:col-start-1"
               title={
@@ -2327,37 +2361,48 @@ export function DataSourceForm({
                   )}
 
                   {extraConnectionParamsList.map((param, index) => (
-                    <FormControlRow key={param.key}>
-                      <Input
-                        className="min-w-0 flex-1"
-                        value={param.key}
-                        disabled={!allowEdit}
-                        aria-label={t("instance.parameter-name-placeholder")}
-                        placeholder={t("instance.parameter-name-placeholder")}
-                        onChange={(e) =>
-                          updateExtraConnectionParamKey(index, e.target.value)
-                        }
-                      />
-                      <Input
-                        className="min-w-0 flex-1"
-                        value={param.value}
-                        disabled={!allowEdit}
-                        aria-label={t("instance.parameter-value-placeholder")}
-                        placeholder={t("instance.parameter-value-placeholder")}
-                        onChange={(e) =>
-                          updateExtraConnectionParamValue(index, e.target.value)
-                        }
-                      />
-                      {allowEdit && (
-                        <Button
-                          variant="destructive"
-                          className="shrink-0"
-                          onClick={() => removeExtraConnectionParam(index)}
-                        >
-                          {t("common.remove")}
-                        </Button>
-                      )}
-                    </FormControlRow>
+                    <FormField
+                      key={param.key}
+                      validationField={`extraConnectionParameters.${param.key}`}
+                      showErrors
+                    >
+                      <FormControlRow>
+                        <Input
+                          className="min-w-0 flex-1"
+                          value={param.key}
+                          disabled={!allowEdit}
+                          aria-label={t("instance.parameter-name-placeholder")}
+                          placeholder={t("instance.parameter-name-placeholder")}
+                          onChange={(e) =>
+                            updateExtraConnectionParamKey(index, e.target.value)
+                          }
+                        />
+                        <Input
+                          className="min-w-0 flex-1"
+                          value={param.value}
+                          disabled={!allowEdit}
+                          aria-label={t("instance.parameter-value-placeholder")}
+                          placeholder={t(
+                            "instance.parameter-value-placeholder"
+                          )}
+                          onChange={(e) =>
+                            updateExtraConnectionParamValue(
+                              index,
+                              e.target.value
+                            )
+                          }
+                        />
+                        {allowEdit && (
+                          <Button
+                            variant="destructive"
+                            className="shrink-0"
+                            onClick={() => removeExtraConnectionParam(index)}
+                          >
+                            {t("common.remove")}
+                          </Button>
+                        )}
+                      </FormControlRow>
+                    </FormField>
                   ))}
                 </FormControlGroup>
 
@@ -2381,7 +2426,7 @@ export function DataSourceForm({
             ))}
         </>
       )}
-    </div>
+    </ValidationProvider>
   );
 }
 
@@ -2412,7 +2457,10 @@ function OracleSIDServiceNameInput({
   };
 
   return (
-    <div className="sm:col-span-3 sm:col-start-1">
+    <FormField
+      validationField="serviceName"
+      className="sm:col-span-3 sm:col-start-1"
+    >
       <RadioGroup
         className="textlabel mb-2 gap-x-4"
         value={mode}
@@ -2439,7 +2487,7 @@ function OracleSIDServiceNameInput({
           }
         }}
       />
-    </div>
+    </FormField>
   );
 }
 
@@ -2457,6 +2505,7 @@ function AwsRegionField({
   const { t } = useTranslation();
   return (
     <FormField
+      validationField="region"
       className="sm:col-span-3 sm:col-start-1"
       title={
         <>

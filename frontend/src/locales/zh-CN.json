@@ -1358,6 +1358,22 @@
     "use-sample-instance": "使用示例实例（可用 7 天）",
     "use-sample-instance-self-host": "使用示例实例",
     "users": "用户",
+    "validation": {
+      "absolute-path": "请输入以 / 开头的绝对路径。",
+      "aws-credential": "请输入访问密钥 ID 或角色 ARN。",
+      "cloud-sql-host": "请输入格式为 project:region:instance 的实例名称。",
+      "forbidden-parameter": "不允许使用 allowAllFiles 参数，因为它会暴露 Bytebase 服务器上的文件。",
+      "gcp-instance": "请使用小写字母、数字或连字符。",
+      "gcp-project": "请使用小写字母、数字、句点、冒号或连字符。",
+      "keytab-resupply": "连接目标已更改，请重新上传 keytab 文件。",
+      "oracle-service": "请输入服务名称或 SID。",
+      "pem-certificate": "请输入 PEM 格式的证书，包含 BEGIN 和 END CERTIFICATE 行。",
+      "pem-key": "请输入 PEM 格式的私钥（PKCS#1、PKCS#8 或 EC）。",
+      "required": "此字段为必填项。",
+      "specific-credential": "请提供指定凭证。Bytebase Cloud 不支持默认凭证。",
+      "tls-pair": "请同时提供客户端证书和私钥。",
+      "tls-source-conflict": "请选择 PEM 内容或文件路径，不可同时使用。"
+    },
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符"
   },
   "issue": {

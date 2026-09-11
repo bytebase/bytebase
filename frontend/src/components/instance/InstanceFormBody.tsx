@@ -30,12 +30,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControlGroup,
   FormControlRow,
-  FormField,
   FormLabel,
   FormSection,
   ResponsiveFormLayout,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
@@ -84,6 +82,11 @@ import { DataSourceForm, RedisSentinelFields } from "./DataSourceForm";
 import { DataSourceSection } from "./DataSourceSection";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
+import {
+  ValidationField as FormField,
+  ValidationInput as Input,
+  ValidationProvider,
+} from "./ValidationField";
 
 // --- Inline sub-components ---
 
@@ -182,6 +185,7 @@ function SpannerHostInput({
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
       <FormField
+        validationField="projectId"
         title={
           <>
             {t("instance.project-id")}
@@ -190,6 +194,7 @@ function SpannerHostInput({
         }
       >
         <Input
+          aria-label={t("instance.project-id")}
           value={projectId}
           required
           placeholder="projectId"
@@ -202,6 +207,7 @@ function SpannerHostInput({
         />
       </FormField>
       <FormField
+        validationField="instanceId"
         title={
           <>
             {t("instance.instance-id")}
@@ -210,6 +216,7 @@ function SpannerHostInput({
         }
       >
         <Input
+          aria-label={t("instance.instance-id")}
           value={instanceId}
           required
           placeholder="instanceId"
@@ -270,6 +277,7 @@ function BigQueryHostInput({
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
       <FormField
+        validationField="projectId"
         title={
           <>
             {t("instance.project-id")}
@@ -278,6 +286,7 @@ function BigQueryHostInput({
         }
       >
         <Input
+          aria-label={t("instance.project-id")}
           value={projectId}
           required
           placeholder="projectId"
@@ -1219,7 +1228,13 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
   );
 
   return (
-    <div className="flex flex-col pb-2">
+    <ValidationProvider
+      className="flex flex-col pb-2"
+      errors={{
+        ...ctx.getDataSourceErrors(adminDataSource),
+        ...(!basicInfo.title.trim() ? { title: "required" } : {}),
+      }}
+    >
       <div className="w-full max-w-5xl flex flex-col">
         {/* Basic Info Card */}
         <FormSection layout="stacked" title={t("instance.section.basic-info")}>
@@ -1257,7 +1272,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             )}
 
             {/* Instance Name */}
-            <FormField>
+            <FormField validationField="title">
               <FormLabel htmlFor="name" className="flex flex-row items-center">
                 {t("instance.instance-name")}
                 <span className="ml-0.5 text-error">*</span>
@@ -1477,6 +1492,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               />
             ) : (
               <FormField
+                validationField="host"
                 title={
                   <span className="flex items-center gap-1">
                     <FormLabel htmlFor="host">
@@ -1758,6 +1774,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           )}
         </FormSection>
       </div>
-    </div>
+    </ValidationProvider>
   );
 }

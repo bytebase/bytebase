@@ -7,10 +7,7 @@ import {
   useState,
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { FormField } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Textarea } from "@/components/ui/textarea";
 import { useServerState } from "@/hooks/useAppState";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
@@ -21,6 +18,11 @@ import {
   DataSource_GCPCredentialSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
+import {
+  ValidationField as FormField,
+  ValidationInput as Input,
+  ValidationTextarea as Textarea,
+} from "./ValidationField";
 
 type CredentialSource = "default" | "specific-credential";
 
@@ -219,7 +221,10 @@ function CredentialSourceForm({
 
   return (
     <div className="flex flex-col gap-4 sm:col-span-3 sm:col-start-1">
-      <FormField title={t("instance.iam-extension.credential-source")}>
+      <FormField
+        validationField="iamExtension"
+        title={t("instance.iam-extension.credential-source")}
+      >
         <SegmentedControl
           value={credentialSource}
           onValueChange={(value) =>
@@ -386,7 +391,10 @@ function AzureCredentialFields({
 
   return (
     <div className="flex flex-col gap-4">
-      <FormField title={t("instance.iam-extension.tenant-id")}>
+      <FormField
+        validationField="iamExtension.tenantId"
+        title={t("instance.iam-extension.tenant-id")}
+      >
         <Input
           aria-label={t("instance.iam-extension.tenant-id")}
           className="w-full"
@@ -395,7 +403,10 @@ function AzureCredentialFields({
           onChange={(e) => onFieldChange("tenantId", e.target.value)}
         />
       </FormField>
-      <FormField title={t("instance.iam-extension.client-id")}>
+      <FormField
+        validationField="iamExtension.clientId"
+        title={t("instance.iam-extension.client-id")}
+      >
         <Input
           aria-label={t("instance.iam-extension.client-id")}
           className="w-full"
@@ -404,7 +415,10 @@ function AzureCredentialFields({
           onChange={(e) => onFieldChange("clientId", e.target.value)}
         />
       </FormField>
-      <FormField title={t("instance.iam-extension.client-secret")}>
+      <FormField
+        validationField="iamExtension.clientSecret"
+        title={t("instance.iam-extension.client-secret")}
+      >
         <Input
           aria-label={t("instance.iam-extension.client-secret")}
           type="password"
@@ -444,7 +458,10 @@ function AwsCredentialFields({
 
   return (
     <div className="flex flex-col gap-4">
-      <FormField title={"Access Key ID"}>
+      <FormField
+        validationField="iamExtension.accessKeyId"
+        title={"Access Key ID"}
+      >
         <Input
           aria-label={"Access Key ID"}
           className="w-full"
@@ -474,7 +491,10 @@ function AwsCredentialFields({
           onChange={(e) => onFieldChange("sessionToken", e.target.value)}
         />
       </FormField>
-      <FormField title={t("instance.role-arn")}>
+      <FormField
+        validationField="iamExtension.roleArn"
+        title={t("instance.role-arn")}
+      >
         <Input
           aria-label={t("instance.role-arn")}
           className="w-full"
@@ -542,7 +562,10 @@ function GcpCredentialField({
   };
 
   return (
-    <FormField title={t("instance.iam-extension.specific-credential")}>
+    <FormField
+      validationField="iamExtension.content"
+      title={t("instance.iam-extension.specific-credential")}
+    >
       <div className="flex flex-col gap-y-1 w-full">
         <p className="textinfolabel">
           <span>{t("instance.create-gcp-credentials")}</span>

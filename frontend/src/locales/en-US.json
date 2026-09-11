@@ -1358,6 +1358,22 @@
     "use-sample-instance": "Use sample instance (Available for 7 days)",
     "use-sample-instance-self-host": "Use sample instance",
     "users": "Users",
+    "validation": {
+      "absolute-path": "Enter an absolute path, starting with /.",
+      "aws-credential": "Enter an access key ID or a role ARN.",
+      "cloud-sql-host": "Enter the instance name as project:region:instance.",
+      "forbidden-parameter": "The allowAllFiles parameter is not allowed because it exposes files on the Bytebase server.",
+      "gcp-instance": "Use lowercase letters, numbers, or hyphens.",
+      "gcp-project": "Use lowercase letters, numbers, periods, colons, or hyphens.",
+      "keytab-resupply": "Upload the keytab again for the new connection destination.",
+      "oracle-service": "Enter a service name or SID.",
+      "pem-certificate": "Enter a PEM certificate, including the BEGIN and END CERTIFICATE lines.",
+      "pem-key": "Enter a PEM private key (PKCS#1, PKCS#8, or EC).",
+      "required": "This field is required.",
+      "specific-credential": "Provide specific credentials. Default credentials are unavailable in Bytebase Cloud.",
+      "tls-pair": "Provide both the client certificate and private key.",
+      "tls-source-conflict": "Use either PEM content or a file path, not both."
+    },
     "your-snowflake-account-locator": "Your Snowflake account locator"
   },
   "issue": {
