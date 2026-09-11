@@ -7,30 +7,30 @@ import (
 	"slices"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // omniTestMetadata is the default mock catalog used by these tests.
 // db.dbo has tables t(a,b,c), t1(a,b,c), t2(a,b), and a view vw.
-var omniTestMetadata = []*storepb.DatabaseSchemaMetadata{
+var omniTestMetadata = []*metadatapb.DatabaseSchemaMetadata{
 	{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
-				Tables: []*storepb.TableMetadata{
-					{Name: "t", Columns: []*storepb.ColumnMetadata{{Name: "a"}, {Name: "b"}, {Name: "c"}}},
-					{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "a"}, {Name: "b"}, {Name: "c"}}},
-					{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "a"}, {Name: "b"}}},
-					{Name: "ident_t", Columns: []*storepb.ColumnMetadata{{Name: "id", IsIdentity: true}, {Name: "payload"}}},
-					{Name: "ident_t2", Columns: []*storepb.ColumnMetadata{{Name: "seq", IsIdentity: true}, {Name: "v"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "t", Columns: []*metadatapb.ColumnMetadata{{Name: "a"}, {Name: "b"}, {Name: "c"}}},
+					{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "a"}, {Name: "b"}, {Name: "c"}}},
+					{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "a"}, {Name: "b"}}},
+					{Name: "ident_t", Columns: []*metadatapb.ColumnMetadata{{Name: "id", IsIdentity: true}, {Name: "payload"}}},
+					{Name: "ident_t2", Columns: []*metadatapb.ColumnMetadata{{Name: "seq", IsIdentity: true}, {Name: "v"}}},
 					{Name: "bare_edge"},
-					{Name: "weird", Columns: []*storepb.ColumnMetadata{{Name: "$node_id"}, {Name: "IDENTITYCOL"}}},
+					{Name: "weird", Columns: []*metadatapb.ColumnMetadata{{Name: "$node_id"}, {Name: "IDENTITYCOL"}}},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{Name: "vw", Definition: "CREATE VIEW [dbo].[vw] AS SELECT a, b FROM t"},
 				},
 			},
@@ -38,11 +38,11 @@ var omniTestMetadata = []*storepb.DatabaseSchemaMetadata{
 	},
 	{
 		Name: "db2",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
-				Tables: []*storepb.TableMetadata{
-					{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "x"}, {Name: "y"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "x"}, {Name: "y"}}},
 				},
 			},
 		},

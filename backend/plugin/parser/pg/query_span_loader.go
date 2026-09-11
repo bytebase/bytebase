@@ -7,13 +7,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/pg/catalog"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// catalogLoader installs every schema object from a storepb.DatabaseSchemaMetadata
+// catalogLoader installs every schema object from a metadatapb.DatabaseSchemaMetadata
 // into an omni catalog, in dependency-topological order, with an inline
 // pseudo fallback at each failed slot.
 //
@@ -30,7 +29,7 @@ import (
 // catalog object belongs to the caller.
 type catalogLoader struct {
 	cat  *catalog.Catalog
-	meta *storepb.DatabaseSchemaMetadata
+	meta *metadatapb.DatabaseSchemaMetadata
 
 	// loaderObjects maps canonical object keys (schema.name) to true for
 	// every object the loader collected from metadata. Used by the classifier
@@ -72,12 +71,12 @@ type objectEntry struct {
 	name   string
 
 	// Exactly one of the following is populated based on kind.
-	enumMeta      *storepb.EnumTypeMetadata
-	compositeMeta *storepb.CompositeTypeMetadata
-	tableMeta     *storepb.TableMetadata
-	viewMeta      *storepb.ViewMetadata
-	matViewMeta   *storepb.MaterializedViewMetadata
-	funcMeta      *storepb.FunctionMetadata
+	enumMeta      *metadatapb.EnumTypeMetadata
+	compositeMeta *metadatapb.CompositeTypeMetadata
+	tableMeta     *metadatapb.TableMetadata
+	viewMeta      *metadatapb.ViewMetadata
+	matViewMeta   *metadatapb.MaterializedViewMetadata
+	funcMeta      *metadatapb.FunctionMetadata
 }
 
 // key returns a canonical kind-prefixed identifier used for dependency
@@ -116,7 +115,7 @@ func (e *objectEntry) sortKey() string {
 // signature. Uses the metadata Signature string when present; falls back to
 // the definition hash to keep distinct overloads distinguishable even when
 // sync emitted an empty Signature field.
-func funcSignatureKey(fn *storepb.FunctionMetadata) string {
+func funcSignatureKey(fn *metadatapb.FunctionMetadata) string {
 	if fn == nil {
 		return ""
 	}
@@ -148,7 +147,7 @@ func kindLabel(k objectKind) string {
 
 // newCatalogLoader returns a loader primed for Load(). It does not touch the
 // catalog until Load() is called.
-func newCatalogLoader(cat *catalog.Catalog, meta *storepb.DatabaseSchemaMetadata) *catalogLoader {
+func newCatalogLoader(cat *catalog.Catalog, meta *metadatapb.DatabaseSchemaMetadata) *catalogLoader {
 	return &catalogLoader{
 		cat:           cat,
 		meta:          meta,
@@ -679,7 +678,7 @@ func (l *catalogLoader) installPseudo(obj *objectEntry) error {
 
 // columnNamesFromTableMetadata returns the deduplicated column names of a
 // table's metadata, in order, for use as pseudo column names.
-func columnNamesFromTableMetadata(tbl *storepb.TableMetadata) []string {
+func columnNamesFromTableMetadata(tbl *metadatapb.TableMetadata) []string {
 	if tbl == nil {
 		return nil
 	}
@@ -698,7 +697,7 @@ func columnNamesFromTableMetadata(tbl *storepb.TableMetadata) []string {
 // viewColumnNames returns the pseudo column-name list for a view. Prefers
 // explicit Columns (when sync populated them); falls back to the set of
 // dependency_columns.column values.
-func viewColumnNames(v *storepb.ViewMetadata) []string {
+func viewColumnNames(v *metadatapb.ViewMetadata) []string {
 	if v == nil {
 		return nil
 	}
@@ -729,7 +728,7 @@ func viewColumnNames(v *storepb.ViewMetadata) []string {
 // matviewColumnNames returns pseudo column names for a materialized view.
 // MaterializedViewMetadata does not carry a Columns field, so we fall back
 // to dependency_columns.
-func matviewColumnNames(m *storepb.MaterializedViewMetadata) []string {
+func matviewColumnNames(m *metadatapb.MaterializedViewMetadata) []string {
 	if m == nil {
 		return nil
 	}

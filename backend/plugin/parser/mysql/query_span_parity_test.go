@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -111,11 +112,11 @@ func runMySQLOmniGoldenCase(
 	engine storepb.Engine,
 	ignoreCaseSensitive bool,
 ) (*base.YamlQuerySpan, error) {
-	metadata := &storepb.DatabaseSchemaMetadata{}
+	metadata := &metadatapb.DatabaseSchemaMetadata{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(metadataText), metadata); err != nil {
 		return nil, err
 	}
-	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: databaseMetadataGetter,
 		ListDatabaseNamesFunc:   databaseNameLister,

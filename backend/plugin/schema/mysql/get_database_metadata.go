@@ -3,6 +3,7 @@ package mysql
 import (
 	"fmt"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/catalog"
 	"github.com/pkg/errors"
 
@@ -17,9 +18,9 @@ func init() {
 
 // GetDatabaseMetadata parses MySQL schema DDL text and returns database metadata
 // using the omni catalog.
-func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
 	if schemaText == "" {
-		return &storepb.DatabaseSchemaMetadata{}, nil
+		return &metadatapb.DatabaseSchemaMetadata{}, nil
 	}
 
 	const dbName = "tmp"

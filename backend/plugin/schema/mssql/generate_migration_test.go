@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -42,7 +43,7 @@ func TestGenerateMigration(t *testing.T) {
 	for i, test := range tests {
 		t.Run(test.Description, func(t *testing.T) {
 			// Parse old schema
-			var oldMetadata *storepb.DatabaseSchemaMetadata
+			var oldMetadata *metadatapb.DatabaseSchemaMetadata
 			if test.OldSchema != "" {
 				oldMetadata, err = GetDatabaseMetadata(test.OldSchema)
 				require.NoErrorf(t, err, "Failed to parse old schema for test case [%02d]: %s", i+1, test.Description)
@@ -65,9 +66,9 @@ func TestGenerateMigration(t *testing.T) {
 			// Handle case where old schema is empty (creating from scratch)
 			if test.OldSchema == "" && oldDBSchema == nil {
 				// Create empty database schema for comparison
-				emptyMetadata := &storepb.DatabaseSchemaMetadata{
+				emptyMetadata := &metadatapb.DatabaseSchemaMetadata{
 					Name:    "",
-					Schemas: []*storepb.SchemaMetadata{},
+					Schemas: []*metadatapb.SchemaMetadata{},
 				}
 				oldDBSchema = model.NewDatabaseMetadata(emptyMetadata, nil, nil, storepb.Engine_MSSQL, false)
 			}
@@ -75,12 +76,12 @@ func TestGenerateMigration(t *testing.T) {
 			// Handle case where new schema is empty (dropping everything)
 			if test.NewSchema == "" {
 				// Create empty metadata with dbo schema to match the structure
-				emptyMetadata := &storepb.DatabaseSchemaMetadata{
+				emptyMetadata := &metadatapb.DatabaseSchemaMetadata{
 					Name: "",
-					Schemas: []*storepb.SchemaMetadata{
+					Schemas: []*metadatapb.SchemaMetadata{
 						{
 							Name:   "dbo",
-							Tables: []*storepb.TableMetadata{},
+							Tables: []*metadatapb.TableMetadata{},
 						},
 					},
 				}

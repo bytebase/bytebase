@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 
@@ -13,18 +14,17 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/yamltest"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
 func TestGetTableDefinitionWithCheckConstraint(t *testing.T) {
-	table := &storepb.TableMetadata{
+	table := &metadatapb.TableMetadata{
 		Name: "t1",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "type", Type: "varchar(10)", Nullable: true, Default: "NULL"},
 			{Name: "amount", Type: "decimal(10,2)", Nullable: true, Default: "NULL"},
 		},
-		CheckConstraints: []*storepb.CheckConstraintMetadata{
+		CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 			{
 				Name: "c1",
 				// The expression as synced from MySQL after unescaping the
@@ -53,7 +53,7 @@ func TestGetTableDefinitionWithCheckConstraint(t *testing.T) {
 }
 
 func TestGetFunctionDefinitionWithMultilineParameters(t *testing.T) {
-	function := &storepb.FunctionMetadata{
+	function := &metadatapb.FunctionMetadata{
 		Name: "f1",
 		// The definition as synced from SHOW CREATE FUNCTION: the parameter
 		// list keeps its original multi-line formatting, and the CHARSET and
@@ -119,23 +119,23 @@ func TestRenderColumnDefaultBitLiteral(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := renderColumnDefault(&storepb.ColumnMetadata{Type: tc.columnType, Default: tc.def})
+			got := renderColumnDefault(&metadatapb.ColumnMetadata{Type: tc.columnType, Default: tc.def})
 			require.Equal(t, tc.want, got)
 		})
 	}
 }
 
 func TestPrintColumnClauseBitDefaultUnquoted(t *testing.T) {
-	table := &storepb.TableMetadata{Name: "t", Charset: "utf8mb4"}
+	table := &metadatapb.TableMetadata{Name: "t", Charset: "utf8mb4"}
 	var buf strings.Builder
-	col := &storepb.ColumnMetadata{Name: "b1", Type: "bit(1)", Nullable: false, Default: `'b\'0\''`}
+	col := &metadatapb.ColumnMetadata{Name: "b1", Type: "bit(1)", Nullable: false, Default: `'b\'0\''`}
 	require.NoError(t, printColumnClause(&buf, col, table))
 	require.Equal(t, "  `b1` bit(1) NOT NULL DEFAULT b'0'", buf.String())
 
 	// A BIT column with no default (b64 BIT(64)) must stay fine: NULL default emitted as
 	// DEFAULT NULL, never as a bit literal.
 	var buf2 strings.Builder
-	col2 := &storepb.ColumnMetadata{Name: "b64", Type: "bit(64)", Nullable: true, Default: "NULL"}
+	col2 := &metadatapb.ColumnMetadata{Name: "b64", Type: "bit(64)", Nullable: true, Default: "NULL"}
 	require.NoError(t, printColumnClause(&buf2, col2, table))
 	require.Equal(t, "  `b64` bit(64) DEFAULT NULL", buf2.String())
 }
@@ -189,7 +189,7 @@ func TestNormalizeFunctionalIndexExpr(t *testing.T) {
 
 func TestPrintIndexClauseFunctionalExprNormalized(t *testing.T) {
 	var buf strings.Builder
-	index := &storepb.IndexMetadata{
+	index := &metadatapb.IndexMetadata{
 		Name:        "idx_tags",
 		Visible:     true,
 		Expressions: []string{"(cast(json_extract(`tags`,_utf8mb4\\'$.ids\\') as unsigned array))"},
@@ -371,23 +371,23 @@ func TestStripLeadingDefiner(t *testing.T) {
 // distinct from "no SRID"), and an unset SRID emits nothing.
 func TestPrintColumnClauseSRIDPresence(t *testing.T) {
 	srid := func(v uint32) *uint32 { return &v }
-	table := &storepb.TableMetadata{Name: "t"}
+	table := &metadatapb.TableMetadata{Name: "t"}
 
-	render := func(col *storepb.ColumnMetadata) string {
+	render := func(col *metadatapb.ColumnMetadata) string {
 		var buf strings.Builder
 		require.NoError(t, printColumnClause(&buf, col, table))
 		return buf.String()
 	}
 
 	require.Equal(t, "  `pt` point NOT NULL /*!80003 SRID 0 */",
-		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(0)}))
+		render(&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(0)}))
 	require.Equal(t, "  `pt` point NOT NULL /*!80003 SRID 4326 */",
-		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)}))
+		render(&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)}))
 	// Custom SRSs above int32 range must render unmangled.
 	require.Equal(t, "  `pt` point NOT NULL /*!80003 SRID 3000000000 */",
-		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(3000000000)}))
+		render(&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(3000000000)}))
 	require.Equal(t, "  `pt` point NOT NULL",
-		render(&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false}))
+		render(&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false}))
 }
 
 // TestPrintColumnClauseInvisibleCommentOrder pins the SDL dumper's INVISIBLE/COMMENT order
@@ -396,9 +396,9 @@ func TestPrintColumnClauseSRIDPresence(t *testing.T) {
 // the dump diverges from SHOW CREATE and from the migration generator's generated-column path.
 func TestPrintColumnClauseInvisibleCommentOrder(t *testing.T) {
 	srid := func(v uint32) *uint32 { return &v }
-	table := &storepb.TableMetadata{Name: "t"}
+	table := &metadatapb.TableMetadata{Name: "t"}
 
-	render := func(col *storepb.ColumnMetadata) string {
+	render := func(col *metadatapb.ColumnMetadata) string {
 		var buf strings.Builder
 		require.NoError(t, printColumnClause(&buf, col, table))
 		return buf.String()
@@ -406,13 +406,13 @@ func TestPrintColumnClauseInvisibleCommentOrder(t *testing.T) {
 
 	// Regular INVISIBLE + COMMENT column: INVISIBLE precedes COMMENT.
 	require.Equal(t, "  `a` int DEFAULT NULL /*!80023 INVISIBLE */ COMMENT 'c'",
-		render(&storepb.ColumnMetadata{Name: "a", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true, Comment: "c"}))
+		render(&metadatapb.ColumnMetadata{Name: "a", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true, Comment: "c"}))
 
 	// Generated spatial INVISIBLE + COMMENT column: same canonical INVISIBLE-before-COMMENT order.
 	require.Equal(t,
 		"  `loc` point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */ /*!80023 INVISIBLE */ COMMENT 'geo'",
-		render(&storepb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), IsInvisible: true, Comment: "geo", Generation: &storepb.GenerationMetadata{
-			Type:       storepb.GenerationMetadata_TYPE_STORED,
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), IsInvisible: true, Comment: "geo", Generation: &metadatapb.GenerationMetadata{
+			Type:       metadatapb.GenerationMetadata_TYPE_STORED,
 			Expression: "st_srid(point(`lng`,`lat`),4326)",
 		}}))
 }
@@ -427,12 +427,12 @@ func TestPrintColumnClauseInvisibleCommentOrder(t *testing.T) {
 //	type GENERATED ALWAYS AS (expr) STORED|VIRTUAL [NOT NULL] [SRID] [INVISIBLE] [COMMENT]
 func TestWriteColumnDefinitionBodyGeneratedOrder(t *testing.T) {
 	srid := func(v uint32) *uint32 { return &v }
-	stored := &storepb.GenerationMetadata{
-		Type:       storepb.GenerationMetadata_TYPE_STORED,
+	stored := &metadatapb.GenerationMetadata{
+		Type:       metadatapb.GenerationMetadata_TYPE_STORED,
 		Expression: "st_srid(point(`lng`,`lat`),4326)",
 	}
 
-	render := func(col *storepb.ColumnMetadata) string {
+	render := func(col *metadatapb.ColumnMetadata) string {
 		var buf strings.Builder
 		writeColumnDefinitionBody(&buf, col)
 		return buf.String()
@@ -442,31 +442,31 @@ func TestWriteColumnDefinitionBodyGeneratedOrder(t *testing.T) {
 	// must come first, then NOT NULL, then SRID.
 	require.Equal(t,
 		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */",
-		render(&storepb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), Generation: stored}))
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), Generation: stored}))
 
 	// Nullable generated spatial column: no NOT NULL, SRID still after the generation clause.
 	require.Equal(t,
 		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED /*!80003 SRID 0 */",
-		render(&storepb.ColumnMetadata{Name: "loc", Type: "point", Nullable: true, Srid: srid(0), Generation: stored}))
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: true, Srid: srid(0), Generation: stored}))
 
 	// Generated spatial column that is also INVISIBLE and has a COMMENT: INVISIBLE precedes
 	// COMMENT, matching SHOW CREATE's canonical order for both regular and generated columns.
 	require.Equal(t,
 		"point GENERATED ALWAYS AS (st_srid(point(`lng`,`lat`),4326)) STORED NOT NULL /*!80003 SRID 4326 */ /*!80023 INVISIBLE */ COMMENT 'geo'",
-		render(&storepb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), IsInvisible: true, Comment: "geo", Generation: stored}))
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326), IsInvisible: true, Comment: "geo", Generation: stored}))
 
 	// Regular (non-generated) INVISIBLE column with a COMMENT: INVISIBLE precedes COMMENT,
 	// the same canonical order as the generated column above (verified against 8.0.32).
 	require.Equal(t,
 		"int DEFAULT NULL /*!80023 INVISIBLE */ COMMENT 'c'",
-		render(&storepb.ColumnMetadata{Name: "a", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true, Comment: "c"}))
+		render(&metadatapb.ColumnMetadata{Name: "a", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true, Comment: "c"}))
 
 	// Plain (non-spatial) VIRTUAL generated column still emits the generation clause and
 	// nothing spurious.
 	require.Equal(t,
 		"int GENERATED ALWAYS AS (`a` + 1) VIRTUAL",
-		render(&storepb.ColumnMetadata{Name: "b", Type: "int", Nullable: true, Generation: &storepb.GenerationMetadata{
-			Type:       storepb.GenerationMetadata_TYPE_VIRTUAL,
+		render(&metadatapb.ColumnMetadata{Name: "b", Type: "int", Nullable: true, Generation: &metadatapb.GenerationMetadata{
+			Type:       metadatapb.GenerationMetadata_TYPE_VIRTUAL,
 			Expression: "`a` + 1",
 		}}))
 
@@ -474,7 +474,7 @@ func TestWriteColumnDefinitionBodyGeneratedOrder(t *testing.T) {
 	// (NOT NULL then SRID, no generation clause).
 	require.Equal(t,
 		"point NOT NULL /*!80003 SRID 4326 */",
-		render(&storepb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326)}))
+		render(&metadatapb.ColumnMetadata{Name: "loc", Type: "point", Nullable: false, Srid: srid(4326)}))
 }
 
 type getDatabaseDefinitionCase struct {
@@ -533,7 +533,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 
 	for i, tc := range tests {
 		t.Run(tc.Description, func(t *testing.T) {
-			var metadata storepb.DatabaseSchemaMetadata
+			var metadata metadatapb.DatabaseSchemaMetadata
 			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
 
 			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{PrintHeader: true}, &metadata)

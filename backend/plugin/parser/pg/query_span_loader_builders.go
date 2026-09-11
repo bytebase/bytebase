@@ -5,9 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/ast"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // This file translates storepb metadata into omni AST nodes. Each build*
@@ -17,7 +16,7 @@ import (
 
 // buildCreateEnumStmt translates EnumTypeMetadata + schema into a
 // CreateEnumStmt. Enum values are preserved as plain string literals.
-func buildCreateEnumStmt(schema string, enum *storepb.EnumTypeMetadata) *ast.CreateEnumStmt {
+func buildCreateEnumStmt(schema string, enum *metadatapb.EnumTypeMetadata) *ast.CreateEnumStmt {
 	vals := make([]ast.Node, 0, len(enum.Values))
 	for _, v := range enum.Values {
 		vals = append(vals, &ast.String{Str: v})
@@ -31,7 +30,7 @@ func buildCreateEnumStmt(schema string, enum *storepb.EnumTypeMetadata) *ast.Cre
 // buildCompositeTypeStmt translates CompositeTypeMetadata + schema into a
 // CompositeTypeStmt. Attribute types are parsed via typeNameFromString; an
 // error on any attribute propagates so the loader can pseudo the whole type.
-func buildCompositeTypeStmt(schema string, composite *storepb.CompositeTypeMetadata) (*ast.CompositeTypeStmt, error) {
+func buildCompositeTypeStmt(schema string, composite *metadatapb.CompositeTypeMetadata) (*ast.CompositeTypeStmt, error) {
 	cols := make([]ast.Node, 0, len(composite.Attributes))
 	for _, attribute := range composite.Attributes {
 		if attribute.Name == "" {
@@ -62,7 +61,7 @@ func buildCompositeTypeStmt(schema string, composite *storepb.CompositeTypeMetad
 // relation rather than install a partially-typed catalog entry.
 //
 // Columns with empty names are skipped.
-func buildCreateStmt(schema string, table *storepb.TableMetadata) (*ast.CreateStmt, error) {
+func buildCreateStmt(schema string, table *metadatapb.TableMetadata) (*ast.CreateStmt, error) {
 	items := make([]ast.Node, 0, len(table.Columns))
 	for _, col := range table.Columns {
 		if col.Name == "" {
@@ -97,7 +96,7 @@ func buildCreateStmt(schema string, table *storepb.TableMetadata) (*ast.CreateSt
 //
 // If the body is empty or unparseable, returns an error; the loader will
 // pseudo the view using dependency_columns metadata.
-func buildViewStmt(schema string, view *storepb.ViewMetadata) (*ast.ViewStmt, error) {
+func buildViewStmt(schema string, view *metadatapb.ViewMetadata) (*ast.ViewStmt, error) {
 	if view.Definition == "" {
 		return nil, errors.New("empty view definition")
 	}
@@ -118,7 +117,7 @@ func buildViewStmt(schema string, view *storepb.ViewMetadata) (*ast.ViewStmt, er
 // buildCreateTableAsStmt translates MaterializedViewMetadata into a
 // CreateTableAsStmt with Objtype OBJECT_MATVIEW. Same SelectStmt contract
 // as buildViewStmt: body must parse to *ast.SelectStmt.
-func buildCreateTableAsStmt(schema string, mv *storepb.MaterializedViewMetadata) (*ast.CreateTableAsStmt, error) {
+func buildCreateTableAsStmt(schema string, mv *metadatapb.MaterializedViewMetadata) (*ast.CreateTableAsStmt, error) {
 	if mv.Definition == "" {
 		return nil, errors.New("empty matview definition")
 	}
@@ -150,7 +149,7 @@ func buildCreateTableAsStmt(schema string, mv *storepb.MaterializedViewMetadata)
 // reconstructed from the signature string. The fallback loses return-type
 // fidelity but keeps analyzer name resolution working for queries that
 // reference the function by name.
-func buildCreateFunctionStmt(schema string, fn *storepb.FunctionMetadata) (*ast.CreateFunctionStmt, error) {
+func buildCreateFunctionStmt(schema string, fn *metadatapb.FunctionMetadata) (*ast.CreateFunctionStmt, error) {
 	if fn.Definition != "" {
 		stmts, err := ParsePg(fn.Definition)
 		if err == nil && len(stmts) == 1 {
@@ -169,7 +168,7 @@ func buildCreateFunctionStmt(schema string, fn *storepb.FunctionMetadata) (*ast.
 // buildCreateFunctionStmtFromSignature is the minimal-shape fallback used
 // when the full definition is missing or unparseable. Parameters and return
 // type collapse to text; the body is a trivial `SELECT NULL::text`.
-func buildCreateFunctionStmtFromSignature(schema string, fn *storepb.FunctionMetadata) (*ast.CreateFunctionStmt, error) {
+func buildCreateFunctionStmtFromSignature(schema string, fn *metadatapb.FunctionMetadata) (*ast.CreateFunctionStmt, error) {
 	argTypes, err := parseFunctionSignatureArgTypes(fn.Signature)
 	if err != nil {
 		return nil, errors.Wrapf(err, "function %q signature %q", fn.Name, fn.Signature)

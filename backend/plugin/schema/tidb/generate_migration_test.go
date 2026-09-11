@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -72,7 +73,7 @@ func TestGenerateMigration(t *testing.T) {
 func parseSchema(t *testing.T, text string) *model.DatabaseMetadata {
 	t.Helper()
 
-	metadata := &storepb.DatabaseSchemaMetadata{Schemas: []*storepb.SchemaMetadata{{}}}
+	metadata := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{}}}
 	if text != "" {
 		parsed, err := GetDatabaseMetadata(text)
 		require.NoError(t, err)

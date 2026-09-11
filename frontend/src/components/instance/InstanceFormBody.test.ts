@@ -184,12 +184,18 @@ describe("InstanceFormBody", () => {
       'className="flex flex-col gap-4"',
       connectionTitleIndex
     );
+    const authenticationIndex = source.indexOf(
+      "<DataSourceForm",
+      connectionTitleIndex
+    );
 
     expect(connectionTitleIndex).toBeGreaterThanOrEqual(0);
     expect(firewallAlertIndex).toBeGreaterThan(connectionTitleIndex);
     expect(firewallAlertIndex).toBeLessThan(firewallInfoIndex);
     expect(firewallInfoIndex).toBeGreaterThan(connectionTitleIndex);
-    expect(firewallInfoIndex).toBeLessThan(connectionGridIndex);
+    expect(connectionGridIndex).toBeGreaterThan(connectionTitleIndex);
+    expect(firewallAlertIndex).toBeGreaterThan(connectionGridIndex);
+    expect(firewallInfoIndex).toBeLessThan(authenticationIndex);
     expect(source).toContain(
       'href="https://docs.bytebase.com/get-started/cloud#prerequisites"'
     );

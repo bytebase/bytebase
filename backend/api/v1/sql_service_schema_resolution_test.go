@@ -3,6 +3,7 @@ package v1
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -45,8 +46,8 @@ func TestSchemaForWriteTargetResolution(t *testing.T) {
 }
 
 func TestPostgresWriteTargetSchemaForRequest(t *testing.T) {
-	dbMeta := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	dbMeta := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "app"},
 			{Name: "public"},
 		},

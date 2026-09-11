@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -40,9 +41,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, err
 	}
 
-	var databaseMetadataSlice []*storepb.DatabaseSchemaMetadata
+	var databaseMetadataSlice []*metadatapb.DatabaseSchemaMetadata
 	for _, database := range databases {
-		databaseMetadataSlice = append(databaseMetadataSlice, &storepb.DatabaseSchemaMetadata{Name: database})
+		databaseMetadataSlice = append(databaseMetadataSlice, &metadatapb.DatabaseSchemaMetadata{Name: database})
 	}
 
 	return &db.InstanceMetadata{
@@ -55,14 +56,14 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	// Query db info
 	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	databaseMetadata := &storepb.DatabaseSchemaMetadata{
+	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: d.databaseName,
 	}
 	found := false
@@ -94,7 +95,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	for _, schemaName := range schemaList {
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &metadatapb.SchemaMetadata{
 			Name:    schemaName,
 			Tables:  tableMap[schemaName],
 			Views:   viewMap[schemaName],
@@ -146,8 +147,8 @@ func (d *Driver) getSchemaList(ctx context.Context, database string) ([]string, 
 // Key: normalized schema name
 //
 // Value: stream list in the schema.
-func (d *Driver) getStreamSchema(ctx context.Context, database string) (map[string][]*storepb.StreamMetadata, error) {
-	streamMap := make(map[string][]*storepb.StreamMetadata)
+func (d *Driver) getStreamSchema(ctx context.Context, database string) (map[string][]*metadatapb.StreamMetadata, error) {
+	streamMap := make(map[string][]*metadatapb.StreamMetadata)
 
 	streamQuery := fmt.Sprintf(`SHOW STREAMS IN DATABASE "%s";`, database)
 	streamMetaRows, err := d.db.QueryContext(ctx, streamQuery)
@@ -206,22 +207,22 @@ func (d *Driver) getStreamSchema(ctx context.Context, database string) (map[stri
 		if err := streamMetaRows.Scan(cols...); err != nil {
 			return nil, err
 		}
-		storePbStreamType := storepb.StreamMetadata_TYPE_UNSPECIFIED
+		storePbStreamType := metadatapb.StreamMetadata_TYPE_UNSPECIFIED
 		if tp == "DELTA" {
-			storePbStreamType = storepb.StreamMetadata_TYPE_DELTA
+			storePbStreamType = metadatapb.StreamMetadata_TYPE_DELTA
 		}
-		storePbMode := storepb.StreamMetadata_MODE_UNSPECIFIED
+		storePbMode := metadatapb.StreamMetadata_MODE_UNSPECIFIED
 		switch mode {
 		case "DEFAULT":
-			storePbMode = storepb.StreamMetadata_MODE_DEFAULT
+			storePbMode = metadatapb.StreamMetadata_MODE_DEFAULT
 		case "APPEND_ONLY":
-			storePbMode = storepb.StreamMetadata_MODE_APPEND_ONLY
+			storePbMode = metadatapb.StreamMetadata_MODE_APPEND_ONLY
 		case "INSERT_ONLY":
-			storePbMode = storepb.StreamMetadata_MODE_INSERT_ONLY
+			storePbMode = metadatapb.StreamMetadata_MODE_INSERT_ONLY
 		default:
 			// Keep as MODE_UNSPECIFIED for unknown modes
 		}
-		streamMetadata := &storepb.StreamMetadata{
+		streamMetadata := &metadatapb.StreamMetadata{
 			Name:      streamName,
 			TableName: tableName,
 			Owner:     owner,
@@ -248,7 +249,7 @@ func (d *Driver) getStreamSchema(ctx context.Context, database string) (map[stri
 	}
 
 	for _, streamList := range streamMap {
-		slices.SortFunc(streamList, func(i, j *storepb.StreamMetadata) int {
+		slices.SortFunc(streamList, func(i, j *metadatapb.StreamMetadata) int {
 			if i.Name < j.Name {
 				return -1
 			}
@@ -281,8 +282,8 @@ func (a *ArrayString) Scan(src any) error {
 // Key: normalized schema name
 //
 // Value: stream list in the schema.
-func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string][]*storepb.TaskMetadata, error) {
-	taskMap := make(map[string][]*storepb.TaskMetadata)
+func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string][]*metadatapb.TaskMetadata, error) {
+	taskMap := make(map[string][]*metadatapb.TaskMetadata)
 
 	taskQuery := fmt.Sprintf(`SHOW TASKS IN DATABASE "%s";`, database)
 	streamMetaRows, err := d.db.QueryContext(ctx, taskQuery)
@@ -346,12 +347,12 @@ func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string
 		if err := streamMetaRows.Scan(cols...); err != nil {
 			return nil, err
 		}
-		storePbState := storepb.TaskMetadata_STATE_UNSPECIFIED
+		storePbState := metadatapb.TaskMetadata_STATE_UNSPECIFIED
 		switch state {
 		case "started":
-			storePbState = storepb.TaskMetadata_STATE_STARTED
+			storePbState = metadatapb.TaskMetadata_STATE_STARTED
 		case "suspended":
-			storePbState = storepb.TaskMetadata_STATE_SUSPENDED
+			storePbState = metadatapb.TaskMetadata_STATE_SUSPENDED
 		default:
 			// Keep as STATE_UNSPECIFIED for unknown states
 		}
@@ -365,7 +366,7 @@ func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string
 		if nullWarehouse.Valid {
 			warehouse = nullWarehouse.String
 		}
-		taskMetadata := &storepb.TaskMetadata{
+		taskMetadata := &metadatapb.TaskMetadata{
 			Name:         taskName,
 			Id:           taskID,
 			Owner:        owner,
@@ -394,7 +395,7 @@ func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string
 	}
 
 	for _, taskList := range taskMap {
-		slices.SortFunc(taskList, func(i, j *storepb.TaskMetadata) int {
+		slices.SortFunc(taskList, func(i, j *metadatapb.TaskMetadata) int {
 			if i.Name < j.Name {
 				return -1
 			}
@@ -407,8 +408,8 @@ func (d *Driver) getTaskSchema(ctx context.Context, database string) (map[string
 	return taskMap, nil
 }
 
-func (d *Driver) getTableSchema(ctx context.Context, database string) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ViewMetadata, error) {
-	tableMap, viewMap := make(map[string][]*storepb.TableMetadata), make(map[string][]*storepb.ViewMetadata)
+func (d *Driver) getTableSchema(ctx context.Context, database string) (map[string][]*metadatapb.TableMetadata, map[string][]*metadatapb.ViewMetadata, error) {
+	tableMap, viewMap := make(map[string][]*metadatapb.TableMetadata), make(map[string][]*metadatapb.ViewMetadata)
 
 	// Query table info
 	var excludedSchemaList []string
@@ -419,7 +420,7 @@ func (d *Driver) getTableSchema(ctx context.Context, database string) (map[strin
 	excludeWhere := fmt.Sprintf("LOWER(TABLE_SCHEMA) NOT IN (%s)", strings.Join(excludedSchemaList, ", "))
 
 	// Query column info.
-	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+	columnMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 	columnQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_SCHEMA,
@@ -443,7 +444,7 @@ func (d *Driver) getTableSchema(ctx context.Context, database string) (map[strin
 	for columnRows.Next() {
 		var schemaName, tableName, nullable string
 		var defaultStr sql.NullString
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		if err := columnRows.Scan(
 			&schemaName,
 			&tableName,
@@ -492,7 +493,7 @@ func (d *Driver) getTableSchema(ctx context.Context, database string) (map[strin
 	defer tableRows.Close()
 	for tableRows.Next() {
 		var schemaName string
-		table := &storepb.TableMetadata{}
+		table := &metadatapb.TableMetadata{}
 		if err := tableRows.Scan(
 			&schemaName,
 			&table.Name,
@@ -527,7 +528,7 @@ func (d *Driver) getTableSchema(ctx context.Context, database string) (map[strin
 	}
 	defer viewRows.Close()
 	for viewRows.Next() {
-		view := &storepb.ViewMetadata{}
+		view := &metadatapb.ViewMetadata{}
 		var schemaName string
 		if err := viewRows.Scan(
 			&schemaName,
@@ -541,7 +542,7 @@ func (d *Driver) getTableSchema(ctx context.Context, database string) (map[strin
 			for _, column := range columns {
 				// TODO(zp): We get column by query the INFORMATION_SCHEMA.COLUMNS, which does not contains the view column belongs to which database.
 				// So in the Snowflake, one view column may belongs to different databases, it may cause some confusing behavior in the Data Masking.
-				view.DependencyColumns = append(view.DependencyColumns, &storepb.DependencyColumn{
+				view.DependencyColumns = append(view.DependencyColumns, &metadatapb.DependencyColumn{
 					Schema: schemaName,
 					Table:  view.Name,
 					Column: column.Name,

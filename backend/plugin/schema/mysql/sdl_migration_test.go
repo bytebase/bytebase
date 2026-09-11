@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/catalog"
 	mysqldriver "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
@@ -161,7 +162,7 @@ func TestSDLRegistrationsAreMySQLOnly(t *testing.T) {
 	_, err = schema.SDLDropAdvices(storepb.Engine_OCEANBASE, "", nil, "")
 	require.ErrorContains(t, err, "not supported")
 
-	_, err = schema.GetMultiFileDatabaseDefinition(storepb.Engine_OCEANBASE, schema.GetDefinitionContext{}, &storepb.DatabaseSchemaMetadata{})
+	_, err = schema.GetMultiFileDatabaseDefinition(storepb.Engine_OCEANBASE, schema.GetDefinitionContext{}, &metadatapb.DatabaseSchemaMetadata{})
 	require.ErrorContains(t, err, "not supported")
 
 	// MySQL stays registered for all three.
@@ -169,12 +170,12 @@ func TestSDLRegistrationsAreMySQLOnly(t *testing.T) {
 	require.NoError(t, err)
 	_, err = schema.SDLDropAdvices(storepb.Engine_MYSQL, "", nil, "")
 	require.NoError(t, err)
-	_, err = schema.GetMultiFileDatabaseDefinition(storepb.Engine_MYSQL, schema.GetDefinitionContext{}, &storepb.DatabaseSchemaMetadata{})
+	_, err = schema.GetMultiFileDatabaseDefinition(storepb.Engine_MYSQL, schema.GetDefinitionContext{}, &metadatapb.DatabaseSchemaMetadata{})
 	require.NoError(t, err)
 }
 
 // metadataFromProto wraps a raw proto in the model type the diff entry points take.
-func metadataFromProto(proto *storepb.DatabaseSchemaMetadata) *model.DatabaseMetadata {
+func metadataFromProto(proto *metadatapb.DatabaseSchemaMetadata) *model.DatabaseMetadata {
 	return model.NewDatabaseMetadata(proto, nil, nil, storepb.Engine_MYSQL, true)
 }
 
@@ -185,36 +186,36 @@ func metadataFromProto(proto *storepb.DatabaseSchemaMetadata) *model.DatabaseMet
 // rejects — the SDL path would fail the whole diff, while the legacy path treats view
 // bodies as opaque text and still diffs the tables.
 func TestDiffMigrationUsesLegacyMetadataPath(t *testing.T) {
-	brokenView := &storepb.ViewMetadata{
+	brokenView := &metadatapb.ViewMetadata{
 		Name: "v_broken",
 		// Not parseable as a SELECT by the omni loader.
 		Definition: "select ((broken from",
 	}
-	oldProto := &storepb.DatabaseSchemaMetadata{
+	oldProto := &metadatapb.DatabaseSchemaMetadata{
 		Name: "d",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "t",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int", Nullable: false},
 				},
 			}},
-			Views: []*storepb.ViewMetadata{brokenView},
+			Views: []*metadatapb.ViewMetadata{brokenView},
 		}},
 	}
-	newProto := &storepb.DatabaseSchemaMetadata{
+	newProto := &metadatapb.DatabaseSchemaMetadata{
 		Name: "d",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "t",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int", Nullable: false},
 					{Name: "extra", Type: "varchar(10)", Nullable: true, Default: "NULL"},
 				},
 			}},
-			Views: []*storepb.ViewMetadata{brokenView},
+			Views: []*metadatapb.ViewMetadata{brokenView},
 		}},
 	}
 
@@ -231,14 +232,14 @@ func TestDiffMigrationUsesLegacyMetadataPath(t *testing.T) {
 
 // legacyColumnChangeSQL diffs two single-column tables through the registered legacy
 // metadata path and returns the migration SQL.
-func legacyColumnChangeSQL(t *testing.T, oldCol, newCol *storepb.ColumnMetadata) string {
+func legacyColumnChangeSQL(t *testing.T, oldCol, newCol *metadatapb.ColumnMetadata) string {
 	t.Helper()
-	mk := func(col *storepb.ColumnMetadata) *model.DatabaseMetadata {
-		return metadataFromProto(&storepb.DatabaseSchemaMetadata{
+	mk := func(col *metadatapb.ColumnMetadata) *model.DatabaseMetadata {
+		return metadataFromProto(&metadatapb.DatabaseSchemaMetadata{
 			Name: "d",
-			Schemas: []*storepb.SchemaMetadata{{
+			Schemas: []*metadatapb.SchemaMetadata{{
 				Name:   "",
-				Tables: []*storepb.TableMetadata{{Name: "t", Columns: []*storepb.ColumnMetadata{col}}},
+				Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{col}}},
 			}},
 		})
 	}
@@ -256,32 +257,32 @@ func TestLegacyDiffSRIDAndInvisible(t *testing.T) {
 
 	t.Run("srid_only_change_modifies", func(t *testing.T) {
 		sql := legacyColumnChangeSQL(t,
-			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false},
-			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
+			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false},
+			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
 		)
 		require.Contains(t, sql, "MODIFY COLUMN `pt` point NOT NULL /*!80003 SRID 4326 */")
 	})
 
 	t.Run("explicit_srid_zero_differs_from_unset", func(t *testing.T) {
 		sql := legacyColumnChangeSQL(t,
-			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false},
-			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(0)},
+			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false},
+			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(0)},
 		)
 		require.Contains(t, sql, "MODIFY COLUMN `pt` point NOT NULL /*!80003 SRID 0 */")
 	})
 
 	t.Run("equal_srid_no_change", func(t *testing.T) {
 		sql := legacyColumnChangeSQL(t,
-			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
-			&storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
+			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
+			&metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
 		)
 		require.Empty(t, sql)
 	})
 
 	t.Run("invisible_only_change_modifies", func(t *testing.T) {
 		sql := legacyColumnChangeSQL(t,
-			&storepb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL"},
-			&storepb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true},
+			&metadatapb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL"},
+			&metadatapb.ColumnMetadata{Name: "c", Type: "int", Nullable: true, Default: "NULL", IsInvisible: true},
 		)
 		require.Contains(t, sql, "MODIFY COLUMN `c` int")
 		require.Contains(t, sql, " /*!80023 INVISIBLE */")

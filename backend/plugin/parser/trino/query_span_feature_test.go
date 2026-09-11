@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -33,15 +34,15 @@ func tablesFromSpan(t *testing.T, sql, defaultDatabase string) base.SourceColumn
 func TestQuerySpan_PredicateExtraction(t *testing.T) {
 	// A WHERE predicate's columns are reported as predicate columns once they
 	// resolve against the (metadata-expanded) source columns.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "name", Type: "varchar"},
 						},
@@ -50,7 +51,7 @@ func TestQuerySpan_PredicateExtraction(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -105,15 +106,15 @@ func TestQuerySpan_SelectStarColumnOrder(t *testing.T) {
 	// against the executed result's column order (query_result_masker.go), so a
 	// nondeterministic order here could apply a column's masker to a different
 	// column and leak sensitive data.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "accounts",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "secret", Type: "varchar"},
 							{Name: "name", Type: "varchar"},
@@ -124,7 +125,7 @@ func TestQuerySpan_SelectStarColumnOrder(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -151,15 +152,15 @@ func TestQuerySpan_AliasedColumnSourceColumns(t *testing.T) {
 	// resolve back to the physical column users.email. Otherwise the per-result
 	// SourceColumns are empty, the masker treats the column as a constant
 	// expression, and a sensitive aliased column is returned unmasked.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "email", Type: "varchar"},
 						},
@@ -168,7 +169,7 @@ func TestQuerySpan_AliasedColumnSourceColumns(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -191,11 +192,11 @@ func TestQuerySpan_SystemSchemaNoNotFoundError(t *testing.T) {
 	// "failed to mask data" rejection of an otherwise-successful result, so
 	// resolving Trino's pseudo-catalogs (which are not Bytebase-tracked
 	// databases) as metadata would fail valid SQL-info queries after execution.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:    "mydb",
-		Schemas: []*storepb.SchemaMetadata{{Name: "public"}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -219,15 +220,15 @@ func TestQuerySpan_SystemSubstringDoesNotBypassMasking(t *testing.T) {
 	// statement text contains "system." in a string literal (which trips the
 	// coarse containsSystemSchema classifier). System detection is per resolved
 	// table, so the literal must not suppress lineage for users.email.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "email", Type: "varchar"},
 						},
@@ -236,7 +237,7 @@ func TestQuerySpan_SystemSubstringDoesNotBypassMasking(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -256,15 +257,15 @@ func TestQuerySpan_SelfJoinStarColumnCount(t *testing.T) {
 	// (2N for a 2-way self-join). The positional masker needs a span result per
 	// output column, so the expansion must NOT collapse the duplicate physical
 	// columns or the trailing instance's columns would get no masker.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "email", Type: "varchar"},
 						},
@@ -273,7 +274,7 @@ func TestQuerySpan_SelfJoinStarColumnCount(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -302,22 +303,22 @@ func TestQuerySpan_ShadowedAliasStillMasked(t *testing.T) {
 	// An alias reused across scopes ("u" for users outside, for orders inside an
 	// EXISTS subquery) must not drop lineage for the outer u.email. Additive
 	// alias resolution keeps users.email so the sensitive column stays masked.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "email", Type: "varchar"},
 						},
 					},
 					{
 						Name: "orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
@@ -325,7 +326,7 @@ func TestQuerySpan_ShadowedAliasStillMasked(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -344,22 +345,22 @@ func TestQuerySpan_QualifiedStarSourceColumns(t *testing.T) {
 	// A qualified star (u.*) must expand to the aliased relation's columns, each
 	// carrying its physical source column so they stay maskable. omni names the
 	// result "u.*"; only u's table (users) is expanded, not the joined orders.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "email", Type: "varchar"},
 						},
 					},
 					{
 						Name: "orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "amount", Type: "double"},
 						},
@@ -368,7 +369,7 @@ func TestQuerySpan_QualifiedStarSourceColumns(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -407,24 +408,24 @@ func TestQuerySpan_QualifiedStarDistinguishesSameNamedTables(t *testing.T) {
 	// must expand to ONLY s1.users' columns, not s2.users' — matching on the full
 	// (database, schema, table), not just the table name. Otherwise the positional
 	// masker could apply s2's policies to s1's columns and leak.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "s1",
-				Tables: []*storepb.TableMetadata{
-					{Name: "users", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}, {Name: "secret", Type: "varchar"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "users", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}, {Name: "secret", Type: "varchar"}}},
 				},
 			},
 			{
 				Name: "s2",
-				Tables: []*storepb.TableMetadata{
-					{Name: "users", Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}, {Name: "name", Type: "varchar"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "users", Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}, {Name: "name", Type: "varchar"}}},
 				},
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -451,15 +452,15 @@ func TestQuerySpan_AliasEndingInStarIsNotExpanded(t *testing.T) {
 	// (email); star-expanding it would emit several results and misalign the
 	// positional masker, leaking the value. Detection keys on the source-ref
 	// shape, so this resolves to a single email result.
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "email", Type: "varchar"},
 						},
@@ -468,7 +469,7 @@ func TestQuerySpan_AliasEndingInStarIsNotExpanded(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,

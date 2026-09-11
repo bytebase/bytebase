@@ -81,6 +81,34 @@ export function groupThreads(comments: IssueComment[]): CommentThread[] {
   }));
 }
 
+export const countUnresolvedThreads = (threads: CommentThread[]): number =>
+  threads.filter((thread) => !thread.resolved).length;
+
+// Unresolved threads placed on each spec's current sheet: the number the
+// statement editor shows for that change. Specs without a placed thread
+// have no entry.
+export function countPlacedUnresolvedBySpec(
+  threads: CommentThread[],
+  specs: Plan_Spec[],
+  placementsFor: (
+    specId: string,
+    sheetSha256: string
+  ) => ReadonlyMap<string, Placement> | undefined
+): ReadonlyMap<string, number> {
+  const counts = new Map<string, number>();
+  for (const spec of specs) {
+    const sheetSha256 = targetSha256OfSpec(spec);
+    if (!sheetSha256) continue;
+    const placed = selectUnresolvedEditorThreads(
+      threads,
+      { specId: spec.id, sheetSha256 },
+      placementsFor(spec.id, sheetSha256)
+    ).length;
+    if (placed > 0) counts.set(spec.id, placed);
+  }
+  return counts;
+}
+
 // The state shown for an anchor in the timeline. A computed placement is
 // authoritative. Before one exists, a hash match is CURRENT, a missing spec
 // is UNAVAILABLE, and anything else is PENDING until the diff settles it.
@@ -186,6 +214,13 @@ export function selectEditorThreads(
   }
   return placed.sort(compareEditorThreads);
 }
+
+// The placed threads still open: what the editor walker visits and what the
+// change tab counts.
+export const selectUnresolvedEditorThreads = (
+  ...args: Parameters<typeof selectEditorThreads>
+): EditorThread[] =>
+  selectEditorThreads(...args).filter((entry) => !entry.thread.resolved);
 
 // Only the unresolved thread anchored on the earliest line expands by
 // default; every other thread is a gutter marker.

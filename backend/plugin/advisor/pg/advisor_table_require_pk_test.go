@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
@@ -20,50 +21,50 @@ import (
 // with_pk and without_pk live only in app_schema; shadow exists in both
 // schemas, with a PK only in public; legacy exists in both without a PK.
 func TestTableRequirePKSearchPath(t *testing.T) {
-	dbSchema := &storepb.DatabaseSchemaMetadata{
+	dbSchema := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "test",
 		SearchPath: "app_schema, public",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name:    "shadow",
-						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
-						Indexes: []*storepb.IndexMetadata{
+						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "shadow_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
 						},
 					},
 					{
 						Name:    "legacy",
-						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
 					},
 				},
 			},
 			{
 				Name: "app_schema",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name:    "shadow",
-						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
 					},
 					{
 						Name:    "legacy",
-						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
 					},
 					{
 						Name: "with_pk",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "name", Type: "text"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "with_pk_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
 						},
 					},
 					{
 						Name: "without_pk",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
 					},
@@ -134,12 +135,12 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			original, ok := proto.Clone(dbSchema).(*storepb.DatabaseSchemaMetadata)
+			original, ok := proto.Clone(dbSchema).(*metadatapb.DatabaseSchemaMetadata)
 			require.True(t, ok)
 			if tc.searchPath != "" {
 				original.SearchPath = tc.searchPath
 			}
-			final, ok := proto.Clone(original).(*storepb.DatabaseSchemaMetadata)
+			final, ok := proto.Clone(original).(*metadatapb.DatabaseSchemaMetadata)
 			require.True(t, ok)
 			checkCtx := advisor.Context{
 				DBType:           storepb.Engine_POSTGRES,

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/component/sheet"
@@ -296,14 +297,14 @@ func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {
 
 func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {
 	sm := sheet.NewManager()
-	finalMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	finalMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "user",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 						},
 					},

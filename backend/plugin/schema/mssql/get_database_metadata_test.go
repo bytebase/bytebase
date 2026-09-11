@@ -5,11 +5,11 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common/yamltest"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestGetDatabaseMetadataSequenceUsesExplicitSchema(t *testing.T) {
@@ -19,11 +19,11 @@ CREATE SEQUENCE audit.EventSeq AS BIGINT;
 `)
 	require.NoError(t, err)
 
-	require.Equal(t, []*storepb.SchemaMetadata{
+	require.Equal(t, []*metadatapb.SchemaMetadata{
 		{
 			Name:   "audit",
-			Tables: []*storepb.TableMetadata{},
-			Sequences: []*storepb.SequenceMetadata{
+			Tables: []*metadatapb.TableMetadata{},
+			Sequences: []*metadatapb.SequenceMetadata{
 				{
 					Name:     "EventSeq",
 					DataType: "BIGINT",
@@ -46,7 +46,7 @@ CREATE TABLE sales.orders (
 `)
 	require.NoError(t, err)
 
-	var orders *storepb.TableMetadata
+	var orders *metadatapb.TableMetadata
 	for _, table := range metadata.Schemas[0].Tables {
 		if table.Name == "orders" {
 			orders = table

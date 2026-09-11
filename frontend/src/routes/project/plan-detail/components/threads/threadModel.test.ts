@@ -16,6 +16,8 @@ import { current, OUTDATED, UNAVAILABLE } from "./placement/place";
 import {
   anchorLineRange,
   buildWholeLineAnchor,
+  countPlacedUnresolvedBySpec,
+  countUnresolvedThreads,
   defaultExpandedThread,
   excerptLines,
   formatLineRange,
@@ -89,6 +91,41 @@ describe("sheetSha256OfName", () => {
     );
     expect(sheetSha256OfName("projects/p/sheets/-1")).toBeUndefined();
     expect(sheetSha256OfName("")).toBeUndefined();
+  });
+});
+
+describe("countUnresolvedThreads", () => {
+  test("counts open roots, anchored or not, and never replies", () => {
+    const threads = groupThreads([
+      root("a", { anchor: anchor(1, 1) }),
+      root("b", { anchor: anchor(2, 2, OTHER_SHA) }),
+      root("c", { anchor: anchor(3, 3), resolved: true }),
+      root("d"),
+      reply("r", "a", 2),
+    ]);
+    expect(countUnresolvedThreads(threads)).toBe(3);
+    expect(countUnresolvedThreads([])).toBe(0);
+  });
+
+  test("placed counts follow each spec's current sheet and its placements", () => {
+    const threads = groupThreads([
+      root("current", { anchor: anchor(1, 1) }),
+      root("outdated", { anchor: anchor(2, 2, OTHER_SHA) }),
+      root("resolved", { anchor: anchor(3, 3), resolved: true }),
+    ]);
+    const specs = plan().specs;
+    expect([
+      ...countPlacedUnresolvedBySpec(threads, specs, () => undefined),
+    ]).toEqual([["spec-1", 1]]);
+    const placed = new Map([
+      [`${ISSUE}/issueComments/outdated`, current(4, 4)],
+    ]);
+    expect([
+      ...countPlacedUnresolvedBySpec(threads, specs, () => placed),
+    ]).toEqual([["spec-1", 2]]);
+    expect(countPlacedUnresolvedBySpec(threads, [], () => undefined).size).toBe(
+      0
+    );
   });
 });
 

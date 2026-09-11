@@ -5,13 +5,13 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/go-cmp/cmp"
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // TestSyncUniqueIndex covers which synced indexes carry Unique. SQL Server
@@ -47,7 +47,7 @@ GO
 	require.NoError(t, err)
 
 	table := requireTable(t, metadata, "dbo", "index_kinds")
-	byName := make(map[string]*storepb.IndexMetadata)
+	byName := make(map[string]*metadatapb.IndexMetadata)
 	for _, index := range table.Indexes {
 		byName[index.Name] = index
 	}
@@ -67,7 +67,7 @@ GO
 
 	// The UNIQUE column constraint keeps arriving through the constraint query,
 	// which is the only path that sets IsConstraint.
-	var columnConstraint *storepb.IndexMetadata
+	var columnConstraint *metadatapb.IndexMetadata
 	for name, index := range byName {
 		if index.IsConstraint && !index.Primary {
 			require.Nilf(t, columnConstraint, "expected one unique constraint, also got %s", name)
@@ -78,7 +78,7 @@ GO
 	require.True(t, columnConstraint.Unique)
 	require.Equal(t, []string{"code"}, columnConstraint.Expressions)
 
-	var primary *storepb.IndexMetadata
+	var primary *metadatapb.IndexMetadata
 	for _, index := range byName {
 		if index.Primary {
 			primary = index
@@ -107,7 +107,7 @@ func TestSyncSpatialIndex(t *testing.T) {
 	testCases := []struct {
 		name     string
 		setupSQL string
-		validate func(*testing.T, *storepb.DatabaseSchemaMetadata)
+		validate func(*testing.T, *metadatapb.DatabaseSchemaMetadata)
 	}{
 		{
 			name: "geometry_and_geography_indexes",
@@ -167,11 +167,11 @@ WITH (
 );
 GO
 `,
-			validate: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			validate: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				table := requireTable(t, metadata, "geo", "locations")
 
 				require.Len(t, table.Columns, 6)
-				columns := make(map[string]*storepb.ColumnMetadata)
+				columns := make(map[string]*metadatapb.ColumnMetadata)
 				for _, column := range table.Columns {
 					columns[column.Name] = column
 				}
@@ -262,7 +262,7 @@ WITH (
 );
 GO
 `,
-			validate: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			validate: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				table := requireTable(t, metadata, "dbo", "spatial_edge_cases")
 				require.Len(t, spatialIndexes(table), 4)
 
@@ -329,7 +329,7 @@ GO
 CREATE NONCLUSTERED COLUMNSTORE INDEX idx_columnstore ON dbo.mixed_indexes(id, name, status);
 GO
 `,
-			validate: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			validate: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				table := requireTable(t, metadata, "dbo", "mixed_indexes")
 
 				// Spatial indexes must not disturb how sync classifies the
@@ -395,10 +395,10 @@ CREATE INDEX idx_area ON dbo.spatial_computed(area);
 CREATE INDEX idx_center ON dbo.spatial_computed(center_x, center_y);
 GO
 `,
-			validate: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			validate: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				table := requireTable(t, metadata, "dbo", "spatial_computed")
 
-				columns := make(map[string]*storepb.ColumnMetadata)
+				columns := make(map[string]*metadatapb.ColumnMetadata)
 				for _, column := range table.Columns {
 					columns[column.Name] = column
 				}
@@ -495,8 +495,8 @@ GO
 
 	// Keyed by name because sync assembles indexes out of a map, so their
 	// order within a table is not itself part of the contract.
-	byName := func(metadata *storepb.DatabaseSchemaMetadata) map[string]*storepb.IndexMetadata {
-		indexes := make(map[string]*storepb.IndexMetadata)
+	byName := func(metadata *metadatapb.DatabaseSchemaMetadata) map[string]*metadatapb.IndexMetadata {
+		indexes := make(map[string]*metadatapb.IndexMetadata)
 		for _, index := range spatialIndexes(requireTable(t, metadata, "spatial_test", "mixed_spatial")) {
 			indexes[index.Name] = index
 		}
@@ -505,8 +505,8 @@ GO
 	require.Empty(t, cmp.Diff(byName(first), byName(second), protocmp.Transform()))
 }
 
-func spatialIndexes(table *storepb.TableMetadata) []*storepb.IndexMetadata {
-	var indexes []*storepb.IndexMetadata
+func spatialIndexes(table *metadatapb.TableMetadata) []*metadatapb.IndexMetadata {
+	var indexes []*metadatapb.IndexMetadata
 	for _, index := range table.Indexes {
 		if index.Type == "SPATIAL" {
 			indexes = append(indexes, index)
@@ -518,10 +518,10 @@ func spatialIndexes(table *storepb.TableMetadata) []*storepb.IndexMetadata {
 // requireSpatialIndex asserts the properties every synced spatial index carries
 // and returns it for the case-specific configuration checks. dataType is
 // GEOMETRY or GEOGRAPHY; only GEOMETRY indexes carry a bounding box.
-func requireSpatialIndex(t *testing.T, table *storepb.TableMetadata, name, column, dataType string) *storepb.IndexMetadata {
+func requireSpatialIndex(t *testing.T, table *metadatapb.TableMetadata, name, column, dataType string) *metadatapb.IndexMetadata {
 	t.Helper()
 
-	var index *storepb.IndexMetadata
+	var index *metadatapb.IndexMetadata
 	for _, candidate := range table.Indexes {
 		if candidate.Name == name {
 			index = candidate
@@ -551,7 +551,7 @@ func requireSpatialIndex(t *testing.T, table *storepb.TableMetadata, name, colum
 	return index
 }
 
-func requireBoundingBox(t *testing.T, index *storepb.IndexMetadata, xmin, ymin, xmax, ymax float64) {
+func requireBoundingBox(t *testing.T, index *metadatapb.IndexMetadata, xmin, ymin, xmax, ymax float64) {
 	t.Helper()
 
 	bbox := index.SpatialConfig.Tessellation.BoundingBox
@@ -562,7 +562,7 @@ func requireBoundingBox(t *testing.T, index *storepb.IndexMetadata, xmin, ymin, 
 	require.Equal(t, ymax, bbox.Ymax)
 }
 
-func requireGridLevels(t *testing.T, index *storepb.IndexMetadata, level1, level2, level3, level4 string) {
+func requireGridLevels(t *testing.T, index *metadatapb.IndexMetadata, level1, level2, level3, level4 string) {
 	t.Helper()
 
 	densities := make(map[int32]string)

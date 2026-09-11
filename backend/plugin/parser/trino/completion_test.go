@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -160,10 +161,10 @@ func TestCompletionNilMetadata(t *testing.T) {
 // for every catalog on the instance. On a Trino instance federating many
 // catalogs, eager loading would fan out a metadata fetch per keystroke.
 func TestCompletionLoadsOnlyNeededCatalogs(t *testing.T) {
-	metas := []*storepb.DatabaseSchemaMetadata{
-		{Name: "Company", Schemas: []*storepb.SchemaMetadata{{Name: "dbo", Tables: []*storepb.TableMetadata{{Name: "Employees", Columns: []*storepb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
-		{Name: "School", Schemas: []*storepb.SchemaMetadata{{Name: "sch", Tables: []*storepb.TableMetadata{{Name: "Student", Columns: []*storepb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
-		{Name: "Warehouse", Schemas: []*storepb.SchemaMetadata{{Name: "wh", Tables: []*storepb.TableMetadata{{Name: "Item", Columns: []*storepb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
+	metas := []*metadatapb.DatabaseSchemaMetadata{
+		{Name: "Company", Schemas: []*metadatapb.SchemaMetadata{{Name: "dbo", Tables: []*metadatapb.TableMetadata{{Name: "Employees", Columns: []*metadatapb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
+		{Name: "School", Schemas: []*metadatapb.SchemaMetadata{{Name: "sch", Tables: []*metadatapb.TableMetadata{{Name: "Student", Columns: []*metadatapb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
+		{Name: "Warehouse", Schemas: []*metadatapb.SchemaMetadata{{Name: "wh", Tables: []*metadatapb.TableMetadata{{Name: "Item", Columns: []*metadatapb.ColumnMetadata{{Name: "Id", Type: "int"}}}}}}},
 	}
 	loads := map[string]int{}
 	getter := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
@@ -237,23 +238,23 @@ func getCaretPosition(statement string) (string, int, int) {
 	panic("caret position not found")
 }
 
-var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
+var databaseMetadatas = []*metadatapb.DatabaseSchemaMetadata{
 	{
 		Name: "Company",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "Employees",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "Id", Type: "int"},
 							{Name: "Name", Type: "varchar"},
 						},
 					},
 					{
 						Name: "Address",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "EmployeeId", Type: "int"},
 							{Name: "Street", Type: "varchar"},
 						},
@@ -262,10 +263,10 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 			},
 			{
 				Name: "MySchema",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "SalaryLevel",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "Id", Type: "int"},
 							{Name: "SalaryUpBound", Type: "int"},
 						},
@@ -276,13 +277,13 @@ var databaseMetadatas = []*storepb.DatabaseSchemaMetadata{
 	},
 	{
 		Name: "School",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "Student",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "Id", Type: "int"},
 							{Name: "ParentName", Type: "varchar"},
 						},

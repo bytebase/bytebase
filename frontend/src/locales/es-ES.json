@@ -642,7 +642,7 @@
       "ssh-key": "Clave del SSH",
       "user": "Nombre de usuario"
     },
-    "ssh-connection": "Conexión SSH",
+    "ssh-connection": "Túnel SSH",
     "ssh-type": {
       "none": "Ninguno",
       "tunnel-and-private-key": "Túnel + Clave Privada"
@@ -673,7 +673,7 @@
       "client-key-path": "Ruta de la clave privada",
       "client-key-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_KEY",
       "configured": "Configurado",
-      "connection-security": "Seguridad de la conexión",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "El TLS mutuo no está disponible para este motor.",
       "posture": {
         "disabled": "Deshabilitado",
@@ -685,7 +685,7 @@
       "verification-disabled-description": "La verificación está desactivada. La conexión está cifrada, pero no se verifica la identidad del servidor y se ignora la configuración de CA. Esto es inseguro. Activa la verificación para conexiones seguras; desactívala solo temporalmente durante el desarrollo o la resolución de problemas.",
       "verify-certificate": "Verificar certificado del servidor"
     },
-    "ssl-connection": "Conexión SSL"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "No tiene permiso para acceder a esta base de datos.",
@@ -1358,6 +1358,22 @@
     "use-sample-instance": "Usar instancia de ejemplo (Disponible durante 7 días)",
     "use-sample-instance-self-host": "Usar instancia de ejemplo",
     "users": "Usuarios",
+    "validation": {
+      "absolute-path": "Introduce una ruta absoluta que comience por /.",
+      "aws-credential": "Introduce un ID de clave de acceso o un ARN de rol.",
+      "cloud-sql-host": "Introduce el nombre de la instancia como project:region:instance.",
+      "forbidden-parameter": "El parámetro allowAllFiles no está permitido porque expone archivos del servidor Bytebase.",
+      "gcp-instance": "Usa letras minúsculas, números o guiones.",
+      "gcp-project": "Usa letras minúsculas, números, puntos, dos puntos o guiones.",
+      "keytab-resupply": "Vuelve a cargar el archivo keytab para el nuevo destino de conexión.",
+      "oracle-service": "Introduce un nombre de servicio o SID.",
+      "pem-certificate": "Introduce un certificado PEM, incluidas las líneas BEGIN y END CERTIFICATE.",
+      "pem-key": "Introduce una clave privada PEM (PKCS#1, PKCS#8 o EC).",
+      "required": "Este campo es obligatorio.",
+      "specific-credential": "Proporciona credenciales específicas. Las credenciales predeterminadas no están disponibles en Bytebase Cloud.",
+      "tls-pair": "Proporciona tanto el certificado de cliente como la clave privada.",
+      "tls-source-conflict": "Usa contenido PEM o una ruta de archivo, pero no ambos."
+    },
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },
   "issue": {
@@ -1811,21 +1827,29 @@
           "view-in-statement": "Ver en la sentencia"
         },
         "comment-on-lines": "Comentar las líneas",
-        "comment-required": "Escribe un comentario antes de enviarlo.",
         "n-replies-hidden_one": "{{count}} respuesta oculta",
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",
         "n-replies_other": "{{count}} respuestas",
         "publish": "Publicar",
-        "reopen-with-comment": "Reabrir con comentario",
+        "reopen-thread": "Reabrir hilo",
         "reply": "Responder",
         "reply-placeholder": "Responder...",
         "reply-posted-status-failed": "La respuesta se publicó, pero no se pudo actualizar el estado del hilo. Vuelve a intentar cambiar el estado.",
         "resolve": "Resolver",
-        "resolve-with-comment": "Resolver con comentario",
+        "resolve-thread": "Resolver hilo",
         "resolved": "Resuelto",
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
+        "walker": {
+          "count_one": "{{count}} hilo sin resolver en esta versión",
+          "count_other": "{{count}} hilos sin resolver en esta versión",
+          "next": "Siguiente hilo sin resolver",
+          "position": "Hilo {{index}} de {{count}}",
+          "previous": "Hilo sin resolver anterior",
+          "remainder_one": "{{count}} más no se muestra en esta versión",
+          "remainder_other": "{{count}} más no se muestran en esta versión"
+        },
         "write-comment": "Escribe un comentario..."
       }
     },
@@ -1869,6 +1893,8 @@
       "n-of-m-approved": "{{n}} de {{m}} aprobadas",
       "n-of-m-tasks": "{{n}}/{{m}} tareas",
       "n-passed": "{{n}} aprobadas",
+      "n-unresolved-threads_one": "{{count}} hilo sin resolver",
+      "n-unresolved-threads_other": "{{count}} hilos sin resolver",
       "n-warning": "{{n}} advertencia"
     },
     "targets": {

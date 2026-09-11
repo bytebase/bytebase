@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	oracleast "github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -28,7 +29,7 @@ func TestGetQuerySpan(t *testing.T) {
 		Description     string `yaml:"description,omitempty"`
 		Statement       string `yaml:"statement,omitempty"`
 		DefaultDatabase string `yaml:"defaultDatabase,omitempty"`
-		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
+		// Metadata is the protojson encoded metadatapb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
 		Metadata              string              `yaml:"metadata,omitempty"`
 		CrossDatabaseMetadata string              `yaml:"crossDatabaseMetadata,omitempty"`
@@ -51,10 +52,10 @@ func TestGetQuerySpan(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &testCases))
 
 	for i, tc := range testCases {
-		metadata := &storepb.DatabaseSchemaMetadata{}
+		metadata := &metadatapb.DatabaseSchemaMetadata{}
 		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
-		list := []*storepb.DatabaseSchemaMetadata{metadata}
-		crossDatabase := &storepb.DatabaseSchemaMetadata{}
+		list := []*metadatapb.DatabaseSchemaMetadata{metadata}
+		crossDatabase := &metadatapb.DatabaseSchemaMetadata{}
 		if tc.CrossDatabaseMetadata != "" {
 			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.CrossDatabaseMetadata), crossDatabase))
 			list = append(list, crossDatabase)
@@ -81,7 +82,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 }
 
-func buildMockDatabaseMetadataGetter(defaultMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
+func buildMockDatabaseMetadataGetter(defaultMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
 	return func(_ context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
 			databaseMetadata := defaultMetadata
 			if instanceID == instanceIDB {
@@ -109,7 +110,7 @@ func buildMockDatabaseMetadataGetter(defaultMetadata []*storepb.DatabaseSchemaMe
 			return names, nil
 		}, func(_ context.Context, _, linkedDatabaseName, _ string) (string, string, *model.DatabaseMetadata, error) {
 			databaseMetadata := defaultMetadata
-			var linkedDBInfo *storepb.LinkedDatabaseMetadata
+			var linkedDBInfo *metadatapb.LinkedDatabaseMetadata
 			for _, metadata := range databaseMetadata {
 				for _, linkedDatabase := range metadata.GetLinkedDatabases() {
 					if linkedDatabase.Name == linkedDatabaseName {
@@ -139,17 +140,17 @@ func listLinkedDatabaseNames() ([]string, error) {
 	return []string{"SCHEMA1", "SCHEMA2"}, nil
 }
 
-func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
-	return []*storepb.DatabaseSchemaMetadata{
+func getLinkedDatabaseMetadata() []*metadatapb.DatabaseSchemaMetadata {
+	return []*metadatapb.DatabaseSchemaMetadata{
 		{
 			Name: "SCHEMA1",
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name: "",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						{
 							Name: "LT1",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "LC1",
 									Type: "int",
@@ -158,7 +159,7 @@ func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
 						},
 						{
 							Name: "LT2",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "LC1",
 									Type: "int",
@@ -170,7 +171,7 @@ func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
 							},
 						},
 					},
-					Views: []*storepb.ViewMetadata{
+					Views: []*metadatapb.ViewMetadata{
 						{
 							Name: "LV1",
 							Definition: `SELECT LC1, LC2

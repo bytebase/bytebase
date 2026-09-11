@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -33,16 +34,16 @@ var (
 	walkThroughsWithContext         = make(map[storepb.Engine]walkThroughWithContext)
 )
 
-type getDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (string, error)
-type getMultiFileDatabaseDefinition func(GetDefinitionContext, *storepb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error)
-type getSchemaDefinition func(*storepb.SchemaMetadata) (string, error)
-type getTableDefinition func(string, *storepb.TableMetadata, []*storepb.SequenceMetadata) (string, error)
-type getViewDefinition func(string, *storepb.ViewMetadata) (string, error)
-type getMaterializedViewDefinition func(string, *storepb.MaterializedViewMetadata) (string, error)
-type getFunctionDefinition func(string, *storepb.FunctionMetadata) (string, error)
-type getProcedureDefinition func(string, *storepb.ProcedureMetadata) (string, error)
-type getSequenceDefinition func(string, *storepb.SequenceMetadata) (string, error)
-type getDatabaseMetadata func(string) (*storepb.DatabaseSchemaMetadata, error)
+type getDatabaseDefinition func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (string, error)
+type getMultiFileDatabaseDefinition func(GetDefinitionContext, *metadatapb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error)
+type getSchemaDefinition func(*metadatapb.SchemaMetadata) (string, error)
+type getTableDefinition func(string, *metadatapb.TableMetadata, []*metadatapb.SequenceMetadata) (string, error)
+type getViewDefinition func(string, *metadatapb.ViewMetadata) (string, error)
+type getMaterializedViewDefinition func(string, *metadatapb.MaterializedViewMetadata) (string, error)
+type getFunctionDefinition func(string, *metadatapb.FunctionMetadata) (string, error)
+type getProcedureDefinition func(string, *metadatapb.ProcedureMetadata) (string, error)
+type getSequenceDefinition func(string, *metadatapb.SequenceMetadata) (string, error)
+type getDatabaseMetadata func(string) (*metadatapb.DatabaseSchemaMetadata, error)
 type generateMigration func(*MetadataDiff) (string, error)
 type getSDLDiff func(currentSDLText, previousUserSDLText string, currentSchema *model.DatabaseMetadata) (*MetadataDiff, error)
 type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetadata, engineVersion string) ([]*storepb.Advice, error)
@@ -103,7 +104,7 @@ func RegisterGetSequenceDefinition(engine storepb.Engine, f getSequenceDefinitio
 	getSequenceDefinitions[engine] = f
 }
 
-func GetSequenceDefinition(engine storepb.Engine, sequenceName string, sequence *storepb.SequenceMetadata) (string, error) {
+func GetSequenceDefinition(engine storepb.Engine, sequenceName string, sequence *metadatapb.SequenceMetadata) (string, error) {
 	f, ok := getSequenceDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -120,7 +121,7 @@ func RegisterGetFunctionDefinition(engine storepb.Engine, f getFunctionDefinitio
 	getFunctionDefinitions[engine] = f
 }
 
-func GetFunctionDefinition(engine storepb.Engine, functionName string, function *storepb.FunctionMetadata) (string, error) {
+func GetFunctionDefinition(engine storepb.Engine, functionName string, function *metadatapb.FunctionMetadata) (string, error) {
 	f, ok := getFunctionDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -137,7 +138,7 @@ func RegisterGetProcedureDefinition(engine storepb.Engine, f getProcedureDefinit
 	getProcedureDefinitions[engine] = f
 }
 
-func GetProcedureDefinition(engine storepb.Engine, procedureName string, procedure *storepb.ProcedureMetadata) (string, error) {
+func GetProcedureDefinition(engine storepb.Engine, procedureName string, procedure *metadatapb.ProcedureMetadata) (string, error) {
 	f, ok := getProcedureDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -154,7 +155,7 @@ func RegisterGetMaterializedViewDefinition(engine storepb.Engine, f getMateriali
 	getMaterializedViewDefinitions[engine] = f
 }
 
-func GetMaterializedViewDefinition(engine storepb.Engine, viewName string, view *storepb.MaterializedViewMetadata) (string, error) {
+func GetMaterializedViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.MaterializedViewMetadata) (string, error) {
 	f, ok := getMaterializedViewDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -171,7 +172,7 @@ func RegisterGetViewDefinition(engine storepb.Engine, f getViewDefinition) {
 	getViewDefinitions[engine] = f
 }
 
-func GetViewDefinition(engine storepb.Engine, viewName string, view *storepb.ViewMetadata) (string, error) {
+func GetViewDefinition(engine storepb.Engine, viewName string, view *metadatapb.ViewMetadata) (string, error) {
 	f, ok := getViewDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -188,7 +189,7 @@ func RegisterGetTableDefinition(engine storepb.Engine, f getTableDefinition) {
 	getTableDefinitions[engine] = f
 }
 
-func GetTableDefinition(engine storepb.Engine, tableName string, table *storepb.TableMetadata, sequences []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(engine storepb.Engine, tableName string, table *metadatapb.TableMetadata, sequences []*metadatapb.SequenceMetadata) (string, error) {
 	f, ok := getTableDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -205,7 +206,7 @@ func RegisterGetSchemaDefinition(engine storepb.Engine, f getSchemaDefinition) {
 	getSchemaDefinitions[engine] = f
 }
 
-func GetSchemaDefinition(engine storepb.Engine, schema *storepb.SchemaMetadata) (string, error) {
+func GetSchemaDefinition(engine storepb.Engine, schema *metadatapb.SchemaMetadata) (string, error) {
 	f, ok := getSchemaDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -222,7 +223,7 @@ func RegisterGetDatabaseDefinition(engine storepb.Engine, f getDatabaseDefinitio
 	getDatabaseDefinitions[engine] = f
 }
 
-func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	f, ok := getDatabaseDefinitions[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
@@ -239,7 +240,7 @@ func RegisterGetDatabaseMetadata(engine storepb.Engine, f getDatabaseMetadata) {
 	getDatabaseMetadataMap[engine] = f
 }
 
-func GetDatabaseMetadata(engine storepb.Engine, schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+func GetDatabaseMetadata(engine storepb.Engine, schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
 	f, ok := getDatabaseMetadataMap[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
@@ -505,7 +506,7 @@ func RegisterGetMultiFileDatabaseDefinition(engine storepb.Engine, f getMultiFil
 	getMultiFileDatabaseDefinitions[engine] = f
 }
 
-func GetMultiFileDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error) {
+func GetMultiFileDatabaseDefinition(engine storepb.Engine, ctx GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (*MultiFileSchemaResult, error) {
 	f, ok := getMultiFileDatabaseDefinitions[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported for multi-file database definition", engine)

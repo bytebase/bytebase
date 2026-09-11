@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { fireEvent } from "@testing-library/react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { ReactElement } from "react";
 import { act } from "react";
@@ -9,6 +10,7 @@ import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
+  DataSourceExternalSecret_SecretType,
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
@@ -25,10 +27,13 @@ import {
 } from "./InstanceFormContext";
 
 const mocks = vi.hoisted(() => ({
+  translate: (key: string) => key,
   hasInstancePermission: vi.fn(() => true),
   pushNotification: vi.fn(),
   createInstance: vi.fn(),
   isSaaSMode: false,
+  hasSSL: false,
+  hasExtraParameters: false,
   listInstanceDatabases: vi.fn(async () => ({
     databases: ["app", "analytics"],
   })),
@@ -59,13 +64,13 @@ vi.mock("./permission", () => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: mocks.translate,
   }),
 }));
 
 vi.mock("@/lib/i18n", () => ({
   default: {
-    t: (key: string) => key,
+    t: mocks.translate,
   },
 }));
 
@@ -121,15 +126,16 @@ vi.mock("@/stores/app", () => {
 });
 
 vi.mock("@/utils", () => ({
+  MAX_LABEL_VALUE_LENGTH: 63,
   calcUpdateMask: () => [],
   convertKVListToLabels: (list: { key: string; value: string }[]) =>
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
   convertLabelsToKVList: (labels: Record<string, string>) =>
     Object.entries(labels).map(([key, value]) => ({ key, value })),
   hasWorkspacePermissionV2: () => true,
-  instanceV1HasExtraParameters: () => false,
+  instanceV1HasExtraParameters: () => mocks.hasExtraParameters,
   instanceV1HasSSH: () => false,
-  instanceV1HasSSL: () => false,
+  instanceV1HasSSL: () => mocks.hasSSL,
   isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
     ds.projectId !== "" && ds.instanceId !== "",
   isValidBigQueryDataSource: (ds: { projectId: string }) =>
@@ -249,6 +255,8 @@ describe("InstanceFormProvider", () => {
     vi.clearAllMocks();
     mocks.hasInstancePermission.mockReturnValue(true);
     mocks.isSaaSMode = false;
+    mocks.hasSSL = false;
+    mocks.hasExtraParameters = false;
     mocks.createInstance.mockResolvedValue(create(InstanceSchema, {}));
     mockEnvironmentList = [];
     vi.useRealTimers();
@@ -783,6 +791,232 @@ describe("InstanceFormProvider", () => {
     harness.unmount();
   });
 
+  test.each([
+    DataSource_AuthenticationType.AWS_RDS_IAM,
+    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+    DataSource_AuthenticationType.AZURE_IAM,
+  ])("omits inactive password sources from IAM payloads for method %s", async (authenticationType) => {
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Capture = () => { context = useInstanceFormContext(); return null; };
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
+      const draft = wrapEditDataSource(create(DataSourceSchema, {
+        authenticationType,
+        host: "project:region:instance",
+        region: "us-east-1",
+        password: "{{inactive-password}}",
+        externalSecret: { secretType: DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT },
+      }));
+      expect(context.checkDataSource([draft])).toBe(true);
+      const payload = context.extractDataSourceFromEdit(Engine.MYSQL, draft);
+      expect(payload.externalSecret).toBeUndefined();
+      expect(payload.password).toBe("");
+      expect(draft.externalSecret).toBeDefined();
+      expect(draft.password).toBe("{{inactive-password}}");
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test.each([
+    DataSource_AuthenticationType.AWS_RDS_IAM,
+    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+    DataSource_AuthenticationType.AZURE_IAM,
+  ])(
+    "keeps TLS drafts editable after switching to IAM method %s",
+    async (authenticationType) => {
+      mocks.hasSSL = true;
+      const { DataSourceForm } = await vi.importActual<
+        typeof import("./DataSourceForm")
+      >("./DataSourceForm");
+      let context!: ReturnType<typeof useInstanceFormContext>;
+      const Editor = () => {
+        context = useInstanceFormContext();
+        return (
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            onDataSourceChange={(ds) =>
+              context.setDataSourceEditState((state) => ({
+                ...state,
+                dataSources: [ds],
+              }))
+            }
+            optionsOnly
+          />
+        );
+      };
+      const harness = renderIntoContainer();
+      try {
+        await harness.render(
+          <InstanceFormProvider><Editor /></InstanceFormProvider>
+        );
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{
+              ...context.adminDataSource,
+              authenticationType: DataSource_AuthenticationType.PASSWORD,
+              useSsl: true,
+              verifyTlsCertificate: true,
+              sslCaPath: "relative.pem",
+              updateSsl: undefined,
+            }],
+          }));
+        });
+        const caInput = () => harness.container.querySelector<HTMLInputElement>(
+          'input[value="relative.pem"]'
+        );
+        expect(caInput()).not.toBeNull();
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{ ...context.adminDataSource, authenticationType }],
+          }));
+        });
+        expect(caInput()).not.toBeNull();
+        expect(caInput()?.disabled).toBe(false);
+        expect(context.extractDataSourceFromEdit(
+          Engine.MYSQL, context.adminDataSource
+        ).useSsl).toBe(true);
+      } finally {
+        harness.unmount();
+      }
+    }
+  );
+
+  test.each(["add", "rename"])(
+    "shows forbidden parameter feedback immediately after %s",
+    async (operation) => {
+      mocks.hasExtraParameters = true;
+      const { DataSourceForm } = await vi.importActual<
+        typeof import("./DataSourceForm")
+      >("./DataSourceForm");
+      let context!: ReturnType<typeof useInstanceFormContext>;
+      const Editor = () => {
+        context = useInstanceFormContext();
+        return (
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            onDataSourceChange={(ds) => context.setDataSourceEditState((state) => ({
+              ...state, dataSources: [ds],
+            }))}
+            optionsOnly
+          />
+        );
+      };
+      const harness = renderIntoContainer();
+      const button = (text: string) => Array.from(
+        harness.container.querySelectorAll("button")
+      ).find((element) => element.textContent === text)!;
+      const input = (value: string) => Array.from(
+        harness.container.querySelectorAll<HTMLInputElement>(
+          'input[aria-label="instance.parameter-name-placeholder"]'
+        )
+      ).find((element) => element.value === value)!;
+      try {
+        await harness.render(
+          <InstanceFormProvider><Editor /></InstanceFormProvider>
+        );
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{ ...context.adminDataSource, host: "db.example.com" }],
+          }));
+        });
+        expect(context.checkDataSource([context.adminDataSource])).toBe(true);
+        await act(async () => { button("instance.add-parameter").click(); });
+        await act(async () => {
+          fireEvent.change(input(""), {
+            target: { value: operation === "add" ? "allowAllFiles" : "timeout" },
+          });
+        });
+        await act(async () => { button("common.add").click(); });
+        if (operation === "rename") {
+          await act(async () => {
+            fireEvent.change(input("timeout"), { target: { value: "allowAllFiles" } });
+          });
+        }
+        expect(context.checkDataSource([context.adminDataSource])).toBe(false);
+        expect(harness.container.textContent).toContain("instance.validation.forbidden-parameter");
+        expect(input("allowAllFiles").getAttribute("aria-invalid")).toBe("true");
+        const errorId = input("allowAllFiles").getAttribute("aria-describedby");
+        expect(errorId).toBeTruthy();
+        expect(harness.container.querySelector(`[id="${errorId}"]`)?.textContent).toBe(
+          "instance.validation.forbidden-parameter"
+        );
+        await act(async () => {
+          fireEvent.change(input("allowAllFiles"), { target: { value: "timeout" } });
+        });
+        expect(context.checkDataSource([context.adminDataSource])).toBe(true);
+        expect(harness.container.textContent).not.toContain("instance.validation.forbidden-parameter");
+      } finally {
+        harness.unmount();
+      }
+    }
+  );
+
+  test("clears errors when deleting the final invalid label unmounts its editor", async () => {
+    const { LabelListEditor } = await vi.importActual<
+      typeof import("@/components/LabelListEditor")
+    >("@/components/LabelListEditor");
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Labels = () => {
+      context = useInstanceFormContext();
+      return context.labelKVList.length > 0 ? (
+        <LabelListEditor
+          kvList={context.labelKVList}
+          onChange={context.setLabelKVList}
+          onErrorsChange={context.setLabelErrors}
+          readonly={false}
+          showErrors
+        />
+      ) : null;
+    };
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(
+        <InstanceFormProvider
+          instance={create(InstanceSchema, {
+            name: "instances/prod",
+            labels: { team: "platform" },
+            engine: Engine.POSTGRES,
+          })}
+        >
+          <Labels />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        context.setLabelKVList([{ key: "team", value: "" }]);
+      });
+      expect(context.labelErrors).toEqual(["label.error.value-necessary"]);
+      const remove = harness.container.querySelector<HTMLButtonElement>("button")!;
+      await act(async () => { remove.click(); });
+      expect(context.labelKVList).toEqual([]);
+      expect(harness.container.querySelector("input")).toBeNull();
+      expect(context.labelErrors).toEqual([]);
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test.each([Engine.BIGQUERY, Engine.SPANNER])("requires resource ID and valid labels when creating GCP engine %s", async (engine) => {
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Capture = () => { context = useInstanceFormContext(); return null; };
+    const harness = renderIntoContainer();
+    await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
+    await act(async () => {
+      context.setBasicInfo((previous) => ({ ...previous, engine, title: "Production" }));
+      context.setDataSourceEditState((previous) => ({ ...previous, dataSources: [wrapEditDataSource(create(DataSourceSchema, { id: "admin", type: DataSourceType.ADMIN, projectId: "valid-project", instanceId: "valid-instance" }))] }));
+    });
+    expect(context.allowCreate).toBe(false);
+    await act(async () => { context.setResourceIdValidated(true); });
+    expect(context.allowCreate).toBe(true);
+    await act(async () => { context.setLabelErrors(["invalid label"]); });
+    expect(context.allowCreate).toBe(false);
+    harness.unmount();
+  });
+
   describe("checkDataSource AWS region requirement", () => {
     const awsDataSource = (region: string, withCredential: boolean) => {
       const ds = wrapEditDataSource(
@@ -790,6 +1024,7 @@ describe("InstanceFormProvider", () => {
           id: "admin",
           type: DataSourceType.ADMIN,
           authenticationType: DataSource_AuthenticationType.AWS_RDS_IAM,
+          host: "db.example.com",
           region,
         })
       );

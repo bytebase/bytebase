@@ -155,6 +155,7 @@ import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "./PlanDetailTabStrip";
 import { PlanTargetDisplay } from "./PlanTargetDisplay";
+import { usePlacedUnresolvedThreadCounts } from "./threads/useUnresolvedThreadCounts";
 
 const DEFAULT_VISIBLE_TARGETS = 20;
 const DATABASE_GROUP_VISIBLE_DATABASES = 3;
@@ -210,6 +211,10 @@ export function PlanDetailChangesBranch({
   const page = usePlanDetailContext();
   const { patchState } = page;
   const currentUser = useCurrentUser();
+  const unresolvedThreadsBySpec = usePlacedUnresolvedThreadCounts(
+    page.issue?.name,
+    page.plan.specs
+  );
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
@@ -600,6 +605,7 @@ export function PlanDetailChangesBranch({
         {visibleSpecs.map((spec, index) => {
           const isSelected = selectedSpec.id === spec.id;
           const isPending = pendingNewSpec?.id === spec.id;
+          const unresolvedCount = unresolvedThreadsBySpec.get(spec.id) ?? 0;
           const reference = derivePlanChangeReference({
             index,
             resources: changeReferenceResources,
@@ -616,10 +622,7 @@ export function PlanDetailChangesBranch({
                 canModifySpecs && visibleSpecs.length > 1 ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      className={cn(
-                        ICON_ACTION_CLASS,
-                        "mr-2 size-6 shrink-0 rounded-xs"
-                      )}
+                      className={cn(ICON_ACTION_CLASS, "size-6 rounded-xs")}
                     >
                       <EllipsisVertical className="size-3.5" />
                     </DropdownMenuTrigger>
@@ -666,6 +669,18 @@ export function PlanDetailChangesBranch({
                 density="tab"
                 reference={reference}
               />
+              {unresolvedCount > 0 && (
+                <Badge
+                  className="h-5 min-w-5 shrink-0 justify-center px-1.5 py-0 text-xs tabular-nums"
+                  data-testid="spec-unresolved-threads"
+                  title={t("plan.summary.n-unresolved-threads", {
+                    count: unresolvedCount,
+                  })}
+                  variant="secondary"
+                >
+                  {unresolvedCount}
+                </Badge>
+              )}
             </PlanDetailTabItem>
           );
         })}

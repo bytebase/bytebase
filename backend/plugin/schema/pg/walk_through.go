@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/catalog"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -176,15 +177,15 @@ func getConfiguredSearchPath(d *model.DatabaseMetadata) []string {
 	return searchPath
 }
 
-// relationToTableProto converts an omni Relation to a storepb.TableMetadata.
-func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.TableMetadata {
-	table := &storepb.TableMetadata{
+// relationToTableProto converts an omni Relation to a metadatapb.TableMetadata.
+func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *metadatapb.TableMetadata {
+	table := &metadatapb.TableMetadata{
 		Name: rel.Name,
 	}
 
 	// Columns.
 	for _, col := range rel.Columns {
-		colMeta := &storepb.ColumnMetadata{
+		colMeta := &metadatapb.ColumnMetadata{
 			Name:     col.Name,
 			Position: int32(col.AttNum),
 			Type:     c.FormatType(col.TypeOID, col.TypeMod),
@@ -192,8 +193,8 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 			Default:  col.Default,
 		}
 		if col.Generated == 's' {
-			colMeta.Generation = &storepb.GenerationMetadata{
-				Type:       storepb.GenerationMetadata_TYPE_STORED,
+			colMeta.Generation = &metadatapb.GenerationMetadata{
+				Type:       metadatapb.GenerationMetadata_TYPE_STORED,
 				Expression: col.GenerationExpr,
 			}
 		}
@@ -201,9 +202,9 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 			colMeta.IsIdentity = true
 			switch col.Identity {
 			case 'a':
-				colMeta.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
+				colMeta.IdentityGeneration = metadatapb.ColumnMetadata_ALWAYS
 			case 'd':
-				colMeta.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+				colMeta.IdentityGeneration = metadatapb.ColumnMetadata_BY_DEFAULT
 			default:
 			}
 		}
@@ -212,7 +213,7 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 
 	// Indexes.
 	for _, idx := range c.IndexesOf(rel.OID) {
-		idxMeta := &storepb.IndexMetadata{
+		idxMeta := &metadatapb.IndexMetadata{
 			Name:    idx.Name,
 			Type:    idx.AccessMethod,
 			Unique:  idx.IsUnique,
@@ -258,7 +259,7 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 	for _, con := range c.ConstraintsOf(rel.OID) {
 		switch con.Type {
 		case 'f': // FK
-			fk := &storepb.ForeignKeyMetadata{
+			fk := &metadatapb.ForeignKeyMetadata{
 				Name: con.Name,
 			}
 			// Columns.
@@ -292,12 +293,12 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 			fk.MatchType = wtFKMatchToString(con.FKMatchType)
 			table.ForeignKeys = append(table.ForeignKeys, fk)
 		case 'c': // CHECK
-			table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
+			table.CheckConstraints = append(table.CheckConstraints, &metadatapb.CheckConstraintMetadata{
 				Name:       con.Name,
 				Expression: con.CheckExpr,
 			})
 		case 'x': // EXCLUDE
-			table.ExcludeConstraints = append(table.ExcludeConstraints, &storepb.ExcludeConstraintMetadata{
+			table.ExcludeConstraints = append(table.ExcludeConstraints, &metadatapb.ExcludeConstraintMetadata{
 				Name:       con.Name,
 				Expression: con.CheckExpr,
 			})
@@ -308,9 +309,9 @@ func relationToTableProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Ta
 	return table
 }
 
-// relationToViewProto converts an omni Relation (view) to a storepb.ViewMetadata.
-func relationToViewProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.ViewMetadata {
-	view := &storepb.ViewMetadata{
+// relationToViewProto converts an omni Relation (view) to a metadatapb.ViewMetadata.
+func relationToViewProto(c *catalog.Catalog, rel *catalog.Relation) *metadatapb.ViewMetadata {
+	view := &metadatapb.ViewMetadata{
 		Name: rel.Name,
 	}
 	if rel.Schema != nil {
@@ -321,9 +322,9 @@ func relationToViewProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.Vie
 	return view
 }
 
-// relationToMatViewProto converts an omni Relation (materialized view) to a storepb.MaterializedViewMetadata.
-func relationToMatViewProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.MaterializedViewMetadata {
-	mv := &storepb.MaterializedViewMetadata{
+// relationToMatViewProto converts an omni Relation (materialized view) to a metadatapb.MaterializedViewMetadata.
+func relationToMatViewProto(c *catalog.Catalog, rel *catalog.Relation) *metadatapb.MaterializedViewMetadata {
+	mv := &metadatapb.MaterializedViewMetadata{
 		Name: rel.Name,
 	}
 	if rel.Schema != nil {
@@ -334,7 +335,7 @@ func relationToMatViewProto(c *catalog.Catalog, rel *catalog.Relation) *storepb.
 
 	// Materialized view indexes.
 	for _, idx := range c.IndexesOf(rel.OID) {
-		idxMeta := &storepb.IndexMetadata{
+		idxMeta := &metadatapb.IndexMetadata{
 			Name:    idx.Name,
 			Type:    idx.AccessMethod,
 			Unique:  idx.IsUnique,

@@ -14,6 +14,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"golang.org/x/text/encoding/charmap"
 	"golang.org/x/text/transform"
 
@@ -113,9 +114,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 	defer rows.Close()
 
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	for rows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
+		database := &metadatapb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(
 			&database.Name,
 			&database.CharacterSet,
@@ -187,8 +188,8 @@ func utf8ToISO88591(utf8Str string) (string, error) {
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	schemaMetadata := &storepb.SchemaMetadata{
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	schemaMetadata := &metadatapb.SchemaMetadata{
 		Name: "",
 	}
 
@@ -225,7 +226,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Query index info.
-	indexMap := make(map[db.TableKey]map[string]*storepb.IndexMetadata)
+	indexMap := make(map[db.TableKey]map[string]*metadatapb.IndexMetadata)
 	indexQuery := `
 		SELECT
 			TABLE_NAME,
@@ -307,10 +308,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 		key := db.TableKey{Schema: "", Table: tableName}
 		if _, ok := indexMap[key]; !ok {
-			indexMap[key] = make(map[string]*storepb.IndexMetadata)
+			indexMap[key] = make(map[string]*metadatapb.IndexMetadata)
 		}
 		if _, ok := indexMap[key][indexName]; !ok {
-			indexMap[key][indexName] = &storepb.IndexMetadata{
+			indexMap[key][indexName] = &metadatapb.IndexMetadata{
 				Name:    indexName,
 				Type:    indexType,
 				Unique:  !nonUnique,
@@ -333,7 +334,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	// 8.0.0–8.0.2 lack it, as do 5.7/5.6, MariaDB, OceanBase, and TiDB (which may report
 	// an 8.x MySQL-compat version), so selecting it there would fail the whole sync —
 	// they select NULL instead.
-	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+	columnMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 	sridSelect := "NULL"
 	if atLeast803 && stockMySQL {
 		sridSelect = "SRS_ID"
@@ -381,7 +382,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	defer columnRows.Close()
 	for columnRows.Next() {
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		var tableName, nullable, extra, tp string
 		var defaultStr sql.NullString
 		var generationExpr []byte
@@ -439,13 +440,13 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		// I have no idea why it does that. But we need to unescape it. -_-
 		text = strings.ReplaceAll(text, `\'`, `'`)
 		if extra != "" && strings.Contains(strings.ToUpper(extra), virtualGenerated) && len(generationExpr) != 0 {
-			column.Generation = &storepb.GenerationMetadata{
-				Type:       storepb.GenerationMetadata_TYPE_VIRTUAL,
+			column.Generation = &metadatapb.GenerationMetadata{
+				Type:       metadatapb.GenerationMetadata_TYPE_VIRTUAL,
 				Expression: text,
 			}
 		} else if extra != "" && strings.Contains(strings.ToUpper(extra), storedGenerated) && len(generationExpr) != 0 {
-			column.Generation = &storepb.GenerationMetadata{
-				Type:       storepb.GenerationMetadata_TYPE_STORED,
+			column.Generation = &metadatapb.GenerationMetadata{
+				Type:       metadatapb.GenerationMetadata_TYPE_STORED,
 				Expression: text,
 			}
 		}
@@ -455,7 +456,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Check constraints info.
-	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
+	checkMap := make(map[db.TableKey][]*metadatapb.CheckConstraintMetadata)
 	if atLeast8_0_16 {
 		checkQuery := getCheckConstraintQuery(isMariaDB)
 		checkRows, err := d.db.QueryContext(ctx, checkQuery, d.databaseName)
@@ -464,7 +465,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		defer checkRows.Close()
 		for checkRows.Next() {
-			check := &storepb.CheckConstraintMetadata{}
+			check := &metadatapb.CheckConstraintMetadata{}
 			var tableName string
 			if err := checkRows.Scan(
 				&tableName,
@@ -483,7 +484,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Query view info.
-	viewMap := make(map[db.TableKey]*storepb.ViewMetadata)
+	viewMap := make(map[db.TableKey]*metadatapb.ViewMetadata)
 	viewQuery := `
 		SELECT
 			TABLE_NAME,
@@ -496,7 +497,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	defer viewRows.Close()
 	for viewRows.Next() {
-		view := &storepb.ViewMetadata{}
+		view := &metadatapb.ViewMetadata{}
 		if err := viewRows.Scan(
 			&view.Name,
 			&view.Definition,
@@ -542,7 +543,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, err
 	}
 
-	partitionTables := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
+	partitionTables := make(map[db.TableKey][]*metadatapb.TablePartitionMetadata)
 	// Query partition info.
 	if d.dbType == storepb.Engine_MYSQL {
 		partitionTables, err = d.listPartitionTables(ctx, d.databaseName)
@@ -614,7 +615,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		switch tableType {
 		case baseTableType:
 			columns := columnMap[key]
-			tableMetadata := &storepb.TableMetadata{
+			tableMetadata := &metadatapb.TableMetadata{
 				Name:             tableName,
 				Columns:          columns,
 				ForeignKeys:      foreignKeysMap[key],
@@ -658,9 +659,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	databaseMetadata := &storepb.DatabaseSchemaMetadata{
+	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
-		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+		Schemas: []*metadatapb.SchemaMetadata{schemaMetadata},
 	}
 	// Query db info.
 	databaseQuery := `
@@ -682,7 +683,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	return databaseMetadata, err
 }
 
-func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*storepb.EventMetadata, error) {
+func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*metadatapb.EventMetadata, error) {
 	listEventsQuery := `
 	SELECT
 		EVENT_NAME,
@@ -699,7 +700,7 @@ func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*stor
 		return nil, util.FormatErrorWithQuery(err, listEventsQuery)
 	}
 	defer eventRows.Close()
-	var events []*storepb.EventMetadata
+	var events []*metadatapb.EventMetadata
 	for eventRows.Next() {
 		var name, timeZone, sqlMode, charsetClient, collationConnection string
 		if err := eventRows.Scan(
@@ -715,7 +716,7 @@ func (d *Driver) getEventList(ctx context.Context, databaseName string) ([]*stor
 		if err != nil {
 			return nil, err
 		}
-		event := &storepb.EventMetadata{
+		event := &metadatapb.EventMetadata{
 			Name:                name,
 			TimeZone:            timeZone,
 			Definition:          eventDef,
@@ -783,7 +784,7 @@ func (d *Driver) getCreateEventStmt(ctx context.Context, databaseName string, na
 	return "", nil
 }
 
-func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
+func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[db.TableKey][]*metadatapb.TriggerMetadata, error) {
 	// Prune to a single database on MariaDB: filter by EVENT_OBJECT_SCHEMA (the
 	// trigger's table schema), not TRIGGER_SCHEMA, which scans every database's
 	// table metadata. A trigger lives in its table's schema, so they are equivalent.
@@ -806,7 +807,7 @@ func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[d
 		return nil, util.FormatErrorWithQuery(err, triggersQuery)
 	}
 	defer triggerRows.Close()
-	triggerMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
+	triggerMap := make(map[db.TableKey][]*metadatapb.TriggerMetadata)
 	for triggerRows.Next() {
 		var name, table, event, timing, statement, sqlMode, charsetClient, collationConnection string
 		if err := triggerRows.Scan(
@@ -821,7 +822,7 @@ func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[d
 		); err != nil {
 			return nil, err
 		}
-		trigger := &storepb.TriggerMetadata{
+		trigger := &metadatapb.TriggerMetadata{
 			Name:                name,
 			Event:               event,
 			Timing:              timing,
@@ -840,7 +841,7 @@ func (d *Driver) getTriggerList(ctx context.Context, databaseName string) (map[d
 	return triggerMap, nil
 }
 
-func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {
+func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*metadatapb.FunctionMetadata, []*metadatapb.ProcedureMetadata, error) {
 	// Query functions and procedure info.
 	routinesQuery := `
 		SELECT
@@ -861,8 +862,8 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 		return nil, nil, util.FormatErrorWithQuery(err, routinesQuery)
 	}
 	defer routineRows.Close()
-	var functions []*storepb.FunctionMetadata
-	var procedures []*storepb.ProcedureMetadata
+	var functions []*metadatapb.FunctionMetadata
+	var procedures []*metadatapb.ProcedureMetadata
 	for routineRows.Next() {
 		var name, routineType, routineComment string
 		var sqlMode, charsetClient, collationConnection, databaseCollation sql.NullString
@@ -882,7 +883,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 			if err != nil {
 				return nil, nil, err
 			}
-			procedures = append(procedures, &storepb.ProcedureMetadata{
+			procedures = append(procedures, &metadatapb.ProcedureMetadata{
 				Name:                name,
 				Definition:          procedureDef,
 				SqlMode:             sqlMode.String,
@@ -896,7 +897,7 @@ func (d *Driver) syncRoutines(ctx context.Context, databaseName string) ([]*stor
 			if err != nil {
 				return nil, nil, err
 			}
-			functions = append(functions, &storepb.FunctionMetadata{
+			functions = append(functions, &metadatapb.FunctionMetadata{
 				Name:                name,
 				Definition:          functionDef,
 				SqlMode:             sqlMode.String,
@@ -1109,7 +1110,7 @@ const (
 	binaryDefaultHexNotation
 )
 
-func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string, binaryFormat binaryDefaultFormat) {
+func setColumnMetadataDefault(column *metadatapb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string, binaryFormat binaryDefaultFormat) {
 	if defaultStr.Valid {
 		// MySQL handles these defaults differently:
 		// 1. CURRENT_TIMESTAMP functions - stored as function names, need QUOTE() unescaping only
@@ -1330,7 +1331,7 @@ func getViewDefFromCreateView(createView string) (string, error) {
 	return "", errors.Errorf("failed to match view definition, %s", createView)
 }
 
-func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
+func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (map[db.TableKey][]*metadatapb.TablePartitionMetadata, error) {
 	const query string = `
 		SELECT
 			TABLE_NAME,
@@ -1363,7 +1364,7 @@ func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (
 	}
 
 	partitionMap := make(map[partitionKey]int)
-	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
+	result := make(map[db.TableKey][]*metadatapb.TablePartitionMetadata)
 
 	for rows.Next() {
 		var tableName, partitionName, partitionMethod string
@@ -1386,7 +1387,7 @@ func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (
 		if _, ok := partitionMap[partitionKey]; !ok {
 			// Partition
 			tp := convertToStorepbTablePartitionType(partitionMethod)
-			if tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+			if tp == metadatapb.TablePartitionMetadata_TYPE_UNSPECIFIED {
 				slog.Warn("unknown partition type", slog.String("partitionMethod", partitionMethod))
 				continue
 			}
@@ -1401,12 +1402,12 @@ func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (
 				value = partitionDescription.String
 			}
 
-			partition := &storepb.TablePartitionMetadata{
+			partition := &metadatapb.TablePartitionMetadata{
 				Name:          partitionName,
 				Type:          tp,
 				Expression:    expression,
 				Value:         value,
-				Subpartitions: []*storepb.TablePartitionMetadata{},
+				Subpartitions: []*metadatapb.TablePartitionMetadata{},
 			}
 			partitionMap[partitionKey] = len(result[tableKey])
 			result[tableKey] = append(result[tableKey], partition)
@@ -1414,7 +1415,7 @@ func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (
 
 		if subpartitionName.Valid {
 			tp := convertToStorepbTablePartitionType(subpartitionMethod.String)
-			if tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED {
+			if tp == metadatapb.TablePartitionMetadata_TYPE_UNSPECIFIED {
 				slog.Warn("unknown subpartition type", slog.String("subpartitionMethod", subpartitionMethod.String))
 				continue
 			}
@@ -1424,12 +1425,12 @@ func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (
 				expression = subpartitionExpression.String
 			}
 
-			subPartition := &storepb.TablePartitionMetadata{
+			subPartition := &metadatapb.TablePartitionMetadata{
 				Name:          subpartitionName.String,
 				Type:          tp,
 				Expression:    expression,
 				Value:         "",
-				Subpartitions: []*storepb.TablePartitionMetadata{},
+				Subpartitions: []*metadatapb.TablePartitionMetadata{},
 			}
 
 			if idx, ok := partitionMap[partitionKey]; !ok {
@@ -1499,30 +1500,30 @@ func (d *Driver) listPartitionTables(ctx context.Context, databaseName string) (
 	return result, nil
 }
 
-func convertToStorepbTablePartitionType(tp string) storepb.TablePartitionMetadata_Type {
+func convertToStorepbTablePartitionType(tp string) metadatapb.TablePartitionMetadata_Type {
 	switch strings.ToUpper(tp) {
 	case "RANGE":
-		return storepb.TablePartitionMetadata_RANGE
+		return metadatapb.TablePartitionMetadata_RANGE
 	case "RANGE COLUMNS":
-		return storepb.TablePartitionMetadata_RANGE_COLUMNS
+		return metadatapb.TablePartitionMetadata_RANGE_COLUMNS
 	case "LIST":
-		return storepb.TablePartitionMetadata_LIST
+		return metadatapb.TablePartitionMetadata_LIST
 	case "LIST COLUMNS":
-		return storepb.TablePartitionMetadata_LIST_COLUMNS
+		return metadatapb.TablePartitionMetadata_LIST_COLUMNS
 	case "HASH":
-		return storepb.TablePartitionMetadata_HASH
+		return metadatapb.TablePartitionMetadata_HASH
 	case "KEY":
-		return storepb.TablePartitionMetadata_KEY
+		return metadatapb.TablePartitionMetadata_KEY
 	case "LINEAR HASH":
-		return storepb.TablePartitionMetadata_LINEAR_HASH
+		return metadatapb.TablePartitionMetadata_LINEAR_HASH
 	case "LINEAR KEY":
-		return storepb.TablePartitionMetadata_LINEAR_KEY
+		return metadatapb.TablePartitionMetadata_LINEAR_KEY
 	default:
-		return storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+		return metadatapb.TablePartitionMetadata_TYPE_UNSPECIFIED
 	}
 }
 
-func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
 	// Prune to a single database on MariaDB instead of opening every database's
 	// table metadata (Error 1969 on large instances). REFERENTIAL_CONSTRAINTS prunes
 	// on CONSTRAINT_SCHEMA; KEY_COLUMN_USAGE prunes only on TABLE_SCHEMA. A foreign
@@ -1556,10 +1557,10 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 		return nil, util.FormatErrorWithQuery(err, fkQuery)
 	}
 	defer fkRows.Close()
-	fkMap := make(map[db.IndexKey]*storepb.ForeignKeyMetadata)
+	fkMap := make(map[db.IndexKey]*metadatapb.ForeignKeyMetadata)
 	for fkRows.Next() {
 		var tableName string
-		var fk storepb.ForeignKeyMetadata
+		var fk metadatapb.ForeignKeyMetadata
 		if err := fkRows.Scan(
 			&tableName,
 			&fk.Name,
@@ -1601,15 +1602,15 @@ func (d *Driver) getForeignKeyList(ctx context.Context, databaseName string) (ma
 	if err := kcuQueryRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, kcuQuery)
 	}
-	unordered := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	unordered := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
 	for key, fk := range fkMap {
 		tableKey := db.TableKey{Schema: "", Table: key.Table}
 		unordered[tableKey] = append(unordered[tableKey], fk)
 	}
 
-	orderedResult := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	orderedResult := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
 	for key, fks := range unordered {
-		slices.SortFunc(fks, func(x, y *storepb.ForeignKeyMetadata) int {
+		slices.SortFunc(fks, func(x, y *metadatapb.ForeignKeyMetadata) int {
 			if x.Name < y.Name {
 				return -1
 			} else if x.Name > y.Name {

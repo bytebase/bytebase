@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -45,7 +46,7 @@ func (*FullyQualifiedObjectNameAdvisor) Check(_ context.Context, checkCtx adviso
 type fullyQualifiedObjectNameRule struct {
 	OmniBaseRule
 
-	dbMetadata *storepb.DatabaseSchemaMetadata
+	dbMetadata *metadatapb.DatabaseSchemaMetadata
 }
 
 func (*fullyQualifiedObjectNameRule) Name() string {

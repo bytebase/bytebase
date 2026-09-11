@@ -23,6 +23,7 @@ import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
+import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
 import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
 import { usePlacementSync } from "./hooks/usePlacementSync";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
@@ -109,6 +110,7 @@ function ProjectPlanDetailPageInner({
     taskId,
   });
   useIssueCommentThreadsSync(page.issue);
+  const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
   usePlacementSync({
     issueName: page.issue?.name,
     projectId,
@@ -318,7 +320,7 @@ function ProjectPlanDetailPageInner({
                   onSelect={() => selectPhase("review")}
                   status={phaseConfigs.review.status}
                   onToggle={() => page.togglePhase("review")}
-                  summary={buildReviewSummary(page.issue, t)}
+                  summary={buildReviewSummary(page.issue, t, unresolvedThreads)}
                   future={
                     <p className="mt-0.5 text-sm text-control-placeholder">
                       {t("plan.phase.review-description")}

@@ -3,7 +3,7 @@ package model
 import (
 	"strings"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	metadatapb "github.com/bytebase/omni/metadata"
 )
 
 // DatabaseSearcher provides a fluent interface for searching database objects with a specific search path.
@@ -67,7 +67,7 @@ func (s *DatabaseSearcher) SearchIndex(name string) (string, *IndexMetadata) {
 
 // SearchView searches for a view in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (s *DatabaseSearcher) SearchView(name string) (string, *storepb.ViewMetadata) {
+func (s *DatabaseSearcher) SearchView(name string) (string, *metadatapb.ViewMetadata) {
 	for _, schemaName := range s.searchPath {
 		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
@@ -99,7 +99,7 @@ func (s *DatabaseSearcher) SearchExternalTable(name string) (string, *ExternalTa
 
 // SearchSequence searches for a sequence in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (s *DatabaseSearcher) SearchSequence(name string) (string, *storepb.SequenceMetadata) {
+func (s *DatabaseSearcher) SearchSequence(name string) (string, *metadatapb.SequenceMetadata) {
 	for _, schemaName := range s.searchPath {
 		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
@@ -115,7 +115,7 @@ func (s *DatabaseSearcher) SearchSequence(name string) (string, *storepb.Sequenc
 
 // SearchMaterializedView searches for a materialized view in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (s *DatabaseSearcher) SearchMaterializedView(name string) (string, *storepb.MaterializedViewMetadata) {
+func (s *DatabaseSearcher) SearchMaterializedView(name string) (string, *metadatapb.MaterializedViewMetadata) {
 	for _, schemaName := range s.searchPath {
 		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
@@ -131,9 +131,9 @@ func (s *DatabaseSearcher) SearchMaterializedView(name string) (string, *storepb
 
 // SearchFunctions searches for functions in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*storepb.FunctionMetadata) {
+func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*metadatapb.FunctionMetadata) {
 	var schemas []string
-	var funcs []*storepb.FunctionMetadata
+	var funcs []*metadatapb.FunctionMetadata
 	for _, schemaName := range s.searchPath {
 		schema := s.db.GetSchemaMetadata(schemaName)
 		if schema == nil {
@@ -190,7 +190,7 @@ func (d *DatabaseMetadata) SearchIndex(searchPath []string, name string) (string
 
 // SearchView searches for a view in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (d *DatabaseMetadata) SearchView(searchPath []string, name string) (string, *storepb.ViewMetadata) {
+func (d *DatabaseMetadata) SearchView(searchPath []string, name string) (string, *metadatapb.ViewMetadata) {
 	for _, schemaName := range searchPath {
 		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
@@ -222,7 +222,7 @@ func (d *DatabaseMetadata) SearchExternalTable(searchPath []string, name string)
 
 // SearchSequence searches for a sequence in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (string, *storepb.SequenceMetadata) {
+func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (string, *metadatapb.SequenceMetadata) {
 	for _, schemaName := range searchPath {
 		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
@@ -238,7 +238,7 @@ func (d *DatabaseMetadata) SearchSequence(searchPath []string, name string) (str
 
 // SearchMaterializedView searches for a materialized view in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (d *DatabaseMetadata) SearchMaterializedView(searchPath []string, name string) (string, *storepb.MaterializedViewMetadata) {
+func (d *DatabaseMetadata) SearchMaterializedView(searchPath []string, name string) (string, *metadatapb.MaterializedViewMetadata) {
 	for _, schemaName := range searchPath {
 		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
@@ -254,9 +254,9 @@ func (d *DatabaseMetadata) SearchMaterializedView(searchPath []string, name stri
 
 // SearchFunctions searches for functions in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]string, []*storepb.FunctionMetadata) {
+func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]string, []*metadatapb.FunctionMetadata) {
 	var schemas []string
-	var funcs []*storepb.FunctionMetadata
+	var funcs []*metadatapb.FunctionMetadata
 	for _, schemaName := range searchPath {
 		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
