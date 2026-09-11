@@ -134,7 +134,11 @@ export const buildChangesSummary = (plan: Plan, t: T): string => {
   return parts.join(" · ");
 };
 
-export const buildReviewSummary = (issue: Issue | undefined, t: T): string => {
+export const buildReviewSummary = (
+  issue: Issue | undefined,
+  t: T,
+  unresolvedThreads = 0
+): string => {
   if (!issue) return "";
 
   const roles = issue.approvalTemplate?.flow?.roles ?? [];
@@ -154,6 +158,12 @@ export const buildReviewSummary = (issue: Issue | undefined, t: T): string => {
     const last = approvers[approvers.length - 1];
     const name = extractPrincipalEmail(last.principal).split("@")[0];
     parts.push(t("plan.summary.last-approved-by", { name }));
+  }
+
+  if (unresolvedThreads > 0) {
+    parts.push(
+      t("plan.summary.n-unresolved-threads", { count: unresolvedThreads })
+    );
   }
 
   return parts.join(" · ");

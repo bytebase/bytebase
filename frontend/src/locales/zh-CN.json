@@ -1827,21 +1827,29 @@
           "view-in-statement": "在语句中查看"
         },
         "comment-on-lines": "评论所选行",
-        "comment-required": "请先填写评论再提交。",
         "n-replies-hidden_one": "已隐藏 {{count}} 条回复",
         "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
         "n-replies_one": "{{count}} 条回复",
         "n-replies_other": "{{count}} 条回复",
         "publish": "发布",
-        "reopen-with-comment": "回复并重新打开",
+        "reopen-thread": "重新打开线程",
         "reply": "回复",
         "reply-placeholder": "回复...",
         "reply-posted-status-failed": "回复已发布，但讨论状态更新失败。请重试状态操作。",
         "resolve": "解决",
-        "resolve-with-comment": "回复并解决",
+        "resolve-thread": "解决线程",
         "resolved": "已解决",
         "threads-on-line_one": "此行有 {{count}} 个讨论",
         "threads-on-line_other": "此行有 {{count}} 个讨论",
+        "walker": {
+          "count_one": "此版本有 {{count}} 个未解决的讨论",
+          "count_other": "此版本有 {{count}} 个未解决的讨论",
+          "next": "下一个未解决的讨论",
+          "position": "第 {{index}} 个，共 {{count}} 个",
+          "previous": "上一个未解决的讨论",
+          "remainder_one": "另有 {{count}} 个未在此版本显示",
+          "remainder_other": "另有 {{count}} 个未在此版本显示"
+        },
         "write-comment": "撰写评论..."
       }
     },
@@ -1885,6 +1893,8 @@
       "n-of-m-approved": "{{n}}/{{m}} 已审批",
       "n-of-m-tasks": "{{n}}/{{m}} 任务",
       "n-passed": "{{n}} 通过",
+      "n-unresolved-threads_one": "{{count}} 个未解决的讨论",
+      "n-unresolved-threads_other": "{{count}} 个未解决的讨论",
       "n-warning": "{{n}} 警告"
     },
     "targets": {

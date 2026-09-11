@@ -481,8 +481,10 @@ test.describe("Inline comment threads (CUJ K)", () => {
     const timelineCard = planPage.threadCardIn("review", seededRoot);
     await expect(timelineCard).toBeVisible();
     await expect(timelineCard).toContainText(seededReply);
+    // The recorded statement downloads once the card nears the viewport.
+    await timelineCard.scrollIntoViewIfNeeded();
     const anchor = timelineCard.getByTestId("statement-anchor");
-    await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT");
+    await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT", { timeout: 15_000 });
     await expect(anchor).toContainText("Lines 2–3");
     await expect(anchor).toContainText("e2e_rev_k2_");
     await expect(anchor.getByRole("button", { name: "View in Statement" })).toBeVisible();
@@ -499,8 +501,7 @@ test.describe("Inline comment threads (CUJ K)", () => {
   // in one test.
   test("a gutter-created thread, then reply, resolve, reopen, and View in Statement round-trip between the surfaces", async () => {
     await planPage.hoverStatementLine(1);
-    await expect(planPage.addThreadGlyph).toBeVisible({ timeout: 5_000 });
-    await planPage.addThreadGlyph.click();
+    await planPage.clickAddThreadGlyph();
     await expect(planPage.inlineComposer).toBeVisible();
     await expect(planPage.inlineComposer).toContainText("Add a comment on line 1");
     await planPage.inlineComposerEditor.fill(createdRoot);
@@ -516,7 +517,9 @@ test.describe("Inline comment threads (CUJ K)", () => {
       .getByTestId("statement-anchor");
     await expect(createdAnchor).toBeVisible({ timeout: 15_000 });
     await expect(createdAnchor).toContainText("Line 1");
-    await expect(createdAnchor).toContainText("e2e_rev_k1_");
+    // The recorded statement downloads once the card nears the viewport.
+    await createdAnchor.scrollIntoViewIfNeeded();
+    await expect(createdAnchor).toContainText("e2e_rev_k1_", { timeout: 15_000 });
 
     const timelineCard = planPage.threadCardIn("review", seededRoot);
     await timelineCard.scrollIntoViewIfNeeded();
@@ -834,5 +837,393 @@ test.describe("Long approval flow adaptive rendering (CUJ I)", () => {
     // No fold chips in the vertical layout.
     await expect(page.getByText("2 approved")).toBeHidden();
     await expect(page.getByText("2 pending")).toBeHidden();
+  });
+});
+
+// Inline comment threads, second pass: several composers at once, the
+// reply composer's thread-state checkbox, the editor walker, and the
+// unresolved counts on the change tab and the Review summary.
+test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ L)", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+  let issueName: string;
+  let specId: string;
+  let sheetSha256: string;
+  const stamp = Date.now();
+  const rootA = `L root A line 2 ${stamp}`;
+  const rootB = `L root B lines 4-5 ${stamp}`;
+  const rootResolved = `L resolved root line 6 ${stamp}`;
+  const rootStale = `L stale root ${stamp}`;
+  const draftOne = `L draft one ${stamp}`;
+  const draftThree = `L draft three ${stamp}`;
+  const replyResolving = `L resolving reply ${stamp}`;
+  const replyReopening = `L reopening reply ${stamp}`;
+
+  // The phase summary line renders only while the section is collapsed.
+  const expectReviewSummary = async (text: string | RegExp) => {
+    await planPage.setPhaseExpanded("review", false);
+    await expect(planPage.reviewPhase).toContainText(text, { timeout: 15_000 });
+    await planPage.setPhaseExpanded("review", true);
+  };
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review L",
+      sql: [1, 2, 3, 4, 5, 6]
+        .map((n) => `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_l${n}_${stamp} TEXT;`)
+        .join("\n"),
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    issueName = seeded.issueName;
+    const plan = await env.api.getPlan(seeded.planName);
+    const spec = plan.specs?.[0];
+    specId = spec?.id ?? "";
+    sheetSha256 = spec?.changeDatabaseConfig?.sheet?.split("/").pop() ?? "";
+    expect(specId).not.toBe("");
+    expect(sheetSha256).toMatch(/^[0-9a-f]{64}$/);
+    const anchor = (startLine: number, endLine: number, sha = sheetSha256) => ({
+      statementAnchor: { spec: specId, sheetSha256: sha, startLine, endLine },
+    });
+    await env.api.createIssueComment(issueName, rootA, anchor(2, 2));
+    await env.api.createIssueComment(issueName, rootB, anchor(4, 5));
+    const resolved = await env.api.createIssueComment(issueName, rootResolved, anchor(6, 6));
+    await env.api.setIssueCommentThreadState(resolved.name, "RESOLVED");
+    // Anchored to an earlier statement of this change whose line has no
+    // counterpart in the displayed one: unresolved, but not placed here.
+    const staleSheet = await env.api.createSheet(env.project, "SELECT 1;\n");
+    const staleSha256 = staleSheet.split("/").pop() ?? "";
+    expect(staleSha256).toMatch(/^[0-9a-f]{64}$/);
+    await env.api.createIssueComment(issueName, rootStale, anchor(1, 1, staleSha256));
+    await goReview(planId);
+    await planPage.expandSection("Changes");
+  });
+
+  test("the change tab counts placed unresolved threads; the Review summary counts all of them", async () => {
+    // Placed and unresolved: A and B. The resolved thread and the stale one
+    // stay out of the tab and the walker; the stale one still counts for
+    // the plan-wide summary.
+    await expect(planPage.specUnresolvedCounts).toHaveCount(1, { timeout: 15_000 });
+    await expect(planPage.specUnresolvedCounts).toHaveText("2");
+    await expectReviewSummary("3 unresolved threads");
+    await expect(planPage.threadWalker).toContainText("2");
+    await expect(planPage.threadWalker).toHaveAttribute(
+      "title",
+      "2 unresolved threads on this version · 1 more not shown on this version",
+    );
+    // Markers: A, B, and the resolved one; the stale thread has none.
+    await expect(planPage.threadMarkers).toHaveCount(3);
+  });
+
+  test("the walker steps through unresolved threads in editor order and wraps", async () => {
+    // The first unresolved thread opens by default.
+    await expect(planPage.threadCardIn("changes", rootA)).toBeVisible();
+    await planPage.threadWalkerNext.click();
+    await expect(planPage.threadCardIn("changes", rootB)).toBeVisible({ timeout: 10_000 });
+    await expect(planPage.threadCardIn("changes", rootA)).not.toBeVisible();
+    await planPage.threadWalkerNext.click();
+    await expect(planPage.threadCardIn("changes", rootA)).toBeVisible({ timeout: 10_000 });
+    await planPage.threadWalkerPrevious.click();
+    await expect(planPage.threadCardIn("changes", rootB)).toBeVisible({ timeout: 10_000 });
+    // The resolved thread is never a stop.
+    await expect(planPage.threadCardIn("changes", rootResolved)).not.toBeVisible();
+  });
+
+  test("several composers stay open with their own drafts, and each closes on its own", async () => {
+    const first = await planPage.openInlineComposerOn(1);
+    const firstEditor = first.locator("textarea");
+    const firstPublish = first.getByRole("button", { name: "Publish", exact: true });
+    await expect(firstPublish).toBeDisabled();
+    await firstEditor.fill(draftOne);
+    await expect(firstPublish).toBeEnabled();
+
+    // The add tile is gone on a line that already carries a form.
+    await planPage.hoverStatementLine(1);
+    await expect(planPage.addThreadGlyph).toHaveCount(0);
+
+    const third = await planPage.openInlineComposerOn(3);
+    await expect(planPage.inlineComposer).toHaveCount(2);
+    await third.locator("textarea").fill(draftThree);
+    await expect(firstEditor).toHaveValue(draftOne);
+
+    // Cancel closes only the form it belongs to.
+    await third.getByRole("button", { name: "Cancel" }).click();
+    await expect(planPage.inlineComposer).toHaveCount(1);
+    await expect(firstEditor).toHaveValue(draftOne);
+
+    // Publishing the remaining form creates its thread and opens it.
+    await firstPublish.click();
+    await expect(planPage.inlineComposer).toHaveCount(0, { timeout: 15_000 });
+    await expect(planPage.threadCardIn("changes", draftOne)).toBeVisible();
+    await expect(planPage.threadMarkers).toHaveCount(4);
+    await expect(planPage.specUnresolvedCounts).toHaveText("3");
+    await expect(planPage.threadWalker).toContainText("3");
+    await expect(planPage.threadCardIn("review", draftOne)).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("the reply composer's checkbox resolves with the reply and reopens again", async () => {
+    const card = planPage.threadCardIn("review", rootA);
+    await card.scrollIntoViewIfNeeded();
+    await card.getByRole("button", { name: "Reply..." }).click();
+    const reply = card.getByRole("button", { name: "Reply", exact: true });
+    const editor = card.locator("textarea[placeholder='Reply...']");
+    await expect(reply).toBeDisabled();
+
+    // An open thread offers Resolve thread, unchecked.
+    const resolveBox = planPage.threadStateCheckbox(card, "Resolve thread");
+    await expect(resolveBox).toHaveAttribute("aria-checked", "false");
+    await editor.fill(replyResolving);
+    await resolveBox.click();
+    await expect(resolveBox).toHaveAttribute("aria-checked", "true");
+    await reply.click();
+
+    const resolvedCard = planPage.threadCardIn("review", rootA);
+    await expect(resolvedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
+    await expect(resolvedCard).toContainText("1 reply");
+    // The counts follow: A left the placed-unresolved set.
+    await expect(planPage.specUnresolvedCounts).toHaveText("2");
+    await expect(planPage.threadWalker).toContainText("2");
+    await expectReviewSummary("3 unresolved threads");
+
+    // Expand and reply again: a resolved thread offers Reopen thread,
+    // checked by default, so an untouched reply reopens it.
+    await resolvedCard.getByRole("button", { name: /Resolved/ }).click();
+    await expect(resolvedCard).toContainText(replyResolving);
+    await resolvedCard.getByRole("button", { name: "Reply..." }).click();
+    const reopenBox = planPage.threadStateCheckbox(resolvedCard, "Reopen thread");
+    await expect(reopenBox).toHaveAttribute("aria-checked", "true");
+    await resolvedCard.locator("textarea[placeholder='Reply...']").fill(replyReopening);
+    await resolvedCard.getByRole("button", { name: "Reply", exact: true }).click();
+    const reopenedCard = planPage.threadCardIn("review", rootA);
+    await expect(reopenedCard).toHaveAttribute("data-thread-state", "open", { timeout: 15_000 });
+    await expect(reopenedCard).toContainText(replyReopening);
+    await expect(planPage.specUnresolvedCounts).toHaveText("3");
+
+    // Unticking it keeps the thread resolved.
+    await reopenedCard.getByRole("button", { name: "Resolve", exact: true }).click();
+    await expect(reopenedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
+    await reopenedCard.getByRole("button", { name: /Resolved/ }).click();
+    await reopenedCard.getByRole("button", { name: "Reply..." }).click();
+    await planPage.threadStateCheckbox(reopenedCard, "Reopen thread").click();
+    await reopenedCard.locator("textarea[placeholder='Reply...']").fill(`${replyReopening} still`);
+    await reopenedCard.getByRole("button", { name: "Reply", exact: true }).click();
+    await expect(reopenedCard).toContainText(`${replyReopening} still`, { timeout: 15_000 });
+    await expect(reopenedCard).toHaveAttribute("data-thread-state", "resolved");
+    await expect(planPage.specUnresolvedCounts).toHaveText("2");
+
+    // Leave A open for the next journey.
+    await reopenedCard.getByRole("button", { name: "Reopen", exact: true }).click();
+    await expect(planPage.threadCardIn("review", rootA)).toHaveAttribute("data-thread-state", "open", {
+      timeout: 15_000,
+    });
+    await expect(planPage.specUnresolvedCounts).toHaveText("3");
+  });
+
+  test("resolving every placed thread removes the walker and the tab count, and reopening restores them", async () => {
+    for (const rootText of [rootA, rootB, draftOne]) {
+      const card = planPage.threadCardIn("review", rootText);
+      await card.scrollIntoViewIfNeeded();
+      await card.getByRole("button", { name: "Resolve", exact: true }).click();
+      await expect(card).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
+    }
+    await expect(planPage.threadWalker).toHaveCount(0);
+    await expect(planPage.specUnresolvedCounts).toHaveCount(0);
+    // Only the stale thread remains open.
+    await expectReviewSummary(/1 unresolved thread(?!s)/);
+
+    const card = planPage.threadCardIn("review", rootB);
+    await card.getByRole("button", { name: /Resolved/ }).click();
+    await card.getByRole("button", { name: "Reopen", exact: true }).click();
+    await expect(planPage.threadWalker).toContainText("1", { timeout: 15_000 });
+    await expect(planPage.specUnresolvedCounts).toHaveText("1");
+    await expectReviewSummary("2 unresolved threads");
+  });
+});
+
+// A reader who may reply but not resolve sees neither the standalone
+// Resolve action nor the reply composer's state checkbox. No predefined role
+// separates the two comment permissions, so the test provisions its own.
+test.describe("Inline comment threads as a reply-only reader (CUJ L, restricted)", () => {
+  const stamp = Date.now();
+  const readerEmail = `e2e-reply-only-${stamp}@example.com`;
+  const readerPassword = "12345678";
+  const readerAuthFile = ".auth/plan-reply-only.json";
+  const roleId = `e2e-reply-only-${stamp}`;
+  let roleName = "";
+  let readerContext: BrowserContext | undefined;
+  let readerPlanPage: PlanDetailPage;
+  let planId: string;
+  const rootText = `L restricted root ${stamp}`;
+
+  test.beforeAll(async ({ browser }) => {
+    await setupApproval(ONE_STEP_RULE);
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review L restricted",
+      sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_lr_${stamp} TEXT;`,
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    const plan = await env.api.getPlan(seeded.planName);
+    const spec = plan.specs?.[0];
+    const sheetSha256 = spec?.changeDatabaseConfig?.sheet?.split("/").pop() ?? "";
+    await env.api.createIssueComment(seeded.issueName, rootText, {
+      statementAnchor: { spec: spec?.id ?? "", sheetSha256, startLine: 1, endLine: 1 },
+    });
+
+    // The viewer role plus what the plan page needs, minus comment update.
+    const role = await env.api.createRole(roleId, "E2E reply-only reader", [
+      "bb.projects.get",
+      "bb.projects.getIamPolicy",
+      "bb.databases.get",
+      "bb.databases.list",
+      "bb.databases.getSchema",
+      "bb.instances.get",
+      "bb.plans.get",
+      "bb.plans.list",
+      "bb.planCheckRuns.get",
+      "bb.taskRuns.list",
+      "bb.rollouts.get",
+      "bb.rollouts.list",
+      "bb.sheets.get",
+      "bb.issues.get",
+      "bb.issues.list",
+      "bb.issueComments.list",
+      "bb.issueComments.create",
+    ]);
+    roleName = role.name;
+    await env.api.createUser(readerEmail, readerPassword, "E2E reply-only reader");
+    await env.api.appendProjectBinding(env.project, roleName, [`user:${readerEmail}`]);
+    await signInBrowserAs(browser, env.baseURL, readerEmail, readerPassword, readerAuthFile);
+    readerContext = await browser.newContext({ storageState: readerAuthFile });
+    readerPlanPage = new PlanDetailPage(await readerContext.newPage(), env.baseURL);
+  });
+
+  test.afterAll(async () => {
+    await readerContext?.close();
+    if (roleName) await env.api.deleteRole(roleName);
+  });
+
+  test("the reader can reply but sees no Resolve action and no state checkbox", async () => {
+    await readerPlanPage.goto(projectId, planId);
+    await readerPlanPage.dismissModals();
+    await readerPlanPage.expandSection("Review");
+    const card = readerPlanPage.threadCardIn("review", rootText);
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expect(card.getByRole("button", { name: "Resolve", exact: true })).toHaveCount(0);
+    await card.getByRole("button", { name: "Reply..." }).click();
+    await expect(card.getByRole("checkbox")).toHaveCount(0);
+    await expect(card.getByRole("button", { name: "Reply", exact: true })).toBeDisabled();
+  });
+});
+
+// Inline comment threads, third pass: a range selected from the gutter, two
+// threads sharing one marker, the walker's announcement and its retreat
+// behind the find widget, and a narrow viewport.
+test.describe("Inline comment threads: ranges, shared markers, walker details, narrow view (CUJ M)", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+  let issueName: string;
+  let specId: string;
+  let sheetSha256: string;
+  let laterRootName = "";
+  const stamp = Date.now();
+  const earlierRoot = `M earlier root lines 4-5 ${stamp}`;
+  const laterRoot = `M later root line 5 ${stamp}`;
+  const rangeRoot = `M range root lines 2-3 ${stamp}`;
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review M",
+      sql: [1, 2, 3, 4, 5, 6]
+        .map((n) => `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_m${n}_${stamp} TEXT;`)
+        .join("\n"),
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    issueName = seeded.issueName;
+    const plan = await env.api.getPlan(seeded.planName);
+    const spec = plan.specs?.[0];
+    specId = spec?.id ?? "";
+    sheetSha256 = spec?.changeDatabaseConfig?.sheet?.split("/").pop() ?? "";
+    expect(specId).not.toBe("");
+    expect(sheetSha256).toMatch(/^[0-9a-f]{64}$/);
+    const anchor = (startLine: number, endLine: number) => ({
+      statementAnchor: { spec: specId, sheetSha256, startLine, endLine },
+    });
+    // Both end on line 5, so they share its marker.
+    await env.api.createIssueComment(issueName, earlierRoot, anchor(4, 5));
+    const later = await env.api.createIssueComment(issueName, laterRoot, anchor(5, 5));
+    laterRootName = later.name;
+    await goReview(planId);
+    await planPage.expandSection("Changes");
+  });
+
+  test.afterAll(async () => {
+    await page?.setViewportSize({ width: 1280, height: 720 }).catch(() => {});
+  });
+
+  test("dragging across line numbers starts a thread on that range", async () => {
+    await planPage.selectStatementLines(2, 3);
+    await planPage.clickAddThreadGlyph();
+    const composer = planPage.inlineComposer;
+    await expect(composer).toBeVisible();
+    await expect(composer).toContainText("Add a comment on lines 2 to 3");
+    await planPage.inlineComposerEditor.fill(rangeRoot);
+    await planPage.inlineComposerPublishButton.click();
+    await expect(composer).not.toBeVisible({ timeout: 15_000 });
+    await expect(planPage.threadCardIn("changes", rangeRoot)).toBeVisible();
+    // One marker on line 3 for the new thread, one shared marker on line 5.
+    await expect(planPage.threadMarkers).toHaveCount(2);
+    const anchorContext = planPage.threadCardIn("review", rangeRoot).getByTestId("statement-anchor");
+    await anchorContext.scrollIntoViewIfNeeded();
+    await expect(anchorContext).toContainText("Lines 2–3", { timeout: 15_000 });
+    await expect(anchorContext).toContainText(`e2e_rev_m2_${stamp}`);
+  });
+
+  test("two threads ending on one line share a counted marker, and the stack expands either one", async () => {
+    const shared = planPage.statementEditor.locator(".bb-thread-glyph--count-2");
+    await expect(shared).toHaveCount(1);
+    await shared.click();
+    // The earliest unresolved thread expands; the other waits as a row.
+    await expect(planPage.threadCardIn("changes", earlierRoot)).toBeVisible();
+    const laterRow = planPage.collapsedThreadRow(laterRootName);
+    await expect(laterRow).toBeVisible();
+    await expect(laterRow).toContainText(laterRoot);
+    await laterRow.click();
+    await expect(planPage.threadCardIn("changes", laterRoot)).toBeVisible();
+    await expect(planPage.threadCardIn("changes", earlierRoot)).not.toBeVisible();
+  });
+
+  test("the walker announces its position and yields the corner to the find widget", async () => {
+    await expect(planPage.threadWalker).toContainText("3");
+    await planPage.threadWalkerNext.click();
+    await expect(planPage.threadWalkerAnnouncement).toHaveText(/^Thread [1-3] of 3$/);
+    // Monaco's find widget takes the corner while it is open. Focus the
+    // editor through its input, since open thread cards cover the lines.
+    await planPage.statementEditor.locator("textarea.inputarea").focus();
+    await page.keyboard.press("Control+f");
+    await expect(planPage.statementEditor.locator(".find-widget.visible")).toBeVisible();
+    await expect(planPage.threadWalker).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await expect(planPage.threadWalker).toBeVisible({ timeout: 5_000 });
+  });
+
+  test("a narrow viewport keeps the walker inside the editor's top-right corner and composers usable", async () => {
+    await page.setViewportSize({ width: 480, height: 1200 });
+    await expect(planPage.threadWalker).toBeVisible({ timeout: 10_000 });
+    const editorBox = await planPage.statementEditor.boundingBox();
+    const walkerBox = await planPage.threadWalker.boundingBox();
+    expect(editorBox && walkerBox).toBeTruthy();
+    if (editorBox && walkerBox) {
+      expect(walkerBox.x + walkerBox.width).toBeLessThanOrEqual(editorBox.x + editorBox.width);
+      expect(walkerBox.y).toBeGreaterThanOrEqual(editorBox.y);
+      expect(walkerBox.y - editorBox.y).toBeLessThan(40);
+    }
+    const composer = await planPage.openInlineComposerOn(1);
+    await expect(composer.getByRole("button", { name: "Publish", exact: true })).toBeDisabled();
+    await composer.getByRole("button", { name: "Cancel" }).click();
+    await expect(planPage.inlineComposer).toHaveCount(0);
   });
 });
