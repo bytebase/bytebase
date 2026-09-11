@@ -3,9 +3,9 @@
 # not abandon the boot; `journalctl -t devbox-startup` has the exit status.
 set -uo pipefail
 trap 'logger -t devbox-startup "exited: status $?"' EXIT
-# A fatal exit powers the box off. Left RUNNING with no runners, the start workflow
-# would never touch it; off, it is restarted and this script retried on the
-# workflow's next tick. Five minutes keeps SSH usable for the journal or /home first.
+# A fatal exit powers the box off. Left RUNNING with no runners, the devbox-start job
+# would never touch it; off, the job starts it within a minute and this script is
+# retried. Five minutes keeps SSH usable for the journal or /home first.
 fatal() {
   logger -t devbox-startup "FATAL: $1"; systemctl stop docker.socket docker containerd 2>/dev/null
   shutdown -h +5 "devbox-startup: $1"; exit 1

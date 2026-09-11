@@ -40,7 +40,7 @@ it hosts two self-hosted GitHub Actions runners for the whole org.
 | External IP | reserved; carries all egress, and inbound SSH |
 | Inbound | SSH only, via the VPC default rule; no tag, no custom rules |
 | Service account | dedicated; reads one secret, writes metrics and logs, nothing else |
-| Availability | always on; preemption stops it, the start workflow restarts it within its polling interval |
+| Availability | always on; preemption stops it, and a Cloud Scheduler job starts it again within two minutes, capacity permitting |
 
 | Component | Rate | $/mo |
 |---|---|---|
@@ -96,8 +96,8 @@ on the secret, which Editor cannot do. It stops at the first failed step.
 
 It enables the APIs, creates the service account, stores the PAT it prompts for in
 Secret Manager, grants that account the secret plus `monitoring.metricWriter` and
-`logging.logWriter`, reserves the address, and creates the instance with
-`startup.sh` as its startup-script metadata.
+`logging.logWriter`, reserves the address, creates the instance with `startup.sh` as
+its startup-script metadata, and schedules its restart.
 
 The `cloud-platform` scope resolves to the intersection with the account's roles: one
 secret, metrics, logs. The scope is not the boundary. The IAM bindings are.
@@ -106,15 +106,11 @@ There is no flag day. Runners register at the organization under the automatic
 `self-hosted` label, with host-qualified names. So this box only adds capacity
 alongside any existing runner, and you can delete the old one whenever.
 
-One step has to happen in order, and it is the last. A preemption stops the instance,
-and `.github/workflows/start-runner-vm.yml` restarts it on a schedule. That workflow
-now names this instance and zone, in two places each. Repointing it any earlier would
-have stopped it restarting the box that was serving CI at the time.
-
-Its cadence changed with it, from three fixed hours to every fifteen minutes. At three
-a day, a preemption just after one of them left the box stopped for up to fifteen
-hours, which is not "always on" for either the dev box or CI. Fifteen minutes bounds
-the outage at fifteen minutes, and starting a running instance is a no-op.
+A preemption stops the instance, and the Cloud Scheduler job `devbox-start` starts it
+again: every minute it calls the Compute API's start, a no-op while the box runs, as
+the Compute Engine default service account. It lives in `northamerica-northeast1`, as
+Cloud Scheduler has no Toronto region. Pause it before stopping the box by hand, and
+resume it after.
 
 ### Connect
 
