@@ -2167,7 +2167,7 @@ export function DataSourceForm({
       {!authOnly && !hideOptions && (
         <>
           {/* SSL */}
-          {showSSL && isPasswordAuth && (
+          {showSSL && (isPasswordAuth || dataSource.useSsl) && (
             <FormField
               className="sm:col-span-3 sm:col-start-1"
               title={

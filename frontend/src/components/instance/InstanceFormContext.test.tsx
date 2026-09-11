@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   createInstance: vi.fn(),
   isSaaSMode: false,
+  hasSSL: false,
   listInstanceDatabases: vi.fn(async () => ({
     databases: ["app", "analytics"],
   })),
@@ -132,7 +133,7 @@ vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: () => true,
   instanceV1HasExtraParameters: () => false,
   instanceV1HasSSH: () => false,
-  instanceV1HasSSL: () => false,
+  instanceV1HasSSL: () => mocks.hasSSL,
   isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
     ds.projectId !== "" && ds.instanceId !== "",
   isValidBigQueryDataSource: (ds: { projectId: string }) =>
@@ -252,6 +253,7 @@ describe("InstanceFormProvider", () => {
     vi.clearAllMocks();
     mocks.hasInstancePermission.mockReturnValue(true);
     mocks.isSaaSMode = false;
+    mocks.hasSSL = false;
     mocks.createInstance.mockResolvedValue(create(InstanceSchema, {}));
     mockEnvironmentList = [];
     vi.useRealTimers();
@@ -813,6 +815,72 @@ describe("InstanceFormProvider", () => {
       harness.unmount();
     }
   });
+
+  test.each([
+    DataSource_AuthenticationType.AWS_RDS_IAM,
+    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+    DataSource_AuthenticationType.AZURE_IAM,
+  ])(
+    "keeps TLS drafts editable after switching to IAM method %s",
+    async (authenticationType) => {
+      mocks.hasSSL = true;
+      const { DataSourceForm } = await vi.importActual<
+        typeof import("./DataSourceForm")
+      >("./DataSourceForm");
+      let context!: ReturnType<typeof useInstanceFormContext>;
+      const Editor = () => {
+        context = useInstanceFormContext();
+        return (
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            onDataSourceChange={(ds) =>
+              context.setDataSourceEditState((state) => ({
+                ...state,
+                dataSources: [ds],
+              }))
+            }
+            optionsOnly
+          />
+        );
+      };
+      const harness = renderIntoContainer();
+      try {
+        await harness.render(
+          <InstanceFormProvider><Editor /></InstanceFormProvider>
+        );
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{
+              ...context.adminDataSource,
+              authenticationType: DataSource_AuthenticationType.PASSWORD,
+              useSsl: true,
+              verifyTlsCertificate: true,
+              sslCaPath: "relative.pem",
+              updateSsl: undefined,
+            }],
+          }));
+        });
+        const caInput = () => harness.container.querySelector<HTMLInputElement>(
+          'input[value="relative.pem"]'
+        );
+        expect(caInput()).not.toBeNull();
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{ ...context.adminDataSource, authenticationType }],
+          }));
+        });
+        expect(caInput()).not.toBeNull();
+        expect(caInput()?.disabled).toBe(false);
+        expect(context.extractDataSourceFromEdit(
+          Engine.MYSQL, context.adminDataSource
+        ).useSsl).toBe(true);
+      } finally {
+        harness.unmount();
+      }
+    }
+  );
 
   test("clears errors when deleting the final invalid label unmounts its editor", async () => {
     const { LabelListEditor } = await vi.importActual<

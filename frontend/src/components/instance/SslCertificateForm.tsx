@@ -276,6 +276,9 @@ export function SslCertificateForm({
     showClientCertSourceUi;
   const showPerGroupSourceUi = showCaSourceUi || showClientCertSourceUi;
 
+  // Configured CA material is still submitted when verification is disabled.
+  // Keep its controls reachable so validation cannot block on hidden fields.
+  const showCaMaterial = verify || !!(ca || caPath || hasCa || hasCaPath);
   const hasClientIdentityMaterial = !!(
     cert ||
     sslKey ||
@@ -678,7 +681,7 @@ export function SslCertificateForm({
             {t("data-source.ssl.server-identity")}
           </legend>
           {renderVerifyControl()}
-          {verify && (
+          {showCaMaterial && (
             <div className="flex flex-col gap-4">
               {showCaSourceUi && (
                 <FormField
@@ -761,7 +764,7 @@ export function SslCertificateForm({
             renderLegacyMaterial()
           ) : (
             <>
-              {verify && (
+              {showCaMaterial && (
                 <div className="flex flex-col gap-4">
                   {showCaSourceUi && (
                     <FormField

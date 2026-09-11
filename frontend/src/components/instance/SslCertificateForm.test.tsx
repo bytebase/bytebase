@@ -228,6 +228,38 @@ describe("SslCertificateForm", () => {
     });
   });
 
+  test.each(["posture", "groups"])("keeps CA drafts editable after disabling verification in %s mode", (mode) => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const render = (verify: boolean) => act(() => {
+      root.render(<SslCertificateForm
+        posture={mode === "posture" ? "TLS" : undefined}
+        onPostureChange={() => {}}
+        caSource="FILE_PATH"
+        onCaSourceChange={() => {}}
+        clientCertSource="NONE"
+        onClientCertSourceChange={() => {}}
+        useSsl={true}
+        verify={verify}
+        onVerifyChange={() => {}}
+        caPath="relative.pem"
+        onCaPathChange={() => {}}
+        engineType={Engine.POSTGRES}
+      />);
+    });
+    try {
+      render(true);
+      expect(container.querySelector('input[value="relative.pem"]')).not.toBeNull();
+      render(false);
+      const input = container.querySelector<HTMLInputElement>('input[value="relative.pem"]');
+      expect(input).not.toBeNull();
+      expect(input?.disabled).toBe(false);
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
   test("falls back to legacy UI when posture source props are incomplete", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
