@@ -1,6 +1,11 @@
 import { CheckCircle, Circle, CircleHelp, ListChecks, X } from "lucide-react";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  type BehaviorMetricName,
+  createBehaviorMetric,
+} from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router, useCurrentRoute } from "@/app/router";
 import {
   getHowBytebaseWorksGuideContent,
@@ -20,9 +25,11 @@ import { preCreateIssue } from "@/lib/plan/issue";
 import { PRODUCT_INTRO_QUERY_KEY } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
+import { getGuideAnalyticsProperties } from "./analytics";
 import {
   GUIDE_PROGRESS_KEYS,
   guideCompletionAcknowledgedKey,
+  guideProgressObservedKey,
 } from "./progress";
 import { resolveGuide } from "./resolve";
 import { getGuideJourney } from "./scenarios";
@@ -31,7 +38,7 @@ import {
   readSelectedGuideScenarioId,
 } from "./selection";
 import { GUIDE_STEP_REGISTRY } from "./steps";
-import type { GuideStepId, ResolvedGuideStep } from "./types";
+import type { GuideAction, GuideStepId, ResolvedGuideStep } from "./types";
 import { useGuideContext } from "./useGuideContext";
 
 export function WorkspaceSetupGuide() {
@@ -47,6 +54,8 @@ export function WorkspaceSetupGuide() {
   const completionAcknowledged = useIntroStateByKey(
     guideCompletionAcknowledgedKey(journey.id)
   );
+  const progressObservedKey = guideProgressObservedKey(journey.id);
+  const progressObserved = useIntroStateByKey(progressObservedKey);
   const allowMultipleMembers =
     workspaceUsage === "team" && !completionAcknowledged;
   const guideEnabled = useAppStore((state) =>
@@ -73,17 +82,33 @@ export function WorkspaceSetupGuide() {
   const completionWideWidthRef = useRef(0);
   const stepViewportRef = useRef<HTMLDivElement>(null);
   const stepMeasurementRef = useRef<HTMLDivElement>(null);
+  const analyticsJourneyRef = useRef<string | undefined>(undefined);
+  const completedStepsRef = useRef<readonly GuideStepId[] | undefined>(
+    undefined
+  );
+  const wasIncompleteRef = useRef(false);
+  const observedProgressKeyRef = useRef<string | undefined>(undefined);
   const guide = useMemo(
     () =>
       resolveGuide({
         journey,
-        registry: GUIDE_STEP_REGISTRY,
+        definitions: GUIDE_STEP_REGISTRY,
         context,
         selectedStepId,
       }),
     [context, journey, selectedStepId]
   );
   const primaryAction = guide.actionStep?.actions.primary;
+  const guideAnalyticsProperties = useMemo(
+    () =>
+      getGuideAnalyticsProperties({
+        guide,
+        journey,
+        scenarioId,
+        workspaceUsage,
+      }),
+    [guide, journey, scenarioId, workspaceUsage]
+  );
   const compactStep =
     guide.highlightedStep ?? guide.actionStep ?? guide.steps[0];
   const compactStepIndex = compactStep
@@ -148,9 +173,83 @@ export function WorkspaceSetupGuide() {
     updateOverflow();
     return () => observer.disconnect();
   }, [completionCompact, guide.complete, i18n.resolvedLanguage, journey.id]);
+
+  const captureGuideMetric = (
+    event: BehaviorMetricName,
+    properties: Record<string, unknown> = {}
+  ) => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric(event, {
+        properties: { ...guideAnalyticsProperties, ...properties },
+      })
+    );
+  };
+  const guideVisible =
+    !dismissed &&
+    guideEnabled &&
+    !loading &&
+    !(guide.complete && completionAcknowledged);
+
+  useEffect(() => {
+    if (
+      !guideVisible ||
+      progressObserved ||
+      observedProgressKeyRef.current === progressObservedKey
+    ) {
+      return;
+    }
+
+    observedProgressKeyRef.current = progressObservedKey;
+    useAppStore.getState().saveIntroStateByKey({
+      key: progressObservedKey,
+      newState: true,
+    });
+    captureGuideMetric("workspace setup guide progress observed", {
+      observation: "initial",
+    });
+  }, [captureGuideMetric, guideVisible, progressObserved, progressObservedKey]);
+
+  useEffect(() => {
+    if (!guideVisible) return;
+
+    const completedSteps = guideAnalyticsProperties.completed_steps;
+    if (analyticsJourneyRef.current !== journey.id) {
+      analyticsJourneyRef.current = journey.id;
+      completedStepsRef.current = completedSteps;
+      wasIncompleteRef.current = !guide.complete;
+      return;
+    }
+
+    const previousCompletedSteps = new Set(completedStepsRef.current);
+    for (const step of completedSteps) {
+      if (!previousCompletedSteps.has(step)) {
+        captureGuideMetric("workspace setup guide step completed", { step });
+      }
+    }
+    if (wasIncompleteRef.current && guide.complete) {
+      captureGuideMetric("workspace setup guide completed");
+    }
+    completedStepsRef.current = completedSteps;
+    wasIncompleteRef.current = !guide.complete;
+  }, [
+    captureGuideMetric,
+    guide.complete,
+    guideAnalyticsProperties,
+    guideVisible,
+    journey.id,
+  ]);
+
+  const captureStepAction = (step: ResolvedGuideStep, action: GuideAction) => {
+    captureGuideMetric("workspace setup guide step action selected", {
+      step: step.definition.id,
+      action_type: action.type,
+    });
+  };
+
   const onSelectStep = (step: ResolvedGuideStep) => {
     setSelectedStepId(step.definition.id);
     const action = step.actions.select;
+    if (action) captureStepAction(step, action);
     if (action?.type === "navigate") void router.push(action.target);
     if (action?.type === "create-change") {
       void preCreateIssue(action.project, [action.database]);
@@ -158,6 +257,7 @@ export function WorkspaceSetupGuide() {
   };
 
   const handleDismiss = () => {
+    captureGuideMetric("workspace setup guide dismissed");
     useAppStore.getState().saveIntroStateByKey({
       key: guide.complete
         ? guideCompletionAcknowledgedKey(journey.id)
@@ -166,12 +266,7 @@ export function WorkspaceSetupGuide() {
     });
   };
 
-  if (
-    dismissed ||
-    !guideEnabled ||
-    loading ||
-    (guide.complete && completionAcknowledged)
-  ) {
+  if (!guideVisible) {
     return null;
   }
 
@@ -363,7 +458,7 @@ export function WorkspaceSetupGuide() {
                           <Button
                             type="button"
                             appearance="secondary"
-                            data-testid={`setup-step-${step.definition.analyticsKey}`}
+                            data-testid={`setup-step-${step.definition.id}`}
                             className={cn(
                               "inline-flex h-auto items-center justify-start gap-x-1 rounded-sm px-2.5 py-1.5 text-sm font-medium whitespace-nowrap 2xl:gap-x-2 2xl:px-3 2xl:py-2 2xl:text-base",
                               highlighted
@@ -432,14 +527,22 @@ export function WorkspaceSetupGuide() {
               />
             )}
           {!guide.complete && primaryAction?.type === "open-sql-editor" && (
-            <SQLEditorButton
-              data-testid="active-action"
-              database={primaryAction.database}
-              openInNewTab
-              size="sm"
-              className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
-              label={t("workspace-setup-guide.actions.query")}
-            />
+            <span
+              onClickCapture={() => {
+                if (guide.actionStep) {
+                  captureStepAction(guide.actionStep, primaryAction);
+                }
+              }}
+            >
+              <SQLEditorButton
+                data-testid="active-action"
+                database={primaryAction.database}
+                openInNewTab
+                size="sm"
+                className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
+                label={t("workspace-setup-guide.actions.query")}
+              />
+            </span>
           )}
           <Button
             type="button"

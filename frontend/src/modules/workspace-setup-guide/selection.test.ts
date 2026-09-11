@@ -77,6 +77,7 @@ describe("workspace setup guide scenario selection", () => {
     expect(isGuideScenarioId("create-database-change")).toBe(true);
     expect(isGuideScenarioId("learn-bytebase-basics")).toBe(false);
     expect(isGuideScenarioId("protect-sensitive-data")).toBe(false);
+    expect(isGuideScenarioId("toString")).toBe(false);
     expect(isGuideScenarioId(undefined)).toBe(false);
   });
 
