@@ -40,6 +40,7 @@ import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
+import { inlineThreadsEnabled } from "@/utils/featureGates";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 import { usePlanChangeReferenceData } from "../../hooks/usePlanChangeReferenceData";
 import { placementOf } from "../../shared/stores/placementSlice";
@@ -83,7 +84,10 @@ export function ReviewActivityTimeline({
     () => collectPlanUpdateSpecs(comments),
     [comments]
   );
-  const threads = useMemo(() => groupThreads(comments), [comments]);
+  const threads = useMemo(
+    () => (inlineThreadsEnabled() ? groupThreads(comments) : []),
+    [comments]
+  );
   // Anchored threads reference the plan's current specs; hydrate them once
   // here rather than once per card.
   const referenceSpecs = useMemo(

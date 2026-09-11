@@ -12,6 +12,7 @@ import {
   ListIssueCommentsRequestSchema,
   UpdateIssueCommentRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
+import { inlineThreadsEnabled } from "@/utils/featureGates";
 import { celStringList } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, IssueCommentSlice } from "./types";
 
@@ -174,8 +175,12 @@ export const createIssueCommentSlice: AppSliceCreator<IssueCommentSlice> = (
           return all;
         };
 
+        // The timeline load is what every comment surface reads, threads or
+        // not, so it runs unconditionally; only the reply pass is gated.
         const timeline = await listAll("");
-        const rootNames = timeline.filter(isThreadRoot).map((c) => c.name);
+        const rootNames = inlineThreadsEnabled()
+          ? timeline.filter(isThreadRoot).map((c) => c.name)
+          : [];
         const replies: IssueComment[] = [];
         for (let i = 0; i < rootNames.length; i += REPLY_QUERY_ROOTS) {
           const chunk = rootNames.slice(i, i + REPLY_QUERY_ROOTS);
