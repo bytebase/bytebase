@@ -36,7 +36,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 type columnRow struct {
 	TableName       string              `bigquery:"table_name"`
 	ColumnName      string              `bigquery:"column_name"`
-	OrdinalPosition int32               `bigquery:"ordinal_position"`
+	OrdinalPosition bigquery.NullInt64  `bigquery:"ordinal_position"`
 	IsNullable      string              `bigquery:"is_nullable"`
 	DataType        string              `bigquery:"data_type"`
 	CollationName   bigquery.NullString `bigquery:"collation_name"`
@@ -57,7 +57,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			data_type,
 			collation_name,
 			column_default
-		FROM %s.INFORMATION_SCHEMA.COLUMNS ORDER BY table_name, ordinal_position;`, d.databaseName))
+		FROM %s.INFORMATION_SCHEMA.COLUMNS
+		WHERE is_hidden = 'NO'
+		ORDER BY table_name, ordinal_position;`, d.databaseName))
 	it, err := q.Read(ctx)
 	if err != nil {
 		return nil, err
@@ -71,6 +73,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		if err != nil {
 			return nil, err
 		}
+		// Pseudo columns such as _PARTITIONTIME/_PARTITIONDATE have NULL ordinal_position.
+		if !row.OrdinalPosition.Valid {
+			continue
+		}
 		nullableBool, err := util.ConvertYesNo(row.IsNullable)
 		if err != nil {
 			return nil, err
@@ -78,7 +84,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 		column := &storepb.ColumnMetadata{
 			Name:     row.ColumnName,
-			Position: row.OrdinalPosition,
+			Position: int32(row.OrdinalPosition.Int64),
 			Nullable: nullableBool,
 			Type:     row.DataType,
 		}
