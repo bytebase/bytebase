@@ -45,7 +45,7 @@ const mocks = vi.hoisted(() => ({
   guideUserCount: 1,
   introState: {} as Record<string, boolean>,
   isSaaS: false,
-  loading: false,
+  contextReady: true,
   preCreateIssue: vi.fn(),
   productModelContent: "guide content" as string | undefined,
   routerPush: vi.fn(),
@@ -148,7 +148,7 @@ vi.mock("./selection", () => ({
 vi.mock("./useGuideContext", () => ({
   useGuideContext: () => ({
     context: mocks.guideContext,
-    loading: mocks.loading,
+    contextReady: mocks.contextReady,
   }),
 }));
 
@@ -161,7 +161,7 @@ beforeEach(() => {
   mocks.guideUserCount = 1;
   mocks.introState = {};
   mocks.isSaaS = false;
-  mocks.loading = false;
+  mocks.contextReady = true;
   mocks.productModelContent = "guide content";
   mocks.scenarioId = undefined;
   mocks.workspaceUsage = undefined;
@@ -866,5 +866,17 @@ describe("WorkspaceSetupGuide", () => {
     render(<WorkspaceSetupGuide />);
 
     expect(mocks.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test("records initial progress when its marker cannot be saved", () => {
+    mocks.saveIntroStateByKey.mockImplementation(() => {
+      throw new Error("localStorage unavailable");
+    });
+
+    expect(() => render(<WorkspaceSetupGuide />)).not.toThrow();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide progress observed",
+      properties: expect.objectContaining({ observation: "initial" }),
+    });
   });
 });

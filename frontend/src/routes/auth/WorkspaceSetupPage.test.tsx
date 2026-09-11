@@ -310,6 +310,21 @@ describe("WorkspaceSetupPage", () => {
     second.unmount();
   });
 
+  test("records setup page entry when its marker cannot be saved", () => {
+    mocks.saveIntroStateByKey.mockImplementation(() => {
+      throw new Error("localStorage unavailable");
+    });
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+
+    expect(() => page.render()).not.toThrow();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
+
+    page.unmount();
+  });
+
   test("uses the shared step indicator for both setup steps", async () => {
     const page = renderIntoContainer(<WorkspaceSetupPage />);
     page.render();

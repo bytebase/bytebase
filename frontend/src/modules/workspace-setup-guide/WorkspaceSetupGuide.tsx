@@ -64,7 +64,7 @@ export function WorkspaceSetupGuide() {
   const productModelAvailable = !!getHowBytebaseWorksGuideContent(
     i18n.resolvedLanguage ?? "en-US"
   );
-  const { context, loading } = useGuideContext({
+  const { context, contextReady } = useGuideContext({
     enabled: guideEnabled,
     dismissed,
     route: currentRoute,
@@ -187,7 +187,7 @@ export function WorkspaceSetupGuide() {
   const guideVisible =
     !dismissed &&
     guideEnabled &&
-    !loading &&
+    contextReady &&
     !(guide.complete && completionAcknowledged);
 
   useEffect(() => {
@@ -200,10 +200,14 @@ export function WorkspaceSetupGuide() {
     }
 
     observedProgressKeyRef.current = progressObservedKey;
-    useAppStore.getState().saveIntroStateByKey({
-      key: progressObservedKey,
-      newState: true,
-    });
+    try {
+      useAppStore.getState().saveIntroStateByKey({
+        key: progressObservedKey,
+        newState: true,
+      });
+    } catch {
+      // Analytics markers must not interrupt guide rendering when storage fails.
+    }
     captureGuideMetric("workspace setup guide progress observed", {
       observation: "initial",
     });
