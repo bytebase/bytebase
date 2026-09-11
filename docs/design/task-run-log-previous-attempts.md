@@ -10,6 +10,8 @@ auto-expanded. A run that failed once and then passed on a retry therefore keeps
 red, auto-expanded failure section forever (BYT-9993; the customer's read: the UI
 is correct, but the failed step should not stay red once it passed).
 
+![Today](task-run-log-previous-attempts/01-today.png)
+
 Task-level re-run is not the problem and does not change: re-running a FAILED or
 CANCELED task creates a new `task_run` row, and `task_run_log` is keyed by
 `(project, task_run_id)`, so entries never cross runs.
@@ -48,6 +50,42 @@ attempt stays flat.
 - The summary bar gains an "N attempts" chip whenever the run has more than one
   attempt.
 
+## States
+
+**No retry.** No `RETRY_INFO` in the stream, so there is no umbrella row and the
+rendering is exactly what it is today. Most runs look like this and are untouched.
+
+![No retry](task-run-log-previous-attempts/02-no-retry.png)
+
+**One previous attempt, collapsed.** The default view after a single retry: one
+grey row noting "1 attempt", then the final attempt's sections flat and green.
+
+![One previous attempt, collapsed](task-run-log-previous-attempts/03-one-attempt-collapsed.png)
+
+**One previous attempt, expanded.** With a single previous attempt the umbrella
+expands straight to that attempt's sections — no middle level for a list of one.
+The failed section is pre-expanded and its red error entry is unchanged.
+
+![One previous attempt, expanded](task-run-log-previous-attempts/04-one-attempt-expanded.png)
+
+**Several previous attempts, collapsed.** Still one row; only the count changes.
+The default view does not grow with the retry count.
+
+![Several previous attempts, collapsed](task-run-log-previous-attempts/05-multiple-attempts-collapsed.png)
+
+**Several previous attempts, expanded.** The umbrella opens to one nested row per
+attempt, each carrying its own reason and duration. Opening an attempt reveals its
+sections.
+
+![Several previous attempts, expanded](task-run-log-previous-attempts/06-multiple-attempts-expanded.png)
+
+**Terminal failure, and a retry in progress.** Left: retries are exhausted, so the
+final attempt's failure is state — red and auto-expanded — while the superseded
+attempts stay folded. Right: the chip reads "retrying 2/3" and the running section
+streams normally.
+
+![Failed and running](task-run-log-previous-attempts/07-failed-and-running.png)
+
 ## Rendering truth table
 
 | Run state | Previous attempts row | Final attempt sections |
@@ -83,18 +121,24 @@ failed section pre-expands only once the user opens its attempt.
 
 ## Alternatives rejected
 
-- **Flat attempt rows**, one grey row per attempt at top level: failure reasons
-  read without a click, but the default view then varies with the retry count, and
-  for lock-timeout retries every attempt carries the same reason, which is most of
-  what the extra rows would show.
-- **Attempt lanes**, every attempt a labeled group in the GitHub Actions style:
-  the clearest symmetry, but it puts a permanent nesting level on the common
-  success path and its final lane header restates the run's own status chip.
-- **Status softening only**, keeping the flat list and marking superseded sections
-  grey: the smallest change, but the interleaved Transaction rows of two attempts
-  stay cryptic and the standalone "Retry" pseudo-section survives.
-- **Amber for history**: rejected everywhere, including row fills. See the color
-  rule above.
+**Flat attempt rows** (left), one grey row per attempt at top level: failure
+reasons read without a click, but the default view then varies with the retry
+count, and for lock-timeout retries every attempt carries the same reason, which
+is most of what the extra rows would show. **Attempt lanes** (right), every attempt
+a labeled group in the GitHub Actions style: the clearest symmetry, but it puts a
+permanent nesting level on the common success path and its final lane header
+restates the run's own status chip.
+
+![Flat rows and attempt lanes](task-run-log-previous-attempts/08-alternatives-rows-and-lanes.png)
+
+**Status softening only**, keeping the flat list and marking superseded sections
+grey: the smallest change, but the interleaved Transaction rows of two attempts
+stay cryptic and the standalone "Retry" pseudo-section survives.
+
+![Status softening only](task-run-log-previous-attempts/09-alternative-status-only.png)
+
+**Amber for history** was rejected everywhere, including row fills. See the color
+rule above.
 
 ## Implementation outline
 
