@@ -319,10 +319,7 @@ const getCommandExecuteDetail = (
       : undefined);
   if (!statement) return "-";
 
-  const normalized = statement.trim().replace(/\s+/g, " ");
-  return normalized.length > 80
-    ? `${normalized.substring(0, 80)}...`
-    : normalized;
+  return statement.trim().replace(/\s+/g, " ");
 };
 
 const getTransactionControlDetail = (

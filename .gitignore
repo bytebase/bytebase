@@ -50,3 +50,7 @@ scripts/azure-marketplace/*.backup
 # superpowers brainstorm sessions (visual companion mockups)
 .superpowers/
 .gocache/
+.pnpm-store/
+
+# Reasonix tool cache
+.reasonix/
