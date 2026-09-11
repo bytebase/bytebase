@@ -207,10 +207,8 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
         navigateByName(AUTH_SETUP_MODULE, {
           query: { redirect: nextPage },
         });
-      } else if (explicitRedirect) {
-        navigateToPath(nextPage, { replace: true });
       } else {
-        navigateByName(WORKSPACE_ROUTE_LANDING, { replace: true });
+        navigateToPath(nextPage, { replace: true });
       }
       return;
     }
