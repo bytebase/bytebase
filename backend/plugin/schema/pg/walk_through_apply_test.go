@@ -105,6 +105,8 @@ func TestWalkThroughKeepsPartitionsUnderTheirTable(t *testing.T) {
 		DROP TABLE public.orders_2023;
 		DROP TABLE public.orders_2024_q2;
 		CREATE INDEX orders_2024_q1_id_idx ON public.orders_2024_q1 (id);
+		ALTER TABLE public.orders_2024 RENAME TO orders_2024_archived;
+		CREATE INDEX orders_2024_archived_id_idx ON public.orders_2024_archived (id);
 	`, &catalog.ExecOptions{ContinueOnError: true})
 	require.NoError(t, err)
 	for _, r := range results {
@@ -115,7 +117,9 @@ func TestWalkThroughKeepsPartitionsUnderTheirTable(t *testing.T) {
 	require.Len(t, schema.Tables, 1, "a changed partition must stay under its table")
 	partitions := schema.Tables[0].Partitions
 	require.Len(t, partitions, 1)
-	require.Equal(t, "orders_2024", partitions[0].Name)
+	require.Equal(t, "orders_2024_archived", partitions[0].Name)
+	require.Len(t, partitions[0].Indexes, 1)
+	require.Equal(t, "orders_2024_archived_id_idx", partitions[0].Indexes[0].Name)
 	require.Len(t, partitions[0].Subpartitions, 1)
 	q1 := partitions[0].Subpartitions[0]
 	require.Equal(t, "orders_2024_q1", q1.Name)

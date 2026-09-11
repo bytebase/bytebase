@@ -35,7 +35,11 @@ func applyDiffToMetadata(original *metadatapb.DatabaseSchemaMetadata, catBefore,
 		}
 	}
 
+	renamed := renamePartitions(result, catAfter, diff.Relations)
 	for _, rel := range diff.Relations {
+		if (rel.From != nil && renamed[rel.From.OID]) || (rel.To != nil && renamed[rel.To.OID]) {
+			continue
+		}
 		if rel.Action == catalog.DiffDrop {
 			if sm := findSchema(result, rel.SchemaName); sm != nil {
 				dropRelation(sm, rel)
@@ -252,6 +256,37 @@ func modifyRelation(sm *metadatapb.SchemaMetadata, catBefore, cat *catalog.Catal
 		sm.MaterializedViews = append(sm.MaterializedViews, relationToMatViewProto(cat, rel.To))
 	default:
 	}
+}
+
+// renamePartitions renames each partition the diff renames where it stands,
+// with its indexes and constraints as the catalog now has them. The diff shows
+// a rename as a drop and an add of the same relation, which would otherwise
+// turn the partition into a table of its own. It returns the OIDs it handled.
+func renamePartitions(result *metadatapb.DatabaseSchemaMetadata, catAfter *catalog.Catalog, relations []catalog.RelationDiffEntry) map[uint32]bool {
+	added := make(map[uint32]catalog.RelationDiffEntry)
+	for _, rel := range relations {
+		if rel.Action == catalog.DiffAdd && rel.To != nil {
+			added[rel.To.OID] = rel
+		}
+	}
+	renamed := make(map[uint32]bool)
+	for _, rel := range relations {
+		if rel.Action != catalog.DiffDrop || rel.From == nil {
+			continue
+		}
+		add, ok := added[rel.From.OID]
+		sm := findSchema(result, rel.SchemaName)
+		if !ok || add.SchemaName != rel.SchemaName || sm == nil {
+			continue
+		}
+		if p := findPartition(sm, rel.Name); p != nil {
+			tbl := relationToTableProto(catAfter, add.To)
+			p.Name = add.Name
+			p.Indexes, p.CheckConstraints, p.ExcludeConstraints = tbl.Indexes, tbl.CheckConstraints, tbl.ExcludeConstraints
+			renamed[rel.From.OID] = true
+		}
+	}
+	return renamed
 }
 
 // applyPartitionDiffs applies a partition's index and constraint changes. A
