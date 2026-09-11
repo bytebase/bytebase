@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -23,31 +24,31 @@ func srid(v uint32) *uint32 { return &v }
 func TestConvertColumnMetadataSRIDInvisibleRoundTrip(t *testing.T) {
 	testCases := []struct {
 		name string
-		in   *storepb.ColumnMetadata
+		in   *metadatapb.ColumnMetadata
 	}{
 		{
 			name: "spatial_srid_4326",
-			in:   &storepb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
+			in:   &metadatapb.ColumnMetadata{Name: "pt", Type: "point", Nullable: false, Srid: srid(4326)},
 		},
 		{
 			// Explicit SRID 0 is a valid spatial reference system, distinct from "no SRID".
 			// Presence (not a zero sentinel) must survive the round-trip.
 			name: "explicit_srid_zero",
-			in:   &storepb.ColumnMetadata{Name: "g", Type: "geometry", Nullable: false, Srid: srid(0)},
+			in:   &metadatapb.ColumnMetadata{Name: "g", Type: "geometry", Nullable: false, Srid: srid(0)},
 		},
 		{
 			// Custom SRSs may exceed int32 range; the value must not be squeezed.
 			name: "srid_above_int32",
-			in:   &storepb.ColumnMetadata{Name: "g", Type: "geometry", Nullable: false, Srid: srid(3000000000)},
+			in:   &metadatapb.ColumnMetadata{Name: "g", Type: "geometry", Nullable: false, Srid: srid(3000000000)},
 		},
 		{
 			name: "invisible_column",
-			in:   &storepb.ColumnMetadata{Name: "secret", Type: "int", Nullable: false, IsInvisible: true},
+			in:   &metadatapb.ColumnMetadata{Name: "secret", Type: "int", Nullable: false, IsInvisible: true},
 		},
 		{
 			// No SRID declared: presence must stay unset (nil), not collapse to SRID 0.
 			name: "no_srid_visible",
-			in:   &storepb.ColumnMetadata{Name: "c", Type: "int", Nullable: true},
+			in:   &metadatapb.ColumnMetadata{Name: "c", Type: "int", Nullable: true},
 		},
 	}
 	for _, tc := range testCases {

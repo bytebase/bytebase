@@ -3,6 +3,7 @@ package spanner
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -25,8 +26,8 @@ func TestLeakPin_SpannerLowercaseUsingCoalesce(t *testing.T) {
 	span, err := googlesqltest.GetSpan(t, storepb.Engine_SPANNER, GetQuerySpan,
 		"SELECT * FROM users JOIN logins USING (id);", "db",
 		googlesqltest.DefaultSchemaTables(
-			&storepb.TableMetadata{Name: "users", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "email"}}},
-			&storepb.TableMetadata{Name: "logins", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "secret"}}},
+			&metadatapb.TableMetadata{Name: "users", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "email"}}},
+			&metadatapb.TableMetadata{Name: "logins", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "secret"}}},
 		))
 	require.NoError(t, err)
 	require.Len(t, span.Results, 3, "USING key must be coalesced: real output is [id, email, secret]")
@@ -43,7 +44,7 @@ func TestLeakPin_SpannerUnnestLineage(t *testing.T) {
 	span, err := googlesqltest.GetSpan(t, storepb.Engine_SPANNER, GetQuerySpan,
 		"SELECT elem FROM victim, UNNEST(victim.secret_tokens) AS elem", "db",
 		googlesqltest.DefaultSchemaTables(
-			&storepb.TableMetadata{Name: "victim", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "secret_tokens"}}},
+			&metadatapb.TableMetadata{Name: "victim", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "secret_tokens"}}},
 		))
 	require.NoError(t, err)
 	require.Len(t, span.Results, 1)
@@ -57,8 +58,8 @@ func TestLeakPin_SpannerByNameMerge(t *testing.T) {
 	span, err := googlesqltest.GetSpan(t, storepb.Engine_SPANNER, GetQuerySpan,
 		"SELECT id, label FROM lt UNION ALL BY NAME SELECT b_secret AS label, id FROM rt", "db",
 		googlesqltest.DefaultSchemaTables(
-			&storepb.TableMetadata{Name: "lt", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "label"}}},
-			&storepb.TableMetadata{Name: "rt", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "b_secret"}}},
+			&metadatapb.TableMetadata{Name: "lt", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "label"}}},
+			&metadatapb.TableMetadata{Name: "rt", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "b_secret"}}},
 		))
 	require.NoError(t, err)
 	require.Len(t, span.Results, 2)
@@ -74,10 +75,10 @@ func TestLeakPin_SpannerByNameMerge(t *testing.T) {
 func TestLeakPin_SchemaQualifiedStar(t *testing.T) {
 	span, err := googlesqltest.GetSpan(t, storepb.Engine_SPANNER, GetQuerySpan,
 		"SELECT analytics.events.* FROM analytics.events", "db",
-		[]*storepb.SchemaMetadata{
+		[]*metadatapb.SchemaMetadata{
 			{Name: ""},
-			{Name: "analytics", Tables: []*storepb.TableMetadata{
-				{Name: "events", Columns: []*storepb.ColumnMetadata{{Name: "id"}, {Name: "payload"}}},
+			{Name: "analytics", Tables: []*metadatapb.TableMetadata{
+				{Name: "events", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}, {Name: "payload"}}},
 			}},
 		})
 	require.NoError(t, err)
@@ -92,7 +93,7 @@ func TestLeakPin_SchemaQualifiedStar(t *testing.T) {
 // extractor's exact behavior; SPANNER_SYS included).
 func TestLeakPin_MixedUserSystemRejected(t *testing.T) {
 	userTables := googlesqltest.DefaultSchemaTables(
-		&storepb.TableMetadata{Name: "users", Columns: []*storepb.ColumnMetadata{{Name: "id"}}},
+		&metadatapb.TableMetadata{Name: "users", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}},
 	)
 	_, err := googlesqltest.GetSpan(t, storepb.Engine_SPANNER, GetQuerySpan,
 		"SELECT * FROM users JOIN INFORMATION_SCHEMA.TABLES ON TRUE", "db", userTables)

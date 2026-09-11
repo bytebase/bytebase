@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -19,10 +20,10 @@ func TestGetObjectDefinition(t *testing.T) {
 		{
 			name: "table with comments",
 			get: func() (string, error) {
-				return GetTableDefinition("public", &storepb.TableMetadata{
+				return GetTableDefinition("public", &metadatapb.TableMetadata{
 					Name:    "orders",
 					Comment: "one row per order",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "id", Type: "integer", Comment: "surrogate key"},
 						{Name: "total", Type: "numeric(10,2)", Nullable: true},
 						{Name: "label", Type: "character varying(50)", Nullable: true, Comment: "display name"},
@@ -42,7 +43,7 @@ COMMENT ON COLUMN "public"."orders"."label" IS 'display name';
 		{
 			name: "view with comment",
 			get: func() (string, error) {
-				return GetViewDefinition("public", &storepb.ViewMetadata{
+				return GetViewDefinition("public", &metadatapb.ViewMetadata{
 					Name:       "recent_orders",
 					Definition: "SELECT id, total FROM orders",
 					Comment:    "last 30 days",
@@ -57,9 +58,9 @@ COMMENT ON VIEW "public"."recent_orders" IS 'last 30 days';
 			// the search path has to carry it or the DDL lands somewhere else.
 			name: "table outside the default schema keeps its qualifier",
 			get: func() (string, error) {
-				return GetTableDefinition("analytics", &storepb.TableMetadata{
+				return GetTableDefinition("analytics", &metadatapb.TableMetadata{
 					Name:    "orders",
-					Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+					Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
 				}, nil)
 			},
 			want: `CREATE TABLE "analytics"."orders" (
@@ -72,10 +73,10 @@ COMMENT ON VIEW "public"."recent_orders" IS 'last 30 days';
 			// not replay.
 			name: "comments with apostrophes stay valid",
 			get: func() (string, error) {
-				return GetTableDefinition("public", &storepb.TableMetadata{
+				return GetTableDefinition("public", &metadatapb.TableMetadata{
 					Name:    "orders",
 					Comment: "owner's orders",
-					Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer", Comment: "don't drop"}},
+					Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Comment: "don't drop"}},
 				}, nil)
 			},
 			want: `CREATE TABLE "public"."orders" (
@@ -100,9 +101,9 @@ COMMENT ON COLUMN "public"."orders"."id" IS 'don''t drop';
 // COLUMN statements. They used to come from ranging over a map, so the dump
 // differed between runs for any table with more than one commented column.
 func TestColumnCommentOrderIsStable(t *testing.T) {
-	table := &storepb.TableMetadata{Name: "wide"}
+	table := &metadatapb.TableMetadata{Name: "wide"}
 	for _, name := range []string{"a", "b", "c", "d", "e", "f", "g", "h"} {
-		table.Columns = append(table.Columns, &storepb.ColumnMetadata{
+		table.Columns = append(table.Columns, &metadatapb.ColumnMetadata{
 			Name:     name,
 			Type:     "integer",
 			Nullable: true,
@@ -134,16 +135,16 @@ func TestObjectDefinitionsRegisteredForRedshift(t *testing.T) {
 		{
 			name: "table",
 			get: func() (string, error) {
-				return schema.GetTableDefinition(storepb.Engine_REDSHIFT, "public", &storepb.TableMetadata{
+				return schema.GetTableDefinition(storepb.Engine_REDSHIFT, "public", &metadatapb.TableMetadata{
 					Name:    "t",
-					Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+					Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
 				}, nil)
 			},
 		},
 		{
 			name: "view",
 			get: func() (string, error) {
-				return schema.GetViewDefinition(storepb.Engine_REDSHIFT, "public", &storepb.ViewMetadata{
+				return schema.GetViewDefinition(storepb.Engine_REDSHIFT, "public", &metadatapb.ViewMetadata{
 					Name:       "v",
 					Definition: "SELECT 1",
 				})
@@ -164,18 +165,18 @@ func TestObjectDefinitionsRegisteredForRedshift(t *testing.T) {
 // whole-database output still frames each object with its banner and renders
 // the same body the single-object entry points return.
 func TestGetDatabaseDefinitionKeepsSections(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name:    "orders",
 						Comment: "one row per order",
-						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer", Comment: "surrogate key"}},
+						Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer", Comment: "surrogate key"}},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{Name: "recent_orders", Definition: "SELECT id FROM orders"},
 				},
 			},
@@ -210,13 +211,13 @@ CREATE OR REPLACE VIEW "public"."recent_orders" AS SELECT id FROM orders;
 // ReferencedSchema, so dropping it binds the constraint to whatever the search
 // path resolves instead of the table the metadata names.
 func TestForeignKeyKeepsReferencedSchema(t *testing.T) {
-	got, err := GetTableDefinition("analytics", &storepb.TableMetadata{
+	got, err := GetTableDefinition("analytics", &metadatapb.TableMetadata{
 		Name: "child",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "integer"},
 			{Name: "parent_id", Type: "integer", Nullable: true},
 		},
-		ForeignKeys: []*storepb.ForeignKeyMetadata{
+		ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 			{
 				Name:              "child_parent_fk",
 				Columns:           []string{"parent_id"},
@@ -235,9 +236,9 @@ func TestForeignKeyKeepsReferencedSchema(t *testing.T) {
 // would corrupt: Redshift folds an unquoted identifier to lower case and rejects
 // one containing a space, and an embedded double quote has to be doubled.
 func TestIdentifiersNeedingQuotesSurvive(t *testing.T) {
-	got, err := GetTableDefinition("Sales Data", &storepb.TableMetadata{
+	got, err := GetTableDefinition("Sales Data", &metadatapb.TableMetadata{
 		Name: "MixedCase",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: `od"d`, Type: "integer", Comment: "quoted name"},
 		},
 	}, nil)
@@ -254,16 +255,16 @@ COMMENT ON COLUMN "Sales Data"."MixedCase"."od""d" IS 'quoted name';
 // quoted, while getColumnList strips the quotes off foreign key columns, so one
 // must be written as-is and the other must be quoted.
 func TestIndexKeysAreVerbatimAndForeignKeyColumnsAreQuoted(t *testing.T) {
-	got, err := GetTableDefinition("public", &storepb.TableMetadata{
+	got, err := GetTableDefinition("public", &metadatapb.TableMetadata{
 		Name: "t",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "MixedCase", Type: "integer"},
 			{Name: "parent_id", Type: "integer", Nullable: true},
 		},
-		Indexes: []*storepb.IndexMetadata{
+		Indexes: []*metadatapb.IndexMetadata{
 			{Name: "t_pkey", Primary: true, Expressions: []string{`"MixedCase"`}},
 		},
-		ForeignKeys: []*storepb.ForeignKeyMetadata{
+		ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 			{
 				Name:              "t_parent_fk",
 				Columns:           []string{"parent_id"},

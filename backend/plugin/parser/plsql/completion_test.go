@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -1280,15 +1281,15 @@ func listDatabaseNamesForTest(_ context.Context, _ string) ([]string, error) {
 func getMetadataForTest(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 	switch databaseName {
 	case "SCHEMA1":
-		return "SCHEMA1", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		return "SCHEMA1", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 			Name: databaseName,
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name: "",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						{
 							Name: "T1",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "C1",
 									Type: "int",
@@ -1297,7 +1298,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						},
 						{
 							Name: "T2",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "C1",
 									Type: "int",
@@ -1309,7 +1310,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 							},
 						},
 					},
-					Views: []*storepb.ViewMetadata{
+					Views: []*metadatapb.ViewMetadata{
 						{
 							Name: "V1",
 							Definition: `CREATE VIEW v1 AS
@@ -1318,7 +1319,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 							`,
 						},
 					},
-					Sequences: []*storepb.SequenceMetadata{
+					Sequences: []*metadatapb.SequenceMetadata{
 						{
 							Name: "SEQ1",
 						},
@@ -1330,15 +1331,15 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 			},
 		}, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
 	case "SCHEMA2":
-		return "SCHEMA2", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		return "SCHEMA2", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 			Name: databaseName,
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name: "",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						{
 							Name: "T1",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "C1",
 									Type: "int",
@@ -1347,7 +1348,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						},
 						{
 							Name: "T2",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "C1",
 									Type: "int",
@@ -1359,7 +1360,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 							},
 						},
 					},
-					Views: []*storepb.ViewMetadata{
+					Views: []*metadatapb.ViewMetadata{
 						{
 							Name: "V1",
 							Definition: `CREATE VIEW v1 AS
@@ -1368,7 +1369,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 							`,
 						},
 					},
-					Sequences: []*storepb.SequenceMetadata{
+					Sequences: []*metadatapb.SequenceMetadata{
 						{
 							Name: "SCHEMA2_SEQ",
 						},
@@ -1377,15 +1378,15 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 			},
 		}, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
 	case "SCHEMA3":
-		return "SCHEMA3", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		return "SCHEMA3", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 			Name: databaseName,
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name: "",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						{
 							Name: "T1",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "C1",
 									Type: "int",
@@ -1394,7 +1395,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						},
 						{
 							Name: "T2",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "C1",
 									Type: "int",
@@ -1406,7 +1407,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 							},
 						},
 					},
-					Views: []*storepb.ViewMetadata{
+					Views: []*metadatapb.ViewMetadata{
 						{
 							Name: "V1",
 							Definition: `CREATE VIEW v1 AS
@@ -1419,15 +1420,15 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 			},
 		}, nil, nil, storepb.Engine_ORACLE, true /* isObjectCaseSensitive */), nil
 	case "SCHEMA4":
-		return "SCHEMA4", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		return "SCHEMA4", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 			Name: databaseName,
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name: "",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						{
 							Name: "T1",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{
 									Name: "C1",
 									Type: "int",

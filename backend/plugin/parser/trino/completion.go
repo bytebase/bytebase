@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/trino/catalog"
 	"github.com/bytebase/omni/trino/completion"
 
@@ -165,7 +166,7 @@ func catalogNeeded(normName, defaultDB, lowerStmt string) bool {
 
 // columnsOf converts storepb columns into omni catalog columns (names
 // normalized).
-func columnsOf(columns []*storepb.ColumnMetadata) []*catalog.Column {
+func columnsOf(columns []*metadatapb.ColumnMetadata) []*catalog.Column {
 	out := make([]*catalog.Column, 0, len(columns))
 	for _, c := range columns {
 		if c == nil {

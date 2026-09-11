@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -11,7 +12,7 @@ import (
 )
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, out io.Writer, metadata *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, out io.Writer, metadata *metadatapb.DatabaseSchemaMetadata) error {
 	text, err := schema.GetDatabaseDefinition(storepb.Engine_POSTGRES, schema.GetDefinitionContext{
 		SkipBackupSchema: true,
 		PrintHeader:      true,

@@ -3,6 +3,7 @@ package pg
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -12,7 +13,7 @@ import (
 )
 
 func TestExtractChangedResources(t *testing.T) {
-	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	statement :=
 		`CREATE TABLE t1 (c1 INT);
 						DROP TABLE t1;
@@ -67,8 +68,8 @@ func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget
 
 	for _, tc := range []struct {
 		name       string
-		appTables  []*storepb.TableMetadata
-		appFuncs   []*storepb.FunctionMetadata
+		appTables  []*metadatapb.TableMetadata
+		appFuncs   []*metadatapb.FunctionMetadata
 		wantSchema string
 	}{
 		{
@@ -77,9 +78,9 @@ func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget
 		},
 		{
 			name: "selected schema still takes precedence",
-			appTables: []*storepb.TableMetadata{{
+			appTables: []*metadatapb.TableMetadata{{
 				Name: "customer",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int"},
 				},
 			}},
@@ -87,16 +88,16 @@ func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget
 		},
 		{
 			name: "relation lookup skips function in selected schema",
-			appFuncs: []*storepb.FunctionMetadata{{
+			appFuncs: []*metadatapb.FunctionMetadata{{
 				Name: "customer",
 			}},
 			wantSchema: "public",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+			dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 				Name: "db",
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name:      "app",
 						Tables:    tc.appTables,
@@ -104,9 +105,9 @@ func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget
 					},
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{{
+						Tables: []*metadatapb.TableMetadata{{
 							Name: "customer",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{Name: "id", Type: "int"},
 							},
 						}},
@@ -128,7 +129,7 @@ func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget
 }
 
 func TestExtractChangedResourcesTruncate(t *testing.T) {
-	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	const statement = `TRUNCATE TABLE public.t1, myschema.t2;`
 
 	want := model.NewChangedResources(dbMetadata)
@@ -144,7 +145,7 @@ func TestExtractChangedResourcesTruncate(t *testing.T) {
 }
 
 func TestExtractChangedResourcesMerge(t *testing.T) {
-	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	const statement = `MERGE INTO myschema.tgt t USING src s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = s.a;`
 
 	want := model.NewChangedResources(dbMetadata)
@@ -159,7 +160,7 @@ func TestExtractChangedResourcesMerge(t *testing.T) {
 }
 
 func TestExtractChangedResourcesCTAS(t *testing.T) {
-	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	for _, tc := range []struct {
 		statement, schema, table string
 	}{

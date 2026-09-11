@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -69,9 +70,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 	defer rows.Close()
 
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	for rows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
+		database := &metadatapb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(
 			&database.Name,
 			&database.CharacterSet,
@@ -129,7 +130,7 @@ func isSyncRollup(refreshType string) bool {
 // materialized views with TABLE_TYPE='VIEW', Doris with 'BASE TABLE', and some setups
 // with 'MATERIALIZED VIEW'; in every case, presence in materializedViewMap is the
 // authoritative signal.
-func isMaterializedView(tableType string, key db.TableKey, materializedViewMap map[db.TableKey]*storepb.MaterializedViewMetadata) bool {
+func isMaterializedView(tableType string, key db.TableKey, materializedViewMap map[db.TableKey]*metadatapb.MaterializedViewMetadata) bool {
 	if _, ok := materializedViewMap[key]; !ok {
 		return false
 	}
@@ -145,8 +146,8 @@ func isMaterializedView(tableType string, key db.TableKey, materializedViewMap m
 // table name. Doris and StarRocks expose them through different catalogs, so the query
 // and projection are engine-specific. The query is best-effort: an engine/version that
 // does not support it is logged and yields an empty set rather than failing the sync.
-func (d *Driver) getMaterializedViews(ctx context.Context) (map[db.TableKey]*storepb.MaterializedViewMetadata, error) {
-	materializedViewMap := make(map[db.TableKey]*storepb.MaterializedViewMetadata)
+func (d *Driver) getMaterializedViews(ctx context.Context) (map[db.TableKey]*metadatapb.MaterializedViewMetadata, error) {
+	materializedViewMap := make(map[db.TableKey]*metadatapb.MaterializedViewMetadata)
 
 	var query string
 	switch d.dbType {
@@ -172,7 +173,7 @@ func (d *Driver) getMaterializedViews(ctx context.Context) (map[db.TableKey]*sto
 	defer rows.Close()
 
 	for rows.Next() {
-		materializedView := &storepb.MaterializedViewMetadata{}
+		materializedView := &metadatapb.MaterializedViewMetadata{}
 		if d.dbType == storepb.Engine_STARROCKS {
 			var refreshType string
 			if err := rows.Scan(&materializedView.Name, &refreshType, &materializedView.Definition); err != nil {
@@ -194,14 +195,14 @@ func (d *Driver) getMaterializedViews(ctx context.Context) (map[db.TableKey]*sto
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	schemaMetadata := &storepb.SchemaMetadata{
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	schemaMetadata := &metadatapb.SchemaMetadata{
 		Name: "",
 	}
 
 	// There is not yet a way to list indexes from information_schema.
 	// Query column info.
-	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+	columnMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 	columnQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_NAME,
@@ -223,7 +224,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	defer columnRows.Close()
 	for columnRows.Next() {
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		var tableName, nullable, extra string
 		var defaultStr sql.NullString
 		if err := columnRows.Scan(
@@ -277,7 +278,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Query view info.
-	viewMap := make(map[db.TableKey]*storepb.ViewMetadata)
+	viewMap := make(map[db.TableKey]*metadatapb.ViewMetadata)
 	viewQuery := fmt.Sprintf(`
 		SELECT
 			TABLE_NAME,
@@ -290,7 +291,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 	defer viewRows.Close()
 	for viewRows.Next() {
-		view := &storepb.ViewMetadata{}
+		view := &metadatapb.ViewMetadata{}
 		if err := viewRows.Scan(
 			&view.Name,
 			&view.Definition,
@@ -363,7 +364,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		switch tableType {
 		case baseTableType:
-			tableMetadata := &storepb.TableMetadata{
+			tableMetadata := &metadatapb.TableMetadata{
 				Name:          tableName,
 				Columns:       columnMap[key],
 				Engine:        engine,
@@ -395,9 +396,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, util.FormatErrorWithQuery(err, tableQuery)
 	}
 
-	databaseMetadata := &storepb.DatabaseSchemaMetadata{
+	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
-		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+		Schemas: []*metadatapb.SchemaMetadata{schemaMetadata},
 	}
 	// Query db info.
 	databaseQuery := fmt.Sprintf(`

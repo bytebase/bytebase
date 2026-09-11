@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -60,7 +61,7 @@ func TestGetDatabaseMetadataObjectKinds(t *testing.T) {
 	tests := []struct {
 		name   string
 		ddl    string
-		verify func(*testing.T, *storepb.DatabaseSchemaMetadata)
+		verify func(*testing.T, *metadatapb.DatabaseSchemaMetadata)
 	}{
 		{
 			name: "table_constraints_indexes_view_sequence",
@@ -91,7 +92,7 @@ WHERE EMAIL IS NOT NULL;
 
 CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 
 				departments := requireTable(t, schemaMetadata, "DEPARTMENTS")
@@ -133,7 +134,7 @@ CREATE TABLE EMPLOYEES (
 CREATE VIEW EMPLOYEE_VIEW AS
 SELECT EMP_ID, EMAIL FROM EMPLOYEES;
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 				require.Equal(t, "HR", schemaMetadata.Name)
 				employees := requireTable(t, schemaMetadata, "EMPLOYEES")
@@ -167,7 +168,7 @@ GROUP BY PRODUCT_ID, CATEGORY;
 COMMENT ON VIEW PRODUCT_SALES_VIEW IS 'Product sales view';
 COMMENT ON MATERIALIZED VIEW PRODUCT_SALES_MV IS 'Product sales materialized view';
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 				require.Equal(t, "Product sales view", requireView(t, schemaMetadata, "PRODUCT_SALES_VIEW").Comment)
 				require.Len(t, schemaMetadata.MaterializedViews, 1)
@@ -186,7 +187,7 @@ CREATE TABLE ORDERS (
 CREATE INDEX idx_orders_status_invisible ON ORDERS(STATUS) INVISIBLE;
 CREATE BITMAP INDEX idx_orders_lower_status ON ORDERS(LOWER(STATUS));
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				orders := requireTable(t, requireSingleSchema(t, metadata), "ORDERS")
 				invisibleIndex := requireIndexMetadata(t, orders, "IDX_ORDERS_STATUS_INVISIBLE")
 				require.False(t, invisibleIndex.Visible)
@@ -215,7 +216,7 @@ BEGIN
 END;
 /
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 				view := requireView(t, schemaMetadata, "EMPLOYEE_VIEW")
 				require.Len(t, view.Triggers, 1)
@@ -242,7 +243,7 @@ GROUP BY PRODUCT_ID, CATEGORY;
 
 CREATE INDEX idx_mv_category ON PRODUCT_SALES_MV(CATEGORY);
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 				requireTable(t, schemaMetadata, "PRODUCT_SALES")
 				require.Len(t, schemaMetadata.MaterializedViews, 1)
@@ -267,7 +268,7 @@ CREATE TABLE EMPLOYEES (
 ALTER TABLE DEPARTMENTS ADD CONSTRAINT fk_dept_manager
     FOREIGN KEY (MANAGER_ID) REFERENCES EMPLOYEES(EMP_ID) ON DELETE SET NULL;
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 				departments := requireTable(t, schemaMetadata, "DEPARTMENTS")
 				requireForeignKey(t, departments, "FK_DEPT_MANAGER", []string{"MANAGER_ID"}, "EMPLOYEES", []string{"EMP_ID"}, "SET NULL")
@@ -285,7 +286,7 @@ ALTER TABLE EMPLOYEES ADD (
     STATUS VARCHAR2(20) DEFAULT 'ACTIVE'
 );
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				employees := requireTable(t, requireSingleSchema(t, metadata), "EMPLOYEES")
 				require.Len(t, employees.Columns, 3)
 				require.Equal(t, "EMAIL", employees.Columns[1].Name)
@@ -311,7 +312,7 @@ CREATE TABLE EMPLOYEES (
     CONSTRAINT fk_manager_dept FOREIGN KEY (MANAGER_DEPT_ID) REFERENCES DEPARTMENTS
 );
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				employees := requireTable(t, requireSingleSchema(t, metadata), "EMPLOYEES")
 				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY", "SALARY>0")
 				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY_2", "SALARY<1000000")
@@ -328,7 +329,7 @@ CREATE TABLE ORDER_ITEMS (
     TOTAL AS (QTY * PRICE)
 );
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				orderItems := requireTable(t, requireSingleSchema(t, metadata), "ORDER_ITEMS")
 				require.Len(t, orderItems.Columns, 3)
 				require.Equal(t, "TOTAL", orderItems.Columns[2].Name)
@@ -345,7 +346,7 @@ CREATE TABLE AUTHORS (
     CONSTRAINT chk_author_name CHECK (NAME <> 'O''Reilly')
 );
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				authors := requireTable(t, requireSingleSchema(t, metadata), "AUTHORS")
 				require.Len(t, authors.Columns, 2)
 				require.Equal(t, "CASEWHENNAME='O''Reilly'THEN1ELSE0END", authors.Columns[1].Default)
@@ -360,7 +361,7 @@ CREATE TABLE ORDERS (
     STATUS VARCHAR2(20) DEFAULT ON NULL 'PENDING'
 );
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				orders := requireTable(t, requireSingleSchema(t, metadata), "ORDERS")
 				require.Len(t, orders.Columns, 2)
 				require.Equal(t, "STATUS", orders.Columns[1].Name)
@@ -385,7 +386,7 @@ CREATE OR REPLACE PACKAGE BODY financial_utils AS
 END financial_utils;
 /
 `,
-			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
+			verify: func(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) {
 				schemaMetadata := requireSingleSchema(t, metadata)
 				require.Len(t, schemaMetadata.Packages, 1)
 				require.Equal(t, "FINANCIAL_UTILS", schemaMetadata.Packages[0].Name)
@@ -440,20 +441,20 @@ END;
 	requireIndex(t, table, "PK_AUDIT_LOG", []string{"LOG_ID"}, true, true)
 }
 
-func requireSingleSchema(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) *storepb.SchemaMetadata {
+func requireSingleSchema(t *testing.T, metadata *metadatapb.DatabaseSchemaMetadata) *metadatapb.SchemaMetadata {
 	t.Helper()
 	require.Len(t, metadata.Schemas, 1)
 	return metadata.Schemas[0]
 }
 
-func requireTable(t *testing.T, schemaMetadata *storepb.SchemaMetadata, name string) *storepb.TableMetadata {
+func requireTable(t *testing.T, schemaMetadata *metadatapb.SchemaMetadata, name string) *metadatapb.TableMetadata {
 	t.Helper()
 	table := findTable(schemaMetadata, name)
 	require.NotNil(t, table)
 	return table
 }
 
-func requireView(t *testing.T, schemaMetadata *storepb.SchemaMetadata, name string) *storepb.ViewMetadata {
+func requireView(t *testing.T, schemaMetadata *metadatapb.SchemaMetadata, name string) *metadatapb.ViewMetadata {
 	t.Helper()
 	for _, view := range schemaMetadata.Views {
 		if view.Name == name {
@@ -464,7 +465,7 @@ func requireView(t *testing.T, schemaMetadata *storepb.SchemaMetadata, name stri
 	return nil
 }
 
-func findTable(schemaMetadata *storepb.SchemaMetadata, name string) *storepb.TableMetadata {
+func findTable(schemaMetadata *metadatapb.SchemaMetadata, name string) *metadatapb.TableMetadata {
 	for _, table := range schemaMetadata.Tables {
 		if table.Name == name {
 			return table
@@ -473,7 +474,7 @@ func findTable(schemaMetadata *storepb.SchemaMetadata, name string) *storepb.Tab
 	return nil
 }
 
-func requireIndex(t *testing.T, table *storepb.TableMetadata, name string, expressions []string, primary bool, unique bool) {
+func requireIndex(t *testing.T, table *metadatapb.TableMetadata, name string, expressions []string, primary bool, unique bool) {
 	t.Helper()
 	index := requireIndexMetadata(t, table, name)
 	require.Equal(t, expressions, index.Expressions)
@@ -481,7 +482,7 @@ func requireIndex(t *testing.T, table *storepb.TableMetadata, name string, expre
 	require.Equal(t, unique, index.Unique)
 }
 
-func requireIndexMetadata(t *testing.T, table *storepb.TableMetadata, name string) *storepb.IndexMetadata {
+func requireIndexMetadata(t *testing.T, table *metadatapb.TableMetadata, name string) *metadatapb.IndexMetadata {
 	t.Helper()
 	for _, index := range table.Indexes {
 		if index.Name == name {
@@ -492,7 +493,7 @@ func requireIndexMetadata(t *testing.T, table *storepb.TableMetadata, name strin
 	return nil
 }
 
-func requireMaterializedViewIndex(t *testing.T, materializedView *storepb.MaterializedViewMetadata, name string, expressions []string, primary bool, unique bool) {
+func requireMaterializedViewIndex(t *testing.T, materializedView *metadatapb.MaterializedViewMetadata, name string, expressions []string, primary bool, unique bool) {
 	t.Helper()
 	for _, index := range materializedView.Indexes {
 		if index.Name != name {
@@ -510,7 +511,7 @@ func requireMaterializedViewIndex(t *testing.T, materializedView *storepb.Materi
 // which for most nodes means with every space removed: "SALARY > 0" arrives as
 // "SALARY>0". The assertions below spell out that form rather than the readable
 // one so they describe what the package returns today.
-func requireCheckConstraint(t *testing.T, table *storepb.TableMetadata, name string, expression string) {
+func requireCheckConstraint(t *testing.T, table *metadatapb.TableMetadata, name string, expression string) {
 	t.Helper()
 	for _, check := range table.CheckConstraints {
 		if check.Name != name {
@@ -522,7 +523,7 @@ func requireCheckConstraint(t *testing.T, table *storepb.TableMetadata, name str
 	t.Fatalf("check constraint %q not found in table %q", name, table.Name)
 }
 
-func requireForeignKey(t *testing.T, table *storepb.TableMetadata, name string, columns []string, referencedTable string, referencedColumns []string, onDelete string) {
+func requireForeignKey(t *testing.T, table *metadatapb.TableMetadata, name string, columns []string, referencedTable string, referencedColumns []string, onDelete string) {
 	t.Helper()
 	for _, fk := range table.ForeignKeys {
 		if fk.Name != name {

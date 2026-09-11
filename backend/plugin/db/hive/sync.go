@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -30,7 +30,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	}
 
 	for _, v := range databaseNames {
-		instanceMetadata.Databases = append(instanceMetadata.Databases, &storepb.DatabaseSchemaMetadata{
+		instanceMetadata.Databases = append(instanceMetadata.Databases, &metadatapb.DatabaseSchemaMetadata{
 			Name: v,
 		})
 	}
@@ -39,7 +39,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	return &instanceMetadata, nil
 }
 
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	dbName := d.config.ConnectionContext.DatabaseName
 	if dbName == "" {
 		dbName = "default"
@@ -49,9 +49,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get info from database %s", dbName)
 	}
-	return &storepb.DatabaseSchemaMetadata{
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name:    dbName,
-		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+		Schemas: []*metadatapb.SchemaMetadata{schemaMetadata},
 	}, nil
 }
 
@@ -106,17 +106,17 @@ func (d *Driver) listTablesNames(ctx context.Context, databaseName string) ([]st
 
 // getTables fetches table info and returns structed table data.
 func (d *Driver) getTables(ctx context.Context, databaseName string) (
-	[]*storepb.TableMetadata,
-	[]*storepb.ExternalTableMetadata,
-	[]*storepb.ViewMetadata,
-	[]*storepb.MaterializedViewMetadata,
+	[]*metadatapb.TableMetadata,
+	[]*metadatapb.ExternalTableMetadata,
+	[]*metadatapb.ViewMetadata,
+	[]*metadatapb.MaterializedViewMetadata,
 	error,
 ) {
 	var (
-		tableMetadatas    []*storepb.TableMetadata
-		extTableMetadatas []*storepb.ExternalTableMetadata
-		viewMetadatas     []*storepb.ViewMetadata
-		mtViewMetadatas   []*storepb.MaterializedViewMetadata
+		tableMetadatas    []*metadatapb.TableMetadata
+		extTableMetadatas []*metadatapb.ExternalTableMetadata
+		viewMetadatas     []*metadatapb.ViewMetadata
+		mtViewMetadatas   []*metadatapb.MaterializedViewMetadata
 	)
 
 	// list tables' names.
@@ -140,19 +140,19 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 		// different processing way according to the type of the table.
 		switch tableInfo.tableType {
 		case "MATERIALIZED_VIEW":
-			mtViewMetadatas = append(mtViewMetadatas, &storepb.MaterializedViewMetadata{
+			mtViewMetadatas = append(mtViewMetadatas, &metadatapb.MaterializedViewMetadata{
 				Name:       tableName,
 				Definition: tableInfo.viewDef,
 				Comment:    tableInfo.comment,
 			})
 		case "VIRTUAL_VIEW":
-			viewMetadatas = append(viewMetadatas, &storepb.ViewMetadata{
+			viewMetadatas = append(viewMetadatas, &metadatapb.ViewMetadata{
 				Name:       tableName,
 				Definition: tableInfo.viewDef,
 				Comment:    tableInfo.comment,
 			})
 		case "EXTERNAL_TABLE":
-			extTableMetadatas = append(extTableMetadatas, &storepb.ExternalTableMetadata{
+			extTableMetadatas = append(extTableMetadatas, &metadatapb.ExternalTableMetadata{
 				Name:    tableName,
 				Columns: tableInfo.colMetadatas,
 			})
@@ -163,7 +163,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 				slog.Debug("failed to get partitions", log.BBError(err))
 				continue
 			}
-			tableMetadatas = append(tableMetadatas, &storepb.TableMetadata{
+			tableMetadatas = append(tableMetadatas, &metadatapb.TableMetadata{
 				Engine:     "HDFS",
 				Comment:    tableInfo.comment,
 				Columns:    tableInfo.colMetadatas,
@@ -180,7 +180,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 	return tableMetadatas, extTableMetadatas, viewMetadatas, mtViewMetadatas, nil
 }
 
-func (d *Driver) getPartitions(ctx context.Context, databaseName, tableName string) ([]*storepb.TablePartitionMetadata, error) {
+func (d *Driver) getPartitions(ctx context.Context, databaseName, tableName string) ([]*metadatapb.TablePartitionMetadata, error) {
 	// partitions.
 	partitionResult, err := d.queryStatementWithLimit(ctx, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tableName), 0)
 	if err != nil {
@@ -190,12 +190,12 @@ func (d *Driver) getPartitions(ctx context.Context, databaseName, tableName stri
 	if partitionResult == nil {
 		return nil, nil
 	}
-	var partitions []*storepb.TablePartitionMetadata
+	var partitions []*metadatapb.TablePartitionMetadata
 	for _, row := range partitionResult.Rows {
 		if row == nil || len(row.Values) == 0 {
 			return nil, errors.New("partitions result row has zero length")
 		}
-		partitions = append(partitions, &storepb.TablePartitionMetadata{
+		partitions = append(partitions, &metadatapb.TablePartitionMetadata{
 			Name: row.Values[0].GetStringValue(),
 		})
 	}
@@ -203,14 +203,14 @@ func (d *Driver) getPartitions(ctx context.Context, databaseName, tableName stri
 }
 
 // This function gets certain database info by name.
-func (d *Driver) getDatabaseInfoByName(ctx context.Context, databaseName string) (*storepb.SchemaMetadata, error) {
+func (d *Driver) getDatabaseInfoByName(ctx context.Context, databaseName string) (*metadatapb.SchemaMetadata, error) {
 	// fetch table metadata.
 	tableMetadata, extTabMetadata, viewMetadata, mtViewMetadata, err := d.getTables(ctx, databaseName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get table metadata from database %s", databaseName)
 	}
 
-	return &storepb.SchemaMetadata{
+	return &metadatapb.SchemaMetadata{
 		Name:              databaseName,
 		Tables:            tableMetadata,
 		ExternalTables:    extTabMetadata,
@@ -221,7 +221,7 @@ func (d *Driver) getDatabaseInfoByName(ctx context.Context, databaseName string)
 
 type TableInfo struct {
 	tableType    string
-	colMetadatas []*storepb.ColumnMetadata
+	colMetadatas []*metadatapb.ColumnMetadata
 	numRows      int
 	viewDef      string
 	totalSize    int
@@ -273,7 +273,7 @@ func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseNam
 			if colName != "" && dataType != "" {
 				// Column metadata.
 				position := len(tableInfo.colMetadatas) + 1
-				tableInfo.colMetadatas = append(tableInfo.colMetadatas, &storepb.ColumnMetadata{
+				tableInfo.colMetadatas = append(tableInfo.colMetadatas, &metadatapb.ColumnMetadata{
 					Name:     colName,
 					Type:     dataType,
 					Comment:  comment,

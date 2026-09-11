@@ -8,6 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	redshiftcatalog "github.com/bytebase/omni/redshift/catalog"
 	redshiftcompletion "github.com/bytebase/omni/redshift/completion"
 
@@ -157,7 +158,7 @@ func execCompletionDDL(cat *redshiftcatalog.Catalog, sql string) bool {
 	return err == nil
 }
 
-func createTableDDL(schemaName, tableName string, columns []*storepb.ColumnMetadata) string {
+func createTableDDL(schemaName, tableName string, columns []*metadatapb.ColumnMetadata) string {
 	return fmt.Sprintf(
 		"CREATE TABLE %s.%s (%s);",
 		quoteIdent(schemaName),
@@ -166,7 +167,7 @@ func createTableDDL(schemaName, tableName string, columns []*storepb.ColumnMetad
 	)
 }
 
-func createViewDDL(kind, schemaName, viewName string, columns []*storepb.ColumnMetadata) string {
+func createViewDDL(kind, schemaName, viewName string, columns []*metadatapb.ColumnMetadata) string {
 	selectItems := make([]string, 0, len(columns))
 	for _, column := range columns {
 		if column == nil || column.GetName() == "" {
@@ -204,7 +205,7 @@ func createMaterializedViewDDL(schemaName, viewName, definition string) string {
 	)
 }
 
-func columnListDDL(columns []*storepb.ColumnMetadata) string {
+func columnListDDL(columns []*metadatapb.ColumnMetadata) string {
 	columnDefs := make([]string, 0, len(columns))
 	for _, column := range columns {
 		if column == nil || column.GetName() == "" {

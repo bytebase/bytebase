@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v3"
@@ -43,14 +44,14 @@ var (
 	// MockIndexColumnList is the mock index column list for test.
 	MockIndexColumnList = []string{"id", "name"}
 	// MockMySQLDatabase is the mock MySQL database for test.
-	MockMySQLDatabase = &storepb.DatabaseSchemaMetadata{
+	MockMySQLDatabase = &metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: MockTableName,
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "id",
 								Type: "int",
@@ -64,7 +65,7 @@ var (
 								Type: "varchar(255)",
 							},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        MockOldMySQLPKName,
 								Expressions: []string{"id", "name"},
@@ -84,7 +85,7 @@ var (
 					},
 					{
 						Name: "orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "order_id", Type: "int"},
 							{Name: "customer_name", Type: "varchar(255)"},
 							{Name: "amount", Type: "decimal(10,2)"},
@@ -93,7 +94,7 @@ var (
 							// qualified lookups distinguish tech_book.name (indexed) from orders.name.
 							{Name: "name", Type: "varchar(255)"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "PRIMARY",
 								Expressions: []string{"order_id"},
@@ -115,20 +116,20 @@ var (
 		},
 	}
 	// MockPostgreSQLDatabase is the mock PostgreSQL database for test.
-	MockPostgreSQLDatabase = &storepb.DatabaseSchemaMetadata{
+	MockPostgreSQLDatabase = &metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: MockTableName,
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer", Position: 1},
 							{Name: "name", Type: "text", Position: 2},
 							{Name: "creator", Type: "text", Position: 3},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        MockOldPostgreSQLPKName,
 								Expressions: []string{"id", "name"},
@@ -148,14 +149,14 @@ var (
 					},
 					{
 						Name: "orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "order_id", Type: "integer", Position: 1},
 							{Name: "customer_name", Type: "text", Position: 2},
 							{Name: "amount", Type: "numeric", Position: 3},
 							{Name: "note", Type: "text", Position: 4},
 							{Name: "name", Type: "text", Position: 5},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "orders_pkey", Expressions: []string{"order_id"}, Unique: true, Primary: true},
 							{Name: "idx_orders_customer", Expressions: []string{"customer_name"}},
 							{Name: "idx_orders_amount", Expressions: []string{"amount"}},
@@ -163,26 +164,26 @@ var (
 					},
 					{
 						Name: "products",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "product_id", Type: "integer", Position: 1},
 							{Name: "title", Type: "text", Position: 2},
 							{Name: "price", Type: "numeric", Position: 3},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "products_pkey", Expressions: []string{"product_id"}, Unique: true, Primary: true},
 							{Name: "idx_products_price", Expressions: []string{"price"}},
 						},
 					},
 					{
 						Name: "no_index_table",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "col_a", Type: "integer", Position: 1},
 							{Name: "col_b", Type: "text", Position: 2},
 						},
 					},
 					{
 						Name: "insert_target",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer", Position: 1},
 							{Name: "name", Type: "text", Position: 2},
 						},
@@ -194,15 +195,15 @@ var (
 			},
 		},
 	}
-	MockMSSQLDatabase = &storepb.DatabaseSchemaMetadata{
+	MockMSSQLDatabase = &metadatapb.DatabaseSchemaMetadata{
 		Name: "master",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "dbo",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "pokes",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "c1", Type: "int"},
 							{Name: "c2", Type: "int"},
 							{Name: "c3", Type: "int"},
@@ -211,7 +212,7 @@ var (
 							{Name: "foo", Type: "int"},
 							{Name: "bar", Type: "int"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "idx_0",
 								Expressions: []string{"c1", "c2", "c3"},
@@ -224,7 +225,7 @@ var (
 					},
 					{
 						Name: "pokes2",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "foo", Type: "int"},
 							{Name: "bar", Type: "int"},
 							// c1 also exists here (non-indexed) so tests can verify
@@ -237,15 +238,15 @@ var (
 			},
 			{
 				Name: "sales",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "order_id", Type: "int"},
 							{Name: "customer_id", Type: "int"},
 							{Name: "note", Type: "varchar"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "PRIMARY",
 								Expressions: []string{"order_id"},
@@ -266,34 +267,34 @@ var (
 	// (`backend/plugin/db/oracle/sync.go`) stores SchemaMetadata{Name: ""}
 	// — a single anonymous schema containing every object. The mock mirrors
 	// this so advisors resolve tables the same way in tests and production.
-	MockOracleDatabase = &storepb.DatabaseSchemaMetadata{
+	MockOracleDatabase = &metadatapb.DatabaseSchemaMetadata{
 		Name: "TEST_DB",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "TECH_BOOK",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "ID", Type: "NUMBER"},
 							{Name: "NAME", Type: "VARCHAR2(255)"},
 							{Name: "CREATOR", Type: "VARCHAR2(255)"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "TECH_BOOK_PK", Expressions: []string{"ID", "NAME"}, Unique: true, Primary: true},
 							{Name: "IDX_TECH_BOOK_NAME", Expressions: []string{"ID", "NAME"}},
 						},
 					},
 					{
 						Name: "ORDERS",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "ORDER_ID", Type: "NUMBER"},
 							{Name: "CUSTOMER_NAME", Type: "VARCHAR2(255)"},
 							{Name: "AMOUNT", Type: "NUMBER"},
 							{Name: "NOTE", Type: "VARCHAR2(255)"},
 							{Name: "NAME", Type: "VARCHAR2(255)"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "ORDERS_PK", Expressions: []string{"ORDER_ID"}, Unique: true, Primary: true},
 							{Name: "IDX_ORDERS_CUSTOMER", Expressions: []string{"CUSTOMER_NAME"}},
 							{Name: "IDX_ORDERS_AMOUNT", Expressions: []string{"AMOUNT"}},
@@ -301,26 +302,26 @@ var (
 					},
 					{
 						Name: "PRODUCTS",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "PRODUCT_ID", Type: "NUMBER"},
 							{Name: "TITLE", Type: "VARCHAR2(255)"},
 							{Name: "PRICE", Type: "NUMBER"},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "PRODUCTS_PK", Expressions: []string{"PRODUCT_ID"}, Unique: true, Primary: true},
 							{Name: "IDX_PRODUCTS_PRICE", Expressions: []string{"PRICE"}},
 						},
 					},
 					{
 						Name: "NO_INDEX_TABLE",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "COL_A", Type: "NUMBER"},
 							{Name: "COL_B", Type: "VARCHAR2(255)"},
 						},
 					},
 					{
 						Name: "INSERT_TARGET",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "ID", Type: "NUMBER"},
 							{Name: "NAME", Type: "VARCHAR2(255)"},
 						},
@@ -366,7 +367,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 	sm := sheet.NewManager()
 	for i, tc := range tests {
 		// Set metadata and database-specific settings based on engine type
-		var schemaMetadata *storepb.DatabaseSchemaMetadata
+		var schemaMetadata *metadatapb.DatabaseSchemaMetadata
 		curDB := "TEST_DB"
 		isCaseSensitive := false
 
@@ -393,13 +394,13 @@ func RunSQLReviewRuleTest(t *testing.T, rule *storepb.SQLReviewRule, dbType stor
 
 		// Create OriginalMetadata as DatabaseMetadata (read-only)
 		// Clone to avoid mutations affecting future test cases
-		metadata, ok := proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
+		metadata, ok := proto.Clone(schemaMetadata).(*metadatapb.DatabaseSchemaMetadata)
 		require.True(t, ok, "failed to clone metadata")
 		originalMetadata := model.NewDatabaseMetadata(metadata, nil, nil, dbType, isCaseSensitive)
 
 		// Create FinalMetadata as DatabaseMetadata (mutable for walk-through)
 		// Clone to avoid mutations affecting future test cases
-		metadata, ok = proto.Clone(schemaMetadata).(*storepb.DatabaseSchemaMetadata)
+		metadata, ok = proto.Clone(schemaMetadata).(*metadatapb.DatabaseSchemaMetadata)
 		require.True(t, ok, "failed to clone metadata")
 		finalMetadata := model.NewDatabaseMetadata(metadata, nil, nil, dbType, isCaseSensitive)
 
@@ -505,11 +506,11 @@ func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, 
 }
 
 // SyncDBSchema implements the Driver interface.
-func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (*MockDriver) SyncDBSchema(_ context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	return nil, nil
 }
 
 // Dump implements the Driver interface.
-func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (*MockDriver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }

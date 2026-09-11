@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -141,15 +142,15 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 		return "", nil, nil
 	}
 
-	return "db", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	return "db", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: databaseName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t1",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "c1",
 							},
@@ -157,7 +158,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 					},
 					{
 						Name: "t2",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "c1",
 							},
@@ -167,7 +168,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name: "v1",
 						Definition: `CREATE VIEW v1 AS

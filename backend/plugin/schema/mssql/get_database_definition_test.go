@@ -4,13 +4,13 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/yamltest"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -34,7 +34,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 
 	for i, tc := range tests {
 		t.Run(tc.Description, func(t *testing.T) {
-			var metadata storepb.DatabaseSchemaMetadata
+			var metadata metadatapb.DatabaseSchemaMetadata
 			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
 
 			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadata)

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver/v4"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/lib/pq"
 	"github.com/pkg/errors"
 
@@ -39,7 +40,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var filteredDatabases []*storepb.DatabaseSchemaMetadata
+	var filteredDatabases []*metadatapb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		// Skip all system databases
 		if pgparser.IsSystemDatabase(database.Name) {
@@ -58,14 +59,14 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	// Query db info
 	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var databaseMetadata *storepb.DatabaseSchemaMetadata
+	var databaseMetadata *metadatapb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		if database.Name == d.databaseName {
 			databaseMetadata = database
@@ -141,7 +142,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
-	var tablePartitionMap map[db.TableKey][]*storepb.TablePartitionMetadata
+	var tablePartitionMap map[db.TableKey][]*metadatapb.TablePartitionMetadata
 	if isAtLeastPG10 {
 		tablePartitionMap, err = getTablePartitions(txn, indexMap, checksMap, excludesMap)
 		if err != nil {
@@ -213,7 +214,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			key := db.TableKey{Schema: schemaName, Table: view.Name}
 			view.Rules = ruleMap[key]
 		}
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &metadatapb.SchemaMetadata{
 			Name:              schemaName,
 			Tables:            tables,
 			ExternalTables:    externalTableMap[schemaName],
@@ -234,7 +235,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	return databaseMetadata, err
 }
 
-func warpTablePartitions(m map[db.TableKey][]*storepb.TablePartitionMetadata, schemaName, tableName string) []*storepb.TablePartitionMetadata {
+func warpTablePartitions(m map[db.TableKey][]*metadatapb.TablePartitionMetadata, schemaName, tableName string) []*metadatapb.TablePartitionMetadata {
 	key := db.TableKey{Schema: schemaName, Table: tableName}
 	if partitions, exists := m[key]; exists {
 		defer delete(m, key)
@@ -243,7 +244,7 @@ func warpTablePartitions(m map[db.TableKey][]*storepb.TablePartitionMetadata, sc
 		}
 		return partitions
 	}
-	return []*storepb.TablePartitionMetadata{}
+	return []*metadatapb.TablePartitionMetadata{}
 }
 
 var listExtensionDependQuery = `
@@ -286,8 +287,8 @@ SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true
         AND nsp.nspname NOT LIKE 'pg_toast%%'
         ORDER BY nsp.nspname, rel.relname, con.conname`, pgparser.SystemSchemaWhereClause)
 
-func getChecks(txn *sql.Tx) (map[db.TableKey][]*storepb.CheckConstraintMetadata, error) {
-	checksMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
+func getChecks(txn *sql.Tx) (map[db.TableKey][]*metadatapb.CheckConstraintMetadata, error) {
+	checksMap := make(map[db.TableKey][]*metadatapb.CheckConstraintMetadata)
 	rows, err := txn.Query(listCheckQuery)
 	if err != nil {
 		return nil, err
@@ -295,7 +296,7 @@ func getChecks(txn *sql.Tx) (map[db.TableKey][]*storepb.CheckConstraintMetadata,
 	defer rows.Close()
 
 	for rows.Next() {
-		var checkMetadata storepb.CheckConstraintMetadata
+		var checkMetadata metadatapb.CheckConstraintMetadata
 		var schemaName, tableName, checkDefinition string
 		if err := rows.Scan(&schemaName, &tableName, &checkMetadata.Name, &checkDefinition); err != nil {
 			return nil, err
@@ -320,8 +321,8 @@ SELECT nsp.nspname, rel.relname, con.conname, pg_get_constraintdef(con.oid, true
         AND nsp.nspname NOT LIKE 'pg_temp%%'
         AND nsp.nspname NOT LIKE 'pg_toast%%'`, pgparser.SystemSchemaWhereClause)
 
-func getExcludeConstraints(txn *sql.Tx) (map[db.TableKey][]*storepb.ExcludeConstraintMetadata, error) {
-	excludesMap := make(map[db.TableKey][]*storepb.ExcludeConstraintMetadata)
+func getExcludeConstraints(txn *sql.Tx) (map[db.TableKey][]*metadatapb.ExcludeConstraintMetadata, error) {
+	excludesMap := make(map[db.TableKey][]*metadatapb.ExcludeConstraintMetadata)
 	rows, err := txn.Query(listExcludeConstraintsQuery)
 	if err != nil {
 		return nil, err
@@ -329,7 +330,7 @@ func getExcludeConstraints(txn *sql.Tx) (map[db.TableKey][]*storepb.ExcludeConst
 	defer rows.Close()
 
 	for rows.Next() {
-		var excludeMetadata storepb.ExcludeConstraintMetadata
+		var excludeMetadata metadatapb.ExcludeConstraintMetadata
 		var schemaName, tableName string
 		if err := rows.Scan(&schemaName, &tableName, &excludeMetadata.Name, &excludeMetadata.Expression); err != nil {
 			return nil, err
@@ -371,8 +372,8 @@ WHERE
 	AND c.conparentid = 0
 ORDER BY fk_schema, fk_table, fk_name;`, pgparser.SystemSchemaWhereClause)
 
-func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
-	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
+	foreignKeysMap := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
 	rows, err := txn.Query(listForeignKeyQuery)
 	if err != nil {
 		return nil, err
@@ -380,7 +381,7 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 	defer rows.Close()
 
 	for rows.Next() {
-		var fkMetadata storepb.ForeignKeyMetadata
+		var fkMetadata metadatapb.ForeignKeyMetadata
 		var fkSchema, fkTable, fkDefinition string
 		var fkRefSchema sql.NullString
 		if err := rows.Scan(
@@ -578,13 +579,13 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 func getTables(
 	txn *sql.Tx,
 	isAtLeastPG10 bool,
-	columnMap map[db.TableKey][]*storepb.ColumnMetadata,
-	indexMap map[db.TableKey][]*storepb.IndexMetadata,
-	triggerMap map[db.TableKey][]*storepb.TriggerMetadata,
-	checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata,
-	excludesMap map[db.TableKey][]*storepb.ExcludeConstraintMetadata,
+	columnMap map[db.TableKey][]*metadatapb.ColumnMetadata,
+	indexMap map[db.TableKey][]*metadatapb.IndexMetadata,
+	triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata,
+	checksMap map[db.TableKey][]*metadatapb.CheckConstraintMetadata,
+	excludesMap map[db.TableKey][]*metadatapb.ExcludeConstraintMetadata,
 	extensionDepend map[int]bool,
-) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, map[int]*db.TableKeyWithColumns, error) {
+) (map[string][]*metadatapb.TableMetadata, map[string][]*metadatapb.ExternalTableMetadata, map[int]*db.TableKeyWithColumns, error) {
 	foreignKeysMap, err := getForeignKeys(txn)
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to get foreign keys")
@@ -594,7 +595,7 @@ func getTables(
 		return nil, nil, nil, errors.Wrapf(err, "failed to get foreign tables")
 	}
 
-	tableMap := make(map[string][]*storepb.TableMetadata)
+	tableMap := make(map[string][]*metadatapb.TableMetadata)
 	tableOidMap := make(map[int]*db.TableKeyWithColumns)
 	query := getListTableQuery(isAtLeastPG10)
 	rows, err := txn.Query(query)
@@ -604,7 +605,7 @@ func getTables(
 	defer rows.Close()
 
 	for rows.Next() {
-		table := &storepb.TableMetadata{}
+		table := &metadatapb.TableMetadata{}
 		var oid int
 		var schemaName string
 		var dataSize, indexSize sql.NullInt64
@@ -644,7 +645,7 @@ func getTables(
 	return tableMap, foreignTablesMap, tableOidMap, nil
 }
 
-func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ExternalTableMetadata, error) {
+func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata) (map[string][]*metadatapb.ExternalTableMetadata, error) {
 	query := getListForeignTableQuery()
 	rows, err := txn.Query(query)
 	if err != nil {
@@ -654,7 +655,7 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 	}
 	defer rows.Close()
 
-	foreignTablesMap := make(map[string][]*storepb.ExternalTableMetadata)
+	foreignTablesMap := make(map[string][]*metadatapb.ExternalTableMetadata)
 
 	for rows.Next() {
 		var schemaName, tableName, foreignServerCatalog, foreignServerName string
@@ -662,7 +663,7 @@ func getForeignTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMe
 			slog.Error("failed to scan foreign table: %v", log.BBError(err))
 			return nil, nil
 		}
-		externalTable := &storepb.ExternalTableMetadata{
+		externalTable := &metadatapb.ExternalTableMetadata{
 			Name:                 tableName,
 			ExternalServerName:   foreignServerName,
 			ExternalDatabaseName: foreignServerCatalog,
@@ -707,8 +708,8 @@ WHERE
 	AND n.nspname NOT LIKE 'pg_toast%%'
 ORDER BY c.oid;`, pgparser.SystemSchemaWhereClause)
 
-func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, checksMap map[db.TableKey][]*storepb.CheckConstraintMetadata, excludesMap map[db.TableKey][]*storepb.ExcludeConstraintMetadata) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
-	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
+func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*metadatapb.IndexMetadata, checksMap map[db.TableKey][]*metadatapb.CheckConstraintMetadata, excludesMap map[db.TableKey][]*metadatapb.ExcludeConstraintMetadata) (map[db.TableKey][]*metadatapb.TablePartitionMetadata, error) {
+	result := make(map[db.TableKey][]*metadatapb.TablePartitionMetadata)
 	rows, err := txn.Query(listTablePartitionQuery)
 	if err != nil {
 		return nil, err
@@ -725,7 +726,7 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 		}
 		key := db.TableKey{Schema: schemaName, Table: tableName}
 		inhKey := db.TableKey{Schema: inhSchemaName, Table: inhTableName}
-		metadata := &storepb.TablePartitionMetadata{
+		metadata := &metadatapb.TablePartitionMetadata{
 			Name:               tableName,
 			Expression:         partKeyDef,
 			Value:              relPartBound,
@@ -735,11 +736,11 @@ func getTablePartitions(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMe
 		}
 		switch strings.ToLower(partitionType) {
 		case "l":
-			metadata.Type = storepb.TablePartitionMetadata_LIST
+			metadata.Type = metadatapb.TablePartitionMetadata_LIST
 		case "r":
-			metadata.Type = storepb.TablePartitionMetadata_RANGE
+			metadata.Type = metadatapb.TablePartitionMetadata_RANGE
 		case "h":
-			metadata.Type = storepb.TablePartitionMetadata_HASH
+			metadata.Type = metadatapb.TablePartitionMetadata_HASH
 		default:
 			return nil, errors.Errorf("invalid partition type %q", partitionType)
 		}
@@ -867,15 +868,15 @@ ORDER BY nc.nspname, c.relname, a.attnum;`, columnDefault, pgparser.SystemSchema
 }
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx, isAtLeastPG12 bool) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
-	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+func getTableColumns(txn *sql.Tx, isAtLeastPG12 bool) (map[db.TableKey][]*metadatapb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 	rows, err := txn.Query(getListColumnQuery(isAtLeastPG12))
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
 		var characterMaxLength, numericPrecision, numericScale, datetimePrecision, defaultStr, collation, udtSchema, udtName, identityGeneration, comment sql.NullString
 		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &numericPrecision, &numericScale, &datetimePrecision, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &identityGeneration, &comment); err != nil {
@@ -941,9 +942,9 @@ func getTableColumns(txn *sql.Tx, isAtLeastPG12 bool) (map[db.TableKey][]*storep
 		if identityGeneration.Valid {
 			switch strings.ToUpper(identityGeneration.String) {
 			case "ALWAYS":
-				column.IdentityGeneration = storepb.ColumnMetadata_ALWAYS
+				column.IdentityGeneration = metadatapb.ColumnMetadata_ALWAYS
 			case "BY DEFAULT":
-				column.IdentityGeneration = storepb.ColumnMetadata_BY_DEFAULT
+				column.IdentityGeneration = metadatapb.ColumnMetadata_BY_DEFAULT
 			default:
 				// Keep the default value
 			}
@@ -969,8 +970,8 @@ WHERE m.schemaname NOT IN (%s)
   AND m.schemaname NOT LIKE 'pg_toast%%'
 ORDER BY m.schemaname, m.matviewname;`, pgparser.SystemSchemaWhereClause)
 
-func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.IndexMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.MaterializedViewMetadata, map[int]*db.TableKey, error) {
-	matviewMap := make(map[string][]*storepb.MaterializedViewMetadata)
+func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*metadatapb.IndexMetadata, triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*metadatapb.MaterializedViewMetadata, map[int]*db.TableKey, error) {
+	matviewMap := make(map[string][]*metadatapb.MaterializedViewMetadata)
 	materializedViewOidMap := make(map[int]*db.TableKey)
 
 	rows, err := txn.Query(listMaterializedViewQuery)
@@ -979,7 +980,7 @@ func getMaterializedViews(txn *sql.Tx, indexMap map[db.TableKey][]*storepb.Index
 	}
 	defer rows.Close()
 	for rows.Next() {
-		matview := &storepb.MaterializedViewMetadata{}
+		matview := &metadatapb.MaterializedViewMetadata{}
 		var oid int
 		var schemaName string
 		var def, comment sql.NullString
@@ -1037,8 +1038,8 @@ WHERE v.schemaname NOT IN (%s)
 ORDER BY v.schemaname, v.viewname;`, pgparser.SystemSchemaWhereClause)
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*storepb.ViewMetadata, map[int]*db.TableKey, error) {
-	viewMap := make(map[string][]*storepb.ViewMetadata)
+func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata, triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata, extensionDepend map[int]bool) (map[string][]*metadatapb.ViewMetadata, map[int]*db.TableKey, error) {
+	viewMap := make(map[string][]*metadatapb.ViewMetadata)
 	viewOidMap := make(map[int]*db.TableKey)
 
 	rows, err := txn.Query(listViewQuery)
@@ -1047,7 +1048,7 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 	}
 	defer rows.Close()
 	for rows.Next() {
-		view := &storepb.ViewMetadata{}
+		view := &metadatapb.ViewMetadata{}
 		var oid int
 		var schemaName string
 		var def, comment sql.NullString
@@ -1097,8 +1098,8 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata, 
 }
 
 // getViewDependencies gets the dependencies of a view.
-func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.DependencyColumn, error) {
-	var result []*storepb.DependencyColumn
+func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*metadatapb.DependencyColumn, error) {
+	var result []*metadatapb.DependencyColumn
 
 	query := fmt.Sprintf(`
 		SELECT source_ns.nspname as source_schema,
@@ -1127,7 +1128,7 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 	}
 	defer rows.Close()
 	for rows.Next() {
-		dependencyColumn := &storepb.DependencyColumn{}
+		dependencyColumn := &metadatapb.DependencyColumn{}
 		if err := rows.Scan(&dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
 			return nil, err
 		}
@@ -1140,8 +1141,8 @@ func getViewDependencies(txn *sql.Tx, schemaName, viewName string) ([]*storepb.D
 }
 
 // getRules gets all rules for tables and views in a database.
-func getRules(txn *sql.Tx) (map[db.TableKey][]*storepb.RuleMetadata, error) {
-	ruleMap := make(map[db.TableKey][]*storepb.RuleMetadata)
+func getRules(txn *sql.Tx) (map[db.TableKey][]*metadatapb.RuleMetadata, error) {
+	ruleMap := make(map[db.TableKey][]*metadatapb.RuleMetadata)
 
 	// Use CTE to avoid calling pg_get_ruledef multiple times per row.
 	// Extract condition from definition using string functions instead of pg_get_expr,
@@ -1196,7 +1197,7 @@ func getRules(txn *sql.Tx) (map[db.TableKey][]*storepb.RuleMetadata, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		rule := &storepb.RuleMetadata{}
+		rule := &metadatapb.RuleMetadata{}
 		var schemaName, tableName string
 		var condition sql.NullString
 
@@ -1234,8 +1235,8 @@ func getRules(txn *sql.Tx) (map[db.TableKey][]*storepb.RuleMetadata, error) {
 }
 
 // getExtensions gets all extensions of a database.
-func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
-	var extensions []*storepb.ExtensionMetadata
+func getExtensions(txn *sql.Tx) ([]*metadatapb.ExtensionMetadata, error) {
+	var extensions []*metadatapb.ExtensionMetadata
 
 	query := `
 		SELECT e.extname, e.extversion, n.nspname, c.description
@@ -1250,7 +1251,7 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		e := &storepb.ExtensionMetadata{}
+		e := &metadatapb.ExtensionMetadata{}
 		var description sql.NullString
 		if err := rows.Scan(&e.Name, &e.Version, &e.Schema, &description); err != nil {
 			return nil, err
@@ -1267,7 +1268,7 @@ func getExtensions(txn *sql.Tx) ([]*storepb.ExtensionMetadata, error) {
 	return extensions, nil
 }
 
-func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.EnumTypeMetadata, error) {
+func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*metadatapb.EnumTypeMetadata, error) {
 	query := `
 	SELECT
 		pt.oid,
@@ -1288,7 +1289,7 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 	}
 	defer rows.Close()
 
-	enumTypes := make(map[string][]*storepb.EnumTypeMetadata)
+	enumTypes := make(map[string][]*metadatapb.EnumTypeMetadata)
 	currentEnumSchema := ""
 	currentEnumNmae := ""
 	currentEnumComment := ""
@@ -1304,7 +1305,7 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 
 		if currentEnumSchema != schemaName || currentEnumNmae != enumName {
 			if currentEnumSchema != "" {
-				enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &storepb.EnumTypeMetadata{
+				enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &metadatapb.EnumTypeMetadata{
 					Name:     currentEnumNmae,
 					Values:   currentEnumValues,
 					Comment:  currentEnumComment,
@@ -1328,7 +1329,7 @@ func getEnumTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*stor
 	}
 
 	if currentEnumSchema != "" {
-		enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &storepb.EnumTypeMetadata{
+		enumTypes[currentEnumSchema] = append(enumTypes[currentEnumSchema], &metadatapb.EnumTypeMetadata{
 			Name:     currentEnumNmae,
 			Values:   currentEnumValues,
 			Comment:  currentEnumComment,
@@ -1379,15 +1380,15 @@ const listCompositeTypeQuery = `
 	  AND pn.nspname NOT LIKE 'pg_toast%'
 	ORDER BY pn.nspname, pt.typname, a.attnum;`
 
-func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*storepb.CompositeTypeMetadata, error) {
+func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]*metadatapb.CompositeTypeMetadata, error) {
 	rows, err := txn.Query(listCompositeTypeQuery)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	compositeTypes := make(map[string][]*storepb.CompositeTypeMetadata)
-	var current *storepb.CompositeTypeMetadata
+	compositeTypes := make(map[string][]*metadatapb.CompositeTypeMetadata)
+	var current *metadatapb.CompositeTypeMetadata
 	currentSchema := ""
 	for rows.Next() {
 		var typeOid, classOid int
@@ -1401,7 +1402,7 @@ func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]
 		}
 
 		if current == nil || currentSchema != schemaName || current.Name != typeName {
-			current = &storepb.CompositeTypeMetadata{
+			current = &metadatapb.CompositeTypeMetadata{
 				Name:     typeName,
 				Comment:  typeComment.String,
 				SkipDump: extensionDepend[typeOid] || extensionDepend[classOid],
@@ -1414,7 +1415,7 @@ func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]
 		if !attributeName.Valid {
 			continue
 		}
-		current.Attributes = append(current.Attributes, &storepb.CompositeTypeAttribute{
+		current.Attributes = append(current.Attributes, &metadatapb.CompositeTypeAttribute{
 			Name:      attributeName.String,
 			Type:      attributeType.String,
 			Collation: attributeCollation.String,
@@ -1429,7 +1430,7 @@ func getCompositeTypes(txn *sql.Tx, extensionDepend map[int]bool) (map[string][]
 }
 
 // getSequences gets all sequences of a database.
-func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, extensionDepend map[int]bool) (map[string][]*storepb.SequenceMetadata, error) {
+func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, extensionDepend map[int]bool) (map[string][]*metadatapb.SequenceMetadata, error) {
 	sequenceOwnerMap, err := getSequenceOwners(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get sequence owners")
@@ -1461,7 +1462,7 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 		return nil, err
 	}
 	defer rows.Close()
-	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	sequenceMap := make(map[string][]*metadatapb.SequenceMetadata)
 	for rows.Next() {
 		var oid int
 		var schemaName, sequenceName, dataType string
@@ -1484,7 +1485,7 @@ func getSequences(txn *sql.Tx, tableOidMap map[int]*db.TableKeyWithColumns, exte
 		if comment.Valid {
 			sequenceComment = comment.String
 		}
-		sequence := &storepb.SequenceMetadata{
+		sequence := &metadatapb.SequenceMetadata{
 			Name:      sequenceName,
 			DataType:  dataType,
 			Start:     strconv.FormatInt(startValue, 10),
@@ -1554,7 +1555,7 @@ func getSequenceOwners(txn *sql.Tx) (map[int]ColumnOidKey, error) {
 	return sequenceOwnerMap, nil
 }
 
-func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*storepb.TriggerMetadata, error) {
+func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*metadatapb.TriggerMetadata, error) {
 	query := `
 	SELECT
 		pt.oid,
@@ -1574,9 +1575,9 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 	}
 	defer rows.Close()
 
-	triggersMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
+	triggersMap := make(map[db.TableKey][]*metadatapb.TriggerMetadata)
 	for rows.Next() {
-		trigger := &storepb.TriggerMetadata{}
+		trigger := &metadatapb.TriggerMetadata{}
 		var oid int
 		var schemaName, tableName string
 		var comment sql.NullString
@@ -1599,7 +1600,7 @@ func getTriggers(txn *sql.Tx, extensionDepend map[int]bool) (map[db.TableKey][]*
 	return triggersMap, nil
 }
 
-func getEventTriggers(txn *sql.Tx, extensionDepend map[int]bool) ([]*storepb.EventTriggerMetadata, error) {
+func getEventTriggers(txn *sql.Tx, extensionDepend map[int]bool) ([]*metadatapb.EventTriggerMetadata, error) {
 	query := `
 	SELECT
 		et.oid,
@@ -1621,7 +1622,7 @@ func getEventTriggers(txn *sql.Tx, extensionDepend map[int]bool) ([]*storepb.Eve
 	}
 	defer rows.Close()
 
-	var eventTriggers []*storepb.EventTriggerMetadata
+	var eventTriggers []*metadatapb.EventTriggerMetadata
 	for rows.Next() {
 		var oid int
 		var name, eventType, functionSchema, functionName, enabled string
@@ -1633,7 +1634,7 @@ func getEventTriggers(txn *sql.Tx, extensionDepend map[int]bool) ([]*storepb.Eve
 			return nil, err
 		}
 
-		eventTrigger := &storepb.EventTriggerMetadata{
+		eventTrigger := &metadatapb.EventTriggerMetadata{
 			Name:           name,
 			Event:          eventType,
 			Tags:           []string(tags),
@@ -1664,7 +1665,7 @@ func getEventTriggers(txn *sql.Tx, extensionDepend map[int]bool) ([]*storepb.Eve
 }
 
 // buildEventTriggerDefinition constructs the CREATE EVENT TRIGGER statement from metadata.
-func buildEventTriggerDefinition(et *storepb.EventTriggerMetadata) string {
+func buildEventTriggerDefinition(et *metadatapb.EventTriggerMetadata) string {
 	var buf strings.Builder
 	buf.WriteString("CREATE EVENT TRIGGER ")
 	fmt.Fprintf(&buf, "%q", et.Name)
@@ -1774,8 +1775,8 @@ func parseIndexOptions(optionsStr string, keyCount int) ([]bool, []bool) {
 }
 
 // getIndexes gets all indices of a database.
-func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (map[db.TableKey][]*storepb.IndexMetadata, error) {
-	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
+func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (map[db.TableKey][]*metadatapb.IndexMetadata, error) {
+	indexMap := make(map[db.TableKey][]*metadatapb.IndexMetadata)
 
 	rows, err := txn.Query(listIndexQuery)
 	if err != nil {
@@ -1783,7 +1784,7 @@ func getIndexes(txn *sql.Tx, indexInheritanceMap map[db.IndexKey]*db.IndexKey) (
 	}
 	defer rows.Close()
 	for rows.Next() {
-		index := &storepb.IndexMetadata{}
+		index := &metadatapb.IndexMetadata{}
 		var schemaName, tableName, indexMethod, indexDefinition string
 		var isUnique, isPrimary, isConstraint bool
 		var keyExpressions pq.StringArray
@@ -1918,8 +1919,8 @@ func getFunctions(
 	tableOidMap map[int]*db.TableKeyWithColumns,
 	viewOidMap, materializedViewOidMap map[int]*db.TableKey,
 	extensionDepend map[int]bool,
-) (map[string][]*storepb.FunctionMetadata, error) {
-	functionMap := make(map[string][]*storepb.FunctionMetadata)
+) (map[string][]*metadatapb.FunctionMetadata, error) {
+	functionMap := make(map[string][]*metadatapb.FunctionMetadata)
 
 	rows, err := txn.Query(listFunctionQuery)
 	if err != nil {
@@ -1927,7 +1928,7 @@ func getFunctions(
 	}
 	defer rows.Close()
 	for rows.Next() {
-		function := &storepb.FunctionMetadata{}
+		function := &metadatapb.FunctionMetadata{}
 		var oid int
 		var schemaName, arguments string
 		var comment sql.NullString
@@ -1948,17 +1949,17 @@ func getFunctions(
 		function.Signature = fmt.Sprintf("%s(%s)", function.Name, arguments)
 		for _, tableOid := range functionDependencyTables[oid] {
 			if table, ok := tableOidMap[tableOid]; ok {
-				function.DependencyTables = append(function.DependencyTables, &storepb.DependencyTable{
+				function.DependencyTables = append(function.DependencyTables, &metadatapb.DependencyTable{
 					Schema: table.Schema,
 					Table:  table.Table,
 				})
 			} else if view, ok := viewOidMap[tableOid]; ok {
-				function.DependencyTables = append(function.DependencyTables, &storepb.DependencyTable{
+				function.DependencyTables = append(function.DependencyTables, &metadatapb.DependencyTable{
 					Schema: view.Schema,
 					Table:  view.Table,
 				})
 			} else if matview, ok := materializedViewOidMap[tableOid]; ok {
-				function.DependencyTables = append(function.DependencyTables, &storepb.DependencyTable{
+				function.DependencyTables = append(function.DependencyTables, &metadatapb.DependencyTable{
 					Schema: matview.Schema,
 					Table:  matview.Table,
 				})

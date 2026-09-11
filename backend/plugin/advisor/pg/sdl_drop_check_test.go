@@ -3,6 +3,7 @@ package pg
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -48,7 +49,7 @@ func TestCheckSDLDropOperations(t *testing.T) {
 						ColumnChanges: []*schema.ColumnDiff{
 							{
 								Action: schema.MetadataDiffActionDrop,
-								OldColumn: &storepb.ColumnMetadata{
+								OldColumn: &metadatapb.ColumnMetadata{
 									Name: "email",
 								},
 							},
@@ -105,7 +106,7 @@ func TestCheckSDLDropOperations(t *testing.T) {
 						ForeignKeyChanges: []*schema.ForeignKeyDiff{
 							{
 								Action: schema.MetadataDiffActionDrop,
-								OldForeignKey: &storepb.ForeignKeyMetadata{
+								OldForeignKey: &metadatapb.ForeignKeyMetadata{
 									Name: "fk_users_teams",
 								},
 							},
@@ -193,7 +194,7 @@ func TestCheckSDLDropOperations(t *testing.T) {
 						ColumnChanges: []*schema.ColumnDiff{
 							{
 								Action: schema.MetadataDiffActionDrop,
-								OldColumn: &storepb.ColumnMetadata{
+								OldColumn: &metadatapb.ColumnMetadata{
 									Name: "legacy_field",
 								},
 							},

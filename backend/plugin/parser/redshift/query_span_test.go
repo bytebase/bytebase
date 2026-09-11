@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -541,32 +542,32 @@ func TestRedshiftOmniQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 	})
 
 	t.Run("view definition resolves unqualified dependencies from view schema", func(t *testing.T) {
-		metadata := &storepb.DatabaseSchemaMetadata{
+		metadata := &metadatapb.DatabaseSchemaMetadata{
 			Name:       "db",
 			SearchPath: "analytics, public",
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name: "public",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						{
 							Name:    "orders",
-							Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "int"}},
+							Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
 						},
 					},
-					Views: []*storepb.ViewMetadata{
+					Views: []*metadatapb.ViewMetadata{
 						{
 							Name:       "unqualified_orders_view",
 							Definition: "CREATE VIEW public.unqualified_orders_view AS SELECT id FROM orders;",
-							Columns:    []*storepb.ColumnMetadata{{Name: "id", Type: "int"}},
+							Columns:    []*metadatapb.ColumnMetadata{{Name: "id", Type: "int"}},
 						},
 					},
 				},
 				{
 					Name: "analytics",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						{
 							Name: "orders",
-							Columns: []*storepb.ColumnMetadata{
+							Columns: []*metadatapb.ColumnMetadata{
 								{Name: "id", Type: "int"},
 								{Name: "event_id", Type: "int"},
 							},
@@ -575,7 +576,7 @@ func TestRedshiftOmniQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 				},
 			},
 		}
-		getter, lister := redshiftMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+		getter, lister := redshiftMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 		localQ := newOmniQuerySpanExtractor("db", []string{"analytics", "public"}, base.GetQuerySpanContext{
 			GetDatabaseMetadataFunc: getter,
 			ListDatabaseNamesFunc:   lister,
@@ -706,24 +707,24 @@ func TestRedshiftOmniQuerySpanMetadataAndErrorCoverage(t *testing.T) {
 
 func redshiftOmniQuerySpanContext(t *testing.T) base.GetQuerySpanContext {
 	t.Helper()
-	getter, lister := redshiftMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{redshiftOmniQuerySpanMetadata()})
+	getter, lister := redshiftMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{redshiftOmniQuerySpanMetadata()})
 	return base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
 	}
 }
 
-func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func redshiftOmniQuerySpanMetadata() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name:       "db",
 		SearchPath: "analytics, public",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 							{Name: "amount", Type: "numeric"},
 							{Name: "tax", Type: "numeric"},
@@ -733,7 +734,7 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 					},
 					{
 						Name: "customers",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 							{Name: "name", Type: "varchar"},
 							{Name: "region", Type: "varchar"},
@@ -741,7 +742,7 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 					},
 					{
 						Name: "line_items",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 							{Name: "order_id", Type: "int"},
 							{Name: "sku", Type: "varchar"},
@@ -749,17 +750,17 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 					},
 					{
 						Name: "keyword_table",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "select", Type: "int"},
 							{Name: "Camel", Type: "int"},
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "active_orders",
 						Definition: "CREATE VIEW public.active_orders AS SELECT id, amount FROM public.orders WHERE status = 'open';",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 							{Name: "amount", Type: "numeric"},
 						},
@@ -767,13 +768,13 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 					{
 						Name:       "a_view",
 						Definition: "CREATE VIEW public.a_view AS SELECT id FROM public.z_view;",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 						},
 					},
 					{
 						Name: "fallback_view",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 							{Name: "amount", Type: "numeric"},
 						},
@@ -781,19 +782,19 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 					{
 						Name:       "z_view",
 						Definition: "CREATE VIEW public.z_view AS SELECT id FROM public.orders;",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "int"},
 						},
 					},
 					{
 						Name:       "aliased_orders",
 						Definition: "CREATE VIEW public.aliased_orders(order_id) AS SELECT id FROM public.orders;",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "order_id", Type: "int"},
 						},
 					},
 				},
-				MaterializedViews: []*storepb.MaterializedViewMetadata{
+				MaterializedViews: []*metadatapb.MaterializedViewMetadata{
 					{
 						Name:       "order_totals_mv",
 						Definition: "CREATE MATERIALIZED VIEW public.order_totals_mv AS SELECT customer_id, SUM(amount) AS total_amount FROM public.orders GROUP BY customer_id;",
@@ -803,7 +804,7 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 						Definition: "CREATE MATERIALIZED VIEW public.aliased_orders_mv(order_id) AS SELECT id FROM public.orders;",
 					},
 				},
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name:       "reporting_fn",
 						Definition: "CREATE FUNCTION public.reporting_fn() RETURNS int STABLE AS $$ SELECT id FROM public.orders $$ LANGUAGE SQL;",
@@ -820,7 +821,7 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 						Signature:  "unsupported_reporting_fn()",
 					},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name: "order_id_seq",
 					},
@@ -828,16 +829,16 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 			},
 			{
 				Name: "analytics",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "events",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "event_id", Type: "int"},
 							{Name: "order_id", Type: "int"},
 						},
 					},
 				},
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name:       "reporting_fn",
 						Definition: "CREATE FUNCTION analytics.reporting_fn() RETURNS int STABLE AS $$ SELECT event_id FROM analytics.events $$ LANGUAGE SQL;",
@@ -847,10 +848,10 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 			},
 			{
 				Name: "spectrum",
-				ExternalTables: []*storepb.ExternalTableMetadata{
+				ExternalTables: []*metadatapb.ExternalTableMetadata{
 					{
 						Name: "spectrum_orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "external_id", Type: "varchar"},
 						},
 					},
@@ -860,7 +861,7 @@ func redshiftOmniQuerySpanMetadata() *storepb.DatabaseSchemaMetadata {
 	}
 }
 
-func redshiftMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+func redshiftMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			for _, metadata := range databaseMetadata {
 				if metadata.GetName() == databaseName {

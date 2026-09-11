@@ -9,10 +9,10 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -58,9 +58,9 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	for _, schema := range schemas {
-		databases = append(databases, &storepb.DatabaseSchemaMetadata{
+		databases = append(databases, &metadatapb.DatabaseSchemaMetadata{
 			// The driver can hand back raw non-UTF-8 bytes for dictionary
 			// strings on non-UTF-8 charsets (e.g. ZHS16GBK values ending in a
 			// truncated multi-byte character); proto string fields reject them
@@ -81,7 +81,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	txn, err := d.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -130,12 +130,12 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, err
 	}
 
-	databaseMetadata := &storepb.DatabaseSchemaMetadata{
+	databaseMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name:            d.databaseName,
 		ServiceName:     d.serviceName,
 		LinkedDatabases: dbLinks,
 	}
-	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &metadatapb.SchemaMetadata{
 		Name:              "",
 		Tables:            tableMap[d.databaseName],
 		Views:             viewMap[d.databaseName],
@@ -154,7 +154,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	return databaseMetadata, nil
 }
 
-func getDBLinks(txn *sql.Tx) ([]*storepb.LinkedDatabaseMetadata, error) {
+func getDBLinks(txn *sql.Tx) ([]*metadatapb.LinkedDatabaseMetadata, error) {
 	query := `
 	SELECT DB_LINK, HOST, USERNAME
 	FROM all_db_links
@@ -166,9 +166,9 @@ func getDBLinks(txn *sql.Tx) ([]*storepb.LinkedDatabaseMetadata, error) {
 	}
 	defer rows.Close()
 
-	var result []*storepb.LinkedDatabaseMetadata
+	var result []*metadatapb.LinkedDatabaseMetadata
 	for rows.Next() {
-		dbLink := &storepb.LinkedDatabaseMetadata{}
+		dbLink := &metadatapb.LinkedDatabaseMetadata{}
 		var name, host, username sql.NullString
 		if err := rows.Scan(&name, &host, &username); err != nil {
 			return nil, err
@@ -225,9 +225,9 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 	return result, nil
 }
 
-func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.TriggerMetadata, map[db.TableKey][]*storepb.TriggerMetadata, error) {
-	tableTriggerMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
-	viewTriggerMap := make(map[db.TableKey][]*storepb.TriggerMetadata)
+func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*metadatapb.TriggerMetadata, map[db.TableKey][]*metadatapb.TriggerMetadata, error) {
+	tableTriggerMap := make(map[db.TableKey][]*metadatapb.TriggerMetadata)
+	viewTriggerMap := make(map[db.TableKey][]*metadatapb.TriggerMetadata)
 
 	// Get trigger comments
 	triggerCommentMap, err := getTriggerComments(txn, schemaName)
@@ -257,7 +257,7 @@ func getTriggers(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Tri
 			continue
 		}
 		key := db.TableKey{Schema: schemaName, Table: tableName.String}
-		trigger := &storepb.TriggerMetadata{
+		trigger := &metadatapb.TriggerMetadata{
 			Name: triggerName.String,
 			Body: sanitizeOracleMetadataString(
 				schemaName,
@@ -301,7 +301,7 @@ func constructTriggerBody(description, triggerBody string) string {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata) (map[string][]*storepb.TableMetadata, error) {
+func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata, triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata) (map[string][]*metadatapb.TableMetadata, error) {
 	indexMap, checkConstraintMap, foreignKeyMap, err := getIndexesAndConstraints(txn, schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
@@ -322,7 +322,7 @@ func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*stor
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get table comments")
 	}
-	tableMap := make(map[string][]*storepb.TableMetadata)
+	tableMap := make(map[string][]*metadatapb.TableMetadata)
 
 	query := fmt.Sprintf(`
 		SELECT OWNER, TABLE_NAME, NUM_ROWS
@@ -341,7 +341,7 @@ func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*stor
 	defer rows.Close()
 
 	for rows.Next() {
-		table := &storepb.TableMetadata{}
+		table := &metadatapb.TableMetadata{}
 		var schemaName string
 		// https://github.com/rana/ora/issues/57#issuecomment-179909837
 		// NUMBER in Oracle can hold 38 decimal digits, so int64 is not enough with its 19 decimal digits.
@@ -457,8 +457,8 @@ func getTableColumnComments(txn *sql.Tx, schemaName string) (map[db.ColumnKey]st
 }
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
-	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (map[db.TableKey][]*metadatapb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 
 	// https://github.com/bytebase/bytebase/issues/6663
 	// Invisible columns don't have column ID so that we need to filter out them.
@@ -510,7 +510,7 @@ func getTableColumns(txn *sql.Tx, schemaName string, version *plsql.Version) (ma
 	}
 	defer rows.Close()
 	for rows.Next() {
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
 		var defaultStr, collation, defaultOnNull sql.NullString
 		var dataLength, dataPrecision, dataScale sql.NullInt64
@@ -635,9 +635,9 @@ func getOuterSchemaRColumns(txn *sql.Tx, outerRTableMap map[db.ConstraintKey]str
 }
 
 func getConstraints(txn *sql.Tx, schemaName string) (
-	map[db.TableKey][]*storepb.IndexMetadata,
-	map[db.TableKey][]*storepb.CheckConstraintMetadata,
-	map[db.TableKey][]*storepb.ForeignKeyMetadata,
+	map[db.TableKey][]*metadatapb.IndexMetadata,
+	map[db.TableKey][]*metadatapb.CheckConstraintMetadata,
+	map[db.TableKey][]*metadatapb.ForeignKeyMetadata,
 	map[db.IndexKey]bool,
 	error,
 ) {
@@ -693,9 +693,9 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 		return nil, nil, nil, nil, util.FormatErrorWithQuery(err, queryConstraints)
 	}
 	defer constraintRows.Close()
-	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
-	checkConstraintMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
-	foreignKeyMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	indexMap := make(map[db.TableKey][]*metadatapb.IndexMetadata)
+	checkConstraintMap := make(map[db.TableKey][]*metadatapb.CheckConstraintMetadata)
+	foreignKeyMap := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
 	isConstraint := make(map[db.IndexKey]bool)
 	outerRColumnMap := make(map[db.ConstraintKey][]string)
 	outerRTableMap := make(map[db.ConstraintKey]string)
@@ -709,7 +709,7 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 		constraintKey := db.ConstraintKey{Schema: schemaName, Constraint: constraintName}
 		switch constraintType {
 		case "P":
-			index := &storepb.IndexMetadata{
+			index := &metadatapb.IndexMetadata{
 				Name:         constraintName,
 				Primary:      true,
 				Unique:       true,
@@ -721,7 +721,7 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 			indexMap[key] = append(indexMap[key], index)
 			isConstraint[db.IndexKey{Schema: schemaName, Table: tableName, Index: constraintName}] = true
 		case "U":
-			index := &storepb.IndexMetadata{
+			index := &metadatapb.IndexMetadata{
 				Name:         constraintName,
 				Unique:       true,
 				IsConstraint: true,
@@ -736,7 +736,7 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 			if strings.HasPrefix(constraintName, "SYS_C") {
 				continue
 			}
-			constraint := &storepb.CheckConstraintMetadata{
+			constraint := &metadatapb.CheckConstraintMetadata{
 				Name: constraintName,
 			}
 			if searchCondition.Valid {
@@ -745,7 +745,7 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 			checkConstraintMap[key] = append(checkConstraintMap[key], constraint)
 		case "R":
 			if rOwner.Valid && rConstraintName.Valid {
-				foreignKey := &storepb.ForeignKeyMetadata{
+				foreignKey := &metadatapb.ForeignKeyMetadata{
 					Name:    constraintName,
 					Columns: constraintColumnMap[constraintKey],
 				}
@@ -779,7 +779,7 @@ func getConstraints(txn *sql.Tx, schemaName string) (
 }
 
 // getIndexes gets all indices and constraints of a database.
-func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.IndexMetadata, map[db.TableKey][]*storepb.CheckConstraintMetadata, map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][]*metadatapb.IndexMetadata, map[db.TableKey][]*metadatapb.CheckConstraintMetadata, map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
 	indexMap, checkConstraintMap, foreignKeyMap, isConstraint, err := getConstraints(txn, schemaName)
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to get constraints")
@@ -870,7 +870,7 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 	}
 	defer rows.Close()
 	for rows.Next() {
-		index := &storepb.IndexMetadata{}
+		index := &metadatapb.IndexMetadata{}
 		var schemaName, tableName, unique string
 		var visibility sql.NullString
 		// INDEX_TYPE is NORMAL, or FUNCTION-BASED NORMAL.
@@ -966,8 +966,8 @@ func getIndexesAndConstraints(txn *sql.Tx, schemaName string) (map[db.TableKey][
 }
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata, triggerMap map[db.TableKey][]*storepb.TriggerMetadata) (map[string][]*storepb.ViewMetadata, error) {
-	viewMap := make(map[string][]*storepb.ViewMetadata)
+func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata, triggerMap map[db.TableKey][]*metadatapb.TriggerMetadata) (map[string][]*metadatapb.ViewMetadata, error) {
+	viewMap := make(map[string][]*metadatapb.ViewMetadata)
 
 	// Get view comments
 	viewCommentMap, err := getViewComments(txn, schemaName)
@@ -989,7 +989,7 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 	}
 	defer rows.Close()
 	for rows.Next() {
-		view := &storepb.ViewMetadata{}
+		view := &metadatapb.ViewMetadata{}
 		var schemaName string
 		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
 			return nil, err
@@ -1031,8 +1031,8 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 }
 
 // getAllViewDependencies gets all view dependencies for a schema in a single query.
-func getAllViewDependencies(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.DependencyColumn, error) {
-	dependenciesMap := make(map[db.TableKey][]*storepb.DependencyColumn)
+func getAllViewDependencies(txn *sql.Tx, schemaName string) (map[db.TableKey][]*metadatapb.DependencyColumn, error) {
+	dependenciesMap := make(map[db.TableKey][]*metadatapb.DependencyColumn)
 
 	query := fmt.Sprintf(`
 		SELECT 
@@ -1055,7 +1055,7 @@ func getAllViewDependencies(txn *sql.Tx, schemaName string) (map[db.TableKey][]*
 
 	for rows.Next() {
 		var viewName string
-		dependencyColumn := &storepb.DependencyColumn{}
+		dependencyColumn := &metadatapb.DependencyColumn{}
 		if err := rows.Scan(&viewName, &dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
 			return nil, err
 		}
@@ -1071,8 +1071,8 @@ func getAllViewDependencies(txn *sql.Tx, schemaName string) (map[db.TableKey][]*
 }
 
 // getAllMaterializedViewDependencies gets all materialized view dependencies for a schema in a single query.
-func getAllMaterializedViewDependencies(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.DependencyColumn, error) {
-	dependenciesMap := make(map[db.TableKey][]*storepb.DependencyColumn)
+func getAllMaterializedViewDependencies(txn *sql.Tx, schemaName string) (map[db.TableKey][]*metadatapb.DependencyColumn, error) {
+	dependenciesMap := make(map[db.TableKey][]*metadatapb.DependencyColumn)
 
 	query := fmt.Sprintf(`
 		SELECT 
@@ -1095,7 +1095,7 @@ func getAllMaterializedViewDependencies(txn *sql.Tx, schemaName string) (map[db.
 
 	for rows.Next() {
 		var mviewName string
-		dependencyColumn := &storepb.DependencyColumn{}
+		dependencyColumn := &metadatapb.DependencyColumn{}
 		if err := rows.Scan(&mviewName, &dependencyColumn.Schema, &dependencyColumn.Table, &dependencyColumn.Column); err != nil {
 			return nil, err
 		}
@@ -1111,8 +1111,8 @@ func getAllMaterializedViewDependencies(txn *sql.Tx, schemaName string) (map[db.
 }
 
 // getMaterializedViews gets all materialized views of a database.
-func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*storepb.ColumnMetadata) ([]*storepb.MaterializedViewMetadata, error) {
-	var materializedViews []*storepb.MaterializedViewMetadata
+func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*metadatapb.ColumnMetadata) ([]*metadatapb.MaterializedViewMetadata, error) {
+	var materializedViews []*metadatapb.MaterializedViewMetadata
 
 	// Get materialized view comments
 	materializedViewCommentMap, err := getMaterializedViewComments(txn, schemaName)
@@ -1135,7 +1135,7 @@ func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*s
 	defer rows.Close()
 
 	for rows.Next() {
-		materializedView := &storepb.MaterializedViewMetadata{}
+		materializedView := &metadatapb.MaterializedViewMetadata{}
 		var schemaName string
 		if err := rows.Scan(&schemaName, &materializedView.Name, &materializedView.Definition); err != nil {
 			return nil, err
@@ -1185,8 +1185,8 @@ func getMaterializedViews(txn *sql.Tx, schemaName string, _ map[db.TableKey][]*s
 }
 
 // getSequences gets all sequences of a database.
-func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, error) {
-	var sequences []*storepb.SequenceMetadata
+func getSequences(txn *sql.Tx, schemaName string) ([]*metadatapb.SequenceMetadata, error) {
+	var sequences []*metadatapb.SequenceMetadata
 
 	// Get sequence comments
 	sequenceCommentMap, err := getSequenceComments(txn, schemaName)
@@ -1207,7 +1207,7 @@ func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, 
 	defer rows.Close()
 
 	for rows.Next() {
-		seq := &storepb.SequenceMetadata{}
+		seq := &metadatapb.SequenceMetadata{}
 		if err := rows.Scan(&seq.Name); err != nil {
 			return nil, err
 		}
@@ -1231,10 +1231,10 @@ func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, 
 	return sequences, nil
 }
 
-func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, []*storepb.PackageMetadata, error) {
-	var functions []*storepb.FunctionMetadata
-	var procedures []*storepb.ProcedureMetadata
-	var packages []*storepb.PackageMetadata
+func getRoutines(txn *sql.Tx, schemaName string) ([]*metadatapb.FunctionMetadata, []*metadatapb.ProcedureMetadata, []*metadatapb.PackageMetadata, error) {
+	var functions []*metadatapb.FunctionMetadata
+	var procedures []*metadatapb.ProcedureMetadata
+	var packages []*metadatapb.PackageMetadata
 
 	// Get function comments
 	functionCommentMap, err := getFunctionComments(txn, schemaName)
@@ -1274,7 +1274,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			// Oracle may include a trailing C-string null terminator via the go-ora driver.
 			switch currentType {
 			case "FUNCTION":
-				function := &storepb.FunctionMetadata{
+				function := &metadatapb.FunctionMetadata{
 					Name:       currentName,
 					Definition: sanitizeOracleDefinition(schemaName, "FUNCTION", currentName, strings.Join(defText, "")),
 				}
@@ -1284,12 +1284,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 				}
 				functions = append(functions, function)
 			case "PROCEDURE":
-				procedures = append(procedures, &storepb.ProcedureMetadata{
+				procedures = append(procedures, &metadatapb.ProcedureMetadata{
 					Name:       currentName,
 					Definition: sanitizeOracleDefinition(schemaName, "PROCEDURE", currentName, strings.Join(defText, "")),
 				})
 			case "PACKAGE":
-				packages = append(packages, &storepb.PackageMetadata{
+				packages = append(packages, &metadatapb.PackageMetadata{
 					Name:       currentName,
 					Definition: sanitizeOracleDefinition(schemaName, "PACKAGE", currentName, strings.Join(defText, "")),
 				})
@@ -1304,7 +1304,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	// Oracle may include a trailing C-string null terminator via the go-ora driver.
 	switch currentType {
 	case "FUNCTION":
-		function := &storepb.FunctionMetadata{
+		function := &metadatapb.FunctionMetadata{
 			Name:       currentName,
 			Definition: sanitizeOracleDefinition(schemaName, "FUNCTION", currentName, strings.Join(defText, "")),
 		}
@@ -1314,12 +1314,12 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 		}
 		functions = append(functions, function)
 	case "PROCEDURE":
-		procedures = append(procedures, &storepb.ProcedureMetadata{
+		procedures = append(procedures, &metadatapb.ProcedureMetadata{
 			Name:       currentName,
 			Definition: sanitizeOracleDefinition(schemaName, "PROCEDURE", currentName, strings.Join(defText, "")),
 		})
 	case "PACKAGE":
-		packages = append(packages, &storepb.PackageMetadata{
+		packages = append(packages, &metadatapb.PackageMetadata{
 			Name:       currentName,
 			Definition: sanitizeOracleDefinition(schemaName, "PACKAGE", currentName, strings.Join(defText, "")),
 		})

@@ -7,10 +7,10 @@ import (
 	"runtime/debug"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/pg/catalog"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -35,25 +35,25 @@ func TestLoaderIntegration_BYT9215_BadQuotedIdentifier(t *testing.T) {
 	// deparse-and-reparse loop chokes on. Under the old path this would kill
 	// query span for the entire database. Under the loader, the bad table is
 	// pseudo-installed and unrelated queries succeed.
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{
+			Tables: []*metadatapb.TableMetadata{
 				// A table with a quoted identifier containing an apostrophe —
 				// the kind of input BYT-9215 reported failing under Exec(ddl).
 				// Real install should succeed (no DDL roundtrip), but even if
 				// it didn't, pseudo would catch it.
 				{
 					Name: "'weird'table",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "id", Type: "int4"},
 					},
 				},
 				// An unrelated healthy table.
 				{
 					Name: "accounts",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "id", Type: "int4"},
 						{Name: "email", Type: "text"},
 					},
@@ -74,24 +74,24 @@ func TestLoaderIntegration_BYT9215_BadQuotedIdentifier(t *testing.T) {
 }
 
 func TestGetQuerySpanWithSelectedSchemaFallsBackToPublic(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "app",
 			},
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{{
+				Tables: []*metadatapb.TableMetadata{{
 					Name: "customer",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "ssn", Type: "text"},
 					},
 				}},
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{meta})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{meta})
 	span, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -113,30 +113,30 @@ func TestGetQuerySpanWithSelectedSchemaFallsBackToPublic(t *testing.T) {
 }
 
 func TestGetQuerySpanSelectedSchemaTakesPrecedenceOverPublic(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "app",
-				Tables: []*storepb.TableMetadata{{
+				Tables: []*metadatapb.TableMetadata{{
 					Name: "customer",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "email", Type: "text"},
 					},
 				}},
 			},
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{{
+				Tables: []*metadatapb.TableMetadata{{
 					Name: "customer",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "ssn", Type: "text"},
 					},
 				}},
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{meta})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{meta})
 	span, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -158,13 +158,13 @@ func TestLoaderIntegration_BrokenEnumCascade(t *testing.T) {
 	// not exist in metadata. Real install of the table fails (omni cannot
 	// resolve the type). Pseudo install of the table succeeds with text
 	// columns. Query against the table returns its metadata column names.
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "tasks",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int4"},
 					// References an enum that is NOT declared in metadata —
 					// buildCreateStmt will succeed (typeNameFromString works)
@@ -198,21 +198,21 @@ func TestLoaderIntegration_BrokenRootTableAndHealthyNeighbor(t *testing.T) {
 	// A query against a healthy table must succeed even when an unrelated
 	// table in the same schema references a broken type. This is the core
 	// blast-radius claim: one bad object does not poison all queries.
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{
+			Tables: []*metadatapb.TableMetadata{
 				{
 					Name: "broken",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "id", Type: "int4"},
 						{Name: "bad", Type: "public.nonexistent_type"},
 					},
 				},
 				{
 					Name: "healthy",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "id", Type: "int4"},
 						{Name: "label", Type: "text"},
 					},
@@ -235,22 +235,22 @@ func TestLoaderIntegration_BrokenRootTableAndHealthyNeighbor(t *testing.T) {
 func TestLoaderIntegration_ViewOverBrokenTableStillResolves(t *testing.T) {
 	// Chain: enum missing → table T references it (degrades to pseudo) →
 	// view V on T installs real (against pseudo T) → query on V resolves.
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "records",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int4"},
 					{Name: "status", Type: "public.nonexistent_enum"},
 					{Name: "title", Type: "text"},
 				},
 			}},
-			Views: []*storepb.ViewMetadata{{
+			Views: []*metadatapb.ViewMetadata{{
 				Name:       "records_view",
 				Definition: "SELECT id, title, status FROM records",
-				DependencyColumns: []*storepb.DependencyColumn{
+				DependencyColumns: []*metadatapb.DependencyColumn{
 					{Schema: "public", Table: "records", Column: "id"},
 					{Schema: "public", Table: "records", Column: "title"},
 					{Schema: "public", Table: "records", Column: "status"},
@@ -273,13 +273,13 @@ func TestLoaderIntegration_ViewOverBrokenTableStillResolves(t *testing.T) {
 func TestLoaderIntegration_SimpleHealthyPath(t *testing.T) {
 	// Baseline sanity: a clean schema must produce exact lineage down to
 	// (schema, table, column) — no degraded flags.
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "users",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int4"},
 					{Name: "email", Type: "text"},
 					{Name: "created_at", Type: "timestamp with time zone"},
@@ -300,17 +300,17 @@ func TestLoaderIntegration_EnumWorksWhenDeclared(t *testing.T) {
 	// When an enum IS declared in metadata, the table installs as real and
 	// enum-typed columns resolve through their real type. This is the
 	// positive control for TestLoaderIntegration_BrokenEnumCascade.
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			EnumTypes: []*storepb.EnumTypeMetadata{{
+			EnumTypes: []*metadatapb.EnumTypeMetadata{{
 				Name:   "task_status",
 				Values: []string{"pending", "running", "done"},
 			}},
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "tasks",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int4"},
 					{Name: "status", Type: "public.task_status"},
 				},
@@ -327,14 +327,14 @@ func TestLoaderIntegration_EnumWorksWhenDeclared(t *testing.T) {
 }
 
 func TestLoaderIntegration_CorrelatedRangeFunctionSubquery(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{
+			Tables: []*metadatapb.TableMetadata{
 				{
 					Name: "compliance_case_record_audits",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "case_id", Type: "text"},
 						{Name: "entity_id", Type: "text"},
 						{Name: "reason", Type: "text"},
@@ -346,7 +346,7 @@ func TestLoaderIntegration_CorrelatedRangeFunctionSubquery(t *testing.T) {
 				},
 				{
 					Name: "compliance_cases",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "case_id", Type: "text"},
 						{Name: "case_info", Type: "jsonb"},
 						{Name: "deleted_at", Type: "timestamptz"},
@@ -394,13 +394,13 @@ where a.reviewer_by in ('****** ', '******')
 }
 
 func TestLoaderIntegration_MultipleCTEsWithLateralJoinKeepsJSONBLineage(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "ai_conversation",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "text"},
 					{Name: "parts", Type: "jsonb"},
 				},
@@ -638,9 +638,9 @@ const (
 	loaderTestSchema = "public"
 )
 
-func mustGetQuerySpan(t *testing.T, meta *storepb.DatabaseSchemaMetadata, sql string) *base.QuerySpan {
+func mustGetQuerySpan(t *testing.T, meta *metadatapb.DatabaseSchemaMetadata, sql string) *base.QuerySpan {
 	t.Helper()
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{meta})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{meta})
 	span, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,

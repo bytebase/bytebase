@@ -5,12 +5,12 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	redshiftanalysis "github.com/bytebase/omni/redshift/analysis"
 	redshiftast "github.com/bytebase/omni/redshift/ast"
 	redshiftcatalog "github.com/bytebase/omni/redshift/catalog"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
@@ -328,7 +328,7 @@ func redshiftRelationSpecFromMetadata(metadata *model.DatabaseMetadata, schema *
 	return nil
 }
 
-func redshiftTableRelationSpec(schemaName, tableName string, columns []*storepb.ColumnMetadata) *redshiftcatalog.RelationSpec {
+func redshiftTableRelationSpec(schemaName, tableName string, columns []*metadatapb.ColumnMetadata) *redshiftcatalog.RelationSpec {
 	return &redshiftcatalog.RelationSpec{
 		SchemaName: schemaName,
 		Name:       tableName,
@@ -337,7 +337,7 @@ func redshiftTableRelationSpec(schemaName, tableName string, columns []*storepb.
 	}
 }
 
-func redshiftRelationColumnSpecs(columns []*storepb.ColumnMetadata) []redshiftcatalog.RelationColumnSpec {
+func redshiftRelationColumnSpecs(columns []*metadatapb.ColumnMetadata) []redshiftcatalog.RelationColumnSpec {
 	result := make([]redshiftcatalog.RelationColumnSpec, 0, len(columns))
 	for _, column := range columns {
 		if column == nil || column.GetName() == "" {
@@ -941,7 +941,7 @@ func (q *omniQuerySpanExtractor) omniFunctionBodySourcesForCall(ctx context.Cont
 	return sources, nil
 }
 
-func (q *omniQuerySpanExtractor) findOmniFunctionMetadata(ctx context.Context, schemaName, functionName string, argCount int) (string, *storepb.FunctionMetadata, error) {
+func (q *omniQuerySpanExtractor) findOmniFunctionMetadata(ctx context.Context, schemaName, functionName string, argCount int) (string, *metadatapb.FunctionMetadata, error) {
 	if q.gCtx.GetDatabaseMetadataFunc == nil {
 		return "", nil, nil
 	}

@@ -8,6 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/tidb/catalog"
 	omnicompletion "github.com/bytebase/omni/tidb/completion"
 	tidbparser "github.com/bytebase/omni/tidb/parser"
@@ -253,7 +254,7 @@ func isIdentByte(b byte) bool {
 
 // defineTable installs a table in the catalog, retrying with generic column
 // types if the real types fail to parse so that column names still surface.
-func defineTable(cat *catalog.Catalog, name string, columns []*storepb.ColumnMetadata) {
+func defineTable(cat *catalog.Catalog, name string, columns []*metadatapb.ColumnMetadata) {
 	if len(columns) == 0 {
 		return
 	}
@@ -263,7 +264,7 @@ func defineTable(cat *catalog.Catalog, name string, columns []*storepb.ColumnMet
 	execTableDDL(cat, name, columns, true)
 }
 
-func execTableDDL(cat *catalog.Catalog, name string, columns []*storepb.ColumnMetadata, generic bool) bool {
+func execTableDDL(cat *catalog.Catalog, name string, columns []*metadatapb.ColumnMetadata, generic bool) bool {
 	defs := make([]string, 0, len(columns))
 	for _, col := range columns {
 		colType := col.GetType()

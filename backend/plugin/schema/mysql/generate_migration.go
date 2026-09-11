@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -14,7 +16,7 @@ import (
 // tableDrop holds drop operations for deduplication
 type tableDrop struct {
 	checkConstraints map[string]string
-	indexes          map[string]*storepb.IndexMetadata
+	indexes          map[string]*metadatapb.IndexMetadata
 	columns          map[string]string
 }
 
@@ -145,7 +147,7 @@ func dropObjectsInOrder(diff *schema.MetadataDiff, buf *strings.Builder) error {
 			if _, exists := dropsPerTable[tableName]; !exists {
 				dropsPerTable[tableName] = &tableDrop{
 					checkConstraints: make(map[string]string),
-					indexes:          make(map[string]*storepb.IndexMetadata),
+					indexes:          make(map[string]*metadatapb.IndexMetadata),
 					columns:          make(map[string]string),
 				}
 			}
@@ -526,7 +528,7 @@ func writeDropColumn(buf *strings.Builder, table, column string) error {
 	return nil
 }
 
-func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, table *storepb.TableMetadata) error {
+func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, table *metadatapb.TableMetadata) error {
 	_, _ = buf.WriteString("CREATE TABLE IF NOT EXISTS `")
 	_, _ = buf.WriteString(tableName)
 	_, _ = buf.WriteString("` (\n")
@@ -645,7 +647,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 // column.Generation. Both branches emit INVISIBLE before COMMENT, matching MySQL's
 // canonical SHOW CREATE order. Shared by writeAddColumn (ADD COLUMN) and writeModifyColumn
 // (MODIFY COLUMN), which differ only in the leading clause.
-func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetadata) {
+func writeColumnDefinitionBody(buf *strings.Builder, column *metadatapb.ColumnMetadata) {
 	_, _ = buf.WriteString(column.Type)
 
 	if column.CharacterSet != "" {
@@ -705,14 +707,14 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetad
 // 8.0.32). INVISIBLE precedes COMMENT, matching MySQL's canonical order for both regular
 // and generated columns. Generated columns never carry DEFAULT / AUTO_INCREMENT / ON
 // UPDATE, so those clauses are intentionally omitted.
-func writeGeneratedColumnAttributes(buf *strings.Builder, column *storepb.ColumnMetadata) {
+func writeGeneratedColumnAttributes(buf *strings.Builder, column *metadatapb.ColumnMetadata) {
 	_, _ = buf.WriteString(" GENERATED ALWAYS AS (")
 	_, _ = buf.WriteString(column.Generation.Expression)
 	_, _ = buf.WriteString(") ")
 	switch column.Generation.Type {
-	case storepb.GenerationMetadata_TYPE_STORED:
+	case metadatapb.GenerationMetadata_TYPE_STORED:
 		_, _ = buf.WriteString("STORED")
-	case storepb.GenerationMetadata_TYPE_VIRTUAL:
+	case metadatapb.GenerationMetadata_TYPE_VIRTUAL:
 		_, _ = buf.WriteString("VIRTUAL")
 	default:
 		// Default to VIRTUAL for unknown types
@@ -738,7 +740,7 @@ func writeGeneratedColumnAttributes(buf *strings.Builder, column *storepb.Column
 	}
 }
 
-func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMetadata) error {
+func writeAddColumn(buf *strings.Builder, table string, column *metadatapb.ColumnMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD COLUMN `")
@@ -752,7 +754,7 @@ func writeAddColumn(buf *strings.Builder, table string, column *storepb.ColumnMe
 	return nil
 }
 
-func writeModifyColumn(buf *strings.Builder, table string, column *storepb.ColumnMetadata) error {
+func writeModifyColumn(buf *strings.Builder, table string, column *metadatapb.ColumnMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` MODIFY COLUMN `")
@@ -764,7 +766,7 @@ func writeModifyColumn(buf *strings.Builder, table string, column *storepb.Colum
 	return nil
 }
 
-func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
+func writeCreateIndex(buf *strings.Builder, table string, index *metadatapb.IndexMetadata) error {
 	_, _ = buf.WriteString("CREATE ")
 	// Handle special index types
 	if strings.ToUpper(index.Type) == "FULLTEXT" {
@@ -825,7 +827,7 @@ func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMe
 	return nil
 }
 
-func writeAddPrimaryKey(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
+func writeAddPrimaryKey(buf *strings.Builder, table string, index *metadatapb.IndexMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD PRIMARY KEY (")
@@ -843,7 +845,7 @@ func writeAddPrimaryKey(buf *strings.Builder, table string, index *storepb.Index
 	return nil
 }
 
-func writeAddUniqueKey(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
+func writeAddUniqueKey(buf *strings.Builder, table string, index *metadatapb.IndexMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD UNIQUE KEY `")
@@ -863,7 +865,7 @@ func writeAddUniqueKey(buf *strings.Builder, table string, index *storepb.IndexM
 	return nil
 }
 
-func writeAddCheckConstraint(buf *strings.Builder, table string, check *storepb.CheckConstraintMetadata) error {
+func writeAddCheckConstraint(buf *strings.Builder, table string, check *metadatapb.CheckConstraintMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD CONSTRAINT `")
@@ -875,7 +877,7 @@ func writeAddCheckConstraint(buf *strings.Builder, table string, check *storepb.
 	return nil
 }
 
-func writeAddForeignKey(buf *strings.Builder, table string, fk *storepb.ForeignKeyMetadata) error {
+func writeAddForeignKey(buf *strings.Builder, table string, fk *metadatapb.ForeignKeyMetadata) error {
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(table)
 	_, _ = buf.WriteString("` ADD CONSTRAINT `")
@@ -919,7 +921,7 @@ func writeAddForeignKey(buf *strings.Builder, table string, fk *storepb.ForeignK
 	return nil
 }
 
-func writeCreateOrReplaceView(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
+func writeCreateOrReplaceView(buf *strings.Builder, viewName string, view *metadatapb.ViewMetadata) error {
 	_, _ = buf.WriteString("CREATE OR REPLACE VIEW `")
 	_, _ = buf.WriteString(viewName)
 	_, _ = buf.WriteString("` AS ")
@@ -1024,7 +1026,7 @@ func hasCreateOrAlterObjects(diff *schema.MetadataDiff) bool {
 	return false
 }
 
-func getDefaultExpression(column *storepb.ColumnMetadata) string {
+func getDefaultExpression(column *metadatapb.ColumnMetadata) string {
 	if column == nil {
 		return ""
 	}
@@ -1037,7 +1039,7 @@ func getDefaultExpression(column *storepb.ColumnMetadata) string {
 	return ""
 }
 
-func hasDefaultValue(column *storepb.ColumnMetadata) bool {
+func hasDefaultValue(column *metadatapb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
@@ -1048,7 +1050,7 @@ func hasDefaultValue(column *storepb.ColumnMetadata) bool {
 	return column.Default != ""
 }
 
-func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
+func hasAutoIncrement(column *metadatapb.ColumnMetadata) bool {
 	if column == nil {
 		return false
 	}
@@ -1056,7 +1058,7 @@ func hasAutoIncrement(column *storepb.ColumnMetadata) bool {
 	return strings.EqualFold(column.GetDefault(), "AUTO_INCREMENT")
 }
 
-func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
+func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *metadatapb.ViewMetadata) error {
 	// Create a temporary view with SELECT 1 AS column_name structure
 	// to satisfy other views that depend on this view
 	_, _ = buf.WriteString("CREATE OR REPLACE VIEW `")
@@ -1081,7 +1083,7 @@ func writeTemporaryViewForDrop(buf *strings.Builder, viewName string, view *stor
 	return nil
 }
 
-func writeCreateTemporaryView(buf *strings.Builder, viewName string, view *storepb.ViewMetadata) error {
+func writeCreateTemporaryView(buf *strings.Builder, viewName string, view *metadatapb.ViewMetadata) error {
 	// Create a temporary view with SELECT 1 AS column_name structure
 	// to satisfy views that depend on this view before we create the real one
 	_, _ = buf.WriteString("CREATE VIEW `")
@@ -1106,7 +1108,7 @@ func writeCreateTemporaryView(buf *strings.Builder, viewName string, view *store
 	return nil
 }
 
-func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *storepb.TriggerMetadata) error {
+func writeCreateTrigger(buf *strings.Builder, tableName string, trigger *metadatapb.TriggerMetadata) error {
 	// Don't add DELIMITER statements - construct the complete trigger statement
 	_, _ = buf.WriteString("CREATE TRIGGER `")
 	_, _ = buf.WriteString(trigger.Name)

@@ -11,17 +11,16 @@ import (
 
 	"github.com/pkg/errors"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/pg/catalog"
 	omniparser "github.com/bytebase/omni/pg/parser"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // loadWalkThroughCatalog installs every schema object from DatabaseSchemaMetadata
 // into the omni catalog in dependency-topological order with pseudo fallback.
 // Indexes and constraints are installed after their parent tables/views.
-func loadWalkThroughCatalog(ctx context.Context, cat *catalog.Catalog, meta *storepb.DatabaseSchemaMetadata) error {
+func loadWalkThroughCatalog(ctx context.Context, cat *catalog.Catalog, meta *metadatapb.DatabaseSchemaMetadata) error {
 	if cat == nil {
 		return errors.New("loadWalkThroughCatalog: nil catalog")
 	}
@@ -63,16 +62,16 @@ type wtObjectEntry struct {
 	name   string
 
 	// Exactly one of the following is set based on kind.
-	enumMeta      *storepb.EnumTypeMetadata
-	compositeMeta *storepb.CompositeTypeMetadata
-	seqMeta       *storepb.SequenceMetadata
-	tableMeta     *storepb.TableMetadata
-	viewMeta      *storepb.ViewMetadata
-	matViewMeta   *storepb.MaterializedViewMetadata
-	funcMeta      *storepb.FunctionMetadata
-	idxMeta       *storepb.IndexMetadata
+	enumMeta      *metadatapb.EnumTypeMetadata
+	compositeMeta *metadatapb.CompositeTypeMetadata
+	seqMeta       *metadatapb.SequenceMetadata
+	tableMeta     *metadatapb.TableMetadata
+	viewMeta      *metadatapb.ViewMetadata
+	matViewMeta   *metadatapb.MaterializedViewMetadata
+	funcMeta      *metadatapb.FunctionMetadata
+	idxMeta       *metadatapb.IndexMetadata
 	// For kindWTConstraint: the parent table metadata.
-	constraintTable *storepb.TableMetadata
+	constraintTable *metadatapb.TableMetadata
 	// For kindWTConstraint, kindWTIndex: the parent relation name.
 	parentName string
 }
@@ -108,7 +107,7 @@ func (e *wtObjectEntry) sortKey() string {
 	return base
 }
 
-func wtFuncSigKey(fn *storepb.FunctionMetadata) string {
+func wtFuncSigKey(fn *metadatapb.FunctionMetadata) string {
 	if fn == nil {
 		return ""
 	}
@@ -145,7 +144,7 @@ func wtKindLabel(k wtObjectKind) string {
 }
 
 // wtCollectObjects flattens DatabaseSchemaMetadata into wtObjectEntry values.
-func wtCollectObjects(meta *storepb.DatabaseSchemaMetadata) []*wtObjectEntry {
+func wtCollectObjects(meta *metadatapb.DatabaseSchemaMetadata) []*wtObjectEntry {
 	var out []*wtObjectEntry
 	for _, sm := range meta.Schemas {
 		if sm.Name == "" {
@@ -265,7 +264,7 @@ func wtCollectObjects(meta *storepb.DatabaseSchemaMetadata) []*wtObjectEntry {
 				kind:   kindWTFunction,
 				schema: sm.Name,
 				name:   proc.Name,
-				funcMeta: &storepb.FunctionMetadata{
+				funcMeta: &metadatapb.FunctionMetadata{
 					Name:       proc.Name,
 					Definition: proc.Definition,
 					Signature:  proc.Signature,
@@ -735,7 +734,7 @@ func wtInstallSequence(cat *catalog.Catalog, obj *wtObjectEntry) error {
 // wtIsIdentitySequence checks if a sequence is owned by an identity column.
 // Identity columns auto-create their sequence during DefineRelation, so
 // pre-creating it would cause a duplicate error.
-func wtIsIdentitySequence(seq *storepb.SequenceMetadata, tables []*storepb.TableMetadata) bool {
+func wtIsIdentitySequence(seq *metadatapb.SequenceMetadata, tables []*metadatapb.TableMetadata) bool {
 	if seq.OwnerTable == "" || seq.OwnerColumn == "" {
 		return false
 	}
@@ -781,7 +780,7 @@ func wtInstallTable(cat *catalog.Catalog, obj *wtObjectEntry) error {
 				colDef.RawDefault = rawDefault
 			}
 		}
-		if col.Generation != nil && col.Generation.Type == storepb.GenerationMetadata_TYPE_STORED && col.Generation.Expression != "" {
+		if col.Generation != nil && col.Generation.Type == metadatapb.GenerationMetadata_TYPE_STORED && col.Generation.Expression != "" {
 			colDef.Generated = 's'
 			if genExpr := wtParseExpr(col.Generation.Expression); genExpr != nil {
 				colDef.Constraints = &ast.List{Items: []ast.Node{
@@ -791,9 +790,9 @@ func wtInstallTable(cat *catalog.Catalog, obj *wtObjectEntry) error {
 		}
 		if col.IsIdentity {
 			switch col.IdentityGeneration {
-			case storepb.ColumnMetadata_ALWAYS:
+			case metadatapb.ColumnMetadata_ALWAYS:
 				colDef.Identity = 'a'
-			case storepb.ColumnMetadata_BY_DEFAULT:
+			case metadatapb.ColumnMetadata_BY_DEFAULT:
 				colDef.Identity = 'd'
 			default:
 				colDef.Identity = 'd'
@@ -1072,7 +1071,7 @@ func wtPseudoConstantSelect(cols []string) (*ast.SelectStmt, error) {
 
 // ---- column name helpers ----
 
-func wtColNames(tbl *storepb.TableMetadata) []string {
+func wtColNames(tbl *metadatapb.TableMetadata) []string {
 	if tbl == nil {
 		return nil
 	}
@@ -1088,7 +1087,7 @@ func wtColNames(tbl *storepb.TableMetadata) []string {
 	return out
 }
 
-func wtViewColNames(v *storepb.ViewMetadata) []string {
+func wtViewColNames(v *metadatapb.ViewMetadata) []string {
 	if v == nil {
 		return nil
 	}
@@ -1116,7 +1115,7 @@ func wtViewColNames(v *storepb.ViewMetadata) []string {
 	return out
 }
 
-func wtMatViewColNames(m *storepb.MaterializedViewMetadata) []string {
+func wtMatViewColNames(m *metadatapb.MaterializedViewMetadata) []string {
 	if m == nil {
 		return nil
 	}

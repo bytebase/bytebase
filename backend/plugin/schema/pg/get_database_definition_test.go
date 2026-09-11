@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	omnipg "github.com/bytebase/omni/pg"
 	"github.com/bytebase/omni/pg/catalog"
 	"github.com/stretchr/testify/assert"
@@ -23,19 +24,19 @@ import (
 func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 	tests := []struct {
 		name     string
-		metadata *storepb.DatabaseSchemaMetadata
+		metadata *metadatapb.DatabaseSchemaMetadata
 		expected string
 	}{
 		{
 			name: "Simple table with basic columns",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "users",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -67,14 +68,14 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 		},
 		{
 			name: "Table with default values",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "products",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -114,14 +115,14 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 		},
 		{
 			name: "Table with constraints",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "users",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -138,7 +139,7 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 										Nullable: true,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "users_pkey",
 										Expressions: []string{"id"},
@@ -151,7 +152,7 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 										IsConstraint: true,
 									},
 								},
-								CheckConstraints: []*storepb.CheckConstraintMetadata{
+								CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 									{
 										Name:       "users_age_check",
 										Expression: "(age >= 0)",
@@ -175,14 +176,14 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 		},
 		{
 			name: "Table with foreign key",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "orders",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -194,14 +195,14 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 										Nullable: false,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "orders_pkey",
 										Expressions: []string{"id"},
 										Primary:     true,
 									},
 								},
-								ForeignKeys: []*storepb.ForeignKeyMetadata{
+								ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 									{
 										Name:              "orders_user_id_fkey",
 										Columns:           []string{"user_id"},
@@ -228,14 +229,14 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 		},
 		{
 			name: "Multiple tables",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "categories",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -250,7 +251,7 @@ func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
 							},
 							{
 								Name: "products",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -281,14 +282,14 @@ CREATE TABLE "public"."products" (
 		},
 		{
 			name: "Table with indexes",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "products",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -310,7 +311,7 @@ CREATE TABLE "public"."products" (
 										Nullable: false,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "products_pkey",
 										Expressions: []string{"id"},
@@ -355,14 +356,14 @@ CREATE UNIQUE INDEX "idx_products_name_unique" ON "public"."products" (name);
 		},
 		{
 			name: "Table with views",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "users",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -385,7 +386,7 @@ CREATE UNIQUE INDEX "idx_products_name_unique" ON "public"."products" (name);
 										Nullable: false,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "users_pkey",
 										Expressions: []string{"id"},
@@ -395,7 +396,7 @@ CREATE UNIQUE INDEX "idx_products_name_unique" ON "public"."products" (name);
 							},
 							{
 								Name: "orders",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -412,7 +413,7 @@ CREATE UNIQUE INDEX "idx_products_name_unique" ON "public"."products" (name);
 										Nullable: false,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "orders_pkey",
 										Expressions: []string{"id"},
@@ -421,7 +422,7 @@ CREATE UNIQUE INDEX "idx_products_name_unique" ON "public"."products" (name);
 								},
 							},
 						},
-						Views: []*storepb.ViewMetadata{
+						Views: []*metadatapb.ViewMetadata{
 							{
 								Name: "active_users",
 								Definition: `SELECT id, name, email
@@ -475,14 +476,14 @@ GROUP BY u.id, u.name;
 		},
 		{
 			name: "Database with functions and procedures",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "users",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -500,7 +501,7 @@ GROUP BY u.id, u.name;
 										Nullable: false,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "users_pkey",
 										Expressions: []string{"id"},
@@ -509,7 +510,7 @@ GROUP BY u.id, u.name;
 								},
 							},
 						},
-						Functions: []*storepb.FunctionMetadata{
+						Functions: []*metadatapb.FunctionMetadata{
 							{
 								Name: "get_user_count",
 								Definition: `CREATE FUNCTION "public"."get_user_count"() RETURNS integer
@@ -587,11 +588,11 @@ $$;
 		},
 		{
 			name: "Database with sequences",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Sequences: []*storepb.SequenceMetadata{
+						Sequences: []*metadatapb.SequenceMetadata{
 							{
 								Name:       "independent_seq",
 								DataType:   "bigint",
@@ -624,10 +625,10 @@ $$;
 								OwnerTable: "", // Independent sequence
 							},
 						},
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "users",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "INTEGER",
@@ -658,18 +659,18 @@ CREATE TABLE "public"."users" (
 		},
 		{
 			name: "Empty database",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{},
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{},
 			},
 			expected: "",
 		},
 		{
 			name: "Serial columns should use serial types",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Sequences: []*storepb.SequenceMetadata{
+						Sequences: []*metadatapb.SequenceMetadata{
 							{
 								Name:        "users_id_seq",
 								DataType:    "bigint",
@@ -704,10 +705,10 @@ CREATE TABLE "public"."users" (
 								OwnerColumn: "id",
 							},
 						},
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "users",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "bigint",
@@ -723,7 +724,7 @@ CREATE TABLE "public"."users" (
 							},
 							{
 								Name: "products",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "integer",
@@ -739,7 +740,7 @@ CREATE TABLE "public"."users" (
 							},
 							{
 								Name: "orders",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "smallint",
@@ -776,11 +777,11 @@ CREATE TABLE "public"."orders" (
 		},
 		{
 			name: "Identity columns should use GENERATED AS IDENTITY syntax",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Sequences: []*storepb.SequenceMetadata{
+						Sequences: []*metadatapb.SequenceMetadata{
 							{
 								Name:        "users_id_seq",
 								DataType:    "bigint",
@@ -804,15 +805,15 @@ CREATE TABLE "public"."orders" (
 								OwnerColumn: "id",
 							},
 						},
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "users",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:               "id",
 										Type:               "bigint",
 										Nullable:           false,
-										IdentityGeneration: storepb.ColumnMetadata_ALWAYS,
+										IdentityGeneration: metadatapb.ColumnMetadata_ALWAYS,
 									},
 									{
 										Name:     "name",
@@ -823,12 +824,12 @@ CREATE TABLE "public"."orders" (
 							},
 							{
 								Name: "products",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:               "id",
 										Type:               "integer",
 										Nullable:           false,
-										IdentityGeneration: storepb.ColumnMetadata_BY_DEFAULT,
+										IdentityGeneration: metadatapb.ColumnMetadata_BY_DEFAULT,
 									},
 									{
 										Name:     "name",
@@ -855,14 +856,14 @@ CREATE TABLE "public"."products" (
 		},
 		{
 			name: "Table with indexes using custom opclass",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "documents",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "SERIAL",
@@ -879,7 +880,7 @@ CREATE TABLE "public"."products" (
 										Nullable: false,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "documents_pkey",
 										Expressions: []string{"id"},
@@ -929,11 +930,11 @@ CREATE INDEX "idx_documents_default_opclass" ON "public"."documents" (title);
 		},
 		{
 			name: "Sequence with ownership (non-serial, non-identity)",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Sequences: []*storepb.SequenceMetadata{
+						Sequences: []*metadatapb.SequenceMetadata{
 							{
 								Name:        "custom_seq",
 								DataType:    "bigint",
@@ -947,10 +948,10 @@ CREATE INDEX "idx_documents_default_opclass" ON "public"."documents" (title);
 								OwnerColumn: "order_number",
 							},
 						},
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "orders",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "INTEGER",
@@ -1001,12 +1002,12 @@ ALTER SEQUENCE "public"."custom_seq" OWNED BY "public"."orders"."order_number";
 }
 
 func TestGetSchemaSDLDefinition(t *testing.T) {
-	schemaMetadata := &storepb.SchemaMetadata{
+	schemaMetadata := &metadatapb.SchemaMetadata{
 		Name: "public",
-		Tables: []*storepb.TableMetadata{
+		Tables: []*metadatapb.TableMetadata{
 			{
 				Name: "users",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{
 						Name:     "id",
 						Type:     "SERIAL",
@@ -1037,14 +1038,14 @@ func TestGetSchemaSDLDefinition(t *testing.T) {
 
 func TestGetDatabaseDefinitionNormalVsSDLFormat(t *testing.T) {
 	// Create a more complex metadata to show the difference
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "SERIAL",
@@ -1061,7 +1062,7 @@ func TestGetDatabaseDefinitionNormalVsSDLFormat(t *testing.T) {
 								Nullable: true,
 							},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "users_pkey",
 								Expressions: []string{"id"},
@@ -1080,13 +1081,13 @@ func TestGetDatabaseDefinitionNormalVsSDLFormat(t *testing.T) {
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "active_users_view",
 						Definition: "SELECT id, name, email FROM users WHERE active = true",
 					},
 				},
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name: "count_active_users",
 						Definition: `CREATE FUNCTION "public"."count_active_users"() RETURNS integer
@@ -1141,19 +1142,19 @@ $$`,
 func TestCheckConstraintNotValidFormat(t *testing.T) {
 	tests := []struct {
 		name     string
-		metadata *storepb.DatabaseSchemaMetadata
+		metadata *metadatapb.DatabaseSchemaMetadata
 		expected string
 	}{
 		{
 			name: "Check constraint with NOT VALID",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "namespace_settings",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "namespace_id",
 										Type:     "bigint",
@@ -1165,14 +1166,14 @@ func TestCheckConstraintNotValidFormat(t *testing.T) {
 										Nullable: true,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "namespace_settings_pkey",
 										Expressions: []string{"namespace_id"},
 										Primary:     true,
 									},
 								},
-								CheckConstraints: []*storepb.CheckConstraintMetadata{
+								CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 									{
 										Name:       "default_branch_protection_defaults_size_constraint",
 										Expression: "(octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID",
@@ -1194,14 +1195,14 @@ func TestCheckConstraintNotValidFormat(t *testing.T) {
 		},
 		{
 			name: "Multiple check constraints with and without NOT VALID",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "test",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "table1",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "serial",
@@ -1218,14 +1219,14 @@ func TestCheckConstraintNotValidFormat(t *testing.T) {
 										Nullable: true,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "table1_pkey",
 										Expressions: []string{"id"},
 										Primary:     true,
 									},
 								},
-								CheckConstraints: []*storepb.CheckConstraintMetadata{
+								CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 									{
 										Name:       "table1_data_size_check",
 										Expression: "(octet_length(data::text) <= 1024) NOT VALID",
@@ -1255,14 +1256,14 @@ CREATE TABLE "test"."table1" (
 		},
 		{
 			name: "Regular check constraint without NOT VALID",
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "public",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "users",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{
 										Name:     "id",
 										Type:     "serial",
@@ -1274,14 +1275,14 @@ CREATE TABLE "test"."table1" (
 										Nullable: true,
 									},
 								},
-								Indexes: []*storepb.IndexMetadata{
+								Indexes: []*metadatapb.IndexMetadata{
 									{
 										Name:        "users_pkey",
 										Expressions: []string{"id"},
 										Primary:     true,
 									},
 								},
-								CheckConstraints: []*storepb.CheckConstraintMetadata{
+								CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 									{
 										Name:       "users_age_check",
 										Expression: "(age >= 0)",
@@ -1331,14 +1332,14 @@ CREATE TABLE "test"."table1" (
 // TestCheckConstraintNotValidFormatNormalMode tests that CHECK constraints with NOT VALID
 // are formatted correctly in normal (non-SDL) mode
 func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "namespace_settings",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "namespace_id",
 								Type:     "bigint",
@@ -1350,7 +1351,7 @@ func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
 								Nullable: true,
 							},
 						},
-						CheckConstraints: []*storepb.CheckConstraintMetadata{
+						CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 							{
 								Name:       "default_branch_protection_defaults_size_constraint",
 								Expression: "(octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID",
@@ -1383,16 +1384,16 @@ func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
 }
 
 func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:    "test_schema",
 				Comment: "Test schema for comments",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name:    "users",
 						Comment: "Users table with comments",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "SERIAL",
@@ -1412,7 +1413,7 @@ func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
 								Comment:  "User email address",
 							},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "idx_users_email",
 								Expressions: []string{"email"},
@@ -1423,14 +1424,14 @@ func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "active_users",
 						Definition: "SELECT id, name, email FROM test_schema.users WHERE active = true",
 						Comment:    "View of active users",
 					},
 				},
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name:       "get_user_count",
 						Signature:  "get_user_count()",
@@ -1438,7 +1439,7 @@ func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
 						Comment:    "Function to get user count",
 					},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name:      "custom_seq",
 						DataType:  "bigint",
@@ -1492,15 +1493,15 @@ func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
 }
 
 func TestGetDatabaseDefinitionSDLFormat_WithCommentsEscaping(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name:    "test_table",
 						Comment: "Table with 'single quotes' and \"double quotes\"",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "INTEGER",
@@ -1531,16 +1532,16 @@ func TestGetDatabaseDefinitionSDLFormat_WithCommentsEscaping(t *testing.T) {
 }
 
 func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name:    "app_schema",
 				Comment: "Application schema",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name:    "products",
 						Comment: "Product catalog",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "INTEGER",
@@ -1554,7 +1555,7 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 								Comment:  "Product name",
 							},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{
 								Name:        "idx_products_name",
 								Expressions: []string{"name"},
@@ -1565,21 +1566,21 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "active_products",
 						Definition: "SELECT id, name FROM app_schema.products WHERE active = true",
 						Comment:    "View of active products",
 					},
 				},
-				MaterializedViews: []*storepb.MaterializedViewMetadata{
+				MaterializedViews: []*metadatapb.MaterializedViewMetadata{
 					{
 						Name:       "product_summary_mv",
 						Definition: "SELECT id, name FROM app_schema.products",
 						Comment:    "Materialized view of product summary",
 					},
 				},
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name:       "count_products",
 						Signature:  "count_products()",
@@ -1587,7 +1588,7 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 						Comment:    "Returns product count",
 					},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name:      "order_seq",
 						DataType:  "bigint",
@@ -1665,14 +1666,14 @@ func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
 }
 
 func TestGetMultiFileDatabaseDefinition_SchemaFileMakesCombinedSDLLoadable(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "metric_helpers",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "metrics",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "INTEGER",
@@ -1707,11 +1708,11 @@ func TestGetMultiFileDatabaseDefinition_SchemaFileMakesCombinedSDLLoadable(t *te
 func TestGetDatabaseDefinitionSDLFormat_SerialColumnWithSequence(t *testing.T) {
 	// This test reproduces the issue where a SERIAL column causes duplicate CREATE SEQUENCE statements
 	// SERIAL columns automatically create sequences, so we should NOT output separate CREATE SEQUENCE for them
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name:        "users_id_seq",
 						DataType:    "integer",
@@ -1736,10 +1737,10 @@ func TestGetDatabaseDefinitionSDLFormat_SerialColumnWithSequence(t *testing.T) {
 						Comment:    "Independent sequence - should appear in SDL",
 					},
 				},
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "integer",
@@ -1782,11 +1783,11 @@ func TestGetDatabaseDefinitionSDLFormat_SerialColumnWithSequence(t *testing.T) {
 
 func TestGetMultiFileDatabaseDefinition_SerialColumnWithSequence(t *testing.T) {
 	// This test verifies that multi-file format correctly handles serial columns and their sequences
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name:        "users_id_seq",
 						DataType:    "integer",
@@ -1822,10 +1823,10 @@ func TestGetMultiFileDatabaseDefinition_SerialColumnWithSequence(t *testing.T) {
 						Comment:    "Custom sequence for orders - should appear as separate file",
 					},
 				},
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "integer",
@@ -1841,7 +1842,7 @@ func TestGetMultiFileDatabaseDefinition_SerialColumnWithSequence(t *testing.T) {
 					},
 					{
 						Name: "orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "integer",
@@ -1913,11 +1914,11 @@ func TestGetDatabaseDefinitionSDLFormat_MultipleSequencesClaimingOwnership(t *te
 	// This test verifies that when multiple sequences claim ownership of the same column,
 	// only the sequence referenced in the DEFAULT clause is skipped (treated as serial sequence).
 	// The other sequences should still be output as CREATE SEQUENCE statements.
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name:        "test_sequence2",
 						DataType:    "integer",
@@ -1941,10 +1942,10 @@ func TestGetDatabaseDefinitionSDLFormat_MultipleSequencesClaimingOwnership(t *te
 						OwnerColumn: "id",
 					},
 				},
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "test_table",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "id",
 								Type:     "integer",
@@ -2007,11 +2008,11 @@ ALTER SEQUENCE "public"."test_sequence2" OWNED BY "public"."test_table"."id";
 func TestGetDatabaseDefinitionSDLFormat_ProcedureWithComment(t *testing.T) {
 	// This test verifies that PROCEDURE comments are correctly generated with
 	// COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name:      "get_user_count",
 						Signature: "get_user_count()",
@@ -2068,11 +2069,11 @@ $$`,
 func TestGetMultiFileDatabaseDefinition_FunctionAndProcedureSeparation(t *testing.T) {
 	// This test verifies that functions and procedures are separated into different folders
 	// in multi-file mode
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name: "get_user_count",
 						Definition: `CREATE FUNCTION "public"."get_user_count"() RETURNS integer
@@ -2183,11 +2184,11 @@ BEGIN
 END;
 $function$`
 
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name:       "camel_to_snake",
 						Signature:  "camel_to_snake(camel_cased_text character varying)",
@@ -2234,16 +2235,16 @@ $function$`
 // feeds. The regression surfaced as omni pgparser choking on the backslash
 // right after `COMMENT ON INDEX ... IS '...';`.
 func TestGetDatabaseDefinition_IndexCommentUsesRealNewline(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "t",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "integer", Nullable: false},
 				},
-				Indexes: []*storepb.IndexMetadata{{
+				Indexes: []*metadatapb.IndexMetadata{{
 					Name:        "idx_t_id",
 					Type:        "btree",
 					Expressions: []string{"id"},
@@ -2278,13 +2279,13 @@ func TestGetDatabaseDefinition_IndexCommentUsesRealNewline(t *testing.T) {
 // `CREATE TABLE "..."."..." (,` — an invalid leading comma. We force the
 // case by declaring a CHECK constraint on a table with no regular columns.
 func TestGetDatabaseDefinition_TableWithOnlyCheckConstraints(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "cons_only",
-				CheckConstraints: []*storepb.CheckConstraintMetadata{{
+				CheckConstraints: []*metadatapb.CheckConstraintMetadata{{
 					Name:       "cons_only_dummy",
 					Expression: "(1 = 1)",
 				}},
@@ -2325,11 +2326,11 @@ func TestGetDatabaseDefinition_TableWithOnlyCheckConstraints(t *testing.T) {
 // column-dependent DDL for such tables instead of producing non-replayable
 // statements.
 func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "s1",
-			Sequences: []*storepb.SequenceMetadata{
+			Sequences: []*metadatapb.SequenceMetadata{
 				{
 					// Owned by a column missing from t1's metadata: the sequence
 					// itself must dump, its OWNED BY clause must not.
@@ -2357,11 +2358,11 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 					OwnerColumn: "id",
 				},
 			},
-			Tables: []*storepb.TableMetadata{
+			Tables: []*metadatapb.TableMetadata{
 				{
 					// Broken sync: constraints and indexes, but no columns.
 					Name: "t1",
-					Indexes: []*storepb.IndexMetadata{
+					Indexes: []*metadatapb.IndexMetadata{
 						{
 							Name:         "pk_t1",
 							Primary:      true,
@@ -2383,23 +2384,23 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 							Comment:     "comment on a never-created index",
 						},
 					},
-					CheckConstraints: []*storepb.CheckConstraintMetadata{{
+					CheckConstraints: []*metadatapb.CheckConstraintMetadata{{
 						Name:       "chk_t1_c1",
 						Expression: "(c1 > 0)",
 					}},
-					ForeignKeys: []*storepb.ForeignKeyMetadata{{
+					ForeignKeys: []*metadatapb.ForeignKeyMetadata{{
 						Name:              "fk_t1_t2",
 						Columns:           []string{"c1"},
 						ReferencedSchema:  "s1",
 						ReferencedTable:   "t2",
 						ReferencedColumns: []string{"id"},
 					}},
-					Triggers: []*storepb.TriggerMetadata{{
+					Triggers: []*metadatapb.TriggerMetadata{{
 						Name:    "trg_t1_c1",
 						Body:    `CREATE TRIGGER trg_t1_c1 BEFORE UPDATE OF c1 ON s1.t1 FOR EACH ROW EXECUTE FUNCTION s1.f()`,
 						Comment: "comment on a never-created trigger",
 					}},
-					Rules: []*storepb.RuleMetadata{{
+					Rules: []*metadatapb.RuleMetadata{{
 						Name:       "rule_t1",
 						Event:      "INSERT",
 						Definition: `CREATE RULE rule_t1 AS ON INSERT TO s1.t1 WHERE new.c1 > 0 DO INSTEAD NOTHING;`,
@@ -2409,18 +2410,18 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 					// Healthy table; its own constraints must still dump, but
 					// its foreign key into the broken table must not.
 					Name: "t2",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "id", Type: "integer", Nullable: false},
 						{Name: "t1_c1", Type: "integer", Nullable: true},
 					},
-					Indexes: []*storepb.IndexMetadata{{
+					Indexes: []*metadatapb.IndexMetadata{{
 						Name:         "pk_t2",
 						Primary:      true,
 						Unique:       true,
 						IsConstraint: true,
 						Expressions:  []string{"id"},
 					}},
-					ForeignKeys: []*storepb.ForeignKeyMetadata{{
+					ForeignKeys: []*metadatapb.ForeignKeyMetadata{{
 						Name:              "fk_t2_t1",
 						Columns:           []string{"t1_c1"},
 						ReferencedSchema:  "s1",
@@ -2433,7 +2434,7 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 					// partition key references missing columns, so the table
 					// must dump bare, without the PARTITION BY clause.
 					Name: "t3",
-					Partitions: []*storepb.TablePartitionMetadata{{
+					Partitions: []*metadatapb.TablePartitionMetadata{{
 						Name:       "t3_p1",
 						Expression: "RANGE (created_at)",
 					}},
@@ -2442,7 +2443,7 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 					// Genuine zero-column table: no indexes, foreign keys, or
 					// partitions. Its column-independent CHECK must be kept.
 					Name: "t4",
-					CheckConstraints: []*storepb.CheckConstraintMetadata{{
+					CheckConstraints: []*metadatapb.CheckConstraintMetadata{{
 						Name:       "chk_t4_ok",
 						Expression: "(1 = 1)",
 					}},
@@ -2508,13 +2509,13 @@ func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
 // because the schema + "." + object object-ID was split back on the first
 // dot and produced an empty schema. The fix uses a NUL separator.
 func TestGetDatabaseDefinition_TableNameContainingDot(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "weird.name",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "c", Type: "text", Nullable: true},
 				},
 			}},
@@ -2561,7 +2562,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 
 	for i, tc := range tests {
 		t.Run(tc.Description, func(t *testing.T) {
-			var metadata storepb.DatabaseSchemaMetadata
+			var metadata metadatapb.DatabaseSchemaMetadata
 			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
 
 			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{PrintHeader: true}, &metadata)
@@ -2591,15 +2592,15 @@ func TestGetDatabaseDefinition(t *testing.T) {
 func TestCheckConstraintOrderStability(t *testing.T) {
 	// Simulate database metadata with multiple CHECK constraints
 	// (similar to the packages_debian_group_distributions table shown in the screenshot)
-	dbMetadata := &storepb.DatabaseSchemaMetadata{
+	dbMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "packages_debian_group_distributions",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "bigint", Nullable: false},
 							{Name: "suite", Type: "character varying(255)", Nullable: false},
 							{Name: "codename", Type: "character varying(255)", Nullable: false},
@@ -2611,7 +2612,7 @@ func TestCheckConstraintOrderStability(t *testing.T) {
 							{Name: "version", Type: "character varying(255)", Nullable: true},
 							{Name: "file_signature", Type: "character varying(4096)", Nullable: true},
 						},
-						CheckConstraints: []*storepb.CheckConstraintMetadata{
+						CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 							{Name: "check_e7c928a24b", Expression: "(char_length((suite)::text) <= 255)"},
 							{Name: "check_590e18405a", Expression: "(char_length((codename)::text) <= 255)"},
 							{Name: "check_0007e0bf61", Expression: "(char_length(signed_file) <= 255)"},
@@ -2655,17 +2656,17 @@ func TestCheckConstraintOrderStability(t *testing.T) {
 func TestGetDatabaseDefinitionSDLFormat_CompositeTypes(t *testing.T) {
 	// aa_nested sorts before its dependency zz_base alphabetically, so correct
 	// output proves dependency ordering rather than name ordering.
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "order_status", Values: []string{"pending", "shipped"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "aa_nested",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "home", Type: "public.zz_base"},
 							{Name: "homes", Type: "public.zz_base[]"},
 							{Name: "status", Type: "public.order_status"},
@@ -2674,7 +2675,7 @@ func TestGetDatabaseDefinitionSDLFormat_CompositeTypes(t *testing.T) {
 					{
 						Name:    "zz_base",
 						Comment: "base address type",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text", Collation: `"C"`, Comment: "street line"},
 							{Name: "city", Type: "character varying(50)"},
 						},
@@ -2682,7 +2683,7 @@ func TestGetDatabaseDefinitionSDLFormat_CompositeTypes(t *testing.T) {
 					{
 						Name:     "ext_owned",
 						SkipDump: true,
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 						},
 					},
@@ -2693,10 +2694,10 @@ func TestGetDatabaseDefinitionSDLFormat_CompositeTypes(t *testing.T) {
 			},
 			{
 				Name: "geo",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "point2",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "lat", Type: "numeric(9,6)"},
 							{Name: "lng", Type: "numeric(9,6)"},
 						},
@@ -2739,23 +2740,23 @@ func TestGetDatabaseDefinitionSDLFormat_CompositeTypes(t *testing.T) {
 }
 
 func TestGetMultiFileDatabaseDefinition_CompositeTypes(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "mood", Values: []string{"happy", "sad"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "wrapper",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "b", Type: "public.base"},
 						},
 					},
 					{
 						Name: "base",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 						},
 						Comment: "base type",
@@ -2822,17 +2823,17 @@ func TestParseQualifiedTypeIdent(t *testing.T) {
 func TestSortCompositeTypesTopologically(t *testing.T) {
 	// Chain across schemas: public.a3 -> other.b2 -> public.c1, with names
 	// chosen so alphabetical order is the reverse of dependency order.
-	c1 := &storepb.CompositeTypeMetadata{
+	c1 := &metadatapb.CompositeTypeMetadata{
 		Name:       "c1",
-		Attributes: []*storepb.CompositeTypeAttribute{{Name: "x", Type: "integer"}},
+		Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "x", Type: "integer"}},
 	}
-	b2 := &storepb.CompositeTypeMetadata{
+	b2 := &metadatapb.CompositeTypeMetadata{
 		Name:       "b2",
-		Attributes: []*storepb.CompositeTypeAttribute{{Name: "c", Type: "public.c1"}},
+		Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "c", Type: "public.c1"}},
 	}
-	a3 := &storepb.CompositeTypeMetadata{
+	a3 := &metadatapb.CompositeTypeMetadata{
 		Name:       "a3",
-		Attributes: []*storepb.CompositeTypeAttribute{{Name: "b", Type: "other.b2[]"}},
+		Attributes: []*metadatapb.CompositeTypeAttribute{{Name: "b", Type: "other.b2[]"}},
 	}
 	ordered := sortCompositeTypesTopologically([]qualifiedCompositeType{
 		{Schema: "public", Composite: a3},
@@ -2846,8 +2847,8 @@ func TestSortCompositeTypesTopologically(t *testing.T) {
 
 	// Independent types come out in deterministic (schema, name) order.
 	ordered = sortCompositeTypesTopologically([]qualifiedCompositeType{
-		{Schema: "public", Composite: &storepb.CompositeTypeMetadata{Name: "zz"}},
-		{Schema: "public", Composite: &storepb.CompositeTypeMetadata{Name: "aa"}},
+		{Schema: "public", Composite: &metadatapb.CompositeTypeMetadata{Name: "zz"}},
+		{Schema: "public", Composite: &metadatapb.CompositeTypeMetadata{Name: "aa"}},
 	})
 	require.Len(t, ordered, 2)
 	assert.Equal(t, "aa", ordered[0].Composite.Name)
@@ -2895,12 +2896,12 @@ func TestEventTriggerSDLMultiFileOutput(t *testing.T) {
 	assert.Contains(t, eventTriggerFile, `COMMENT ON EVENT TRIGGER "audit_ddl_start" IS 'Audit DDL start';`)
 }
 
-func eventTriggerSDLMetadata() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func eventTriggerSDLMetadata() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Functions: []*storepb.FunctionMetadata{
+				Functions: []*metadatapb.FunctionMetadata{
 					{
 						Name:      "audit_ddl",
 						Signature: "audit_ddl()",
@@ -2914,7 +2915,7 @@ $$`,
 				},
 			},
 		},
-		EventTriggers: []*storepb.EventTriggerMetadata{
+		EventTriggers: []*metadatapb.EventTriggerMetadata{
 			{
 				Name:           "audit_ddl_start",
 				Event:          "ddl_command_start",
@@ -2929,18 +2930,18 @@ $$`,
 }
 
 func TestTriggerSDLSingleFileOutput(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
-						Triggers: []*storepb.TriggerMetadata{
+						Triggers: []*metadatapb.TriggerMetadata{
 							{
 								Name: "audit_trigger",
 								Body: "CREATE TRIGGER audit_trigger AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",
@@ -2965,18 +2966,18 @@ func TestTriggerSDLSingleFileOutput(t *testing.T) {
 }
 
 func TestTriggerSDLMultiFileOutput(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
-						Triggers: []*storepb.TriggerMetadata{
+						Triggers: []*metadatapb.TriggerMetadata{
 							{
 								Name: "audit_trigger",
 								Body: "CREATE TRIGGER audit_trigger AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",
@@ -3013,18 +3014,18 @@ func TestTriggerSDLMultiFileOutput(t *testing.T) {
 func TestTriggerSDLWithCompleteDefinition(t *testing.T) {
 	// Test that triggers with complete CREATE TRIGGER statements in Body are output correctly
 	// This simulates triggers dumped from the database where Body contains the full statement
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "ci_builds",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
-						Triggers: []*storepb.TriggerMetadata{
+						Triggers: []*metadatapb.TriggerMetadata{
 							{
 								Name: "ci_builds_loose_fk_trigger",
 								Body: "CREATE TRIGGER ci_builds_loose_fk_trigger AFTER DELETE ON public.ci_builds REFERENCING OLD TABLE AS old_table FOR EACH STATEMENT EXECUTE FUNCTION public.loose_foreign_key_on_builds_projects()",
@@ -3055,18 +3056,18 @@ func TestTriggerSDLWithCompleteDefinition(t *testing.T) {
 }
 
 func TestTriggerSDLWithComment(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
-						Triggers: []*storepb.TriggerMetadata{
+						Triggers: []*metadatapb.TriggerMetadata{
 							{
 								Name:    "audit_trigger",
 								Body:    "CREATE TRIGGER audit_trigger AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",
@@ -3093,18 +3094,18 @@ func TestTriggerSDLWithComment(t *testing.T) {
 }
 
 func TestMultipleTriggersSDL(t *testing.T) {
-	metadata := &storepb.DatabaseSchemaMetadata{
+	metadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 						},
-						Triggers: []*storepb.TriggerMetadata{
+						Triggers: []*metadatapb.TriggerMetadata{
 							{
 								Name: "audit_insert",
 								Body: "CREATE TRIGGER audit_insert AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",

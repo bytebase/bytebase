@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/bytebase/omni/mysql/catalog"
 
@@ -600,9 +601,9 @@ func mysqlUnqualifiedName(name string) string {
 	return name
 }
 
-// catalogToProto converts the omni catalog state to a storepb.DatabaseSchemaMetadata.
-func catalogToProto(c *catalog.Catalog, dbName string) *storepb.DatabaseSchemaMetadata {
-	dbMeta := &storepb.DatabaseSchemaMetadata{
+// catalogToProto converts the omni catalog state to a metadatapb.DatabaseSchemaMetadata.
+func catalogToProto(c *catalog.Catalog, dbName string) *metadatapb.DatabaseSchemaMetadata {
+	dbMeta := &metadatapb.DatabaseSchemaMetadata{
 		Name: dbName,
 	}
 
@@ -615,7 +616,7 @@ func catalogToProto(c *catalog.Catalog, dbName string) *storepb.DatabaseSchemaMe
 	dbMeta.Collation = db.Collation
 
 	// MySQL uses a single empty-name schema.
-	schemaMeta := &storepb.SchemaMetadata{
+	schemaMeta := &metadatapb.SchemaMetadata{
 		Name: "",
 	}
 
@@ -629,7 +630,7 @@ func catalogToProto(c *catalog.Catalog, dbName string) *storepb.DatabaseSchemaMe
 	// tableProtoByLowerName lets the trigger pass below attach each trigger to its
 	// owning table's metadata. The omni catalog keys tables case-insensitively, and a
 	// trigger records its table via Trigger.Table, so the lookup is lower-cased.
-	tableProtoByLowerName := make(map[string]*storepb.TableMetadata, len(tableNames))
+	tableProtoByLowerName := make(map[string]*metadatapb.TableMetadata, len(tableNames))
 	for _, tName := range tableNames {
 		t := db.Tables[tName]
 		tableProto := tableToProto(t)
@@ -665,7 +666,7 @@ func catalogToProto(c *catalog.Catalog, dbName string) *storepb.DatabaseSchemaMe
 
 	for _, vName := range viewNames {
 		v := db.Views[vName]
-		schemaMeta.Views = append(schemaMeta.Views, &storepb.ViewMetadata{
+		schemaMeta.Views = append(schemaMeta.Views, &metadatapb.ViewMetadata{
 			Name:       v.Name,
 			Definition: v.Definition,
 		})
@@ -711,8 +712,8 @@ func catalogToProto(c *catalog.Catalog, dbName string) *storepb.DatabaseSchemaMe
 	return dbMeta
 }
 
-func tableToProto(t *catalog.Table) *storepb.TableMetadata {
-	table := &storepb.TableMetadata{
+func tableToProto(t *catalog.Table) *metadatapb.TableMetadata {
+	table := &metadatapb.TableMetadata{
 		Name:      t.Name,
 		Engine:    t.Engine,
 		Charset:   t.Charset,
@@ -727,7 +728,7 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 			// indexes) are not reported by information_schema.
 			continue
 		}
-		colMeta := &storepb.ColumnMetadata{
+		colMeta := &metadatapb.ColumnMetadata{
 			Name:         col.Name,
 			Position:     int32(col.Position),
 			Type:         col.ColumnType,
@@ -753,11 +754,11 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 			colMeta.OnUpdate = col.OnUpdate
 		}
 		if col.Generated != nil {
-			genType := storepb.GenerationMetadata_TYPE_VIRTUAL
+			genType := metadatapb.GenerationMetadata_TYPE_VIRTUAL
 			if col.Generated.Stored {
-				genType = storepb.GenerationMetadata_TYPE_STORED
+				genType = metadatapb.GenerationMetadata_TYPE_STORED
 			}
-			colMeta.Generation = &storepb.GenerationMetadata{
+			colMeta.Generation = &metadatapb.GenerationMetadata{
 				Type:       genType,
 				Expression: col.Generated.Expr,
 			}
@@ -781,7 +782,7 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 		if indexType == "" {
 			indexType = "BTREE"
 		}
-		idxMeta := &storepb.IndexMetadata{
+		idxMeta := &metadatapb.IndexMetadata{
 			Name:    idx.Name,
 			Type:    indexType,
 			Unique:  idx.Unique,
@@ -814,7 +815,7 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 	for _, con := range t.Constraints {
 		switch con.Type {
 		case catalog.ConForeignKey:
-			fk := &storepb.ForeignKeyMetadata{
+			fk := &metadatapb.ForeignKeyMetadata{
 				Name:              con.Name,
 				Columns:           con.Columns,
 				ReferencedTable:   con.RefTable,
@@ -828,7 +829,7 @@ func tableToProto(t *catalog.Table) *storepb.TableMetadata {
 			}
 			table.ForeignKeys = append(table.ForeignKeys, fk)
 		case catalog.ConCheck:
-			table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
+			table.CheckConstraints = append(table.CheckConstraints, &metadatapb.CheckConstraintMetadata{
 				Name:       con.Name,
 				Expression: con.CheckExpr,
 			})
@@ -865,16 +866,16 @@ func normalizeOmniDefault(value string, kind catalog.ColumnDefaultKind) string {
 	}
 }
 
-func partitionsToProto(p *catalog.PartitionInfo) []*storepb.TablePartitionMetadata {
+func partitionsToProto(p *catalog.PartitionInfo) []*metadatapb.TablePartitionMetadata {
 	expr := p.Expr
 	if expr == "" && len(p.Columns) > 0 {
 		// RANGE COLUMNS / LIST COLUMNS / KEY partitioning carries a column
 		// list instead of an expression; the driver reports the joined list.
 		expr = strings.Join(p.Columns, ",")
 	}
-	var result []*storepb.TablePartitionMetadata
+	var result []*metadatapb.TablePartitionMetadata
 	for _, pd := range p.Partitions {
-		result = append(result, &storepb.TablePartitionMetadata{
+		result = append(result, &metadatapb.TablePartitionMetadata{
 			Name:       pd.Name,
 			Type:       partitionTypeToProto(p.Type),
 			Expression: expr,
@@ -884,38 +885,38 @@ func partitionsToProto(p *catalog.PartitionInfo) []*storepb.TablePartitionMetada
 	return result
 }
 
-func partitionTypeToProto(t string) storepb.TablePartitionMetadata_Type {
+func partitionTypeToProto(t string) metadatapb.TablePartitionMetadata_Type {
 	switch strings.ToUpper(t) {
 	case "RANGE":
-		return storepb.TablePartitionMetadata_RANGE
+		return metadatapb.TablePartitionMetadata_RANGE
 	case "RANGE COLUMNS":
-		return storepb.TablePartitionMetadata_RANGE_COLUMNS
+		return metadatapb.TablePartitionMetadata_RANGE_COLUMNS
 	case "LIST":
-		return storepb.TablePartitionMetadata_LIST
+		return metadatapb.TablePartitionMetadata_LIST
 	case "LIST COLUMNS":
-		return storepb.TablePartitionMetadata_LIST_COLUMNS
+		return metadatapb.TablePartitionMetadata_LIST_COLUMNS
 	case "HASH":
-		return storepb.TablePartitionMetadata_HASH
+		return metadatapb.TablePartitionMetadata_HASH
 	case "LINEAR HASH":
-		return storepb.TablePartitionMetadata_LINEAR_HASH
+		return metadatapb.TablePartitionMetadata_LINEAR_HASH
 	case "KEY":
-		return storepb.TablePartitionMetadata_KEY
+		return metadatapb.TablePartitionMetadata_KEY
 	case "LINEAR KEY":
-		return storepb.TablePartitionMetadata_LINEAR_KEY
+		return metadatapb.TablePartitionMetadata_LINEAR_KEY
 	default:
-		return storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+		return metadatapb.TablePartitionMetadata_TYPE_UNSPECIFIED
 	}
 }
 
-func routineToFunctionProto(r *catalog.Routine) *storepb.FunctionMetadata {
-	return &storepb.FunctionMetadata{
+func routineToFunctionProto(r *catalog.Routine) *metadatapb.FunctionMetadata {
+	return &metadatapb.FunctionMetadata{
 		Name:       r.Name,
 		Definition: r.Body,
 	}
 }
 
-func routineToProcedureProto(r *catalog.Routine) *storepb.ProcedureMetadata {
-	return &storepb.ProcedureMetadata{
+func routineToProcedureProto(r *catalog.Routine) *metadatapb.ProcedureMetadata {
+	return &metadatapb.ProcedureMetadata{
 		Name:       r.Name,
 		Definition: r.Body,
 	}
@@ -926,8 +927,8 @@ func routineToProcedureProto(r *catalog.Routine) *storepb.ProcedureMetadata {
 // not a full CREATE TRIGGER; this mirrors that shape so a parsed-DDL catalog and a
 // synced catalog produce the same TriggerMetadata. DEFINER and session charset state
 // are intentionally dropped: omni's trigger differ ignores them.
-func triggerToProto(tr *catalog.Trigger) *storepb.TriggerMetadata {
-	return &storepb.TriggerMetadata{
+func triggerToProto(tr *catalog.Trigger) *metadatapb.TriggerMetadata {
+	return &metadatapb.TriggerMetadata{
 		Name:   tr.Name,
 		Event:  tr.Event,
 		Timing: tr.Timing,
@@ -939,8 +940,8 @@ func triggerToProto(tr *catalog.Trigger) *storepb.TriggerMetadata {
 // the full SHOW CREATE EVENT text in Definition, so the catalog's ShowCreateEvent is
 // used to reproduce that canonical form (DEFINER included to match the sync; the SDL
 // dump and omni's event differ both ignore it).
-func eventToProto(c *catalog.Catalog, dbName string, e *catalog.Event) *storepb.EventMetadata {
-	return &storepb.EventMetadata{
+func eventToProto(c *catalog.Catalog, dbName string, e *catalog.Event) *metadatapb.EventMetadata {
+	return &metadatapb.EventMetadata{
 		Name:       e.Name,
 		Definition: c.ShowCreateEvent(dbName, e.Name),
 	}

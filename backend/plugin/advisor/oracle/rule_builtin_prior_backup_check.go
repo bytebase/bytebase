@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/oracle/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -236,7 +237,7 @@ func oracleNameEqual(astName, metadataName string, isObjectCaseSensitive bool) b
 // the current owner only — a DML explicitly qualified with a different owner
 // must stay silent (its metadata is simply not synced), not borrow the
 // current schema's table of the same name.
-func oracleFindLongColumns(dbSchema *storepb.DatabaseSchemaMetadata, table *TableReference, isObjectCaseSensitive bool) []string {
+func oracleFindLongColumns(dbSchema *metadatapb.DatabaseSchemaMetadata, table *TableReference, isObjectCaseSensitive bool) []string {
 	var result []string
 	for _, schemaMeta := range dbSchema.GetSchemas() {
 		if schemaMeta.GetName() == "" {

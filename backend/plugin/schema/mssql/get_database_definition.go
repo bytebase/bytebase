@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -22,7 +24,7 @@ func init() {
 	schema.RegisterGetProcedureDefinition(storepb.Engine_MSSQL, GetProcedureDefinition)
 }
 
-func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	if to == nil {
 		return "", nil
 	}
@@ -65,13 +67,13 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	return buf.String(), nil
 }
 
-func GetTableDefinition(schemaName string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(schemaName string, table *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
 	writeTable(&buf, schemaName, table)
 	return buf.String(), nil
 }
 
-func writeFunctionsAndProcedures(out *strings.Builder, schema *storepb.SchemaMetadata) {
+func writeFunctionsAndProcedures(out *strings.Builder, schema *metadatapb.SchemaMetadata) {
 	for _, function := range schema.Functions {
 		writeFunction(out, schema.Name, function)
 	}
@@ -81,7 +83,7 @@ func writeFunctionsAndProcedures(out *strings.Builder, schema *storepb.SchemaMet
 	}
 }
 
-func hasViews(schemas []*storepb.SchemaMetadata) bool {
+func hasViews(schemas []*metadatapb.SchemaMetadata) bool {
 	for _, schema := range schemas {
 		if len(schema.Views) > 0 {
 			return true
@@ -90,7 +92,7 @@ func hasViews(schemas []*storepb.SchemaMetadata) bool {
 	return false
 }
 
-func hasTables(schemas []*storepb.SchemaMetadata) bool {
+func hasTables(schemas []*metadatapb.SchemaMetadata) bool {
 	for _, schema := range schemas {
 		if len(schema.Tables) > 0 {
 			return true
@@ -99,7 +101,7 @@ func hasTables(schemas []*storepb.SchemaMetadata) bool {
 	return false
 }
 
-func writeAllTablesInOrder(out *strings.Builder, schemas []*storepb.SchemaMetadata) {
+func writeAllTablesInOrder(out *strings.Builder, schemas []*metadatapb.SchemaMetadata) {
 	// Collect all tables from all schemas
 	var allTables []*tableWithSchema
 	for _, schema := range schemas {
@@ -126,7 +128,7 @@ func writeAllTablesInOrder(out *strings.Builder, schemas []*storepb.SchemaMetada
 
 type tableWithSchema struct {
 	schema string
-	table  *storepb.TableMetadata
+	table  *metadatapb.TableMetadata
 }
 
 // sortTablesByDependenciesAcrossSchemas sorts tables using topological sort considering cross-schema foreign key dependencies
@@ -203,7 +205,7 @@ func sortTablesByDependenciesAcrossSchemas(tables []*tableWithSchema) []*tableWi
 	return result
 }
 
-func writeAllViewsInOrder(out *strings.Builder, schemas []*storepb.SchemaMetadata) {
+func writeAllViewsInOrder(out *strings.Builder, schemas []*metadatapb.SchemaMetadata) {
 	// Collect all views from all schemas
 	var allViews []*viewWithSchema
 	for _, schema := range schemas {
@@ -230,7 +232,7 @@ func writeAllViewsInOrder(out *strings.Builder, schemas []*storepb.SchemaMetadat
 
 type viewWithSchema struct {
 	schema string
-	view   *storepb.ViewMetadata
+	view   *metadatapb.ViewMetadata
 }
 
 // sortViewsByDependenciesAcrossSchemas sorts views using topological sort considering cross-schema dependencies
@@ -310,7 +312,7 @@ func sortViewsByDependenciesAcrossSchemas(views []*viewWithSchema) []*viewWithSc
 	return result
 }
 
-func writeTable(out *strings.Builder, schemaName string, table *storepb.TableMetadata) {
+func writeTable(out *strings.Builder, schemaName string, table *metadatapb.TableMetadata) {
 	_, _ = fmt.Fprintf(out, "CREATE TABLE [%s].[%s] (\n", schemaName, table.Name)
 	for i, column := range table.Columns {
 		if i != 0 {
@@ -347,11 +349,11 @@ func writeTable(out *strings.Builder, schemaName string, table *storepb.TableMet
 	}
 }
 
-func writeClusteredColumnStoreIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+func writeClusteredColumnStoreIndex(out *strings.Builder, schemaName string, tableName string, index *metadatapb.IndexMetadata) {
 	_, _ = fmt.Fprintf(out, "CREATE CLUSTERED COLUMNSTORE INDEX [%s] ON [%s].[%s];\n\n", index.Name, schemaName, tableName)
 }
 
-func writeNonClusteredColumnStoreIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+func writeNonClusteredColumnStoreIndex(out *strings.Builder, schemaName string, tableName string, index *metadatapb.IndexMetadata) {
 	_, _ = fmt.Fprintf(out, "CREATE NONCLUSTERED COLUMNSTORE INDEX [%s] ON [%s].[%s] (\n", index.Name, schemaName, tableName)
 	for i, column := range index.Expressions {
 		if i != 0 {
@@ -362,14 +364,14 @@ func writeNonClusteredColumnStoreIndex(out *strings.Builder, schemaName string, 
 	_, _ = out.WriteString("\n);\n\n")
 }
 
-func writeSpatialIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+func writeSpatialIndex(out *strings.Builder, schemaName string, tableName string, index *metadatapb.IndexMetadata) {
 	// Use the enhanced spatial index DDL generation
 	spatialDDL := generateSpatialIndexDefinition(index, schemaName, tableName)
 	_, _ = out.WriteString(spatialDDL)
 	_, _ = out.WriteString(";\n\n")
 }
 
-func writeNormalIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+func writeNormalIndex(out *strings.Builder, schemaName string, tableName string, index *metadatapb.IndexMetadata) {
 	_, _ = out.WriteString("CREATE")
 	if index.Unique {
 		_, _ = out.WriteString(" UNIQUE")
@@ -392,7 +394,7 @@ func writeNormalIndex(out *strings.Builder, schemaName string, tableName string,
 	_, _ = out.WriteString("\n);\n\n")
 }
 
-func writeIndex(out *strings.Builder, schemaName string, tableName string, index *storepb.IndexMetadata) {
+func writeIndex(out *strings.Builder, schemaName string, tableName string, index *metadatapb.IndexMetadata) {
 	switch strings.ToUpper(index.Type) {
 	case "CLUSTERED COLUMNSTORE":
 		writeClusteredColumnStoreIndex(out, schemaName, tableName, index)
@@ -405,11 +407,11 @@ func writeIndex(out *strings.Builder, schemaName string, tableName string, index
 	}
 }
 
-func writeCheck(out *strings.Builder, check *storepb.CheckConstraintMetadata) {
+func writeCheck(out *strings.Builder, check *metadatapb.CheckConstraintMetadata) {
 	_, _ = fmt.Fprintf(out, "    CONSTRAINT [%s] CHECK %s", check.Name, check.Expression)
 }
 
-func writeForeignKey(out *strings.Builder, fk *storepb.ForeignKeyMetadata) {
+func writeForeignKey(out *strings.Builder, fk *metadatapb.ForeignKeyMetadata) {
 	_, _ = fmt.Fprintf(out, "    CONSTRAINT [%s] FOREIGN KEY (", fk.Name)
 	for i, column := range fk.Columns {
 		if i != 0 {
@@ -433,7 +435,7 @@ func writeForeignKey(out *strings.Builder, fk *storepb.ForeignKeyMetadata) {
 	}
 }
 
-func writeKey(out *strings.Builder, key *storepb.IndexMetadata) {
+func writeKey(out *strings.Builder, key *metadatapb.IndexMetadata) {
 	_, _ = fmt.Fprintf(out, "    CONSTRAINT [%s]", key.Name)
 	if key.Primary {
 		_, _ = out.WriteString(" PRIMARY KEY")
@@ -459,7 +461,7 @@ func writeKey(out *strings.Builder, key *storepb.IndexMetadata) {
 	_, _ = out.WriteString(")")
 }
 
-func writeColumn(out *strings.Builder, column *storepb.ColumnMetadata) {
+func writeColumn(out *strings.Builder, column *metadatapb.ColumnMetadata) {
 	_, _ = fmt.Fprintf(out, "    [%s] %s", column.Name, column.Type)
 	if column.IsIdentity {
 		_, _ = fmt.Fprintf(out, " IDENTITY(%d,%d)", column.IdentitySeed, column.IdentityIncrement)
@@ -475,38 +477,38 @@ func writeColumn(out *strings.Builder, column *storepb.ColumnMetadata) {
 	}
 }
 
-func writeView(out *strings.Builder, _ string, view *storepb.ViewMetadata) {
+func writeView(out *strings.Builder, _ string, view *metadatapb.ViewMetadata) {
 	// The view definition already contains CREATE VIEW statement
 	_, _ = fmt.Fprintf(out, "%s;\n\nGO\n\n", view.Definition)
 }
 
-func writeFunction(out *strings.Builder, _ string, function *storepb.FunctionMetadata) {
+func writeFunction(out *strings.Builder, _ string, function *metadatapb.FunctionMetadata) {
 	_, _ = fmt.Fprintf(out, "%s\n\nGO\n\n", function.Definition)
 }
 
-func writeProcedure(out *strings.Builder, _ string, procedure *storepb.ProcedureMetadata) {
+func writeProcedure(out *strings.Builder, _ string, procedure *metadatapb.ProcedureMetadata) {
 	_, _ = fmt.Fprintf(out, "%s\n\nGO\n\n", procedure.Definition)
 }
 
-func GetViewDefinition(schemaName string, view *storepb.ViewMetadata) (string, error) {
+func GetViewDefinition(schemaName string, view *metadatapb.ViewMetadata) (string, error) {
 	var buf strings.Builder
 	writeView(&buf, schemaName, view)
 	return buf.String(), nil
 }
 
-func GetFunctionDefinition(schemaName string, function *storepb.FunctionMetadata) (string, error) {
+func GetFunctionDefinition(schemaName string, function *metadatapb.FunctionMetadata) (string, error) {
 	var buf strings.Builder
 	writeFunction(&buf, schemaName, function)
 	return buf.String(), nil
 }
 
-func GetProcedureDefinition(schemaName string, procedure *storepb.ProcedureMetadata) (string, error) {
+func GetProcedureDefinition(schemaName string, procedure *metadatapb.ProcedureMetadata) (string, error) {
 	var buf strings.Builder
 	writeProcedure(&buf, schemaName, procedure)
 	return buf.String(), nil
 }
 
-func generateSpatialIndexDefinition(index *storepb.IndexMetadata, schemaName, tableName string) string {
+func generateSpatialIndexDefinition(index *metadatapb.IndexMetadata, schemaName, tableName string) string {
 	var buf strings.Builder
 
 	// Build the CREATE SPATIAL INDEX statement
@@ -563,7 +565,7 @@ func generateSpatialIndexDefinition(index *storepb.IndexMetadata, schemaName, ta
 	return buf.String()
 }
 
-func buildTessellationParams(tessellation *storepb.TessellationConfig) []string {
+func buildTessellationParams(tessellation *metadatapb.TessellationConfig) []string {
 	params := []string{}
 
 	// BOUNDING_BOX for GEOMETRY indexes
@@ -592,7 +594,7 @@ func buildTessellationParams(tessellation *storepb.TessellationConfig) []string 
 	return params
 }
 
-func buildStorageParams(storage *storepb.StorageConfig) []string {
+func buildStorageParams(storage *metadatapb.StorageConfig) []string {
 	params := []string{}
 
 	// PAD_INDEX (defaults to OFF, so only output when ON)

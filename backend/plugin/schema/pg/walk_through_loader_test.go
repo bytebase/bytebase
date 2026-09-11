@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/catalog"
 	"github.com/stretchr/testify/require"
 
@@ -64,19 +65,19 @@ func TestClone_BasicIsolation(t *testing.T) {
 // TestClone_WalkThroughIntegration tests the full walk-through flow using Clone:
 // load catalog → clone → exec user DDL on clone → diff → apply.
 func TestClone_WalkThroughIntegration(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "postgres",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer", Position: 1},
 							{Name: "name", Type: "text", Position: 2, Nullable: true},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "users_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
 						},
 					},
@@ -133,9 +134,9 @@ func TestClone_WalkThroughIntegration(t *testing.T) {
 
 // TestClone_SearchPath tests Clone preserves search path and session user.
 func TestClone_SearchPath(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "postgres",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{Name: "public"},
 			{Name: "alice"},
 		},
@@ -175,19 +176,19 @@ func TestClone_SearchPath(t *testing.T) {
 // TestClone_WalkThroughFunction tests the actual WalkThroughWithContext function
 // using Clone (if enabled) produces correct FinalMetadata.
 func TestClone_WalkThroughFunction(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "postgres",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "test",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer", Position: 1},
 							{Name: "name", Type: "text", Position: 2, Nullable: true},
 						},
-						Indexes: []*storepb.IndexMetadata{
+						Indexes: []*metadatapb.IndexMetadata{
 							{Name: "test_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
 						},
 					},
@@ -217,25 +218,25 @@ func TestClone_WalkThroughFunction(t *testing.T) {
 // compositeWalkThroughMetadata has an adversarial name pair (aa_nested sorts
 // before its dependency zz_base) plus an enum-referencing composite and a
 // table using one, so a successful load proves dependency-ordered install.
-func compositeWalkThroughMetadata() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+func compositeWalkThroughMetadata() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				EnumTypes: []*storepb.EnumTypeMetadata{
+				EnumTypes: []*metadatapb.EnumTypeMetadata{
 					{Name: "status", Values: []string{"a", "b"}},
 				},
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						// References zz_base only through an array suffix.
 						Name: "aa_array_only",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "items", Type: "public.zz_base[]"},
 						},
 					},
 					{
 						Name: "aa_nested",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "home", Type: "public.zz_base"},
 							{Name: "s", Type: "public.status"},
 						},
@@ -243,7 +244,7 @@ func compositeWalkThroughMetadata() *storepb.DatabaseSchemaMetadata {
 					{
 						Name:    "zz_base",
 						Comment: "base address type",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "street", Type: "text", Collation: `"C"`, Comment: "street line"},
 							{Name: "city", Type: "character varying(50)"},
 						},
@@ -251,15 +252,15 @@ func compositeWalkThroughMetadata() *storepb.DatabaseSchemaMetadata {
 					{
 						Name:     "ext_owned",
 						SkipDump: true,
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "x", Type: "integer"},
 						},
 					},
 				},
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer", Position: 1},
 							{Name: "home", Type: "public.zz_base", Position: 2, Nullable: true},
 						},
@@ -289,14 +290,14 @@ func TestWalkThroughCompositeFallbackPreservesAttributeNames(t *testing.T) {
 	// A domain-typed attribute cannot install (domains are not loader
 	// objects), forcing the pseudo fallback — which must keep attribute
 	// names so later DDL targeting them still resolves.
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "with_domain",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "p", Type: "public.pos_int"},
 							{Name: "note", Type: "text"},
 						},
@@ -337,7 +338,7 @@ func TestWalkThroughCompositeFallbackPreservesAttributeNames(t *testing.T) {
 	diff := catalog.Diff(cat, catAfter)
 	require.False(t, diff.IsEmpty())
 	newProto := applyDiffToMetadata(meta, cat, catAfter, diff)
-	var applied *storepb.CompositeTypeMetadata
+	var applied *metadatapb.CompositeTypeMetadata
 	for _, composite := range newProto.Schemas[0].CompositeTypes {
 		if composite.Name == "with_domain" {
 			applied = composite
@@ -354,14 +355,14 @@ func TestWalkThroughDropReaddAttributeReadsCatalogType(t *testing.T) {
 	// Dropping and re-adding an attribute with the same name assigns a new
 	// attnum; the rebuilt metadata must take the catalog's new type, not
 	// carry the stale previous metadata.
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				CompositeTypes: []*storepb.CompositeTypeMetadata{
+				CompositeTypes: []*metadatapb.CompositeTypeMetadata{
 					{
 						Name: "with_domain",
-						Attributes: []*storepb.CompositeTypeAttribute{
+						Attributes: []*metadatapb.CompositeTypeAttribute{
 							{Name: "p", Type: "public.pos_int", Comment: "old comment"},
 							{Name: "note", Type: "text"},
 						},
@@ -388,7 +389,7 @@ func TestWalkThroughDropReaddAttributeReadsCatalogType(t *testing.T) {
 	diff := catalog.Diff(cat, catAfter)
 	require.False(t, diff.IsEmpty())
 	newProto := applyDiffToMetadata(meta, cat, catAfter, diff)
-	var applied *storepb.CompositeTypeMetadata
+	var applied *metadatapb.CompositeTypeMetadata
 	for _, composite := range newProto.Schemas[0].CompositeTypes {
 		if composite.Name == "with_domain" {
 			applied = composite
@@ -396,7 +397,7 @@ func TestWalkThroughDropReaddAttributeReadsCatalogType(t *testing.T) {
 	}
 	require.NotNil(t, applied)
 	require.Len(t, applied.Attributes, 2)
-	var p *storepb.CompositeTypeAttribute
+	var p *metadatapb.CompositeTypeAttribute
 	for _, attribute := range applied.Attributes {
 		if attribute.Name == "p" {
 			p = attribute
@@ -441,7 +442,7 @@ func TestWalkThroughAppliesCompositeTypeChanges(t *testing.T) {
 	publicSchema := newMeta.GetSchemaMetadata("public")
 	require.NotNil(t, publicSchema)
 
-	composites := make(map[string]*storepb.CompositeTypeMetadata)
+	composites := make(map[string]*metadatapb.CompositeTypeMetadata)
 	for _, composite := range publicSchema.GetProto().CompositeTypes {
 		composites[composite.Name] = composite
 	}

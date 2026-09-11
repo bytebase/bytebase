@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
@@ -24,7 +25,7 @@ func init() {
 }
 
 // GetDatabaseMetadata parses the database schema text and returns the metadata using TiDB's parser.
-func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
 	// Use TiDB's parser to parse the SQL
 	p := parser.New()
 	p.EnableWindowFunc(true)
@@ -42,10 +43,10 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	extractor := &metadataExtractor{
-		schemas: make(map[string]*storepb.SchemaMetadata),
-		tables:  make(map[tableKey]*storepb.TableMetadata),
-		views:   make(map[viewKey]*storepb.ViewMetadata),
-		result: &storepb.DatabaseSchemaMetadata{
+		schemas: make(map[string]*metadatapb.SchemaMetadata),
+		tables:  make(map[tableKey]*metadatapb.TableMetadata),
+		views:   make(map[viewKey]*metadatapb.ViewMetadata),
+		result: &metadatapb.DatabaseSchemaMetadata{
 			Name: "",
 		},
 	}
@@ -59,31 +60,31 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 	}
 
 	// Build the final metadata structure
-	defaultSchema := &storepb.SchemaMetadata{
+	defaultSchema := &metadatapb.SchemaMetadata{
 		Name: "",
 	}
 
 	// Add tables to schema
-	var tables []*storepb.TableMetadata
+	var tables []*metadatapb.TableMetadata
 	for _, table := range extractor.tables {
 		tables = append(tables, table)
 	}
-	slices.SortFunc(tables, func(a, b *storepb.TableMetadata) int {
+	slices.SortFunc(tables, func(a, b *metadatapb.TableMetadata) int {
 		return strings.Compare(a.Name, b.Name)
 	})
 	defaultSchema.Tables = tables
 
 	// Add views to schema
-	var views []*storepb.ViewMetadata
+	var views []*metadatapb.ViewMetadata
 	for _, view := range extractor.views {
 		views = append(views, view)
 	}
-	slices.SortFunc(views, func(a, b *storepb.ViewMetadata) int {
+	slices.SortFunc(views, func(a, b *metadatapb.ViewMetadata) int {
 		return strings.Compare(a.Name, b.Name)
 	})
 	defaultSchema.Views = views
 
-	extractor.result.Schemas = []*storepb.SchemaMetadata{defaultSchema}
+	extractor.result.Schemas = []*metadatapb.SchemaMetadata{defaultSchema}
 
 	return extractor.result, nil
 }
@@ -99,11 +100,11 @@ type viewKey struct {
 }
 
 type metadataExtractor struct {
-	schemas map[string]*storepb.SchemaMetadata
-	tables  map[tableKey]*storepb.TableMetadata
-	views   map[viewKey]*storepb.ViewMetadata
+	schemas map[string]*metadatapb.SchemaMetadata
+	tables  map[tableKey]*metadatapb.TableMetadata
+	views   map[viewKey]*metadatapb.ViewMetadata
 
-	result *storepb.DatabaseSchemaMetadata
+	result *metadatapb.DatabaseSchemaMetadata
 }
 
 func (m *metadataExtractor) processStatement(stmt ast.StmtNode) error {
@@ -147,7 +148,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 		schemaName = stmt.Table.Schema.O
 	}
 
-	table := &storepb.TableMetadata{
+	table := &metadatapb.TableMetadata{
 		Name:    tableName,
 		Engine:  "InnoDB", // Default for TiDB
 		Comment: "",
@@ -155,7 +156,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 	// Process columns
 	for i, col := range stmt.Cols {
-		column := &storepb.ColumnMetadata{
+		column := &metadatapb.ColumnMetadata{
 			Name:     col.Name.Name.O,
 			Position: int32(i + 1),
 			Nullable: true, // Default, will be overridden by constraints
@@ -212,7 +213,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 		switch constraint.Tp {
 		case ast.ConstraintPrimaryKey:
 			expressions, keyLengths, descending := m.getIndexColumnsInfo(constraint.Keys)
-			index := &storepb.IndexMetadata{
+			index := &metadatapb.IndexMetadata{
 				Name:        "PRIMARY",
 				Primary:     true,
 				Unique:      true,
@@ -226,7 +227,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 		case ast.ConstraintKey, ast.ConstraintIndex:
 			expressions, keyLengths, descending := m.getIndexColumnsInfo(constraint.Keys)
-			index := &storepb.IndexMetadata{
+			index := &metadatapb.IndexMetadata{
 				Name:        constraint.Name,
 				Primary:     false,
 				Unique:      false,
@@ -240,7 +241,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 		case ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex:
 			expressions, keyLengths, descending := m.getIndexColumnsInfo(constraint.Keys)
-			index := &storepb.IndexMetadata{
+			index := &metadatapb.IndexMetadata{
 				Name:        constraint.Name,
 				Primary:     false,
 				Unique:      true,
@@ -253,7 +254,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			table.Indexes = append(table.Indexes, index)
 
 		case ast.ConstraintForeignKey:
-			fk := &storepb.ForeignKeyMetadata{
+			fk := &metadatapb.ForeignKeyMetadata{
 				Name:              constraint.Name,
 				Columns:           m.getColumnNames(constraint.Keys),
 				ReferencedTable:   constraint.Refer.Table.Name.O,
@@ -332,7 +333,7 @@ func (m *metadataExtractor) processCreateView(stmt *ast.CreateViewStmt) error {
 		schemaName = stmt.ViewName.Schema.O
 	}
 
-	view := &storepb.ViewMetadata{
+	view := &metadatapb.ViewMetadata{
 		Name:       viewName,
 		Definition: m.extractViewDefinition(stmt),
 		Comment:    "",
@@ -591,7 +592,7 @@ func (*metadataExtractor) getReferenceAction(action ast.ReferOptionType) string 
 	}
 }
 
-func (m *metadataExtractor) processTiDBTableComment(comment string, table *storepb.TableMetadata) {
+func (m *metadataExtractor) processTiDBTableComment(comment string, table *metadatapb.TableMetadata) {
 	// Process TiDB-specific table comment features like PK_AUTO_RANDOM_BITS
 	pkAutoRandomBitsRegex := regexp.MustCompile(`PK_AUTO_RANDOM_BITS=(\d+)`)
 	if matches := pkAutoRandomBitsRegex.FindStringSubmatch(comment); len(matches) > 1 {
@@ -606,13 +607,13 @@ func (m *metadataExtractor) processTiDBTableComment(comment string, table *store
 	}
 }
 
-func (*metadataExtractor) processAutoRandom(_ *ast.CreateTableStmt, _ *storepb.TableMetadata) {
+func (*metadataExtractor) processAutoRandom(_ *ast.CreateTableStmt, _ *metadatapb.TableMetadata) {
 	// TiDB's AUTO_RANDOM is typically stored in table comments or special constraints
 	// This is a simplified implementation - full AUTO_RANDOM support would require
 	// parsing TiDB-specific syntax extensions
 }
 
-func (*metadataExtractor) isPrimaryKeyColumn(column *storepb.ColumnMetadata, table *storepb.TableMetadata) bool {
+func (*metadataExtractor) isPrimaryKeyColumn(column *metadatapb.ColumnMetadata, table *metadatapb.TableMetadata) bool {
 	for _, index := range table.Indexes {
 		if index.Primary {
 			for _, expr := range index.Expressions {
@@ -645,7 +646,7 @@ func (*metadataExtractor) extractCommentFromExpr(expr ast.ExprNode) string {
 	return ""
 }
 
-func (*metadataExtractor) processGeneratedColumn(option *ast.ColumnOption, column *storepb.ColumnMetadata) {
+func (*metadataExtractor) processGeneratedColumn(option *ast.ColumnOption, column *metadatapb.ColumnMetadata) {
 	if option.Expr != nil {
 		// Extract the generation expression
 		var generationExpr string
@@ -684,7 +685,7 @@ func (*metadataExtractor) getIndexType(constraint *ast.Constraint) string {
 	return indexType
 }
 
-func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, table *storepb.TableMetadata) {
+func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, table *metadatapb.TableMetadata) {
 	// TiDB check constraints are handled differently
 	// For now, skip processing as the AST structure may not have ExprInCheck
 	// In a full implementation, we would need to check the constraint structure
@@ -708,7 +709,7 @@ func (*metadataExtractor) extractViewDefinition(stmt *ast.CreateViewStmt) string
 }
 
 // processColumnLevelConstraints creates indexes for column-level PRIMARY KEY and UNIQUE constraints
-func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStmt, table *storepb.TableMetadata) {
+func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStmt, table *metadatapb.TableMetadata) {
 	var primaryKeyColumns []string
 	var uniqueConstraints []struct {
 		columnName string
@@ -748,7 +749,7 @@ func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStm
 			keyLengths[i] = -1 // No prefix length for column-level constraints
 		}
 
-		index := &storepb.IndexMetadata{
+		index := &metadatapb.IndexMetadata{
 			Name:        "PRIMARY",
 			Primary:     true,
 			Unique:      true,
@@ -763,7 +764,7 @@ func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStm
 
 	// Create UNIQUE indexes for column-level unique constraints
 	for _, unique := range uniqueConstraints {
-		index := &storepb.IndexMetadata{
+		index := &metadatapb.IndexMetadata{
 			Name:        unique.indexName,
 			Primary:     false,
 			Unique:      true,
@@ -778,14 +779,14 @@ func (*metadataExtractor) processColumnLevelConstraints(stmt *ast.CreateTableStm
 }
 
 // ensureForeignKeyIndexes creates indexes for all foreign key columns if they don't already exist
-func (m *metadataExtractor) ensureForeignKeyIndexes(table *storepb.TableMetadata) {
+func (m *metadataExtractor) ensureForeignKeyIndexes(table *metadatapb.TableMetadata) {
 	for _, fk := range table.ForeignKeys {
 		m.ensureForeignKeyIndex(fk, table)
 	}
 }
 
 // ensureForeignKeyIndex creates an index for foreign key columns if one doesn't already exist
-func (*metadataExtractor) ensureForeignKeyIndex(fk *storepb.ForeignKeyMetadata, table *storepb.TableMetadata) {
+func (*metadataExtractor) ensureForeignKeyIndex(fk *metadatapb.ForeignKeyMetadata, table *metadatapb.TableMetadata) {
 	// Check if an index already exists that covers the foreign key columns
 	fkColumns := fk.Columns
 
@@ -819,7 +820,7 @@ func (*metadataExtractor) ensureForeignKeyIndex(fk *storepb.ForeignKeyMetadata, 
 		keyLengths[i] = -1 // No prefix length for FK indexes
 	}
 
-	index := &storepb.IndexMetadata{
+	index := &metadatapb.IndexMetadata{
 		Name:        indexName,
 		Primary:     false,
 		Unique:      false,

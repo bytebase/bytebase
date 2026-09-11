@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -34,7 +35,7 @@ func hasKeyword(cands []base.Candidate, text string) bool {
 	return false
 }
 
-func metadataFunc(meta *storepb.DatabaseSchemaMetadata) base.GetDatabaseMetadataFunc {
+func metadataFunc(meta *metadatapb.DatabaseSchemaMetadata) base.GetDatabaseMetadataFunc {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 		return databaseName, model.NewDatabaseMetadata(meta, nil, nil, storepb.Engine_TIDB, true /* isObjectCaseSensitive */), nil
 	}
@@ -88,15 +89,15 @@ func candidateSet(cands []base.Candidate, types ...base.CandidateType) map[strin
 // catalog DDL backticks identifiers; the quoted candidate text proves the shim
 // quotes reserved object names on the way out.
 func TestCompletion_ReservedWordIdentifiersSurface(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "order",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "select"},
 							{Name: "key"},
 						},
@@ -131,13 +132,13 @@ func TestCompletion_ReservedWordIdentifiersSurface(t *testing.T) {
 // column name still surfaces. Without that retry the failing CREATE TABLE would
 // drop the entire table from the catalog.
 func TestCompletion_UnparseableColumnTypeFallsBackToGeneric(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
-					{Name: "t", Columns: []*storepb.ColumnMetadata{
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "t", Columns: []*metadatapb.ColumnMetadata{
 						{Name: "good", Type: "int"},
 						{Name: "weird", Type: ")"}, // unparseable type — forces the generic retry
 					}},
@@ -159,9 +160,9 @@ func TestCompletion_UnparseableColumnTypeFallsBackToGeneric(t *testing.T) {
 // In the read-only query scene, write statements (DML/DDL incl. TiDB BATCH)
 // must be filtered out, while read keywords (SELECT) stay.
 func TestCompletion_QuerySceneFiltersWriteKeywords(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name:    "testdb",
-		Schemas: []*storepb.SchemaMetadata{{Name: ""}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
 	})
 	ccx := func(scene base.SceneType) base.CompletionContext {
 		return base.CompletionContext{Scene: scene, DefaultDatabase: "testdb", Metadata: meta}
@@ -192,9 +193,9 @@ func TestCompletion_QuerySceneFiltersWriteKeywords(t *testing.T) {
 // position. Context-specific keywords that are valid inside read statements must
 // survive — e.g. CREATE in SHOW CREATE TABLE, UPDATE in SELECT ... FOR UPDATE.
 func TestCompletion_QuerySceneKeepsReadSubkeywords(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name:    "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: ""}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
 	})
 	q := base.CompletionContext{Scene: base.SceneTypeQuery, DefaultDatabase: "db", Metadata: meta}
 
@@ -213,9 +214,9 @@ func TestCompletion_QuerySceneKeepsReadSubkeywords(t *testing.T) {
 // prefix at a statement-start position (the common autocomplete path), while
 // still preserving read sub-keywords typed mid-statement.
 func TestCompletion_QuerySceneFiltersWriteKeywordPrefix(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name:    "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: ""}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
 	})
 	q := base.CompletionContext{Scene: base.SceneTypeQuery, DefaultDatabase: "db", Metadata: meta}
 
@@ -242,9 +243,9 @@ func TestCompletion_QuerySceneFiltersWriteKeywordPrefix(t *testing.T) {
 // cannot produce it. Its presence for Engine_TIDB and absence for Engine_MYSQL
 // proves Engine_TIDB now routes through the omni shim, not the mysql completer.
 func TestCompletion_TiDBRoutesThroughOmni(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name:    "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: ""}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
 	})
 	cCtx := base.CompletionContext{
 		Scene:             base.SceneTypeAll,
@@ -274,16 +275,16 @@ func TestCompletion_TiDBRoutesThroughOmni(t *testing.T) {
 // fully-qualified db.table.col refs) that omni omits, because omni resolves the
 // in-scope columns directly instead. Tracked as a follow-up candidate gap.
 func TestCompletion_NoCoreCandidateLossVsMySQL(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
-					{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "c1"}}},
-					{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "c1"}, {Name: "c2"}}},
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}}},
+					{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}, {Name: "c2"}}},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{Name: "v1", Definition: "SELECT c1 FROM t1"}, // bare SELECT, as TiDB sync stores it
 				},
 			},
@@ -335,9 +336,9 @@ func TestCompletion_NoCoreCandidateLossVsMySQL(t *testing.T) {
 // candidates must still surface so the user can pick a database.
 func TestCompletion_InstanceLevelDatabaseCandidates(t *testing.T) {
 	meta := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
-		return databaseName, model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		return databaseName, model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 			Name:    databaseName,
-			Schemas: []*storepb.SchemaMetadata{{Name: ""}},
+			Schemas: []*metadatapb.SchemaMetadata{{Name: ""}},
 		}, nil, nil, storepb.Engine_TIDB, true), nil
 	}
 	cCtx := base.CompletionContext{
@@ -359,11 +360,11 @@ func TestCompletion_InstanceLevelDatabaseCandidates(t *testing.T) {
 // Completion must be limited to the statement containing the caret: table refs
 // from earlier statements in the buffer must not leak into the candidate set.
 func TestCompletion_LimitsToStatementAtCaret(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
-			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
-			{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
+			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
+			{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
 		}}},
 	})
 	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
@@ -386,12 +387,12 @@ func TestCompletion_LimitsToStatementAtCaret(t *testing.T) {
 // so the view must still be installed (and surface as a candidate) via the
 // wrapped CREATE VIEW form rather than being treated as already created.
 func TestCompletion_ViewWithBareSelectDefinitionSurfaces(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name:   "",
-			Tables: []*storepb.TableMetadata{{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "id"}}}},
-			Views:  []*storepb.ViewMetadata{{Name: "v1", Definition: "SELECT id FROM t1"}},
+			Tables: []*metadatapb.TableMetadata{{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}}},
+			Views:  []*metadatapb.ViewMetadata{{Name: "v1", Definition: "SELECT id FROM t1"}},
 		}},
 	})
 	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
@@ -407,11 +408,11 @@ func TestCompletion_ViewWithBareSelectDefinitionSurfaces(t *testing.T) {
 // reference must be scoped to the qualifier's table (relies on the omni resolver
 // honoring the qualifier — pulled in via the go.mod bump).
 func TestCompletion_QualifiedColumnScopedInJoin(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
-			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
-			{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
+			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
+			{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
 		}}},
 	})
 	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
@@ -435,11 +436,11 @@ func TestCompletion_QualifiedColumnScopedInJoin(t *testing.T) {
 // An unknown column qualifier narrows to no columns rather than broadening to
 // all in-scope columns (relies on the omni resolver fix pulled in via the bump).
 func TestCompletion_UnknownQualifierOffersNoColumns(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
-			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
-			{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
+			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "a1"}, {Name: "a2"}}},
+			{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "b1"}, {Name: "b2"}}},
 		}}},
 	})
 	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
@@ -460,10 +461,10 @@ func TestCompletion_UnknownQualifierOffersNoColumns(t *testing.T) {
 // Function candidates carry a "()" suffix, matching the mysql completer, so the
 // completion text inserts a call site.
 func TestCompletion_FunctionCandidatesGetParens(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
-			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "id"}}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
+			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}},
 		}}},
 	})
 	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
@@ -547,10 +548,10 @@ func TestStatementReferencesDatabase(t *testing.T) {
 // A backtick inside a preceding string literal must not be treated as an open
 // identifier quote: the reserved table name must still be quoted on the way out.
 func TestCompletion_QuotesReservedNameAfterStringLiteralWithBacktick(t *testing.T) {
-	meta := metadataFunc(&storepb.DatabaseSchemaMetadata{
+	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
-			{Name: "order", Columns: []*storepb.ColumnMetadata{{Name: "id"}}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
+			{Name: "order", Columns: []*metadatapb.ColumnMetadata{{Name: "id"}}},
 		}}},
 	})
 	cCtx := base.CompletionContext{Scene: base.SceneTypeAll, DefaultDatabase: "db", Metadata: meta}
@@ -569,16 +570,16 @@ func TestCompletion_QuotesReservedNameAfterStringLiteralWithBacktick(t *testing.
 // omni-side limitation — omni ignores the table qualifier — tracked as a
 // follow-up, not asserted here.)
 func TestCompletion_QualifiedColumnAcrossDatabases(t *testing.T) {
-	appMeta := &storepb.DatabaseSchemaMetadata{
+	appMeta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "appdb",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
-			{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "c1"}}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
+			{Name: "t1", Columns: []*metadatapb.ColumnMetadata{{Name: "c1"}}},
 		}}},
 	}
-	otherMeta := &storepb.DatabaseSchemaMetadata{
+	otherMeta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "otherdb",
-		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
-			{Name: "t2", Columns: []*storepb.ColumnMetadata{{Name: "c2"}, {Name: "c3"}}},
+		Schemas: []*metadatapb.SchemaMetadata{{Name: "", Tables: []*metadatapb.TableMetadata{
+			{Name: "t2", Columns: []*metadatapb.ColumnMetadata{{Name: "c2"}, {Name: "c3"}}},
 		}}},
 	}
 	metaFn := func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {

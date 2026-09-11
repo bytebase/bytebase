@@ -7,10 +7,9 @@ import (
 
 	"github.com/pkg/errors"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/bytebase/omni/pg/catalog"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 // ---------------- typeNameFromString ----------------
@@ -415,7 +414,7 @@ func TestLoaderQualifiedNameList(t *testing.T) {
 // ---------------- real builders ----------------
 
 func TestLoaderBuildCreateEnumStmt(t *testing.T) {
-	stmt := buildCreateEnumStmt("public", &storepb.EnumTypeMetadata{
+	stmt := buildCreateEnumStmt("public", &metadatapb.EnumTypeMetadata{
 		Name:   "task_status",
 		Values: []string{"pending", "running", "done"},
 	})
@@ -429,9 +428,9 @@ func TestLoaderBuildCreateEnumStmt(t *testing.T) {
 }
 
 func TestLoaderBuildCreateStmt(t *testing.T) {
-	stmt, err := buildCreateStmt("public", &storepb.TableMetadata{
+	stmt, err := buildCreateStmt("public", &metadatapb.TableMetadata{
 		Name: "t",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "int4", Nullable: false},
 			{Name: "name", Type: "text", Nullable: true},
 			{Name: "amount", Type: "numeric(10,2)", Nullable: true},
@@ -455,9 +454,9 @@ func TestLoaderBuildCreateStmt(t *testing.T) {
 }
 
 func TestLoaderBuildCreateStmt_BadTypeErrors(t *testing.T) {
-	_, err := buildCreateStmt("public", &storepb.TableMetadata{
+	_, err := buildCreateStmt("public", &metadatapb.TableMetadata{
 		Name: "t",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "bad", Type: "this is not a type at all;;"},
 		},
 	})
@@ -467,9 +466,9 @@ func TestLoaderBuildCreateStmt_BadTypeErrors(t *testing.T) {
 }
 
 func TestLoaderBuildCreateStmt_EmptyTypeErrors(t *testing.T) {
-	_, err := buildCreateStmt("public", &storepb.TableMetadata{
+	_, err := buildCreateStmt("public", &metadatapb.TableMetadata{
 		Name:    "t",
-		Columns: []*storepb.ColumnMetadata{{Name: "x", Type: ""}},
+		Columns: []*metadatapb.ColumnMetadata{{Name: "x", Type: ""}},
 	})
 	if err == nil {
 		t.Fatal("expected error for empty column type")
@@ -479,9 +478,9 @@ func TestLoaderBuildCreateStmt_EmptyTypeErrors(t *testing.T) {
 func TestLoaderBuildViewStmt(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
-	base, err := buildCreateStmt("public", &storepb.TableMetadata{
+	base, err := buildCreateStmt("public", &metadatapb.TableMetadata{
 		Name: "orders",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "int4"},
 			{Name: "total", Type: "int4"},
 		},
@@ -492,7 +491,7 @@ func TestLoaderBuildViewStmt(t *testing.T) {
 	if err := cat.DefineRelation(base, 'r'); err != nil {
 		t.Fatalf("install base: %v", err)
 	}
-	stmt, err := buildViewStmt("public", &storepb.ViewMetadata{
+	stmt, err := buildViewStmt("public", &metadatapb.ViewMetadata{
 		Name:       "v",
 		Definition: "SELECT id, total FROM orders",
 	})
@@ -505,7 +504,7 @@ func TestLoaderBuildViewStmt(t *testing.T) {
 }
 
 func TestLoaderBuildViewStmt_EmptyDefinition(t *testing.T) {
-	_, err := buildViewStmt("public", &storepb.ViewMetadata{Name: "v"})
+	_, err := buildViewStmt("public", &metadatapb.ViewMetadata{Name: "v"})
 	if err == nil {
 		t.Fatal("expected error for empty definition")
 	}
@@ -514,9 +513,9 @@ func TestLoaderBuildViewStmt_EmptyDefinition(t *testing.T) {
 func TestLoaderBuildCreateTableAsStmt(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
-	base, err := buildCreateStmt("public", &storepb.TableMetadata{
+	base, err := buildCreateStmt("public", &metadatapb.TableMetadata{
 		Name: "orders",
-		Columns: []*storepb.ColumnMetadata{
+		Columns: []*metadatapb.ColumnMetadata{
 			{Name: "id", Type: "int4"},
 		},
 	})
@@ -526,7 +525,7 @@ func TestLoaderBuildCreateTableAsStmt(t *testing.T) {
 	if err := cat.DefineRelation(base, 'r'); err != nil {
 		t.Fatalf("install base: %v", err)
 	}
-	stmt, err := buildCreateTableAsStmt("public", &storepb.MaterializedViewMetadata{
+	stmt, err := buildCreateTableAsStmt("public", &metadatapb.MaterializedViewMetadata{
 		Name:       "m",
 		Definition: "SELECT id FROM orders",
 	})
@@ -541,7 +540,7 @@ func TestLoaderBuildCreateTableAsStmt(t *testing.T) {
 func TestLoaderBuildCreateFunctionStmt(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
-	stmt, err := buildCreateFunctionStmt("public", &storepb.FunctionMetadata{
+	stmt, err := buildCreateFunctionStmt("public", &metadatapb.FunctionMetadata{
 		Name:      "fn",
 		Signature: "fn(integer, text)",
 	})
@@ -559,7 +558,7 @@ func TestLoaderBuildCreateFunctionStmt(t *testing.T) {
 func TestLoaderBuildCreateFunctionStmt_ZeroArgs(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
-	stmt, err := buildCreateFunctionStmt("public", &storepb.FunctionMetadata{
+	stmt, err := buildCreateFunctionStmt("public", &metadatapb.FunctionMetadata{
 		Name:      "fn",
 		Signature: "fn()",
 	})
@@ -625,24 +624,24 @@ func TestLoaderParseSelectBody(t *testing.T) {
 func TestLoader_HappyPath(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			EnumTypes: []*storepb.EnumTypeMetadata{
+			EnumTypes: []*metadatapb.EnumTypeMetadata{
 				{Name: "task_status", Values: []string{"pending", "running"}},
 			},
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "tasks",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int4"},
 					{Name: "status", Type: "public.task_status"},
 					{Name: "title", Type: "text"},
 				},
 			}},
-			Views: []*storepb.ViewMetadata{{
+			Views: []*metadatapb.ViewMetadata{{
 				Name:       "open_tasks",
 				Definition: "SELECT id, title, status FROM tasks",
-				DependencyColumns: []*storepb.DependencyColumn{
+				DependencyColumns: []*metadatapb.DependencyColumn{
 					{Schema: "public", Table: "tasks", Column: "id"},
 					{Schema: "public", Table: "tasks", Column: "title"},
 					{Schema: "public", Table: "tasks", Column: "status"},
@@ -671,12 +670,12 @@ func TestLoader_HappyPath(t *testing.T) {
 func TestLoader_BrokenEnumCascadesToPseudo(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "t",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int4"},
 					// Reference a user type that is not in metadata. The
 					// real install will fail; pseudo should take over.
@@ -708,22 +707,22 @@ func TestLoader_BrokenEnumCascadesToPseudo(t *testing.T) {
 func TestLoader_TopoOrder_DependencyBeforeUse(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
 			// View is listed BEFORE its base table in metadata. The loader
 			// must reorder so the table is installed first; otherwise the
 			// view body analyzes against an empty catalog.
-			Views: []*storepb.ViewMetadata{{
+			Views: []*metadatapb.ViewMetadata{{
 				Name:       "v",
 				Definition: "SELECT id FROM base",
-				DependencyColumns: []*storepb.DependencyColumn{
+				DependencyColumns: []*metadatapb.DependencyColumn{
 					{Schema: "public", Table: "base", Column: "id"},
 				},
 			}},
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "base",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "id", Type: "int4"},
 				},
 			}},
@@ -745,21 +744,21 @@ func TestLoader_CycleBreaking(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
 	// Two views referencing each other — a metadata-level cycle.
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Views: []*storepb.ViewMetadata{
+			Views: []*metadatapb.ViewMetadata{
 				{
 					Name:       "v_alpha",
 					Definition: "SELECT id FROM v_beta",
-					DependencyColumns: []*storepb.DependencyColumn{
+					DependencyColumns: []*metadatapb.DependencyColumn{
 						{Schema: "public", Table: "v_beta", Column: "id"},
 					},
 				},
 				{
 					Name:       "v_beta",
 					Definition: "SELECT id FROM v_alpha",
-					DependencyColumns: []*storepb.DependencyColumn{
+					DependencyColumns: []*metadatapb.DependencyColumn{
 						{Schema: "public", Table: "v_alpha", Column: "id"},
 					},
 				},
@@ -789,15 +788,15 @@ func TestLoader_CycleBreaking(t *testing.T) {
 
 func TestLoader_LoaderObjectsTracksEverything(t *testing.T) {
 	cat := catalog.New()
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			EnumTypes: []*storepb.EnumTypeMetadata{
+			EnumTypes: []*metadatapb.EnumTypeMetadata{
 				{Name: "e", Values: []string{"a"}},
 			},
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name:    "t",
-				Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "int4"}},
+				Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "int4"}},
 			}},
 		}},
 	}
@@ -823,7 +822,7 @@ func TestLoader_NilMetaIsNoop(t *testing.T) {
 }
 
 func TestLoader_NilCatalogErrors(t *testing.T) {
-	loader := newCatalogLoader(nil, &storepb.DatabaseSchemaMetadata{})
+	loader := newCatalogLoader(nil, &metadatapb.DatabaseSchemaMetadata{})
 	if err := loader.Load(context.Background()); err == nil {
 		t.Error("expected error for nil catalog")
 	}
@@ -836,10 +835,10 @@ func TestLoader_NilCatalogErrors(t *testing.T) {
 func TestLoader_FunctionOverloadsAllInstalled(t *testing.T) {
 	cat := catalog.New()
 	cat.SetSearchPath([]string{"public"})
-	meta := &storepb.DatabaseSchemaMetadata{
-		Schemas: []*storepb.SchemaMetadata{{
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Functions: []*storepb.FunctionMetadata{
+			Functions: []*metadatapb.FunctionMetadata{
 				{
 					Name:       "fn",
 					Signature:  "fn(integer)",
@@ -881,9 +880,9 @@ func TestLoaderTopoSort_Determinism(t *testing.T) {
 	// for the same input.
 	objects := []*objectEntry{
 		{kind: kindSchema, schema: "public", name: "public"},
-		{kind: kindTable, schema: "public", name: "b", tableMeta: &storepb.TableMetadata{Name: "b"}},
-		{kind: kindTable, schema: "public", name: "a", tableMeta: &storepb.TableMetadata{Name: "a"}},
-		{kind: kindEnum, schema: "public", name: "e", enumMeta: &storepb.EnumTypeMetadata{Name: "e"}},
+		{kind: kindTable, schema: "public", name: "b", tableMeta: &metadatapb.TableMetadata{Name: "b"}},
+		{kind: kindTable, schema: "public", name: "a", tableMeta: &metadatapb.TableMetadata{Name: "a"}},
+		{kind: kindEnum, schema: "public", name: "e", enumMeta: &metadatapb.EnumTypeMetadata{Name: "e"}},
 	}
 	first := topoSortObjects(objects)
 	second := topoSortObjects(objects)

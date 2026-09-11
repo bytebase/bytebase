@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/tidb/ast"
 	pingcapast "github.com/pingcap/tidb/pkg/parser/ast"
 
@@ -438,7 +439,7 @@ func omniCollectTableAliases(t ast.TableExpr, defaultDB string, m *updateTableAl
 //     refs at execution time).
 //
 // Returns deduplicated targets.
-func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap, dbMetadata *storepb.DatabaseSchemaMetadata) []priorBackupTable {
+func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap, dbMetadata *metadatapb.DatabaseSchemaMetadata) []priorBackupTable {
 	var result []priorBackupTable
 	seen := make(map[string]bool)
 	add := func(t priorBackupTable) {
@@ -524,7 +525,7 @@ func omniExtractUpdateTargets(setList []*ast.Assignment, m *updateTableAliasMap,
 // SET fall through to the zero-match path → all distinctBases
 // fallback. Case-insensitive matching on table/column names per
 // MySQL convention.
-func omniResolveUnqualifiedSETColumn(colName string, distinctBases []priorBackupTable, dbMetadata *storepb.DatabaseSchemaMetadata) []priorBackupTable {
+func omniResolveUnqualifiedSETColumn(colName string, distinctBases []priorBackupTable, dbMetadata *metadatapb.DatabaseSchemaMetadata) []priorBackupTable {
 	if colName == "" {
 		return distinctBases
 	}

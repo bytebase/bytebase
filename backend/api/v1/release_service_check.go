@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/proto"
@@ -352,7 +353,7 @@ loop:
 		originMetadata := model.NewDatabaseMetadata(dbMetadata.GetProto(), nil, nil, engine, store.IsObjectCaseSensitive(instance))
 
 		// Clone metadata for final to avoid modifying the original
-		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*storepb.DatabaseSchemaMetadata)
+		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*metadatapb.DatabaseSchemaMetadata)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
