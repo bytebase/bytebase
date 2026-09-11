@@ -1615,7 +1615,7 @@
         "line": {
           "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza también se registra",
           "capped-read-only": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase puede comprobar en cada motor: donde no puede demostrar que una sentencia es de lectura, no se ejecuta ninguna consulta",
-          "capped-read-write": "Limitado por sus propios permisos de Bytebase. Este modo no exige que una sentencia sea de lectura",
+          "capped-read-write": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase admite en cada motor de base de datos: este modo levanta el límite de solo lectura donde puede y rechaza la escritura por completo donde no puede",
           "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
           "no-write": "Sin cambios, despliegues ni exportaciones"
         },
@@ -2662,7 +2662,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una conexión de administración ni leer el historial de consultas de otra persona."
+          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -2680,7 +2680,7 @@
             "title": "Gestionar el mantenimiento de bases de datos"
           },
           "propose": {
-            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear y eliminar versiones y revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
+            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones y revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
             "title": "Proponer cambios"
           },
           "read-data": {
@@ -2732,8 +2732,8 @@
           "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
         },
         "masking-pending": {
-          "applied": "Esta política se guardará con las exenciones de enmascaramiento aplicadas, igual que fuera de MCP.",
-          "ignored": "Esta política se guardará con las exenciones de enmascaramiento ignoradas, lo que surte efecto cuando se active MCP."
+          "applied": "Esta política se guardará con las exenciones de enmascaramiento aplicadas.",
+          "ignored": "Esta política se guardará con las exenciones de enmascaramiento ignoradas."
         },
         "mode": {
           "disabled": {

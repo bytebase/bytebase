@@ -125,13 +125,20 @@ export function MCPAccessPolicySection() {
         }),
         updateMask: create(FieldMaskSchema, { paths }),
       });
-      setEditing(false);
+      // Re-read before leaving the editor. refreshServerInfo throws without
+      // clearing what it holds, so closing first would present the pre-save
+      // policy as current; staying in the editor keeps the pick the admin made,
+      // and saving again is the same write.
       await refreshServerInfo();
+      setEditing(false);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
         title: t("settings.mcp.policy.saved", { mode: modeLabel(pick) }),
       });
+    } catch {
+      // The response interceptor reports both failures; there is nothing to add
+      // and nothing to undo, and an unhandled rejection would escape onClick.
     } finally {
       setSaving(false);
     }
@@ -172,38 +179,37 @@ export function MCPAccessPolicySection() {
         })
       : t("settings.mcp.policy.tightening");
 
-  // A masking edit survives a pick that hides its control, and is written with
-  // the rest. Under such a pick the footer is the flag's only disclosure, so it
-  // names the value Save writes — whenever that value will be set, not only
-  // when this edit changed it.
+  // Disabled is the one pick that withholds the toggle and can still be saved,
+  // so it is the one state where the footer is the flag's only disclosure. It
+  // names the value Save writes whenever that value will be set, not only when
+  // this edit changed it — and says nothing about when the value takes effect,
+  // which depends on a masking license this line cannot see.
   const maskingPending =
-    !maskingApplies && (ignoreMasking || maskingChanged)
+    canSave &&
+    pick === MCPSetting_Capability.DISABLED &&
+    (ignoreMasking || storedIgnoreMasking)
       ? ignoreMasking
         ? t("settings.mcp.policy.masking-pending.ignored")
         : t("settings.mcp.policy.masking-pending.applied")
       : undefined;
 
-  // The stored flag's chip, and which of three things that flag is doing. The
-  // arm is chosen by naming the mode it means: a negation would also catch the
-  // ceiling this build cannot parse and label a policy nobody turned off as
-  // "MCP is off".
-  const maskingBadge =
-    storedMode === undefined
-      ? undefined
-      : storedMode === MCPSetting_Capability.DISABLED
-        ? {
-            variant: "default" as const,
-            text: t("settings.mcp.policy.masking.badge-disabled"),
-          }
-        : dataMaskingAvailable
-          ? {
-              variant: "secondary" as const,
-              text: t("settings.mcp.policy.masking.badge"),
-            }
-          : {
-              variant: "default" as const,
-              text: t("settings.mcp.policy.masking.badge-unlicensed"),
-            };
+  // What the stored flag is doing, for the view that reports it. Takes the mode
+  // rather than reading `storedMode`, so the branch that already proved there is
+  // a stored mode passes the proof in instead of re-testing for it.
+  const maskingBadgeFor = (mode: MCPMode) =>
+    mode === MCPSetting_Capability.DISABLED ? (
+      <Badge variant="default">
+        {t("settings.mcp.policy.masking.badge-disabled")}
+      </Badge>
+    ) : dataMaskingAvailable ? (
+      <Badge variant="secondary">
+        {t("settings.mcp.policy.masking.badge")}
+      </Badge>
+    ) : (
+      <Badge variant="default">
+        {t("settings.mcp.policy.masking.badge-unlicensed")}
+      </Badge>
+    );
 
   // Three states share this slot and only the last renders a policy. Early
   // returns rather than a ternary chain, so each state is named where it is
@@ -246,11 +252,7 @@ export function MCPAccessPolicySection() {
                     mode: modeLabel(storedMode),
                   })}
                 />
-                {storedIgnoreMasking && maskingBadge && (
-                  <Badge variant={maskingBadge.variant}>
-                    {maskingBadge.text}
-                  </Badge>
-                )}
+                {storedIgnoreMasking && maskingBadgeFor(storedMode)}
               </div>
             )}
             <PermissionGuard permissions={["bb.settings.set"]}>
@@ -305,10 +307,6 @@ export function MCPAccessPolicySection() {
                   <RadioGroupItem
                     key={capability}
                     value={String(capability)}
-                    // The group's disabled state never reaches the item's own
-                    // prop, so without this the card keeps its pointer and its
-                    // hover while a save swallows the click.
-                    disabled={saving}
                     // The item wraps the whole card in a label, so without this
                     // the radio's name absorbs the caption too.
                     aria-label={modeLabel(capability)}
@@ -320,7 +318,7 @@ export function MCPAccessPolicySection() {
                           // colors resolves every one of them to the same
                           // system value; the outline is what still separates
                           // the selected card from the other two.
-                          "border-accent bg-accent/5 ring-1 ring-accent forced-colors:outline forced-colors:outline-2"
+                          "border-accent bg-accent/5 ring-1 ring-accent forced-colors:outline-2"
                         : "border-control-border",
                       !picked &&
                         !saving &&

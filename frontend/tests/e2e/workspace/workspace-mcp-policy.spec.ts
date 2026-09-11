@@ -6,6 +6,7 @@
 // workspace-seat-limit's license drop (directory order).
 
 import { test, expect, type Page } from "@playwright/test";
+import { rowsInTier } from "../../../src/components/mcp/mcpCapabilityRows";
 import enUS from "../../../src/locales/en-US.json";
 import {
   STORAGE_KEY_MCP_LADDER_DETAILS,
@@ -28,15 +29,13 @@ let env: TestEnv & { api: BytebaseApiClient };
 // then "restore" the workspace to a ceiling it never had.
 let originalMCPSetting: Record<string, unknown>;
 
-// The eight row titles, in list order. They are the product's claim about what
-// a mode allows, and the same strings the consent page reuses.
+// The row titles, in list order, derived from the table the product renders —
+// a ninth row must change this spec rather than leave it green against eight.
 const rowTitle = (id: keyof typeof COPY.ladder.row) => COPY.ladder.row[id].title;
-const READ_ROWS = (
-  ["read-schemas", "read-data", "read-workflow"] as const
-).map(rowTitle);
-const WRITE_ROWS = (
-  ["propose", "run-rollouts", "run-statements", "export", "manage"] as const
-).map(rowTitle);
+const titlesInTier = (tier: "read" | "write") =>
+  rowsInTier(tier).map((row) => rowTitle(row.id as keyof typeof COPY.ladder.row));
+const READ_ROWS = titlesInTier("read");
+const WRITE_ROWS = titlesInTier("write");
 
 const READ_ONLY_SUMMARY = COPY.ladder.summary["read-only"];
 const READ_WRITE_SUMMARY = COPY.ladder.summary["read-write"];

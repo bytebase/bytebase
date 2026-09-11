@@ -8,6 +8,7 @@ import {
   rowsInTier,
   servedRows,
 } from "./mcpCapabilityRows";
+import { isServingMode, MCP_CAPABILITY_CHOICES } from "./mcpPolicy";
 
 describe("mcpCapabilityRows", () => {
   // Each mode is a PREFIX of the one list. It is what lets a single ladder show
@@ -31,6 +32,18 @@ describe("mcpCapabilityRows", () => {
     expect(servedRows(MCPSetting_Capability.READ_WRITE)).toHaveLength(
       MCP_CAPABILITY_ROWS.length
     );
+  });
+
+  // isServingMode gates the ladder, the masking toggle and the consent routing,
+  // and is the one mode predicate the compiler does not force: a fourth serving
+  // mode breaks SERVES and MCP_MODE_PRESENTATION, but leaves this answering
+  // "false" and sending the session to the Disabled consent screen.
+  test("a mode serves a session exactly when it serves a row", () => {
+    for (const mode of MCP_CAPABILITY_CHOICES) {
+      expect(isServingMode(mode), String(mode)).toBe(
+        MCP_CAPABILITY_ROWS.some((row) => isRowServed(mode, row))
+      );
+    }
   });
 
   test("read-only serves no write row, so no write tag can appear under it", () => {

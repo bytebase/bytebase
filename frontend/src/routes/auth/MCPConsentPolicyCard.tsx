@@ -17,7 +17,8 @@ export interface MCPConsentLine {
 
 interface Props {
   readonly label: string;
-  readonly mode: MCPMode;
+  /** Omitted by the panel for a ceiling this build has no name for. */
+  readonly mode?: MCPMode;
   readonly lines: readonly MCPConsentLine[];
 }
 
@@ -33,7 +34,7 @@ export function MCPConsentPolicyCard({ label, mode, lines }: Props) {
     <div className="bg-control-bg rounded-sm p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between gap-x-2">
         <p className="text-sm text-control-light">{label}</p>
-        <MCPModeBadge mode={mode} />
+        {mode !== undefined && <MCPModeBadge mode={mode} />}
       </div>
       <ul className="text-sm text-main flex flex-col gap-2">
         {lines.map((line) => (

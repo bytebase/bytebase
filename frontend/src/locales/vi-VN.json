@@ -1615,7 +1615,7 @@
         "line": {
           "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
           "capped-read-only": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì Bytebase có thể kiểm tra trên từng engine — nơi không thể chứng minh một câu lệnh là đọc, không truy vấn nào chạy",
-          "capped-read-write": "Giới hạn bởi quyền Bytebase của chính bạn. Chế độ này không yêu cầu câu lệnh phải là thao tác đọc",
+          "capped-read-write": "Giới hạn bởi quyền Bytebase của chính bạn và bởi mức hỗ trợ của Bytebase trên từng loại cơ sở dữ liệu — chế độ này gỡ giới hạn chỉ đọc ở nơi có thể, và từ chối hẳn thao tác ghi ở nơi không thể",
           "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
           "no-write": "Không thay đổi, triển khai hay xuất dữ liệu"
         },
@@ -2662,7 +2662,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở kết nối quản trị, hoặc đọc lịch sử truy vấn của người khác."
+          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -2680,7 +2680,7 @@
             "title": "Quản lý vận hành cơ sở dữ liệu"
           },
           "propose": {
-            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo và xóa bản phát hành và bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
+            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành và bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
             "title": "Đề xuất thay đổi"
           },
           "read-data": {
@@ -2732,8 +2732,8 @@
           "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
         },
         "masking-pending": {
-          "applied": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu được áp dụng, như bên ngoài MCP.",
-          "ignored": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu bị bỏ qua, có hiệu lực khi MCP được bật."
+          "applied": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu được áp dụng.",
+          "ignored": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu bị bỏ qua."
         },
         "mode": {
           "disabled": {

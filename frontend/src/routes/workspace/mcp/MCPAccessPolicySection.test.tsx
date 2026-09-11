@@ -660,6 +660,58 @@ describe("MCPAccessPolicySection", () => {
     await flush();
     expect(maskingBadgeText(container)).toBeUndefined();
     expect(container.textContent).toContain("settings.mcp.policy.unreadable.pick");
+    // "Pick a mode to save this policy" and "this policy will be saved" cannot
+    // both hold. Nothing is pending until a mode is picked.
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.masking-pending"
+    );
+    unmount();
+  });
+
+  // Opening the editor is not an edit. A form that cannot be saved has no save
+  // to describe, and the view's chip is where the stored flag is reported.
+  test("a pristine editor promises no save", async () => {
+    storePolicy(MCPSetting_Capability.DISABLED, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.masking-pending"
+    );
+    expect(
+      [...container.querySelectorAll("button")].find((button) =>
+        button.textContent?.includes("settings.mcp.policy.save")
+      )
+    ).toHaveProperty("disabled", true);
+    unmount();
+  });
+
+  // The footer says what will be written, never when it takes effect — so it
+  // does not vary with a masking license the way the view's chip does.
+  test("the pending line reads the same on an unlicensed workspace", async () => {
+    mocks.dataMaskingAvailable.value = false;
+    storePolicy(MCPSetting_Capability.READ_ONLY, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    expect(maskingBadgeText(container)).toBe(
+      "settings.mcp.policy.masking.badge-unlicensed"
+    );
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.masking-pending.ignored"
+    );
     unmount();
   });
 

@@ -30,8 +30,11 @@ function RadioGroupItem({
   return (
     <label
       className={cn(
-        "flex items-center gap-x-2",
-        disabled ? "cursor-not-allowed" : "cursor-pointer",
+        "flex items-center gap-x-2 cursor-pointer",
+        // Base UI resolves the radio's disabled state from the group as well as
+        // from this prop, so reading the prop alone leaves a group-disabled
+        // item with a pointer over a control that ignores the click.
+        "has-[:disabled]:cursor-not-allowed",
         className
       )}
     >

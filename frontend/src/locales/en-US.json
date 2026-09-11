@@ -1615,7 +1615,7 @@
         "line": {
           "audit": "Audited actions carry an MCP tag, and anything the policy refuses is recorded",
           "capped-read-only": "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all",
-          "capped-read-write": "Capped by your own Bytebase permissions. This mode does not require a statement to be a read",
+          "capped-read-write": "Capped by your own Bytebase permissions, and by what Bytebase supports on each database engine — this mode lifts the read-only limit where it can, and refuses the write outright where it cannot",
           "masking": "Your masking exemptions do not apply to this session",
           "no-write": "No changes, rollouts or exports"
         },
@@ -2662,7 +2662,7 @@
         "disabled": "Nothing is allowed; no MCP session can connect.",
         "floor": {
           "label": "Never, in any mode:",
-          "text": "approve issues, administer the workspace, handle credentials, open an admin connection, or read anyone else's query history."
+          "text": "approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
         },
         "heading": "{{mode}} allows",
         "hide-details": "Hide details",
@@ -2680,7 +2680,7 @@
             "title": "Manage database housekeeping"
           },
           "propose": {
-            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create and delete releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must",
+            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must",
             "title": "Propose changes"
           },
           "read-data": {
@@ -2732,8 +2732,8 @@
           "unavailable": "Data masking is not licensed for this workspace, so nothing is masked whatever this is set to."
         },
         "masking-pending": {
-          "applied": "This policy will be saved with masking exemptions applied, as they are outside MCP.",
-          "ignored": "This policy will be saved with masking exemptions ignored, which takes effect when MCP is enabled."
+          "applied": "This policy will be saved with masking exemptions applied.",
+          "ignored": "This policy will be saved with masking exemptions ignored."
         },
         "mode": {
           "disabled": {

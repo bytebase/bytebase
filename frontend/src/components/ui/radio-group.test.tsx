@@ -95,22 +95,35 @@ describe("RadioGroupItem", () => {
     unmount();
   });
 
-  test("uses a not-allowed cursor for a disabled option", () => {
+  // The cursor follows the radio's resolved disabled state rather than this
+  // component's own prop, because Base UI resolves that state from the group
+  // too. Asserted through the control's `disabled` and the variant that keys
+  // off it: which of the two cursor rules wins is the selector's job, and a
+  // class string cannot show it.
+  test.each([
+    ["the option's own prop", { group: false }],
+    ["the group's disabled state", { group: true }],
+  ])("a not-allowed cursor follows %s", (_label, { group }) => {
     const { container, unmount } = renderIntoContainer(
       createElement(
         RadioGroup,
-        { value: "workspace", onValueChange: () => undefined },
+        {
+          value: "workspace",
+          onValueChange: () => undefined,
+          ...(group ? { disabled: true } : {}),
+        },
         createElement(
           RadioGroupItem,
-          { value: "workspace", disabled: true },
+          { value: "workspace", ...(group ? {} : { disabled: true }) },
           "Workspace"
         )
       )
     );
 
-    const label = container.querySelector("label");
-    expect(label?.className).toContain("cursor-not-allowed");
-    expect(label?.className).not.toContain("cursor-pointer");
+    expect(container.querySelector("label")?.className).toContain(
+      "has-[:disabled]:cursor-not-allowed"
+    );
+    expect(container.querySelector("[disabled]")).not.toBeNull();
 
     unmount();
   });
