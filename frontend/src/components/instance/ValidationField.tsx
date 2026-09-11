@@ -55,9 +55,13 @@ export function ValidationProvider({
 
 export function ValidationField({
   validationField,
+  showErrors = false,
   children,
   ...props
-}: ComponentProps<typeof FormField> & { validationField?: string | string[] }) {
+}: ComponentProps<typeof FormField> & {
+  validationField?: string | string[];
+  showErrors?: boolean;
+}) {
   const { t } = useTranslation();
   const errors = useContext(ErrorsContext);
   const [touched, setTouched] = useState(false);
@@ -71,7 +75,7 @@ export function ValidationField({
       fields.flatMap((field) => (errors[field] ? [errors[field]] : []))
     ),
   ];
-  const invalid = touched && messages.length > 0;
+  const invalid = (showErrors || touched) && messages.length > 0;
   return (
     <FieldContext.Provider
       value={{

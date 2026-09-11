@@ -2364,6 +2364,7 @@ export function DataSourceForm({
                     <FormField
                       key={param.key}
                       validationField={`extraConnectionParameters.${param.key}`}
+                      showErrors
                     >
                       <FormControlRow>
                         <Input

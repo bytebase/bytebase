@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { fireEvent } from "@testing-library/react";
 import { Code, ConnectError } from "@connectrpc/connect";
 import type { ReactElement } from "react";
 import { act } from "react";
@@ -32,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   createInstance: vi.fn(),
   isSaaSMode: false,
   hasSSL: false,
+  hasExtraParameters: false,
   listInstanceDatabases: vi.fn(async () => ({
     databases: ["app", "analytics"],
   })),
@@ -131,7 +133,7 @@ vi.mock("@/utils", () => ({
   convertLabelsToKVList: (labels: Record<string, string>) =>
     Object.entries(labels).map(([key, value]) => ({ key, value })),
   hasWorkspacePermissionV2: () => true,
-  instanceV1HasExtraParameters: () => false,
+  instanceV1HasExtraParameters: () => mocks.hasExtraParameters,
   instanceV1HasSSH: () => false,
   instanceV1HasSSL: () => mocks.hasSSL,
   isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
@@ -254,6 +256,7 @@ describe("InstanceFormProvider", () => {
     mocks.hasInstancePermission.mockReturnValue(true);
     mocks.isSaaSMode = false;
     mocks.hasSSL = false;
+    mocks.hasExtraParameters = false;
     mocks.createInstance.mockResolvedValue(create(InstanceSchema, {}));
     mockEnvironmentList = [];
     vi.useRealTimers();
@@ -876,6 +879,77 @@ describe("InstanceFormProvider", () => {
         expect(context.extractDataSourceFromEdit(
           Engine.MYSQL, context.adminDataSource
         ).useSsl).toBe(true);
+      } finally {
+        harness.unmount();
+      }
+    }
+  );
+
+  test.each(["add", "rename"])(
+    "shows forbidden parameter feedback immediately after %s",
+    async (operation) => {
+      mocks.hasExtraParameters = true;
+      const { DataSourceForm } = await vi.importActual<
+        typeof import("./DataSourceForm")
+      >("./DataSourceForm");
+      let context!: ReturnType<typeof useInstanceFormContext>;
+      const Editor = () => {
+        context = useInstanceFormContext();
+        return (
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            onDataSourceChange={(ds) => context.setDataSourceEditState((state) => ({
+              ...state, dataSources: [ds],
+            }))}
+            optionsOnly
+          />
+        );
+      };
+      const harness = renderIntoContainer();
+      const button = (text: string) => Array.from(
+        harness.container.querySelectorAll("button")
+      ).find((element) => element.textContent === text)!;
+      const input = (value: string) => Array.from(
+        harness.container.querySelectorAll<HTMLInputElement>(
+          'input[aria-label="instance.parameter-name-placeholder"]'
+        )
+      ).find((element) => element.value === value)!;
+      try {
+        await harness.render(
+          <InstanceFormProvider><Editor /></InstanceFormProvider>
+        );
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{ ...context.adminDataSource, host: "db.example.com" }],
+          }));
+        });
+        expect(context.checkDataSource([context.adminDataSource])).toBe(true);
+        await act(async () => { button("instance.add-parameter").click(); });
+        await act(async () => {
+          fireEvent.change(input(""), {
+            target: { value: operation === "add" ? "allowAllFiles" : "timeout" },
+          });
+        });
+        await act(async () => { button("common.add").click(); });
+        if (operation === "rename") {
+          await act(async () => {
+            fireEvent.change(input("timeout"), { target: { value: "allowAllFiles" } });
+          });
+        }
+        expect(context.checkDataSource([context.adminDataSource])).toBe(false);
+        expect(harness.container.textContent).toContain("instance.validation.forbidden-parameter");
+        expect(input("allowAllFiles").getAttribute("aria-invalid")).toBe("true");
+        const errorId = input("allowAllFiles").getAttribute("aria-describedby");
+        expect(errorId).toBeTruthy();
+        expect(harness.container.querySelector(`[id="${errorId}"]`)?.textContent).toBe(
+          "instance.validation.forbidden-parameter"
+        );
+        await act(async () => {
+          fireEvent.change(input("allowAllFiles"), { target: { value: "timeout" } });
+        });
+        expect(context.checkDataSource([context.adminDataSource])).toBe(true);
+        expect(harness.container.textContent).not.toContain("instance.validation.forbidden-parameter");
       } finally {
         harness.unmount();
       }
