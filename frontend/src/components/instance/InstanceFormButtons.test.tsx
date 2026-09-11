@@ -275,18 +275,60 @@ describe("InstanceFormButtons", () => {
   test.each([
     { title: "Production", labelErrors: ["invalid label"] },
     { title: "   ", labelErrors: [] },
-  ])("blocks Update for invalid metadata: %j", async ({title, labelErrors}) => {
-    mocks.context = { ...mocks.context, isCreating: false, instance: create(InstanceSchema, { name: "instances/prod" }), basicInfo: create(InstanceSchema, { title, engine: Engine.POSTGRES }), labelErrors };
+  ])("blocks Update but allows connection testing for invalid metadata: %j", async ({ title, labelErrors }) => {
+    mocks.context = {
+      ...mocks.context,
+      isCreating: false,
+      instance: create(InstanceSchema, { name: "instances/prod" }),
+      basicInfo: create(InstanceSchema, { title, engine: Engine.POSTGRES }),
+      labelErrors,
+    };
     const container = document.createElement("div");
     const root = createRoot(container);
-    await act(async () => { root.render(<InstanceFormButtons />); });
-    const update = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "common.update")!;
-    expect(update.disabled).toBe(true);
-    await act(async () => { update.click(); });
-    expect(mocks.updateInstance).not.toHaveBeenCalled();
-    expect(mocks.context.testConnection).not.toHaveBeenCalled();
-    await act(async () => { root.unmount(); });
+    try {
+      await act(async () => { root.render(<InstanceFormButtons />); });
+      const buttons = Array.from(container.querySelectorAll("button"));
+      const update = buttons.find((button) => button.textContent === "common.update")!;
+      const testConnection = buttons.find((button) => button.textContent === "instance.test-connection")!;
+      expect(update.disabled).toBe(true);
+      expect(testConnection.disabled).toBe(false);
+      await act(async () => {
+        update.click();
+        testConnection.click();
+      });
+      expect(mocks.updateInstance).not.toHaveBeenCalled();
+      expect(mocks.context.testConnection).toHaveBeenCalledExactlyOnceWith(
+        mocks.context.editingDataSource, false
+      );
+    } finally {
+      await act(async () => { root.unmount(); });
+    }
   });
+
+  test.each(["isRequesting", "isTestingConnection"])(
+    "blocks connection testing during %s on edit",
+    async (pendingState) => {
+      mocks.context = {
+        ...mocks.context,
+        isCreating: false,
+        instance: create(InstanceSchema, { name: "instances/prod" }),
+        state: { isRequesting: false, isTestingConnection: false, [pendingState]: true },
+      };
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      try {
+        await act(async () => { root.render(<InstanceFormButtons />); });
+        const testConnection = Array.from(container.querySelectorAll("button")).find(
+          (button) => ["instance.test-connection", "instance.testing-connection"].includes(button.textContent ?? "")
+        )!;
+        expect(testConnection.disabled).toBe(true);
+        await act(async () => { testConnection.click(); });
+        expect(mocks.context.testConnection).not.toHaveBeenCalled();
+      } finally {
+        await act(async () => { root.unmount(); });
+      }
+    }
+  );
 
   test("invalidates provider drafts only after a successful server-backed save", async () => {
     const saved = create(InstanceSchema, {

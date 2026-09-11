@@ -641,7 +641,11 @@ export function InstanceFormButtons({
           <>
             <Button
               appearance="secondary"
-              disabled={!allowUpdate || state.isRequesting || !allowEdit}
+              disabled={
+                !allowTestConnection ||
+                state.isRequesting ||
+                state.isTestingConnection
+              }
               onClick={testConnectionForCurrentEditingDS}
             >
               {state.isTestingConnection
