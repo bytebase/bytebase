@@ -645,10 +645,10 @@ describe("useAppStore", () => {
     expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
   });
 
-  test("self-host first login uses the unified workspace setup route", async () => {
+  test("self-host first login with an IdP display name uses the unified workspace setup route", async () => {
     const firstLoginUser = createProto(UserSchema, {
       ...user,
-      title: user.email,
+      title: "Alice Doe",
     });
     mocks.login.mockResolvedValue({
       requireResetPassword: false,
@@ -661,6 +661,56 @@ describe("useAppStore", () => {
       saas: false,
     });
     mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {}),
+          },
+        }),
+      })
+    );
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceAdmin")
+    );
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
+      query: { redirect: "/" },
+    });
+  });
+
+  test("Cloud first login with an IdP display name uses the unified workspace setup route", async () => {
+    const firstLoginUser = createProto(UserSchema, {
+      ...user,
+      title: "Alice Doe",
+    });
+    mocks.login.mockResolvedValue({
+      requireResetPassword: false,
+      user: firstLoginUser,
+    });
+    mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 1,
+      saas: true,
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {}),
+          },
+        }),
+      })
+    );
     mocks.getIamPolicy.mockResolvedValue(
       workspacePolicyForUser("roles/workspaceAdmin")
     );
