@@ -5,7 +5,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/trino/catalog"
 	"github.com/bytebase/omni/trino/completion"
 
@@ -90,7 +89,7 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext, st
 		if err != nil || meta == nil {
 			continue
 		}
-		loadCatalogMetadata(cat, norm, meta)
+		loadCatalogMetadata(cat, meta)
 	}
 
 	if cCtx.DefaultDatabase != "" {
@@ -108,30 +107,12 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext, st
 // Views carry their defining query so omni's analysis can resolve lineage
 // through them (GetQuerySpanWithCatalog); an empty definition leaves the view
 // opaque. Shared by the completion and query-span catalog builders.
-func loadCatalogMetadata(cat *catalog.Catalog, norm string, meta *model.DatabaseMetadata) []string {
+func loadCatalogMetadata(cat *catalog.Catalog, meta *model.DatabaseMetadata) []string {
+	cat.LoadMetadata(meta.GetProto())
 	var definitions []string
-	database := cat.EnsureCatalog(norm)
-	for _, schemaName := range meta.ListSchemaNames() {
-		schemaMeta := meta.GetSchemaMetadata(schemaName)
-		if schemaMeta == nil {
-			continue
-		}
-		sc := database.EnsureSchema(catalog.Normalize(schemaName))
-		for _, tableName := range schemaMeta.ListTableNames() {
-			tableMeta := schemaMeta.GetTable(tableName)
-			if tableMeta == nil {
-				continue
-			}
-			sc.AddTable(catalog.Normalize(tableName), columnsOf(tableMeta.GetProto().GetColumns())...)
-		}
-		for _, viewName := range schemaMeta.ListViewNames() {
-			viewMeta := schemaMeta.GetView(viewName)
-			if viewMeta == nil {
-				continue
-			}
-			v := sc.AddView(catalog.Normalize(viewName), columnsOf(viewMeta.GetColumns())...)
-			v.Definition = viewMeta.GetDefinition()
-			if def := viewMeta.GetDefinition(); def != "" {
+	for _, schema := range meta.GetProto().GetSchemas() {
+		for _, view := range schema.GetViews() {
+			if def := view.GetDefinition(); def != "" {
 				definitions = append(definitions, def)
 			}
 		}
@@ -162,19 +143,6 @@ func catalogNeeded(normName, defaultDB, lowerStmt string) bool {
 		return true
 	}
 	return strings.Contains(lowerStmt, strings.ToLower(normName))
-}
-
-// columnsOf converts storepb columns into omni catalog columns (names
-// normalized).
-func columnsOf(columns []*metadatapb.ColumnMetadata) []*catalog.Column {
-	out := make([]*catalog.Column, 0, len(columns))
-	for _, c := range columns {
-		if c == nil {
-			continue
-		}
-		out = append(out, catalog.NewColumn(catalog.Normalize(c.Name), c.Type, c.Nullable))
-	}
-	return out
 }
 
 // convertCandidateType maps an omni completion candidate type onto the bytebase

@@ -28,9 +28,8 @@ func init() {
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
 // Flow:
 //  1. Create the catalog and select the target database.
-//  2. loadWalkThroughCatalog: install each object individually with per-object
-//     pseudo fallback, so one broken CREATE TABLE can't disable the whole
-//     simulation.
+//  2. catalog.LoadMetadata: install each object, with a stand-in for one that
+//     fails, so one broken CREATE TABLE can't disable the whole simulation.
 //  3. catalog.Exec(userSQL) → execute user DDL
 //  4. Map errors → *storepb.Advice
 //  5. Convert updated catalog → DatabaseMetadata (for downstream rules)
@@ -61,10 +60,8 @@ func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMeta
 		}
 	}
 
-	// Step 2: Install every schema object individually with pseudo fallback.
-	// TODO: thread a real context.Context through WalkThroughContext; for now the
-	// loader only uses it for early cancellation during catalog bulk-load.
-	if err := loadWalkThroughCatalog(context.Background(), c, dbName, d.GetProto()); err != nil {
+	// Step 2: Install every schema object, with stand-ins for the ones that fail.
+	if _, err := c.LoadMetadata(context.Background(), d.GetProto()); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.DDLSimulationFailed.Int32(),

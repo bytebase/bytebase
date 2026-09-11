@@ -220,7 +220,7 @@ func (q *querySpanExtractor) buildSpanCatalog(ctx context.Context, statement str
 			if err != nil || meta == nil {
 				continue
 			}
-			for _, def := range loadCatalogMetadata(cat, norm, meta) {
+			for _, def := range loadCatalogMetadata(cat, meta) {
 				corpus += "\n" + strings.ToLower(def)
 			}
 		}
