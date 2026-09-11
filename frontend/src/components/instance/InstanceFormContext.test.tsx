@@ -9,6 +9,7 @@ import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
+  DataSourceExternalSecret_SecretType,
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
@@ -783,6 +784,34 @@ describe("InstanceFormProvider", () => {
     ).toBeNull();
 
     harness.unmount();
+  });
+
+  test.each([
+    DataSource_AuthenticationType.AWS_RDS_IAM,
+    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+    DataSource_AuthenticationType.AZURE_IAM,
+  ])("omits inactive password sources from IAM payloads for method %s", async (authenticationType) => {
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Capture = () => { context = useInstanceFormContext(); return null; };
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
+      const draft = wrapEditDataSource(create(DataSourceSchema, {
+        authenticationType,
+        host: "project:region:instance",
+        region: "us-east-1",
+        password: "{{inactive-password}}",
+        externalSecret: { secretType: DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT },
+      }));
+      expect(context.checkDataSource([draft])).toBe(true);
+      const payload = context.extractDataSourceFromEdit(Engine.MYSQL, draft);
+      expect(payload.externalSecret).toBeUndefined();
+      expect(payload.password).toBe("");
+      expect(draft.externalSecret).toBeDefined();
+      expect(draft.password).toBe("{{inactive-password}}");
+    } finally {
+      harness.unmount();
+    }
   });
 
   test("clears errors when deleting the final invalid label unmounts its editor", async () => {

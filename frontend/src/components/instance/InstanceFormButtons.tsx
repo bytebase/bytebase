@@ -33,6 +33,7 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { StickyActionFooter } from "../ui/sticky-action-footer";
+import { isIAMAuthentication } from "./authentication";
 import {
   type ConnectionFailureCategory,
   ConnectionRecovery,
@@ -114,7 +115,9 @@ export function InstanceFormButtons({
   const checkExternalSecretFeature = (dataSources: DataSource[]) => {
     if (hasExternalSecretFeature) return true;
     return dataSources.every(
-      (ds) => !ds.externalSecret && !/^{{.+}}$/.test(ds.password)
+      (ds) =>
+        isIAMAuthentication(ds.authenticationType) ||
+        (!ds.externalSecret && !/^{{.+}}$/.test(ds.password))
     );
   };
 

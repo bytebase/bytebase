@@ -7,6 +7,7 @@ import {
   DataSourceExternalSecret_AuthType as SecretAuth,
   DataSourceExternalSecret_SecretType as SecretType,
 } from "@/types/proto-es/v1/instance_service_pb";
+import { isIAMAuthentication } from "./authentication";
 import type { EditDataSource } from "./common";
 
 export type ValidationErrors = Record<string, string>;
@@ -103,9 +104,7 @@ export function validateDataSource(
     isEqual(stored.iamExtension, iam);
   if (
     isSaaSMode &&
-    [Auth.GOOGLE_CLOUD_SQL_IAM, Auth.AWS_RDS_IAM, Auth.AZURE_IAM].includes(
-      ds.authenticationType
-    ) &&
+    isIAMAuthentication(ds.authenticationType) &&
     !keepsCredential
   ) {
     if (!iam?.case) errors.iamExtension = "specific-credential";
@@ -126,7 +125,7 @@ export function validateDataSource(
   }
 
   const secret = ds.externalSecret;
-  if (secret) {
+  if (secret && !isIAMAuthentication(ds.authenticationType)) {
     if (
       [SecretType.VAULT_KV_V2, SecretType.AZURE_KEY_VAULT].includes(
         secret.secretType

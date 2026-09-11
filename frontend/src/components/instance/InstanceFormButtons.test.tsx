@@ -4,6 +4,8 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
+  DataSource_AuthenticationType,
+  DataSourceExternalSecret_SecretType,
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
@@ -26,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   fetchDatabases: vi.fn(),
   batchUpdateDatabases: vi.fn(),
   captureMetric: vi.fn(),
+  hasFeature: vi.fn(() => true),
   onCreated: vi.fn(),
   context: undefined as Record<string, unknown> | undefined,
 }));
@@ -63,7 +66,7 @@ vi.mock("@/app/analytics/provider", () => ({
 
 vi.mock("@/stores/app", () => {
   const appState = {
-    hasFeature: () => true,
+    hasFeature: mocks.hasFeature,
     instanceLicenseCount: () => 100,
     activatedInstanceCount: () => 1,
     isSaaSMode: () => false,
@@ -167,6 +170,7 @@ const flushPromises = async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.hasFeature.mockReturnValue(true);
   mocks.routerCurrentName = "workspace.instance.create";
   mocks.routerCurrentQuery = {};
 
@@ -236,6 +240,38 @@ beforeEach(() => {
 });
 
 describe("InstanceFormButtons", () => {
+  test("does not require the external-secret feature for an inactive IAM draft", async () => {
+    mocks.hasFeature.mockReturnValue(false);
+    const dataSource = create(DataSourceSchema, {
+      id: "admin", type: DataSourceType.ADMIN,
+      authenticationType: DataSource_AuthenticationType.AZURE_IAM,
+      host: "db.example.com", password: "{{inactive-password}}",
+      externalSecret: { secretType: DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT },
+    });
+    const saved = create(InstanceSchema, {
+      name: "instances/prod", title: "Before", engine: Engine.POSTGRES,
+      dataSources: [dataSource],
+    });
+    mocks.getInstanceByName.mockReturnValue(saved);
+    mocks.updateInstance.mockResolvedValue(saved);
+    mocks.context = {
+      ...mocks.context, instance: saved, isCreating: false,
+      basicInfo: { ...saved, title: "After" },
+      adminDataSource: dataSource, editingDataSource: dataSource,
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    try {
+      await act(async () => { root.render(<InstanceFormButtons />); });
+      const update = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "common.update")!;
+      await act(async () => { update.click(); });
+      expect(mocks.context.setMissingFeature).not.toHaveBeenCalled();
+      expect(mocks.updateInstance).toHaveBeenCalledOnce();
+    } finally {
+      await act(async () => { root.unmount(); });
+    }
+  });
+
   test.each([
     { title: "Production", labelErrors: ["invalid label"] },
     { title: "   ", labelErrors: [] },

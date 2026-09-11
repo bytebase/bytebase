@@ -112,6 +112,30 @@ describe("instance validation", () => {
       "externalSecret.secretName": "required",
     });
   });
+  test.each([Auth.AWS_RDS_IAM, Auth.GOOGLE_CLOUD_SQL_IAM, Auth.AZURE_IAM])(
+    "ignores the inactive external-secret draft for IAM method %s",
+    (authenticationType) => {
+      const ds = draft(
+        create(DataSourceSchema, {
+          authenticationType: Auth.PASSWORD,
+          host: "project:region:instance",
+          region: "us-east-1",
+          externalSecret: { secretType: SecretType.AZURE_KEY_VAULT },
+        })
+      );
+      const options = { engine: Engine.MYSQL, isSaaSMode: false };
+      expect(validateDataSource(ds, options)["externalSecret.url"]).toBe(
+        "required"
+      );
+      expect(
+        validateDataSource({ ...ds, authenticationType }, options)
+      ).toEqual({});
+      expect(validateDataSource(ds, options)["externalSecret.secretName"]).toBe(
+        "required"
+      );
+    }
+  );
+
   test("stored redacted credentials pass, replacements require complete credentials", () => {
     const stored = create(DataSourceSchema, {
       host: "db.example.com",
