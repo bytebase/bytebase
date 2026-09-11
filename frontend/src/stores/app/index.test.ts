@@ -725,7 +725,51 @@ describe("useAppStore", () => {
     });
   });
 
-  test("invited SaaS first login skips workspace setup and opens the workspace landing page", async () => {
+  test("invited self-host user leaves root navigation to the router on first login", async () => {
+    const firstLoginUser = createProto(UserSchema, {
+      ...user,
+      title: "Bob Invited",
+    });
+    mocks.login.mockResolvedValue({
+      requireResetPassword: false,
+      user: firstLoginUser,
+    });
+    mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 2,
+      saas: false,
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceMember")
+    );
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
+    expect(mocks.navigateByName).not.toHaveBeenCalledWith(
+      "auth.setup",
+      expect.anything()
+    );
+  });
+
+  test("invited SaaS first login skips workspace setup and lets the router choose the destination", async () => {
     vi.stubGlobal("location", {
       search: "?workspace=default&email=alice%40example.com",
     });
@@ -753,7 +797,7 @@ describe("useAppStore", () => {
       request: { email: user.email, password: "secret" } as never,
     });
 
-    expect(mocks.navigateByName).toHaveBeenCalledWith("workspace.landing", {
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", {
       replace: true,
     });
     expect(mocks.navigateByName).not.toHaveBeenCalledWith(
