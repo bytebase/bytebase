@@ -1450,20 +1450,19 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
         {/* Connection Card */}
         <FormSection layout="stacked" title={t("instance.section.connection")}>
-          {isSaaSMode && (
-            <Alert variant="info" className="mt-2">
-              <a
-                href="https://docs.bytebase.com/get-started/cloud#prerequisites"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="normal-link"
-              >
-                {t("instance.sentence.firewall-info")}
-              </a>
-            </Alert>
-          )}
-
           <div className="flex flex-col gap-4">
+            {isSaaSMode && (
+              <Alert variant="info">
+                <a
+                  href="https://docs.bytebase.com/get-started/cloud#prerequisites"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="normal-link"
+                >
+                  {t("instance.sentence.firewall-info")}
+                </a>
+              </Alert>
+            )}
             {editingDataSource?.id === adminDataSource.id && (
               <DataSourceForm
                 authOnly
