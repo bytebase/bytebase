@@ -642,7 +642,7 @@
       "ssh-key": "Clave del SSH",
       "user": "Nombre de usuario"
     },
-    "ssh-connection": "Conexión SSH",
+    "ssh-connection": "Túnel SSH",
     "ssh-type": {
       "none": "Ninguno",
       "tunnel-and-private-key": "Túnel + Clave Privada"
@@ -673,7 +673,7 @@
       "client-key-path": "Ruta de la clave privada",
       "client-key-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_KEY",
       "configured": "Configurado",
-      "connection-security": "Seguridad de la conexión",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "El TLS mutuo no está disponible para este motor.",
       "posture": {
         "disabled": "Deshabilitado",
@@ -685,7 +685,7 @@
       "verification-disabled-description": "La verificación está desactivada. La conexión está cifrada, pero no se verifica la identidad del servidor y se ignora la configuración de CA. Esto es inseguro. Activa la verificación para conexiones seguras; desactívala solo temporalmente durante el desarrollo o la resolución de problemas.",
       "verify-certificate": "Verificar certificado del servidor"
     },
-    "ssl-connection": "Conexión SSL"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "No tiene permiso para acceder a esta base de datos.",

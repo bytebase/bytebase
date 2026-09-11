@@ -642,7 +642,7 @@
       "ssh-key": "SSH Key",
       "user": "User"
     },
-    "ssh-connection": "SSH Connection",
+    "ssh-connection": "SSH tunnel",
     "ssh-type": {
       "none": "None",
       "tunnel-and-private-key": "Tunnel + Private Key"
@@ -673,7 +673,7 @@
       "client-key-path": "Private key path",
       "client-key-placeholder": "Input or drag and drop YOUR_CLIENT_KEY",
       "configured": "Configured",
-      "connection-security": "Connection security",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "Mutual TLS is not available for this engine.",
       "posture": {
         "disabled": "Disabled",
@@ -685,7 +685,7 @@
       "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored. This is insecure. Enable verification for secure connections; disable it only temporarily for development or troubleshooting.",
       "verify-certificate": "Verify server certificate"
     },
-    "ssl-connection": "SSL Connection"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "You don't have the permission to access this database.",

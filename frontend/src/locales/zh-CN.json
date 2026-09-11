@@ -642,7 +642,7 @@
       "ssh-key": "SSH 密钥",
       "user": "用户名"
     },
-    "ssh-connection": "SSH 连接",
+    "ssh-connection": "SSH 隧道",
     "ssh-type": {
       "none": "不使用",
       "tunnel-and-private-key": "隧道 + 私钥"
@@ -673,7 +673,7 @@
       "client-key-path": "私钥路径",
       "client-key-placeholder": "输入或拖放 YOUR_CLIENT_KEY",
       "configured": "已配置",
-      "connection-security": "连接安全性",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "此引擎不支持双向 TLS。",
       "posture": {
         "disabled": "已禁用",
@@ -685,7 +685,7 @@
       "verification-disabled-description": "验证已关闭。连接仍然加密，但不会验证服务器身份，CA 设置将被忽略。这存在安全风险。请启用证书验证，仅在开发或故障排查时临时关闭。",
       "verify-certificate": "验证服务器证书"
     },
-    "ssl-connection": "SSL 连接"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "您无权访问该数据库",
