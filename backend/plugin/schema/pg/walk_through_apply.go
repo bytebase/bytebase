@@ -2,6 +2,7 @@ package pg
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -220,6 +221,9 @@ func dropRelation(sm *metadatapb.SchemaMetadata, rel catalog.RelationDiffEntry) 
 	sm.Tables = removeTableByName(sm.Tables, name)
 	sm.Views = removeViewByName(sm.Views, name)
 	sm.MaterializedViews = removeMatViewByName(sm.MaterializedViews, name)
+	for _, t := range sm.Tables {
+		t.Partitions = removePartitionByName(t.Partitions, name)
+	}
 }
 
 func modifyRelation(sm *metadatapb.SchemaMetadata, catBefore, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
@@ -230,6 +234,10 @@ func modifyRelation(sm *metadatapb.SchemaMetadata, catBefore, cat *catalog.Catal
 	case 'r', 'p', 'f':
 		tbl := findTable(sm, rel.Name)
 		if tbl == nil {
+			if p := findPartition(sm, rel.Name); p != nil {
+				applyPartitionDiffs(p, catBefore, cat, rel)
+				return
+			}
 			sm.Tables = append(sm.Tables, relationToTableProto(cat, rel.To))
 			return
 		}
@@ -244,6 +252,15 @@ func modifyRelation(sm *metadatapb.SchemaMetadata, catBefore, cat *catalog.Catal
 		sm.MaterializedViews = append(sm.MaterializedViews, relationToMatViewProto(cat, rel.To))
 	default:
 	}
+}
+
+// applyPartitionDiffs applies a partition's index and constraint changes. A
+// partition's metadata holds only those; its columns are its parent table's.
+func applyPartitionDiffs(p *metadatapb.TablePartitionMetadata, catBefore, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+	tbl := &metadatapb.TableMetadata{Indexes: p.Indexes, CheckConstraints: p.CheckConstraints, ExcludeConstraints: p.ExcludeConstraints}
+	applyIndexDiffs(tbl, cat, rel)
+	applyConstraintDiffs(tbl, catBefore, cat, rel)
+	p.Indexes, p.CheckConstraints, p.ExcludeConstraints = tbl.Indexes, tbl.CheckConstraints, tbl.ExcludeConstraints
 }
 
 func applyColumnDiffs(tbl *metadatapb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
@@ -527,6 +544,37 @@ func findTable(sm *metadatapb.SchemaMetadata, name string) *metadatapb.TableMeta
 		}
 	}
 	return nil
+}
+
+// findPartition returns the partition named name, at any depth, of a table in sm.
+func findPartition(sm *metadatapb.SchemaMetadata, name string) *metadatapb.TablePartitionMetadata {
+	var find func(partitions []*metadatapb.TablePartitionMetadata) *metadatapb.TablePartitionMetadata
+	find = func(partitions []*metadatapb.TablePartitionMetadata) *metadatapb.TablePartitionMetadata {
+		for _, p := range partitions {
+			if p.Name == name {
+				return p
+			}
+			if sub := find(p.Subpartitions); sub != nil {
+				return sub
+			}
+		}
+		return nil
+	}
+	for _, t := range sm.Tables {
+		if p := find(t.Partitions); p != nil {
+			return p
+		}
+	}
+	return nil
+}
+
+// removePartitionByName removes the partition named name, at any depth.
+func removePartitionByName(partitions []*metadatapb.TablePartitionMetadata, name string) []*metadatapb.TablePartitionMetadata {
+	partitions = slices.DeleteFunc(partitions, func(p *metadatapb.TablePartitionMetadata) bool { return p.Name == name })
+	for _, p := range partitions {
+		p.Subpartitions = removePartitionByName(p.Subpartitions, name)
+	}
+	return partitions
 }
 
 func removeTableByName(tables []*metadatapb.TableMetadata, name string) []*metadatapb.TableMetadata {

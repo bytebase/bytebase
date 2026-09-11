@@ -82,6 +82,47 @@ func TestClone_WalkThroughIntegration(t *testing.T) {
 	require.Nil(t, origMeta.GetSchemaMetadata("public").GetTable("posts"), "original should not have posts")
 }
 
+func TestWalkThroughKeepsPartitionsUnderTheirTable(t *testing.T) {
+	meta := &metadatapb.DatabaseSchemaMetadata{
+		Name: "postgres",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*metadatapb.TableMetadata{{
+				Name:    "orders",
+				Columns: []*metadatapb.ColumnMetadata{{Name: "id", Type: "integer"}},
+				Partitions: []*metadatapb.TablePartitionMetadata{
+					{Name: "orders_2023"},
+					{Name: "orders_2024", Subpartitions: []*metadatapb.TablePartitionMetadata{{Name: "orders_2024_q1"}, {Name: "orders_2024_q2"}}},
+				},
+			}},
+		}},
+	}
+	catBefore := catalog.New()
+	_, err := catBefore.LoadMetadata(context.Background(), meta, catalog.LoadMetadataOptions{Full: true})
+	require.NoError(t, err)
+	catAfter := catBefore.Clone()
+	results, err := catAfter.Exec(`
+		DROP TABLE public.orders_2023;
+		DROP TABLE public.orders_2024_q2;
+		CREATE INDEX orders_2024_q1_id_idx ON public.orders_2024_q1 (id);
+	`, &catalog.ExecOptions{ContinueOnError: true})
+	require.NoError(t, err)
+	for _, r := range results {
+		require.NoError(t, r.Error, r.SQL)
+	}
+
+	schema := applyDiffToMetadata(meta, catBefore, catAfter, catalog.Diff(catBefore, catAfter)).Schemas[0]
+	require.Len(t, schema.Tables, 1, "a changed partition must stay under its table")
+	partitions := schema.Tables[0].Partitions
+	require.Len(t, partitions, 1)
+	require.Equal(t, "orders_2024", partitions[0].Name)
+	require.Len(t, partitions[0].Subpartitions, 1)
+	q1 := partitions[0].Subpartitions[0]
+	require.Equal(t, "orders_2024_q1", q1.Name)
+	require.Len(t, q1.Indexes, 1)
+	require.Equal(t, "orders_2024_q1_id_idx", q1.Indexes[0].Name)
+}
+
 // compositeWalkThroughMetadata has an adversarial name pair (aa_nested sorts
 // before its dependency zz_base) plus an enum-referencing composite and a
 // table using one, so a successful load proves dependency-ordered install.
