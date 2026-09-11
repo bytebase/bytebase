@@ -132,4 +132,6 @@ frontend/tests/e2e/
 | Server won't start / port in use | `lsof -ti:18234 \| xargs kill` and check for orphan processes matching `bytebase-e2e` |
 | Stale PID file | `rm /tmp/bytebase-e2e-pid` |
 | Stale auth state | `rm -rf frontend/.auth/ frontend/tests/.auth/` |
+| `postmaster became multithreaded during startup` (macOS) | The shell has no valid UTF-8 `LANG`; the harness defaults one, so export `LANG=en_US.UTF-8` only when running the binary by hand |
+| `token signature is invalid` on license install | The license is signed with the production key: build with `-tags embed_frontend,release` |
 | "This Bytebase build does not bundle frontend" error | Binary was built without `embed_frontend` tag — rebuild with the prerequisite commands above |

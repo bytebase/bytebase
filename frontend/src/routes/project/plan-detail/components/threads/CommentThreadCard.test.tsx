@@ -165,15 +165,21 @@ const buttonByText = (text: string) =>
     button.textContent?.includes(text)
   );
 
-const chooseReplyAction = (action = "reply") => {
-  click(container.querySelector('button[aria-label="common.actions"]'));
-  const item = Array.from(document.querySelectorAll('[role="menuitem"]'))
-    .find((el) => el.textContent === `plan.review.thread.${action}`);
-  click(item);
-  expect(mocks.createIssueComment).not.toHaveBeenCalled();
-  expect(mocks.updateIssueComment).not.toHaveBeenCalled();
-  click(buttonByText(`plan.review.thread.${action}`));
+const stateCheckbox = () => container.querySelector('[role="checkbox"]');
+
+// Submits the open composer, optionally flipping the thread-state checkbox
+// first so the reply also resolves or reopens the thread.
+const submitReply = ({ toggleState = false } = {}) => {
+  if (toggleState) click(stateCheckbox());
+  click(buttonByText("plan.review.thread.reply"));
 };
+
+// Grants reply but not the update permission the settle actions need.
+const denySettle = () =>
+  mocks.hasPermission.mockImplementation(
+    (_project: unknown, permission: unknown) =>
+      permission === "bb.issueComments.create"
+  );
 
 describe("CommentThreadCard", () => {
   test("places statement context above the root author as a separate full-width region", () => {
@@ -305,7 +311,7 @@ describe("CommentThreadCard", () => {
       setter?.call(textarea, "Sounds good");
       textarea?.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    chooseReplyAction();
+    submitReply();
     await act(async () => {});
     expect(mocks.createIssueComment).toHaveBeenCalledWith({
       issueName: ISSUE,
@@ -368,7 +374,9 @@ describe("CommentThreadCard", () => {
     const onReplyDraftChange = vi.fn();
     const onThreadStateChanged = vi.fn();
     render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft="Decision details" onReplyDraftChange={onReplyDraftChange} onThreadStateChanged={onThreadStateChanged} />);
-    chooseReplyAction(resolved ? "reopen-with-comment" : "resolve-with-comment");
+    // Open threads resolve when the box is ticked; resolved ones reopen by
+    // default, so the box is left alone there.
+    submitReply({ toggleState: !resolved });
     expect(mocks.createIssueComment).toHaveBeenCalledExactlyOnceWith({issueName: ISSUE, root: rootName, comment: "Decision details"});
     expect(mocks.updateIssueComment).not.toHaveBeenCalled();
     await act(async () => {finishReply(comment("reply", "Decision details", {root: rootName}));});
@@ -380,12 +388,68 @@ describe("CommentThreadCard", () => {
     expect(onThreadStateChanged).toHaveBeenCalledExactlyOnceWith(!resolved);
   });
 
+  test.each([false, true])("the composer checkbox mirrors the thread state: resolved=%s", (resolved) => {
+    const [thread] = groupThreads([comment("root", "Root", { resolved })]);
+    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft="Draft" onReplyDraftChange={vi.fn()} />);
+    expect(stateCheckbox()?.getAttribute("aria-checked")).toBe(String(resolved));
+    expect(container.querySelector("label")?.textContent).toBe(
+      resolved ? "plan.review.thread.reopen-thread" : "plan.review.thread.resolve-thread"
+    );
+    expect(buttonByText("plan.review.thread.reply")).toBeDefined();
+    expect(container.querySelector('button[aria-label="common.actions"]')).toBeNull();
+  });
+
+  test("an untouched checkbox on an open thread posts a plain reply", async () => {
+    const [thread] = groupThreads([comment("root", "Root")]);
+    const onThreadStateChanged = vi.fn();
+    mocks.createIssueComment.mockResolvedValueOnce(comment("reply", "Just a note", { root: rootName }));
+    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft="Just a note" onReplyDraftChange={vi.fn()} onThreadStateChanged={onThreadStateChanged} />);
+    submitReply();
+    await act(async () => {});
+    expect(mocks.createIssueComment).toHaveBeenCalledTimes(1);
+    expect(mocks.updateIssueComment).not.toHaveBeenCalled();
+    expect(onThreadStateChanged).not.toHaveBeenCalled();
+  });
+
+  test("an untouched checkbox on a resolved thread reopens it with the reply; unticking keeps it resolved", async () => {
+    const [thread] = groupThreads([comment("root", "Root", { resolved: true })]);
+    const onThreadStateChanged = vi.fn();
+    mocks.createIssueComment.mockResolvedValue(comment("reply", "Not done yet", { root: rootName }));
+    mocks.updateIssueComment.mockResolvedValueOnce(comment("root", "Root", { resolved: false }));
+    const props = { issueName: ISSUE, project, thread, collapsible: false, onReplyDraftChange: vi.fn(), onThreadStateChanged };
+    render(<CommentThreadCard {...props} replyDraft="Not done yet" />);
+    expect(stateCheckbox()?.getAttribute("aria-checked")).toBe("true");
+    submitReply();
+    await act(async () => {});
+    expect(mocks.updateIssueComment).toHaveBeenCalledExactlyOnceWith({ issueCommentName: rootName, threadState: IssueComment_ThreadState.OPEN });
+    expect(onThreadStateChanged).toHaveBeenCalledExactlyOnceWith(false);
+
+    vi.clearAllMocks();
+    mocks.hasPermission.mockReturnValue(true);
+    mocks.createIssueComment.mockResolvedValue(comment("reply", "Still resolved", { root: rootName }));
+    render(<CommentThreadCard {...props} replyDraft="Still resolved" />);
+    // The composer closed after the first reply; open it again.
+    click(buttonByText("plan.review.thread.reply-placeholder"));
+    submitReply({ toggleState: true });
+    await act(async () => {});
+    expect(mocks.createIssueComment).toHaveBeenCalledTimes(1);
+    expect(mocks.updateIssueComment).not.toHaveBeenCalled();
+  });
+
+  test("hides the state checkbox without the update permission", () => {
+    denySettle();
+    const [thread] = groupThreads([comment("root", "Root")]);
+    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft="Draft" onReplyDraftChange={vi.fn()} />);
+    expect(stateCheckbox()).toBeNull();
+    expect(buttonByText("plan.review.thread.reply")).toBeDefined();
+  });
+
   test("reply failure preserves the draft and never changes status", async () => {
     const [thread] = groupThreads([comment("root", "Root")]);
     const onReplyDraftChange = vi.fn();
     mocks.createIssueComment.mockRejectedValueOnce(new Error("offline"));
     render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} replyDraft="Keep this draft" onReplyDraftChange={onReplyDraftChange} />);
-    chooseReplyAction("resolve-with-comment");
+    submitReply({ toggleState: true });
     await act(async () => {});
     expect(mocks.updateIssueComment).not.toHaveBeenCalled();
     expect(onReplyDraftChange).not.toHaveBeenCalled();
@@ -399,7 +463,7 @@ describe("CommentThreadCard", () => {
     mocks.createIssueComment.mockResolvedValueOnce(comment("reply", "Posted", {root: rootName}));
     mocks.updateIssueComment.mockRejectedValueOnce(new Error("status update failed"));
     render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} replyDraft="Posted" onReplyDraftChange={onReplyDraftChange} onThreadStateChanged={onThreadStateChanged} />);
-    chooseReplyAction("resolve-with-comment");
+    submitReply({ toggleState: true });
     await act(async () => {});
     expect(onReplyDraftChange).toHaveBeenCalledWith(expect.any(Function));
     expect(onThreadStateChanged).not.toHaveBeenCalled();
@@ -413,19 +477,8 @@ describe("CommentThreadCard", () => {
     expect(onThreadStateChanged).toHaveBeenCalledExactlyOnceWith(true);
   });
 
-  test("without settle permission the submission menu only offers Reply", () => {
-    mocks.hasPermission.mockImplementation((_project, permission) => permission === "bb.issueComments.create");
-    const [thread] = groupThreads([comment("root", "Root")]);
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} replyDraft="Reply only" onReplyDraftChange={vi.fn()} />);
-    click(container.querySelector('button[aria-label="common.actions"]'));
-    expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map((el) => el.textContent)).toEqual(["plan.review.thread.reply"]);
-  });
-
   test("authoring the root grants no Resolve without the update permission", () => {
-    mocks.hasPermission.mockImplementation(
-      (_project: unknown, permission: unknown) =>
-        permission === "bb.issueComments.create"
-    );
+    denySettle();
     const [thread] = groupThreads([
       comment("root", "Root", { creator: "users/me@example.com" }),
     ]);
@@ -436,10 +489,7 @@ describe("CommentThreadCard", () => {
   });
 
   test("hides Resolve from users who may neither update nor own the root", () => {
-    mocks.hasPermission.mockImplementation(
-      (_project: unknown, permission: unknown) =>
-        permission === "bb.issueComments.create"
-    );
+    denySettle();
     const [thread] = groupThreads([comment("root", "Root")]);
     render(
       <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
@@ -456,7 +506,7 @@ test.each(["ctrlKey", "metaKey"])("ignores %s+Enter while a reply is pending", a
   mocks.createIssueComment.mockImplementationOnce(() => new Promise(resolve => {complete = resolve;}));
   const onReplyDraftChange = vi.fn();
   render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} replyDraft="My reply" onReplyDraftChange={onReplyDraftChange} />);
-  chooseReplyAction();
+  submitReply();
   expect(mocks.createIssueComment).toHaveBeenCalledTimes(1);
   expect(buttonByText("plan.review.thread.reply")?.disabled).toBe(true);
   act(() => {container.querySelector("textarea")!.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", [modifier]: true, bubbles: true}));});
@@ -466,21 +516,17 @@ test.each(["ctrlKey", "metaKey"])("ignores %s+Enter while a reply is pending", a
 });
 
 
-test.each(["reply", "resolve-with-comment", "reopen-with-comment"])("validates an empty comment after clicking %s", (action) => {
-  const [thread] = groupThreads([comment("root", "Root", {resolved: action === "reopen-with-comment"})]);
+test("disables Reply on an empty draft, checkbox or not", () => {
+  const [thread] = groupThreads([comment("root", "Root")]);
   const props = {issueName: ISSUE, project, thread, collapsible: false, onReplyDraftChange: vi.fn()};
   render(<CommentThreadCard {...props} replyDraft="   " />);
-  expect(document.querySelector('[role="alert"]')).toBeNull();
-  chooseReplyAction(action);
-  expect(buttonByText(`plan.review.thread.${action}`)?.disabled).toBe(false);
-  expect(document.querySelector('[role="alert"]')?.textContent).toBe("plan.review.thread.comment-required");
-  expect(container.querySelector('[role="alert"]')).toBeNull();
+  click(stateCheckbox());
+  expect(buttonByText("plan.review.thread.reply")?.disabled).toBe(true);
+  act(() => {container.querySelector("textarea")!.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", metaKey: true, bubbles: true}));});
   expect(mocks.createIssueComment).not.toHaveBeenCalled();
   expect(mocks.updateIssueComment).not.toHaveBeenCalled();
   render(<CommentThreadCard {...props} replyDraft="Now with a comment" />);
-  expect(document.querySelector('[role="alert"]')).toBeNull();
-  render(<CommentThreadCard {...props} replyDraft="" />);
-  expect(document.querySelector('[role="alert"]')).toBeNull();
+  expect(buttonByText("plan.review.thread.reply")?.disabled).toBe(false);
 });
 
 

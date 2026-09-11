@@ -1,5 +1,4 @@
-import { Loader2, Send } from "lucide-react";
-import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -8,27 +7,28 @@ import { useCurrentUser } from "@/hooks/useAppState";
 import type { LineRange } from "./threadModel";
 
 // The composer that opens below the last selected line. Publishing creates a
-// root comment anchored to those lines; the draft survives a failed publish.
+// root comment anchored to those lines. The owner holds the draft, so it
+// survives a failed publish and the form's own re-renders.
 export function InlineThreadComposer({
+  draft,
   onCancel,
+  onDraftChange,
   onPublish,
   pending,
   range,
 }: {
+  draft: string;
   onCancel: () => void;
-  onPublish: (comment: string) => Promise<boolean>;
+  onDraftChange: (draft: string) => void;
+  onPublish: (comment: string) => void;
   pending: boolean;
   range: LineRange;
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const [draft, setDraft] = useState("");
   const canPublish = !pending && draft.trim() !== "";
-
-  const publish = async () => {
-    if (!canPublish) return;
-    const published = await onPublish(draft);
-    if (published) setDraft("");
+  const publish = () => {
+    if (canPublish) onPublish(draft);
   };
 
   return (
@@ -55,26 +55,19 @@ export function InlineThreadComposer({
       </div>
       <div className="flex flex-col gap-y-2 px-3 py-2">
         <MarkdownEditor
+          autoFocus
           compact
           content={draft}
-          onChange={setDraft}
-          onSubmit={() => void publish()}
+          onChange={onDraftChange}
+          onSubmit={publish}
           placeholder={t("plan.review.thread.write-comment")}
         />
         <div className="flex items-center justify-end gap-x-2">
           <Button onClick={onCancel} size="sm" appearance="secondary">
             {t("common.cancel")}
           </Button>
-          <Button
-            disabled={!canPublish}
-            onClick={() => void publish()}
-            size="sm"
-          >
-            {pending ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Send className="size-3.5" />
-            )}
+          <Button disabled={!canPublish} onClick={publish} size="sm">
+            {pending && <Loader2 className="size-4 animate-spin" />}
             {t("plan.review.thread.publish")}
           </Button>
         </div>

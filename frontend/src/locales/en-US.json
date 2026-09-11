@@ -1827,21 +1827,29 @@
           "view-in-statement": "View in Statement"
         },
         "comment-on-lines": "Comment on lines",
-        "comment-required": "Enter a comment before submitting.",
         "n-replies-hidden_one": "{{count}} reply hidden",
         "n-replies-hidden_other": "{{count}} replies hidden",
         "n-replies_one": "{{count}} reply",
         "n-replies_other": "{{count}} replies",
         "publish": "Publish",
-        "reopen-with-comment": "Reopen with comment",
+        "reopen-thread": "Reopen thread",
         "reply": "Reply",
         "reply-placeholder": "Reply...",
         "reply-posted-status-failed": "Reply posted, but the thread status could not be updated. Retry the status action.",
         "resolve": "Resolve",
-        "resolve-with-comment": "Resolve with comment",
+        "resolve-thread": "Resolve thread",
         "resolved": "Resolved",
         "threads-on-line_one": "{{count}} thread on this line",
         "threads-on-line_other": "{{count}} threads on this line",
+        "walker": {
+          "count_one": "{{count}} unresolved thread on this version",
+          "count_other": "{{count}} unresolved threads on this version",
+          "next": "Next unresolved thread",
+          "position": "Thread {{index}} of {{count}}",
+          "previous": "Previous unresolved thread",
+          "remainder_one": "{{count}} more not shown on this version",
+          "remainder_other": "{{count}} more not shown on this version"
+        },
         "write-comment": "Write a comment..."
       }
     },
@@ -1885,6 +1893,8 @@
       "n-of-m-approved": "{{n}} of {{m}} approved",
       "n-of-m-tasks": "{{n}}/{{m}} tasks",
       "n-passed": "{{n}} passed",
+      "n-unresolved-threads_one": "{{count}} unresolved thread",
+      "n-unresolved-threads_other": "{{count}} unresolved threads",
       "n-warning": "{{n}} warning"
     },
     "targets": {

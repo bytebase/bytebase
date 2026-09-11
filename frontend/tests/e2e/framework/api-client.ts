@@ -669,6 +669,20 @@ export class BytebaseApiClient {
     );
   }
 
+  // Resolve or reopen a thread root through the thread_state field mask.
+  // UpdateIssueComment is bound to the issue's :comment path with the comment
+  // as the body, like CreateIssueComment.
+  async setIssueCommentThreadState(
+    commentName: string,
+    threadState: "OPEN" | "RESOLVED",
+  ): Promise<void> {
+    const issueName = commentName.replace(/\/issueComments\/[^/]+$/, "");
+    await this.request(
+      "PATCH", `/v1/${issueName}:comment?updateMask=thread_state`,
+      { name: commentName, threadState },
+    );
+  }
+
   // `root` creates a reply in that thread; `statementAnchor` starts a thread
   // anchored to whole lines of the spec's saved sheet (zero columns, inclusive
   // end line). Both omitted: a general comment.

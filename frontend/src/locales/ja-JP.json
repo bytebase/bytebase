@@ -1827,21 +1827,29 @@
           "view-in-statement": "ステートメントで表示"
         },
         "comment-on-lines": "選択行にコメント",
-        "comment-required": "送信する前にコメントを入力してください。",
         "n-replies-hidden_one": "{{count}} 件の返信が非表示",
         "n-replies-hidden_other": "{{count}} 件の返信が非表示",
         "n-replies_one": "{{count}} 件の返信",
         "n-replies_other": "{{count}} 件の返信",
         "publish": "公開",
-        "reopen-with-comment": "コメントして再開",
+        "reopen-thread": "スレッドを再開",
         "reply": "返信",
         "reply-placeholder": "返信...",
         "reply-posted-status-failed": "返信は投稿されましたが、スレッドの状態を更新できませんでした。状態の変更を再試行してください。",
         "resolve": "解決",
-        "resolve-with-comment": "コメントして解決",
+        "resolve-thread": "スレッドを解決",
         "resolved": "解決済み",
         "threads-on-line_one": "この行に {{count}} 件のスレッド",
         "threads-on-line_other": "この行に {{count}} 件のスレッド",
+        "walker": {
+          "count_one": "このバージョンに未解決のスレッドが {{count}} 件",
+          "count_other": "このバージョンに未解決のスレッドが {{count}} 件",
+          "next": "次の未解決スレッド",
+          "position": "{{count}} 件中 {{index}} 件目",
+          "previous": "前の未解決スレッド",
+          "remainder_one": "他に {{count}} 件がこのバージョンでは表示されません",
+          "remainder_other": "他に {{count}} 件がこのバージョンでは表示されません"
+        },
         "write-comment": "コメントを書く..."
       }
     },
@@ -1885,6 +1893,8 @@
       "n-of-m-approved": "{{m}} 件中 {{n}} 件承認済み",
       "n-of-m-tasks": "{{n}}/{{m}} タスク",
       "n-passed": "{{n}} 件合格",
+      "n-unresolved-threads_one": "未解決のスレッド {{count}} 件",
+      "n-unresolved-threads_other": "未解決のスレッド {{count}} 件",
       "n-warning": "{{n}} 件の警告"
     },
     "targets": {

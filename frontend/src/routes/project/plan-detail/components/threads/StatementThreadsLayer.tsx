@@ -8,11 +8,13 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { MonacoOverlayWidget } from "@/components/monaco/MonacoOverlayWidget";
 import { MonacoViewZone } from "@/components/monaco/MonacoViewZone";
 import type {
   IStandaloneCodeEditor,
   MonacoModule,
 } from "@/components/monaco/types";
+import { useMonacoFindWidgetVisible } from "@/components/monaco/useMonacoFindWidgetVisible";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -23,6 +25,7 @@ import { usePlanDetailStore } from "../../shared/stores/usePlanDetailStore";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { InlineThreadComposer } from "./InlineThreadComposer";
 import "./statementThreads.css";
+import { StatementThreadWalker } from "./StatementThreadWalker";
 import { ThreadStack } from "./ThreadStack";
 import {
   buildWholeLineAnchor,
@@ -34,6 +37,7 @@ import {
   lineRangeLabel,
   selectEditorThreads,
   selectionLineRange,
+  selectUnresolvedEditorThreads,
 } from "./threadModel";
 import { canReplyToThread, useThreadActions } from "./useThreadActions";
 
@@ -44,10 +48,21 @@ const firstToExpand = (threads: EditorThread[] | undefined): string[] => {
   return entry ? [entry.thread.root.name] : [];
 };
 
+// An unpublished comment form, keyed by the last line of its range so one
+// line carries at most one form. Drafts live in their own record so typing
+// leaves the decorations and listeners keyed on this map alone.
+type Composer = {
+  range: LineRange;
+  // Bumped when the form is opened again, to reveal it.
+  revealNonce: number;
+};
+
 // Binds comment threads to the read-only statement editor with Monaco's own
 // primitives, the way VS Code's comment controller does: glyph-margin
 // decorations for markers and the comment affordance, whole-line decorations
-// for highlights, and view zones for the composer and the expanded threads.
+// for highlights, and view zones for the composers and the expanded threads.
+// Several composers may be open at once, one per line, like unsent review
+// forms in a diff.
 //
 // Creation is a two-step gesture. Selecting lines (a press or drag in the
 // gutter, or a text selection) shows the comment action on the last selected
@@ -79,14 +94,34 @@ export function StatementThreadsLayer({
   const actions = useThreadActions(issue.name);
   const canCreate = canReplyToThread(project);
 
+  const threads = useMemo(() => groupThreads(comments), [comments]);
   const editorThreads = useMemo(
     () =>
       selectEditorThreads(
-        groupThreads(comments),
+        threads,
         { specId: spec.id, sheetSha256 },
         placements
       ),
-    [comments, placements, sheetSha256, spec.id]
+    [placements, sheetSha256, spec.id, threads]
+  );
+  // What the walker can visit, in editor order, and how many unresolved
+  // threads of this change it cannot because they are not placed here.
+  const visitableThreads = useMemo(
+    () =>
+      selectUnresolvedEditorThreads(
+        threads,
+        { specId: spec.id, sheetSha256 },
+        placements
+      ),
+    [placements, sheetSha256, spec.id, threads]
+  );
+  const unplacedUnresolved = useMemo(
+    () =>
+      threads.filter(
+        (thread) =>
+          !thread.resolved && thread.root.statementAnchor?.spec === spec.id
+      ).length - visitableThreads.length,
+    [spec.id, threads, visitableThreads.length]
   );
   const markersByLine = useMemo(
     () => groupMarkersByLine(editorThreads),
@@ -151,7 +186,44 @@ export function StatementThreadsLayer({
   const [hoveredLine, setHoveredLine] = useState<number | undefined>();
   const [selection, setSelection] = useState<LineRange | undefined>();
   const dragRef = useRef<LineRange | undefined>(undefined);
-  const [composerRange, setComposerRange] = useState<LineRange | undefined>();
+  const [composers, setComposers] = useState<ReadonlyMap<number, Composer>>(
+    () => new Map()
+  );
+  const [composerDrafts, setComposerDrafts] = useState<
+    Readonly<Record<number, string>>
+  >({});
+
+  // Walker: the current thread is the expanded one when it is unresolved.
+  // Stepping wraps; with nothing open, down starts at the first and up at
+  // the last.
+  const [walkerAnnouncement, setWalkerAnnouncement] = useState("");
+  const [flashRoot, setFlashRoot] = useState<string | undefined>();
+  const findWidgetVisible = useMonacoFindWidgetVisible(editor);
+  const currentVisitableIndex = useMemo(
+    () =>
+      visitableThreads.findIndex(
+        (entry) =>
+          entry.range.endLine === openLine &&
+          expandedRoots.has(entry.thread.root.name)
+      ),
+    [expandedRoots, openLine, visitableThreads]
+  );
+  const walk = (step: 1 | -1) => {
+    const count = visitableThreads.length;
+    if (!count) return;
+    const from =
+      currentVisitableIndex === -1 && step < 0 ? count : currentVisitableIndex;
+    const index = (from + step + count) % count;
+    const target = visitableThreads[index];
+    openThreads(target.range.endLine, [target.thread.root.name]);
+    setSelection(undefined);
+    setFlashRoot(target.thread.root.name);
+    editor.revealLineNearTop(target.range.startLine);
+    editor.getDomNode()?.scrollIntoView({ block: "nearest" });
+    setWalkerAnnouncement(
+      t("plan.review.thread.walker.position", { index: index + 1, count })
+    );
+  };
 
   // The line that carries the comment action: the end of the selection, or
   // the hovered line when nothing is selected.
@@ -220,16 +292,21 @@ export function StatementThreadsLayer({
         entry.range.endLine === openLine &&
         expandedRoots.has(entry.thread.root.name)
     );
-    const creationRange = composerRange ?? (canCreate ? selection : undefined);
-    const range = creationRange ?? activeThread?.range;
-    if (range) {
+    // A pending selection replaces the reading highlight; open composers
+    // keep theirs beside it, and win where they overlap.
+    const pendingSelection = canCreate ? selection : undefined;
+    const paint = (range: LineRange, className: string) => {
       for (let line = range.startLine; line <= range.endLine; line++) {
-        lineClasses.set(
-          line,
-          creationRange ? "bb-thread-line--selecting" : "bb-thread-line"
-        );
+        lineClasses.set(line, className);
       }
+    };
+    if (activeThread && !pendingSelection) {
+      paint(activeThread.range, "bb-thread-line");
     }
+    for (const composer of composers.values()) {
+      paint(composer.range, "bb-thread-line--selecting");
+    }
+    if (pendingSelection) paint(pendingSelection, "bb-thread-line--selecting");
     for (const [line, className] of [...lineClasses].sort(
       ([a], [b]) => a - b
     )) {
@@ -268,7 +345,7 @@ export function StatementThreadsLayer({
         },
       });
     }
-    if (actionLine !== undefined && !composerRange) {
+    if (actionLine !== undefined && !composers.has(actionLine)) {
       const actionRange = selection ?? {
         startLine: actionLine,
         endLine: actionLine,
@@ -290,7 +367,7 @@ export function StatementThreadsLayer({
     actionLine,
     canCreate,
     commentedLines,
-    composerRange,
+    composers,
     editor,
     editorThreads,
     expandedRoots,
@@ -303,7 +380,17 @@ export function StatementThreadsLayer({
 
   const openComposer = useCallback(
     (range: LineRange) => {
-      setComposerRange(range);
+      setComposers((previous) => {
+        const next = new Map(previous);
+        const existing = previous.get(range.endLine);
+        // The line already has a form: bring it back into view and leave
+        // its range alone.
+        next.set(range.endLine, {
+          range: existing?.range ?? range,
+          revealNonce: (existing?.revealNonce ?? 0) + 1,
+        });
+        return next;
+      });
       // The composer range takes over the highlight; drop the text selection.
       editor.setPosition({ lineNumber: range.startLine, column: 1 });
       // Empty-line gutter selections may already have this cursor position,
@@ -412,7 +499,7 @@ export function StatementThreadsLayer({
         const isCreationAction =
           e.target.type ===
           monacoModule.editor.MouseTargetType.GUTTER_LINE_DECORATIONS;
-        if (isCreationAction && actionLine === line && !composerRange) {
+        if (isCreationAction && actionLine === line && !composers.has(line)) {
           e.event.preventDefault();
           openComposer(selection ?? { startLine: line, endLine: line });
           return;
@@ -448,7 +535,7 @@ export function StatementThreadsLayer({
   }, [
     actionLine,
     canCreate,
-    composerRange,
+    composers,
     editor,
     markersByLine,
     monacoModule,
@@ -482,31 +569,54 @@ export function StatementThreadsLayer({
     return () => node.classList.remove("bb-thread-creatable");
   }, [canCreate, editor]);
 
-  const publish = useCallback(
-    async (comment: string) => {
-      if (!composerRange) return false;
-      const created = await actions.publish(
-        comment,
-        buildWholeLineAnchor({
-          spec: spec.id,
-          sheetSha256,
-          startLine: composerRange.startLine,
-          endLine: composerRange.endLine,
-        })
-      );
-      if (!created) return false;
-      setComposerRange(undefined);
-      openThreads(composerRange.endLine, [created.name]);
-      return true;
-    },
-    [actions, composerRange, openThreads, sheetSha256, spec.id]
-  );
+  const closeComposer = (line: number) => {
+    setComposers((previous) => {
+      if (!previous.has(line)) return previous;
+      const next = new Map(previous);
+      next.delete(line);
+      return next;
+    });
+    setComposerDrafts(({ [line]: _dropped, ...rest }) => rest);
+  };
+
+  const updateComposerDraft = (line: number, draft: string) =>
+    setComposerDrafts((previous) =>
+      previous[line] === draft ? previous : { ...previous, [line]: draft }
+    );
+
+  const publish = async (line: number, comment: string) => {
+    const range = composers.get(line)?.range;
+    if (!range) return;
+    const created = await actions.publish(
+      comment,
+      buildWholeLineAnchor({
+        spec: spec.id,
+        sheetSha256,
+        startLine: range.startLine,
+        endLine: range.endLine,
+      })
+    );
+    if (!created) return;
+    closeComposer(line);
+    openThreads(line, [created.name]);
+  };
 
   const openEntries: EditorThread[] =
     openLine !== undefined ? (markersByLine.get(openLine) ?? []) : [];
 
   return (
     <>
+      {visitableThreads.length > 0 && !findWidgetVisible && (
+        <MonacoOverlayWidget editor={editor}>
+          <StatementThreadWalker
+            announcement={walkerAnnouncement}
+            count={visitableThreads.length}
+            onNext={() => walk(1)}
+            onPrevious={() => walk(-1)}
+            remainder={unplacedUnresolved}
+          />
+        </MonacoOverlayWidget>
+      )}
       {openLine !== undefined && openEntries.length > 0 && (
         <MonacoViewZone
           afterLineNumber={openLine}
@@ -514,11 +624,13 @@ export function StatementThreadsLayer({
           revealKey={expandedRoots.size > 0 ? expandedRoots : undefined}
           revealTarget={expandedThreadRef}
         >
-          <div className="py-2 pr-2 sm:pr-4">
+          <div className="py-2 pr-2">
             <ThreadStack
               key={openLine}
               expandedRoots={expandedRoots}
               expandedThreadRef={expandedThreadRef}
+              flashRoot={flashRoot}
+              onFlashEnd={() => setFlashRoot(undefined)}
               issueName={issue.name}
               onCollapse={(rootName) =>
                 openThreads(
@@ -535,22 +647,25 @@ export function StatementThreadsLayer({
           </div>
         </MonacoViewZone>
       )}
-      {composerRange && (
+      {Array.from(composers, ([line, composer]) => (
         <MonacoViewZone
-          afterLineNumber={composerRange.endLine}
+          afterLineNumber={line}
           editor={editor}
-          revealKey={`${composerRange.startLine}-${composerRange.endLine}`}
+          key={line}
+          revealKey={composer.revealNonce}
         >
-          <div className="py-2 pr-2 sm:pr-4">
+          <div className="py-2 pr-2">
             <InlineThreadComposer
-              onCancel={() => setComposerRange(undefined)}
-              onPublish={publish}
+              draft={composerDrafts[line] ?? ""}
+              onCancel={() => closeComposer(line)}
+              onDraftChange={(draft) => updateComposerDraft(line, draft)}
+              onPublish={(comment) => publish(line, comment)}
               pending={actions.pending}
-              range={composerRange}
+              range={composer.range}
             />
           </div>
         </MonacoViewZone>
-      )}
+      ))}
     </>
   );
 }

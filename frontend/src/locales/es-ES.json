@@ -1827,21 +1827,29 @@
           "view-in-statement": "Ver en la sentencia"
         },
         "comment-on-lines": "Comentar las líneas",
-        "comment-required": "Escribe un comentario antes de enviarlo.",
         "n-replies-hidden_one": "{{count}} respuesta oculta",
         "n-replies-hidden_other": "{{count}} respuestas ocultas",
         "n-replies_one": "{{count}} respuesta",
         "n-replies_other": "{{count}} respuestas",
         "publish": "Publicar",
-        "reopen-with-comment": "Reabrir con comentario",
+        "reopen-thread": "Reabrir hilo",
         "reply": "Responder",
         "reply-placeholder": "Responder...",
         "reply-posted-status-failed": "La respuesta se publicó, pero no se pudo actualizar el estado del hilo. Vuelve a intentar cambiar el estado.",
         "resolve": "Resolver",
-        "resolve-with-comment": "Resolver con comentario",
+        "resolve-thread": "Resolver hilo",
         "resolved": "Resuelto",
         "threads-on-line_one": "{{count}} hilo en esta línea",
         "threads-on-line_other": "{{count}} hilos en esta línea",
+        "walker": {
+          "count_one": "{{count}} hilo sin resolver en esta versión",
+          "count_other": "{{count}} hilos sin resolver en esta versión",
+          "next": "Siguiente hilo sin resolver",
+          "position": "Hilo {{index}} de {{count}}",
+          "previous": "Hilo sin resolver anterior",
+          "remainder_one": "{{count}} más no se muestra en esta versión",
+          "remainder_other": "{{count}} más no se muestran en esta versión"
+        },
         "write-comment": "Escribe un comentario..."
       }
     },
@@ -1885,6 +1893,8 @@
       "n-of-m-approved": "{{n}} de {{m}} aprobadas",
       "n-of-m-tasks": "{{n}}/{{m}} tareas",
       "n-passed": "{{n}} aprobadas",
+      "n-unresolved-threads_one": "{{count}} hilo sin resolver",
+      "n-unresolved-threads_other": "{{count}} hilos sin resolver",
       "n-warning": "{{n}} advertencia"
     },
     "targets": {

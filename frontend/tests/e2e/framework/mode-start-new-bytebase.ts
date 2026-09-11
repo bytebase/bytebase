@@ -199,7 +199,10 @@ export async function startServer(): Promise<{
     {
       detached: true,
       stdio: "ignore",
-      env: { ...process.env, PG_URL: "" },
+      // The embedded Postgres needs a valid UTF-8 locale: without LANG,
+      // initdb rejects the locale and Postgres 17 on macOS then fails with
+      // "postmaster became multithreaded during startup".
+      env: { LANG: "en_US.UTF-8", ...process.env, PG_URL: "" },
     }
   );
 

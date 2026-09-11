@@ -1827,21 +1827,29 @@
           "view-in-statement": "Xem trong câu lệnh"
         },
         "comment-on-lines": "Bình luận các dòng đã chọn",
-        "comment-required": "Nhập bình luận trước khi gửi.",
         "n-replies-hidden_one": "{{count}} phản hồi bị ẩn",
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
         "publish": "Đăng",
-        "reopen-with-comment": "Mở lại kèm bình luận",
+        "reopen-thread": "Mở lại luồng",
         "reply": "Trả lời",
         "reply-placeholder": "Trả lời...",
         "reply-posted-status-failed": "Đã đăng phản hồi nhưng không thể cập nhật trạng thái chủ đề. Hãy thử lại thao tác cập nhật trạng thái.",
         "resolve": "Giải quyết",
-        "resolve-with-comment": "Giải quyết kèm bình luận",
+        "resolve-thread": "Giải quyết luồng",
         "resolved": "Đã giải quyết",
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
+        "walker": {
+          "count_one": "{{count}} luồng chưa giải quyết ở phiên bản này",
+          "count_other": "{{count}} luồng chưa giải quyết ở phiên bản này",
+          "next": "Luồng chưa giải quyết tiếp theo",
+          "position": "Luồng {{index}} trên {{count}}",
+          "previous": "Luồng chưa giải quyết trước đó",
+          "remainder_one": "Còn {{count}} luồng không hiển thị ở phiên bản này",
+          "remainder_other": "Còn {{count}} luồng không hiển thị ở phiên bản này"
+        },
         "write-comment": "Viết bình luận..."
       }
     },
@@ -1885,6 +1893,8 @@
       "n-of-m-approved": "{{n}} trên {{m}} đã được phê duyệt",
       "n-of-m-tasks": "{{n}}/{{m}} tác vụ",
       "n-passed": "{{n}} đã vượt qua",
+      "n-unresolved-threads_one": "{{count}} luồng chưa giải quyết",
+      "n-unresolved-threads_other": "{{count}} luồng chưa giải quyết",
       "n-warning": "{{n}} cảnh báo"
     },
     "targets": {
