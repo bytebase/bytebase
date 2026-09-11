@@ -1099,8 +1099,17 @@ test.describe("Inline comment threads as a reply-only reader (CUJ L, restricted)
     readerPlanPage = new PlanDetailPage(await readerContext.newPage(), env.baseURL);
   });
 
+  // DeleteRole refuses a role a binding still references, so drop the
+  // binding and the reader first; the throwaway workspace must not carry
+  // this role or user into later suites.
   test.afterAll(async () => {
     await readerContext?.close();
+    if (roleName) {
+      const policy = await env.api.getProjectIamPolicy(env.project);
+      policy.bindings = policy.bindings.filter((binding) => binding.role !== roleName);
+      await env.api.setProjectIamPolicy(env.project, policy);
+    }
+    await env.api.deleteUser(readerEmail).catch(() => {});
     if (roleName) await env.api.deleteRole(roleName);
   });
 
