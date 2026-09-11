@@ -42,15 +42,11 @@ func healthySchema() *metadatapb.DatabaseSchemaMetadata {
 
 // A table with no columns models a snapshot from a sync before #20581.
 func degradedSchema() *metadatapb.DatabaseSchemaMetadata {
-	return degradedSchemaNamed("t")
-}
-
-func degradedSchemaNamed(table string) *metadatapb.DatabaseSchemaMetadata {
 	return &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{{
 			Name:   "public",
-			Tables: []*metadatapb.TableMetadata{{Name: table}},
+			Tables: []*metadatapb.TableMetadata{{Name: "t"}},
 		}},
 	}
 }
@@ -100,6 +96,8 @@ func TestUnresolvedColumnsSignalFiresOnDegradedSnapshot(t *testing.T) {
 		"WITH t AS (SELECT count(*) FILTER (WHERE EXISTS (SELECT 1 FROM t)) AS c FROM (SELECT 1) x) SELECT * FROM t",
 		"WITH t AS (SELECT string_agg('x', ',' ORDER BY (SELECT count(*) FROM t)) AS c FROM (SELECT 1) x) SELECT * FROM t",
 		`WITH "T" AS (SELECT 1 AS n) SELECT count(*) FILTER (WHERE EXISTS (SELECT 1 FROM t)) FROM "T"`,
+		"SELECT * FROM generate_series(1, (SELECT count(*)::int FROM public.t))",
+		"SELECT * FROM (VALUES ((SELECT count(*) FROM public.t))) v(x)",
 	}
 	for _, statement := range statements {
 		t.Run(statement, func(t *testing.T) {
@@ -242,21 +240,4 @@ func TestUnresolvedColumnsSignalResolvesRelationsNotRoutines(t *testing.T) {
 	span = spanFor(t, "SELECT * FROM t", sequenceFirst)
 	require.Nil(t, span.UnresolvedColumnsError,
 		"the sequence in a is the relation this query reads, and a sequence carries no column list to judge")
-}
-
-// BYT-10076 tracks reads omitted from the access set; these cases record that gap.
-func TestUnresolvedColumnsSignalNotCoveredShapes(t *testing.T) {
-	notCovered := map[string]string{
-		"subquery in a FROM-clause function argument": "SELECT * FROM generate_series(1, (SELECT count(*)::int FROM public.d))",
-		"subquery inside a VALUES list":               "SELECT * FROM (VALUES ((SELECT count(*) FROM public.d))) v(x)",
-	}
-	for name, statement := range notCovered {
-		t.Run(name, func(t *testing.T) {
-			span := spanFor(t, statement, degradedSchemaNamed("d"))
-			require.Empty(t, span.SourceColumns,
-				"the premise of this gap is that the access set is empty; if this fails the gap may have been closed upstream")
-			require.Nil(t, span.UnresolvedColumnsError,
-				"documented gap: no access reported, so nothing to check (BYT-10076)")
-		})
-	}
 }
