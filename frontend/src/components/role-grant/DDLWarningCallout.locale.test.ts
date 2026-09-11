@@ -2,6 +2,7 @@
 import { describe, expect, test } from "vitest";
 import enReact from "@/locales/en-US.json";
 import esReact from "@/locales/es-ES.json";
+import idReact from "@/locales/id-ID.json";
 import jaReact from "@/locales/ja-JP.json";
 import viReact from "@/locales/vi-VN.json";
 import zhReact from "@/locales/zh-CN.json";
@@ -17,6 +18,7 @@ import zhReact from "@/locales/zh-CN.json";
 const locales = {
   "en-US": enReact,
   "zh-CN": zhReact,
+  "id-ID": idReact,
   "ja-JP": jaReact,
   "es-ES": esReact,
   "vi-VN": viReact,
