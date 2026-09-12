@@ -99,6 +99,7 @@ describe("DataSourceForm connection information buttons", () => {
     expect(form).toContain('onOpenInfoPanel("authentication")');
     expect(form).toContain('onOpenInfoPanel("ssl")');
     expect(form).toContain('onOpenInfoPanel("ssh")');
+    expect(form.match(/className="-ml-1 w-6 shrink-0 p-0"/g)).toHaveLength(3);
   });
 });
 
