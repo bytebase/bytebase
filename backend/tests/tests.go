@@ -177,9 +177,9 @@ func sharedServer(t *testing.T) *controller {
 }
 
 // startWorkspace gives the test a server, and so a workspace, of its own. Use it
-// when the test writes what the workspace shares — a setting, the license, the
-// IAM policy, a workspace-scoped ID, the demo principal's credentials — or
-// asserts on a workspace-wide list.
+// when the test writes what the workspace shares — a setting, a workspace or
+// environment policy, the license, the IAM policy, a workspace-scoped ID, the
+// demo principal's credentials — or asserts on a workspace-wide list.
 func startWorkspace(ctx context.Context, t *testing.T) (*controller, context.Context) {
 	t.Helper()
 	ctl := &controller{}

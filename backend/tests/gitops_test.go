@@ -1632,7 +1632,7 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 			t.Parallel()
 			a := require.New(t)
 			ctx := context.Background()
-			ctl, ctx := startProject(ctx, t)
+			ctl, ctx := startWorkspace(ctx, t)
 
 			// Create a project.
 			projectID := generateRandomString("gitops-dep")

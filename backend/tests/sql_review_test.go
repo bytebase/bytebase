@@ -97,7 +97,7 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 	tests, err := readTestData(filepath)
 	a.NoError(err)
-	ctl, ctx := startProject(ctx, t)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	pgContainer := provisionPgInstance(t)
 
