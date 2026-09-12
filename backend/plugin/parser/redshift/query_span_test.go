@@ -108,15 +108,12 @@ func TestRedshiftQuerySpanEntrypointDoesNotDependOnANTLR(t *testing.T) {
 	}
 }
 
-func TestRedshiftOmniQuerySpanUsesLazyRelationResolver(t *testing.T) {
+// Query span must resolve relations lazily through UseMetadata rather than
+// installing the whole snapshot up front.
+func TestRedshiftOmniQuerySpanUsesUseMetadata(t *testing.T) {
 	content, err := os.ReadFile("query_span_extractor.go")
 	require.NoError(t, err)
-	source := string(content)
-	require.Contains(t, source, "SetRelationResolver")
-	require.NotContains(t, source, "pendingOmniCatalogView")
-	require.NotContains(t, source, "buildOmniQuerySpanCatalog")
-	require.NotContains(t, source, "orderPendingOmniCatalogViews")
-	require.NotContains(t, source, "createQuerySpanViewDDL")
+	require.Contains(t, string(content), "UseMetadata")
 }
 
 func TestRedshiftOmniQuerySpanNonSelectTypes(t *testing.T) {

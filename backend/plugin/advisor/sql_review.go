@@ -133,7 +133,7 @@ func SQLReviewCheck(
 			SessionUser: checkContext.SessionUser,
 			RawSQL:      statements,
 		}
-		if advice := schema.WalkThroughWithContext(checkContext.DBType, walkThroughContext, checkContext.FinalMetadata, asts); advice != nil {
+		if advice := schema.WalkThroughWithContext(ctx, checkContext.DBType, walkThroughContext, checkContext.FinalMetadata, asts); advice != nil {
 			for _, rule := range ruleList {
 				if rule.Engine == checkContext.DBType && rule.Type == storepb.SQLReviewRule_BUILTIN_WALK_THROUGH_CHECK {
 					if status, err := NewStatusBySQLReviewRuleLevel(rule.Level); err == nil {

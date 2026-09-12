@@ -2,13 +2,11 @@ package redshift
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	redshiftcatalog "github.com/bytebase/omni/redshift/catalog"
 	redshiftcompletion "github.com/bytebase/omni/redshift/completion"
 
@@ -21,9 +19,9 @@ func init() {
 }
 
 // Completion returns Redshift auto-completion candidates backed by omni's
-// parser-native completer. Bytebase metadata is copied into an omni Redshift
-// catalog with minimal DDL so the completer can resolve schemas, relations,
-// columns, sequences, and Redshift-specific grammar slots.
+// parser-native completer. Bytebase metadata is loaded into an omni Redshift
+// catalog so the completer can resolve schemas, relations, columns, sequences,
+// and Redshift-specific grammar slots.
 func Completion(ctx context.Context, cCtx base.CompletionContext, statement string, caretLine int, caretOffset int) ([]base.Candidate, error) {
 	cat := buildCompletionCatalog(ctx, cCtx)
 
@@ -102,48 +100,7 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext) *r
 	}
 
 	cat := redshiftcatalog.New()
-	for _, schemaName := range metadata.ListSchemaNames() {
-		schemaMeta := metadata.GetSchemaMetadata(schemaName)
-		if schemaMeta == nil {
-			continue
-		}
-		execCompletionDDL(cat, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s;", quoteIdent(schemaName)))
-
-		for _, tableName := range schemaMeta.ListTableNames() {
-			tableMeta := schemaMeta.GetTable(tableName)
-			if tableMeta == nil {
-				continue
-			}
-			execCompletionDDL(cat, createTableDDL(schemaName, tableName, tableMeta.GetProto().GetColumns()))
-		}
-		for _, tableName := range schemaMeta.ListForeignTableNames() {
-			tableMeta := schemaMeta.GetExternalTable(tableName)
-			if tableMeta == nil {
-				continue
-			}
-			execCompletionDDL(cat, createTableDDL(schemaName, tableName, tableMeta.GetProto().GetColumns()))
-		}
-		for _, viewName := range schemaMeta.ListViewNames() {
-			viewMeta := schemaMeta.GetView(viewName)
-			if viewMeta == nil {
-				continue
-			}
-			execCompletionDDL(cat, createViewDDL("VIEW", schemaName, viewName, viewMeta.GetColumns()))
-		}
-		for _, viewName := range schemaMeta.ListMaterializedViewNames() {
-			viewMeta := schemaMeta.GetMaterializedView(viewName)
-			if viewMeta == nil {
-				continue
-			}
-			cat.SetSearchPath([]string{schemaName, "public"})
-			if viewMeta.GetDefinition() == "" || !execCompletionDDL(cat, createMaterializedViewDDL(schemaName, viewName, viewMeta.GetDefinition())) {
-				execCompletionDDL(cat, createViewDDL("MATERIALIZED VIEW", schemaName, viewName, nil))
-			}
-		}
-		for _, sequenceName := range schemaMeta.ListSequenceNames() {
-			execCompletionDDL(cat, fmt.Sprintf("CREATE SEQUENCE %s.%s;", quoteIdent(schemaName), quoteIdent(sequenceName)))
-		}
-	}
+	cat.LoadMetadata(metadata.GetProto())
 
 	searchPath := []string{"public"}
 	if cCtx.DefaultSchema != "" {
@@ -151,100 +108,6 @@ func buildCompletionCatalog(ctx context.Context, cCtx base.CompletionContext) *r
 	}
 	cat.SetSearchPath(searchPath)
 	return cat
-}
-
-func execCompletionDDL(cat *redshiftcatalog.Catalog, sql string) bool {
-	_, err := cat.Exec(sql, nil)
-	return err == nil
-}
-
-func createTableDDL(schemaName, tableName string, columns []*metadatapb.ColumnMetadata) string {
-	return fmt.Sprintf(
-		"CREATE TABLE %s.%s (%s);",
-		quoteIdent(schemaName),
-		quoteIdent(tableName),
-		columnListDDL(columns),
-	)
-}
-
-func createViewDDL(kind, schemaName, viewName string, columns []*metadatapb.ColumnMetadata) string {
-	selectItems := make([]string, 0, len(columns))
-	for _, column := range columns {
-		if column == nil || column.GetName() == "" {
-			continue
-		}
-		selectItems = append(selectItems, fmt.Sprintf(
-			"CAST(NULL AS %s) AS %s",
-			normalizeCompletionType(column.GetType()),
-			quoteIdent(column.GetName()),
-		))
-	}
-	if len(selectItems) == 0 {
-		selectItems = append(selectItems, "1 AS __bytebase_completion_placeholder")
-	}
-	return fmt.Sprintf(
-		"CREATE %s %s.%s AS SELECT %s;",
-		kind,
-		quoteIdent(schemaName),
-		quoteIdent(viewName),
-		strings.Join(selectItems, ", "),
-	)
-}
-
-func createMaterializedViewDDL(schemaName, viewName, definition string) string {
-	definition = strings.TrimSpace(definition)
-	definition = strings.TrimSuffix(definition, ";")
-	if strings.HasPrefix(strings.ToUpper(definition), "CREATE ") {
-		return definition + ";"
-	}
-	return fmt.Sprintf(
-		"CREATE MATERIALIZED VIEW %s.%s AS %s;",
-		quoteIdent(schemaName),
-		quoteIdent(viewName),
-		definition,
-	)
-}
-
-func columnListDDL(columns []*metadatapb.ColumnMetadata) string {
-	columnDefs := make([]string, 0, len(columns))
-	for _, column := range columns {
-		if column == nil || column.GetName() == "" {
-			continue
-		}
-		columnDefs = append(columnDefs, fmt.Sprintf("%s %s", quoteIdent(column.GetName()), normalizeCompletionType(column.GetType())))
-	}
-	if len(columnDefs) == 0 {
-		columnDefs = append(columnDefs, "__bytebase_completion_placeholder text")
-	}
-	return strings.Join(columnDefs, ", ")
-}
-
-func normalizeCompletionType(typ string) string {
-	lower := strings.ToLower(strings.TrimSpace(typ))
-	switch {
-	case lower == "":
-		return "text"
-	case strings.Contains(lower, "bigint"):
-		return "bigint"
-	case strings.Contains(lower, "int"):
-		return "integer"
-	case strings.Contains(lower, "bool"):
-		return "boolean"
-	case strings.Contains(lower, "char"), strings.Contains(lower, "text"), strings.Contains(lower, "string"):
-		return "text"
-	case strings.Contains(lower, "numeric"), strings.Contains(lower, "decimal"):
-		return "numeric"
-	case strings.Contains(lower, "double"):
-		return "double precision"
-	case strings.Contains(lower, "float"), strings.Contains(lower, "real"):
-		return "real"
-	case strings.Contains(lower, "date"):
-		return "date"
-	case strings.Contains(lower, "time"):
-		return "timestamp"
-	default:
-		return "text"
-	}
 }
 
 func quoteIdent(name string) string {

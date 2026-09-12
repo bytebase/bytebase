@@ -23,30 +23,28 @@ func init() {
 
 // WalkThrough walks through the PostgreSQL DDL and builds catalog metadata.
 func WalkThrough(d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
-	return WalkThroughWithContext(schema.WalkThroughContext{}, d, ast)
+	return WalkThroughWithContext(context.Background(), schema.WalkThroughContext{}, d, ast)
 }
 
 // WalkThroughWithContext performs DDL simulation using the omni catalog.
-//  1. loadWalkThroughCatalog(metadata) → load existing schema into catalog
+//  1. catalog.LoadMetadata(metadata) → load existing schema into catalog
 //  2. catalog.Exec(userSQL) → execute user DDL, collect per-statement Changes
 //  3. Map exec errors → *storepb.Advice
 //  4. Merge Changes into original metadata → FinalMetadata for downstream rules
-func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, _ []base.AST) *storepb.Advice {
-	if ctx.RawSQL == "" {
+func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext, d *model.DatabaseMetadata, _ []base.AST) *storepb.Advice {
+	if wtCtx.RawSQL == "" {
 		return nil
 	}
 
 	// Step 1: Load existing schema into two catalogs — one as snapshot, one for exec.
-	// TODO(BYT-9215): Thread a real context.Context through the call chain instead of using context.Background().
-	// WalkThroughContext is not a context.Context and the caller does not pass one.
 	catBefore := catalog.New()
-	if ctx.SessionUser != "" {
-		catBefore.SetSessionUser(ctx.SessionUser)
+	if wtCtx.SessionUser != "" {
+		catBefore.SetSessionUser(wtCtx.SessionUser)
 	}
 	if searchPath := getConfiguredSearchPath(d); len(searchPath) > 0 {
 		catBefore.SetSearchPath(searchPath)
 	}
-	if err := loadWalkThroughCatalog(context.Background(), catBefore, d.GetProto()); err != nil {
+	if _, err := catBefore.LoadMetadata(ctx, d.GetProto(), catalog.LoadMetadataOptions{Full: true}); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.DDLSimulationFailed.Int32(),
@@ -59,7 +57,7 @@ func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMeta
 	catAfter := catBefore.Clone()
 
 	// Step 2: Execute user SQL on catAfter.
-	results, execErr := catAfter.Exec(ctx.RawSQL, &catalog.ExecOptions{ContinueOnError: true})
+	results, execErr := catAfter.Exec(wtCtx.RawSQL, &catalog.ExecOptions{ContinueOnError: true})
 	if execErr != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,

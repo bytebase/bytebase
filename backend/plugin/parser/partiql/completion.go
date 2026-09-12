@@ -30,12 +30,7 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 		_, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, cCtx.DefaultDatabase)
 		if err == nil && dbMeta != nil {
 			databaseMetadata = dbMeta
-			schema := dbMeta.GetSchemaMetadata("")
-			if schema != nil {
-				for _, table := range schema.ListTableNames() {
-					cat.AddTable(table)
-				}
-			}
+			cat.LoadMetadata(dbMeta.GetProto())
 		}
 	}
 
