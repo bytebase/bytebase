@@ -221,6 +221,19 @@ describe("InstanceFormBody", () => {
     expect(source).toContain('t("instance.sentence.host.none-snowflake")');
   });
 
+  test("keeps the sync databases information trigger at the shared xs size", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+    const syncDatabases = source.slice(
+      source.indexOf("export function SyncDatabases"),
+      source.indexOf("export function InstanceFormBody")
+    );
+
+    expect(syncDatabases).toContain('className="-ml-1 w-6 shrink-0 p-0"');
+  });
+
   test("moves the localized testing label into the sticky form actions", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/instance/InstanceFormButtons.tsx"),

@@ -628,7 +628,7 @@ export function SyncDatabases({
                 type="button"
                 appearance="link"
                 size="xs"
-                className="h-auto shrink-0 p-0"
+                className="-ml-1 w-6 shrink-0 p-0"
                 aria-label={t("instance.sync-databases.self")}
                 onClick={() => onOpenInfoPanel("sync-databases")}
               >

@@ -1027,8 +1027,9 @@ describe("InstanceFormProvider", () => {
       );
 
       expect(infoButton).not.toBeNull();
-      expect(infoButton?.className).toContain("h-auto");
-      expect(infoButton?.className).not.toContain("w-6");
+      expect(infoButton?.className).toContain("w-6");
+      expect(infoButton?.className).not.toContain("h-auto");
+      expect(infoButton?.className).toContain("-ml-1");
       expect(infoButton?.parentElement?.className).toContain("gap-x-1");
     } finally {
       harness.unmount();
