@@ -101,6 +101,43 @@ func TestCompletionWebhookEnvironmentUsesLastEnvironmentOrder(t *testing.T) {
 	require.Equal(t, "prod", completionWebhookEnvironment(tasks, environmentOrderMap))
 }
 
+// TestPlanTasksComplete covers the status combinations a pipeline reaches, each
+// named for the rollout that produces it. These ran as end-to-end webhook cases
+// until they were found to differ only in the statuses they arranged. A retried
+// task reaches DONE, so "all done" is that case too.
+func TestPlanTasksComplete(t *testing.T) {
+	done := &store.TaskMessage{LatestTaskRunStatus: storepb.TaskRun_DONE}
+	skipped := &store.TaskMessage{LatestTaskRunStatus: storepb.TaskRun_SKIPPED}
+	userSkipped := &store.TaskMessage{Payload: &storepb.Task{Skipped: true}}
+	failed := &store.TaskMessage{LatestTaskRunStatus: storepb.TaskRun_FAILED}
+	canceled := &store.TaskMessage{LatestTaskRunStatus: storepb.TaskRun_CANCELED}
+	running := &store.TaskMessage{LatestTaskRunStatus: storepb.TaskRun_RUNNING}
+	pending := &store.TaskMessage{LatestTaskRunStatus: storepb.TaskRun_PENDING}
+
+	testCases := []struct {
+		name  string
+		tasks []*store.TaskMessage
+		want  bool
+	}{
+		{"all done", []*store.TaskMessage{done, done}, true},
+		{"done and skipped", []*store.TaskMessage{done, skipped}, true},
+		{"all skipped", []*store.TaskMessage{skipped, skipped}, true},
+		{"a failed task the user skipped", []*store.TaskMessage{done, userSkipped}, true},
+		{"every failed task skipped", []*store.TaskMessage{userSkipped, userSkipped}, true},
+		{"mixed recovery", []*store.TaskMessage{done, skipped, done, userSkipped}, true},
+		{"no tasks", nil, true},
+		{"one still failed", []*store.TaskMessage{done, failed}, false},
+		{"one canceled", []*store.TaskMessage{done, canceled}, false},
+		{"one still running", []*store.TaskMessage{done, running}, false},
+		{"one still pending", []*store.TaskMessage{done, pending}, false},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, planTasksComplete(tc.tasks))
+		})
+	}
+}
+
 func TestSchedulePendingTaskRunsSkipsArchivedProject(t *testing.T) {
 	ctx := context.Background()
 	s := setupRolloutCreatorStore(ctx, t)
