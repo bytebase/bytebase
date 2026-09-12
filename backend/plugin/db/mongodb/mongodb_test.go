@@ -222,10 +222,6 @@ func TestExecuteLogsParseFailure(t *testing.T) {
 // This ensures the fix for PR #17282 (which changed to single-quote bracket notation
 // for special characters) works correctly.
 func TestQueryWithBracketNotation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MongoDB testcontainer test in short mode")
-	}
-
 	ctx := context.Background()
 
 	// Get MongoDB container from testcontainer utility
@@ -332,10 +328,6 @@ func TestQueryWithBracketNotation(t *testing.T) {
 // TestQueryWithBracketNotationStructure tests the exact structure of query results
 // using protocmp to ensure the result format is correct.
 func TestQueryWithBracketNotationStructure(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MongoDB testcontainer test in short mode")
-	}
-
 	ctx := context.Background()
 
 	// Get MongoDB container from testcontainer utility
@@ -420,10 +412,6 @@ func TestQueryWithBracketNotationStructure(t *testing.T) {
 // large integers must render in mongosh notation (plain decimal), not the Go
 // driver's scientific notation (e.g. 1.779696815227E+12).
 func TestQueryDoubleNotation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping MongoDB testcontainer test in short mode")
-	}
-
 	ctx := context.Background()
 
 	container := testcontainer.GetTestMongoDBContainer(ctx, t)

@@ -23,9 +23,6 @@ import (
 // in particular that the BATCH DRY RUN and inner-DML SQL derived by text-slicing
 // (omni has no statement-level deparse) execute correctly against TiDB.
 func TestStatementDMLDryRunTiDBContainer(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping TiDB testcontainer test in short mode")
-	}
 	ctx := context.Background()
 	container := testcontainer.GetTestTiDBContainer(ctx, t)
 	defer container.Close(ctx)

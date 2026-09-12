@@ -36,7 +36,7 @@ Bytebase is the standard for database development. Every product and engineering
 
 Test API and workflow behavior against PostgreSQL. Engine dialect and DDL fidelity tests belong in omni.
 
-- Test logic in its owning package. Use `backend/api/v1` for service behavior and `backend/store` for metadata queries, collision isolation, and transaction contention.
+- Test logic in its owning package. Use `backend/api/v1` for service behavior and `backend/store` for metadata queries, collision isolation, and transaction contention. Every test runs in CI, so do not check `testing.Short()` or skip a test to park a known gap.
 - A backend test boots a Bytebase server only when it needs a background runner, real rollout, or audit trail; these tests live in `backend/tests`. Browser E2E tests use the separate frontend harness.
 - Packages needing metadata PostgreSQL use `testcontainer.Main` and `testcontainer.NewMetadataDB`. Target-engine tests use `testcontainer.SharedPgContainer` or its siblings, with `NewPgDatabase` for a database per test. Use these shared fixtures instead of package-owned or per-test containers.
 - Prefer pure functions for handler decisions and conversions. When state reads are necessary, define a narrow interface beside the handler and fake it, as `backend/api/mcp` does with `serverStore`; avoid an interface over the entire store. Every fake requires a contract test against the real store too.
