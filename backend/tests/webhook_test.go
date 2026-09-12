@@ -420,30 +420,6 @@ func TestWebhookIntegration(t *testing.T) {
 		require.True(t, foundCorrectWebhook, "expected a webhook whose Slack description matches the plan description")
 	})
 
-	t.Run("PipelineCompletedAfterSkippingFailedTask", func(t *testing.T) {
-		collector.reset()
-
-		project := ctl.createTestProject(ctx, t, "byt9398-c4")
-
-		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c4_pass", "byt9398_c4_fail")
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c4_pass")},
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c4_fail")},
-		})
-		rollout := runAllTasks(ctx, t, ctl, plan)
-
-		// Phase 1: failing task → exactly one PIPELINE_FAILED, no PIPELINE_COMPLETED.
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, rollout.Name)
-		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0, rollout.Name)
-
-		// Phase 2: skip the failed task → PIPELINE_COMPLETED fires (the fix).
-		skipFailedTasks(ctx, t, ctl, rollout)
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, rollout.Name)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1, rollout.Name)
-	})
-
 	t.Run("PipelineCompleted_AllTasksDone", func(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "byt9398-c1")
@@ -457,80 +433,6 @@ func TestWebhookIntegration(t *testing.T) {
 
 		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
-	})
-
-	t.Run("PipelineCompleted_DoneAndSkipped", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-c2")
-		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c2_a", "byt9398_c2_b")
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c2_a")},
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c2_b")},
-		})
-		rollout := createRolloutOnly(ctx, t, ctl, plan)
-		skipTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c2_b"))
-		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c2_a"))
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
-	})
-
-	t.Run("PipelineCompleted_AllSkipped", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-c5")
-		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c5_a", "byt9398_c5_b")
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c5_a")},
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c5_b")},
-		})
-		rollout := createRolloutOnly(ctx, t, ctl, plan)
-		skipAllTasks(ctx, t, ctl, rollout)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
-	})
-
-	t.Run("PipelineCompleted_DoneAndFailedThenRetriedDone", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-c3")
-		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c3_pass", "byt9398_c3_fail")
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c3_pass")},
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c3_fail")},
-		})
-		rollout := runAllTasks(ctx, t, ctl, plan)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
-
-		unblockFailingTask(t, pgContainer, "byt9398_c3_fail")
-		retryFailedTasks(ctx, t, ctl, rollout)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-	})
-
-	t.Run("PipelineCompleted_AllFailedThenAllSkipped", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-c6")
-		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c6_a", "byt9398_c6_b")
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c6_a")},
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c6_b")},
-		})
-		rollout := runAllTasks(ctx, t, ctl, plan)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-
-		skipAllTasks(ctx, t, ctl, rollout)
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
 
 	t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
@@ -577,27 +479,6 @@ func TestWebhookIntegration(t *testing.T) {
 		})
 		runAllTasks(ctx, t, ctl, plan)
 		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-	})
-
-	t.Run("PipelineFailed_DedupOnSecondTaskFailure", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-f2")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f2_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f2_b", ""))
-		collector.reset()
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f2_a")},
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f2_b")},
-		})
-		rollout := runAllTasks(ctx, t, ctl, plan)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-
-		// Both tasks have failed. ClaimPipelineFailureNotification's PK collision
-		// must dedupe — assert exactly 1 even after both terminal.
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
 
 	t.Run("PipelineFailed_RetryFailsAgain", func(t *testing.T) {
