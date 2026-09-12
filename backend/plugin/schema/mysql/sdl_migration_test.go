@@ -389,14 +389,11 @@ func TestLoadCatalogFallbackSeedsExplicitDefaultsForTimestamp(t *testing.T) {
 // skipUnlessLiveOracle gates every live-oracle SDL suite in this package. These
 // suites need the developer's local MySQL oracles (5.7 at 127.0.0.1:13307, 8.0 at
 // 127.0.0.1:13306 — see liveServers) and are opt-in via MYSQL_SDL_LIVE_ORACLE=1.
-// CI runs `go test ./backend/...` without -short and has no such servers, so an
-// explicit environment gate (mirroring the cosmosdb integration tests) keeps the
-// suites out of CI while leaving them one env var away locally.
+// CI has no such servers, so an explicit environment gate (mirroring the cosmosdb
+// integration tests) keeps the suites out of CI while leaving them one env var
+// away locally.
 func skipUnlessLiveOracle(t *testing.T) {
 	t.Helper()
-	if testing.Short() {
-		t.Skip("skipping live MySQL SDL oracle test in short mode")
-	}
 	if os.Getenv("MYSQL_SDL_LIVE_ORACLE") == "" {
 		t.Skip("skipping live MySQL SDL oracle test: set MYSQL_SDL_LIVE_ORACLE=1 (needs local MySQL 5.7 at :13307 and 8.0 at :13306)")
 	}
