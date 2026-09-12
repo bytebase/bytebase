@@ -23,6 +23,7 @@ Bytebase is the standard for database development. Every product and engineering
 - Metadata JSONB uses `protojson.Marshal`: keys are camelCase (`taskRun`), not proto snake_case (`task_run`).
 - Follow Google language style guides and AIPs for API/proto design. AIPs take precedence over the proto guide. Enum values use `HELLO`, not `TYPE_HELLO`.
 - Use American English. Avoid collection names ending in `List`.
+- Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the MCP Access policy page promises, and nothing enforces that. Before changing one, read [mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md#keeping-the-rows-true).
 
 ## Code comments
 

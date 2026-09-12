@@ -77,6 +77,15 @@ const DYNAMIC_PREFIXES = [
   "settings.mcp.policy.unreadable.title",
   "settings.mcp.policy.unserved.description",
   "settings.mcp.policy.unserved.title",
+  // The capability ladder's template-driven families only: row titles and
+  // detail lines keyed by row id, the per-mode summary, and the tier tag and
+  // divider keyed by tier. Listed per family rather than as the
+  // `settings.mcp.ladder.` subtree, which would also exempt every sibling key
+  // the ladder names literally — the floor line among them.
+  "settings.mcp.ladder.row.",
+  "settings.mcp.ladder.stops.",
+  "settings.mcp.ladder.summary.",
+  "settings.mcp.ladder.tier.",
   // Built as `…undisclosed.${reason}.<suffix>` over a reason the consent page
   // derives: title, description and line for both, plus retry for the one that
   // offers it. Listed per reason rather than as one subtree, which would also

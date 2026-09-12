@@ -123,7 +123,10 @@ vi.mock("@/components/ui/tooltip", () => ({
 
 vi.mock("./RuleComponents", () => ({
   RuleConfig: () => <div data-testid="rule-config" />,
-  RuleEditDialog: () => <div data-testid="rule-edit-dialog" />,
+  // Rendered in row position inside <tbody>, where the real dialog portals its
+  // content out and leaves nothing structural. A <tr> is the valid stand-in; a
+  // <div> here is markup the real component never produces.
+  RuleEditDialog: () => <tr data-testid="rule-edit-dialog" />,
   RuleLevelFilter: () => <div data-testid="rule-level-filter" />,
   RuleLevelSwitch: () => {
     mocks.ruleLevelSwitch();

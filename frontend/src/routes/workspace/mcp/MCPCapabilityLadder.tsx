@@ -1,0 +1,223 @@
+import { Check, ChevronRight, Minus } from "lucide-react";
+import { Fragment } from "react";
+import { useTranslation } from "react-i18next";
+import type {
+  MCPCapabilityRow,
+  MCPCapabilityTier,
+} from "@/components/mcp/mcpCapabilityRows";
+import {
+  isRowServed,
+  MCP_CAPABILITY_TIERS,
+  mcpRowKey,
+  mcpTierKey,
+  rowsInTier,
+} from "@/components/mcp/mcpCapabilityRows";
+import {
+  type MCPServingMode,
+  mcpModeKey,
+  mcpSummaryKey,
+} from "@/components/mcp/mcpPolicy";
+import type { BadgeProps } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
+
+const TIER_VARIANT: Record<MCPCapabilityTier, BadgeProps["variant"]> = {
+  read: "success",
+  write: "warning",
+};
+
+interface Props {
+  readonly mode: MCPServingMode;
+  readonly expanded: boolean;
+  readonly details: boolean;
+  readonly onExpandedChange: (expanded: boolean) => void;
+  readonly onDetailsChange: (details: boolean) => void;
+}
+
+/**
+ * What a mode allows, as capability rows in one ordered list of which every
+ * mode is a prefix.
+ *
+ * The served set comes from the mode's tier alone, so there is no comparison
+ * against a stored mode and the edit state renders exactly what the view will
+ * show after saving. Rows a mode does not serve stay visible and muted, which is
+ * what lets an admin compare two modes without opening a second surface.
+ */
+export function MCPCapabilityLadder({
+  mode,
+  expanded,
+  details,
+  onExpandedChange,
+  onDetailsChange,
+}: Props) {
+  const { t } = useTranslation();
+
+  return (
+    <Collapsible open={expanded} onOpenChange={onExpandedChange}>
+      <div className="flex items-center justify-between gap-x-2 border-b border-block-border py-2">
+        <CollapsibleTrigger
+          className="min-w-0 flex-1 rounded-xs"
+          data-testid="mcp-ladder-trigger"
+        >
+          <ChevronRight
+            className={cn(
+              "size-4 shrink-0 text-control-light transition-transform",
+              expanded && "rotate-90"
+            )}
+          />
+          {/* Neither label repeats the mode name the chip or the selector
+              already shows, except the heading, whose job is to say whose list
+              this is. */}
+          <span
+            className={cn(
+              "min-w-0 text-sm",
+              expanded ? "font-medium text-main" : "text-control-light"
+            )}
+          >
+            {expanded
+              ? t("settings.mcp.ladder.heading", {
+                  mode: t(mcpModeKey(mode, "title")),
+                })
+              : t(mcpSummaryKey(mode))}
+          </span>
+        </CollapsibleTrigger>
+        {expanded && (
+          <Button
+            appearance="link"
+            size="sm"
+            className="shrink-0 px-0"
+            onClick={() => onDetailsChange(!details)}
+          >
+            {details
+              ? t("settings.mcp.ladder.hide-details")
+              : t("settings.mcp.ladder.show-details")}
+          </Button>
+        )}
+      </div>
+
+      <CollapsiblePanel>
+        {/* One list, so the rows are announced as a single ordered set and a
+            row's position in it survives without sight — the prefix the design
+            rests on. Each divider is a presentational sibling of the rows it
+            closes, never content inside the last of them. */}
+        {/* Tailwind's preflight removes the marker from every `ul`, and Safari
+            drops list semantics from an unstyled list — so the position
+            announcement this list depends on needs the role stated. */}
+        <ul role="list" className="flex flex-col">
+          {MCP_CAPABILITY_TIERS.map((tier) => (
+            <Fragment key={tier}>
+              {rowsInTier(tier).map((row) => (
+                <LadderRow
+                  key={row.id}
+                  row={row}
+                  served={isRowServed(mode, row)}
+                  details={details}
+                />
+              ))}
+              <TierDivider tier={tier} />
+            </Fragment>
+          ))}
+        </ul>
+        {/* The floor is one line rather than a row: it is what no mode serves,
+            so it has no mark and belongs to no tier. */}
+        <p className="bg-error/5 px-3 py-2 text-sm text-error">
+          <span className="font-medium">
+            {t("settings.mcp.ladder.floor.label")}
+          </span>{" "}
+          {t("settings.mcp.ladder.floor.text")}
+        </p>
+      </CollapsiblePanel>
+    </Collapsible>
+  );
+}
+
+function LadderRow({
+  row,
+  served,
+  details,
+}: {
+  row: MCPCapabilityRow;
+  served: boolean;
+  details: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <li className="flex items-start gap-x-2 border-b border-block-border px-1 py-2">
+      <span
+        className={cn(
+          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
+          served
+            ? "bg-success/10 text-success"
+            : "bg-control-bg text-control-light"
+        )}
+      >
+        {served ? (
+          <Check className="size-3" aria-hidden="true" />
+        ) : (
+          <Minus className="size-3" aria-hidden="true" />
+        )}
+        {/* Served and unserved are otherwise carried by the glyph, the muting
+            and the presence of the tier tag — all of them visual. Without this
+            a refused row is announced the same as an allowed one. */}
+        <span className="sr-only">
+          {served
+            ? t("settings.mcp.ladder.mark.allowed")
+            : t("settings.mcp.ladder.mark.refused")}
+        </span>
+      </span>
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              "text-sm",
+              served ? "font-medium text-main" : "text-control-light"
+            )}
+          >
+            {t(mcpRowKey(row, "title"))}
+          </span>
+          {served && (
+            <Badge
+              variant={TIER_VARIANT[row.tier]}
+              className="px-2 py-0 text-xs"
+            >
+              {t(mcpTierKey(row.tier, "tier"))}
+            </Badge>
+          )}
+        </div>
+        {details && (
+          <p
+            className={cn(
+              "text-xs leading-4",
+              served ? "text-control" : "text-control-light"
+            )}
+          >
+            {t(mcpRowKey(row, "details"))}
+          </p>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function TierDivider({ tier }: { tier: MCPCapabilityTier }) {
+  const { t } = useTranslation();
+  return (
+    <li
+      role="presentation"
+      className="flex items-center gap-x-2 border-b border-block-border py-2 text-xs text-control-light"
+    >
+      <Separator className="flex-1" />
+      <span className="uppercase tracking-wide">
+        {t(mcpTierKey(tier, "stops"))}
+      </span>
+      <Separator className="flex-1" />
+    </li>
+  );
+}

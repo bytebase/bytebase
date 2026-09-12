@@ -20,9 +20,10 @@ describe("Popover", () => {
     await act(async () => {
       root.render(
         <Popover>
-          <PopoverTrigger>
-            <button type="button">Open</button>
-          </PopoverTrigger>
+          {/* The trigger renders the button itself. Nesting one inside it
+              produced button-in-button, which the parser resolves by closing
+              the outer element early. */}
+          <PopoverTrigger>Open</PopoverTrigger>
           <PopoverContent>Popover body</PopoverContent>
         </Popover>
       );
@@ -43,9 +44,7 @@ describe("Popover", () => {
     await act(async () => {
       root.render(
         <Popover>
-          <PopoverTrigger>
-            <button type="button">Open</button>
-          </PopoverTrigger>
+          <PopoverTrigger>Open</PopoverTrigger>
           {/* Popover content renders via portal into bb-react-layer-overlay.
               We query document.body since the popup lives outside `container`. */}
           <PopoverContent>Popover body</PopoverContent>
@@ -75,9 +74,7 @@ describe("Popover", () => {
     function ControlledPopover({ open }: { open: boolean }) {
       return (
         <Popover open={open}>
-          <PopoverTrigger>
-            <button type="button">Open</button>
-          </PopoverTrigger>
+          <PopoverTrigger>Open</PopoverTrigger>
           <PopoverContent>Controlled content</PopoverContent>
         </Popover>
       );

@@ -31,6 +31,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
+import { useLocalStorageBoolean } from "@/hooks/useLocalStorageBoolean";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
@@ -743,34 +744,6 @@ function SingleResultViewInner({
 // ---------------------------------------------------------------------------
 // Inline helpers — small enough to live in this file.
 // ---------------------------------------------------------------------------
-
-function useLocalStorageBoolean(
-  key: string,
-  defaultValue: boolean
-): [boolean, (next: boolean) => void] {
-  const [value, setValue] = useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw === "true") return true;
-      if (raw === "false") return false;
-    } catch {
-      // ignore
-    }
-    return defaultValue;
-  });
-  const update = useCallback(
-    (next: boolean) => {
-      setValue(next);
-      try {
-        localStorage.setItem(key, String(next));
-      } catch {
-        // ignore
-      }
-    },
-    [key]
-  );
-  return [value, update];
-}
 
 function DatabaseInfo({ database }: { database: Database }) {
   const { t } = useTranslation();

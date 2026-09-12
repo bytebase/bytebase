@@ -1630,12 +1630,10 @@
         },
         "line": {
           "audit": "Audited actions carry an MCP tag, and anything the policy refuses is recorded",
-          "capped": "Capped by your own Bytebase permissions",
+          "capped-read-only": "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all",
+          "capped-read-write": "Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation",
           "masking": "Your masking exemptions do not apply to this session",
-          "no-write": "No data or schema changes",
-          "read": "Read schemas and run read-only queries",
-          "workflow": "Open issues, plans and rollouts, and export query results",
-          "write": "Make the data and schema changes your permissions allow"
+          "no-write": "No changes, rollouts, exports or database management"
         },
         "title": "This session may",
         "undisclosed": {
@@ -2674,12 +2672,8 @@
       "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
     },
     "mcp": {
-      "auth": {
-        "description": "OAuth authentication is required on first connection. Ensure you have appropriate Bytebase permissions.",
-        "title": "Authentication Required"
-      },
       "connect": {
-        "description": "Add Bytebase to your AI client, approve access in the browser, and start asking.",
+        "description": "Add Bytebase to your AI client and start asking. On first connection you sign in and approve access in the browser.",
         "desktop-note": "Claude Desktop reads remote servers from your Claude account, not from the config file. Add this URL as a custom connector under Customize > Connectors on claude.ai, then it appears in Claude Desktop.",
         "json-note": "This is the mcpServers shape. Client config formats differ: VS Code, for example, expects servers in its own mcp.json, so use the VS Code tab for that.",
         "title": "Connect a client"
@@ -2690,33 +2684,98 @@
         "example": "List all projects in my Bytebase instance",
         "title": "Your First Prompt"
       },
+      "ladder": {
+        "disabled": "Nothing is allowed; no MCP session can connect.",
+        "floor": {
+          "label": "Never, in any mode:",
+          "text": "approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
+        },
+        "heading": "{{mode}} allows",
+        "hide-details": "Hide details",
+        "mark": {
+          "allowed": "Allowed",
+          "refused": "Not allowed"
+        },
+        "row": {
+          "export": {
+            "details": "Download results as a file. Data leaves Bytebase",
+            "title": "Export query results"
+          },
+          "manage": {
+            "details": "Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries",
+            "title": "Manage database housekeeping"
+          },
+          "propose": {
+            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must",
+            "title": "Propose changes"
+          },
+          "read-data": {
+            "details": "Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Saved queries and sheets you have access to",
+            "title": "Read data by running queries"
+          },
+          "read-schemas": {
+            "details": "Schemas · Databases and instances · Projects and database groups · Catalogs, changelogs and revisions · SQL review configs · Your own session and workspace facts",
+            "title": "Read schemas and metadata"
+          },
+          "read-workflow": {
+            "details": "Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews",
+            "title": "Read the change workflow"
+          },
+          "run-rollouts": {
+            "details": "Create a rollout · Run, skip or cancel its tasks, under the project's approval policy",
+            "title": "Run rollouts and tasks"
+          },
+          "run-statements": {
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow",
+            "title": "Run DML and DDL statements"
+          }
+        },
+        "show-details": "Show details",
+        "stops": {
+          "read": "Read-only stops here",
+          "write": "Read-write stops here"
+        },
+        "summary": {
+          "read-only": "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
+          "read-write": "Read schemas, data and the change workflow; propose, run, export and manage"
+        },
+        "tier": {
+          "read": "read",
+          "write": "write"
+        }
+      },
       "policy": {
-        "audit": "MCP policy denials are recorded in the audit log.",
-        "description": "The most any MCP session may do in this workspace. Every session is also capped by the connecting user's own permissions.",
+        "current": "Current policy: {{mode}}",
+        "description": "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are audited.",
         "edit": "Edit policy",
-        "in-force": "In force",
         "loading": "Reading the access policy…",
         "masking": {
           "badge": "Masking exemptions ignored",
-          "description": "Masked data stays masked in MCP sessions. The masking exemptions granted to a user, and the unmask carried by an access grant, stop applying to their MCP requests. The same user is unaffected in the Bytebase console.",
-          "limits": "Masking coverage depends on the engine. Where Bytebase does not mask, or masks without consulting exemptions, this changes nothing.",
+          "badge-disabled": "Masking exemptions ignored — MCP is off",
+          "badge-unlicensed": "Masking exemptions ignored — masking not licensed",
+          "description": "If enabled, masked data stays masked in MCP sessions even for users with exemptions or unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing. The console is unaffected.",
           "title": "Ignore masking exemptions",
           "unavailable": "Data masking is not licensed for this workspace, so nothing is masked whatever this is set to."
+        },
+        "masking-pending": {
+          "applied": "This policy will be saved with masking exemptions applied.",
+          "ignored": "This policy will be saved with masking exemptions ignored."
         },
         "mode": {
           "disabled": {
             "best-for": "Best for: keeping MCP off until you are ready to turn it on.",
+            "caption": "No sessions connect",
             "description": "No MCP session can connect to this workspace.",
             "title": "Disabled"
           },
           "read-only": {
             "best-for": "Best for: querying and exploring data, including by people who do not write SQL.",
-            "description": "Sessions can explore schemas and run read-only queries. Bytebase classifies every statement before it runs and refuses a request whole if any statement is not a read. Where the engine's driver has one, the database session is opened read-only as well. How deep this goes varies by engine.",
+            "caption": "Explore and query",
             "title": "Read-only"
           },
           "read-write": {
             "best-for": "Best for: making database changes through an AI agent, still capped by each user's own permissions.",
-            "description": "Sessions can also change data and schemas, as far as the connecting user's own permissions allow.",
+            "caption": "Change data and schemas",
             "title": "Read-write"
           }
         },
@@ -2726,7 +2785,8 @@
         },
         "save": "Save policy",
         "saved": "Policy saved. {{mode}} applies to every session's next request.",
-        "tightening": "A ceiling change applies to the next request of every running session. Work an agent has already been admitted to runs to completion.",
+        "tightening": "Applies to every running session's next request.",
+        "tightening-change": "{{from}} → {{to}} applies to every running session's next request.",
         "title": "Access policy",
         "unreadable": {
           "description": "This workspace stores a capability value this build does not understand. Every MCP connection is being refused. Pick a mode and save to set it right.",

@@ -91,6 +91,9 @@ export declare const AuthMethodSchema: GenEnum<AuthMethod>;
  * between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
  * method is refused rather than served. Annotating a method is therefore a
  * change to what an MCP session can reach, taking effect on the next request.
+ * READ and WRITE methods are also disclosed to workspace admins, as capability
+ * rows on the Access policy page, so annotating a method changes what the
+ * product promises as well as what it serves.
  *
  * @generated from enum bytebase.v1.MCPMethodClass
  */

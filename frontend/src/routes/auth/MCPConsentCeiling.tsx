@@ -1,21 +1,16 @@
-import { Check, EyeOff, ScrollText, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { Check, EyeOff, Info, ScrollText, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { mcpRowKey, servedRows } from "@/components/mcp/mcpCapabilityRows";
+import type { MCPServingMode } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import {
-  type MCPSetting,
-  MCPSetting_Capability,
-} from "@/types/proto-es/v1/setting_service_pb";
-
-interface Line {
-  readonly key: string;
-  readonly icon: ReactNode;
-  readonly text: string;
-}
+import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
+import type { MCPConsentLine } from "./MCPConsentPolicyCard";
+import { MCPConsentPolicyCard } from "./MCPConsentPolicyCard";
 
 interface Props {
-  readonly setting: MCPSetting;
+  /** The ceiling this session runs at, narrowed by the caller. */
+  readonly mode: MCPServingMode;
+  readonly ignoreMaskingExemptions: boolean;
   readonly dataMaskingAvailable: boolean;
 }
 
@@ -23,56 +18,57 @@ interface Props {
  * What the workspace's ceiling lets this session do, shown before the person
  * approves rather than after.
  *
- * The same ceiling refuses the POST server-side, so this page is the richer
- * render of a decision the backend makes either way — never the decision
- * itself.
+ * The capability rows are the settings page's, from the same table, so the
+ * wording an admin chose the policy by is the wording the person approving
+ * reads. The same ceiling refuses the POST server-side, so this page is the
+ * richer render of a decision the backend makes either way — never the
+ * decision itself.
  */
-export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
+export function MCPConsentCeiling({
+  mode,
+  ignoreMaskingExemptions,
+  dataMaskingAvailable,
+}: Props) {
   const { t } = useTranslation();
 
-  const readWrite = setting.capability === MCPSetting_Capability.READ_WRITE;
-  const modeKey = readWrite ? "read-write" : "read-only";
-  const modeLabel = t(`settings.mcp.policy.mode.${modeKey}.title`);
-
-  const lines: Line[] = [
-    {
-      key: "read",
+  const readWrite = mode === MCPSetting_Capability.READ_WRITE;
+  const lines: MCPConsentLine[] = [
+    ...servedRows(mode).map((row) => ({
+      key: row.id,
       icon: <Check className="size-4 text-success" />,
-      text: t("oauth2.consent.mcp.line.read"),
-    },
-    readWrite
-      ? {
-          key: "write",
-          icon: <Check className="size-4 text-success" />,
-          text: t("oauth2.consent.mcp.line.write"),
-        }
-      : {
-          key: "no-write",
-          icon: <X className="size-4 text-error" />,
-          text: t("oauth2.consent.mcp.line.no-write"),
-        },
-    // The WRITE class is not only data and schema: CreateIssue, CreatePlan,
-    // CreateRollout, BatchRunTasks, Export and the saved-query methods all
-    // carry it, so approving read-write approves workflow and egress too.
+      mark: t("settings.mcp.ladder.mark.allowed"),
+      text: t(mcpRowKey(row, "title")),
+    })),
+    // One line for the whole unserved tier rather than five muted rows: this
+    // screen is an approval, not a comparison, and the person is deciding
+    // about what the session gains.
     ...(readWrite
-      ? [
+      ? []
+      : [
           {
-            key: "workflow",
-            icon: <Check className="size-4 text-success" />,
-            text: t("oauth2.consent.mcp.line.workflow"),
+            // No mark: the sentence states the prohibition itself, and
+            // prefixing "Not allowed" would double the negative.
+            key: "no-write",
+            icon: <X className="size-4 text-error" />,
+            text: t("oauth2.consent.mcp.line.no-write"),
           },
-        ]
-      : []),
+        ]),
+    // A bound, not a grant: neutral glyph and no mark, so it is not counted
+    // among the rows above it. Scoped by mode because Read-only's statement
+    // clamp is one rule with one consequence, while Read-write's answer varies
+    // by engine and by operation — so that line states the bound and stops.
     {
       key: "capped",
-      icon: <Check className="size-4 text-success" />,
-      text: t("oauth2.consent.mcp.line.capped"),
+      icon: <Info className="size-4 text-control-light" />,
+      text: readWrite
+        ? t("oauth2.consent.mcp.line.capped-read-write")
+        : t("oauth2.consent.mcp.line.capped-read-only"),
     },
     // Both halves, because the line promises a restriction. The toggle
     // withholds unmasking exemptions from MCP sessions, which changes nothing
     // where masking does not run at all — asserting it there would tell the
     // person approving that their data is covered when it is not.
-    ...(setting.ignoreMaskingExemptions && dataMaskingAvailable
+    ...(ignoreMaskingExemptions && dataMaskingAvailable
       ? [
           {
             key: "masking",
@@ -90,22 +86,11 @@ export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="bg-control-bg rounded-sm p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-x-2">
-          <p className="text-sm text-control-light">
-            {t("oauth2.consent.mcp.title")}
-          </p>
-          <Badge variant={readWrite ? "warning" : "success"}>{modeLabel}</Badge>
-        </div>
-        <ul className="text-sm text-main flex flex-col gap-2">
-          {lines.map((line) => (
-            <li key={line.key} className="flex items-start gap-2">
-              <span className="mt-0.5 shrink-0">{line.icon}</span>
-              <span>{line.text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <MCPConsentPolicyCard
+        label={t("oauth2.consent.mcp.title")}
+        mode={mode}
+        lines={lines}
+      />
 
       {readWrite && (
         <Alert
