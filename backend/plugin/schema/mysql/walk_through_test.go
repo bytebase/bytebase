@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -58,7 +59,7 @@ func TestWalkThrough(t *testing.T) {
 
 		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, test.Statement)
 		asts := base.ExtractASTs(stmts)
-		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
+		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if advice != nil {
 			// Compare the advice fields
 			require.NotNil(t, test.Advice, "unexpected advice for statement %q: %+v", test.Statement, advice)
@@ -119,7 +120,7 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	require.True(t, ok)
 	require.True(t, createTable.IfNotExists)
 
-	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t1"))
 }
@@ -141,7 +142,7 @@ func TestWalkThroughSRIDInvisible(t *testing.T) {
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
 	asts := base.ExtractASTs(stmts)
 
-	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 
 	cols := map[string]*metadatapb.ColumnMetadata{}
@@ -164,7 +165,7 @@ func TestWalkThroughSRIDInvisible(t *testing.T) {
 
 // TestWalkThroughSRIDInvisibleSeeded verifies the reverse leg of the WalkThroughWithContext
 // round-trip: when the walk-through starts from already-synced metadata that carries SRID
-// / INVISIBLE columns, the proto->catalog seeding (wtBuildColumnDef) must install those
+// / INVISIBLE columns, LoadMetadata must install those
 // attributes into the omni catalog so that running an UNRELATED DDL does not strip them
 // from the resulting proto. Without seeding, the pre-existing columns load as
 // plain/no-SRID and — because columnsEqual now compares these fields — surface as phantom
@@ -196,7 +197,7 @@ func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
 	sm := sheet.NewManager()
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
 	asts := base.ExtractASTs(stmts)
-	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 
 	geo := state.GetSchemaMetadata("").GetTable("geo")
@@ -240,7 +241,7 @@ func TestWalkThroughKeepsSeededIndexTypes(t *testing.T) {
 	statement := "CREATE TABLE unrelated (x INT PRIMARY KEY);"
 	sm := sheet.NewManager()
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
-	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
 	require.Nil(t, advice)
 
 	// Each index reports its effective access method, the engine's default one

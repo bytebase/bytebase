@@ -105,7 +105,7 @@ func TestWalkThrough(t *testing.T) {
 
 		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_POSTGRES, test.Statement)
 		asts := base.ExtractASTs(stmts)
-		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
+		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if test.Advice != nil {
 			require.NotNil(t, advice)
 			require.Equal(t, test.Advice.Code, advice.Code)
@@ -209,7 +209,7 @@ func TestWalkThroughANTLR(t *testing.T) {
 		asts := base.ExtractASTs(stmts)
 
 		// Call WalkThrough with AST
-		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
+		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if advice != nil {
 			// Compare the advice fields
 			if test.Advice != nil {
@@ -325,9 +325,9 @@ func TestWalkThroughSearchPathState(t *testing.T) {
 			state := newSearchPathTestState(test.searchPath)
 			stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, test.sql)
 			require.NoError(t, err)
-			ctx := test.session
-			ctx.RawSQL = test.sql
-			advice := WalkThroughWithContext(ctx, state, base.ExtractASTs(stmts))
+			wtCtx := test.session
+			wtCtx.RawSQL = test.sql
+			advice := WalkThroughWithContext(context.Background(), wtCtx, state, base.ExtractASTs(stmts))
 			require.Nil(t, advice)
 			test.assert(t, state)
 		})
@@ -414,7 +414,7 @@ func TestClone_SearchPath(t *testing.T) {
 }
 
 // TestClone_WalkThroughFunction tests the actual WalkThroughWithContext function
-// using Clone (if enabled) produces correct FinalMetadata.
+// using Clone produces correct FinalMetadata.
 func TestClone_WalkThroughFunction(t *testing.T) {
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "postgres",
@@ -438,11 +438,11 @@ func TestClone_WalkThroughFunction(t *testing.T) {
 	}
 
 	state := model.NewDatabaseMetadata(meta, nil, nil, storepb.Engine_POSTGRES, true)
-	ctx := schema.WalkThroughContext{
+	wtCtx := schema.WalkThroughContext{
 		RawSQL: `CREATE TABLE public.new_table (id int PRIMARY KEY, val text);`,
 	}
 
-	advice := WalkThroughWithContext(ctx, state, nil)
+	advice := WalkThroughWithContext(context.Background(), wtCtx, state, nil)
 	require.Nil(t, advice, "walk-through should succeed")
 
 	// Check FinalMetadata has the new table

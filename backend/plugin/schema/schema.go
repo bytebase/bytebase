@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -65,7 +66,7 @@ type sdlDropAdvices func(userSDLText string, currentSchema *model.DatabaseMetada
 type diffSDLMigration func(sourceSDL, targetSDL, engineVersion string, sessionCtx *SDLSessionContextMap) (string, error)
 type diffMetadataMigration func(oldSchema, newSchema *model.DatabaseMetadata) (string, error)
 type walkThrough func(*model.DatabaseMetadata, []base.AST) *storepb.Advice
-type walkThroughWithContext func(WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
+type walkThroughWithContext func(context.Context, WalkThroughContext, *model.DatabaseMetadata, []base.AST) *storepb.Advice
 
 // WalkThroughContext carries optional session state into schema walk-through implementations.
 type WalkThroughContext struct {
@@ -533,12 +534,12 @@ func RegisterWalkThroughWithContext(engine storepb.Engine, f walkThroughWithCont
 }
 
 func WalkThrough(engine storepb.Engine, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
-	return WalkThroughWithContext(engine, WalkThroughContext{}, d, ast)
+	return WalkThroughWithContext(context.Background(), engine, WalkThroughContext{}, d, ast)
 }
 
-func WalkThroughWithContext(engine storepb.Engine, ctx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
+func WalkThroughWithContext(ctx context.Context, engine storepb.Engine, wtCtx WalkThroughContext, d *model.DatabaseMetadata, ast []base.AST) *storepb.Advice {
 	if f, ok := walkThroughsWithContext[engine]; ok {
-		return f(ctx, d, ast)
+		return f(ctx, wtCtx, d, ast)
 	}
 	f, ok := walkThroughs[engine]
 	if !ok {
