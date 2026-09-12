@@ -198,7 +198,7 @@ func seedFailingSheet(ctx context.Context, t *testing.T, ctl *controller, projec
 // succeed.
 func unblockFailingTask(t *testing.T, pgContainer *Container, dbName string) {
 	t.Helper()
-	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s", pgContainer.host, pgContainer.port, dbName))
+	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=%s", pgContainer.GetHost(), pgContainer.GetPort(), dbName))
 	require.NoError(t, err)
 	defer func() {
 		if cerr := db.Close(); cerr != nil {

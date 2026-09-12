@@ -32,7 +32,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/migrator"
 	samplerunner "github.com/bytebase/bytebase/backend/runner/sample"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -45,58 +44,23 @@ import (
 // server, so each gets its own migrated metadata database on the package's
 // Postgres and they share one target, isolated by workspace.
 
-// newMetadataStore gives a test its own migrated metadata database on the
-// package's Postgres, for service-level tests that need a Store but no server.
-func newMetadataStore(ctx context.Context, t *testing.T) (*sql.DB, *store.Store) {
-	t.Helper()
-	admin, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:root-password@%s:%s/postgres", externalPgHost, externalPgPort))
-	require.NoError(t, err)
-	defer admin.Close()
-	name := getTestDatabaseString()
-	_, err = admin.ExecContext(ctx, "CREATE DATABASE "+name)
-	require.NoError(t, err)
-
-	dsn := fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s", externalPgHost, externalPgPort, name)
-	db, err := sql.Open("pgx", dsn)
-	require.NoError(t, err)
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-	stores, err := store.New(ctx, dsn, false)
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, stores.Close())
-		require.NoError(t, db.Close())
-	})
-	return db, stores
-}
-
 var (
-	sampleTargetOnce      sync.Once
-	sampleTargetContainer *testcontainer.Container
-	sampleTargetErr       error
+	sampleTargetOnce sync.Once
+	sampleTargetErr  error
 )
 
-// sharedSampleTarget starts the TLS Postgres the sample tests provision onto,
-// once for the package; startMain takes it down. The tests isolate by
-// workspace — every sample resource name derives from the workspace ID — so
-// one target serves them all.
+// sharedSampleTarget is the TLS Postgres the sample tests provision onto. The
+// tests isolate by workspace — every sample resource name derives from the
+// workspace ID — so one target serves them all, revoked down to its baseline
+// once.
 func sharedSampleTarget(t *testing.T) *testcontainer.Container {
 	t.Helper()
+	container := testcontainer.SharedTLSPgContainer(t)
 	sampleTargetOnce.Do(func() {
-		ctx := context.Background()
-		container, err := testcontainer.GetTLSPgContainer(ctx)
-		if err != nil {
-			sampleTargetErr = err
-			return
-		}
-		if err := prepareSampleTargetBaseline(ctx, container.GetDB()); err != nil {
-			container.Close(ctx)
-			sampleTargetErr = err
-			return
-		}
-		sampleTargetContainer = container
+		sampleTargetErr = prepareSampleTargetBaseline(context.Background(), container.GetDB())
 	})
 	require.NoError(t, sampleTargetErr)
-	return sampleTargetContainer
+	return container
 }
 
 func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
@@ -432,7 +396,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time, works
 	t.Cleanup(cancel)
 
 	target := sharedSampleTarget(t)
-	_, stores := newMetadataStore(ctx, t)
+	_, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, workspaceID)
 	require.NoError(t, err)
 	_, err = stores.GetDB().ExecContext(ctx, `INSERT INTO project (resource_id, workspace, name) VALUES ('sample-project', $1, 'Sample Project')`, workspaceID)

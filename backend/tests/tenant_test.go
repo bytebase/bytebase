@@ -35,10 +35,7 @@ func TestTenantBackfill(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// ==================== TEST SETUP ====================
 	// Create baseline database, database group, and a pending rollout.
@@ -54,23 +51,23 @@ func TestTenantBackfill(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	prodInstance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "prod-instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "prod-instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 
 	// Create baseline database (source of truth for tenant schemas).
-	baselineDBName := "tenant_baseline"
+	baselineDBName := uniqueDB("tenant_baseline")
 	err = ctl.createDatabase(ctx, project.Msg, prodInstance.Msg, nil, baselineDBName, "")
 	a.NoError(err)
 
@@ -162,7 +159,7 @@ func TestTenantBackfill(t *testing.T) {
 	a.NoError(err)
 
 	// Step 2: Create new tenant database.
-	newTenantDBName := "tenant_new"
+	newTenantDBName := uniqueDB("tenant_new")
 	err = ctl.createDatabase(ctx, project.Msg, prodInstance.Msg, nil, newTenantDBName, "")
 	a.NoError(err)
 
@@ -307,21 +304,18 @@ func TestCreatePlanWithRepeatedDatabaseGroupTarget(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "prod-instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "prod-instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

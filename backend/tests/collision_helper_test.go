@@ -78,27 +78,27 @@ func setupCollidingProjects(
 	}))
 	a.NoError(err)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("col-inst"),
 		Instance: &v1pb.Instance{
-			Title:       "collision-instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "collision-instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	dbNameA := "collision_db_a"
+	dbNameA := uniqueDB("collision_db_a")
 	err = ctl.createDatabase(ctx, projectA.Msg, instance, nil, dbNameA, "")
 	a.NoError(err)
 
-	dbNameB := "collision_db_b"
+	dbNameB := uniqueDB("collision_db_b")
 	err = ctl.createDatabase(ctx, projectB.Msg, instance, nil, dbNameB, "")
 	a.NoError(err)
 
@@ -238,14 +238,14 @@ func setupCollidingProjectsSeparateInstances(
 	instA := createPgInstance(ctx, t, ctl, "col-inst-a")
 	instB := createPgInstance(ctx, t, ctl, "col-inst-b")
 
-	const dbNameA = "collision_db_a"
+	dbNameA := uniqueDB("collision_db_a")
 	a.NoError(ctl.createDatabase(ctx, projectA.Msg, instA, nil, dbNameA, ""))
 	dbA, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instA.Name, dbNameA),
 	}))
 	a.NoError(err)
 
-	const dbNameB = "collision_db_b"
+	dbNameB := uniqueDB("collision_db_b")
 	a.NoError(ctl.createDatabase(ctx, projectB.Msg, instB, nil, dbNameB, ""))
 	dbB, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instB.Name, dbNameB),
@@ -464,16 +464,16 @@ func listTaskRunAndTaskUIDs(ctx context.Context, t *testing.T, ctl *controller, 
 func createPgInstance(ctx context.Context, t *testing.T, ctl *controller, titlePrefix string) *v1pb.Instance {
 	t.Helper()
 	a := require.New(t)
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	resp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString(titlePrefix),
 		Instance: &v1pb.Instance{
-			Title:       titlePrefix,
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         titlePrefix,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

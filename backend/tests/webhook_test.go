@@ -141,10 +141,7 @@ func TestWebhookIntegration(t *testing.T) {
 	// unsynchronized from every parallel test that adds a webhook.
 
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	require.NoError(t, err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Test webhook server.
 	//
@@ -167,17 +164,17 @@ func TestWebhookIntegration(t *testing.T) {
 	defer webhookServer.Close()
 
 	// Create a single instance for all tests
-	pgContainer, err := provisionPgInstance(ctx, t)
-	require.NoError(t, err)
+	pgContainer := sharedPgTarget(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "test instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "test instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	require.NoError(t, err)

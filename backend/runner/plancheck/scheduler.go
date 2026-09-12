@@ -40,6 +40,10 @@ type Scheduler struct {
 	executor       *CombinedExecutor
 	licenseService *enterprise.LicenseService
 	productMetrics *productmetrics.ProductMetrics
+
+	// runs tracks the goroutines runOnce spawns. The server closes the store
+	// once every Run has returned, so Run has to wait for them.
+	runs sync.WaitGroup
 }
 
 // Run runs the scheduler.
@@ -47,6 +51,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(planCheckSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
+	defer s.runs.Wait()
 	slog.Debug(fmt.Sprintf("Plan check scheduler started and will run every %v", planCheckSchedulerInterval))
 	for {
 		select {
@@ -91,7 +96,11 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 	}
 
 	for _, c := range claimed {
-		go s.runPlanCheckRun(ctx, c.ProjectID, c.UID, c.PlanUID, c.ApprovalInputVersion)
+		s.runs.Add(1)
+		go func() {
+			defer s.runs.Done()
+			s.runPlanCheckRun(ctx, c.ProjectID, c.UID, c.PlanUID, c.ApprovalInputVersion)
+		}()
 	}
 	result = productmetrics.ResultSuccess
 }

@@ -16,13 +16,9 @@ func TestDatabaseEnvironment(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	prodEnvironment, err := ctl.getEnvironment(ctx, "prod")
 	a.NoError(err)
@@ -32,17 +28,18 @@ func TestDatabaseEnvironment(t *testing.T) {
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "test",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new(prodEnvironment.Name),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.dataSource(v1pb.DataSourceType_ADMIN, "admin-ds")},
+			Title:         "test",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new(prodEnvironment.Name),
+			Activation:    true,
+			SyncDatabases: &v1pb.SyncDatabases{},
+			DataSources:   []*v1pb.DataSource{pgContainer.dataSource(v1pb.DataSourceType_ADMIN, "admin-ds")},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	db0Name := "db0"
+	db0Name := uniqueDB("db0")
 	err = ctl.createDatabase(ctx, ctl.project, instance, testEnvironment /* environment */, db0Name, "")
 	a.NoError(err)
 	db0Resp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
@@ -55,7 +52,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.NotNil(db0.EffectiveEnvironment)
 	a.Equal(testEnvironment.Name, *db0.EffectiveEnvironment)
 
-	db1Name := "db1"
+	db1Name := uniqueDB("db1")
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, db1Name, "")
 	a.NoError(err)
 	db1Resp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
@@ -67,7 +64,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.NotNil(db1.EffectiveEnvironment)
 	a.Equal(prodEnvironment.Name, *db1.EffectiveEnvironment)
 
-	db2Name := "db2"
+	db2Name := uniqueDB("db2")
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, db2Name, "")
 	a.NoError(err)
 	db2Resp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{

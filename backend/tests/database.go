@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
@@ -11,7 +12,36 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
+// allowDatabaseSync names one more database an instance may sync. The syncer
+// imports only what the list names, so a database about to be created has to be
+// added first. An instance with a server to itself carries no list and skips this.
+func (ctl *controller) allowDatabaseSync(ctx context.Context, instance *v1pb.Instance, databaseName string) error {
+	if instance.GetSyncDatabases() == nil {
+		return nil
+	}
+	resp, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: instance.Name}))
+	if err != nil {
+		return err
+	}
+	databases := resp.Msg.GetSyncDatabases().GetDatabases()
+	if slices.Contains(databases, databaseName) {
+		return nil
+	}
+	_, err = ctl.instanceServiceClient.UpdateInstance(ctx, connect.NewRequest(&v1pb.UpdateInstanceRequest{
+		Instance: &v1pb.Instance{
+			Name:          instance.Name,
+			SyncDatabases: &v1pb.SyncDatabases{Databases: append(databases, databaseName)},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"sync_databases"}},
+	}))
+	return err
+}
+
 func (ctl *controller) createDatabase(ctx context.Context, project *v1pb.Project, instance *v1pb.Instance, environment *v1pb.EnvironmentSetting_Environment, databaseName string, owner string) error {
+	if err := ctl.allowDatabaseSync(ctx, instance, databaseName); err != nil {
+		return err
+	}
+
 	// Database provisioning is test setup, and its plan is approved by the same
 	// test actor. Opt into that legacy behavior explicitly; production projects
 	// keep the restrictive default when the setting is absent.

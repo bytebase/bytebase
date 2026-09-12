@@ -18,19 +18,15 @@ func TestProjectInstanceWorkflowTargets(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
-	const databaseID = "bot36_workflow_database"
+	pg := sharedPgTarget(t)
+	databaseID := uniqueDB("bot36_workflow_database")
 	createPgDatabase(t, pg, databaseID)
 
 	otherProject := createProjectForProjectInstanceTest(ctx, t, ctl, "bot36-other-project")
-	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, "bot36-project-instance", "project instance", pg)
-	_, err = ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
+	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, "bot36-project-instance", "project instance", pg, databaseID)
+	_, err := ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
 	a.NoError(err)
 
 	databaseName := fmt.Sprintf("%s/databases/%s", instance.Name, databaseID)

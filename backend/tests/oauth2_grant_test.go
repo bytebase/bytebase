@@ -218,10 +218,7 @@ func TestOAuth2GrantLifecycle(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
@@ -420,10 +417,7 @@ func TestOAuth2IssuanceRechecksTheCeiling(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)

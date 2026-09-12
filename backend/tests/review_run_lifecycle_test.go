@@ -51,16 +51,13 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
 	// The fixture issues carry rollouts; a rollout freezes the plan's SQL, so
 	// review is refused.
-	_, err = runReview(ctx, ctl, fixture.IssueA.Name, "rule")
+	_, err := runReview(ctx, ctl, fixture.IssueA.Name, "rule")
 	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
 
 	// Fresh colliding plan+issue pairs without rollouts.

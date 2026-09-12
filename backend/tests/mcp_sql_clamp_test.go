@@ -79,24 +79,22 @@ type mcpClampFixture struct {
 	token    string
 }
 
-func setupMCPClampFixture(ctx context.Context, t *testing.T) *mcpClampFixture {
+// setupMCPClampFixture builds the fixture on the caller's controller, so each
+// test decides whether a project of its own is enough or it needs a workspace.
+func setupMCPClampFixture(ctx context.Context, t *testing.T, ctl *controller) *mcpClampFixture {
 	t.Helper()
 	a := require.New(t)
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	t.Cleanup(func() { ctl.Close(ctx) })
 
-	container, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	container := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("mcp-clamp"),
 		Instance: &v1pb.Instance{
-			Title:       "MCP clamp",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{container.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP clamp",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{container.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -157,7 +155,8 @@ func (f *mcpClampFixture) employeeCount(t *testing.T) int {
 func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	// A read is served, and the response says what held it to reads. Postgres
 	// gets the driver session too, so the strongest depth is what it reports.
@@ -266,7 +265,8 @@ func (f *mcpClampFixture) sequenceValue(t *testing.T) int64 {
 func TestMCPReadOnlyCeilingRefusesASessionRewrite(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 	before := f.sequenceValue(t)
 
 	disarm := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
@@ -291,7 +291,8 @@ func TestMCPReadOnlyCeilingRefusesASessionRewrite(t *testing.T) {
 func TestMCPReadOnlyCeilingJudgesTheWholeBatch(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	reads := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
 		"SELECT id FROM employee; SELECT name FROM employee;")
@@ -314,7 +315,8 @@ func TestMCPReadOnlyCeilingJudgesTheWholeBatch(t *testing.T) {
 func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	// The agent's read runs first and is SERVED, which is what actually opens
 	// a read-only Postgres session; a refused statement never reaches a
@@ -356,7 +358,8 @@ func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	// Start read-write, on a session opened under that ceiling.
 	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.MCPSetting_READ_WRITE))
@@ -398,7 +401,8 @@ func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 func TestMCPReadOnlyClampCoversAnExplainRequest(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	explained := callAPIOnSession(f.ctx, t, f.session, "SQLService/Query", map[string]any{
 		"name":      f.database,
@@ -426,10 +430,7 @@ func TestMCPCutoverAdmitsReadOnlyAndNothingElse(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",
@@ -517,7 +518,8 @@ func TestMCPCutoverAdmitsReadOnlyAndNothingElse(t *testing.T) {
 func TestMCPReadOnlyRoleDowngradeBitesTheNextRequest(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
-	f := setupMCPClampFixture(context.Background(), t)
+	ctl, ctx := startWorkspace(context.Background(), t)
+	f := setupMCPClampFixture(ctx, t, ctl)
 
 	const readerEmail = "clamp-reader@example.com"
 	const readerPassword = "1024bytebase"

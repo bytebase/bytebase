@@ -19,18 +19,14 @@ func TestProjectInstancePlanCheckSchedulingFollowsProjectLifecycle(t *testing.T)
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
-	const databaseID = "bot36_scheduler_database"
+	pg := sharedPgTarget(t)
+	databaseID := uniqueDB("bot36_scheduler_database")
 	createPgDatabase(t, pg, databaseID)
 
-	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, "bot36-scheduler-instance", "scheduler instance", pg)
-	_, err = ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
+	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, "bot36-scheduler-instance", "scheduler instance", pg, databaseID)
+	_, err := ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
 	a.NoError(err)
 	databaseName := fmt.Sprintf("%s/databases/%s", instance.Name, databaseID)
 	_, err = ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{Name: databaseName}))

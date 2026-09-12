@@ -181,19 +181,12 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := provisionPgInstance(t)
 
-	pgDB := pgContainer.db
-	err = pgDB.Ping()
+	pgDB := pgContainer.GetDB()
+	err := pgDB.Ping()
 	a.NoError(err)
 
 	_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
@@ -210,7 +203,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)

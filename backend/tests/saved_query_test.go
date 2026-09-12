@@ -18,10 +18,7 @@ func TestListSavedQueries(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	ownerToken := ctl.authInterceptor.token
 
@@ -169,10 +166,7 @@ func TestListSavedQueriesOrdering(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	createSavedQuery := func(title string) *v1pb.SavedQuery {
 		return createTitledSavedQuery(ctx, a, ctl, title)
@@ -185,7 +179,7 @@ func TestListSavedQueriesOrdering(t *testing.T) {
 
 	// Editing a row must not move it in the default order; only an explicit
 	// "update_time desc" surfaces it first.
-	_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+	_, err := ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
 		SavedQuery: &v1pb.SavedQuery{Name: first.Name, Content: []byte("SELECT 2;")},
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"content"}},
 	}))
@@ -267,10 +261,7 @@ func TestSearchSavedQueriesFilterByFolder(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	createSavedQuery := func(title string) *v1pb.SavedQuery {
 		return createTitledSavedQuery(ctx, a, ctl, title)
@@ -352,10 +343,7 @@ func TestSearchSavedQueriesFilterByTitle(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	createSavedQuery := func(title string) *v1pb.SavedQuery {
 		return createTitledSavedQuery(ctx, a, ctl, title)
@@ -411,10 +399,7 @@ func TestMoveSavedQueries(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	createSavedQuery := func(title, folder string) *v1pb.SavedQuery {
 		resp, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
@@ -506,10 +491,7 @@ func TestSearchSavedQueryFoldersReturnsCallerFolders(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	ownerToken := ctl.authInterceptor.token
 
@@ -634,10 +616,7 @@ func TestGetSavedQueryHidesUnreadableRows(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	ownerToken := ctl.authInterceptor.token
 	created, err := ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
@@ -720,10 +699,7 @@ func TestListSavedQueriesReturnsWholeStatement(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	const ownerEmail = "demo@example.com"
 
@@ -766,10 +742,7 @@ func TestCreateSavedQueryRejectsArchivedProject(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	projectID := generateRandomString("sq-archived")
 	projectResp, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
@@ -803,12 +776,9 @@ func TestSearchSavedQueriesRejectsWildcardProject(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	_, err = ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
+	_, err := ctl.savedQueryServiceClient.SearchSavedQueries(ctx, connect.NewRequest(&v1pb.SearchSavedQueriesRequest{
 		Parent: "projects/-",
 	}))
 	a.Error(err)
@@ -854,10 +824,7 @@ func TestSavedQuerySharing(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	ownerToken := ctl.authInterceptor.token
 
@@ -1055,10 +1022,7 @@ func TestSavedQueryPerVerbRoleGrants(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	ownerToken := ctl.authInterceptor.token
 

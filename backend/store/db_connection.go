@@ -23,6 +23,7 @@ import (
 type DBConnectionManager struct {
 	mu          sync.Mutex
 	db          *sql.DB
+	closed      bool
 	cleanup     func() error
 	pgURLOrFile string // Either a PostgreSQL URL or a file path
 	watcher     *fsnotify.Watcher
@@ -73,8 +74,12 @@ func (m *DBConnectionManager) Initialize(ctx context.Context) error {
 	return nil
 }
 
-// GetDB returns the current database connection.
+// GetDB returns the current database connection. After Close it returns the
+// same handle, closed, so a runner that outlives shutdown gets an error rather
+// than a nil pointer.
 func (m *DBConnectionManager) GetDB() *sql.DB {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	return m.db
 }
 
@@ -88,12 +93,12 @@ func (m *DBConnectionManager) Close() error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.db == nil {
+	if m.db == nil || m.closed {
 		return nil
 	}
 
 	err := closeMetadataDBConnection(&metadataDBConnection{db: m.db, cleanup: m.cleanup})
-	m.db = nil
+	m.closed = true
 	m.cleanup = nil
 	return err
 }
@@ -164,6 +169,7 @@ func (m *DBConnectionManager) reloadConnection(ctx context.Context, filePath str
 	oldCleanup := m.cleanup
 	m.db = newConn.db
 	m.cleanup = newConn.cleanup
+	m.closed = false
 	m.mu.Unlock()
 
 	// Gracefully drain old connections and force close after 1 hour

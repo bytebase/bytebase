@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -112,70 +113,66 @@ func openTestDriver(ctx context.Context, t *testing.T, container *testcontainer.
 }
 
 func TestExecuteCreateIndexInTransaction(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestTiDBContainer(ctx, t)
-	defer container.Close(ctx)
+	container, database := testcontainer.NewTiDBDatabase(t)
 
 	tidbDriver := openTestDriver(ctx, t, container)
 	defer func() {
 		require.NoError(t, tidbDriver.Close(ctx))
 	}()
 
-	_, err := tidbDriver.Execute(ctx, `
-		CREATE DATABASE IF NOT EXISTS test;
-		USE test;
-		DROP TABLE IF EXISTS test.execute_create_index_in_transaction;
-		CREATE TABLE test.execute_create_index_in_transaction (id INT);
+	_, err := tidbDriver.Execute(ctx, fmt.Sprintf(`
+		USE %[1]s;
+		CREATE TABLE %[1]s.execute_create_index_in_transaction (id INT);
 		BEGIN;
-		CREATE INDEX idx_execute_create_index_in_transaction ON test.execute_create_index_in_transaction(id);
+		CREATE INDEX idx_execute_create_index_in_transaction ON %[1]s.execute_create_index_in_transaction(id);
 		COMMIT;
-	`, db.ExecuteOptions{})
+	`, database), db.ExecuteOptions{})
 	require.NoError(t, err)
 
 	var count int
-	query := `
+	query := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM information_schema.tidb_indexes
-		WHERE table_schema = 'test'
+		WHERE table_schema = '%s'
 			AND table_name = 'execute_create_index_in_transaction'
 			AND key_name = 'idx_execute_create_index_in_transaction'
-	`
+	`, database)
 	err = tidbDriver.db.QueryRowContext(ctx, query).Scan(&count)
 	require.NoError(t, err)
 	require.Equal(t, 1, count)
 }
 
 func TestExecutePreparedStatementFlowWithCreateIndexString(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestTiDBContainer(ctx, t)
-	defer container.Close(ctx)
+	container, database := testcontainer.NewTiDBDatabase(t)
 
 	tidbDriver := openTestDriver(ctx, t, container)
 	defer func() {
 		require.NoError(t, tidbDriver.Close(ctx))
 	}()
 
-	statement := `
-		CREATE DATABASE IF NOT EXISTS test;
-		USE test;
-		DROP TABLE IF EXISTS test.prepare_statement_flow;
-		CREATE TABLE test.prepare_statement_flow (id INT);
-		SET @sql := 'CREATE INDEX idx_prepare_statement_flow ON test.prepare_statement_flow(id)';
+	statement := fmt.Sprintf(`
+		USE %[1]s;
+		CREATE TABLE %[1]s.prepare_statement_flow (id INT);
+		SET @sql := 'CREATE INDEX idx_prepare_statement_flow ON %[1]s.prepare_statement_flow(id)';
 		PREPARE stmt FROM @sql;
 		EXECUTE stmt;
 		DEALLOCATE PREPARE stmt;
-	`
+	`, database)
 	_, err := tidbDriver.Execute(ctx, statement, db.ExecuteOptions{})
 	require.NoError(t, err)
 
 	var count int
-	query := `
+	query := fmt.Sprintf(`
 		SELECT COUNT(*)
 		FROM information_schema.tidb_indexes
-		WHERE table_schema = 'test'
+		WHERE table_schema = '%s'
 			AND table_name = 'prepare_statement_flow'
 			AND key_name = 'idx_prepare_statement_flow'
-	`
+	`, database)
 	err = tidbDriver.db.QueryRowContext(ctx, query).Scan(&count)
 	require.NoError(t, err)
 	require.Equal(t, 1, count)

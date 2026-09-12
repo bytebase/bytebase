@@ -82,10 +82,10 @@ var (
 )
 
 func TestSensitiveData(t *testing.T) {
+	databaseName := uniqueDB("sensitive_data")
 	const (
-		databaseName = "sensitive_data"
-		tableName    = "tech_book"
-		createTable  = `
+		tableName   = "tech_book"
+		createTable = `
 			CREATE TABLE tech_book(
 				id int primary key,
 				name varchar(220),
@@ -103,12 +103,9 @@ func TestSensitiveData(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
-	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+	_, err := ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		Setting: &v1pb.Setting{
 			Name: "settings/" + v1pb.Setting_SEMANTIC_TYPES.String(),
 			Value: &v1pb.SettingValue{
@@ -131,20 +128,17 @@ func TestSensitiveData(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "pgInstance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "pgInstance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)

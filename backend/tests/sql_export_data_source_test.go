@@ -25,23 +25,16 @@ func TestSQLExportDataSourceResolution(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := provisionPgInstance(t)
 
 	// A login role for the read-only data source. Its grants have to wait until
 	// the table exists, further down: Postgres grants are per object, where
 	// MySQL's GRANT SELECT ON *.* covered tables created later.
-	_, err = pgContainer.db.Exec("DROP ROLE IF EXISTS export_ro")
+	_, err := pgContainer.GetDB().Exec("DROP ROLE IF EXISTS export_ro")
 	a.NoError(err)
-	_, err = pgContainer.db.Exec("CREATE ROLE export_ro LOGIN PASSWORD 'export_ro_password'")
+	_, err = pgContainer.GetDB().Exec("CREATE ROLE export_ro LOGIN PASSWORD 'export_ro_password'")
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
@@ -51,7 +44,7 @@ func TestSQLExportDataSourceResolution(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
@@ -78,7 +71,7 @@ func TestSQLExportDataSourceResolution(t *testing.T) {
 	err = ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false)
 	a.NoError(err)
 
-	grantDB, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s?sslmode=disable", pgContainer.host, pgContainer.port, databaseName))
+	grantDB, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s?sslmode=disable", pgContainer.GetHost(), pgContainer.GetPort(), databaseName))
 	a.NoError(err)
 	defer grantDB.Close()
 	for _, stmt := range []string{
@@ -107,8 +100,8 @@ func TestSQLExportDataSourceResolution(t *testing.T) {
 		DataSource: &v1pb.DataSource{
 			Id:       "readonly",
 			Type:     v1pb.DataSourceType_READ_ONLY,
-			Host:     pgContainer.host,
-			Port:     pgContainer.port,
+			Host:     pgContainer.GetHost(),
+			Port:     pgContainer.GetPort(),
 			Username: "export_ro",
 			Password: "export_ro_password",
 		},

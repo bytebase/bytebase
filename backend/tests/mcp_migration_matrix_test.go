@@ -168,10 +168,7 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// The probe is an audited mutation, so each session leaves exactly one
 	// provenance-carrying row to sort out below, and it is a WRITE method
@@ -283,10 +280,7 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",
@@ -398,10 +392,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 	session := openMCPSession(ctx, t, ctl, mcpToken)
@@ -417,7 +408,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 		"the same bearer must be refused on its next request after the ceiling tightens; %s", body)
 	a.Contains(body, "turned MCP access off")
 
-	_, err = session.CallTool(ctx, &mcp.CallToolParams{
+	_, err := session.CallTool(ctx, &mcp.CallToolParams{
 		Name:      "call_api",
 		Arguments: map[string]any{"operationId": "WorkspaceService/ListWorkspaces"},
 	})
@@ -446,10 +437,7 @@ func TestMCPMembershipRevocationBitesLiveSession(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	const memberEmail = "revoked-member@example.com"
 	const memberPassword = "1024bytebase"

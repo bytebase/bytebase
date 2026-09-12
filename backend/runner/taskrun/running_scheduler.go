@@ -135,7 +135,11 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
-	go s.runTaskRunOnce(ctx, taskRunUID, task, executor)
+	s.runs.Add(1)
+	go func() {
+		defer s.runs.Done()
+		s.runTaskRunOnce(ctx, taskRunUID, task, executor)
+	}()
 	return nil
 }
 
