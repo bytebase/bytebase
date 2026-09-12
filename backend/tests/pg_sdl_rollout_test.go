@@ -31,28 +31,24 @@ func TestPgSDLRollout(t *testing.T) {
 	ctx := context.Background()
 
 	// Create a single shared PostgreSQL container for all subtests
-	pgContainer, err := getPgContainer(ctx)
-	a.NoError(err)
-	defer pgContainer.Close(ctx)
+	pgContainer := sharedPgTarget(t)
 
-	// Create a single shared Bytebase controller and instance for all subtests
-	ctl := &controller{}
-	ctx, err = ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	// One controller and instance for all the subtests.
+	ctl, ctx := startProject(ctx, t)
 
 	// Create shared instance in Bytebase
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("inst")[:8],
+		InstanceId: shortInstanceID(),
 		Instance: &v1pb.Instance{
-			Title:       "SDL Test Instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "SDL Test Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,
-				Host:     pgContainer.host,
-				Port:     pgContainer.port,
+				Host:     pgContainer.GetHost(),
+				Port:     pgContainer.GetPort(),
 				Username: "postgres",
 				Password: "root-password",
 				Id:       "admin",
@@ -69,7 +65,7 @@ func TestPgSDLRollout(t *testing.T) {
 		dbName := fmt.Sprintf("sdl_workflow_%s", strings.ReplaceAll(uuid.New().String()[:8], "-", ""))
 
 		// Create database directly in PostgreSQL
-		_, err := pgContainer.db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+		_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 		a.NoError(err)
 
 		// Create database in Bytebase
@@ -192,7 +188,7 @@ CREATE TABLE "public"."posts" (
 		dbName := fmt.Sprintf("sdl_empty_%s", strings.ReplaceAll(uuid.New().String()[:8], "-", ""))
 
 		// Create database directly in PostgreSQL
-		_, err := pgContainer.db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+		_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 		a.NoError(err)
 
 		// Create database in Bytebase
@@ -233,7 +229,7 @@ CREATE TABLE "public"."posts" (
 		dbName := fmt.Sprintf("sdl_nochange_%s", strings.ReplaceAll(uuid.New().String()[:8], "-", ""))
 
 		// Create database directly in PostgreSQL
-		_, err := pgContainer.db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+		_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 		a.NoError(err)
 
 		// Create database in Bytebase

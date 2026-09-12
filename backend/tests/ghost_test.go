@@ -47,20 +47,13 @@ func TestGhostSchemaUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	mysqlContainer, err := getMySQLContainer(ctx)
-	defer func() {
-		mysqlContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	mysqlContainer := provisionMySQLInstance(t)
 
-	mysqlDB := mysqlContainer.db
+	mysqlDB := mysqlContainer.GetDB()
 
-	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+	_, err := mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
 	a.NoError(err)
 
 	_, err = mysqlDB.Exec("DROP USER IF EXISTS bytebase")
@@ -78,7 +71,7 @@ func TestGhostSchemaUpdate(t *testing.T) {
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.GetHost(), Port: mysqlContainer.GetPort(), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)

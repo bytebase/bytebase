@@ -30,10 +30,7 @@ func TestCollisionUpdateIssueNoCrossProjectEffect(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -77,10 +74,7 @@ func TestCollisionCreateRolloutIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	a.Greater(len(fixture.BaselineA.PlanCheckRuns), 0, "project A should have plan_check_runs")
@@ -104,10 +98,7 @@ func TestCollisionBatchRunTasksNoCrossProjectEffect(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	a.Greater(len(fixture.BaselineA.TaskRuns), 0, "project A should have task_runs")
@@ -140,10 +131,7 @@ func TestCollisionBatchSkipTasksNoCrossProjectEffect(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	a.Greater(len(fixture.BaselineA.TaskRuns), 0, "project A should have task_runs")
@@ -190,10 +178,7 @@ func TestCollisionListPlansIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -219,10 +204,7 @@ func TestCollisionListTaskRunsIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	fixture.completeRolloutB(ctx, t, ctl)
@@ -252,10 +234,7 @@ func TestCollisionGetPlanCheckRunIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	fixture.completeRolloutB(ctx, t, ctl)
@@ -276,10 +255,7 @@ func TestCollisionGetIssueIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -299,10 +275,7 @@ func TestCollisionListIssuesIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -334,10 +307,7 @@ func TestSearchIssuesConcreteProjectAuthorization(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	ownerToken := ctl.authInterceptor.token
@@ -347,7 +317,7 @@ func TestSearchIssuesConcreteProjectAuthorization(t *testing.T) {
 
 	ctl.authInterceptor.token = memberToken
 	// Concrete parent the caller cannot read: denied, not silently served.
-	_, err = ctl.issueServiceClient.SearchIssues(ctx,
+	_, err := ctl.issueServiceClient.SearchIssues(ctx,
 		connect.NewRequest(&v1pb.SearchIssuesRequest{
 			Parent:   fixture.ProjectB.Name,
 			PageSize: 100,

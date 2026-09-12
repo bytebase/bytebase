@@ -34,14 +34,11 @@ func setupPlanUpdateFixture(t *testing.T, withIssue bool) *planUpdateFixture {
 	t.Helper()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	t.Cleanup(func() { _ = ctl.Close(ctx) })
+	ctl, ctx := startProject(ctx, t)
 	// The fixture creates a database through a bootstrap Plan owned and approved
 	// by the test user. Keep that setup flow independent of the feature under
 	// test; individual tests can set the project policy they need afterwards.
-	_, err = ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
 			Name:                        ctl.project.Name,
 			AllowLastPlanEditorApproval: true,
@@ -51,16 +48,16 @@ func setupPlanUpdateFixture(t *testing.T, withIssue bool) *planUpdateFixture {
 	a.NoError(err)
 
 	instanceName := "planUpdateInstance_" + generateRandomString("inst")
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       instanceName,
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         instanceName,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)

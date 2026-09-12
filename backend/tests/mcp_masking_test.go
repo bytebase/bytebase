@@ -114,10 +114,7 @@ type mcpMaskingFixture struct {
 func setupMCPMaskingFixture(ctx context.Context, t *testing.T) *mcpMaskingFixture {
 	t.Helper()
 	a := require.New(t)
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	t.Cleanup(func() { ctl.Close(ctx) })
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",
@@ -153,16 +150,16 @@ func setupMCPMaskingFixture(ctx context.Context, t *testing.T) *mcpMaskingFixtur
 	}))
 	a.NoError(err)
 
-	container, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	container := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("mcp-masking"),
 		Instance: &v1pb.Instance{
-			Title:       "MCP masking",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{container.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "MCP masking",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{container.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -900,10 +897,7 @@ func TestMCPSessionCannotFlipTheMaskingToggle(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",

@@ -32,11 +32,7 @@ func TestMCPCannotChangeOwnPasswordAndLogIn(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// A dedicated end user drives the session: the escape is about an MCP
 	// session rewriting its OWN credentials, and using the fixture's admin
@@ -162,11 +158,7 @@ func TestWebUserStillChangesPasswordAndLogsIn(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	const webEmail = "web-user@example.com"
 	const oldPassword = "1024bytebase"

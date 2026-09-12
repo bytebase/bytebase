@@ -27,6 +27,7 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 	ticker := time.NewTicker(taskSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
+	defer s.runs.Wait()
 	slog.Debug(fmt.Sprintf("Running task runs scheduler started and will run every %v", taskSchedulerInterval))
 	for {
 		select {
@@ -135,7 +136,7 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
-	go s.runTaskRunOnce(ctx, taskRunUID, task, executor)
+	s.runs.Go(func() { s.runTaskRunOnce(ctx, taskRunUID, task, executor) })
 	return nil
 }
 
@@ -257,8 +258,12 @@ func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *
 		return
 	}
 
-	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED)
-	s.bus.PlanCompletionCheckChan <- bus.PlanRef{ProjectID: task.ProjectID, PlanID: task.PlanID}
+	// Signal to check if plan is complete and successful (may send PIPELINE_COMPLETED).
+	// Give up on shutdown rather than blocking on a stopped consumer.
+	select {
+	case s.bus.PlanCompletionCheckChan <- bus.PlanRef{ProjectID: task.ProjectID, PlanID: task.PlanID}:
+	case <-ctx.Done():
+	}
 }
 
 // validateTaskFreshness checks for state drift between task creation and execution time.

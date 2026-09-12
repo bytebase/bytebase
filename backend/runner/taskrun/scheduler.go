@@ -40,6 +40,10 @@ type Scheduler struct {
 	// haFailSince is when CheckReplicaLimit first started failing.
 	// Zero means the check is currently passing.
 	haFailSince time.Time
+
+	// runs tracks the task goroutines; the scheduler that spawns them waits for
+	// them before it returns, or they outlive the store.
+	runs sync.WaitGroup
 }
 
 // NewScheduler will create a new scheduler.
@@ -159,7 +163,7 @@ func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	go s.runTaskCompletionListener(ctx)
+	wg.Go(func() { s.runTaskCompletionListener(ctx) })
 
 	// Start rollout creator component
 	rolloutCreator := NewRolloutCreator(s.store, s.bus, s.webhookManager)

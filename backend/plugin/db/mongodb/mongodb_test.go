@@ -222,11 +222,9 @@ func TestExecuteLogsParseFailure(t *testing.T) {
 // This ensures the fix for PR #17282 (which changed to single-quote bracket notation
 // for special characters) works correctly.
 func TestQueryWithBracketNotation(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-
-	// Get MongoDB container from testcontainer utility
-	container := testcontainer.GetTestMongoDBContainer(ctx, t)
-	defer container.Close(ctx)
+	container, database := testcontainer.NewMongoDatabase(t)
 
 	// Create test database and collection with some data
 	driver := &Driver{}
@@ -237,14 +235,14 @@ func TestQueryWithBracketNotation(t *testing.T) {
 			Username: container.GetUsername(),
 		},
 		ConnectionContext: db.ConnectionContext{
-			DatabaseName: "testdb",
+			DatabaseName: database,
 		},
 		Password: container.GetPassword(),
 	}
 
 	openedDriver, err := driver.Open(ctx, storepb.Engine_MONGODB, connConfig)
 	require.NoError(t, err)
-	defer openedDriver.Close(ctx)
+	t.Cleanup(func() { openedDriver.Close(ctx) })
 
 	// Wait for MongoDB to be fully ready
 	err = openedDriver.Ping(ctx)
@@ -280,6 +278,7 @@ func TestQueryWithBracketNotation(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			results, err := openedDriver.QueryConn(ctx, nil, tc.statement, db.QueryContext{
 				Limit:                50,
 				MaximumSQLResultSize: 10 * 1024 * 1024, // 10MB
@@ -328,11 +327,9 @@ func TestQueryWithBracketNotation(t *testing.T) {
 // TestQueryWithBracketNotationStructure tests the exact structure of query results
 // using protocmp to ensure the result format is correct.
 func TestQueryWithBracketNotationStructure(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-
-	// Get MongoDB container from testcontainer utility
-	container := testcontainer.GetTestMongoDBContainer(ctx, t)
-	defer container.Close(ctx)
+	container, database := testcontainer.NewMongoDatabase(t)
 
 	// Create test database and collection with deterministic data
 	driver := &Driver{}
@@ -343,7 +340,7 @@ func TestQueryWithBracketNotationStructure(t *testing.T) {
 			Username: container.GetUsername(),
 		},
 		ConnectionContext: db.ConnectionContext{
-			DatabaseName: "testdb",
+			DatabaseName: database,
 		},
 		Password: container.GetPassword(),
 	}
@@ -412,10 +409,9 @@ func TestQueryWithBracketNotationStructure(t *testing.T) {
 // large integers must render in mongosh notation (plain decimal), not the Go
 // driver's scientific notation (e.g. 1.779696815227E+12).
 func TestQueryDoubleNotation(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-
-	container := testcontainer.GetTestMongoDBContainer(ctx, t)
-	defer container.Close(ctx)
+	container, database := testcontainer.NewMongoDatabase(t)
 
 	driver := &Driver{}
 	connConfig := db.ConnectionConfig{
@@ -425,7 +421,7 @@ func TestQueryDoubleNotation(t *testing.T) {
 			Username: container.GetUsername(),
 		},
 		ConnectionContext: db.ConnectionContext{
-			DatabaseName: "testdb",
+			DatabaseName: database,
 		},
 		Password: container.GetPassword(),
 	}
@@ -441,7 +437,7 @@ func TestQueryDoubleNotation(t *testing.T) {
 	// BSON doubles, matching the issue's data shape.
 	mongoDriver, ok := openedDriver.(*Driver)
 	require.True(t, ok)
-	_, err = mongoDriver.client.Database("testdb").Collection("users").InsertOne(ctx, bson.D{
+	_, err = mongoDriver.client.Database(database).Collection("users").InsertOne(ctx, bson.D{
 		{Key: "_id", Value: int32(1129063441)},
 		{Key: "name", Value: "repro user 1"},
 		{Key: "created_at", Value: float64(1779696815227)},

@@ -103,25 +103,19 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "pgInstance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "pgInstance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
@@ -130,6 +124,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	for _, tt := range tests {
 		instance := pgInstance
 		databaseOwner := "postgres"
+		tt.databaseName = uniqueDB(tt.databaseName)
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, tt.databaseName, databaseOwner)
 		a.NoError(err)
 

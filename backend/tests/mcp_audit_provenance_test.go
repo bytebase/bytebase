@@ -27,10 +27,7 @@ func TestMCPAuditProvenance(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// A plain workspace member drives the MCP session, so an IAM-gated admin
 	// action is genuinely denied by the ACL interceptor, not the handler.

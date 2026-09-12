@@ -146,6 +146,46 @@ outgoing connections, and twenty servers' clients hold many of those. It shows
 in none of the CI logs checked, but it scales with throughput; a runner that
 starts seeing it should move one of the two ranges apart.
 
+### Third pass: 130 s, and every container in one place
+
+2026-09-12, same box, the command CI runs with `-count=1`: **130 s**, walls
+summing to 469 s and overlapping 3.6×, `backend/tests` 118 s of it.
+
+Every engine container now starts inside `backend/common/testcontainer` and is
+shared per package — `plugin/db/mongodb` 12.9 s to 6.3 s, three containers to
+one; `plugin/db/tidb` 5.1 s to 4.4 s; the pg17, TLS-Postgres and sample targets
+onto the same machinery. The Oracle container, unused since #21356, is deleted,
+and the per-test `GetTest*Container` helpers with it. Effort 4 then took the run
+to 120 s, the package to 107 s.
+
+**Then the target Postgres went the same way.** `backend/tests` was starting 162
+of them, one per test, because a container it registers as an instance is a
+whole server whose databases the syncer enumerates. `Instance.sync_databases` is
+what lets one server carry many instances — the syncer imports only the
+databases the list names, which is how Sample Project Instance already shares
+one target across workspaces — so a test now takes a database of its own on one
+shared target and the instance it registers names that database.
+**173 Postgres containers across the run became 31** and the run 1 m 56 s became
+**1 m 39 s**. Seventeen provisions stay private: the tests that create a
+cluster-wide role, the two that need separate servers to hold the same database
+name, and the one whose subject is two instances discovering the same physical
+`postgres` database. One server for twenty parallel tests also needs a raised
+`max_connections`; at the default 100 the failure reads "server refused TLS
+connection", which names neither the limit nor the cause.
+
+The two share a package, so they were measured as a 2×2 rather than in sequence
+— standalone `backend/tests`, one box, the same code with one toggle each:
+
+| | a server per test | one server |
+| --- | ---: | ---: |
+| **a container per test** | 87.9 s | 76.0 s |
+| **one target container** | 77.4 s | **55.3 s** |
+
+Each is worth about 11 s alone (effort 4 −11.9, the shared target −10.5) and
+32.6 s together, so the pair beats the sum of its parts by 10 s. Neither cost is
+the container or the boot itself: it is that a test spends that second holding a
+parallel slot, and removing one of the two just moves the queue to the other.
+
 ### The floor
 
 `backend/plugin/...` cost 866 s across 69 packages at the start, and split by
@@ -193,11 +233,11 @@ The standing order, by what is left rather than by number:
 
 | | Effort | Worth |
 | --- | --- | --- |
-| 1 | 7, engine conformance to omni | 164 s, behind a large ownership blocker |
-| 2 | 6, seams instead of containers | seconds; do it for the tests, not the clock |
-| 3 | 4, isolate per project | a memory ceiling, not a speed play |
+| 1 | 6, seams instead of containers | seconds; do it for the tests, not the clock |
+| 2 | 7, engine conformance to omni | 14 s; do it for ownership, not the clock |
 
-Two entries have left this list. Effort 5 is done — and was worth less than the
+Three entries have left this list. Effort 4 is done, and beat its own
+re-sizing; see its section. Effort 5 is done — and was worth less than the
 ~320 s it was sized at, because a third of that number was
 `TestSQLReviewForMySQL`, which was not the duplicate the sizing assumed; see its
 section. `TestWebhookIntegration` was second at 148 s until #21355 fixed the
@@ -365,48 +405,30 @@ paragraph below described the state before that landed. At 148 s it was most of 
 173 s, and the rest of the package finishes around it. It is the one place left
 in `backend/tests` where a single test is worth attacking on its own.
 
-### 4. Isolate per project, not per workspace
+### [✓] 4. Isolate per project, not per workspace
 
-**Re-sized: about 7 s of wall, not 362 s.** The 362 s below is real work — 207
-boots at 703 ms up and, after effort 1, ~1 ms down — but effort 2's step 2 made
-it overlap. Spread across twenty workers it is worth single-digit seconds of
-wall clock, and the run is no longer bound by this package anyway.
+**237 server boots down to 109, `backend/tests` 83–90 s to 71–77 s standalone,
+its summed test time 1954 s to 1765 s.** Project is Bytebase's tenancy boundary,
+so it is the test boundary: `startProject` takes a project on the package's one
+server (113 call sites), `startWorkspace` takes a server, and so a workspace, of
+its own (102).
 
-What survives is a resource argument, not a speed one: twenty concurrent servers
-is what sets the memory ceiling on how far `-parallel` can go, and one server for
-the whole package would lift it. Do this when a runner cannot take the
-concurrency, not to buy time. The original sizing follows.
+What forces a workspace is wider than the settings files this section first
+listed, and every item came back as a failing test rather than a prediction: the
+MCP capability ceiling and the license, the demo principal's password and MFA,
+**removals** from the workspace IAM policy — grants are additive, but
+`SetIamPolicy` writes the whole policy, so a grant that read before a removal and
+wrote after resurrects the binding — any workspace-wide list or count assertion,
+and workspace-scoped resource IDs, where instances collided on
+`generateRandomString("inst")[:8]`, a prefix plus three hex characters. One
+conflict was worth fixing in the helper instead: `addMemberToWorkspaceIAM`
+re-reads and re-applies on the etag conflict the server tells it to retry, which
+keeps all sixteen granting files on the shared server.
 
-**362 s of fixture time inside `backend/tests`.**
-
-Every test there gets its own server, and therefore its own workspace: a
-database, a full `LATEST.sql` migration, signup, login, a license upload, two
-rollout policies and a project. That is 703 ms up and 1047 ms down, 207 times
-over, almost all of it rebuilding scaffolding no test asserts on.
-
-Project is already Bytebase's tenancy boundary, so make it the test boundary:
-one server for the whole package, one shared workspace, and a project per test —
-plus its own principal where the test needs one. The collision tests already prove this
-works. `setupCollidingProjects` puts two projects in one workspace and asserts
-neither can see the other.
-
-**Workspace-scoped singletons are the exception.** These files call
-`UpdateSetting` on rows that exist once per workspace — the MCP capability and
-masking toggles, workspace approval, maximum request expiration, email, AI. Two
-parallel tests toggling one would race, so they keep a workspace of their own:
-
-```
-approval_test.go   mcp_capability_setting_test.go   mcp_masking_test.go
-login_audit_test.go   review_run_lifecycle_test.go   sensitive_data_test.go
-mcp_forbidden_credential_mints_test.go   maximum_request_expiration_test.go
-webhook_test.go   (via webhook_helpers_test.go)
-```
-
-Workspace IAM grants are additive, so `addMemberToWorkspaceIAM` is safe provided
-each test grants to its own principal.
-
-`TestWebhookIntegration` needs separate attention: 144 s, the slowest test in
-the repo, 24 subtests behind one boot with several fixed sleeps.
+The re-sizing to ~7 s of wall held for the run and understated the package,
+because the boots also set the memory ceiling on `-parallel`. What is left is the
+floor: `TestWebhookIntegration`, 48.7 s of a 73 s package, 24 sequential subtests
+behind one boot.
 
 ### [✓] 5. Postgres only for `backend/store` and `backend/tests`
 
@@ -623,20 +645,23 @@ the 27 `TestCollision*` and `TestClaim*` tests where they are —
 
 ### 7. Engine conformance to omni
 
-**Re-sized: 164 s of package wall time, no longer the largest change here.**
-#21344 replaced Oracle's migration round-trip with recorded goldens and #21351
-gave each engine package one shared container, taking `plugin/schema/*` from
-475 s to 164 s and Oracle from 315 s to 78 s. The ownership argument is
-unaffected — these tests still assert engine fidelity, which is omni's — but the
-port now buys 164 s, not 475 s, against the same large blocker described below.
+**Not done, and re-sized again: 14 s, so the clock argument is spent.** #21415
+took the testcontainer out of `plugin/schema` and #21429 moved every engine's
+catalog load onto omni's `LoadMetadata`, so the seven `plugin/schema/*` packages
+cost **14.2 s between them**, oracle **0.05 s** against the 315 s it opened this
+design at. Most of the rest is the ~3 s a package pays to start its test binary.
+`plugin/db/*` is 100 s and stays — it is our driver — with containers in four
+packages, each sharing one.
+
+Port it when omni owns the metadata model, because these tests assert engine
+fidelity and that is omni's to assert. Not to make the suite faster.
 
 The blocker is that the round-trip is expressed in Bytebase's metadata proto
 (`storepb`, `plugin/schema`, `store/model`), so omni must own the metadata model
 first. The ownership split above is the plan: all of `plugin/schema/*` moves,
 all of `plugin/db/*` stays, because that is our driver. The figures in the rest
-of this section — 475 s, 315 s for Oracle, 339 s for `plugin/db/*` — are the
-pre-#21351 ones the analysis was done against; the split they describe is
-unchanged, the totals are now 164 s and 145 s.
+of this section are the ones the analysis was done against; the split they
+describe is unchanged, the totals are in the opening above.
 
 For most engines the metadata model is not the near blocker — omni has no engine
 to move to. It ships a parser and AST for Oracle and for MSSQL and nothing more,
@@ -669,11 +694,12 @@ round-trip. That is engine fidelity, which belongs in omni, paid for on every PR
 by every engineer. The two tests and the `GetStarRocksContainer` helpers were
 deleted; the package now runs in under 2 s on its remaining unit tests.
 
-### One loose end
+### [✓] One loose end
 
-`action/**` is in the workflow's `paths` filter, but `go test ./backend/...`
-never runs the seven test files under `action/`. Add `./action/...` to the
-command. They are unit tests and cost about 2 s.
+`action/**` was in the workflow's `paths` filter while the test command never
+ran the seven test files under `action/`, so a PR touching only the action CLI
+ran the whole backend suite and none of its own tests. `./action/...` is now on
+the command: 48 tests, 0.15 s, in the tail behind `backend/tests`.
 
 ## Reproducing
 
@@ -692,5 +718,5 @@ subtest time inside a 315 s package.
 
 Per-operation costs came from a temporary test in `backend/tests` that timed
 `StartServerWithExternalPg` phase by phase, `GetPgContainer` and
-`getMySQLContainer` in a loop, plus four `slog` probes inside `server.Shutdown`.
+`provisionMySQLInstance` in a loop, plus four `slog` probes inside `server.Shutdown`.
 All reverted.

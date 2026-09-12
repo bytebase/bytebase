@@ -23,11 +23,7 @@ func TestActionCheckCommand_ValidMigrations(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create test instance and database
 	database := ctl.createTestDatabase(ctx, t)
@@ -35,7 +31,7 @@ func TestActionCheckCommand_ValidMigrations(t *testing.T) {
 	// Create test data directory
 	testDataDir := t.TempDir()
 	validMigrationsDir := filepath.Join(testDataDir, "valid-migrations")
-	err = os.MkdirAll(validMigrationsDir, 0755)
+	err := os.MkdirAll(validMigrationsDir, 0755)
 	a.NoError(err)
 
 	// Create a valid migration file
@@ -85,11 +81,7 @@ func TestActionCheckCommand_ValidMigrationsForDatabaseGroup(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create test instance and database
 	database := ctl.createTestDatabase(ctx, t)
@@ -161,18 +153,14 @@ func TestActionCheckCommand_SyntaxErrors(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create test database
 	database := ctl.createTestDatabase(ctx, t)
 
 	// Create test data directory with syntax error migration
 	testDataDir := t.TempDir()
-	err = os.MkdirAll(testDataDir, 0755)
+	err := os.MkdirAll(testDataDir, 0755)
 	a.NoError(err)
 
 	// Create a migration file with obvious syntax errors
@@ -214,11 +202,7 @@ func TestActionCheckCommand_MultipleTargets(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create multiple test databases
 	database1 := ctl.createTestDatabase(ctx, t)
@@ -226,7 +210,7 @@ func TestActionCheckCommand_MultipleTargets(t *testing.T) {
 
 	// Create test data directory
 	testDataDir := t.TempDir()
-	err = os.MkdirAll(testDataDir, 0755)
+	err := os.MkdirAll(testDataDir, 0755)
 	a.NoError(err)
 
 	// Create a valid migration file
@@ -277,15 +261,10 @@ func TestActionCheckCommand_DeclarativeCheckValidSchema(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create PostgreSQL test database
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create test data directory and schema.sql file
 	testDataDir := t.TempDir()
@@ -297,7 +276,7 @@ func TestActionCheckCommand_DeclarativeCheckValidSchema(t *testing.T) {
     CONSTRAINT uk_users_username UNIQUE (username)
 );`
 	schemaFile := filepath.Join(testDataDir, "schema.sql")
-	err = os.WriteFile(schemaFile, []byte(schemaContent), 0644)
+	err := os.WriteFile(schemaFile, []byte(schemaContent), 0644)
 	a.NoError(err)
 
 	// Execute declarative check command
@@ -320,15 +299,10 @@ func TestActionCheckCommand_DeclarativeCheckMultipleFiles(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create PostgreSQL test database
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create test data directory with multiple SQL files
 	testDataDir := t.TempDir()
@@ -342,7 +316,7 @@ func TestActionCheckCommand_DeclarativeCheckMultipleFiles(t *testing.T) {
     CONSTRAINT uk_users_username UNIQUE (username)
 );`
 	usersFile := filepath.Join(testDataDir, "users.sql")
-	err = os.WriteFile(usersFile, []byte(usersContent), 0644)
+	err := os.WriteFile(usersFile, []byte(usersContent), 0644)
 	a.NoError(err)
 
 	// Create products.sql
@@ -376,11 +350,7 @@ func TestActionCheckCommand_DeclarativeCheckWithDatabaseGroup(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Keeps MySQL. Porting this to Postgres was tried and reverted: the
 	// declarative release check returns three errors against the same schema
@@ -431,15 +401,10 @@ func TestActionCheckCommand_DeclarativeCheckSyntaxErrors(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create PostgreSQL test database
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create test data directory with invalid SQL
 	testDataDir := t.TempDir()
@@ -449,7 +414,7 @@ func TestActionCheckCommand_DeclarativeCheckSyntaxErrors(t *testing.T) {
     email VARCHAR(255)  -- Missing comma after previous column
 );`
 	schemaFile := filepath.Join(testDataDir, "schema.sql")
-	err = os.WriteFile(schemaFile, []byte(invalidSchemaContent), 0644)
+	err := os.WriteFile(schemaFile, []byte(invalidSchemaContent), 0644)
 	a.NoError(err)
 
 	// Execute declarative check command with syntax error
@@ -535,16 +500,16 @@ func (ctl *controller) createTestDatabase(ctx context.Context, t *testing.T) *v1
 	a := require.New(t)
 
 	// Create Postgres instance
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("inst")[:8],
+		InstanceId: shortInstanceID(),
 		Instance: &v1pb.Instance{
-			Title:       "Test Instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Test Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -568,12 +533,11 @@ func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T
 	a := require.New(t)
 
 	// Get MySQL container
-	mysqlContainer, err := getMySQLContainer(ctx)
-	a.NoError(err)
+	mysqlContainer := provisionMySQLInstance(t)
 
 	// Create MySQL instance
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("inst")[:8],
+		InstanceId: shortInstanceID(),
 		Instance: &v1pb.Instance{
 			Title:       "Test MySQL Instance",
 			Engine:      v1pb.Engine_MYSQL,
@@ -581,8 +545,8 @@ func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T
 			Activation:  true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,
-				Host:     mysqlContainer.host,
-				Port:     mysqlContainer.port,
+				Host:     mysqlContainer.GetHost(),
+				Port:     mysqlContainer.GetPort(),
 				Username: "root",
 				Password: "root-password",
 				Id:       "admin",
@@ -606,25 +570,25 @@ func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T
 }
 
 // createTestPostgreSQLDatabase creates a test PostgreSQL database instance and database
-func (ctl *controller) createTestPostgreSQLDatabase(ctx context.Context, t *testing.T) (*v1pb.Database, *Container) {
+func (ctl *controller) createTestPostgreSQLDatabase(ctx context.Context, t *testing.T) *v1pb.Database {
 	a := require.New(t)
 
 	// Get PostgreSQL container
-	pgContainer, err := getPgContainer(ctx)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// Create PostgreSQL instance
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("inst")[:8],
+		InstanceId: shortInstanceID(),
 		Instance: &v1pb.Instance{
-			Title:       "Test PostgreSQL Instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "Test PostgreSQL Instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,
-				Host:     pgContainer.host,
-				Port:     pgContainer.port,
+				Host:     pgContainer.GetHost(),
+				Port:     pgContainer.GetPort(),
 				Username: "postgres",
 				Password: "root-password",
 				Id:       "admin",
@@ -644,18 +608,14 @@ func (ctl *controller) createTestPostgreSQLDatabase(ctx context.Context, t *test
 	}))
 	a.NoError(err)
 
-	return databaseResp.Msg, pgContainer
+	return databaseResp.Msg
 }
 
 func TestActionRolloutCommand_BasicRollout(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create test database
 	database := ctl.createTestDatabase(ctx, t)
@@ -668,7 +628,7 @@ func TestActionRolloutCommand_BasicRollout(t *testing.T) {
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
 	migrationFile := filepath.Join(testDataDir, "00001_create_users.sql")
-	err = os.WriteFile(migrationFile, []byte(migrationContent), 0644)
+	err := os.WriteFile(migrationFile, []byte(migrationContent), 0644)
 	a.NoError(err)
 
 	// Create output file
@@ -785,11 +745,7 @@ func TestActionRolloutCommand_MultipleFiles(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create test database
 	database := ctl.createTestDatabase(ctx, t)
@@ -803,7 +759,7 @@ func TestActionRolloutCommand_MultipleFiles(t *testing.T) {
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
-	err = os.WriteFile(filepath.Join(testDataDir, "00001_create_users.sql"), []byte(migrationContent1), 0644)
+	err := os.WriteFile(filepath.Join(testDataDir, "00001_create_users.sql"), []byte(migrationContent1), 0644)
 	a.NoError(err)
 
 	// Create 00002_add_email.sql
@@ -989,11 +945,7 @@ func TestActionRolloutCommand_FileContentVersionMatch(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create test database
 	database := ctl.createTestDatabase(ctx, t)
@@ -1007,7 +959,7 @@ func TestActionRolloutCommand_FileContentVersionMatch(t *testing.T) {
 	migrationContent2 := `CREATE TABLE second_table (id INTEGER);`
 	migrationContent10 := `CREATE TABLE tenth_table (id INTEGER);`
 
-	err = os.WriteFile(filepath.Join(testDataDir, "v1_first.sql"), []byte(migrationContent1), 0644)
+	err := os.WriteFile(filepath.Join(testDataDir, "v1_first.sql"), []byte(migrationContent1), 0644)
 	a.NoError(err)
 	err = os.WriteFile(filepath.Join(testDataDir, "v2_second.sql"), []byte(migrationContent2), 0644)
 	a.NoError(err)
@@ -1063,15 +1015,10 @@ func TestActionRolloutDeclarativeMode_BasicDeclarativeRollout(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create PostgreSQL test database
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create test data directory and schema.sql file
 	testDataDir := t.TempDir()
@@ -1080,7 +1027,7 @@ func TestActionRolloutDeclarativeMode_BasicDeclarativeRollout(t *testing.T) {
     username VARCHAR(255) NOT NULL UNIQUE
 );`
 	schemaFile := filepath.Join(testDataDir, "schema.sql")
-	err = os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
+	err := os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
 	a.NoError(err)
 
 	// Create output file
@@ -1133,15 +1080,10 @@ func TestActionRolloutDeclarativeMode_DeclarativeSchemaEvolution(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create PostgreSQL test database
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create test data directory
 	testDataDir := t.TempDir()
@@ -1152,7 +1094,7 @@ func TestActionRolloutDeclarativeMode_DeclarativeSchemaEvolution(t *testing.T) {
     id SERIAL,
     username VARCHAR(255) NOT NULL UNIQUE
 );`
-	err = os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
+	err := os.WriteFile(schemaFile, []byte(migrationContent1), 0644)
 	a.NoError(err)
 
 	// Execute first declarative rollout
@@ -1240,15 +1182,10 @@ func TestActionRolloutDeclarativeMode_DeclarativeIdempotency(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create PostgreSQL test database
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create test data directory and schema.sql file
 	testDataDir := t.TempDir()
@@ -1258,7 +1195,7 @@ func TestActionRolloutDeclarativeMode_DeclarativeIdempotency(t *testing.T) {
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
 	schemaFile := filepath.Join(testDataDir, "schema.sql")
-	err = os.WriteFile(schemaFile, []byte(migrationContent), 0644)
+	err := os.WriteFile(schemaFile, []byte(migrationContent), 0644)
 	a.NoError(err)
 
 	// Create output files
@@ -1406,17 +1343,11 @@ func TestActionRolloutDeclarativeMode_DeclarativeMultipleDatabases(t *testing.T)
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create multiple PostgreSQL test databases
-	database1, pgContainer1 := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer1.Close(ctx)
-	database2, pgContainer2 := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer2.Close(ctx)
+	database1 := ctl.createTestPostgreSQLDatabase(ctx, t)
+	database2 := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create test data directory and schema.sql file
 	testDataDir := t.TempDir()
@@ -1426,7 +1357,7 @@ func TestActionRolloutDeclarativeMode_DeclarativeMultipleDatabases(t *testing.T)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
 	schemaFile := filepath.Join(testDataDir, "schema.sql")
-	err = os.WriteFile(schemaFile, []byte(migrationContent), 0644)
+	err := os.WriteFile(schemaFile, []byte(migrationContent), 0644)
 	a.NoError(err)
 
 	// Execute declarative rollout to multiple databases
@@ -1470,15 +1401,10 @@ func TestActionRolloutDeclarativeMode_DeclarativeWithDatabaseGroup(t *testing.T)
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create PostgreSQL test database
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create database group
 	databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
@@ -1541,15 +1467,10 @@ func TestActionRolloutDeclarativeMode_DeclarativeMultipleFilesMerged(t *testing.
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create PostgreSQL test database
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	// Create test data directory with multiple SQL files
 	testDataDir := t.TempDir()
@@ -1561,7 +1482,7 @@ func TestActionRolloutDeclarativeMode_DeclarativeMultipleFilesMerged(t *testing.
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
 	usersFile := filepath.Join(testDataDir, "users.sql")
-	err = os.WriteFile(usersFile, []byte(usersContent), 0644)
+	err := os.WriteFile(usersFile, []byte(usersContent), 0644)
 	a.NoError(err)
 
 	// Create names.sql
@@ -1646,11 +1567,7 @@ func TestActionErrorScenarios_InvalidServiceAccountSecret(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create test database
 	database := ctl.createTestDatabase(ctx, t)
@@ -1662,7 +1579,7 @@ func TestActionErrorScenarios_InvalidServiceAccountSecret(t *testing.T) {
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
-	err = os.WriteFile(filepath.Join(testDataDir, "00001_create_users.sql"), []byte(migrationContent), 0644)
+	err := os.WriteFile(filepath.Join(testDataDir, "00001_create_users.sql"), []byte(migrationContent), 0644)
 	a.NoError(err)
 
 	// Execute command with invalid credentials
@@ -1684,11 +1601,7 @@ func TestActionErrorScenarios_NonExistentDatabase(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create test data directory and migration file
 	testDataDir := t.TempDir()
@@ -1697,7 +1610,7 @@ func TestActionErrorScenarios_NonExistentDatabase(t *testing.T) {
     username TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );`
-	err = os.WriteFile(filepath.Join(testDataDir, "00001_create_users.sql"), []byte(migrationContent), 0644)
+	err := os.WriteFile(filepath.Join(testDataDir, "00001_create_users.sql"), []byte(migrationContent), 0644)
 	a.NoError(err)
 
 	// Try to target a database that doesn't exist
@@ -1719,11 +1632,7 @@ func TestActionErrorScenarios_EmptyFilePattern(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	database := ctl.createTestDatabase(ctx, t)
 
@@ -1731,7 +1640,7 @@ func TestActionErrorScenarios_EmptyFilePattern(t *testing.T) {
 	testDataDir := t.TempDir()
 
 	// Use a pattern that matches no files
-	_, err = executeActionCommand(ctx,
+	_, err := executeActionCommand(ctx,
 		"rollout",
 		"--url", ctl.rootURL,
 		"--service-account", "demo@example.com",
