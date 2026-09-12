@@ -956,6 +956,85 @@ describe("InstanceFormProvider", () => {
     }
   );
 
+  test("places add parameter in the extra parameters form field", async () => {
+    mocks.hasExtraParameters = true;
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    const Editor = () => {
+      const context = useInstanceFormContext();
+      return (
+        <DataSourceForm
+          dataSource={context.adminDataSource}
+          onDataSourceChange={() => undefined}
+          optionsOnly
+        />
+      );
+    };
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <Editor />
+        </InstanceFormProvider>
+      );
+
+      const addParameter = Array.from(
+        harness.container.querySelectorAll("button")
+      ).find((element) => element.textContent === "instance.add-parameter");
+      const field = addParameter?.closest('[data-slot="form-field"]');
+
+      expect(field).not.toBeNull();
+      expect(
+        field?.querySelector('[data-slot="form-field-title"]')?.textContent
+      ).toBe("data-source.extra-params.self");
+      expect(addParameter?.className).toContain("h-7");
+      expect(addParameter?.className).toContain("self-start");
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("keeps the optional username info icon close to its title", async () => {
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    const Editor = () => {
+      const context = useInstanceFormContext();
+      return (
+        <DataSourceForm
+          dataSource={context.adminDataSource}
+          onDataSourceChange={() => undefined}
+          onOpenInfoPanel={() => undefined}
+        />
+      );
+    };
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <Editor />
+        </InstanceFormProvider>
+      );
+
+      const usernameTitle = Array.from(
+        harness.container.querySelectorAll('[data-slot="form-field-title"]')
+      ).find((title) => title.textContent?.includes("common.username"));
+      const infoButton = usernameTitle?.querySelector<HTMLButtonElement>(
+        'button[aria-label="instance.authentication"]'
+      );
+
+      expect(infoButton).not.toBeNull();
+      expect(infoButton?.className).toContain("h-auto");
+      expect(infoButton?.className).not.toContain("w-6");
+      expect(infoButton?.parentElement?.className).toContain("gap-x-1");
+    } finally {
+      harness.unmount();
+    }
+  });
+
   test("clears errors when deleting the final invalid label unmounts its editor", async () => {
     const { LabelListEditor } = await vi.importActual<
       typeof import("@/components/LabelListEditor")
