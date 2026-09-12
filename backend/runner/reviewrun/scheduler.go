@@ -141,11 +141,7 @@ func (s *Scheduler) dispatchReviewRun(ctx context.Context, claimed *store.Claime
 		s.completeReviewRun(ctx, claimed, errors.Errorf("no executor registered for reviewer type %q", claimed.Type))
 		return
 	}
-	s.runs.Add(1)
-	go func() {
-		defer s.runs.Done()
-		s.runReviewRunOnce(ctx, claimed, executor)
-	}()
+	s.runs.Go(func() { s.runReviewRunOnce(ctx, claimed, executor) })
 }
 
 func (s *Scheduler) runReviewRunOnce(ctx context.Context, claimed *store.ClaimedReviewRun, executor Executor) {

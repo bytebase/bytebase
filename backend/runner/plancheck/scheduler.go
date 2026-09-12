@@ -96,11 +96,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 	}
 
 	for _, c := range claimed {
-		s.runs.Add(1)
-		go func() {
-			defer s.runs.Done()
-			s.runPlanCheckRun(ctx, c.ProjectID, c.UID, c.PlanUID, c.ApprovalInputVersion)
-		}()
+		s.runs.Go(func() { s.runPlanCheckRun(ctx, c.ProjectID, c.UID, c.PlanUID, c.ApprovalInputVersion) })
 	}
 	result = productmetrics.ResultSuccess
 }
@@ -217,8 +213,12 @@ func (s *Scheduler) markPlanCheckRunDone(ctx context.Context, projectID string, 
 		return
 	}
 	if issue != nil && issue.PlanUID != nil && !issue.Payload.GetDraft() {
-		// Trigger approval finding.
-		s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: projectID, UID: issue.UID}
+		// Trigger approval finding. Give up on shutdown: the consumer stops
+		// first, and a blocked send here would hold the runner open past it.
+		select {
+		case s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: projectID, UID: issue.UID}:
+		case <-ctx.Done():
+		}
 	}
 }
 
