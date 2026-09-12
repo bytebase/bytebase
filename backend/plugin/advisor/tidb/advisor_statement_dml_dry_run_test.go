@@ -111,6 +111,14 @@ func TestStatementDMLDryRun(t *testing.T) {
 			},
 		},
 		{
+			name:      "batch without the optional ON clause",
+			statement: "BATCH LIMIT 2 DELETE FROM t WHERE id > 0",
+			wantQueries: []string{
+				"autocommit: BATCH LIMIT 2 DRY RUN DELETE FROM t WHERE id > 0",
+				"tx: EXPLAIN DELETE FROM t WHERE id > 0",
+			},
+		},
+		{
 			name:        "batch dry run failure skips the explain",
 			statement:   "BATCH ON missing_col LIMIT 2 DELETE FROM t WHERE id > 0",
 			failOn:      "missing_col",
