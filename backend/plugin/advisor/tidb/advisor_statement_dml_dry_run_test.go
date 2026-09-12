@@ -95,6 +95,22 @@ func TestStatementDMLDryRun(t *testing.T) {
 			},
 		},
 		{
+			name:      "batch update",
+			statement: "BATCH ON id LIMIT 2 UPDATE t SET name = 'y' WHERE id > 0",
+			wantQueries: []string{
+				"autocommit: BATCH ON id LIMIT 2 DRY RUN UPDATE t SET name = 'y' WHERE id > 0",
+				"tx: EXPLAIN UPDATE t SET name = 'y' WHERE id > 0",
+			},
+		},
+		{
+			name:      "batch insert select",
+			statement: "BATCH ON id LIMIT 2 INSERT INTO t2 SELECT id, name FROM t",
+			wantQueries: []string{
+				"autocommit: BATCH ON id LIMIT 2 DRY RUN INSERT INTO t2 SELECT id, name FROM t",
+				"tx: EXPLAIN INSERT INTO t2 SELECT id, name FROM t",
+			},
+		},
+		{
 			name:        "batch dry run failure skips the explain",
 			statement:   "BATCH ON missing_col LIMIT 2 DELETE FROM t WHERE id > 0",
 			failOn:      "missing_col",
