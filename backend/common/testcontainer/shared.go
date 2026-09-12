@@ -17,7 +17,7 @@ import (
 // that need no engine from paying for a container they never open.
 var (
 	sharedPg       = startOnce(GetPgContainer)
-	sharedTargetPg = startOnce(getTargetPgContainer)
+	sharedTargetPg = startOnce(GetPgContainer)
 	sharedPg17     = startOnce(getPg17Container)
 	sharedTLSPg    = startOnce(getTLSPgContainer)
 	sharedMSSQL    = startOnce(getMSSQLContainer)

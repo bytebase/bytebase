@@ -163,6 +163,10 @@ func pgRequest(image string) testcontainers.ContainerRequest {
 			"LANG":              "en_US.UTF-8",
 			"POSTGRES_PASSWORD": pgSpec.password,
 		},
+		// A shared container carries a connection pool per server and per
+		// instance on it; the default 100 runs out at twenty parallel tests, as
+		// "server refused TLS connection".
+		Cmd: []string{"postgres", "-c", "max_connections=1000"},
 		WaitingFor: wait.ForLog("database system is ready to accept connections").
 			WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
 	}
@@ -173,15 +177,6 @@ func pgRequest(image string) testcontainers.ContainerRequest {
 // provisions per test.
 func GetPgContainer(ctx context.Context) (*Container, error) {
 	return start(ctx, pgRequest("postgres:16-alpine"), pgSpec)
-}
-
-// getTargetPgContainer is GetPgContainer with room for many clients: each test
-// that registers an instance on the shared target holds a pool of its own, and
-// the default 100 runs out as "server refused TLS connection".
-func getTargetPgContainer(ctx context.Context) (*Container, error) {
-	req := pgRequest("postgres:16-alpine")
-	req.Cmd = []string{"postgres", "-c", "max_connections=1000"}
-	return start(ctx, req, pgSpec)
 }
 
 // getPg17Container starts PostgreSQL 17, required for the features absent in
@@ -211,12 +206,11 @@ func getTLSPgContainer(ctx context.Context) (retC *Container, retErr error) {
 		"chown postgres:postgres /tmp/server.key && exec /usr/local/bin/docker-entrypoint.sh \"$@\"",
 		"--",
 	}
-	req.Cmd = []string{
-		"postgres",
+	req.Cmd = append(req.Cmd,
 		"-c", "ssl=on",
 		"-c", "ssl_cert_file=/tmp/server.crt",
 		"-c", "ssl_key_file=/tmp/server.key",
-	}
+	)
 	req.Files = []testcontainers.ContainerFile{
 		{Reader: bytes.NewReader(certificate), ContainerFilePath: "/tmp/server.crt", FileMode: 0o644},
 		{Reader: bytes.NewReader(key), ContainerFilePath: "/tmp/server.key", FileMode: 0o600},
