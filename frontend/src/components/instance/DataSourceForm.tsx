@@ -858,7 +858,7 @@ export function DataSourceForm({
 
   return (
     <ValidationProvider
-      className="grid grid-cols-1 gap-y-4 gap-x-4 border-none sm:grid-cols-3"
+      className="grid grid-cols-1 gap-y-6 gap-x-4 border-none sm:grid-cols-3"
       errors={ctx.getDataSourceErrors(dataSource)}
     >
       {authOnly
@@ -1169,7 +1169,7 @@ export function DataSourceForm({
                                 type="button"
                                 appearance="link"
                                 size="xs"
-                                className="w-6 shrink-0 p-0"
+                                className="h-auto shrink-0 p-0"
                                 aria-label={t("instance.authentication")}
                                 onClick={() =>
                                   onOpenInfoPanel("authentication")
@@ -1239,7 +1239,12 @@ export function DataSourceForm({
                         {/* Plain password */}
                         {passwordType ===
                           DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED && (
-                          <FormField title={<>{t("common.password")}</>}>
+                          <FormField
+                            title={<>{t("common.password")}</>}
+                            description={t(
+                              "instance.password-source.stored-in-bytebase"
+                            )}
+                          >
                             <div>
                               {!isCreating && allowUsingEmptyPassword && (
                                 <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
@@ -1281,11 +1286,6 @@ export function DataSourceForm({
                                   }
                                 />
                               </div>
-                              <p className="text-xs leading-4 text-control-light">
-                                {t(
-                                  "instance.password-source.stored-in-bytebase"
-                                )}
-                              </p>
                             </div>
                           </FormField>
                         )}
@@ -1301,14 +1301,14 @@ export function DataSourceForm({
                                     (item) => item.value === passwordType
                                   )?.label
                                 }
-                              >
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {passwordSourceControl}
+                                description={
                                   <LearnMoreLink
                                     href="https://docs.bytebase.com/get-started/connect/overview#secret-manager-integration"
                                     className="text-sm text-accent"
                                   />
-                                </div>
+                                }
+                              >
+                                {passwordSourceControl}
                                 <ResponsiveFormLayout className="mt-2">
                                   <fieldset
                                     className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -2171,14 +2171,14 @@ export function DataSourceForm({
             <FormField
               className="sm:col-span-3 sm:col-start-1"
               title={
-                <span className="flex items-center justify-start gap-x-2">
+                <span className="flex items-center justify-start gap-x-1">
                   {t("data-source.ssl.connection-security")}
                   {onOpenInfoPanel && hasSslInfo && (
                     <Button
                       type="button"
                       appearance="link"
                       size="xs"
-                      className="w-6 shrink-0 p-0"
+                      className="h-auto shrink-0 p-0"
                       aria-label={t("data-source.ssl.connection-security")}
                       onClick={() => onOpenInfoPanel("ssl")}
                     >
@@ -2307,7 +2307,7 @@ export function DataSourceForm({
                         type="button"
                         appearance="link"
                         size="xs"
-                        className="w-6 shrink-0 p-0"
+                        className="h-auto shrink-0 p-0"
                         aria-label={t("data-source.ssh-connection")}
                         onClick={() => onOpenInfoPanel("ssh")}
                       >
@@ -2325,105 +2325,120 @@ export function DataSourceForm({
           )}
 
           {/* Extra connection parameters */}
-          {hasExtraParameters &&
-            (showExtraParameters || extraConnectionParamsList.length > 0 ? (
-              <FormField
-                className="sm:col-span-3 sm:col-start-1"
-                title={t("data-source.extra-params.self")}
-                description={t("data-source.extra-params.description")}
-              >
-                <FormControlGroup className="mt-2">
-                  {allowEdit && (
-                    <FormControlRow>
-                      <Input
-                        value={newParamKey}
-                        className="min-w-0 flex-1"
-                        aria-label={t("instance.parameter-name-placeholder")}
-                        placeholder={t("instance.parameter-name-placeholder")}
-                        onChange={(e) => setNewParamKey(e.target.value)}
-                      />
-                      <Input
-                        value={newParamValue}
-                        className="min-w-0 flex-1"
-                        aria-label={t("instance.parameter-value-placeholder")}
-                        placeholder={t("instance.parameter-value-placeholder")}
-                        onChange={(e) => setNewParamValue(e.target.value)}
-                      />
-                      <Button
-                        appearance="outline"
-                        className="shrink-0"
-                        disabled={!newParamKey.trim()}
-                        onClick={addNewParameter}
-                      >
-                        {t("common.add")}
-                      </Button>
-                    </FormControlRow>
-                  )}
-
-                  {extraConnectionParamsList.map((param, index) => (
-                    <FormField
-                      key={param.key}
-                      validationField={`extraConnectionParameters.${param.key}`}
-                      showErrors
-                    >
+          {hasExtraParameters && (
+            <FormField
+              className="sm:col-span-3 sm:col-start-1"
+              title={t("data-source.extra-params.self")}
+              description={t("data-source.extra-params.description")}
+            >
+              {showExtraParameters || extraConnectionParamsList.length > 0 ? (
+                <>
+                  <FormControlGroup className="mt-2">
+                    {allowEdit && (
                       <FormControlRow>
                         <Input
+                          value={newParamKey}
                           className="min-w-0 flex-1"
-                          value={param.key}
-                          disabled={!allowEdit}
                           aria-label={t("instance.parameter-name-placeholder")}
                           placeholder={t("instance.parameter-name-placeholder")}
-                          onChange={(e) =>
-                            updateExtraConnectionParamKey(index, e.target.value)
-                          }
+                          onChange={(e) => setNewParamKey(e.target.value)}
                         />
                         <Input
+                          value={newParamValue}
                           className="min-w-0 flex-1"
-                          value={param.value}
-                          disabled={!allowEdit}
                           aria-label={t("instance.parameter-value-placeholder")}
                           placeholder={t(
                             "instance.parameter-value-placeholder"
                           )}
-                          onChange={(e) =>
-                            updateExtraConnectionParamValue(
-                              index,
-                              e.target.value
-                            )
-                          }
+                          onChange={(e) => setNewParamValue(e.target.value)}
                         />
-                        {allowEdit && (
-                          <Button
-                            variant="destructive"
-                            className="shrink-0"
-                            onClick={() => removeExtraConnectionParam(index)}
-                          >
-                            {t("common.remove")}
-                          </Button>
-                        )}
+                        <Button
+                          appearance="outline"
+                          className="w-24 shrink-0"
+                          disabled={!newParamKey.trim()}
+                          onClick={addNewParameter}
+                        >
+                          {t("common.add")}
+                        </Button>
                       </FormControlRow>
-                    </FormField>
-                  ))}
-                </FormControlGroup>
+                    )}
 
-                {extraConnectionParamsList.length === 0 && (
-                  <div className="textinfolabel text-sm italic mt-2">
-                    {allowEdit
-                      ? t("instance.no-params-yet-add-above")
-                      : t("instance.no-extra-params-configured")}
-                  </div>
-                )}
-              </FormField>
-            ) : (
-              <Button
-                appearance="link"
-                className="justify-start sm:col-span-3"
-                onClick={() => setShowExtraParameters(true)}
-                disabled={!allowEdit}
-              >
-                {t("instance.add-parameter")}
-              </Button>
-            ))}
+                    {extraConnectionParamsList.map((param, index) => (
+                      <FormField
+                        key={param.key}
+                        validationField={`extraConnectionParameters.${param.key}`}
+                        showErrors
+                      >
+                        <FormControlRow>
+                          <Input
+                            className="min-w-0 flex-1"
+                            value={param.key}
+                            disabled={!allowEdit}
+                            aria-label={t(
+                              "instance.parameter-name-placeholder"
+                            )}
+                            placeholder={t(
+                              "instance.parameter-name-placeholder"
+                            )}
+                            onChange={(e) =>
+                              updateExtraConnectionParamKey(
+                                index,
+                                e.target.value
+                              )
+                            }
+                          />
+                          <Input
+                            className="min-w-0 flex-1"
+                            value={param.value}
+                            disabled={!allowEdit}
+                            aria-label={t(
+                              "instance.parameter-value-placeholder"
+                            )}
+                            placeholder={t(
+                              "instance.parameter-value-placeholder"
+                            )}
+                            onChange={(e) =>
+                              updateExtraConnectionParamValue(
+                                index,
+                                e.target.value
+                              )
+                            }
+                          />
+                          {allowEdit && (
+                            <Button
+                              variant="destructive"
+                              className="w-24 shrink-0"
+                              onClick={() => removeExtraConnectionParam(index)}
+                            >
+                              {t("common.remove")}
+                            </Button>
+                          )}
+                        </FormControlRow>
+                      </FormField>
+                    ))}
+                  </FormControlGroup>
+
+                  {extraConnectionParamsList.length === 0 && (
+                    <div className="textinfolabel text-sm italic mt-2">
+                      {allowEdit
+                        ? t("instance.no-params-yet-add-above")
+                        : t("instance.no-extra-params-configured")}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Button
+                  appearance="link"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => setShowExtraParameters(true)}
+                  disabled={!allowEdit}
+                >
+                  {t("instance.add-parameter")}
+                </Button>
+              )}
+            </FormField>
+          )}
         </>
       )}
     </ValidationProvider>

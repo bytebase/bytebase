@@ -38,11 +38,51 @@ describe("DataSourceForm password sources", () => {
     const form = source();
     const sourceIndex = form.indexOf("{passwordSourceControl}");
     const inputIndex = form.indexOf('type="password"', sourceIndex);
-    const storedHintIndex = form.indexOf("stored-in-bytebase");
 
     expect(sourceIndex).toBeGreaterThan(0);
     expect(inputIndex).toBeGreaterThan(sourceIndex);
-    expect(storedHintIndex).toBeGreaterThan(sourceIndex);
+  });
+
+  test("places the Bytebase password storage hint below the password title", () => {
+    const form = source();
+    const plainPasswordIndex = form.indexOf("/* Plain password */");
+    const storedHintIndex = form.indexOf(
+      "instance.password-source.stored-in-bytebase",
+      plainPasswordIndex
+    );
+    const passwordInputIndex = form.indexOf(
+      'type="password"',
+      plainPasswordIndex
+    );
+
+    expect(plainPasswordIndex).toBeGreaterThan(0);
+    expect(storedHintIndex).toBeGreaterThan(plainPasswordIndex);
+    expect(storedHintIndex).toBeLessThan(passwordInputIndex);
+    expect(form.slice(storedHintIndex - 100, storedHintIndex)).toContain(
+      "description={"
+    );
+  });
+
+  test("places external secret documentation below the source title", () => {
+    const form = source();
+    const externalSecretFieldIndex = form.indexOf(
+      "/* External secret fields */"
+    );
+    const passwordSourceControlIndex = form.indexOf(
+      "{passwordSourceControl}",
+      externalSecretFieldIndex
+    );
+    const learnMoreIndex = form.indexOf(
+      "<LearnMoreLink",
+      externalSecretFieldIndex
+    );
+
+    expect(externalSecretFieldIndex).toBeGreaterThan(0);
+    expect(learnMoreIndex).toBeGreaterThan(externalSecretFieldIndex);
+    expect(learnMoreIndex).toBeLessThan(passwordSourceControlIndex);
+    expect(form.slice(learnMoreIndex - 100, learnMoreIndex)).toContain(
+      "description={"
+    );
   });
 });
 
@@ -59,5 +99,23 @@ describe("DataSourceForm connection information buttons", () => {
     expect(form).toContain('onOpenInfoPanel("authentication")');
     expect(form).toContain('onOpenInfoPanel("ssl")');
     expect(form).toContain('onOpenInfoPanel("ssh")');
+  });
+});
+
+describe("DataSourceForm extra parameters", () => {
+  test("uses the same action width for add and remove rows", () => {
+    const extraParameters = source().slice(
+      source().indexOf("/* Extra connection parameters */")
+    );
+
+    expect(extraParameters.match(/className="w-24 shrink-0"/g)).toHaveLength(2);
+  });
+});
+
+describe("DataSourceForm layout", () => {
+  test("uses a 24px rhythm between connection fields", () => {
+    expect(source()).toContain(
+      'className="grid grid-cols-1 gap-y-6 gap-x-4 border-none sm:grid-cols-3"'
+    );
   });
 });

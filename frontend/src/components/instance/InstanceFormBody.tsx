@@ -628,7 +628,7 @@ export function SyncDatabases({
                 type="button"
                 appearance="link"
                 size="xs"
-                className="w-6 shrink-0 p-0"
+                className="h-auto shrink-0 p-0"
                 aria-label={t("instance.sync-databases.self")}
                 onClick={() => onOpenInfoPanel("sync-databases")}
               >
@@ -1453,14 +1453,10 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           <div className="flex flex-col gap-4">
             {isSaaSMode && (
               <Alert variant="info">
-                <a
-                  href="https://docs.bytebase.com/get-started/cloud#prerequisites"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="normal-link"
-                >
-                  {t("instance.sentence.firewall-info")}
-                </a>
+                <div className="flex flex-wrap items-center gap-x-2">
+                  <span>{t("instance.sentence.firewall-info")}</span>
+                  <LearnMoreLink href="https://docs.bytebase.com/get-started/cloud#prerequisites" />
+                </div>
               </Alert>
             )}
             {editingDataSource?.id === adminDataSource.id && (

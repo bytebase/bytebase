@@ -199,6 +199,16 @@ describe("InstanceFormBody", () => {
     expect(source).toContain(
       'href="https://docs.bytebase.com/get-started/cloud#prerequisites"'
     );
+
+    const firewallAlert = source.slice(
+      firewallAlertIndex,
+      source.indexOf("</Alert>", firewallAlertIndex)
+    );
+    expect(firewallAlert).toContain(
+      '<span>{t("instance.sentence.firewall-info")}</span>'
+    );
+    expect(firewallAlert).toContain("<LearnMoreLink");
+    expect(firewallAlert).not.toContain("<a");
   });
 
   test("keeps Docker-only host suggestions out of Bytebase Cloud", () => {

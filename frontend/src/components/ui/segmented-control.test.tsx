@@ -113,4 +113,23 @@ describe("SegmentedControl", () => {
 
     unmount();
   });
+
+  test("does not replace a selected disabled segment background on hover", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(SegmentedControl, {
+        ariaLabel: "Database sync",
+        value: "azure",
+        onValueChange: () => undefined,
+        options: providerOptions,
+      })
+    );
+
+    const selectedDisabledSegment = container.querySelectorAll("label")[4];
+    expect(selectedDisabledSegment?.className).toContain("bg-accent");
+    expect(selectedDisabledSegment?.className).not.toContain(
+      "hover:bg-background"
+    );
+
+    unmount();
+  });
 });
