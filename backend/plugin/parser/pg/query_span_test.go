@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"runtime/debug"
 	"testing"
 
@@ -109,20 +110,17 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*metadatapb.DatabaseSche
 		}
 }
 
-func TestLoaderIntegration_BYT9215_BadQuotedIdentifier(t *testing.T) {
-	// BYT-9215 class: a table name contains a character sequence the DDL
-	// deparse-and-reparse loop chokes on. Under the old path this would kill
-	// query span for the entire database. Under the loader, the bad table is
-	// pseudo-installed and unrelated queries succeed.
+func TestQuerySpanSurvivesABadQuotedIdentifier(t *testing.T) {
+	// A table name carrying a character sequence that a deparse-and-reparse
+	// loop chokes on (BYT-9215). Loading the snapshot never renders DDL, so the
+	// table installs and unrelated queries succeed either way.
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
 			Tables: []*metadatapb.TableMetadata{
-				// A table with a quoted identifier containing an apostrophe —
-				// the kind of input BYT-9215 reported failing under Exec(ddl).
-				// Real install should succeed (no DDL roundtrip), but even if
-				// it didn't, pseudo would catch it.
+				// A quoted identifier containing an apostrophe — the kind of
+				// input BYT-9215 reported failing under Exec(ddl).
 				{
 					Name: "'weird'table",
 					Columns: []*metadatapb.ColumnMetadata{
@@ -232,11 +230,10 @@ func TestGetQuerySpanSelectedSchemaTakesPrecedenceOverPublic(t *testing.T) {
 	}
 }
 
-func TestLoaderIntegration_BrokenEnumCascade(t *testing.T) {
-	// Real failure chain: table references a user-defined type that does
-	// not exist in metadata. Real install of the table fails (omni cannot
-	// resolve the type). Pseudo install of the table succeeds with text
-	// columns. Query against the table returns its metadata column names.
+func TestQuerySpanSurvivesABrokenEnum(t *testing.T) {
+	// The table references a user-defined type the snapshot never declares, so
+	// it installs as a stand-in with text columns. A query against it still
+	// returns the column names the snapshot records.
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{{
@@ -273,7 +270,7 @@ func TestLoaderIntegration_BrokenEnumCascade(t *testing.T) {
 	}
 }
 
-func TestLoaderIntegration_BrokenRootTableAndHealthyNeighbor(t *testing.T) {
+func TestQuerySpanKeepsAHealthyNeighborOfABrokenTable(t *testing.T) {
 	// A query against a healthy table must succeed even when an unrelated
 	// table in the same schema references a broken type. This is the core
 	// blast-radius claim: one bad object does not poison all queries.
@@ -311,9 +308,9 @@ func TestLoaderIntegration_BrokenRootTableAndHealthyNeighbor(t *testing.T) {
 	}
 }
 
-func TestLoaderIntegration_ViewOverBrokenTableStillResolves(t *testing.T) {
-	// Chain: enum missing → table T references it (degrades to pseudo) →
-	// view V on T installs real (against pseudo T) → query on V resolves.
+func TestQuerySpanResolvesAViewOverABrokenTable(t *testing.T) {
+	// Chain: enum missing → table T references it, so T stands in → view V over
+	// T installs against that stand-in → a query on V still resolves.
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{{
@@ -349,9 +346,9 @@ func TestLoaderIntegration_ViewOverBrokenTableStillResolves(t *testing.T) {
 	}
 }
 
-func TestLoaderIntegration_SimpleHealthyPath(t *testing.T) {
-	// Baseline sanity: a clean schema must produce exact lineage down to
-	// (schema, table, column) — no degraded flags.
+func TestQuerySpanOnAHealthySchema(t *testing.T) {
+	// Baseline: a clean schema produces exact lineage down to
+	// (schema, table, column).
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{{
@@ -375,7 +372,7 @@ func TestLoaderIntegration_SimpleHealthyPath(t *testing.T) {
 	mustHaveExactSource(t, span.Results[1], "users", "email")
 }
 
-func TestLoaderIntegration_PartitionReadKeepsLineage(t *testing.T) {
+func TestQuerySpanKeepsLineageThroughAPartition(t *testing.T) {
 	// Masking resolves a partition to its parent table, which needs the read to
 	// trace to the partition's columns.
 	meta := &metadatapb.DatabaseSchemaMetadata{
@@ -397,10 +394,10 @@ func TestLoaderIntegration_PartitionReadKeepsLineage(t *testing.T) {
 	mustHaveExactSource(t, span.Results[0], "orders_2024", "ssn")
 }
 
-func TestLoaderIntegration_EnumWorksWhenDeclared(t *testing.T) {
+func TestQuerySpanResolvesADeclaredEnum(t *testing.T) {
 	// When an enum IS declared in metadata, the table installs as real and
 	// enum-typed columns resolve through their real type. This is the
-	// positive control for TestLoaderIntegration_BrokenEnumCascade.
+	// positive control for TestQuerySpanSurvivesABrokenEnum.
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{{
@@ -427,7 +424,7 @@ func TestLoaderIntegration_EnumWorksWhenDeclared(t *testing.T) {
 	mustHaveExactSource(t, span.Results[1], "tasks", "status")
 }
 
-func TestLoaderIntegration_CorrelatedRangeFunctionSubquery(t *testing.T) {
+func TestQuerySpanOnACorrelatedRangeFunctionSubquery(t *testing.T) {
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{{
@@ -459,7 +456,6 @@ func TestLoaderIntegration_CorrelatedRangeFunctionSubquery(t *testing.T) {
 	sql := `
 select
   a.case_id,
-  -- c.member_id,
   a.entity_id as uid,
   a.reason,
   a.remark,
@@ -494,7 +490,7 @@ where a.reviewer_by in ('****** ', '******')
 	mustHaveExactSource(t, span.Results[7], "compliance_cases", "case_info")
 }
 
-func TestLoaderIntegration_MultipleCTEsWithLateralJoinKeepsJSONBLineage(t *testing.T) {
+func TestQuerySpanKeepsJSONBLineageThroughCTEsAndALateralJoin(t *testing.T) {
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{{
@@ -595,9 +591,8 @@ func TestAppendQueryDoesNotMutateSharedStack(t *testing.T) {
 	}
 }
 
-func TestLoaderIntegration_BuiltinFunctionSelfReferenceDoesNotOverflow(t *testing.T) {
-	if os.Getenv("BYTEBASE_TEST_FUNCTION_SELF_REFERENCE") == "1" {
-		debug.SetMaxStack(1 << 20)
+func TestWalkExprStopsOnSelfReferentialFunction(t *testing.T) {
+	mustNotOverflow(t, func() {
 		varExpr := &catalog.VarExpr{RangeIdx: 0, AttNum: 1}
 		q := &catalog.Query{
 			TargetList: []*catalog.TargetEntry{{
@@ -615,22 +610,14 @@ func TestLoaderIntegration_BuiltinFunctionSelfReferenceDoesNotOverflow(t *testin
 				}},
 			}},
 		}
-		extractor := newOmniQuerySpanExtractor(loaderTestDB, []string{loaderTestSchema}, base.GetQuerySpanContext{})
+		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
 		extractor.cat = catalog.New()
 		extractor.walkExpr(q, q.TargetList[0].Expr, make(base.SourceColumnSet))
-		return
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_BuiltinFunctionSelfReferenceDoesNotOverflow$")
-	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_FUNCTION_SELF_REFERENCE=1")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("walkExpr overflowed on self-referential function RTE: %v\n%s", err, output)
-	}
+	})
 }
 
-func TestLoaderIntegration_PlainColumnCycleDoesNotOverflow(t *testing.T) {
-	if os.Getenv("BYTEBASE_TEST_PLAIN_COLUMN_CYCLE") == "1" {
-		debug.SetMaxStack(1 << 20)
+func TestIsUltimatelyPlainColumnStopsOnCyclicSubquery(t *testing.T) {
+	mustNotOverflow(t, func() {
 		varExpr := &catalog.VarExpr{RangeIdx: 0, AttNum: 1}
 		q := &catalog.Query{
 			TargetList: []*catalog.TargetEntry{{
@@ -642,40 +629,24 @@ func TestLoaderIntegration_PlainColumnCycleDoesNotOverflow(t *testing.T) {
 		}
 		q.RangeTable[0].Subquery = q
 		_ = isUltimatelyPlainColumn(q, varExpr)
-		return
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_PlainColumnCycleDoesNotOverflow$")
-	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_PLAIN_COLUMN_CYCLE=1")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("isUltimatelyPlainColumn overflowed on cyclic subquery RTE: %v\n%s", err, output)
-	}
+	})
 }
 
-func TestLoaderIntegration_PredicateQueryCycleDoesNotOverflow(t *testing.T) {
-	if os.Getenv("BYTEBASE_TEST_PREDICATE_QUERY_CYCLE") == "1" {
-		debug.SetMaxStack(1 << 20)
+func TestCollectQueryPredicateColumnsStopsOnCyclicQuery(t *testing.T) {
+	mustNotOverflow(t, func() {
 		q := &catalog.Query{}
 		q.CTEList = []*catalog.CommonTableExprQ{{Query: q}}
-		extractor := newOmniQuerySpanExtractor(loaderTestDB, []string{loaderTestSchema}, base.GetQuerySpanContext{})
+		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
 		analyzer := &plpgsqlAnalyzer{
 			extractor: extractor,
 			scope:     newVariableScope(nil),
 		}
 		analyzer.collectQueryPredicateColumns(q)
-		return
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_PredicateQueryCycleDoesNotOverflow$")
-	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_PREDICATE_QUERY_CYCLE=1")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("collectQueryPredicateColumns overflowed on cyclic query graph: %v\n%s", err, output)
-	}
+	})
 }
 
-func TestLoaderIntegration_SetOpQueryCycleDoesNotOverflow(t *testing.T) {
-	if os.Getenv("BYTEBASE_TEST_SET_OP_QUERY_CYCLE") == "1" {
-		debug.SetMaxStack(1 << 20)
+func TestExtractLineageStopsOnCyclicSetOp(t *testing.T) {
+	mustNotOverflow(t, func() {
 		q := &catalog.Query{SetOp: catalog.SetOpUnion}
 		q.LArg = q
 		q.RArg = &catalog.Query{TargetList: []*catalog.TargetEntry{{
@@ -686,21 +657,13 @@ func TestLoaderIntegration_SetOpQueryCycleDoesNotOverflow(t *testing.T) {
 		selStmt := &ast.SelectStmt{}
 		selStmt.Larg = selStmt
 		selStmt.Rarg = &ast.SelectStmt{}
-		extractor := newOmniQuerySpanExtractor(loaderTestDB, []string{loaderTestSchema}, base.GetQuerySpanContext{})
+		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
 		extractor.extractLineage(q, selStmt)
-		return
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_SetOpQueryCycleDoesNotOverflow$")
-	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_SET_OP_QUERY_CYCLE=1")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("extractLineage overflowed on cyclic set-op query graph: %v\n%s", err, output)
-	}
+	})
 }
 
-func TestLoaderIntegration_FallbackCTECycleDoesNotOverflow(t *testing.T) {
-	if os.Getenv("BYTEBASE_TEST_FALLBACK_CTE_CYCLE") == "1" {
-		debug.SetMaxStack(1 << 20)
+func TestResolveThroughCTEStopsOnCyclicCTE(t *testing.T) {
+	mustNotOverflow(t, func() {
 		cteSel := &ast.SelectStmt{
 			TargetList: &ast.List{Items: []ast.Node{&ast.ResTarget{
 				Name: "x",
@@ -711,7 +674,7 @@ func TestLoaderIntegration_FallbackCTECycleDoesNotOverflow(t *testing.T) {
 			}}},
 			FromClause: &ast.List{Items: []ast.Node{&ast.RangeVar{Relname: "c"}}},
 		}
-		extractor := newOmniQuerySpanExtractor(loaderTestDB, []string{loaderTestSchema}, base.GetQuerySpanContext{})
+		extractor := newOmniQuerySpanExtractor(testDB, []string{testSchema}, base.GetQuerySpanContext{})
 		extractor.cat = catalog.New()
 		analyzer := &plpgsqlAnalyzer{
 			extractor: extractor,
@@ -719,25 +682,37 @@ func TestLoaderIntegration_FallbackCTECycleDoesNotOverflow(t *testing.T) {
 			cteMap:    map[string]*ast.SelectStmt{"c": cteSel},
 		}
 		analyzer.resolveThroughCTE(cteSel, "x", nil, make(base.SourceColumnSet))
-		return
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=^TestLoaderIntegration_FallbackCTECycleDoesNotOverflow$")
-	cmd.Env = append(os.Environ(), "BYTEBASE_TEST_FALLBACK_CTE_CYCLE=1")
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("resolveThroughCTE overflowed on cyclic fallback CTE: %v\n%s", err, output)
-	}
+	})
 }
 
 // ---------- helpers ----------
 
-// loaderTestDB / loaderTestSchema are the fixed database/schema names
-// every catalog-loader integration test uses; keeping them as constants keeps the call
-// sites terse and satisfies the unparam linter.
+// testDB / testSchema are the fixed database and schema names these tests use;
+// as constants they keep the call sites terse and satisfy the unparam linter.
 const (
-	loaderTestDB     = "db"
-	loaderTestSchema = "public"
+	testDB     = "db"
+	testSchema = "public"
 )
+
+// noOverflowEnv marks the subprocess mustNotOverflow spawns.
+const noOverflowEnv = "BYTEBASE_TEST_NO_OVERFLOW"
+
+// mustNotOverflow runs fn in a subprocess with a 1 MB stack, so recursion that
+// does not terminate fails this test instead of taking the whole run down. The
+// subprocess re-runs this same test, which then takes the fn branch.
+func mustNotOverflow(t *testing.T, fn func()) {
+	t.Helper()
+	if os.Getenv(noOverflowEnv) == "1" {
+		debug.SetMaxStack(1 << 20)
+		fn()
+		return
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=^"+regexp.QuoteMeta(t.Name())+"$")
+	cmd.Env = append(os.Environ(), noOverflowEnv+"=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("recursion did not terminate: %v\n%s", err, output)
+	}
+}
 
 func mustGetQuerySpan(t *testing.T, meta *metadatapb.DatabaseSchemaMetadata, sql string) *base.QuerySpan {
 	t.Helper()
@@ -745,7 +720,7 @@ func mustGetQuerySpan(t *testing.T, meta *metadatapb.DatabaseSchemaMetadata, sql
 	span, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
-	}, base.Statement{Text: sql}, loaderTestDB, "", false)
+	}, base.Statement{Text: sql}, testDB, "", false)
 	if err != nil {
 		t.Fatalf("GetQuerySpan(%q): %v", sql, err)
 	}
@@ -758,8 +733,8 @@ func mustGetQuerySpan(t *testing.T, meta *metadatapb.DatabaseSchemaMetadata, sql
 func mustHaveExactSource(t *testing.T, result base.QuerySpanResult, table, column string) {
 	t.Helper()
 	want := base.ColumnResource{
-		Database: loaderTestDB,
-		Schema:   loaderTestSchema,
+		Database: testDB,
+		Schema:   testSchema,
 		Table:    table,
 		Column:   column,
 	}

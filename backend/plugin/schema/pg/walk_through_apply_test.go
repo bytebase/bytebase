@@ -184,9 +184,9 @@ func compositeWalkThroughMetadata() *metadatapb.DatabaseSchemaMetadata {
 }
 
 func TestWalkThroughCompositeFallbackPreservesAttributeNames(t *testing.T) {
-	// A domain-typed attribute cannot install (domains are not loader
-	// objects), forcing the pseudo fallback — which must keep attribute
-	// names so later DDL targeting them still resolves.
+	// LoadMetadata does not install domains, so a domain-typed attribute makes
+	// the composite stand in — which must keep attribute names so later DDL
+	// targeting them still resolves.
 	meta := &metadatapb.DatabaseSchemaMetadata{
 		Schemas: []*metadatapb.SchemaMetadata{
 			{
@@ -223,7 +223,7 @@ func TestWalkThroughCompositeFallbackPreservesAttributeNames(t *testing.T) {
 	}
 
 	// A rename keeps the attribute number, so the renamed attribute of a
-	// degraded composite must also keep its real previous type.
+	// stood-in composite must also keep its real previous type.
 	renameResults, err := catAfter.Exec(`ALTER TYPE public.with_domain RENAME ATTRIBUTE p TO q;`, &catalog.ExecOptions{ContinueOnError: true})
 	require.NoError(t, err)
 	for _, r := range renameResults {

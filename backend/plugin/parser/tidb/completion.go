@@ -105,13 +105,11 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	return result, nil
 }
 
-// buildCatalog constructs an omni TiDB catalog from Bytebase metadata by
-// replaying minimal DDL. It fully loads the default database plus any database
-// referenced as a qualifier in the statement (so cross-database qualified
-// completion like `other_db.tbl.col` resolves), and registers every other known
-// database name so database-name candidates still surface. Every identifier is
-// backticked so reserved words and special characters parse; tables are created
-// one at a time so a single unparseable column type cannot empty the catalog.
+// buildCatalog constructs an omni TiDB catalog from Bytebase metadata. It
+// fully loads the default database plus any database referenced as a qualifier
+// in the statement (so cross-database qualified completion like
+// `other_db.tbl.col` resolves), and registers every other known database name
+// so database-name candidates still surface.
 func buildCatalog(ctx context.Context, cCtx base.CompletionContext, statement string) *catalog.Catalog {
 	cat := catalog.New()
 	allNames := listAllDatabaseNames(ctx, cCtx)
@@ -159,14 +157,12 @@ func buildCatalog(ctx context.Context, cCtx base.CompletionContext, statement st
 	return cat
 }
 
-// loadDatabaseObjects fully loads one database's tables and views into the
-// catalog, under that database's namespace.
+// loadDatabaseObjects loads one database's tables and views into the catalog.
 func loadDatabaseObjects(ctx context.Context, cCtx base.CompletionContext, cat *catalog.Catalog, dbName string) {
-	db := backtickIdentifier(dbName)
 	_, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, dbName)
 	if err != nil || dbMeta == nil {
 		// Still register the name so it can be a database candidate.
-		_, _ = cat.Exec("CREATE DATABASE "+db+";", &catalog.ExecOptions{ContinueOnError: true})
+		_, _ = cat.Exec("CREATE DATABASE "+backtickIdentifier(dbName)+";", &catalog.ExecOptions{ContinueOnError: true})
 		return
 	}
 	_, _ = cat.LoadMetadata(ctx, dbMeta.GetProto())

@@ -802,7 +802,7 @@ func removeFunctionByIdentity(funcs []*metadatapb.FunctionMetadata, identity str
 // metadata (the catalog does not track comments, and it only keeps the bare
 // collation name) for attributes that survive by name. Attributes unchanged
 // between from and to keep their previous metadata verbatim, so a composite
-// degraded to the text-backed pseudo fallback does not rewrite untouched
+// degraded to a text-backed stand-in does not rewrite untouched
 // attributes to text — mirroring the per-column granularity of table diffs.
 //
 // Within a degraded composite this is a deliberate trade-off: an attribute
@@ -810,7 +810,7 @@ func removeFunctionByIdentity(funcs []*metadatapb.FunctionMetadata, identity str
 // read text in from and to), so that rare change is missed in favor of not
 // corrupting every untouched attribute. Walk-through metadata is advisory;
 // post-execution sync restores ground truth. The root fix is modeling the
-// types the loader cannot install today (e.g. domains).
+// types LoadMetadata cannot install today (e.g. domains).
 func compositeTypeToProto(cat *catalog.Catalog, name string, from, to *catalog.Relation, previous *metadatapb.CompositeTypeMetadata) *metadatapb.CompositeTypeMetadata {
 	previousAttributes := make(map[string]*metadatapb.CompositeTypeAttribute)
 	composite := &metadatapb.CompositeTypeMetadata{Name: name}

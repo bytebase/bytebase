@@ -75,11 +75,6 @@ type omniQuerySpanExtractor struct {
 	// fallbackCTEAliases holds CTE column aliases (e.g., WITH t1(cc1, cc2) AS (...)).
 	// Keyed by lowercase CTE name.
 	fallbackCTEAliases map[string][]string
-
-	// lastFallbackReason is the classifier's verdict for the most recent
-	// AnalyzeSelectStmt error at any of the three fallback sites. Used by
-	// tests; not consumed by production code.
-	lastFallbackReason fallbackReason
 }
 
 // newOmniQuerySpanExtractor creates a new omni-based query span extractor.
@@ -324,10 +319,6 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 
 	query, err := e.cat.AnalyzeSelectStmt(selStmt)
 	if err != nil {
-		// Record the classifier's verdict for test inspection. This does not
-		// gate behavior — the fallback below always runs on analyzer errors.
-		e.lastFallbackReason = classifyAnalyzeError(err)
-
 		// Before falling back, try to handle user-defined table-returning functions
 		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
 		// used as table sources: SELECT * FROM func()).
