@@ -101,10 +101,7 @@ func TestCompletionWebhookEnvironmentUsesLastEnvironmentOrder(t *testing.T) {
 	require.Equal(t, "prod", completionWebhookEnvironment(tasks, environmentOrderMap))
 }
 
-// TestPlanTasksComplete covers the status combinations a pipeline reaches, each
-// named for the rollout that produces it. These ran as end-to-end webhook cases
-// until they were found to differ only in the statuses they arranged. A retried
-// task reaches DONE, so "all done" is that case too.
+// A retried task reaches DONE, so "all done" is the retry case too.
 func TestPlanTasksComplete(t *testing.T) {
 	done := &store.TaskMessage{LatestTaskRunStatus: storepb.TaskRun_DONE}
 	skipped := &store.TaskMessage{LatestTaskRunStatus: storepb.TaskRun_SKIPPED}
