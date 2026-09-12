@@ -81,17 +81,17 @@ const webhookWaitTimeout = 30 * time.Second
 
 // waitForWebhookCount blocks until at least n webhooks for (project, eventTitle)
 // have arrived, or fails the test after webhookWaitTimeout.
-func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, resources ...string) {
+func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int) {
 	t.Helper()
 	deadline := time.Now().Add(webhookWaitTimeout)
 	for {
-		count := countWebhooksFor(c, projectName, eventTitle, resources...)
+		count := countWebhooksFor(c, projectName, eventTitle)
 		if count >= n {
 			return
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("timed out waiting for %d %q webhooks on %s for resources %v; got %d after %s",
-				n, eventTitle, projectName, resources, count, webhookWaitTimeout)
+			t.Fatalf("timed out waiting for %d %q webhooks on %s; got %d after %s",
+				n, eventTitle, projectName, count, webhookWaitTimeout)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -117,10 +117,10 @@ func createDatabasesFlushingCompletion(ctx context.Context, t *testing.T, ctl *c
 }
 
 // requireWebhookCount asserts the exact count of webhooks for (project, eventTitle).
-func requireWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, resources ...string) {
+func requireWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int) {
 	t.Helper()
-	got := countWebhooksFor(c, projectName, eventTitle, resources...)
-	require.Equalf(t, n, got, "expected %d %q webhooks on %s for resources %v, got %d", n, eventTitle, projectName, resources, got)
+	got := countWebhooksFor(c, projectName, eventTitle)
+	require.Equalf(t, n, got, "expected %d %q webhooks on %s, got %d", n, eventTitle, projectName, got)
 }
 
 func countWebhooksFor(c *webhookCollector, projectName, eventTitle string, resources ...string) int {
@@ -305,49 +305,6 @@ func skipTaskByDB(ctx context.Context, t *testing.T, ctl *controller, rollout *v
 		Reason: "test: skip task by db",
 	}))
 	require.NoError(t, err)
-}
-
-// skipFailedTasks finds every FAILED task in the rollout and skips them.
-func skipFailedTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
-	t.Helper()
-	fresh := refreshRollout(ctx, t, ctl, rollout)
-	perStage := map[string][]string{}
-	for _, stage := range fresh.Stages {
-		for _, task := range stage.Tasks {
-			if task.Status == v1pb.Task_FAILED {
-				perStage[stage.Name] = append(perStage[stage.Name], task.Name)
-			}
-		}
-	}
-	require.NotEmpty(t, perStage, "expected at least one failed task to skip")
-	for stageName, names := range perStage {
-		_, err := ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
-			Parent: stageName,
-			Tasks:  names,
-			Reason: "test: skip failed tasks",
-		}))
-		require.NoError(t, err)
-	}
-}
-
-func skipAllTasks(ctx context.Context, t *testing.T, ctl *controller, rollout *v1pb.Rollout) {
-	t.Helper()
-	fresh := refreshRollout(ctx, t, ctl, rollout)
-	for _, stage := range fresh.Stages {
-		var names []string
-		for _, task := range stage.Tasks {
-			names = append(names, task.Name)
-		}
-		if len(names) == 0 {
-			continue
-		}
-		_, err := ctl.rolloutServiceClient.BatchSkipTasks(ctx, connect.NewRequest(&v1pb.BatchSkipTasksRequest{
-			Parent: stage.Name,
-			Tasks:  names,
-			Reason: "test: skip all",
-		}))
-		require.NoError(t, err)
-	}
 }
 
 // retryFailedTasks reruns BatchRunTasks on every FAILED task. Caller decides
