@@ -255,9 +255,9 @@ and `node_modules` — which is right for anything inside a working copy.
 ### c. GitHub runners
 
 Two accounts, two job slots, one systemd template. A pull request touching both
-backend and frontend schedules five self-hosted jobs -- one each from `backend-tests`,
-`golangci-lint` and `test_link`, two from `frontend-tests` -- so three of them queue,
-before counting any other repository in the org. That is deliberate: jobs queue, they
+backend and frontend schedules three self-hosted jobs from `ci.yml` -- `go-tests`,
+`golangci-lint` and `frontend-tests` -- so one of them queues, before counting any
+other repository in the org. That is deliberate: jobs queue, they
 do not fail. It began as four slots, five cores and 8 GB each, and that oversubscribed
 the box: a Go build or a frontend build uses every core it can find, and four at once
 pushed the load average past 60 on 20 vCPUs; the one runner hang seen so far happened
