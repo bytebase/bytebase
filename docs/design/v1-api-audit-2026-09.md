@@ -104,7 +104,7 @@ not a gate. The house pattern that already works for behavior is the descriptor-
 `TestAllowMissingCreatePermission` — and A1 and A3 below are two more of those.
 
 The gate is the linter. `buf lint`'s BASIC profile, the only check CI runs
-(`.github/workflows/ci.yml:158`), sees none of the 575, which is how they accumulated. A
+(`.github/workflows/ci.yml:154`), sees none of the 575, which is how they accumulated. A
 ratchet — run `api-linter --output-format json`, compare the count against `main`, fail on
 increase — is one workflow step and holds the line while the 211 are burned down; once they are,
 `--set-exit-status` with the suppressions in place becomes the gate.

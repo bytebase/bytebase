@@ -14,10 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # A job skipped by its `if` reports success to a required check, which is how
-  # the checks below pass on pull requests that don't touch their paths. Each
-  # gate is `!cancelled() && output != 'false'`, so a failed detection leaves
-  # the outputs empty and runs every job instead of skipping it.
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -44,7 +40,7 @@ jobs:
 
   go-tests:
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.go != 'false' }}
+    if: needs.changes.outputs.go == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     steps:
@@ -72,7 +68,7 @@ jobs:
 
   golangci-lint:
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.go != 'false' }}
+    if: needs.changes.outputs.go == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     steps:
@@ -114,7 +110,7 @@ jobs:
 
   frontend-tests:
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.frontend != 'false' }}
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     steps:
@@ -145,7 +141,7 @@ jobs:
 
   lint-protos:
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.proto != 'false' }}
+    if: needs.changes.outputs.proto == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -161,3 +157,15 @@ jobs:
           input: "proto"
           breaking: false
           token: ${{ secrets.BUF_TOKEN }}
+
+  # The ruleset's only required check, so every job that must pass belongs in
+  # `needs`. A job skipped because `changes` found nothing for it counts as passing.
+  required:
+    needs: [changes, go-tests, golangci-lint, frontend-tests, lint-protos]
+    # always() on the job and its step: a cancelled run must fail this check, not skip it.
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+        run: exit 1
