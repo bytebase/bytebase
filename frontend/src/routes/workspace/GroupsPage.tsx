@@ -1188,7 +1188,7 @@ export function GroupsPage() {
     };
     // Run on mount
     handleRouteChange();
-    // Listen for in-app navigation via Vue router (pushState/replaceState)
+    // Listen for in-app router navigation (pushState/replaceState)
     const unregister = router.afterEach(() => {
       handleRouteChange();
     });

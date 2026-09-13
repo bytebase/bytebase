@@ -1,6 +1,5 @@
 import { clone, create as createProto } from "@bufbuild/protobuf";
 import { createContextValues } from "@connectrpc/connect";
-import { uniqBy } from "lodash-es";
 import { savedQueryServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { UNKNOWN_ID } from "@/types";
@@ -27,11 +26,9 @@ import type { AppSliceCreator, SavedQuerySlice, SavedQueryView } from "./types";
 const cacheKey = (uid: string, view: SavedQueryView) => `${uid}:${view}`;
 
 /**
- * Zustand port of the legacy Pinia `useWorkSheetStore`. Saved queries are
- * keyed by `${uid}:${view}` so FULL (with statement) and BASIC (list)
- * views coexist, matching the old cache. Related resources (project,
- * database, creator) are hydrated through the sibling app slices rather
- * than the old Pinia stores.
+ * Saved queries are keyed by `${uid}:${view}` so FULL (with statement) and
+ * BASIC (list) views coexist. Related resources (project, database, creator)
+ * are hydrated through the sibling app slices.
  */
 export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
   set,
@@ -268,14 +265,6 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
         }
       }
     },
-
-    // The deduped full list. Callers split into "my" / "shared" using
-    // their own current-user source — the SQL editor uses the Pinia
-    // current user (reliably loaded before saved queries are fetched),
-    // whereas the app store's `currentUser` can lag on routes that don't
-    // load it eagerly.
-    savedQueryList: () =>
-      uniqBy(Object.values(get().savedQueriesByKey), (w) => w.name),
 
     getSavedQueryPolicy: async (name) =>
       await savedQueryServiceClientConnect.getSavedQueryPolicy(

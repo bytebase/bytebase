@@ -40,7 +40,6 @@ vi.mock("@/app/router", async (importOriginal) => ({
     query: mocks.currentRoute.value.query,
     requiredPermissions: [],
     overrideDocumentTitle: false,
-    meta: {},
   }),
 }));
 

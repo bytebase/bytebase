@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ZOOM_RANGE } from "../common/const";
 import { useSchemaDiagramContext } from "../common/context";
-import { useDragCanvas, useFitView, useSetCenter } from "./composables";
-import { useScreenshot } from "./composables/useScreenshot";
+import { useDragCanvas, useFitView, useSetCenter } from "./hooks";
+import { useScreenshot } from "./hooks/useScreenshot";
 import { ZoomButton } from "./ZoomButton";
 
 interface CanvasProps {
@@ -25,9 +25,9 @@ interface CanvasProps {
 }
 
 /**
- * React port of `Canvas/Canvas.vue`. The viewport: applies a CSS
- * `transform: matrix(zoom, 0, 0, zoom, x, y)` to a desktop layer and
- * mounts the zoom + fit + screenshot button group at the bottom-right.
+ * The viewport: applies a CSS `transform: matrix(zoom, 0, 0, zoom, x, y)`
+ * to a desktop layer and mounts the zoom + fit + screenshot button group at
+ * the bottom-right.
  */
 export function Canvas({
   children,

@@ -117,8 +117,7 @@ export function getLabelFilter(labels: string[]): string[] {
 }
 
 // Builds the CEL filter string for `listDatabases` from a structured
-// `DatabaseFilter`. Mirrors the legacy Pinia `getListDatabaseFilter` so the
-// app store lists databases identically to the old store.
+// `DatabaseFilter`.
 export function buildDatabaseFilter(filter: DatabaseFilter): string {
   const params: string[] = [];
   if (isValidProjectName(filter.project)) {

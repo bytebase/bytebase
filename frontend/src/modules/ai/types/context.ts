@@ -1,8 +1,7 @@
 import type Emittery from "emittery";
 
-// The React-shaped AI plugin context lives in `react/context.tsx`
-// (`ReactAIContext`). This module now only carries the framework-agnostic
-// event bus type shared between the plugin's logic and React layers.
+// Event bus shared by the AI plugin's logic and its React context
+// (`src/modules/ai/components/context.tsx`).
 export type AIContextEvents = Emittery<{
   "run-statement": { statement: string };
   error: string;

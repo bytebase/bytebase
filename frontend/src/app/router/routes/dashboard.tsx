@@ -482,9 +482,9 @@ const workspaceSettingRoutes: RouteObject[] = [
   },
 ];
 
-// Environment detail — redirect-only route in vue (it redirected to the
-// environments dashboard with the environment name as a `#hash`). A leaf with
-// no element/lazy renders a blank body, so the redirect is the element here.
+// Environment detail is redirect-only: it goes to the environments dashboard
+// with the environment name as a `#hash`. A leaf with no element/lazy renders a
+// blank body, so the loader performs the redirect.
 const environmentV1Routes: RouteObject[] = [
   {
     path: "environments/:environmentName",
@@ -548,12 +548,12 @@ const instanceRoutes: RouteObject[] = [
 // Project routes (`/projects/:projectId/**`).
 //
 // The `requiredPermissionList` entries on the parent (`bb.projects.get`) and
-// each leaf are ported 1:1 from the legacy vue routes and aggregate via
-// `assembleRoute` into `route.requiredPermissions`. `ProjectRouteGate` (the
-// parent element) loads the project and enforces those permissions before its
-// `<Outlet/>` mounts the leaf — project-scoped checks need the loaded `Project`
-// resource, which is why `BodyLayout` routes project routes straight to this
-// gate instead of its generic workspace-level `RoutePermissionGuardShell`.
+// each leaf aggregate via `assembleRoute` into `route.requiredPermissions`.
+// `ProjectRouteGate` (the parent element) loads the project and enforces those
+// permissions before its `<Outlet/>` mounts the leaf — project-scoped checks
+// need the loaded `Project` resource, which is why `BodyLayout` routes project
+// routes straight to this gate instead of its generic workspace-level
+// `RoutePermissionGuardShell`.
 const projectV1Routes: RouteObject[] = [
   {
     path: "projects/:projectId",
@@ -566,8 +566,7 @@ const projectV1Routes: RouteObject[] = [
         index: true,
         handle: { name: PROJECT_V1_ROUTE_DETAIL },
         // The project root has no page of its own — redirect to the Issues
-        // tab (mirrors the legacy vue-router DETAIL → ISSUES redirect). `issues`
-        // is relative to the parent `projects/:projectId`.
+        // tab. `issues` is relative to the parent `projects/:projectId`.
         element: <Navigate to="issues" replace />,
       },
       {
@@ -979,8 +978,8 @@ const projectV1Routes: RouteObject[] = [
   },
 ];
 
-// `/` DashboardLayout → BodyLayout child holding the dashboard routes, plus
-// the `/issues` IssuesRouteShell route.
+// `/` DashboardLayout → BodyLayout child holding the dashboard routes,
+// including the `/issues` My Issues page.
 export const dashboardRoutes: RouteObject[] = [
   {
     path: "/",

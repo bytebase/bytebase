@@ -55,7 +55,6 @@ type PendingClose = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/TabList.vue.
  * Horizontal tab bar at the top of the SQL editor. Drag-reorder via
  * @dnd-kit, overflow-x scroll, "+" button to add a new saved query, and
  * right-click context menu delegated to TabContextMenu.
@@ -321,10 +320,9 @@ export function TabList() {
 
       <AlertDialog
         open={pendingClose !== null}
-        // Vue's confirm dialog used `closeOnEsc: false`, `maskClosable: false`,
-        // `closable: false` — the user MUST click Cancel or "Close tab".
-        // Cancel Base UI's close when the reason is Esc / outside-click so
-        // the dialog stays open and forces an explicit choice.
+        // The user MUST click Cancel or "Close tab". Cancel Base UI's close
+        // when the reason is Esc / outside-click so the dialog stays open
+        // and forces an explicit choice.
         onOpenChange={(
           open: boolean,
           eventDetails?: { reason?: string; cancel?: () => void }

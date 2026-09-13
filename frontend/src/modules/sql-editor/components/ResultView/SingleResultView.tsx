@@ -427,8 +427,7 @@ function SingleResultViewInner({
     // `result.statement`. The backend may rewrite the result statement
     // with an auto-appended LIMIT for non-admin reads — re-running that
     // rewritten SQL on the export path silently caps the exported rows
-    // even when the user asks for more. This matches the Vue
-    // multi-result export, which already used `executeParams.statement`.
+    // even when the user asks for more.
     onExport?.({ ...req, statement: params.statement });
   };
 

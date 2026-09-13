@@ -37,7 +37,8 @@ vi.mock("@/hooks/useAppState", () => ({
   ],
 }));
 
-// Stub EnvironmentLabel — the real component pulls in Pinia stores + theme tokens.
+// Stub EnvironmentLabel — the real component pulls in app-store hooks and
+// theme tokens.
 vi.mock("@/components/EnvironmentLabel", () => ({
   EnvironmentLabel: ({
     environmentName,

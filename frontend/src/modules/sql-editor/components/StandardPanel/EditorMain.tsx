@@ -25,15 +25,12 @@ interface EditorMainProps {
 }
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/StandardPanel/EditorMain.vue`.
- *
  * SavedQuery shell:
- *  - Top toolbar (`EditorAction`, already React)
+ *  - Top toolbar (`EditorAction`)
  *  - Body: `SQLEditor` when there's a tab, `Welcome` otherwise
  *  - Two hidden React modal mounts (`ExecutingHintModal`, `SaveSheetModal`)
  *
- * AI side pane has been hoisted to `StandardPanel.vue` (Vue host) so
- * the cross-framework boundary stays clean — see Stage 17 design.
+ * The AI side pane lives in `StandardPanel`.
  */
 export function EditorMain({ onChangeConnection }: EditorMainProps) {
   const { instance } = useConnectionOfCurrentSQLEditorTab();
@@ -62,8 +59,8 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
     [execute]
   );
 
-  // Run-from-toolbar: pull the active statement that the React
-  // `SQLEditor` published to the shared shallowRef.
+  // Run-from-toolbar: pull the active statement that `SQLEditor`
+  // published to `activeStatementRef`.
   const handleExecuteFromActionBar = useCallback(
     (params: SQLEditorQueryParams) => {
       const tabsState = getSQLEditorTabsState();
@@ -106,8 +103,7 @@ export function EditorMain({ onChangeConnection }: EditorMainProps) {
 
   if (!isDisconnected && !allowReadonlyMode) {
     // Connected to an instance without a read-only data source —
-    // surface the admin-mode CTA, matching Vue `EditorMain.vue`'s
-    // `<ReactPageMount v-else page="ReadonlyModeNotSupported" />` branch.
+    // surface the admin-mode CTA.
     return <ReadonlyModeNotSupported />;
   }
 

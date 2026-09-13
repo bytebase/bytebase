@@ -63,11 +63,10 @@ import {
 const SELECT_ALL_LIMIT = 50;
 
 /**
- * Schema-pane "view detail" panel actions. Mirrors Vue's
- * `useCurrentTabViewStateContext().availableActions` — the consumer
- * (SchemaPane.tsx) computes this from the active connection's instance
- * and passes it in. We don't recompute it here so the per-instance
- * support gating stays a single source of truth.
+ * Schema-pane "view detail" panel actions. The consumer (SchemaPane.tsx)
+ * computes this via `useAvailableActions()` from the active connection's
+ * instance and passes it in. We don't recompute it here so the
+ * per-instance support gating stays a single source of truth.
  */
 export type AvailableAction = {
   readonly view: EditorPanelView;
@@ -76,22 +75,17 @@ export type AvailableAction = {
 };
 
 /**
- * Replaces `SchemaPane/actions.tsx` Vue exports. Two factories:
- *  - `useSchemaPaneActions()` — invokable handlers (selectAll, viewDetail,
- *    openNewTab).
+ * Two factories:
+ *  - `useSchemaPaneActions()` — invokable handlers (selectAllFromTableOrView,
+ *    openDataExplorer, viewDetail, openNewTab).
  *  - `useSchemaPaneContextMenu(node, deps)` — nested menu items keyed by
- *    `node.meta.type`, mirroring the Vue dropdown 1:1 (item order +
- *    nesting + i18n keys).
+ *    `node.meta.type`.
  *
  * The schema-viewer modal's lifecycle stays in SchemaPane.tsx (it owns
  * the React state). The hook receives `setSchemaViewer` so menu items
  * can ask the panel to open the viewer.
  */
 
-/**
- * Pure helper: resolve the engine for a target without standing up a
- * Vue reactive computed.
- */
 const engineForDatabase = (database: string): Engine => {
   const db = useAppStore.getState().getDatabaseByName(database);
   return getInstanceResource(db).engine;
@@ -141,7 +135,7 @@ const copyToClipboard = async (
   if (await writeTextToClipboard(content)) {
     notify("common.copied");
   } else {
-    // Silent fail — matches Vue's `if (!isSupported.value) return` behavior.
+    // Silent fail.
   }
 };
 
@@ -178,7 +172,7 @@ const runQuery = async (
     table: tableOrViewName,
   };
   // Yield once so any state updates above flush before execute reads
-  // the tab — mirrors Vue's `await nextTick()` in the original.
+  // the tab.
   await Promise.resolve();
   execute({
     statement,
@@ -420,10 +414,9 @@ const ITEM_ORDER = [
 ];
 
 /**
- * Mirror Vue's `useDropdown().options` 1:1 — same item ordering, same
- * branching, same keys. Schema-typed nodes use the consumer-supplied
- * `availableActions` list (from `useCurrentTabViewStateContext` on the
- * Vue side) so per-instance support gating lives in one place.
+ * Schema-typed nodes use the consumer-supplied `availableActions` list
+ * (from `useAvailableActions`) so per-instance support gating lives in one
+ * place.
  *
  * Returns `[]` for disabled / unsupported nodes; callers should hide
  * the popup in that case.

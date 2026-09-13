@@ -13,11 +13,8 @@ type Props = {
 // Per-table caches: each entry is a `Map<columnName, ColumnMetadata>` keyed
 // by the table-like metadata object that owns the columns. Two reasons for
 // the WeakMap-of-Maps pattern:
-//   1. The previous implementation did `tableMetadata.columns.find(...)`
-//      from every ColumnNode, which is O(columns-per-table) per row. For a
-//      200-column table with ~30 virtualized rows, that's 6,000 reactive
-//      proxy reads per expand — and every read goes through Vue's tracker
-//      because the metadata is a Pinia/Vue reactive proxy.
+//   1. `tableMetadata.columns.find(...)` from every ColumnNode would be
+//      O(columns-per-table) per row.
 //   2. WeakMap keys (the parent metadata reference) drop their cache entry
 //      automatically when the metadata refreshes — no manual invalidation.
 const tableColumnIndex = new WeakMap<object, Map<string, ColumnMetadata>>();
@@ -31,20 +28,13 @@ function findColumn(parent: { columns: ColumnMetadata[] }, name: string) {
 }
 
 /**
- * Replaces `TreeNode/ColumnNode.vue`. The icon and trailing type-tag both
- * depend on the column's resolved metadata:
+ * The icon and trailing type-tag both depend on the column's resolved
+ * metadata:
  *  - PrimaryKeyIcon when the column is part of the primary index.
  *  - IndexIcon when it's part of any other index (and not the PK).
  *  - ColumnIcon otherwise.
  *  - The trailing type-tag (`int`, `varchar(255)`, …) is rendered when
  *    the metadata fetch has resolved.
- *
- * Lookups use `useMemo`. The schema tree is rebuilt by `SchemaPane`
- * whenever the database metadata changes, which produces fresh `target`
- * objects and remounts these rows with current metadata — a per-row
- * subscription would be unnecessary overhead, and synchronous watch
- * setup was the dominant cost of expanding a Columns folder with
- * hundreds of children.
  */
 export function ColumnNode({ node, keyword }: Props) {
   const target = (node as TreeNode<"column">).meta.target;

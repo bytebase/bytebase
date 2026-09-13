@@ -7,7 +7,7 @@ type Props = {
   readonly view: string;
 };
 
-/** Replaces `HoverPanel/ViewInfo.vue`. Just the view's comment, wrapped. */
+/** Just the view's comment, wrapped. */
 export function ViewInfo({ database, schema, view }: Props) {
   const viewMetadata = useAppStore((s) =>
     s.getViewMetadata({ database, schema, view })

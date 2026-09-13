@@ -206,10 +206,6 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
         });
       }
 
-      // Pinia and the React app store both cache the workspace profile.
-      // Pinia's computed updates automatically; the React store is a
-      // load-once cache, so we refresh it here so consumers like
-      // <Watermark /> and <BannersWrapper /> pick up the new values.
       await useAppStore.getState().loadWorkspaceProfile(true);
     }, [state, domainInput, getInitialState]);
 

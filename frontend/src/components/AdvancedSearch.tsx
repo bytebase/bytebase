@@ -61,8 +61,7 @@ interface AdvancedSearchProps {
   onParamsChange: (params: SearchParams) => void;
   /**
    * Fires on Enter while no scope/value dropdown is active. Hosts use this
-   * for "press Enter to advance to the next match" — mirrors the Vue
-   * `@keyup:enter` shortcut on the result-view search bar.
+   * for "press Enter to advance to the next match".
    */
   onEnter?: () => void;
 }
@@ -377,7 +376,6 @@ export function AdvancedSearch({
     if (id) {
       setMenuView("value");
       setMenuIndex(0);
-      // Show "scope:" prefix in the input to match Vue behavior
       setInputText(`${id}:`);
     } else {
       setMenuView("scope");

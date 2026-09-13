@@ -60,25 +60,6 @@ const FLAT_TABLE_THRESHOLD = 1000;
 // store mutation.
 const EMPTY_KEYS: readonly string[] = Object.freeze([]);
 
-/**
- * React port of `frontend/src/views/sql-editor/AsidePanel/SchemaPane/SchemaPane.vue`.
- *
- * Wires together every Phase 1–4 artifact:
- *   - schemaTree.ts builder              (Phase 1)
- *   - useDelayedValue / useHoverState    (Phase 1)
- *   - leaf TreeNode/*.tsx                (Phase 1)
- *   - heavy nodes + Label dispatcher     (Phase 2)
- *   - HoverPanel + *Info cards           (Phase 3)
- *   - useSchemaPaneActions / ContextMenu (Phase 4a/4b)
- *   - SyncSchemaButton                   (Phase 4c)
- *   - FlatTableList                      (Phase 4d)
- *
- * The schema-viewer modal lives in the Vue parent (`AsidePanel.vue`)
- * since it embeds Vue-only `BBModal` + `TableSchemaViewer`. The menu's
- * "View schema text" action emits a `show-schema-viewer` event on
- * `sqlEditorEvents` which the Vue context provider listens for and
- * mirrors onto its inject ref.
- */
 export function SchemaPane() {
   return (
     <HoverStateProvider>
@@ -108,8 +89,7 @@ function SchemaPaneInner() {
 
   const [searchPattern, setSearchPattern] = useState("");
 
-  // Reset the search box on every tab switch — matches Vue's
-  // `watch(() => currentTab.value?.id, ...)`.
+  // Reset the search box on every tab switch.
   useEffect(() => {
     setSearchPattern("");
   }, [currentTabId]);
@@ -156,8 +136,7 @@ function SchemaPaneInner() {
   }, [metadata]);
 
   // Build the tree via requestAnimationFrame so the heavy walk doesn't
-  // block the metadata-fetch teardown's transition. Mirrors Vue's
-  // `requestAnimationFrame(() => { tree.value = buildDatabaseSchemaTree(...) })`.
+  // block the metadata-fetch teardown's transition.
   const [treeResult, setTreeResult] = useState<
     { database: string; tree: SchemaTreeNode[] } | undefined
   >(undefined);
@@ -349,9 +328,8 @@ function SchemaPaneInner() {
 
   // ---- Context menu (right-click) -----------------------------------------
   const contextMenuRef = useRef<SchemaContextMenuHandle>(null);
-  // Schema-viewer modal lives here now (was bridged through Vue parent
-  // until the React TableSchemaViewer landed). Local state because the
-  // SchemaPane right-click menu is the only trigger.
+  // Schema-viewer modal state is local because the SchemaPane right-click
+  // menu is the only trigger.
   const [schemaViewer, setSchemaViewerState] = useState<
     | {
         schema?: string;
@@ -521,11 +499,6 @@ function SchemaPaneInner() {
         setSchemaViewer={setSchemaViewer}
       />
 
-      {/* Schema-viewer modal — Vue's BBModal+TableSchemaViewer used to
-          live in the parent (`SQLEditorHomePage.vue`) bridged via the
-          `show-schema-viewer` event because TableSchemaViewer was Vue.
-          Now the React TableSchemaViewer ships, so the trigger and its
-          modal home in the same place. */}
       <Dialog
         open={!!schemaViewer}
         onOpenChange={(open) => {
@@ -572,8 +545,6 @@ const searchMatch = (
   node: TreeDataNode<SchemaTreeNode>,
   term: string
 ): boolean => {
-  // Mirror Vue's NTree default: case-insensitive substring match against
-  // the node's display label.
   const label = node.data.label ?? "";
   return label.toLowerCase().includes(term.toLowerCase());
 };
@@ -616,10 +587,7 @@ function useSchemaActionsForClick() {
 
 /**
  * Minimal database breadcrumb for the schema-viewer modal title:
- * engine icon + instance name + chevron + database name. Replaces
- * Vue's `<RichDatabaseName>` for this single use site — full port
- * of `RichDatabaseName.vue` is deferred until another React surface
- * needs it.
+ * engine icon + instance name + chevron + database name.
  */
 function DatabaseTitle({
   database,
@@ -713,8 +681,7 @@ function SchemaTreeRow({
     const delay = hoverHasState ? 150 : undefined;
     hoverUpdate(state, "before", delay);
 
-    // Compute position from the row's bounding rect, like Vue's
-    // `findAncestor(.n-tree-node)` → getBoundingClientRect.
+    // Compute position from the row's bounding rect.
     const wrapper = findAncestor(
       e.target as HTMLElement,
       ".bb-schema-tree-row"

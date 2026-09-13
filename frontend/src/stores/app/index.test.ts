@@ -3236,8 +3236,7 @@ describe("useAppStore", () => {
         table: "users",
       }).name
     ).toBe("users");
-    // Unknown table falls back to an empty TableMetadata placeholder
-    // (mirrors the legacy Pinia store's behavior).
+    // Unknown table falls back to an empty TableMetadata placeholder.
     expect(
       store.getState().getTableMetadata({
         database: "instances/i1/databases/db1",

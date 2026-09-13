@@ -15,10 +15,9 @@ interface NavigatorTreeProps {
 }
 
 /**
- * React port of `Navigator/Tree.vue`. Reuses the shared `Tree` primitive
- * (react-arborist) and renders schema → table levels with prefix /
- * suffix slots. Clicking a table emits `set-center` so the canvas
- * recenters on it.
+ * Reuses the shared `Tree` primitive (react-arborist) and renders schema →
+ * table levels with prefix / suffix slots. Clicking a table emits
+ * `set-center` so the canvas recenters on it.
  */
 export function NavigatorTree({
   keyword = "",
@@ -55,16 +54,16 @@ export function NavigatorTree({
       };
       return node;
     });
-    // Mirror Vue: collapse the tree when there's a single, unnamed schema
-    // (e.g. MySQL's default schema) — show only the table children.
+    // Collapse the tree when there's a single, unnamed schema (e.g. MySQL's
+    // default schema) — show only the table children.
     if (schemaNodes.length === 1 && selectedSchemas[0].name === "") {
       return schemaNodes[0].children ?? [];
     }
     return schemaNodes;
   }, [selectedSchemas]);
 
-  // Match Vue's `default-expand-all="true"` — every schema row opens
-  // expanded so the table children are visible without manual clicking.
+  // Every schema row opens expanded so the table children are visible
+  // without manual clicking.
   const expandedIds = useMemo(() => data.map((node) => node.id), [data]);
 
   return (

@@ -9,8 +9,8 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/CheckNode.vue`. Renders the constraint name plus a
- * trailing tag with the resolved check expression (if metadata is loaded).
+ * Renders the constraint name plus a trailing tag with the resolved check
+ * expression (if metadata is loaded).
  */
 export function CheckNode({ node, keyword }: Props) {
   const target = (node as TreeNode<"check">).meta.target;

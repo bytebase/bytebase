@@ -27,7 +27,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/TabItem/TabItem.vue.
  * One row in the tab bar. Composes Prefix + (Label|AdminLabel) + Suffix,
  * handles left-click to select + contextmenu emit, and ties into @dnd-kit's
  * sortable for drag-reorder inside TabList.

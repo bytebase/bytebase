@@ -16,11 +16,10 @@ export interface SavedQueryAndTab {
 }
 
 /**
- * React replacement for the Pinia `useWorkSheetAndTabStore`. Derives the
- * saved query bound to the current SQL editor tab plus creator / read-only
- * flags. The tab comes from the Zustand tab store; the saved query is read
- * from the Zustand saved query slice via `useAppStore` so cache hydration
- * and in-place edits re-render.
+ * Derives the saved query bound to the current SQL editor tab plus creator /
+ * read-only flags. The tab comes from the Zustand tab store; the saved query
+ * is read from the Zustand saved query slice via `useAppStore` so cache
+ * hydration and in-place edits re-render.
  */
 export const useSavedQueryAndTab = (): SavedQueryAndTab => {
   const currentTab = useCurrentSQLEditorTab();

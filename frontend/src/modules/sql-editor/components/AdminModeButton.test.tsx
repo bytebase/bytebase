@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  // Per-test controllable state read by the migrated Zustand/bridge hooks.
+  // Per-test controllable state read by the mocked hooks.
   state: {
     project: "projects/test" as string,
     allowAdmin: true,
@@ -50,7 +50,7 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
   }),
 }));
 
-// Pinia bridge hook that resolves the admin permission for the project.
+// Hook that resolves the admin permission for the project.
 vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
   useSQLEditorAllowAdmin: mocks.useSQLEditorAllowAdmin,
 }));

@@ -167,8 +167,6 @@ const downloadAll = async (
 };
 
 /**
- * React port of `frontend/src/components/DataExportButton.vue`.
- *
  * - DRAWER view: opens a Sheet with row-count / format / optional password
  *   fields, plus a `formContent` slot for caller-provided fields (e.g. the
  *   batch-export database picker).

@@ -19,12 +19,10 @@ type Props = CodeBlockProps & {
   code: string;
 };
 
-const MIN_WIDTH_PX = 8 * 16; // 8rem — same minimum as the Vue source.
+const MIN_WIDTH_PX = 8 * 16; // 8rem
 const PADDING_PX = 8;
 
 /**
- * React port of `plugins/ai/components/ChatView/Markdown/CodeBlock.vue`.
- *
  * Renders a SQL snippet inside a read-only `MonacoEditor` with three
  * actions:
  *   - Run: `aiContextEvents.emit("run-statement", { statement })`
@@ -35,7 +33,7 @@ const PADDING_PX = 8;
  * Width is adaptive: measure the nearest `.message` ancestor (set by
  * `ChatView`) via ResizeObserver and clamp to `[MIN_WIDTH_PX, ...]`.
  * `width` is the fraction of the message bubble this card occupies —
- * `AIMessageView` passes `0.85`.
+ * `AIMessageView` passes `1.0`, `UserMessageView` passes `0.6`.
  */
 export function CodeBlock({ code, width }: Props) {
   const { t } = useTranslation();

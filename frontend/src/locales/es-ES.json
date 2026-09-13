@@ -804,7 +804,6 @@
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
     "unassign-alert-title": "Desasignar bases de datos",
-    "unassigned-databases": "Bases de datos no asignadas",
     "unique": "Único",
     "visible": "Visible"
   },
@@ -1319,9 +1318,6 @@
       "host": {
         "none-snowflake": "por ejemplo, host.docker.internal | IP del host | socket local",
         "saas": "por ejemplo, db.example.com | IP de la base de datos"
-      },
-      "proxy": {
-        "snowflake": "Para el servidor proxy, agregue @PROXY_HOST y especifique PROXY_PORT en el puerto"
       }
     },
     "show-how-to-create": "Mostrar cómo crear",
@@ -2033,9 +2029,6 @@
         }
       },
       "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
-    },
-    "overview": {
-      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
     },
     "select": "Seleccionar proyecto",
     "settings": {

@@ -45,25 +45,18 @@ import {
 } from "@/utils";
 
 /**
- * React port of `frontend/src/views/sql-editor/SQLEditorHomePage.vue`.
- *
  * Top-level shell of the SQL Editor route:
  *  - desktop: a horizontal split between `<AsidePanel>` (workspace
  *    tree, etc.) and the main column (`<TabList>` + `<Panels>`).
  *  - mobile (window width < 800px): the aside collapses behind a
  *    floating chevron + drawer.
  *
- * Two emittery listeners survive from the Vue version:
+ * Two emittery listeners:
  *  - `alter-schema` opens a new tab to the plan editor with a
  *    pre-filled `ALTER TABLE` statement.
  *  - `insert-at-caret` flips back to the CODE view and stages the
- *    content into `pendingInsertAtCaret`; the React `<SQLEditor>` reads
- *    that ref and inserts at the cursor.
- *
- * The Vue Router route entry lives in `router/sqlEditor.ts` as a
- * tiny inline `defineComponent` whose sole job is to mount this
- * React tree via `<ReactPageMount page="SQLEditorHomePage">` — no
- * per-route `.vue` file remains.
+ *    content into `pendingInsertAtCaret`; `<SQLEditor>` reads it and
+ *    inserts at the cursor.
  */
 export function SQLEditorHomePage() {
   const { t } = useTranslation();
@@ -98,7 +91,7 @@ export function SQLEditorHomePage() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   // alter-schema: open a new tab to the plan editor with a pre-filled
-  // ALTER TABLE template (mirrors Vue's `useEmitteryEventListener`).
+  // ALTER TABLE template.
   useEffect(() => {
     const off = sqlEditorEvents.on(
       "alter-schema",
@@ -141,8 +134,8 @@ export function SQLEditorHomePage() {
   }, [navigate, t]);
 
   // insert-at-caret: flip view to CODE, stage content into
-  // pendingInsertAtCaret. The React `<SQLEditor>` reads the same Pinia
-  // ref and inserts at the cursor.
+  // pendingInsertAtCaret. `<SQLEditor>` reads it from the SQL Editor
+  // store and inserts at the cursor.
   useEffect(() => {
     const off = sqlEditorEvents.on(
       "insert-at-caret",
@@ -250,10 +243,6 @@ export function SQLEditorHomePage() {
 
       <ConnectionPanel />
 
-      {/* Diagnostic teleport target — the Vue version reused
-          `#sql-editor-debug`. Skipped here; the legacy markers
-          (`isDisconnected`, `currentTab.id`, `currentTab.connection`)
-          are still inspectable via Vue devtools on the Pinia store. */}
       <DebugProbe
         isDisconnected={isDisconnected}
         tabId={tab?.id}
@@ -264,9 +253,8 @@ export function SQLEditorHomePage() {
 }
 
 /**
- * Renders the same `[Page]…` debug strings the Vue version teleported
- * into `#sql-editor-debug`. The portal is no-op when that target isn't
- * in the DOM (production builds), matching the legacy behavior.
+ * Renders the `[Page]…` debug strings into `#sql-editor-debug`. The
+ * portal is a no-op when that target isn't in the DOM.
  */
 function DebugProbe({
   isDisconnected,

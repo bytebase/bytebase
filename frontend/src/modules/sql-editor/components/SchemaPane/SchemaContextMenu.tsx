@@ -30,14 +30,12 @@ type Target = {
 type Props = SchemaMenuDeps;
 
 /**
- * Replaces `SchemaPane/actions.tsx`'s NDropdown imperative use in
- * `SchemaPane.vue`. Mirrors the Stage 14 `ConnectionContextMenu` pattern:
- * a 0×0 fixed-position trigger at the cursor is programmatically clicked
- * so Base UI records a click-type open event and the popup stays open
- * while the pointer moves to a menu item.
+ * Schema tree right-click menu. Uses the same pattern as
+ * `ConnectionContextMenu`: a 0×0 fixed-position trigger at the cursor is
+ * programmatically clicked so Base UI records a click-type open event and
+ * the popup stays open while the pointer moves to a menu item.
  *
- * `open` is controlled so `hide()` can dismiss the menu deterministically
- * (matches the same fix applied to TabContextMenu after the codex review).
+ * `open` is controlled so `hide()` can dismiss the menu deterministically.
  */
 export const SchemaContextMenu = forwardRef<SchemaContextMenuHandle, Props>(
   function SchemaContextMenu(deps, ref) {

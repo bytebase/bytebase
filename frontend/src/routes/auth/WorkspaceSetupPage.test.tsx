@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { fireEvent } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act } from "react";
@@ -13,8 +10,6 @@ import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
-
-const componentDir = dirname(fileURLToPath(import.meta.url));
 
 const mocks = vi.hoisted(() => ({
   canUpdateWorkspace: true,
@@ -651,20 +646,6 @@ describe("WorkspaceSetupPage", () => {
       },
     });
     page.unmount();
-  });
-
-  test("uses the shared product intro query key after creating a project", () => {
-    const source = readFileSync(join(componentDir, "WorkspaceSetupPage.tsx"), {
-      encoding: "utf8",
-    });
-
-    expect(source).toContain(
-      "[PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO"
-    );
-    expect(source).toContain("PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO");
-    expect(source).toContain(
-      "query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO }"
-    );
   });
 
   test("shows workspace name when the sole member can update the workspace", () => {

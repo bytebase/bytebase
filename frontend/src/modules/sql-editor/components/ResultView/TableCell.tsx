@@ -58,7 +58,6 @@ export function TableCell({
     [value, columnType, binaryFormat]
   );
 
-  // ResizeObserver replaces Vue's `useResizeObserver(cellRef, ...)`.
   useEffect(() => {
     const cell = cellRef.current;
     const wrapper = wrapperRef.current;

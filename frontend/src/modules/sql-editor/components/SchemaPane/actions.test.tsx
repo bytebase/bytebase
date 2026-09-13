@@ -89,8 +89,8 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 
 vi.mock("@/utils", () => ({
   // Stub everything actions.tsx imports. We don't `importOriginal` here
-  // because the real `@/utils` transitively pulls in monaco / vue
-  // surfaces that vitest can't load.
+  // because the real `@/utils` transitively pulls in monaco surfaces that
+  // vitest can't load.
   autoSQLEditorDatabaseRoute: () => ({
     name: "sql-editor.database",
     params: {

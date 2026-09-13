@@ -1,6 +1,4 @@
 /**
- * SavedQueryPane — React port of SavedQueryPane.vue (Stage 12, Phase 4).
- *
  * Hosts the SQL editor's saved query sidebar: search, filter menu, multi-select
  * toolbar, and one SheetTree per visible view.
  */
@@ -190,10 +188,10 @@ export function SavedQueryPane() {
               />
             )}
             {views.map((view) => (
-              // Non-"my" trees intentionally omit multi-select callbacks. Vue
-              // bound v-model only on the `my` tree; wiring them everywhere let
-              // a shared/draft right-click populate the my tree's checkedNodes,
-              // which the toolbar's Delete flow acts on.
+              // Non-"my" trees intentionally omit multi-select callbacks.
+              // Wiring them everywhere would let a shared/draft right-click
+              // populate the my tree's checkedNodes, which the toolbar's
+              // Delete flow acts on.
               <SheetTree key={view} view={view} />
             ))}
             {!hasAnyView && (

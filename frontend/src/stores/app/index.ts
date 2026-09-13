@@ -92,7 +92,7 @@ registerPermissionCheckers({
 });
 
 // Back the subscription / environment reads in shared `@/utils` helpers with
-// this store, replacing the legacy Pinia stores those helpers used to read.
+// this store.
 registerAppStoreUtilBridge({
   currentUser: () => useAppStore.getState().currentUser,
   isLoggedIn: () => useAppStore.getState().isLoggedIn(),

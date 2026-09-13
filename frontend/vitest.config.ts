@@ -34,7 +34,7 @@ export default mergeConfig(
       // transform (skipping the plugin fails 82 files), so bound the wait
       // instead: vitest force-exits either way, this just stops it idling.
       teardownTimeout: 1000,
-      exclude: [...configDefaults.exclude, "e2e/*", "tests/e2e/**"],
+      exclude: [...configDefaults.exclude, "tests/e2e/**"],
       root: fileURLToPath(new URL("./", import.meta.url)),
       setupFiles: ["./vitest.setup.ts"],
       globalSetup: ["./vitest.globalSetup.ts"],

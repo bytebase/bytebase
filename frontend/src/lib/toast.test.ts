@@ -8,7 +8,7 @@ vi.mock("@base-ui/react/toast", () => ({
   },
 }));
 
-import { mapNotificationToToast, pushReactNotification } from "./toast";
+import { mapNotificationToToast, pushNotification } from "./toast";
 
 describe("mapNotificationToToast", () => {
   test("SUCCESS maps to type=success, priority=low, timeout=6000", () => {
@@ -85,11 +85,11 @@ describe("mapNotificationToToast", () => {
   });
 });
 
-describe("pushReactNotification", () => {
+describe("pushNotification", () => {
   beforeEach(() => addMock.mockReset());
 
   test("calls toastManager.add with mapped options", () => {
-    pushReactNotification({
+    pushNotification({
       module: "bytebase",
       style: "SUCCESS",
       title: "Saved",
@@ -104,7 +104,7 @@ describe("pushReactNotification", () => {
   });
 
   test("ignores notifications with module !== 'bytebase'", () => {
-    pushReactNotification({
+    pushNotification({
       module: "other",
       style: "INFO",
       title: "ignored",

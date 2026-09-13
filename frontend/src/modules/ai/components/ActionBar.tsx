@@ -5,7 +5,6 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useAIContext } from "./context";
 
 /**
- * React port of `plugins/ai/components/ActionBar.vue`.
  * Top bar above the chat: "AI Assistant" heading on the left,
  * History + New-conversation buttons on the right.
  */

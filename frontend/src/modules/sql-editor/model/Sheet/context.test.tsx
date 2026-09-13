@@ -16,7 +16,6 @@ type AppState = {
   savedQueriesByKey: Record<string, SavedQuery>;
   isSaaSMode: () => boolean;
   getSavedQueryByName: (name: string) => SavedQuery | undefined;
-  savedQueryList: () => SavedQuery[];
   patchSavedQueryFolderInCache: ReturnType<typeof vi.fn>;
   searchSavedQueryFolders: ReturnType<typeof vi.fn>;
   fetchSavedQueryList: ReturnType<typeof vi.fn>;
@@ -67,7 +66,6 @@ const mocks = vi.hoisted(() => {
         isSaaSMode: () => false,
         getSavedQueryByName: (name: string) =>
           appState.savedQueriesByKey[keyForSavedQuery(name)],
-        savedQueryList: () => Object.values(appState.savedQueriesByKey),
         searchSavedQueryFolders: vi.fn(async () => []),
         fetchSavedQueryList: vi.fn(async (_project, _filter, _params) => {
           const savedQuery = create(SavedQuerySchema, {

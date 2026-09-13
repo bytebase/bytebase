@@ -12,8 +12,7 @@ import { instanceV1AllowsCrossDatabaseQuery } from "@/utils/v1/instance";
  * connection. Lives under `@/lib/` (not `@/utils/`) because the lookup
  * goes through the React app store — putting it under `@/utils/` would
  * create a static ESM cycle: `@/utils` → `@/stores/app` → ...slices...
- * → `@/types` → ... → back into `@/utils`. Hosting on the React side breaks
- * the import graph cleanly while keeping the migration off Pinia.
+ * → `@/types` → ... → back into `@/utils`.
  */
 export const getConnectionForSQLEditorTab = (tab?: SQLEditorTab) => {
   const target: {
