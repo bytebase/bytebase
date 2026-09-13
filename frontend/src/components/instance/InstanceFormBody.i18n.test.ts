@@ -3,6 +3,7 @@ import i18next from "i18next";
 import { describe, expect, test } from "vitest";
 import enUS from "@/locales/en-US.json";
 import esES from "@/locales/es-ES.json";
+import idID from "@/locales/id-ID.json";
 import jaJP from "@/locales/ja-JP.json";
 import viVN from "@/locales/vi-VN.json";
 import zhCN from "@/locales/zh-CN.json";
@@ -11,6 +12,7 @@ const LOCALES = {
   "en-US": enUS,
   "zh-CN": zhCN,
   "es-ES": esES,
+  "id-ID": idID,
   "ja-JP": jaJP,
   "vi-VN": viVN,
 } as const;
