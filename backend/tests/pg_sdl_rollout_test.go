@@ -64,10 +64,6 @@ func TestPgSDLRollout(t *testing.T) {
 		// Create unique database name
 		dbName := fmt.Sprintf("sdl_workflow_%s", strings.ReplaceAll(uuid.New().String()[:8], "-", ""))
 
-		// Create database directly in PostgreSQL
-		_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
-		a.NoError(err)
-
 		// Create database in Bytebase
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil, dbName, "postgres")
 		a.NoError(err)
@@ -187,10 +183,6 @@ CREATE TABLE "public"."posts" (
 		// Create unique database name
 		dbName := fmt.Sprintf("sdl_empty_%s", strings.ReplaceAll(uuid.New().String()[:8], "-", ""))
 
-		// Create database directly in PostgreSQL
-		_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
-		a.NoError(err)
-
 		// Create database in Bytebase
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil, dbName, "postgres")
 		a.NoError(err)
@@ -227,10 +219,6 @@ CREATE TABLE "public"."posts" (
 
 		// Create unique database name
 		dbName := fmt.Sprintf("sdl_nochange_%s", strings.ReplaceAll(uuid.New().String()[:8], "-", ""))
-
-		// Create database directly in PostgreSQL
-		_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
-		a.NoError(err)
 
 		// Create database in Bytebase
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil, dbName, "postgres")

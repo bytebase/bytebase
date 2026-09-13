@@ -2,8 +2,11 @@ package tests
 
 import (
 	"context"
+	"net"
+	"sync"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -16,13 +19,31 @@ type Container struct {
 	*testcontainer.Container
 }
 
+// pgContainers maps each Postgres the tests hold, by host:port, to its
+// container, so createDatabase can reach the server behind an instance.
+var (
+	pgContainersMu sync.Mutex
+	pgContainers   = map[string]*Container{}
+)
+
+func pgContainerOf(instance *v1pb.Instance) (*Container, error) {
+	pgContainersMu.Lock()
+	defer pgContainersMu.Unlock()
+	for _, ds := range instance.GetDataSources() {
+		if c, ok := pgContainers[net.JoinHostPort(ds.Host, ds.Port)]; ok && ds.Type == v1pb.DataSourceType_ADMIN {
+			return c, nil
+		}
+	}
+	return nil, errors.Errorf("instance %s is not on a test Postgres; use createDatabaseByRollout", instance.Name)
+}
+
 // provisionPgInstance starts a Postgres of the test's own, closed when the test
 // finishes. Use it for what sharedPgTarget cannot serve: a cluster-wide write
 // such as a role, two instances that must be two servers, or a connection the
 // test breaks on purpose.
 func provisionPgInstance(t *testing.T) *Container {
 	t.Helper()
-	return provision(t, testcontainer.GetPgContainer)
+	return registerPg(provision(t, testcontainer.GetPgContainer))
 }
 
 // dataSource returns a data source of the given type and ID pointing at the container.
@@ -48,8 +69,14 @@ func (c *Container) adminDataSource() *v1pb.DataSource {
 // test's databases too.
 func sharedPgTarget(t *testing.T) *Container {
 	t.Helper()
-	tc := testcontainer.SharedTargetPgContainer(t)
-	return &Container{tc}
+	return registerPg(&Container{testcontainer.SharedTargetPgContainer(t)})
+}
+
+func registerPg(c *Container) *Container {
+	pgContainersMu.Lock()
+	defer pgContainersMu.Unlock()
+	pgContainers[net.JoinHostPort(c.GetHost(), c.GetPort())] = c
+	return c
 }
 
 // provisionMySQLInstance is provisionPgInstance for MySQL.

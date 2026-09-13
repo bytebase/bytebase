@@ -816,9 +816,9 @@ func TestGitOpsRolloutGhostDirective(t *testing.T) {
 	instance := instanceResp.Msg
 
 	backupDBName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
-	err = ctl.createDatabase(ctx, project, instance, nil, backupDBName, "")
+	err = ctl.createDatabaseByRollout(ctx, project, instance, nil, backupDBName)
 	a.NoError(err)
-	err = ctl.createDatabase(ctx, project, instance, nil, databaseName, "")
+	err = ctl.createDatabaseByRollout(ctx, project, instance, nil, databaseName)
 	a.NoError(err)
 
 	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{

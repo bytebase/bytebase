@@ -557,7 +557,7 @@ func (ctl *controller) createTestMySQLDatabase(ctx context.Context, t *testing.T
 
 	// Create database
 	dbName := generateRandomString("db")[:8]
-	err = ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, "")
+	err = ctl.createDatabaseByRollout(ctx, ctl.project, instanceResp.Msg, nil, dbName)
 	a.NoError(err)
 
 	// Get database

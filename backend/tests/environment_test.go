@@ -40,7 +40,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	instance := instanceResp.Msg
 
 	db0Name := uniqueDB("db0")
-	err = ctl.createDatabase(ctx, ctl.project, instance, testEnvironment /* environment */, db0Name, "")
+	err = ctl.createDatabaseByRollout(ctx, ctl.project, instance, testEnvironment /* environment */, db0Name)
 	a.NoError(err)
 	db0Resp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db0Name),
@@ -53,7 +53,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.Equal(testEnvironment.Name, *db0.EffectiveEnvironment)
 
 	db1Name := uniqueDB("db1")
-	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, db1Name, "")
+	err = ctl.createDatabaseByRollout(ctx, ctl.project, instance, nil /* environment */, db1Name)
 	a.NoError(err)
 	db1Resp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db1Name),
@@ -65,7 +65,7 @@ func TestDatabaseEnvironment(t *testing.T) {
 	a.Equal(prodEnvironment.Name, *db1.EffectiveEnvironment)
 
 	db2Name := uniqueDB("db2")
-	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, db2Name, "")
+	err = ctl.createDatabaseByRollout(ctx, ctl.project, instance, nil /* environment */, db2Name)
 	a.NoError(err)
 	db2Resp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instance.Name, db2Name),
