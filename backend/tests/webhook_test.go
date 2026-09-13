@@ -161,7 +161,8 @@ func TestWebhookIntegration(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	}))
-	defer webhookServer.Close()
+	// Cleanup, not defer: the parallel subtests below run after this body returns.
+	t.Cleanup(webhookServer.Close)
 
 	// Create a single instance for all tests
 	pgContainer := sharedPgTarget(t)
@@ -421,9 +422,11 @@ func TestWebhookIntegration(t *testing.T) {
 	})
 
 	t.Run("PipelineCompleted_AllTasksDone", func(t *testing.T) {
-		collector.reset()
+		t.Parallel()
 		project := ctl.createTestProject(ctx, t, "byt9398-c1")
-		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c1_a", "byt9398_c1_b")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c1_a", ""))
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c1_b", ""))
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED})
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c1_a")},
@@ -436,9 +439,12 @@ func TestWebhookIntegration(t *testing.T) {
 	})
 
 	t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
-		collector.reset()
+		t.Parallel()
 		project := ctl.createTestProject(ctx, t, "byt9398-c7")
-		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c7_done", "byt9398_c7_skip", "byt9398_c7_retry", "byt9398_c7_skipfailed")
+		for _, database := range []string{"byt9398_c7_done", "byt9398_c7_skip", "byt9398_c7_retry", "byt9398_c7_skipfailed"} {
+			require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, database, ""))
+		}
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED})
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c7_done")},
@@ -469,10 +475,9 @@ func TestWebhookIntegration(t *testing.T) {
 	})
 
 	t.Run("PipelineFailed_SingleTaskFails", func(t *testing.T) {
-		collector.reset()
+		t.Parallel()
 		project := ctl.createTestProject(ctx, t, "byt9398-f1")
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f1_fail", ""))
-		collector.reset()
 		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f1_fail")},
@@ -482,10 +487,9 @@ func TestWebhookIntegration(t *testing.T) {
 	})
 
 	t.Run("PipelineFailed_RetryFailsAgain", func(t *testing.T) {
-		collector.reset()
+		t.Parallel()
 		project := ctl.createTestProject(ctx, t, "byt9398-f3")
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f3_fail", ""))
-		collector.reset()
 		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f3_fail")},
@@ -511,7 +515,7 @@ func TestWebhookIntegration(t *testing.T) {
 		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
 		appr := provisionApprover(ctx, t, ctl, project, "i2", "roles/projectOwner")
 
-		collector.reset() // flush any creation-time webhook events
+		collector.reset()
 		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
