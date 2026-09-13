@@ -14,33 +14,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
+  select-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      go: ${{ steps.filter.outputs.go }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-      proto: ${{ steps.filter.outputs.proto }}
+      go: ${{ steps.select.outputs.go }}
+      frontend: ${{ steps.select.outputs.frontend }}
+      proto: ${{ steps.select.outputs.proto }}
     steps:
       # HEAD is the pull request's merge commit; its first parent is the base branch.
       - uses: actions/checkout@v7
         with:
           fetch-depth: 2
           sparse-checkout: .github
-      - id: filter
+      - name: Select checks from changed files
+        id: select
         run: |
           files=$(git diff --name-only --no-renames HEAD^1 HEAD)
           changed() { grep -qE "$1" <<<"$files" && echo true || echo false; }
-          {
-            echo "go=$(changed '^(backend/|action/|proto/.*\.go$|go\.(mod|sum)$|\.golangci\.yaml$|\.github/workflows/ci\.yml$)')"
-            # The frontend gate's `prepare` script also reads these backend files.
-            echo "frontend=$(changed '^(frontend/|backend/enterprise/plan\.yaml$|backend/common/permission/permission\.yaml$|backend/api/mcp/gen/openapi\.yaml$|scripts/check_link_test\.go$|\.github/workflows/ci\.yml$)')"
-            echo "proto=$(changed '^(proto/|\.github/workflows/ci\.yml$)')"
-          } >> "$GITHUB_OUTPUT"
+          go=$(changed '^(backend/|action/|proto/.*\.go$|go\.(mod|sum)$|\.golangci\.yaml$|\.github/workflows/ci\.yml$)')
+          # The frontend gate's `prepare` script also reads these backend files.
+          frontend=$(changed '^(frontend/|backend/enterprise/plan\.yaml$|backend/common/permission/permission\.yaml$|backend/api/mcp/gen/openapi\.yaml$|scripts/check_link_test\.go$|\.github/workflows/ci\.yml$)')
+          proto=$(changed '^(proto/|\.github/workflows/ci\.yml$)')
+          printf 'go=%s\nfrontend=%s\nproto=%s\n' "$go" "$frontend" "$proto" >> "$GITHUB_OUTPUT"
+          echo "Changed areas: go=$go, frontend=$frontend, proto=$proto. Checks for an unchanged area are skipped, and merge-gate counts a skipped check as passing." | tee -a "$GITHUB_STEP_SUMMARY"
 
   go-tests:
-    needs: changes
-    if: needs.changes.outputs.go == 'true'
+    needs: select-checks
+    if: needs.select-checks.outputs.go == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     steps:
@@ -67,8 +68,8 @@ jobs:
         run: grep --color=never -e '--- PASS:' -e '--- FAIL:' test.log | sed 's/[:()]//g' | awk '{print $2,$3,$4}' | sort -t' ' -nk3 -r | awk '{sum += $3; print $1,$2,$3,sum"s"}'
 
   golangci-lint:
-    needs: changes
-    if: needs.changes.outputs.go == 'true'
+    needs: select-checks
+    if: needs.select-checks.outputs.go == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     steps:
@@ -109,8 +110,8 @@ jobs:
         run: golangci-lint run --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners
 
   frontend-tests:
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
+    needs: select-checks
+    if: needs.select-checks.outputs.frontend == 'true'
     runs-on: self-hosted
     timeout-minutes: 30
     steps:
@@ -140,8 +141,8 @@ jobs:
         run: go test -timeout 600s -v ./scripts/...
 
   lint-protos:
-    needs: changes
-    if: needs.changes.outputs.proto == 'true'
+    needs: select-checks
+    if: needs.select-checks.outputs.proto == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -158,14 +159,21 @@ jobs:
           breaking: false
           token: ${{ secrets.BUF_TOKEN }}
 
-  # The ruleset's only required check, so every job that must pass belongs in
-  # `needs`. A job skipped because `changes` found nothing for it counts as passing.
-  required:
-    needs: [changes, go-tests, golangci-lint, frontend-tests, lint-protos]
+  # The only check the main ruleset requires, so every job that must pass
+  # belongs in `needs`.
+  merge-gate:
+    needs: [select-checks, go-tests, golangci-lint, frontend-tests, lint-protos]
     # always() on the job and its step: a cancelled run must fail this check, not skip it.
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
-        run: exit 1
+      - name: Fail if any job failed or was cancelled
+        if: always()
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "- \(.key): \(.value.result)"' <<<"$NEEDS" | tee -a "$GITHUB_STEP_SUMMARY"
+          failed=$(jq -r 'to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | .key' <<<"$NEEDS")
+          for job in $failed; do echo "::error::$job did not pass"; done
+          [ -z "$failed" ] || exit 1
