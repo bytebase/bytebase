@@ -192,7 +192,7 @@ export function SignupPage() {
                     components={{
                       terms: (
                         <a
-                          href="https://www.bytebase.com/terms?source=console"
+                          href="https://www.bytebase.com/legal/terms?source=console"
                           className="text-accent"
                         />
                       ),

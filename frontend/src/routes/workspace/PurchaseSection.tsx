@@ -536,7 +536,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           <span>
                             {t("subscription.purchase.accept-terms-prefix")}{" "}
                             <a
-                              href="https://www.bytebase.com/terms"
+                              href="https://www.bytebase.com/legal/terms"
                               target="_blank"
                               rel="noopener noreferrer"
                               className="underline hover:text-main"
