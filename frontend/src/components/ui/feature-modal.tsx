@@ -144,17 +144,24 @@ export function FeatureModal({
     : t("subscription.contact-to-upgrade");
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen, details) => {
+        if (startingTrial) {
+          details.cancel();
+          return;
+        }
+        onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="max-w-2xl">
         <div>
           <div className="flex items-center justify-between border-b pb-2 mb-4">
             <DialogTitle className="text-base font-medium">{title}</DialogTitle>
-            {/* The Dialog primitive has no built-in close button; render one
-                explicitly so users can dismiss the paywall regardless of
-                which CTA path renders below. */}
             <DialogClose
               aria-label={t("common.close")}
-              className="rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
+              disabled={startingTrial}
+              className="rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               <X className="size-4" />
             </DialogClose>

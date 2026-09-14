@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  cancelDismissal: vi.fn(),
   captureFeatureGateMetric: vi.fn(),
   useSubscriptionState: vi.fn(),
   useAppStore: vi.fn(),
@@ -81,13 +82,13 @@ vi.mock("@/components/ui/dialog", () => ({
   }: {
     open: boolean;
     children: React.ReactNode;
-    onOpenChange: (v: boolean) => void;
+    onOpenChange: (v: boolean, details: { cancel: () => void }) => void;
   }) => (
     <div data-testid="dialog" data-open={String(open)}>
       {open ? children : null}
       <button
         data-testid="dialog-close"
-        onClick={() => onOpenChange(false)}
+        onClick={() => onOpenChange(false, { cancel: mocks.cancelDismissal })}
         type="button"
       />
     </div>
@@ -100,12 +101,19 @@ vi.mock("@/components/ui/dialog", () => ({
   ),
   DialogClose: ({
     children,
+    disabled,
     "aria-label": ariaLabel,
   }: {
     children: React.ReactNode;
+    disabled?: boolean;
     "aria-label"?: string;
   }) => (
-    <button data-testid="dialog-close-x" aria-label={ariaLabel} type="button">
+    <button
+      data-testid="dialog-close-x"
+      aria-label={ariaLabel}
+      disabled={disabled}
+      type="button"
+    >
       {children}
     </button>
   ),
@@ -115,11 +123,18 @@ vi.mock("@/components/ui/button", () => ({
   Button: ({
     children,
     onClick,
+    disabled,
   }: {
     children: React.ReactNode;
     onClick?: () => void;
+    disabled?: boolean;
   }) => (
-    <button data-testid="button" onClick={onClick} type="button">
+    <button
+      data-testid="button"
+      onClick={onClick}
+      disabled={disabled}
+      type="button"
+    >
       {children}
     </button>
   ),
@@ -310,6 +325,80 @@ describe("FeatureModal", () => {
     expect(onFeatureUnlocked).toHaveBeenCalledOnce();
     unmount();
   });
+
+  test.each([false, true])(
+    "blocks dismissal during trial activation (failed: %s)",
+    async (failed) => {
+      let resolveTrial!: () => void;
+      let rejectTrial!: (error: unknown) => void;
+      mocks.startTrial.mockReturnValueOnce(
+        new Promise<void>((resolve, reject) => {
+          resolveTrial = resolve;
+          rejectTrial = reject;
+        })
+      );
+      mocks.useSubscriptionState.mockReturnValue({
+        canStartTrial: true,
+        showTrial: false,
+        startTrial: mocks.startTrial,
+        trialingDays: 14,
+      });
+      const onOpenChange = vi.fn();
+      const onFeatureUnlocked = vi.fn();
+      const { container, render, unmount } = renderIntoContainer(
+        <FeatureModal
+          open
+          feature={1}
+          onOpenChange={onOpenChange}
+          onFeatureUnlocked={onFeatureUnlocked}
+        />
+      );
+      render();
+      const button = container.querySelector<HTMLButtonElement>(
+        "[data-testid='button']"
+      );
+      act(() => {
+        button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      });
+      expect(mocks.startTrial).toHaveBeenCalledOnce();
+      expect(button?.disabled).toBe(true);
+
+      const closeButton = container.querySelector<HTMLButtonElement>(
+        "[data-testid='dialog-close-x']"
+      );
+      expect(closeButton?.disabled).toBe(true);
+      act(() => {
+        container.querySelector("[data-testid='dialog-close']")?.dispatchEvent(
+          new MouseEvent("click", { bubbles: true })
+        );
+      });
+      expect(mocks.cancelDismissal).toHaveBeenCalledOnce();
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      await act(async () => {
+        if (failed) {
+          rejectTrial(new ConnectError("unavailable", Code.Unavailable));
+        } else {
+          resolveTrial();
+        }
+      });
+      if (failed) {
+        expect(onFeatureUnlocked).not.toHaveBeenCalled();
+        expect(onOpenChange).not.toHaveBeenCalled();
+        expect(closeButton?.disabled).toBe(false);
+        act(() => {
+          container.querySelector("[data-testid='dialog-close']")?.dispatchEvent(
+            new MouseEvent("click", { bubbles: true })
+          );
+        });
+        expect(mocks.cancelDismissal).toHaveBeenCalledOnce();
+      } else {
+        expect(onFeatureUnlocked).toHaveBeenCalledOnce();
+      }
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+      unmount();
+    }
+  );
 
   test.each([
     new ConnectError("temporarily unavailable", Code.Unavailable),
