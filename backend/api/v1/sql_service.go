@@ -1977,9 +1977,12 @@ func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 	case storepb.Engine_SPANNER:
 		// Spanner returns its plan as JSON and has no text form.
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}
-	case storepb.Engine_MONGODB, storepb.Engine_REDIS, storepb.Engine_DYNAMODB:
-		// These drivers refuse an explain outright, so there is no format to ask
-		// for. Saying TEXT here would send a caller down a path that fails later.
+	case storepb.Engine_MONGODB, storepb.Engine_REDIS, storepb.Engine_DYNAMODB,
+		storepb.Engine_CASSANDRA, storepb.Engine_COSMOSDB, storepb.Engine_DATABRICKS,
+		storepb.Engine_ELASTICSEARCH:
+		// No driver here implements explain: the first three refuse it, the rest
+		// ignore the flag and would run the statement itself. Saying TEXT would
+		// send a caller down a path that never produces a plan.
 		return nil
 	default:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
@@ -1991,15 +1994,20 @@ func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 // reaches them onto their own syntax, so a request that slipped through would
 // silently come back in a format the caller cannot parse.
 func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) error {
+	supported := supportedExplainFormats(engine)
+	// An engine with no explain at all is refused whatever the caller asked for,
+	// including nothing. Its driver would otherwise run the statement as an
+	// ordinary query — and an explain request skips the read-only validation
+	// above, on the understanding that the driver turns the statement into a
+	// plan.
+	if len(supported) == 0 {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support EXPLAIN", engine))
+	}
 	if format == v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
 		return nil
 	}
-	supported := supportedExplainFormats(engine)
 	if slices.Contains(supported, format) {
 		return nil
-	}
-	if len(supported) == 0 {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain", engine))
 	}
 	names := make([]string, 0, len(supported))
 	for _, f := range supported {
