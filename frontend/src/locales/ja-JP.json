@@ -728,6 +728,7 @@
     "mixed-label-values": "混合値",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "nullable": "null も可能",
+    "open-sql-editor": "SQL エディターを開く",
     "partition-tables": "パーティションテーブル",
     "partitioned": "パーティション",
     "project-instance-transfer-disabled": "プロジェクトに紐付けられたインスタンスのデータベースは、移管または割り当て解除できません。",
