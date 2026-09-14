@@ -1002,8 +1002,10 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 
 		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_granted"))
 		before = countRows(t, "public.t_granted")
-		resp, qErr = runAs(token, "WITH i AS (INSERT INTO public.t_granted (id) VALUES (42) RETURNING id) SELECT count(*) FROM i;")
+		resp, qErr = runAs(token, "WITH i AS (INSERT INTO public.t_granted (id) VALUES (42) RETURNING id) SELECT id FROM i;")
 		assertAllowed(t, resp, qErr)
+		// The editor runs a write with Exec, so the rows the CTE returns never reach the response.
+		ra.Equal([]string{"Affected Rows"}, resp.Results[0].ColumnNames)
 		ra.Equal(before+1, countRows(t, "public.t_granted"))
 		resp, qErr = runAs(token, "WITH i AS (INSERT INTO public.t_other (id) VALUES (42) RETURNING id) SELECT count(*) FROM i;")
 		assertDeniedOn(t, resp, qErr, "/tables/t_other")
