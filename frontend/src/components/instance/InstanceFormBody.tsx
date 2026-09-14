@@ -1276,12 +1276,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               <FormLabel htmlFor="name" className="flex flex-row items-center">
                 {t("instance.instance-name")}
                 <span className="ml-0.5 text-error">*</span>
-                {instance && (
-                  <div className="ml-2 flex items-center">
-                    <EngineIcon engine={instance.engine} className="size-4" />
-                    <span className="ml-1">{instance.engineVersion}</span>
-                  </div>
-                )}
               </FormLabel>
               <Input
                 id="name"
