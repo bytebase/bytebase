@@ -241,7 +241,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	if err != nil {
 		return nil, "", errors.Wrapf(err, "failed to extract changed resources")
 	}
-	totalAffectedRows, estimateWarning := calculateAffectedRows(ctx, changeSummary, explainCalculator)
+	totalAffectedRows, estimateWarning := calculateAffectedRows(ctx, instance.Metadata.GetEngine(), changeSummary, explainCalculator)
 
 	return &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 		StatementTypes:   sqlTypes,
@@ -269,8 +269,10 @@ type getAffectedRowsFromExplain func(context.Context, string) (int64, error)
 // calculateAffectedRows adds the estimated rows of the DML statements, the inserted VALUES rows,
 // and the rows of tables changed by DDL. The returned warning describes DML statements whose rows
 // could not be estimated.
-func calculateAffectedRows(ctx context.Context, changeSummary *parserbase.ChangeSummary, explainCalculator getAffectedRowsFromExplain) (int64, string) {
-	shapes := groupStatementsByShape(changeSummary.DMLStatements)
+func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSummary *parserbase.ChangeSummary, explainCalculator getAffectedRowsFromExplain) (int64, string) {
+	// The MySQL family escapes quotes in string literals with backslashes by default.
+	backslashEscapes := engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB || engine == storepb.Engine_TIDB || engine == storepb.Engine_OCEANBASE
+	shapes := groupStatementsByShape(changeSummary.DMLStatements, backslashEscapes)
 	sampled := 0
 	var failures []error
 	if explainCalculator != nil {
@@ -342,11 +344,11 @@ type statementShape struct {
 
 // groupStatementsByShape groups statements that differ only in literal values, comments, or
 // spacing, in the order each shape first appears.
-func groupStatementsByShape(statements []string) []*statementShape {
+func groupStatementsByShape(statements []string, backslashEscapes bool) []*statementShape {
 	var shapes []*statementShape
 	byKey := map[string]*statementShape{}
 	for _, statement := range statements {
-		key := shapeKey(statement)
+		key := shapeKey(statement, backslashEscapes)
 		shape, ok := byKey[key]
 		if !ok {
 			shape = &statementShape{}
@@ -359,8 +361,9 @@ func groupStatementsByShape(statements []string) []*statementShape {
 }
 
 // shapeKey replaces the string and numeric literals of a statement with ? and removes comments and
-// whitespace. Identifiers keep their text, including their case.
-func shapeKey(statement string) string {
+// whitespace. Identifiers keep their text, including their case. With backslashEscapes, a
+// backslash escapes the next character of a quoted string.
+func shapeKey(statement string, backslashEscapes bool) string {
 	var b strings.Builder
 	space := false
 	// Whitespace is kept only between words, where ? counts as a word.
@@ -376,10 +379,10 @@ func shapeKey(statement string) string {
 		c := statement[i]
 		switch {
 		case c == '\'':
-			i = quotedEnd(statement, i)
+			i = quotedEnd(statement, i, backslashEscapes)
 			write('?')
 		case c == '"' || c == '`':
-			end := quotedEnd(statement, i)
+			end := quotedEnd(statement, i, backslashEscapes && c == '"')
 			write(c)
 			b.WriteString(statement[i+1 : end])
 			i = end
@@ -429,18 +432,19 @@ func isSkippedComment(text, opener string) bool {
 }
 
 // quotedEnd returns the offset just past the quoted text that starts at start, where a doubled
-// quote continues the text.
-func quotedEnd(statement string, start int) int {
+// quote continues the text, and so does an escaped quote with backslashEscapes.
+func quotedEnd(statement string, start int, backslashEscapes bool) int {
 	quote := statement[start]
 	for i := start + 1; i < len(statement); i++ {
-		if statement[i] != quote {
-			continue
-		}
-		if i+1 < len(statement) && statement[i+1] == quote {
+		switch {
+		case backslashEscapes && statement[i] == '\\':
 			i++
-			continue
+		case statement[i] != quote:
+		case i+1 < len(statement) && statement[i+1] == quote:
+			i++
+		default:
+			return i + 1
 		}
-		return i + 1
 	}
 	return len(statement)
 }

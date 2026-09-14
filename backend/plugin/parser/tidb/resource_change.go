@@ -25,12 +25,13 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 	for _, ast := range asts {
 		tidbAST, ok := GetTiDBAST(ast)
 		if !ok {
-			// The pingcap re-parse rejects some statements omni accepts. Count those from the
+			// The pingcap re-parse rejects some statements omni accepts. Read those from the
 			// omni AST rather than failing the summary of every other statement.
 			omniAST, ok := ast.(*OmniAST)
 			if !ok {
 				return nil, errors.New("expected TiDB AST")
 			}
+			addOmniTables(database, omniAST.Node, summary.ChangedResources)
 			countOmniDML(summary, omniAST)
 			continue
 		}
@@ -57,6 +58,47 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 		}
 	}
 	return summary, nil
+}
+
+// addOmniTables records the tables an omni INSERT, UPDATE, DELETE, or BATCH statement names, as
+// getResourceChanges does for the pingcap AST.
+func addOmniTables(database string, node omniast.Node, changedResources *model.ChangedResources) {
+	var tableExprs []omniast.TableExpr
+	switch n := node.(type) {
+	case *omniast.InsertStmt:
+		if n.Table != nil {
+			tableExprs = append(tableExprs, n.Table)
+		}
+	case *omniast.UpdateStmt:
+		tableExprs = n.Tables
+	case *omniast.DeleteStmt:
+		tableExprs = append(append(tableExprs, n.Tables...), n.Using...)
+	case *omniast.BatchStmt:
+		if n.DryRun == omniast.BatchDryRunNone {
+			addOmniTables(database, n.DML, changedResources)
+		}
+		return
+	default:
+		return
+	}
+	var add func(expr omniast.TableExpr)
+	add = func(expr omniast.TableExpr) {
+		switch e := expr.(type) {
+		case *omniast.TableRef:
+			d := e.Schema
+			if d == "" {
+				d = database
+			}
+			changedResources.AddTable(d, "", &storepb.ChangedResourceTable{Name: e.Name}, false)
+		case *omniast.JoinClause:
+			add(e.Left)
+			add(e.Right)
+		default:
+		}
+	}
+	for _, expr := range tableExprs {
+		add(expr)
+	}
 }
 
 func countOmniDML(summary *base.ChangeSummary, omniAST *OmniAST) {

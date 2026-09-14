@@ -127,7 +127,7 @@ func TestCalculateAffectedRows(t *testing.T) {
 				return e.rows, e.err
 			}
 
-			rows, warning := calculateAffectedRows(context.Background(), changeSummary, explain)
+			rows, warning := calculateAffectedRows(context.Background(), storepb.Engine_POSTGRES, changeSummary, explain)
 			require.Equal(t, tc.wantRows, rows)
 			require.Equal(t, tc.wantWarning, warning)
 			require.Equal(t, tc.wantExplains, explains)
@@ -137,18 +137,28 @@ func TestCalculateAffectedRows(t *testing.T) {
 
 func TestShapeKey(t *testing.T) {
 	for _, tc := range []struct {
-		name       string
-		statements []string
-		want       string
+		name             string
+		statements       []string
+		backslashEscapes bool
+		want             string
 	}{
 		{
 			name: "literals and spacing",
 			statements: []string{
 				"UPDATE t SET v = 'it''s' WHERE id = 1;",
 				"UPDATE t SET v='x' WHERE id=20.5;",
-				"UPDATE  t\n\tSET v = 'y'  -- comment\nWHERE /* note */ id = 3;",
+				"UPDATE  t\n\tSET v = 'C:\\'  -- comment\nWHERE /* note */ id = 3;",
 			},
 			want: "UPDATE t SET v=? WHERE id=?;",
+		},
+		{
+			name: "backslash escapes",
+			statements: []string{
+				"UPDATE t SET v = 'it\\'s' WHERE id = 1;",
+				"UPDATE t SET v = 'C:\\\\' WHERE id = 2;",
+			},
+			backslashEscapes: true,
+			want:             "UPDATE t SET v=? WHERE id=?;",
 		},
 		{
 			name: "lists of literals",
@@ -166,7 +176,7 @@ func TestShapeKey(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, statement := range tc.statements {
-				require.Equal(t, tc.want, shapeKey(statement), statement)
+				require.Equal(t, tc.want, shapeKey(statement, tc.backslashEscapes), statement)
 			}
 		})
 	}
@@ -183,8 +193,10 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE --+ CARDINALITY(t 1000000)\nt SET v = 1", "UPDATE t SET v = 1"},
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
 		} {
-			require.NotEqual(t, shapeKey(pair[0]), shapeKey(pair[1]), pair[0])
+			require.NotEqual(t, shapeKey(pair[0], false), shapeKey(pair[1], false), pair[0])
 		}
+		require.NotEqual(t, shapeKey("UPDATE t SET v = 'it\\'s' WHERE id = 1", true), shapeKey("UPDATE t SET v = 'it\\'s'", true))
+		require.NotEqual(t, shapeKey(`UPDATE t SET v = "a\"b" WHERE id = 1`, true), shapeKey(`UPDATE t SET v = "a\"b"`, true))
 	})
 }
 

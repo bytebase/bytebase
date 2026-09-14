@@ -134,7 +134,7 @@ func TestExtractChangedResourcesDMLCounts(t *testing.T) {
 			dmlCount:    1,
 			insertCount: 1,
 			samples:     []string{"UPDATE t2 SET c = 1 WHERE id = 1"},
-			tables:      []string{"t2"},
+			tables:      []string{"t", "t2"},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
