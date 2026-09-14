@@ -11,6 +11,10 @@ import {
 } from "@/components/ui/select";
 import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
 import { useDatabaseCatalog } from "@/hooks/useDatabaseCatalog";
+import {
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/lib/productIntro";
 import { getColumnDefaultValuePlaceholder } from "@/modules/schema-editor/core/columnDefaultValue";
 import { useAppStore } from "@/stores/app";
 import {
@@ -43,6 +47,7 @@ import {
   instanceV1SupportsSequence,
   instanceV1SupportsTrigger,
 } from "@/utils";
+import { instanceV1MaskingForNoSQL } from "@/utils/v1/instance";
 import {
   type ObjectSectionRow,
   ObjectSectionTable,
@@ -120,6 +125,14 @@ export function DatabaseObjectExplorer({
     project,
     "bb.databaseCatalogs.update"
   );
+  useProductIntro({
+    id: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.intro.mark-sensitive-data-title"),
+    description: t(
+      "workspace-setup-guide.intro.mark-sensitive-fields-description"
+    ),
+    disabled: !canUpdateCatalog || !instanceV1MaskingForNoSQL(databaseEngine),
+  });
   const [selectedTableName, setSelectedTableName] = useState(routeTable);
 
   const selectedSchemaMetadata = databaseMetadata.schemas.find(
@@ -381,7 +394,10 @@ export function DatabaseObjectExplorer({
 
       {databaseEngine !== Engine.REDIS && (
         <>
-          <section className="flex flex-col gap-4">
+          <section
+            className="flex flex-col gap-4"
+            data-product-intro-target={MARK_SENSITIVE_DATA_PRODUCT_INTRO}
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-lg font-medium text-main">
                 {databaseEngine === Engine.MONGODB

@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import { LoaderCircle, Lock, Sparkles, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -126,8 +127,10 @@ export function FeatureModal({
       await startTrial();
       close();
       onFeatureUnlocked?.();
-    } catch {
-      setTrialRejected(true);
+    } catch (error) {
+      if (ConnectError.from(error).code === Code.FailedPrecondition) {
+        setTrialRejected(true);
+      }
     } finally {
       setStartingTrial(false);
     }

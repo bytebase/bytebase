@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import { act, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -310,8 +311,53 @@ describe("FeatureModal", () => {
     unmount();
   });
 
+  test.each([
+    new ConnectError("temporarily unavailable", Code.Unavailable),
+    new ConnectError("server failure", Code.Internal),
+    new Error("network failure"),
+  ])("keeps trial activation retryable after %s", async (error) => {
+    mocks.startTrial.mockRejectedValueOnce(error);
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      showTrial: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const onOpenChange = vi.fn();
+    const onFeatureUnlocked = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureModal
+        open
+        feature={1}
+        onOpenChange={onOpenChange}
+        onFeatureUnlocked={onFeatureUnlocked}
+      />
+    );
+    render();
+    const button = container.querySelector<HTMLButtonElement>(
+      "[data-testid='button']"
+    );
+    expect(button).not.toBeNull();
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(button?.textContent).toBe("subscription.plan.try");
+    expect(button?.disabled).toBe(false);
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(onFeatureUnlocked).not.toHaveBeenCalled();
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mocks.startTrial).toHaveBeenCalledTimes(2);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onFeatureUnlocked).toHaveBeenCalledOnce();
+    unmount();
+  });
+
   test("falls back to plan details when trial activation is rejected", async () => {
-    mocks.startTrial.mockRejectedValue(new Error("not eligible"));
+    mocks.startTrial.mockRejectedValue(
+      new ConnectError("not eligible", Code.FailedPrecondition)
+    );
     mocks.useSubscriptionState.mockReturnValue({
       canStartTrial: true,
       showTrial: false,

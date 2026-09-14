@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -210,6 +211,64 @@ describe("FeatureAttention", () => {
     });
 
     expect(mocks.startTrial).toHaveBeenCalledOnce();
+    unmount();
+  });
+
+  test.each([
+    new ConnectError("temporarily unavailable", Code.Unavailable),
+    new ConnectError("server failure", Code.Internal),
+    new Error("network failure"),
+  ])("keeps trial activation retryable after %s", async (error) => {
+    mocks.startTrial.mockRejectedValueOnce(error);
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      isTrialing: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
+    );
+    render();
+    const button = container.querySelector("button");
+    expect(button).not.toBeNull();
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(button?.textContent).toBe("subscription.plan.try");
+    expect(button?.disabled).toBe(false);
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mocks.startTrial).toHaveBeenCalledTimes(2);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("opens plan details after a definitive trial rejection", async () => {
+    mocks.startTrial.mockRejectedValueOnce(
+      new ConnectError("not eligible", Code.FailedPrecondition)
+    );
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      isTrialing: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
+    );
+    render();
+    const button = container.querySelector("button");
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(button?.textContent).toBe("common.learn-more");
+    act(() => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mocks.startTrial).toHaveBeenCalledOnce();
+    expect(mocks.routerPush).toHaveBeenCalledWith("/subscription");
     unmount();
   });
 

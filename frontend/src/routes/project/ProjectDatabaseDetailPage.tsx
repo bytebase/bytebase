@@ -10,6 +10,10 @@ import { SampleExpirationAlert } from "@/components/SampleExpirationAlert";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/lib/productIntro";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -17,7 +21,12 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { autoDatabaseRoute, getDatabaseProject } from "@/utils";
+import {
+  autoDatabaseRoute,
+  getDatabaseEngine,
+  getDatabaseProject,
+  instanceV1MaskingForNoSQL,
+} from "@/utils";
 import { isProjectInstanceDatabase } from "@/utils/v1/database";
 import { DatabaseDetailActions } from "./database-detail/DatabaseDetailActions";
 import { DatabaseDetailHeader } from "./database-detail/DatabaseDetailHeader";
@@ -91,8 +100,18 @@ export function ProjectDatabaseDetailPage({
   );
 
   useEffect(() => {
-    setSelectedTab(parseProjectDatabaseDetailTabHash(hash));
-  }, [hash]);
+    const tab = parseProjectDatabaseDetailTabHash(hash);
+    if (
+      detail.ready &&
+      tab === PROJECT_DATABASE_DETAIL_TAB_CATALOG &&
+      query?.[PRODUCT_INTRO_QUERY_KEY] === MARK_SENSITIVE_DATA_PRODUCT_INTRO &&
+      instanceV1MaskingForNoSQL(getDatabaseEngine(detail.database))
+    ) {
+      handleTabChange(PROJECT_DATABASE_DETAIL_TAB_OVERVIEW);
+      return;
+    }
+    setSelectedTab(tab);
+  }, [detail.database, detail.ready, handleTabChange, hash, query]);
 
   const handleSetEnvironment = useCallback(() => {
     handleTabChange(PROJECT_DATABASE_DETAIL_TAB_SETTING);

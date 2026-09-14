@@ -11,7 +11,10 @@ import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
 import { catalogResourceName } from "@/stores/app/databaseCatalog";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import type {
+  DatabaseCatalog,
+  ObjectSchema,
+} from "@/types/proto-es/v1/database_catalog_service_pb";
 import { convertMemberToFullname } from "@/utils/v1/iam";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import { GUIDE_PROGRESS_KEYS } from "./progress";
@@ -41,14 +44,32 @@ const INITIAL_FACTS: GuideFacts = {
   databaseName: "",
 };
 
+const objectSchemaHasSemanticType = (
+  schema: ObjectSchema | undefined
+): boolean => {
+  if (!schema) return false;
+  if (schema.semanticType) return true;
+  if (schema.kind.case === "structKind") {
+    return Object.values(schema.kind.value.properties).some(
+      objectSchemaHasSemanticType
+    );
+  }
+  if (schema.kind.case === "arrayKind") {
+    return objectSchemaHasSemanticType(schema.kind.value.kind);
+  }
+  return false;
+};
+
 export const catalogHasMarkedSensitiveData = (
   catalog: Pick<DatabaseCatalog, "schemas"> | undefined
 ) =>
   catalog?.schemas.some((schema) =>
     schema.tables.some(
       (table) =>
-        table.kind?.case === "columns" &&
-        table.kind.value.columns.some((column) => !!column.semanticType)
+        (table.kind?.case === "columns" &&
+          table.kind.value.columns.some((column) => !!column.semanticType)) ||
+        (table.kind?.case === "objectSchema" &&
+          objectSchemaHasSemanticType(table.kind.value))
     )
   ) ?? false;
 

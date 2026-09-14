@@ -1,3 +1,4 @@
+import { create } from "@bufbuild/protobuf";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
@@ -7,6 +8,7 @@ import {
 } from "@/app/router/handles";
 import { planEvents } from "@/lib/plan/events";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import { DatabaseCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { GUIDE_PROGRESS_KEYS } from "./progress";
 import type {
   GuideRoute,
@@ -184,6 +186,72 @@ describe("useGuideContext", () => {
       )
     ).toBe(false);
   });
+
+  test.each([
+    ["root", { semanticType: "bb.default" }, true],
+    [
+      "nested object field",
+      {
+        kind: {
+          case: "structKind",
+          value: {
+            properties: {
+              contact: {
+                kind: {
+                  case: "structKind",
+                  value: {
+                    properties: {
+                      email: { semanticType: "bb.default" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      true,
+    ],
+    [
+      "array element",
+      {
+        kind: {
+          case: "arrayKind",
+          value: {
+            kind: {
+              kind: {
+                case: "structKind",
+                value: {
+                  properties: {
+                    email: { semanticType: "bb.default-partial" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      true,
+    ],
+    [
+      "unmarked field",
+      {
+        kind: { case: "structKind", value: { properties: { email: {} } } },
+      },
+      false,
+    ],
+    ["empty array schema", { kind: { case: "arrayKind", value: {} } }, false],
+  ] as const)(
+    "recognizes sensitive data in %s",
+    (_name, objectSchema, expected) => {
+      const catalog = create(DatabaseCatalogSchema, {
+        schemas: [
+          { tables: [{ kind: { case: "objectSchema", value: objectSchema } }] },
+        ],
+      });
+      expect(catalogHasMarkedSensitiveData(catalog)).toBe(expected);
+    },
+  );
 
   test("loads existing sensitive-data completion for its target database", async () => {
     mockDiscoveredDatabase();
