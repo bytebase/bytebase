@@ -1,16 +1,20 @@
 import { describe, expect, test } from "vitest";
-import type { PlanNode, PlanTree } from "./plan-model";
+import {
+  PLAN_FULL_TABLE_SCAN,
+  PLAN_TOO_DEEP_MESSAGE,
+  type PlanNode,
+  type PlanTree,
+} from "./plan-model";
 import {
   POSTGRES_PLAN_EMPTY_MESSAGE,
   POSTGRES_PLAN_INVALID_JSON_MESSAGE,
   POSTGRES_PLAN_NO_PLAN_MESSAGE,
-  POSTGRES_PLAN_TOO_DEEP_MESSAGE,
   parsePostgresPlan,
 } from "./postgres-plan";
-import bitmapIndexScan from "./test-data/bitmap-index-scan.json";
-import cteNestedLoopInitplan from "./test-data/cte-nested-loop-initplan.json";
-import hashJoinAggregateSort from "./test-data/hash-join-aggregate-sort.json";
-import seqScanFilter from "./test-data/seq-scan-filter.json";
+import bitmapIndexScan from "./test-data/postgres/bitmap-index-scan.json";
+import cteNestedLoopInitplan from "./test-data/postgres/cte-nested-loop-initplan.json";
+import hashJoinAggregateSort from "./test-data/postgres/hash-join-aggregate-sort.json";
+import seqScanFilter from "./test-data/postgres/seq-scan-filter.json";
 
 /** A chain of `depth` nodes, the shape that drives every recursive walk. */
 const nestedPlan = (depth: number): string => {
@@ -239,7 +243,42 @@ describe("parsePostgresPlan", () => {
     // later, in a render with no error boundary over it.
     expect(parsePostgresPlan(nestedPlan(2000))).toEqual({
       ok: false,
-      message: POSTGRES_PLAN_TOO_DEEP_MESSAGE,
+      message: PLAN_TOO_DEEP_MESSAGE,
     });
+  });
+
+  test("warns on a sequential scan of a table large enough to matter", () => {
+    const { nodes } = parseFixture(hashJoinAggregateSort);
+    const flagged = nodes.filter((node) => node.warnings.length > 0);
+
+    // `orders` at 819 is flagged; `customers` at 78 is a tiny table.
+    expect(flagged.map((node) => node.subject)).toEqual(["orders"]);
+    expect(flagged[0].warnings).toEqual([PLAN_FULL_TABLE_SCAN]);
+  });
+
+  test("leaves a scan of a tiny table alone", () => {
+    const { root } = parseFixture(seqScanFilter);
+
+    expect(root.totalCost).toBe(90.5);
+    expect(root.warnings).toEqual([]);
+  });
+
+  test("flags the parallel sequential scan and no other scan type", () => {
+    const warningsOf = (raw: Record<string, unknown>) => {
+      const result = parsePostgresPlan(
+        JSON.stringify([{ Plan: { "Total Cost": 5000, ...raw } }])
+      );
+      if (!result.ok) throw new Error(result.message);
+      return result.tree.root.warnings;
+    };
+
+    expect(warningsOf({ "Node Type": "Seq Scan" })).toEqual([
+      PLAN_FULL_TABLE_SCAN,
+    ]);
+    expect(
+      warningsOf({ "Node Type": "Seq Scan", "Parallel Aware": true })
+    ).toEqual([PLAN_FULL_TABLE_SCAN]);
+    expect(warningsOf({ "Node Type": "Index Scan" })).toEqual([]);
+    expect(warningsOf({ "Node Type": "Bitmap Heap Scan" })).toEqual([]);
   });
 });

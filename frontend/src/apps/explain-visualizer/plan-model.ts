@@ -4,14 +4,22 @@
  * Engine adapters map their own EXPLAIN output onto this model and the viewer
  * components read nothing else, so adding an engine means adding a parser.
  *
- * Bytebase runs EXPLAIN without ANALYZE, so every number here is a planner
+ * Bytebase plans without executing, so every number here is an optimizer
  * estimate: there is no actual timing, loop, buffer, or worker data to model.
+ * Engines differ in which estimates they report at all, so each one is
+ * optional and a surface shows only what the plan carries.
  */
 
 /** One free-form attribute the engine reported for a node. */
 export interface PlanProperty {
   readonly label: string;
   readonly value: string;
+}
+
+/** Something about a node worth a reader's attention, and what it means. */
+export interface PlanWarning {
+  readonly title: string;
+  readonly detail: string;
 }
 
 export interface PlanNode {
@@ -23,20 +31,34 @@ export interface PlanNode {
   readonly subject?: string;
   /** How the parent consumes this node, such as "Inner" or "InitPlan 1". */
   readonly relationship?: string;
-  readonly startupCost: number;
-  readonly totalCost: number;
-  /** Total cost minus the children's total cost, clamped at zero. */
-  readonly selfCost: number;
-  readonly rows: number;
-  readonly width: number;
+  /** Cost before the node returns its first row, including its subtree. */
+  readonly startupCost?: number;
+  /** Cost of returning every row, including the node's subtree. */
+  readonly totalCost?: number;
+  /** What the node adds on top of its children; see `planSelfCost`. */
+  readonly selfCost?: number;
+  /** Rows the node is estimated to return each time it runs. */
+  readonly rows?: number;
+  /** Estimated size of one returned row, in bytes. */
+  readonly width?: number;
   readonly properties: readonly PlanProperty[];
+  readonly warnings: readonly PlanWarning[];
   readonly children: readonly PlanNode[];
+}
+
+/** Which estimates appear anywhere in a plan. */
+export interface PlanEstimates {
+  readonly cost: boolean;
+  readonly startupCost: boolean;
+  readonly rows: boolean;
+  readonly width: boolean;
 }
 
 export interface PlanTree {
   readonly root: PlanNode;
   /** Every node in depth-first order, root first. */
   readonly nodes: readonly PlanNode[];
+  readonly estimates: PlanEstimates;
   readonly maxSelfCost: number;
   readonly maxRows: number;
   /**
@@ -57,6 +79,71 @@ export type PlanParseResult =
   | { readonly ok: true; readonly tree: PlanTree }
   | { readonly ok: false; readonly message: string };
 
+/**
+ * Deepest plan a parser will build.
+ *
+ * The parsers and the walks over their result (`flattenPlan`, `planRows`,
+ * `planPath`) recurse once per level, so a pathological nesting depth
+ * overflows the stack. Without a cap that happens during render, where there
+ * is no error boundary to catch it and React unmounts the page instead of
+ * showing the parse error. The cap is an order of magnitude below the depth
+ * any of those walks fails at, and far above any plan an optimizer produces.
+ */
+export const PLAN_MAX_DEPTH = 500;
+
+export const PLAN_TOO_DEEP_MESSAGE = `The query plan nests more than ${PLAN_MAX_DEPTH} levels deep, which is deeper than this visualizer can draw.`;
+
+/**
+ * Appends a property, folding a value under a label already present into that
+ * property on a line of its own, since an engine can report one label twice.
+ */
+export function addPlanProperty(
+  properties: PlanProperty[],
+  label: string,
+  value: string
+) {
+  if (!value) return;
+  const index = properties.findIndex((property) => property.label === label);
+  if (index < 0) {
+    properties.push({ label, value });
+  } else if (!properties[index].value.split("\n").includes(value)) {
+    properties[index] = {
+      label,
+      value: `${properties[index].value}\n${value}`,
+    };
+  }
+}
+
+/**
+ * A node's total cost minus its children's, clamped at zero, or undefined when
+ * the node has no total cost. `PlanTree.costBasis` says when the clamp bites.
+ */
+export function planSelfCost(
+  totalCost: number | undefined,
+  children: readonly PlanNode[]
+): number | undefined {
+  if (totalCost === undefined) return undefined;
+  const childCost = children.reduce(
+    (sum, child) => sum + (child.totalCost ?? 0),
+    0
+  );
+  return Math.max(0, totalCost - childCost);
+}
+
+/** Warning for a read of a whole table, attached by each engine's parser. */
+export const PLAN_FULL_TABLE_SCAN: PlanWarning = {
+  title: "Full table scan",
+  detail:
+    "Reads every row of this table. If the query needs only a few of them, an index on the filtered columns could avoid the full read.",
+};
+
+/** Warning for a read of a whole index, attached by each engine's parser. */
+export const PLAN_FULL_INDEX_SCAN: PlanWarning = {
+  title: "Full index scan",
+  detail:
+    "Reads every entry of this index. If the query needs only a few of them, a condition on the index's leading columns could avoid the full read.",
+};
+
 /** Which estimate, if any, shades the diagram's node cards. */
 export type PlanHighlightMode = "off" | "cost" | "rows";
 
@@ -75,17 +162,30 @@ export function buildPlanTree(root: PlanNode): PlanTree {
   let maxSelfCost = 0;
   let maxRows = 0;
   let selfCostTotal = 0;
+  const estimates = {
+    cost: false,
+    startupCost: false,
+    rows: false,
+    width: false,
+  };
   for (const node of nodes) {
-    if (node.selfCost > maxSelfCost) maxSelfCost = node.selfCost;
-    if (node.rows > maxRows) maxRows = node.rows;
-    selfCostTotal += node.selfCost;
+    const selfCost = node.selfCost ?? 0;
+    const rows = node.rows ?? 0;
+    if (selfCost > maxSelfCost) maxSelfCost = selfCost;
+    if (rows > maxRows) maxRows = rows;
+    selfCostTotal += selfCost;
+    estimates.cost ||= node.totalCost !== undefined;
+    estimates.startupCost ||= node.startupCost !== undefined;
+    estimates.rows ||= node.rows !== undefined;
+    estimates.width ||= node.width !== undefined;
   }
   return {
     root,
     nodes,
+    estimates,
     maxSelfCost,
     maxRows,
-    costBasis: Math.max(root.totalCost, selfCostTotal),
+    costBasis: Math.max(root.totalCost ?? 0, selfCostTotal),
   };
 }
 
@@ -224,16 +324,27 @@ export function planNodeIdFromFragment(
 const costFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 2,
 });
+// SQL Server's cost units are small enough that a whole plan often costs less
+// than one, where two decimal places would print most operators as zero.
+const fractionalCostFormat = new Intl.NumberFormat("en-US", {
+  maximumSignificantDigits: 3,
+});
 const countFormat = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-export function formatPlanCost(value: number): string {
-  return costFormat.format(value);
+/** What a surface prints for an estimate the engine did not report. */
+const PLAN_NO_ESTIMATE = "—";
+
+export function formatPlanCost(value: number | undefined): string {
+  if (value === undefined) return PLAN_NO_ESTIMATE;
+  return Math.abs(value) < 1
+    ? fractionalCostFormat.format(value)
+    : costFormat.format(value);
 }
 
-export function formatPlanCount(value: number): string {
-  return countFormat.format(value);
+export function formatPlanCount(value: number | undefined): string {
+  return value === undefined ? PLAN_NO_ESTIMATE : countFormat.format(value);
 }
 
 const shareFormat = new Intl.NumberFormat("en-US", {
@@ -256,7 +367,7 @@ export function formatPlanShare(value: number): string {
  */
 export function planSelfCostShare(node: PlanNode, tree: PlanTree): number {
   if (tree.costBasis <= 0) return 0;
-  return Math.min(1, Math.max(0, node.selfCost / tree.costBasis));
+  return Math.min(1, Math.max(0, (node.selfCost ?? 0) / tree.costBasis));
 }
 
 /** Narrowest and widest stroke a diagram edge is drawn with, in pixels. */
@@ -270,41 +381,18 @@ export const PLAN_EDGE_MAX_WIDTH = 6;
  * scale is logarithmic; a linear one would draw everything but the largest
  * edge as the same hairline.
  */
-export function planEdgeWidth(rows: number, tree: PlanTree): number {
-  if (tree.maxRows <= 0 || rows <= 0) return PLAN_EDGE_MIN_WIDTH;
+export function planEdgeWidth(
+  rows: number | undefined,
+  tree: PlanTree
+): number {
+  if (tree.maxRows <= 0 || rows === undefined || rows <= 0) {
+    return PLAN_EDGE_MIN_WIDTH;
+  }
   const ratio =
     Math.log1p(Math.min(rows, tree.maxRows)) / Math.log1p(tree.maxRows);
   const width =
     PLAN_EDGE_MIN_WIDTH + ratio * (PLAN_EDGE_MAX_WIDTH - PLAN_EDGE_MIN_WIDTH);
   return Math.round(width * 100) / 100;
-}
-
-/**
- * Node types that read a whole relation, spelled as `toNodeType` names them.
- */
-const FULL_RELATION_SCAN_TYPES = new Set(["Seq Scan", "Parallel Seq Scan"]);
-
-/**
- * Total cost below which reading a whole relation is not worth flagging.
- *
- * Under PostgreSQL's default settings a sequential scan costs `seq_page_cost`
- * (1.0) per page plus `cpu_tuple_cost` (0.01) per row, so 100 cost units is
- * roughly a 50-page, 5,000-row relation — about 400 KB. Reading all of that is
- * a handful of page fetches that no index lookup would beat, and flagging it
- * would bury the scans a reader can act on.
- */
-export const PLAN_FULL_SCAN_COST_THRESHOLD = 100;
-
-/** What a flagged full scan means, shared by every surface that reports one. */
-export const PLAN_FULL_SCAN_HINT =
-  "Reads every row of this relation. If the query needs only a few of them, an index on the filtered columns could avoid the full read.";
-
-/** Whether the node reads a whole relation large enough to be worth saying so. */
-export function isFlaggedFullScan(node: PlanNode): boolean {
-  return (
-    FULL_RELATION_SCAN_TYPES.has(node.nodeType) &&
-    node.totalCost >= PLAN_FULL_SCAN_COST_THRESHOLD
-  );
 }
 
 export interface PlanTimelineRow extends PlanRow {
@@ -326,7 +414,7 @@ export interface PlanTimelineRow extends PlanRow {
  * the other.
  */
 export function planTimeline(tree: PlanTree): PlanTimelineRow[] {
-  const fraction = (value: number) =>
+  const fraction = (value = 0) =>
     tree.costBasis <= 0 ? 0 : Math.min(1, Math.max(0, value / tree.costBasis));
   return planRows(tree.root).map((row) => {
     const start = fraction(row.node.startupCost);
@@ -351,8 +439,8 @@ export function planCostliestNodes(
   limit: number = PLAN_COSTLIEST_LIMIT
 ): PlanNode[] {
   return tree.nodes
-    .filter((node) => node.selfCost > 0)
-    .sort((a, b) => b.selfCost - a.selfCost)
+    .filter((node) => (node.selfCost ?? 0) > 0)
+    .sort((a, b) => (b.selfCost ?? 0) - (a.selfCost ?? 0))
     .slice(0, limit);
 }
 
@@ -369,7 +457,7 @@ export function planCostByOperation(tree: PlanTree): PlanOperationCost[] {
   for (const node of tree.nodes) {
     const entry = totals.get(node.nodeType) ?? { count: 0, selfCost: 0 };
     entry.count += 1;
-    entry.selfCost += node.selfCost;
+    entry.selfCost += node.selfCost ?? 0;
     totals.set(node.nodeType, entry);
   }
   return [...totals]
@@ -398,7 +486,7 @@ export function planHighlightIntensity(
   mode: PlanHighlightMode
 ): number {
   if (mode === "off") return 0;
-  const value = mode === "cost" ? node.selfCost : node.rows;
+  const value = (mode === "cost" ? node.selfCost : node.rows) ?? 0;
   const max = mode === "cost" ? tree.maxSelfCost : tree.maxRows;
   if (max <= 0 || value <= 0) return 0;
   return Math.sqrt(Math.min(value, max) / max);

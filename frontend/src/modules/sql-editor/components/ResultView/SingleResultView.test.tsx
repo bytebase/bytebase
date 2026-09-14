@@ -208,7 +208,8 @@ vi.mock("@/stores/app", () => ({
   },
 }));
 
-vi.mock("@/utils/explainToken", () => ({
+vi.mock("@/utils/explainToken", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/explainToken")>()),
   createExplainToken,
 }));
 
@@ -787,23 +788,92 @@ describe("SingleResultView explain visualizer", () => {
     openSpy.mockRestore();
   });
 
-  test("Spanner reuses the plan already in the result", async () => {
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+  test.each([
+    [Engine.MSSQL, QueryOption_ExplainFormat.XML, "<ShowPlanXML/>"],
+    // Spanner's grid already holds JSON, and it takes the same path anyway.
+    [Engine.SPANNER, QueryOption_ExplainFormat.JSON, '{"planNodes":[]}'],
+  ])(
+    "asks engine %s for the plan in the format its visualizer reads",
+    async (engine, explainFormat, plan) => {
+      const openSpy = vi
+        .spyOn(window, "open")
+        .mockReturnValue({} as Window);
+      runQuery.mockImplementation(
+        async (
+          _database: unknown,
+          context: { resultSet?: { results: unknown[] } }
+        ) => {
+          context.resultSet = {
+            results: [
+              create(QueryResultSchema, {
+                statement: "SELECT 1",
+                rows: [
+                  create(QueryRowSchema, {
+                    values: [
+                      create(RowValueSchema, {
+                        kind: { case: "stringValue", value: plan },
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          };
+        }
+      );
 
+      render(
+        <SingleResultView
+          disallowCopyingData={false}
+          params={{ ...params, engine, explain: true }}
+          database={databaseForEngine(engine)}
+          result={create(QueryResultSchema, {
+            columnNames: ["QUERY PLAN"],
+            statement: "SELECT 1",
+            rows: [
+              create(QueryRowSchema, {
+                values: [
+                  create(RowValueSchema, {
+                    kind: { case: "stringValue", value: "a readable plan" },
+                  }),
+                ],
+              }),
+            ],
+          })}
+          showExport={false}
+        />
+      );
+
+      fireEvent.click(screen.getByText("visualize-explain"));
+
+      await waitFor(() => expect(openSpy).toHaveBeenCalled());
+      expect(
+        runQuery.mock.calls[0][1].params.queryOption?.explainFormat
+      ).toBe(explainFormat);
+      expect(createExplainToken).toHaveBeenCalledWith({
+        statement: "SELECT 1",
+        explain: plan,
+        engine,
+      });
+      expect(notify).not.toHaveBeenCalled();
+      openSpy.mockRestore();
+    }
+  );
+
+  test("offers no visualizer for an engine it cannot draw", () => {
     render(
       <SingleResultView
         disallowCopyingData={false}
-        params={{ ...params, engine: Engine.SPANNER, explain: true }}
-        database={databaseForEngine(Engine.SPANNER)}
+        params={{ ...params, engine: Engine.MYSQL, explain: true }}
+        database={databaseForEngine(Engine.MYSQL)}
         result={create(QueryResultSchema, {
-          columnNames: ["QUERY PLAN"],
-          columnTypeNames: ["JSON"],
+          columnNames: ["EXPLAIN"],
           statement: "SELECT 1",
           rows: [
             create(QueryRowSchema, {
               values: [
                 create(RowValueSchema, {
-                  kind: { case: "stringValue", value: '{"planNodes":[]}' },
+                  kind: { case: "stringValue", value: "-> Table scan on t" },
                 }),
               ],
             }),
@@ -813,10 +883,6 @@ describe("SingleResultView explain visualizer", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("visualize-explain"));
-
-    await waitFor(() => expect(openSpy).toHaveBeenCalled());
-    expect(runQuery).not.toHaveBeenCalled();
-    openSpy.mockRestore();
+    expect(screen.queryByText("visualize-explain")).toBeNull();
   });
 });

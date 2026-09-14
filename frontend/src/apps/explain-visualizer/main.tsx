@@ -1,5 +1,4 @@
 import "@/assets/css/tailwind.css";
-import "html-query-plan/css/qp.css";
 import "./explain-visualizer.css";
 import { createRoot } from "react-dom/client";
 import { ExplainVisualizerApp } from "./ExplainVisualizerApp";

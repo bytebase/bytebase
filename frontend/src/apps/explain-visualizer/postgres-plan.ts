@@ -1,8 +1,13 @@
 import {
   buildPlanTree,
+  PLAN_FULL_TABLE_SCAN,
+  PLAN_MAX_DEPTH,
+  PLAN_TOO_DEEP_MESSAGE,
   type PlanNode,
   type PlanParseResult,
   type PlanProperty,
+  type PlanWarning,
+  planSelfCost,
 } from "./plan-model";
 
 /**
@@ -32,28 +37,36 @@ const PROMOTED_KEYS = new Set([
   "Subplan Name",
 ]);
 
-/**
- * Deepest plan this file will build.
- *
- * Both this parser and the model's walks (`flattenPlan`, `planRows`,
- * `planPath`) recurse once per level, so a pathological nesting depth
- * overflows the stack. Without a cap that happens during render, where there
- * is no error boundary to catch it and React unmounts the page instead of
- * showing the parse error. The cap is an order of magnitude below the depth
- * any of those walks fails at, and far above any plan PostgreSQL produces.
- */
-const MAX_PLAN_DEPTH = 500;
-
 export const POSTGRES_PLAN_EMPTY_MESSAGE =
   "PostgreSQL returned no query plan for this statement.";
 export const POSTGRES_PLAN_INVALID_JSON_MESSAGE =
   "The query plan is not valid JSON. EXPLAIN (FORMAT JSON) output is expected.";
 export const POSTGRES_PLAN_NO_PLAN_MESSAGE =
   'The query plan JSON does not contain a "Plan" object.';
-export const POSTGRES_PLAN_TOO_DEEP_MESSAGE = `The query plan nests more than ${MAX_PLAN_DEPTH} levels deep, which is deeper than this visualizer can draw.`;
 
 /** Raised by `toPlanNode` and caught by `parsePostgresPlan` alone. */
-const PLAN_TOO_DEEP = new Error(POSTGRES_PLAN_TOO_DEEP_MESSAGE);
+const PLAN_TOO_DEEP = new Error(PLAN_TOO_DEEP_MESSAGE);
+
+/** Node types that read a whole table, spelled as `toNodeType` names them. */
+const FULL_TABLE_SCAN_TYPES = new Set(["Seq Scan", "Parallel Seq Scan"]);
+
+/**
+ * Total cost below which reading a whole table is not worth flagging.
+ *
+ * Under PostgreSQL's default settings a sequential scan costs `seq_page_cost`
+ * (1.0) per page plus `cpu_tuple_cost` (0.01) per row, so 100 cost units is
+ * roughly a 50-page, 5,000-row table — about 400 KB. Reading all of that is a
+ * handful of page fetches that no index lookup would beat, and flagging it
+ * would bury the scans a reader can act on.
+ */
+const FULL_SCAN_COST_THRESHOLD = 100;
+
+function toWarnings(nodeType: string, totalCost: number): PlanWarning[] {
+  return FULL_TABLE_SCAN_TYPES.has(nodeType) &&
+    totalCost >= FULL_SCAN_COST_THRESHOLD
+    ? [PLAN_FULL_TABLE_SCAN]
+    : [];
+}
 
 type JsonRecord = Record<string, unknown>;
 
@@ -194,21 +207,22 @@ function toChildren(raw: JsonRecord, id: string, depth: number): PlanNode[] {
 }
 
 function toPlanNode(raw: JsonRecord, id: string, depth: number): PlanNode {
-  if (depth > MAX_PLAN_DEPTH) throw PLAN_TOO_DEEP;
+  if (depth > PLAN_MAX_DEPTH) throw PLAN_TOO_DEEP;
   const children = toChildren(raw, id, depth);
+  const nodeType = toNodeType(raw);
   const totalCost = toNumber(raw["Total Cost"]);
-  const childCost = children.reduce((sum, child) => sum + child.totalCost, 0);
   return {
     id,
-    nodeType: toNodeType(raw),
+    nodeType,
     subject: toSubject(raw),
     relationship: toRelationship(raw),
     startupCost: toNumber(raw["Startup Cost"]),
     totalCost,
-    selfCost: Math.max(0, totalCost - childCost),
+    selfCost: planSelfCost(totalCost, children),
     rows: toNumber(raw["Plan Rows"]),
     width: toNumber(raw["Plan Width"]),
     properties: toProperties(raw),
+    warnings: toWarnings(nodeType, totalCost),
     children,
   };
 }
@@ -259,6 +273,6 @@ export function parsePostgresPlan(source: string): PlanParseResult {
     return { ok: true, tree: buildPlanTree(toPlanNode(entry["Plan"], "0", 0)) };
   } catch (error) {
     if (error !== PLAN_TOO_DEEP) throw error;
-    return { ok: false, message: POSTGRES_PLAN_TOO_DEEP_MESSAGE };
+    return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
   }
 }

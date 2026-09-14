@@ -1,15 +1,16 @@
 import { describe, expect, test } from "vitest";
 import {
+  addPlanProperty,
   buildPlanTree,
   findPlanNode,
   flattenPlan,
   formatPlanCost,
   formatPlanCount,
   formatPlanShare,
-  isFlaggedFullScan,
   PLAN_EDGE_MAX_WIDTH,
   PLAN_EDGE_MIN_WIDTH,
   type PlanNode,
+  type PlanProperty,
   type PlanTree,
   planCollapsedAncestor,
   planCostByOperation,
@@ -21,13 +22,14 @@ import {
   planNodeIdFromFragment,
   planRevealNode,
   planRows,
+  planSelfCost,
   planSelfCostShare,
   planTimeline,
 } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
-import cteNestedLoopInitplan from "./test-data/cte-nested-loop-initplan.json";
-import hashJoinAggregateSort from "./test-data/hash-join-aggregate-sort.json";
-import seqScanFilter from "./test-data/seq-scan-filter.json";
+import cteNestedLoopInitplan from "./test-data/postgres/cte-nested-loop-initplan.json";
+import hashJoinAggregateSort from "./test-data/postgres/hash-join-aggregate-sort.json";
+import seqScanFilter from "./test-data/postgres/seq-scan-filter.json";
 
 const parseFixture = (fixture: unknown): PlanTree => {
   const result = parsePostgresPlan(JSON.stringify(fixture));
@@ -48,8 +50,18 @@ const node = (
   rows: 0,
   width: 0,
   properties: [],
+  warnings: [],
   children,
   ...overrides,
+});
+
+/** A node the way an engine that reports no estimates describes one. */
+const bareNode = (id: string, children: PlanNode[] = []): PlanNode => ({
+  id,
+  nodeType: "Scan",
+  properties: [],
+  warnings: [],
+  children,
 });
 
 const sampleTree = () =>
@@ -80,6 +92,94 @@ describe("buildPlanTree", () => {
     expect(tree.nodes).toHaveLength(4);
     expect(tree.maxSelfCost).toBe(40);
     expect(tree.maxRows).toBe(900);
+  });
+
+  test("says which estimates the plan carries", () => {
+    expect(sampleTree().estimates).toEqual({
+      cost: true,
+      startupCost: true,
+      rows: true,
+      width: true,
+    });
+    expect(buildPlanTree(bareNode("0", [bareNode("0.0")])).estimates).toEqual({
+      cost: false,
+      startupCost: false,
+      rows: false,
+      width: false,
+    });
+    // One node reporting an estimate is enough for the plan to carry it.
+    const mixed = buildPlanTree(
+      bareNode("0", [{ ...bareNode("0.0"), rows: 5 }])
+    );
+    expect(mixed.estimates).toEqual({
+      cost: false,
+      startupCost: false,
+      rows: true,
+      width: false,
+    });
+    expect(mixed.maxRows).toBe(5);
+  });
+
+  test("ranks and bases nothing on a plan without estimates", () => {
+    const tree = buildPlanTree(bareNode("0", [bareNode("0.0")]));
+
+    expect(tree.maxSelfCost).toBe(0);
+    expect(tree.maxRows).toBe(0);
+    expect(tree.costBasis).toBe(0);
+    for (const entry of tree.nodes) {
+      expect(planSelfCostShare(entry, tree)).toBe(0);
+      expect(planHighlightIntensity(entry, tree, "cost")).toBe(0);
+      expect(planHighlightIntensity(entry, tree, "rows")).toBe(0);
+    }
+    expect(planCostliestNodes(tree)).toEqual([]);
+  });
+});
+
+describe("addPlanProperty", () => {
+  test("appends a new label and folds a repeated one onto its own line", () => {
+    const properties: PlanProperty[] = [];
+    addPlanProperty(properties, "Agg", "COUNT() AS $v1");
+    addPlanProperty(properties, "Condition", "($a = $b)");
+    addPlanProperty(properties, "Agg", "ANY() AS $v2");
+
+    expect(properties).toEqual([
+      { label: "Agg", value: "COUNT() AS $v1\nANY() AS $v2" },
+      { label: "Condition", value: "($a = $b)" },
+    ]);
+  });
+
+  test("skips an empty value and a value the label already holds", () => {
+    const properties: PlanProperty[] = [];
+    addPlanProperty(properties, "Storage", "RowStore");
+    addPlanProperty(properties, "Storage", "RowStore");
+    addPlanProperty(properties, "Predicate", "");
+
+    expect(properties).toEqual([{ label: "Storage", value: "RowStore" }]);
+  });
+});
+
+describe("planSelfCost", () => {
+  test("subtracts the children's total cost from the node's", () => {
+    expect(
+      planSelfCost(100, [
+        node("0.0", { totalCost: 30 }),
+        node("0.1", { totalCost: 45 }),
+      ])
+    ).toBe(25);
+  });
+
+  test("clamps at zero when the children report more than the node", () => {
+    expect(planSelfCost(10, [node("0.0", { totalCost: 40 })])).toBe(0);
+  });
+
+  test("counts a child without a cost as costing nothing", () => {
+    expect(planSelfCost(10, [bareNode("0.0")])).toBe(10);
+  });
+
+  test("has no self cost for a node without a total cost", () => {
+    expect(planSelfCost(undefined, [node("0.0", { totalCost: 5 })])).toBe(
+      undefined
+    );
   });
 });
 
@@ -138,6 +238,18 @@ describe("number formatting", () => {
     expect(formatPlanCost(0)).toBe("0");
     expect(formatPlanCost(1465.93)).toBe("1,465.93");
     expect(formatPlanCount(50000)).toBe("50,000");
+  });
+
+  test("keeps a fractional cost's leading digits rather than rounding it away", () => {
+    expect(formatPlanCost(0.68)).toBe("0.68");
+    expect(formatPlanCost(0.0325135)).toBe("0.0325");
+    expect(formatPlanCost(0.0000418)).toBe("0.0000418");
+    expect(formatPlanCost(1.60801)).toBe("1.61");
+  });
+
+  test("prints a dash for an estimate the engine did not report", () => {
+    expect(formatPlanCost(undefined)).toBe("—");
+    expect(formatPlanCount(undefined)).toBe("—");
   });
 
   test("keeps a share that rounds to nothing from reading as nothing", () => {
@@ -282,10 +394,13 @@ describe("plan node fragments", () => {
 describe("costBasis", () => {
   test("is the root's total cost, which the self costs add back up to", () => {
     const tree = parseFixture(hashJoinAggregateSort);
-    const selfTotal = tree.nodes.reduce((sum, node) => sum + node.selfCost, 0);
+    const selfTotal = tree.nodes.reduce(
+      (sum, node) => sum + (node.selfCost ?? 0),
+      0
+    );
 
     expect(tree.costBasis).toBeCloseTo(1465.93, 5);
-    expect(selfTotal).toBeCloseTo(tree.root.totalCost, 5);
+    expect(selfTotal).toBeCloseTo(tree.root.totalCost ?? Number.NaN, 5);
   });
 
   test("covers the self costs a Limit truncates out of the root's total", () => {
@@ -347,37 +462,13 @@ describe("planEdgeWidth", () => {
     const rowless = buildPlanTree(node("0"));
 
     expect(planEdgeWidth(0, tree)).toBe(PLAN_EDGE_MIN_WIDTH);
+    expect(planEdgeWidth(undefined, tree)).toBe(PLAN_EDGE_MIN_WIDTH);
     expect(planEdgeWidth(10, rowless)).toBe(PLAN_EDGE_MIN_WIDTH);
   });
 
   test("keeps an estimate far past the plan's largest inside the range", () => {
     const tree = parseFixture(hashJoinAggregateSort);
     expect(planEdgeWidth(10_000_000, tree)).toBe(PLAN_EDGE_MAX_WIDTH);
-  });
-});
-
-describe("isFlaggedFullScan", () => {
-  test("flags a sequential scan of a relation large enough to matter", () => {
-    const tree = parseFixture(hashJoinAggregateSort);
-    const flagged = tree.nodes.filter(isFlaggedFullScan);
-
-    // `orders` at 819 is flagged; `customers` at 78 is a tiny relation.
-    expect(flagged.map((entry) => entry.subject)).toEqual(["orders"]);
-  });
-
-  test("leaves a scan of a tiny relation alone", () => {
-    const tree = parseFixture(seqScanFilter);
-    expect(tree.root.totalCost).toBe(90.5);
-    expect(isFlaggedFullScan(tree.root)).toBe(false);
-  });
-
-  test("flags the parallel variant and no other scan type", () => {
-    const scan = (nodeType: string) => node("0", { nodeType, totalCost: 5000 });
-
-    expect(isFlaggedFullScan(scan("Seq Scan"))).toBe(true);
-    expect(isFlaggedFullScan(scan("Parallel Seq Scan"))).toBe(true);
-    expect(isFlaggedFullScan(scan("Index Scan"))).toBe(false);
-    expect(isFlaggedFullScan(scan("Bitmap Heap Scan"))).toBe(false);
   });
 });
 

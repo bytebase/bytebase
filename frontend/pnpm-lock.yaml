@@ -104,9 +104,6 @@ importers:
       highlight.js:
         specifier: 11.11.1
         version: 11.11.1
-      html-query-plan:
-        specifier: ^2.6.1
-        version: 2.6.1
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
@@ -2556,9 +2553,6 @@ packages:
 
   html-parse-stringify@4.0.1:
     resolution: {integrity: sha512-0zHsZJrK7S3K2aucXWL6ycoYJ/iNtIcFHC/nYQgFklPtrv5LpJctIiSCroWZWeuoXvuyFdzp6KzjJQ+OT5MfFw==}
-
-  html-query-plan@2.6.1:
-    resolution: {integrity: sha512-8LoHDSOFGu4RKXit8we3ydE5W5qJFYg/hKtCfrV+hUnqhOssVDAgaxoJ2NNyF+eDkeXaicbJ/FBhz2/NmI4KuQ==}
 
   html-to-image@1.11.13:
     resolution: {integrity: sha512-cuOPoI7WApyhBElTTb9oqsawRvZ0rHhaHwghRLlTuffoD1B2aDemlCruLeZrUIIdvG7gs9xeELEPm6PhuASqrg==}
@@ -5908,8 +5902,6 @@ snapshots:
       - '@noble/hashes'
 
   html-parse-stringify@4.0.1: {}
-
-  html-query-plan@2.6.1: {}
 
   html-to-image@1.11.13: {}
 

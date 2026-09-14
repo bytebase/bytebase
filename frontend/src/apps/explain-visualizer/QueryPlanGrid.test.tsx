@@ -1,15 +1,24 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import cteNestedLoopInitplan from "./test-data/cte-nested-loop-initplan.json";
-import type { PlanTree } from "./plan-model";
+import indexSeekKeyLookup from "./test-data/mssql/index-seek-key-lookup.xml?raw";
+import cteNestedLoopInitplan from "./test-data/postgres/cte-nested-loop-initplan.json";
+import spannerHashJoin from "./test-data/spanner/hash-join.json";
+import { parseMssqlPlan } from "./mssql-plan";
+import type { PlanParseResult, PlanTree } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import { QueryPlanGrid } from "./QueryPlanGrid";
+import { parseSpannerPlan } from "./spanner-plan";
 
-const treeFrom = (plan: unknown): PlanTree => {
-  const result = parsePostgresPlan(JSON.stringify(plan));
+const treeOf = (result: PlanParseResult): PlanTree => {
   if (!result.ok) throw new Error(result.message);
   return result.tree;
 };
+
+const treeFrom = (plan: unknown): PlanTree =>
+  treeOf(parsePostgresPlan(JSON.stringify(plan)));
+
+const headers = () =>
+  screen.getAllByRole("columnheader").map((cell) => cell.textContent);
 
 const tree = () => treeFrom(cteNestedLoopInitplan);
 
@@ -53,6 +62,43 @@ describe("QueryPlanGrid", () => {
       "Seq Scan",
       "Index Scan",
     ]);
+  });
+
+  test("has a column for every estimate PostgreSQL reports", () => {
+    renderGrid();
+    expect(headers()).toEqual([
+      "#",
+      "Node",
+      "Added cost",
+      "Total cost",
+      "Rows",
+      "Width",
+    ]);
+  });
+
+  test("marks an estimate one node lacks and the rest of the plan has", () => {
+    renderGrid({ tree: treeOf(parseMssqlPlan(indexSeekKeyLookup)) });
+
+    expect(headers()).toEqual([
+      "#",
+      "Node",
+      "Added cost",
+      "Total cost",
+      "Rows",
+      "Width",
+    ]);
+    // A SQL Server statement has a cost and rows but no row width.
+    expect(cellsOf(rows()[0]).slice(2)).toEqual(["0", "0.0325", "10", "—"]);
+  });
+
+  test("leaves out the estimate columns of a plan without estimates", () => {
+    renderGrid({
+      tree: treeOf(parseSpannerPlan(JSON.stringify(spannerHashJoin))),
+    });
+
+    expect(headers()).toEqual(["#", "Node"]);
+    expect(cellsOf(rows()[4])).toEqual(["5", "Table ScanAlbums"]);
+    expect(screen.queryAllByTestId("plan-cost-share-bar")).toHaveLength(0);
   });
 
   test("numbers rows from one and reports each node's estimates", () => {

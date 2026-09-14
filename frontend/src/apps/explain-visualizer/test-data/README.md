@@ -1,10 +1,17 @@
 # Plan test data
 
-Real `EXPLAIN (FORMAT JSON)` output, captured from PostgreSQL 17 against a seeded
-schema, one file per plan shape. The tests in this directory parse these instead
-of hand-written JSON so the parser is pinned to what the server actually emits —
-including the fields nobody thinks to invent, such as `Parent Relationship`,
-`Subplan Name`, `Strategy` and `Partial Mode`.
+Real query plans, one file per plan shape, in the exact form Bytebase hands the
+visualizer. The parser tests read these instead of hand-written plans so each
+parser is pinned to what the engine actually emits — including the fields
+nobody thinks to invent.
+
+Keep them verbatim. Editing one to make a test pass defeats the point of
+capturing it.
+
+## `postgres/`
+
+`EXPLAIN (FORMAT JSON)` output captured from PostgreSQL 17 against a seeded
+schema: `customers` (5,000 rows) and `orders` (50,000 rows).
 
 | File | Shape it covers |
 | --- | --- |
@@ -13,11 +20,47 @@ including the fields nobody thinks to invent, such as `Parent Relationship`,
 | `hash-join-aggregate-sort.json` | Hash join under a hashed aggregate under a sort |
 | `cte-nested-loop-initplan.json` | A CTE, a nested loop, an InitPlan subquery and a limit |
 
-To add one, run the query against PostgreSQL and save the output verbatim:
+To add one:
 
 ```bash
-psql -At -c "EXPLAIN (FORMAT JSON) <query>" > <shape>.json
+psql -At -c "EXPLAIN (FORMAT JSON) <query>" > postgres/<shape>.json
 ```
 
-Keep them verbatim. Editing one to make a test pass defeats the point of
-capturing it.
+## `mssql/`
+
+`SHOWPLAN_XML` output captured from SQL Server 2022 against the same schema,
+with `orders_customer_id_idx` on `orders(customer_id)`. Each file is one
+statement run with `SET SHOWPLAN_XML ON`, which is how the driver runs them.
+
+| File | Shape it covers |
+| --- | --- |
+| `index-seek-key-lookup.xml` | Nested loops over an index seek and a key lookup |
+| `hash-join-aggregate-sort.xml` | Merge join, stream and hash aggregates, and a sort |
+| `missing-index.xml` | A missing-index suggestion and a full scan of `orders` |
+| `implicit-conversion-warning.xml` | Statement-level type conversion warnings |
+| `no-join-predicate.xml` | An operator warning on a join without a condition |
+| `if-else.xml` | An `IF` with its condition, `THEN` and `ELSE` |
+| `procedure-two-statements.xml` | A procedure call holding two statements |
+| `two-statement-batch.xml` | Two statements in one plan, under a batch |
+
+To add one, run the statement in `sqlcmd` and keep the `<ShowPlanXML>` document
+from its output:
+
+```bash
+printf 'SET SHOWPLAN_XML ON;\nGO\n<statement>\nGO\n' | sqlcmd -S localhost -U sa -C -d plandb -y 0
+```
+
+## `spanner/`
+
+The Spanner emulator does not plan queries, so these are production Spanner
+plans from [spanner-cli's test data](https://github.com/cloudspannerecosystem/spanner-cli/tree/master/testdata/plans)
+(Apache License 2.0), passed through the driver's `convertQueryPlanToJSON` so
+each file holds the JSON Bytebase returns for that plan. Biome re-indents it,
+as it does every JSON file here.
+
+| File | Source | Shape it covers |
+| --- | --- | --- |
+| `hash-join.json` | `hash_join.input.json` | Build and probe inputs, full table and index scans |
+| `filter-limit.json` | `filter.input.json` | Global and local limits, a seek condition |
+| `scalar-subquery.json` | `scalar_subquery_with_filter_scan.input.json` | A scalar subquery with its own aggregates |
+| `nested-array-subqueries.json` | `array_subqueries_with_compute_struct.input.json` | An array subquery inside another |
