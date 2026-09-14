@@ -179,8 +179,8 @@ func TestShapeKey(t *testing.T) {
 			want: "DELETE FROM t WHERE id IN(?,?,?)",
 		},
 		{
-			name:       "identifiers keep their digits",
-			statements: []string{"UPDATE t1 SET c2 = 0x1F WHERE t1.c3 > 1e3"},
+			name:       "numbers",
+			statements: []string{"UPDATE t1 SET c2 = 0x1F WHERE t1.c3 > 1e3", "UPDATE t1 SET c2 = 7 WHERE t1.c3 > 1.5e-3"},
 			want:       "UPDATE t1 SET c2=? WHERE t1.c3>?",
 		},
 	} {
@@ -197,6 +197,8 @@ func TestShapeKey(t *testing.T) {
 			{`UPDATE "2024_orders" SET v = 1`, `UPDATE "2025_orders" SET v = 1`},
 			{"UPDATE `Orders` SET v = 1", "UPDATE `orders` SET v = 1"},
 			{"UPDATE Orders SET v = 1", "UPDATE orders SET v = 1"},
+			{"UPDATE [2024_orders] SET v = 1", "UPDATE [2025_orders] SET v = 1"},
+			{"UPDATE 2024_orders SET v = 1", "UPDATE 2025_orders SET v = 1"},
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
 			// Comments stay in the shape, so no comment marker can hide the rest of a statement.
 			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1"},

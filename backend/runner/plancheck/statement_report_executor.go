@@ -401,10 +401,16 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			i = end
 		// The version after /*! or /*M! decides whether MySQL or MariaDB runs the comment, so it stays.
 		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])) && !strings.HasSuffix(statement[:i], "/*!") && !strings.HasSuffix(statement[:i], "/*M!"):
-			for i < len(statement) && (isWordByte(statement[i]) || statement[i] == '.') {
+			if end := numberEnd(statement, i); end >= 0 {
+				i = end
+				write('?')
+				break
+			}
+			// A word that starts with digits but is not a number, such as [2024_orders], is an identifier.
+			for i < len(statement) && isWordByte(statement[i]) {
+				write(statement[i])
 				i++
 			}
-			write('?')
 		case c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v':
 			space = true
 			i++
@@ -414,6 +420,39 @@ func shapeKey(statement string, mysqlFamily bool) string {
 		}
 	}
 	return b.String()
+}
+
+// numberEnd returns the offset just past the decimal or hexadecimal number that starts at start, or
+// -1 when the word there is not a number.
+func numberEnd(statement string, start int) int {
+	isDigit := func(i int) bool { return i < len(statement) && '0' <= statement[i] && statement[i] <= '9' }
+	i := start
+	if strings.HasPrefix(statement[i:], "0x") || strings.HasPrefix(statement[i:], "0X") {
+		i += 2
+		for i < len(statement) && strings.IndexByte("0123456789abcdefABCDEF", statement[i]) >= 0 {
+			i++
+		}
+	} else {
+		for isDigit(i) || (i < len(statement) && statement[i] == '.') {
+			i++
+		}
+		if i < len(statement) && (statement[i] == 'e' || statement[i] == 'E') {
+			exponent := i + 1
+			if exponent < len(statement) && (statement[exponent] == '+' || statement[exponent] == '-') {
+				exponent++
+			}
+			if isDigit(exponent) {
+				i = exponent
+				for isDigit(i) {
+					i++
+				}
+			}
+		}
+	}
+	if i < len(statement) && isWordByte(statement[i]) {
+		return -1
+	}
+	return i
 }
 
 // quotedEnd returns the offset just past the quoted text that starts at start, where a doubled
