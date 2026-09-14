@@ -171,12 +171,14 @@ func TestShapeKey(t *testing.T) {
 		})
 	}
 
-	t.Run("identifiers keep their case and quoted text", func(t *testing.T) {
+	t.Run("statements that differ beyond literals keep separate shapes", func(t *testing.T) {
 		for _, pair := range [][2]string{
 			{`UPDATE "Orders" SET v = 1`, `UPDATE "orders" SET v = 1`},
 			{`UPDATE "2024_orders" SET v = 1`, `UPDATE "2025_orders" SET v = 1`},
 			{"UPDATE `Orders` SET v = 1", "UPDATE `orders` SET v = 1"},
 			{"UPDATE Orders SET v = 1", "UPDATE orders SET v = 1"},
+			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1"},
+			{"UPDATE t SET v = 1 /*M! WHERE id = 1 */", "UPDATE t SET v = 1"},
 		} {
 			require.NotEqual(t, shapeKey(pair[0]), shapeKey(pair[1]), pair[0])
 		}

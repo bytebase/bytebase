@@ -395,7 +395,8 @@ func shapeKey(statement string) string {
 				i = len(statement)
 			}
 			space = true
-		case strings.HasPrefix(statement[i:], "/*"):
+		// MySQL and MariaDB run the contents of /*! and /*M! comments, so those stay in the key.
+		case strings.HasPrefix(statement[i:], "/*") && !strings.HasPrefix(statement[i:], "/*!") && !strings.HasPrefix(statement[i:], "/*M!"):
 			if end := strings.Index(statement[i+2:], "*/"); end >= 0 {
 				i += end + 4
 			} else {
