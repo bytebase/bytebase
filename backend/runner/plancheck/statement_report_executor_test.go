@@ -179,6 +179,24 @@ func TestShapeKey(t *testing.T) {
 			want: "UPDATE t SET v=b? WHERE id=?;",
 		},
 		{
+			name: "ordinary comments",
+			statements: []string{
+				"-- row 1\nUPDATE t SET v = 1 WHERE id = 1;",
+				"/* row 2 */ UPDATE t SET v = 2 /* it's */ WHERE id = 2; -- done",
+				"UPDATE/**/t SET v = 3 WHERE id = 3;",
+			},
+			want: "UPDATE t SET v=? WHERE id=?;",
+		},
+		{
+			name: "MySQL family # comments",
+			statements: []string{
+				"# row 1\nUPDATE t SET v = 1 WHERE id = 1;",
+				"UPDATE t SET v = 2 WHERE id = 2; # row 2",
+			},
+			mysqlFamily: true,
+			want:        "UPDATE t SET v=? WHERE id=?;",
+		},
+		{
 			name: "MySQL family -- without whitespace is not a comment",
 			statements: []string{
 				"UPDATE t SET c = c--1 WHERE id = 1;",
@@ -219,14 +237,14 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE [t]]1] SET v = 1", "UPDATE [t]]2] SET v = 1"},
 			{"UPDATE 2024_orders SET v = 1", "UPDATE 2025_orders SET v = 1"},
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
-			// Comments keep their text, so no comment marker can hide the rest of a statement.
 			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1"},
 			{"UPDATE /*+ CARDINALITY(t 1) */ t SET v = 1", "UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1"},
 			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1 /*!99999 WHERE id = 1 */"},
 			{"UPDATE t SET v = 1 /*M!100100 WHERE id = 1 */", "UPDATE t SET v = 1 /*M!999999 WHERE id = 1 */"},
+			{"UPDATE t SET v = 1 /*T![feature] WHERE id = 1 */", "UPDATE t SET v = 1"},
+			{"UPDATE --+ INDEX(t i1)\nt SET v = 1", "UPDATE --+ INDEX(t i2)\nt SET v = 1"},
 			{"UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1", "UPDATE t SET v = 1"},
 			{"UPDATE [t--x] SET v = 1 WHERE id = 1", "UPDATE [t--x] SET v = 1"},
-			{"UPDATE t SET v = v--1 WHERE id = 1", "UPDATE t SET v = v"},
 			{"UPDATE t SET v = $$--$$ WHERE id = 1", "UPDATE t SET v = $$--$$"},
 			{"UPDATE t SET v = 1 -- don't\nWHERE id = 1", "UPDATE t SET v = 1 -- don't\n"},
 			{"UPDATE t SET v = v - -1 WHERE flag", "UPDATE t SET v = v --? WHERE flag"},
@@ -240,6 +258,9 @@ func TestShapeKey(t *testing.T) {
 			require.NotEqual(t, shapeKey(pair[0], false), shapeKey(pair[1], false), pair[0])
 			require.NotEqual(t, shapeKey(pair[0], true), shapeKey(pair[1], true), pair[0])
 		}
+		// -- starts a comment on PostgreSQL, but on MySQL only before whitespace.
+		require.Equal(t, shapeKey("UPDATE t SET v = v--1 WHERE id = 1", false), shapeKey("UPDATE t SET v = v", false))
+		require.NotEqual(t, shapeKey("UPDATE t SET v = v--1 WHERE id = 1", true), shapeKey("UPDATE t SET v = v", true))
 		require.NotEqual(t, shapeKey("UPDATE t SET v = 'it\\'s' WHERE id = 1", true), shapeKey("UPDATE t SET v = 'it\\'s'", true))
 		require.NotEqual(t, shapeKey(`UPDATE t SET v = "a\"b" WHERE id = 1`, true), shapeKey(`UPDATE t SET v = "a\"b"`, true))
 		require.NotEqual(t, shapeKey("UPDATE t SET v = 1 # x\nWHERE id = 1", true), shapeKey("UPDATE t SET v = 1 # x WHERE id=?", true))

@@ -361,15 +361,15 @@ func groupStatementsByShape(statements []string, mysqlFamily bool) []*statementS
 	return shapes
 }
 
-// shapeKey replaces the string and numeric literals of a statement with ? and drops whitespace that
-// does not separate words. Everything else keeps its text, including identifiers, their case,
-// double-quoted text, which MySQL's ANSI_QUOTES makes an identifier, and comments with the numbers in
-// them, such as optimizer hints. A statement with text the scan does not follow, such as an unclosed
-// quote, an Oracle q'{...}' string, a dollar-quoted string, a nested comment, or a quote in brackets,
-// is its own key, because a quote in that text could make the scan read the statement's clauses as a
-// literal. mysqlFamily applies the MySQL, MariaDB, TiDB, and OceanBase rules that a backslash escapes
-// the next character of a quoted string, that # starts a line comment, and that -- starts one only
-// before whitespace or a control character.
+// shapeKey replaces the string and numeric literals of a statement with ? and drops comments and
+// whitespace that does not separate words. Everything else keeps its text, including identifiers,
+// their case, double-quoted text, which MySQL's ANSI_QUOTES makes an identifier, and the hints and
+// executable comments that isKeptComment lists. A statement with text the scan does not follow, such
+// as an unclosed quote, an Oracle q'{...}' string, a dollar-quoted string, a nested comment, or a
+// quote in brackets, is its own key, because a quote in that text could make the scan read the
+// statement's clauses as a literal. mysqlFamily applies the MySQL, MariaDB, TiDB, and OceanBase rules
+// that a backslash escapes the next character of a quoted string, that # starts a line comment, and
+// that -- starts one only before whitespace or a control character.
 func shapeKey(statement string, mysqlFamily bool) string {
 	var b strings.Builder
 	space := false
@@ -431,9 +431,12 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			if c == '/' && strings.Contains(statement[i+2:end], "/*") {
 				return statement
 			}
-			// Copying never drops text, so a marker misread as a comment only splits shapes.
-			write(c)
-			b.WriteString(statement[i+1 : end])
+			if isKeptComment(statement[i:end]) {
+				write(c)
+				b.WriteString(statement[i+1 : end])
+			} else {
+				space = true
+			}
 			i = end
 		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])):
 			if end := numberEnd(statement, i); end >= 0 {
@@ -473,6 +476,18 @@ func isDollarQuoteStart(text string) bool {
 		end++
 	}
 	return end < len(text) && text[end] == '$'
+}
+
+// isKeptComment reports whether a comment changes how a statement runs: an optimizer hint, such as
+// /*+ ... */ or Oracle's --+ ..., or a MySQL, MariaDB, or TiDB executable comment, such as
+// /*!80000 ... */, /*M!100100 ... */, or /*T![feature] ... */.
+func isKeptComment(comment string) bool {
+	for _, prefix := range []string{"/*+", "--+", "/*!", "/*M!", "/*T!"} {
+		if strings.HasPrefix(comment, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // commentEnd returns the offset just past the comment that starts at start: past the newline that
