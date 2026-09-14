@@ -208,6 +208,21 @@ DELETE FROM t4;`
 	require.NoError(t, err)
 	require.Equal(t, []string{"db.Reports.t3", "db.app.t2", "db.public.t1", "db.public.t4"}, getTableNames(got.ChangedResources))
 
+	t.Run("the synced search path applies without a current schema", func(t *testing.T) {
+		dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Name:       "db",
+			SearchPath: `"$user", app, public`,
+			Schemas: []*metadatapb.SchemaMetadata{
+				{Name: "app", Tables: []*metadatapb.TableMetadata{{Name: "t"}}},
+				{Name: "public", Tables: []*metadatapb.TableMetadata{{Name: "t2"}}},
+			},
+		}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_COCKROACHDB, true /* caseSensitive */)
+		const statement = `DELETE FROM t; DELETE FROM t2; DROP MATERIALIZED VIEW mv; DROP VIEW v;`
+		got, err := extractChangedResources("db", "", dbMetadata, parseASTs(t, statement), statement)
+		require.NoError(t, err)
+		require.Equal(t, []string{"db.app.mv", "db.app.t", "db.public.t2"}, getTableNames(got.ChangedResources))
+	})
+
 	t.Run("existing tables resolve to the first schema that has them", func(t *testing.T) {
 		dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 			Name: "db",

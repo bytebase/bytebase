@@ -195,7 +195,8 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			return nil, "", errors.Errorf("invalid cockroachdb driver type")
 		}
 		explainCalculator = cd.CountAffectedRows
-		defaultSchema = "public"
+		// Empty so the extractor resolves names with the database's synced search_path, as for PostgreSQL.
+		defaultSchema = ""
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		md, ok := driver.(*mysqldriver.Driver)
 		if !ok {

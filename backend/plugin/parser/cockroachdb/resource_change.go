@@ -16,14 +16,17 @@ func init() {
 }
 
 // extractChangedResources resolves an unqualified table to the current database and to a schema of
-// the search path: currentSchema, or "public" when it is empty, until the statements SET another.
-// Like the PostgreSQL extractor, an existing table resolves to the first schema that has it in
-// dbMetadata, and a new table to the first schema.
+// the search path: currentSchema, or else the search path synced in dbMetadata, or "public", until
+// the statements SET another. Like the PostgreSQL extractor, an existing table resolves to the first
+// schema that has it in dbMetadata, and a new table to the first schema.
 func extractChangedResources(database string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
-	if currentSchema == "" {
-		currentSchema = "public"
-	}
 	defaultSearchPath := []string{currentSchema}
+	if currentSchema == "" {
+		defaultSearchPath = []string{"public"}
+		if dbMetadata != nil && len(dbMetadata.GetSearchPath()) > 0 {
+			defaultSearchPath = dbMetadata.GetSearchPath()
+		}
+	}
 	searchPath := defaultSearchPath
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
@@ -92,6 +95,13 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		case *tree.DropTable:
 			for i := range n.Names {
 				addTable(&n.Names[i], true)
+			}
+		case *tree.DropView:
+			// A materialized view holds data, so its drop is recorded like a table's.
+			if n.IsMaterialized {
+				for i := range n.Names {
+					addTable(&n.Names[i], true)
+				}
 			}
 		case *tree.Truncate:
 			for i := range n.Tables {
