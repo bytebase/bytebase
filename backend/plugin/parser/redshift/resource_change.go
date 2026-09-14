@@ -43,6 +43,17 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 	}
 
 	searchPath := schema
+	// replaySearchPath is the search path set after the starting one, which the EXPLAIN connection
+	// does not have.
+	var replaySearchPath []string
+	sampleDML := func(text string) {
+		summary.DMLCount++
+		text = strings.TrimSpace(text)
+		if len(replaySearchPath) > 0 {
+			text = base.WithSearchPath(text, replaySearchPath)
+		}
+		summary.DMLStatements = append(summary.DMLStatements, text)
+	}
 	addTable := func(rv *redshiftast.RangeVar, affectedTable bool) {
 		tableDatabase, tableSchema := rv.Catalogname, rv.Schemaname
 		if tableDatabase == "" {
@@ -59,10 +70,10 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 			if rows, ok := insertValuesRowCount(n); ok {
 				summary.InsertCount += rows
 			} else {
-				addSampledDML(summary, stmt.Text)
+				sampleDML(stmt.Text)
 			}
 		case *redshiftast.UpdateStmt, *redshiftast.DeleteStmt:
-			addSampledDML(summary, stmt.Text)
+			sampleDML(stmt.Text)
 		case *redshiftast.MergeStmt:
 			// Redshift documents EXPLAIN only for SELECT, CREATE TABLE AS, INSERT, UPDATE, and DELETE.
 			summary.DMLCount++
@@ -80,8 +91,11 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 				}
 			}
 		case *redshiftast.VariableSetStmt:
-			if newSearchPath, ok := searchPathFromSet(n, schema); ok {
-				searchPath = newSearchPath
+			if schemas, ok := searchPathFromSet(n); ok {
+				searchPath, replaySearchPath = schema, schemas
+				if len(schemas) > 0 {
+					searchPath = schemas[0]
+				}
 			}
 		default:
 		}
@@ -121,11 +135,6 @@ func ddlAffectedTables(stmts []omniredshift.Statement, database, schema string) 
 	return affected, nil
 }
 
-func addSampledDML(summary *base.ChangeSummary, text string) {
-	summary.DMLCount++
-	summary.DMLStatements = append(summary.DMLStatements, strings.TrimSpace(text))
-}
-
 // insertValuesRowCount returns how many rows INSERT ... VALUES or INSERT ... DEFAULT
 // VALUES adds, and false for an INSERT whose rows come from a query.
 func insertValuesRowCount(n *redshiftast.InsertStmt) (int, bool) {
@@ -138,19 +147,20 @@ func insertValuesRowCount(n *redshiftast.InsertStmt) (int, bool) {
 	return 0, false
 }
 
-// searchPathFromSet mirrors how omni's ExtractChangedResources follows SET search_path:
-// unqualified names resolve to the first named schema, or to the starting schema after
-// RESET or SET ... TO DEFAULT.
-func searchPathFromSet(n *redshiftast.VariableSetStmt, defaultSchema string) (string, bool) {
+// searchPathFromSet returns the schemas a SET search_path names, skipping "$user", or none for RESET
+// or SET ... TO DEFAULT, which restore the starting search path. ok is false for any other statement.
+// Like omni's ExtractChangedResources, unqualified names resolve to the first schema.
+func searchPathFromSet(n *redshiftast.VariableSetStmt) ([]string, bool) {
 	if !strings.EqualFold(n.Name, "search_path") {
-		return "", false
+		return nil, false
 	}
 	if n.Kind == redshiftast.VAR_SET_DEFAULT || n.Kind == redshiftast.VAR_RESET {
-		return defaultSchema, true
+		return nil, true
 	}
 	if n.Args == nil {
-		return "", false
+		return nil, false
 	}
+	var schemas []string
 	for _, arg := range n.Args.Items {
 		c, ok := arg.(*redshiftast.A_Const)
 		if !ok {
@@ -160,7 +170,7 @@ func searchPathFromSet(n *redshiftast.VariableSetStmt, defaultSchema string) (st
 		if !ok || s.Str == "" || s.Str == "$user" {
 			continue
 		}
-		return s.Str, true
+		schemas = append(schemas, s.Str)
 	}
-	return "", false
+	return schemas, len(schemas) > 0
 }

@@ -3,18 +3,34 @@ package redshift
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"regexp"
 	"strconv"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var rowsRegexp = regexp.MustCompile("rows=([0-9]+)")
 
+// CountAffectedRows returns the planner's estimate of the rows the statement modifies. A search
+// path that base.WithSearchPath put before the statement is set for the EXPLAIN in a transaction
+// that is rolled back.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
-	explainSQL := fmt.Sprintf("EXPLAIN %s", statement)
-	rows, err := d.db.QueryContext(ctx, explainSQL)
+	setup, statement := base.SplitSearchPath(statement)
+	query := d.db.QueryContext
+	if setup != "" {
+		tx, err := d.db.BeginTx(ctx, nil)
+		if err != nil {
+			return 0, err
+		}
+		defer tx.Rollback()
+		if _, err := tx.ExecContext(ctx, setup); err != nil {
+			return 0, err
+		}
+		query = tx.QueryContext
+	}
+	rows, err := query(ctx, "EXPLAIN "+statement)
 	if err != nil {
 		return 0, err
 	}

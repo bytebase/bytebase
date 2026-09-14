@@ -100,8 +100,24 @@ DELETE FROM copied_rows WHERE id = 1;`,
 				{database: "db", schema: "analytics", name: "copied_rows"},
 				{database: "db", schema: "analytics", name: "old_rows", affected: true},
 			},
-			dmlStatements: []string{"DELETE FROM copied_rows WHERE id = 1;"},
+			dmlStatements: []string{"SET LOCAL search_path TO \"analytics\";\nDELETE FROM copied_rows WHERE id = 1;"},
 			dmlCount:      1,
+		},
+		{
+			name: "sampled_dml_replays_the_search_path",
+			statement: `SET search_path TO '$user', analytics, public;
+UPDATE t SET c = 1;
+RESET search_path;
+UPDATE t SET c = 2;`,
+			tables: []table{
+				{database: "db", schema: "analytics", name: "t"},
+				{database: "db", schema: "public", name: "t"},
+			},
+			dmlStatements: []string{
+				"SET LOCAL search_path TO \"analytics\", \"public\";\nUPDATE t SET c = 1;",
+				"UPDATE t SET c = 2;",
+			},
+			dmlCount: 2,
 		},
 		{
 			name: "comment_before_semicolon_between_ddl_and_dml",
