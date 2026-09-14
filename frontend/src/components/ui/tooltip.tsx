@@ -1,5 +1,5 @@
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
@@ -61,7 +61,10 @@ export function BlockTooltip({
   side = "top",
   delayDuration = 100,
   popupClassName,
-}: TooltipProps) {
+  render,
+}: TooltipProps & {
+  readonly render?: ComponentProps<typeof BaseTooltip.Trigger>["render"];
+}) {
   if (!content) {
     return <>{children}</>;
   }
@@ -69,7 +72,9 @@ export function BlockTooltip({
   return (
     <BaseTooltip.Provider delay={delayDuration}>
       <BaseTooltip.Root>
-        <BaseTooltip.Trigger render={<div className="flex-1 min-w-0" />}>
+        <BaseTooltip.Trigger
+          render={render ?? <div className="flex-1 min-w-0" />}
+        >
           {children}
         </BaseTooltip.Trigger>
         <BaseTooltip.Portal container={getLayerRoot("overlay")}>
