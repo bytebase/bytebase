@@ -2,12 +2,14 @@ import { type DragEvent, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveFormLayout } from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   SegmentedControl,
   type SegmentedControlOption,
 } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   getLocalTlsCaSource,
@@ -369,7 +371,12 @@ export function SslCertificateForm({
     </div>
   );
   const renderPostureControl = () => {
-    const options: SegmentedControlOption<LocalTlsPosture>[] = [
+    const options: Array<{
+      value: LocalTlsPosture;
+      label: string;
+      disabled?: boolean;
+      tooltip?: string;
+    }> = [
       {
         value: LOCAL_TLS_POSTURE_DISABLED,
         label: t("data-source.ssl.posture.disabled"),
@@ -390,14 +397,33 @@ export function SslCertificateForm({
 
     return (
       <div className="flex flex-col gap-y-1">
-        <SegmentedControl
+        <RadioGroup
           value={resolvedPosture}
-          onValueChange={(next) => onPostureChange?.(next)}
-          ariaLabel={t("data-source.ssl.posture.self")}
-          options={options}
+          onValueChange={(next) => onPostureChange?.(next as LocalTlsPosture)}
+          aria-label={t("data-source.ssl.posture.self")}
           disabled={disabled}
-          size="sm"
-        />
+          className="flex-col items-start self-start gap-y-2"
+        >
+          {options.map((option) => {
+            const item = (
+              <RadioGroupItem
+                key={option.value}
+                value={option.value}
+                disabled={disabled || option.disabled}
+              >
+                {option.label}
+              </RadioGroupItem>
+            );
+
+            return option.tooltip ? (
+              <Tooltip key={option.value} content={option.tooltip}>
+                {item}
+              </Tooltip>
+            ) : (
+              item
+            );
+          })}
+        </RadioGroup>
       </div>
     );
   };

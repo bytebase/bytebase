@@ -12,7 +12,7 @@ import {
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 
@@ -110,17 +110,19 @@ export function SshConnectionForm({
     <div className="flex flex-col gap-4">
       <FormField title={title ?? t("data-source.ssh-connection")}>
         <div className="flex flex-col gap-4">
-          <SegmentedControl
+          <RadioGroup
             value={sshType}
             onValueChange={(value) => handleSelectType(value as SshType)}
-            ariaLabel={t("data-source.ssh-connection")}
-            options={SSH_TYPES.map((type) => ({
-              value: type,
-              label: getSshTypeLabel(type),
-            }))}
-            size="sm"
+            aria-label={t("data-source.ssh-connection")}
             disabled={disabled}
-          />
+            className="flex-col items-start self-start gap-y-2"
+          >
+            {SSH_TYPES.map((type) => (
+              <RadioGroupItem key={type} value={type} disabled={disabled}>
+                {getSshTypeLabel(type)}
+              </RadioGroupItem>
+            ))}
+          </RadioGroup>
           {sshType !== "NONE" && (
             <ResponsiveFormLayout>
               <fieldset className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2">

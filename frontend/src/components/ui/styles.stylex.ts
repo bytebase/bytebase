@@ -216,7 +216,7 @@ const formStyles = stylex.create({
     alignItems: "start",
     columnGap: 16,
     display: "grid",
-    gridTemplateColumns: "160px minmax(0, 1fr)",
+    gridTemplateColumns: "224px minmax(0, 1fr)",
     rowGap: 0,
   },
   fieldControl: {

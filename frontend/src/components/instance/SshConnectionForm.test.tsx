@@ -63,6 +63,19 @@ describe("SshConnectionForm", () => {
     document.body.innerHTML = "";
   });
 
+  test("renders vertically arranged radio choices", () => {
+    const { container, root } = mount(<ControlledSshConnectionForm />);
+    expect(
+      container
+        .querySelector('[role="radiogroup"]')
+        ?.classList.contains("flex-col")
+    ).toBe(true);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("keeps tunnel selected after editing SSH fields before port is entered", () => {
     const { container, root } = mount(<ControlledSshConnectionForm />);
     const tunnelRadio = container.querySelector(

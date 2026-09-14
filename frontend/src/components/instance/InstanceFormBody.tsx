@@ -1,6 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import type { Duration } from "@bufbuild/protobuf/wkt";
 import { DurationSchema } from "@bufbuild/protobuf/wkt";
+import { isEqual, omit } from "lodash-es";
 import {
   ChevronDown,
   ChevronRight,
@@ -35,8 +36,8 @@ import {
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -438,14 +439,27 @@ function ScanIntervalInput({
   return (
     <FormField
       title={
-        <span className="flex items-center gap-x-2">
+        <span className="inline-flex items-center gap-x-2">
           {t("instance.scan-interval.self")}
           <FeatureBadge
             feature={PlanFeature.FEATURE_CUSTOM_INSTANCE_SYNC_TIME}
           />
+          <Tooltip
+            content={t("instance.scan-interval.description")}
+            popupClassName="max-w-96"
+          >
+            <Button
+              type="button"
+              appearance="link"
+              size="xs"
+              className="-ml-1 w-6 p-0"
+              aria-label={t("instance.scan-interval.self")}
+            >
+              <Info className="size-3.5" />
+            </Button>
+          </Tooltip>
         </span>
       }
-      description={t("instance.scan-interval.description")}
     >
       <RadioGroup
         className="gap-x-6"
@@ -523,11 +537,38 @@ export function SyncDatabases({
   );
   const pendingScrollDatabaseRef = useRef<string | null>(null);
   const firstNewDatabaseRef = useRef<HTMLLabelElement | null>(null);
+  const databaseListInstance = isCreatingProp
+    ? pendingCreateInstance
+    : instance;
+  const previousDatabaseListInstanceRef =
+    useRef<typeof databaseListInstance>(undefined);
+  const activeDatabaseListRequestRef = useRef(0);
+  const isMountedRef = useRef(false);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Notify parent only when selection actually changes.
   const onSyncDatabasesChangeRef = useRef(onSyncDatabasesChange);
   onSyncDatabasesChangeRef.current = onSyncDatabasesChange;
   const prevNotifiedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const selectedDatabases = syncDatabases?.databases ?? [];
+    const nextSyncAll = syncDatabases === undefined;
+
+    setSyncAll((current) => (current === nextSyncAll ? current : nextSyncAll));
+    setSelectedSet((current) =>
+      current.size === selectedDatabases.length &&
+      selectedDatabases.every((database) => current.has(database))
+        ? current
+        : new Set(selectedDatabases)
+    );
+  }, [syncDatabases]);
 
   useEffect(() => {
     const key = [
@@ -539,32 +580,52 @@ export function SyncDatabases({
     onSyncDatabasesChangeRef.current(syncAll ? [] : [...selectedSet], syncAll);
   }, [syncAll, selectedSet]);
 
-  const databaseListInstance = isCreatingProp
-    ? pendingCreateInstance
-    : instance;
-
   useEffect(() => {
-    if (syncAll) return;
-    let cancelled = false;
+    if (syncAll) {
+      previousDatabaseListInstanceRef.current = undefined;
+      activeDatabaseListRequestRef.current += 1;
+      setLoading(false);
+      return;
+    }
     const fetchDatabases = async () => {
       const inst = databaseListInstance;
-      if (!inst) return;
+      if (!inst) {
+        activeDatabaseListRequestRef.current += 1;
+        setLoading(false);
+        return;
+      }
+      if (
+        isEqual(
+          omit(previousDatabaseListInstanceRef.current, "syncDatabases"),
+          omit(inst, "syncDatabases")
+        )
+      ) {
+        return;
+      }
+      previousDatabaseListInstanceRef.current = inst;
+      const requestId = activeDatabaseListRequestRef.current + 1;
+      activeDatabaseListRequestRef.current = requestId;
       setLoading(true);
       try {
         const resp = await useAppStore
           .getState()
           .listInstanceDatabases(inst.name, isCreatingProp ? inst : undefined);
-        if (!cancelled) {
-          setDatabaseList(new Set([...resp.databases, ...selectedSet]));
+        if (
+          isMountedRef.current &&
+          requestId === activeDatabaseListRequestRef.current
+        ) {
+          setDatabaseList(new Set([...selectedSet, ...resp.databases]));
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (
+          isMountedRef.current &&
+          requestId === activeDatabaseListRequestRef.current
+        ) {
+          setLoading(false);
+        }
       }
     };
-    fetchDatabases();
-    return () => {
-      cancelled = true;
-    };
+    void fetchDatabases();
   }, [syncAll, isCreatingProp, databaseListInstance]);
 
   useEffect(() => {
@@ -643,25 +704,25 @@ export function SyncDatabases({
       }
     >
       <div className="flex flex-col gap-y-2">
-        <SegmentedControl
+        <RadioGroup
           value={syncAll ? "all" : "selected"}
           onValueChange={(value) => setSyncAll(value === "all")}
-          options={[
-            { value: "all", label: t("instance.sync-databases.all-databases") },
-            {
-              value: "selected",
-              label: t("instance.sync-databases.selected-databases"),
-            },
-          ]}
           disabled={!allowEdit}
-          ariaLabel={
+          aria-label={
             hasProjectContext
               ? t("instance.sync-databases.project-sync-all")
               : t("instance.sync-databases.self")
           }
           aria-describedby={disabledReason ? disabledReasonId : undefined}
-          size="sm"
-        />
+          className="flex-col items-start self-start gap-y-2"
+        >
+          <RadioGroupItem value="all" disabled={!allowEdit}>
+            {t("instance.sync-databases.all-databases")}
+          </RadioGroupItem>
+          <RadioGroupItem value="selected" disabled={!allowEdit}>
+            {t("instance.sync-databases.selected-databases")}
+          </RadioGroupItem>
+        </RadioGroup>
         {disabledReason && (
           <p
             id={disabledReasonId}
@@ -876,7 +937,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
   const [isEngineSelectorCollapsed, setIsEngineSelectorCollapsed] =
     useState(false);
-  const [showLabels, setShowLabels] = useState(false);
 
   // --- Computed values ---
 
@@ -1281,7 +1341,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                 id="name"
                 value={basicInfo.title}
                 required
-                className="w-full max-w-[40rem]"
+                className="w-full"
                 disabled={!allowEdit}
                 maxLength={200}
                 onChange={(e) => updateBasicInfo({ title: e.target.value })}
@@ -1330,36 +1390,25 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
             {/* Environment */}
             <FormField title={t("common.environment")}>
-              <div className="flex items-center gap-4">
-                <EnvironmentSelect
-                  portal
-                  className="w-full max-w-[40rem]"
-                  value={
-                    isValidEnvironmentName(
-                      `${environmentNamePrefix}${environment.id}`
-                    )
-                      ? `${environmentNamePrefix}${environment.id}`
-                      : ""
-                  }
-                  disabled={!allowEdit}
-                  onChange={(value) =>
-                    handleSelectEnvironment(value || undefined)
-                  }
-                />
-                {!showLabels && labelKVList.length === 0 && allowEdit && (
-                  <Button
-                    size="sm"
-                    appearance="link"
-                    onClick={() => setShowLabels(true)}
-                  >
-                    {t("instance.add-labels")}
-                  </Button>
-                )}
-              </div>
+              <EnvironmentSelect
+                portal
+                className="w-full"
+                value={
+                  isValidEnvironmentName(
+                    `${environmentNamePrefix}${environment.id}`
+                  )
+                    ? `${environmentNamePrefix}${environment.id}`
+                    : ""
+                }
+                disabled={!allowEdit}
+                onChange={(value) =>
+                  handleSelectEnvironment(value || undefined)
+                }
+              />
             </FormField>
 
             {/* Labels */}
-            {(showLabels || labelKVList.length > 0) && (
+            {(allowEdit || labelKVList.length > 0) && (
               <FormField title={t("common.labels")}>
                 <LabelListEditor
                   kvList={labelKVList}
@@ -1375,12 +1424,28 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             {!isCreating && (
               <FormField
                 title={
-                  <div className="inline-flex items-center">
+                  <div className="inline-flex items-center gap-x-1">
                     <FormLabel htmlFor="external-link">
                       {basicInfo.engine === Engine.SNOWFLAKE
                         ? t("instance.snowflake-web-console")
                         : t("instance.external-link")}
                     </FormLabel>
+                    {basicInfo.engine !== Engine.SNOWFLAKE && (
+                      <Tooltip
+                        content={t("instance.sentence.console.snowflake")}
+                        popupClassName="max-w-96"
+                      >
+                        <Button
+                          type="button"
+                          appearance="link"
+                          size="xs"
+                          className="-ml-1 w-6 p-0"
+                          aria-label={t("instance.external-link")}
+                        >
+                          <Info className="size-3.5" />
+                        </Button>
+                      </Tooltip>
+                    )}
                     {(basicInfo.externalLink ?? "").trim().length > 0 && (
                       <Button
                         type="button"
@@ -1411,22 +1476,17 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     value={instanceLink}
                   />
                 ) : (
-                  <>
-                    <p className="text-xs leading-4 text-control-light">
-                      {t("instance.sentence.console.snowflake")}
-                    </p>
-                    <Input
-                      id="external-link"
-                      value={basicInfo.externalLink ?? ""}
-                      required
-                      className="w-full"
-                      disabled={!allowEdit}
-                      placeholder={SnowflakeExtraLinkPlaceHolder}
-                      onChange={(e) =>
-                        updateBasicInfo({ externalLink: e.target.value })
-                      }
-                    />
-                  </>
+                  <Input
+                    id="external-link"
+                    value={basicInfo.externalLink ?? ""}
+                    required
+                    className="w-full"
+                    disabled={!allowEdit}
+                    placeholder={SnowflakeExtraLinkPlaceHolder}
+                    onChange={(e) =>
+                      updateBasicInfo({ externalLink: e.target.value })
+                    }
+                  />
                 )}
               </FormField>
             )}
