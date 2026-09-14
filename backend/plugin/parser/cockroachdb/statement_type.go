@@ -95,6 +95,23 @@ func getStatementType(stmt tree.Statement) storepb.StatementType {
 	case *tree.Truncate:
 		return storepb.StatementType_TRUNCATE
 
+	case *tree.RenameDatabase, *tree.AlterDatabaseOwner, *tree.ReparentDatabase,
+		*tree.AlterDatabaseAddRegion, *tree.AlterDatabaseDropRegion, *tree.AlterDatabasePrimaryRegion,
+		*tree.AlterDatabaseSurvivalGoal, *tree.AlterDatabasePlacement, *tree.AlterDatabaseAddSuperRegion,
+		*tree.AlterDatabaseDropSuperRegion, *tree.AlterDatabaseAlterSuperRegion, *tree.AlterDatabaseSecondaryRegion,
+		*tree.AlterDatabaseDropSecondaryRegion, *tree.AlterDatabaseSetZoneConfigExtension:
+		return storepb.StatementType_ALTER_DATABASE
+	case *tree.SetZoneConfig:
+		if n.Database != "" {
+			return storepb.StatementType_ALTER_DATABASE
+		}
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
+	case *tree.AlterRoleSet:
+		// ALTER DATABASE d SET parses as ALTER ROLE ALL IN DATABASE d SET, which sets the same defaults.
+		if n.AllRoles && n.DatabaseName != "" {
+			return storepb.StatementType_ALTER_DATABASE
+		}
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	case *tree.AlterTable, *tree.AlterTableLocality:
 		return storepb.StatementType_ALTER_TABLE
 	case *tree.AlterTableSetSchema:
