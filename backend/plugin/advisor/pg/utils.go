@@ -194,6 +194,7 @@ type sessionSettings struct {
 }
 
 type sessionSetting struct {
+	name  string
 	text  string
 	local bool
 }
@@ -203,7 +204,15 @@ func (s *sessionSettings) add(node ast.Node, text string) {
 	switch n := node.(type) {
 	case *ast.VariableSetStmt:
 		if omniIsRoleOrSearchPathSet(n) {
-			s.settings = append(s.settings, sessionSetting{text: text, local: n.IsLocal})
+			if n.Kind == ast.VAR_SET_CURRENT && !n.IsLocal {
+				// SET ... FROM CURRENT keeps the value a SET LOCAL gave the setting after the transaction ends.
+				for i := range s.settings {
+					if strings.EqualFold(s.settings[i].name, n.Name) {
+						s.settings[i].local = false
+					}
+				}
+			}
+			s.settings = append(s.settings, sessionSetting{name: n.Name, text: text, local: n.IsLocal})
 		}
 	case *ast.DiscardStmt:
 		if n.Target == ast.DISCARD_ALL {

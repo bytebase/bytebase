@@ -117,4 +117,12 @@ ROLLBACK;`)
 SET LOCAL search_path = i;
 ROLLBACK;`)
 	require.Equal(t, []string{"SET search_path = a", "SET ROLE r", "SET search_path = d", "RESET search_path", "SET search_path = h"}, settings.statements())
+
+	// SET ... FROM CURRENT keeps the SET LOCAL value of its own setting past COMMIT.
+	add(`BEGIN;
+SET LOCAL ROLE s;
+SET LOCAL search_path = j;
+SET search_path FROM CURRENT;
+COMMIT;`)
+	require.Equal(t, []string{"SET search_path = a", "SET ROLE r", "SET search_path = d", "RESET search_path", "SET search_path = h", "SET LOCAL search_path = j", "SET search_path FROM CURRENT"}, settings.statements())
 }

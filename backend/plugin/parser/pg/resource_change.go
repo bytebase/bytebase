@@ -104,6 +104,9 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			var newSearchPath []string
 			if n.Kind == ast.VAR_RESET_ALL || (strings.EqualFold(n.Name, "search_path") && (n.Kind == ast.VAR_RESET || n.Kind == ast.VAR_SET_DEFAULT)) {
 				newSearchPath = initialSearchPath
+			} else if strings.EqualFold(n.Name, "search_path") && n.Kind == ast.VAR_SET_CURRENT {
+				// SET ... FROM CURRENT makes the current search path, which a SET LOCAL may have set, the session's.
+				newSearchPath = searchPath
 			} else if strings.EqualFold(n.Name, "search_path") && n.Args != nil {
 				for _, arg := range n.Args.Items {
 					if ac, ok := arg.(*ast.A_Const); ok {
