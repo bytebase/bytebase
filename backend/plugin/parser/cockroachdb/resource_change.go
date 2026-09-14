@@ -54,6 +54,11 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			addTable(&index.Table, false)
 			return
 		}
+		// dbMetadata describes only the current database, so an index of another is recorded by its database.
+		if index.Table.ExplicitCatalog && index.Table.Catalog() != database {
+			summary.ChangedResources.AddDatabase(index.Table.Catalog())
+			return
+		}
 		if dbMetadata == nil {
 			return
 		}

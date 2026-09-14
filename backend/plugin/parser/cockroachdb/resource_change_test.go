@@ -294,6 +294,7 @@ func TestExtractChangedResourcesDDL(t *testing.T) {
 		{statement: `CREATE TABLE t3 (id INT PRIMARY KEY)`, wantTables: []string{"db.public.t3"}},
 		{statement: `CREATE INDEX idx ON t2 (c)`, wantTables: []string{"db.public.t2"}},
 		{statement: `DROP INDEX t2@t2_c_idx, t2_c_idx, app.t_c_idx, missing_idx`, wantTables: []string{"db.app.t", "db.public.t2"}},
+		{statement: `DROP INDEX db.public.t2_c_idx`, wantTables: []string{"db.public.t2"}},
 		{statement: `ALTER INDEX app.t@t_c_idx PARTITION BY NOTHING`, wantTables: []string{"db.app.t"}},
 		{statement: `ALTER INDEX t2_c_idx NOT VISIBLE`, wantTables: []string{"db.public.t2"}},
 		{statement: `ALTER INDEX t2_c_idx RENAME TO t2_idx`, wantTables: []string{"db.public.t2"}},
@@ -319,6 +320,14 @@ func TestExtractChangedResourcesDDL(t *testing.T) {
 			require.Zero(t, got.DMLCount)
 		})
 	}
+
+	t.Run("an index of another database is recorded by its database", func(t *testing.T) {
+		const statement = `DROP INDEX otherdb.public.t2_c_idx`
+		got, err := extractChangedResources("db", "public", dbMetadata, parseASTs(t, statement), statement)
+		require.NoError(t, err)
+		require.Empty(t, getTableNames(got.ChangedResources))
+		require.Equal(t, []string{"otherdb"}, got.ChangedResources.GetDatabaseOnlyTargets())
+	})
 }
 
 func TestExtractChangedResourcesExplainAnalyze(t *testing.T) {
