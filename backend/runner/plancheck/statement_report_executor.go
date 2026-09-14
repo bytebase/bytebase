@@ -393,14 +393,20 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			i = end
 			write('?')
 		case c == '[':
-			// A SQL Server bracketed identifier, or an array subscript, keeps its text.
-			end := strings.IndexByte(statement[i:], ']')
-			if end < 0 {
+			// A SQL Server bracketed identifier, where ]] continues it, or an array subscript, keeps its text.
+			end := i + 1
+			for end < len(statement) && (statement[end] != ']' || (end+1 < len(statement) && statement[end+1] == ']')) {
+				if statement[end] == ']' {
+					end++
+				}
+				end++
+			}
+			if end >= len(statement) {
 				return statement
 			}
 			write(c)
-			b.WriteString(statement[i+1 : i+end+1])
-			i += end + 1
+			b.WriteString(statement[i+1 : end+1])
+			i = end + 1
 		case c == '"' || c == '`':
 			end, closed := quotedEnd(statement, i, mysqlFamily && c == '"')
 			if !closed {
