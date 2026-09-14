@@ -259,8 +259,8 @@ func queryBlockRows(block map[string]any) (float64, error) {
 // dmlTargets holds the names a plan uses for the tables an UPDATE or DELETE modifies.
 type dmlTargets struct {
 	names []string
-	// unqualified marks a multi-table UPDATE assignment to a column without a table qualifier.
-	unqualified bool
+	// unqualified counts the multi-table UPDATE assignments to a column without a table qualifier.
+	unqualified int
 }
 
 func updateTargets(stmt *ast.UpdateStmt) dmlTargets {
@@ -272,7 +272,7 @@ func updateTargets(stmt *ast.UpdateStmt) dmlTargets {
 	var targets dmlTargets
 	for _, assignment := range stmt.SetList {
 		if assignment.Column == nil || assignment.Column.Table == "" {
-			targets.unqualified = true
+			targets.unqualified++
 			continue
 		}
 		if !containsFold(targets.names, assignment.Column.Table) {
@@ -329,7 +329,7 @@ func targetRows(block map[string]any, targets dmlTargets) (float64, error) {
 	// explained as flags none, so find the targets by name. A name that no plan table has, such as a
 	// view's, or that several have, as when a subquery reads another table of that name, counts the
 	// final estimate.
-	if len(targets.names) == 0 && !targets.unqualified {
+	if len(targets.names) == 0 && targets.unqualified == 0 {
 		return 0, errors.New("the plan has no UPDATE or DELETE target")
 	}
 	for _, name := range targets.names {
@@ -346,10 +346,9 @@ func targetRows(block map[string]any, targets dmlTargets) (float64, error) {
 			total += final
 		}
 	}
-	// An unqualified column may belong to any joined table, so it counts the final estimate.
-	if targets.unqualified {
-		total += final
-	}
+	// An unqualified column may belong to any joined table, so each counts the final estimate, up to
+	// one per joined table.
+	total += final * float64(min(targets.unqualified, len(tables)))
 	return total, nil
 }
 

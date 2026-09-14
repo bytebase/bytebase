@@ -333,6 +333,12 @@ func TestEstimateAffectedRowsFromExplainJSON(t *testing.T) {
 			want:      1000,
 		},
 		{
+			// Either joined table may own each unqualified column: 2 * 1000.
+			fixture:   "mariadb_update_join_unqualified_column.json",
+			statement: "UPDATE big AS b JOIN s AS x ON b.s_id = x.id SET v = 1, flag = 0 WHERE x.flag = 1;",
+			want:      2000,
+		},
+		{
 			fixture:   "mariadb_delete_impossible_where.json",
 			statement: "DELETE FROM t WHERE 1 = 0;",
 			want:      0,
