@@ -10,11 +10,12 @@ import { planEvents } from "@/lib/plan/events";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
 import { catalogResourceName } from "@/stores/app/databaseCatalog";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import type {
   DatabaseCatalog,
   ObjectSchema,
 } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { getDatabaseEngine } from "@/utils/v1/database";
 import { convertMemberToFullname } from "@/utils/v1/iam";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import { GUIDE_PROGRESS_KEYS } from "./progress";
@@ -136,6 +137,19 @@ const isPopulatedProjectDatabaseRoute = (
   !!databaseName &&
   params.projectId === extractProjectResourceName(databaseProjectName);
 
+const databaseNameFromRoute = (route: GuideRoute) => {
+  const params = route.params ?? {};
+  if (
+    (route.name !== PROJECT_V1_ROUTE_DATABASE_DETAIL &&
+      route.name !== INSTANCE_ROUTE_DATABASE_DETAIL) ||
+    !hasRouteParams(params, ["instanceId", "databaseName"])
+  ) {
+    return undefined;
+  }
+  const parent = route.query?.parent;
+  return `${typeof parent === "string" ? parent : `instances/${params.instanceId}`}/databases/${params.databaseName}`;
+};
+
 export const useGuideContext = ({
   enabled,
   dismissed,
@@ -185,9 +199,24 @@ export const useGuideContext = ({
   );
   const [facts, setFacts] = useState<GuideFacts>(INITIAL_FACTS);
   const [contextReady, setContextReady] = useState(false);
+  const routeDatabaseName =
+    scenarioId === "mark-sensitive-data"
+      ? databaseNameFromRoute(route)
+      : undefined;
+  const routeDatabase = useAppStore((state) =>
+    routeDatabaseName ? state.databasesByName[routeDatabaseName] : undefined
+  );
+  const useRouteDatabase =
+    !!routeDatabase && getDatabaseEngine(routeDatabase) !== Engine.REDIS;
+  const databaseName = useRouteDatabase
+    ? routeDatabase.name
+    : facts.databaseName;
+  const databaseProjectName = useRouteDatabase
+    ? routeDatabase.project
+    : facts.databaseProjectName;
   const targetCatalog = useAppStore((state) =>
-    facts.databaseName
-      ? state.catalogsByName[catalogResourceName(facts.databaseName)]
+    databaseName
+      ? state.catalogsByName[catalogResourceName(databaseName)]
       : undefined
   );
   const hasMarkedSensitiveData =
@@ -323,7 +352,12 @@ export const useGuideContext = ({
               ? store.fetchDatabases({
                   parent: workspaceResourceName,
                   pageSize: 1,
-                  filter: { project: project.name },
+                  filter: {
+                    project: project.name,
+                    ...(scenarioId === "mark-sensitive-data"
+                      ? { excludeEngines: [Engine.REDIS] }
+                      : {}),
+                  },
                   silent: true,
                 })
               : Promise.resolve(undefined),
@@ -404,12 +438,22 @@ export const useGuideContext = ({
   const context = useMemo(
     () => ({
       ...facts,
+      databaseName,
+      databaseProjectName,
       hasMarkedSensitiveData,
       isSaaS,
       hasOtherWorkspaceMember,
       route,
     }),
-    [facts, hasMarkedSensitiveData, hasOtherWorkspaceMember, isSaaS, route]
+    [
+      facts,
+      databaseName,
+      databaseProjectName,
+      hasMarkedSensitiveData,
+      hasOtherWorkspaceMember,
+      isSaaS,
+      route,
+    ]
   );
   return { context, contextReady };
 };

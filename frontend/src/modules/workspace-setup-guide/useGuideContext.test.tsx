@@ -9,6 +9,10 @@ import {
 import { planEvents } from "@/lib/plan/events";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { DatabaseCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { getGuideJourney } from "./scenarios";
+import { resolveGuide } from "./resolve";
+import { GUIDE_STEP_DEFINITIONS } from "./steps";
 import { GUIDE_PROGRESS_KEYS } from "./progress";
 import type {
   GuideRoute,
@@ -273,6 +277,78 @@ describe("useGuideContext", () => {
       silent: true,
     });
     expect(result.current.context.hasMarkedSensitiveData).toBe(true);
+  });
+
+  test.each([
+    [undefined, "instances/other/databases/selected"],
+    ["instances/other", "instances/other/databases/selected"],
+    ["projects/app/instances/other", "projects/app/instances/other/databases/selected"],
+  ])("watches the opened database under %s instead of the discovered target", async (parent, database) => {
+    mockDiscoveredDatabase();
+    const props = {
+      enabled: true,
+      dismissed: false,
+      scenarioId: "mark-sensitive-data" as const,
+      route: {
+        name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+        params: { projectId: "app", instanceId: "other", databaseName: "selected" },
+        query: { parent },
+      },
+    };
+    mocks.databasesByName = { [database]: { name: database, project: "projects/app" } };
+    const { result, rerender } = renderGuideContext(props);
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.databaseName).toBe(database);
+    expect(result.current.context.hasMarkedSensitiveData).toBe(false);
+    mocks.catalogsByName = {
+      [`${database}/catalog`]: catalogWithColumn({ semanticType: "bb.default" }),
+    };
+    rerender(props);
+    await waitFor(() => expect(result.current.context.hasMarkedSensitiveData).toBe(true));
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: GUIDE_PROGRESS_KEYS.sensitiveDataMarked,
+      newState: true,
+    });
+  });
+
+  test.each([
+    home,
+    {
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: { projectId: "app", instanceId: "redis", databaseName: "0" },
+    },
+  ])("requires a non-Redis target before enabling the masking step on %j", async (route) => {
+    mockDiscoveredDatabase();
+    mocks.introState[GUIDE_PROGRESS_KEYS.databaseExplored] = true;
+    mocks.databasesByName = {
+      "instances/redis/databases/0": {
+        name: "instances/redis/databases/0",
+        project: "projects/app",
+        instanceResource: { engine: Engine.REDIS },
+      },
+    };
+    mocks.fetchDatabases.mockImplementation(async (request) => ({
+      databases: request.filter.excludeEngines?.includes(Engine.REDIS)
+        ? []
+        : [{ name: "instances/redis/databases/0", project: "projects/app" }],
+      nextPageToken: "",
+    }));
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route,
+      scenarioId: "mark-sensitive-data",
+    });
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(expect.objectContaining({
+      filter: { project: "projects/app", excludeEngines: [Engine.REDIS] },
+    }));
+    const guide = resolveGuide({
+      journey: getGuideJourney("mark-sensitive-data"),
+      definitions: GUIDE_STEP_DEFINITIONS,
+      context: result.current.context,
+    });
+    expect(guide.steps.find((step) => step.definition.id === "mark-sensitive-data")?.blocked).toBe(true);
   });
 
   test("reacts when the target catalog marks a sensitive column", async () => {

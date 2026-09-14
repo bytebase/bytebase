@@ -18,7 +18,8 @@ export type GuideWorkspaceUsage = "team" | "solo";
 
 export type GuideJourneyId = "workspace-setup" | GuideScenarioId;
 
-export type GuideRoute = Pick<ReactRoute, "name" | "params">;
+export type GuideRoute = Pick<ReactRoute, "name" | "params"> &
+  Partial<Pick<ReactRoute, "query">>;
 
 export type GuideContext = {
   hasProject: boolean;

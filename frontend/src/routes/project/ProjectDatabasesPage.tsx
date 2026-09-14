@@ -84,6 +84,7 @@ import {
   PERMISSIONS_FOR_DATABASE_CREATE_ISSUE,
   supportedEngineV1List,
 } from "@/utils";
+import { getDatabaseEngine } from "@/utils/v1/database";
 import { extractProjectResourceName } from "@/utils/v1/project";
 
 const fetchAvailableInstanceCount = async (
@@ -626,10 +627,12 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     );
   }, [projectName]);
 
+  const maskingDatabase = visibleDatabases.find(
+    (database) => getDatabaseEngine(database) !== Engine.REDIS
+  );
   const handleMarkSensitiveData = useCallback(() => {
-    const firstDatabase = visibleDatabases[0];
-    if (!firstDatabase) return;
-    const target = autoDatabaseRoute(firstDatabase);
+    if (!maskingDatabase) return;
+    const target = autoDatabaseRoute(maskingDatabase);
     void router.push({
       ...target,
       query: {
@@ -638,7 +641,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       },
       hash: "#catalog",
     });
-  }, [visibleDatabases]);
+  }, [maskingDatabase]);
 
   useProductIntro({
     id: CONNECT_DATABASE_PRODUCT_INTRO,
@@ -806,7 +809,11 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                   </PermissionGuard>
                 )}
                 {databaseNextAction.showMarkSensitiveData && (
-                  <Button size="sm" onClick={handleMarkSensitiveData}>
+                  <Button
+                    size="sm"
+                    disabled={!maskingDatabase}
+                    onClick={handleMarkSensitiveData}
+                  >
                     {t("db.project-instance-synced-mark-sensitive-data-action")}
                   </Button>
                 )}
