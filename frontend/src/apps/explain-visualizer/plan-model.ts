@@ -319,9 +319,11 @@ export interface PlanTimelineRow extends PlanRow {
 /**
  * Every node as a span from its startup cost to its total cost.
  *
- * EXPLAIN without ANALYZE reports no time, but the two costs still say when in
- * the plan a node's work happens: nothing of it is available before the
- * startup cost, and all of it is by the total.
+ * Both costs include the node's whole subtree, so a span says how much of the
+ * plan's cost a node accounts for and how much of that is paid before its first
+ * row. It is not a schedule: siblings each start from their own subtree's cost,
+ * so two inputs of a join overlap on this axis while actually running one after
+ * the other.
  */
 export function planTimeline(tree: PlanTree): PlanTimelineRow[] {
   const fraction = (value: number) =>

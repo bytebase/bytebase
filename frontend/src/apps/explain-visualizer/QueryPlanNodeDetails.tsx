@@ -62,7 +62,7 @@ export function QueryPlanNodeDetails({ node }: Props) {
           value={formatPlanCost(node.startupCost)}
         />
         <PlanMetric label="Total cost" value={formatPlanCost(node.totalCost)} />
-        <PlanMetric label="Self cost" value={formatPlanCost(node.selfCost)} />
+        <PlanMetric label="Added cost" value={formatPlanCost(node.selfCost)} />
         <PlanMetric label="Estimated rows" value={formatPlanCount(node.rows)} />
         <PlanMetric
           label="Row width"

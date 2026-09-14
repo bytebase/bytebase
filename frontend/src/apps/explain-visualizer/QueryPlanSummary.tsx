@@ -319,7 +319,7 @@ function CostByOperation({ tree }: { tree: PlanTree }) {
               "text-right text-xs leading-4 sm:w-28"
             )}
           >
-            Self cost
+            Added cost
           </TableHead>
           <TableHead className="w-28 text-right text-xs leading-4 sm:w-40">
             Share
@@ -375,8 +375,8 @@ export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
         <PlanTotals tree={tree} />
 
         <Section
-          title="Cost timeline"
-          description="Each node spans its startup cost — the cost before its first row — to its total cost. Darker spans carry more of the plan's cost."
+          title="Cost ranges"
+          description="Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other."
         >
           <CostTimeline
             tree={tree}
@@ -387,7 +387,7 @@ export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
 
         <Section
           title="Costliest operators"
-          description="Ranked by the cost a node adds on top of its children."
+          description="Ranked by the cost a node adds on top of its children. A node that rescans an input, such as a nested loop, carries the repeats of that input rather than the input itself."
         >
           <CostliestOperators
             tree={tree}

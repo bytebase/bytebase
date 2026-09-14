@@ -259,9 +259,9 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
             <TableHead className={HEAD_CLASS}>Node</TableHead>
             <TableHead
               className={cn(HEAD_CLASS, "w-32 pl-2 text-right sm:w-48")}
-              title="Cost the node adds on top of its children; the bar is that cost as a share of the plan"
+              title="Cost this node adds on top of its children; a node that rescans an input carries the repeats. The bar is that cost as a share of the plan."
             >
-              Self cost
+              Added cost
             </TableHead>
             <TableHead
               className={cn(

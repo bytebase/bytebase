@@ -43,7 +43,7 @@ describe("QueryPlanNodeDetails", () => {
     expect(screen.getByText("Total cost").nextSibling).toHaveTextContent(
       "1,090.86"
     );
-    expect(screen.getByText("Self cost").nextSibling).toHaveTextContent(
+    expect(screen.getByText("Added cost").nextSibling).toHaveTextContent(
       "193.86"
     );
     expect(screen.getByText("Estimated rows").nextSibling).toHaveTextContent(
