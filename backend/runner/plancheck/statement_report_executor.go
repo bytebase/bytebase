@@ -343,8 +343,8 @@ type statementShape struct {
 	rows       int64
 }
 
-// groupStatementsByShape groups statements that differ only in literal values, comments, or
-// spacing, in the order each shape first appears.
+// groupStatementsByShape groups statements that differ only in literal values or spacing, in the
+// order each shape first appears.
 func groupStatementsByShape(statements []string, mysqlFamily bool) []*statementShape {
 	var shapes []*statementShape
 	byKey := map[string]*statementShape{}
@@ -361,10 +361,10 @@ func groupStatementsByShape(statements []string, mysqlFamily bool) []*statementS
 	return shapes
 }
 
-// shapeKey replaces the string and numeric literals of a statement with ? and removes comments and
-// whitespace. Identifiers keep their text, including their case. mysqlFamily applies the lexical
-// rules of MySQL, MariaDB, TiDB, and OceanBase: a backslash escapes the next character of a quoted
-// string, and -- opens a comment only before whitespace or a control character.
+// shapeKey replaces the string and numeric literals of a statement with ? and drops whitespace that
+// does not separate words. Everything else keeps its text, including identifiers, their case, and
+// comments. mysqlFamily applies the MySQL, MariaDB, TiDB, and OceanBase rule that a backslash escapes
+// the next character of a quoted string.
 func shapeKey(statement string, mysqlFamily bool) string {
 	var b strings.Builder
 	space := false
@@ -379,26 +379,14 @@ func shapeKey(statement string, mysqlFamily bool) string {
 	}
 	for i := 0; i < len(statement); {
 		c := statement[i]
-		// A PostgreSQL dollar-quoted string can hold quotes and comment markers. The MySQL family
-		// allows identifiers that start with $ instead.
-		if c == '$' && !mysqlFamily && (i == 0 || !isWordByte(statement[i-1])) {
-			if tag := dollarQuoteTag(statement[i:]); tag != "" {
-				end := strings.Index(statement[i+len(tag):], tag)
-				if end < 0 {
-					return statement
-				}
-				i += 2*len(tag) + end
-				write('?')
-				continue
-			}
-		}
 		switch {
 		case c == '\'':
 			// PostgreSQL E'...' strings escape with backslashes too.
 			escapes := mysqlFamily || (i > 0 && (statement[i-1] == 'E' || statement[i-1] == 'e') && (i == 1 || !isWordByte(statement[i-2])))
 			end, closed := quotedEnd(statement, i, escapes)
 			if !closed {
-				// An unclosed quote means the scan misread the statement, so it keeps a shape of its own.
+				// An unclosed quote means the scan misread the statement, such as a quote inside a
+				// comment or a dollar-quoted string, so the statement keeps a shape of its own.
 				return statement
 			}
 			i = end
@@ -416,20 +404,6 @@ func shapeKey(statement string, mysqlFamily bool) string {
 				i++
 			}
 			write('?')
-		case isSkippedComment(statement[i:], "--", mysqlFamily):
-			if end := strings.IndexByte(statement[i:], '\n'); end >= 0 {
-				i += end
-			} else {
-				i = len(statement)
-			}
-			space = true
-		case isSkippedComment(statement[i:], "/*", mysqlFamily):
-			if end := strings.Index(statement[i+2:], "*/"); end >= 0 {
-				i += end + 4
-			} else {
-				i = len(statement)
-			}
-			space = true
 		case c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v':
 			space = true
 			i++
@@ -439,24 +413,6 @@ func shapeKey(statement string, mysqlFamily bool) string {
 		}
 	}
 	return b.String()
-}
-
-// isSkippedComment reports whether text starts with a comment that opens with opener and does not
-// change how the statement runs: MySQL and MariaDB run /*! and /*M! comments, and /*+ and --+
-// comments hold optimizer hints.
-func isSkippedComment(text, opener string, mysqlFamily bool) bool {
-	if !strings.HasPrefix(text, opener) {
-		return false
-	}
-	if mysqlFamily && opener == "--" && len(text) > 2 && text[2] > ' ' {
-		return false
-	}
-	for _, kept := range []string{"/*!", "/*M!", "/*+", "--+"} {
-		if strings.HasPrefix(text, kept) {
-			return false
-		}
-	}
-	return true
 }
 
 // quotedEnd returns the offset just past the quoted text that starts at start, where a doubled
@@ -476,22 +432,6 @@ func quotedEnd(statement string, start int, backslashEscapes bool) (int, bool) {
 		}
 	}
 	return len(statement), false
-}
-
-// dollarQuoteTag returns the $$ or $tag$ that opens a PostgreSQL dollar-quoted string at the start
-// of text, or "" when text does not start with one.
-func dollarQuoteTag(text string) string {
-	for i := 1; i < len(text); i++ {
-		c := text[i]
-		switch {
-		case c == '$':
-			return text[:i+1]
-		case c == '_' || c >= 0x80 || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (i > 1 && '0' <= c && c <= '9'):
-		default:
-			return ""
-		}
-	}
-	return ""
 }
 
 func isWordByte(c byte) bool {

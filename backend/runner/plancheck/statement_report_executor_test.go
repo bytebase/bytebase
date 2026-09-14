@@ -149,15 +149,15 @@ func TestShapeKey(t *testing.T) {
 			statements: []string{
 				"UPDATE t SET v = 'it''s' WHERE id = 1;",
 				"UPDATE t SET v='x' WHERE id=20.5;",
-				"UPDATE  t\n\tSET v = 'C:\\'  -- comment\nWHERE /* note */ id = 3;",
+				"UPDATE  t\n\tSET v = 'C:\\'  WHERE id = 3;",
 			},
 			want: "UPDATE t SET v=? WHERE id=?;",
 		},
 		{
-			name: "MySQL family escapes and comments",
+			name: "MySQL family backslash escapes",
 			statements: []string{
 				"UPDATE t SET v = 'it\\'s' WHERE id = 1;",
-				"UPDATE t SET v = 'C:\\\\' -- note\nWHERE id = 2;",
+				"UPDATE t SET v = 'C:\\\\' WHERE id = 2;",
 			},
 			mysqlFamily: true,
 			want:        "UPDATE t SET v=? WHERE id=?;",
@@ -169,14 +169,6 @@ func TestShapeKey(t *testing.T) {
 				"UPDATE t SET v = E'x' WHERE id = 2;",
 			},
 			want: "UPDATE t SET v=E? WHERE id=?;",
-		},
-		{
-			name: "PostgreSQL dollar-quoted strings and parameters",
-			statements: []string{
-				"UPDATE t SET v = $$--$$ WHERE id = $1;",
-				"UPDATE t SET v = $body$it's$body$ WHERE id = $1;",
-			},
-			want: "UPDATE t SET v=? WHERE id=$1;",
 		},
 		{
 			name: "lists of literals",
@@ -205,22 +197,22 @@ func TestShapeKey(t *testing.T) {
 			{`UPDATE "2024_orders" SET v = 1`, `UPDATE "2025_orders" SET v = 1`},
 			{"UPDATE `Orders` SET v = 1", "UPDATE `orders` SET v = 1"},
 			{"UPDATE Orders SET v = 1", "UPDATE orders SET v = 1"},
-			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1"},
-			{"UPDATE t SET v = 1 /*M! WHERE id = 1 */", "UPDATE t SET v = 1"},
-			{"UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1", "UPDATE t SET v = 1"},
-			{"UPDATE --+ CARDINALITY(t 1000000)\nt SET v = 1", "UPDATE t SET v = 1"},
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
+			// Comments stay in the shape, so no comment marker can hide the rest of a statement.
+			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1"},
+			{"UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1", "UPDATE t SET v = 1"},
+			{"UPDATE [t--x] SET v = 1 WHERE id = 1", "UPDATE [t--x] SET v = 1"},
+			{"UPDATE t SET v = v--1 WHERE id = 1", "UPDATE t SET v = v"},
 			{"UPDATE t SET v = $$--$$ WHERE id = 1", "UPDATE t SET v = $$--$$"},
-			{"UPDATE t SET v = $tag$it's$tag$ WHERE id = 1", "UPDATE t SET v = $tag$it's$tag$"},
 			// The quote never closes, so each statement keeps its own shape.
-			{"UPDATE t SET v = 'it WHERE id = 1", "UPDATE t SET v = 'it"},
+			{"UPDATE t SET v = $$it's$$ WHERE id = 1", "UPDATE t SET v = $$it's$$"},
+			{"UPDATE t SET v = 1 -- don't\nWHERE id = 1", "UPDATE t SET v = 1 -- don't\n"},
 		} {
 			require.NotEqual(t, shapeKey(pair[0], false), shapeKey(pair[1], false), pair[0])
+			require.NotEqual(t, shapeKey(pair[0], true), shapeKey(pair[1], true), pair[0])
 		}
 		require.NotEqual(t, shapeKey("UPDATE t SET v = 'it\\'s' WHERE id = 1", true), shapeKey("UPDATE t SET v = 'it\\'s'", true))
 		require.NotEqual(t, shapeKey(`UPDATE t SET v = "a\"b" WHERE id = 1`, true), shapeKey(`UPDATE t SET v = "a\"b"`, true))
-		// MySQL reads c--1 as c - (-1), not as the start of a comment.
-		require.NotEqual(t, shapeKey("UPDATE t SET c = c--1 WHERE id = 1", true), shapeKey("UPDATE t SET c = c", true))
 	})
 }
 
