@@ -66,6 +66,7 @@ import {
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
 import {
+  engineNameV1,
   extractInstanceResourceName,
   extractProjectResourceName,
   getDefaultPagination,
@@ -593,12 +594,20 @@ export function InstanceDetailView({
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-x-2">
-          <EngineIcon engine={instance.engine} className="h-6 w-6" />
-          <span className="text-lg font-medium">
-            {instanceV1Name(instance)}
-          </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-2">
+          <EngineIcon engine={instance.engine} className="size-6 shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-lg font-medium break-words">
+              {instanceV1Name(instance)}
+            </h1>
+            {cachedInstance && (
+              <p className="text-sm text-control-light break-words">
+                {engineNameV1(instance.engine)}
+                {instance.engineVersion && ` · ${instance.engineVersion}`}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-x-2">
           {instance.state === State.ACTIVE && (
