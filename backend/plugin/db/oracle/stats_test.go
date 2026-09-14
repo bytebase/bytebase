@@ -59,6 +59,35 @@ func TestCountAffectedRows(t *testing.T) {
 			want:      100,
 		},
 		{
+			// Captured from Oracle 23, where the statement row estimates the 1000 rows an INSERT ALL reads
+			// and writes to three tables.
+			name:      "insert_all_writes_each_row_to_every_into",
+			statement: "INSERT ALL INTO t1 VALUES (id) INTO t2 VALUES (id) INTO t3 VALUES (id) SELECT id FROM src",
+			plan: [][]driver.Value{
+				{"0", nil, "INSERT STATEMENT", "1000"},
+				{"1", "0", "MULTI-TABLE INSERT", nil},
+				{"2", "1", "TABLE ACCESS", "1000"},
+				{"3", "1", "INTO", nil},
+				{"4", "1", "INTO", nil},
+				{"5", "1", "INTO", nil},
+			},
+			explained: "INSERT " + hint + " ALL INTO t1 VALUES (id) INTO t2 VALUES (id) INTO t3 VALUES (id) SELECT id FROM src",
+			want:      3000,
+		},
+		{
+			name:      "insert_first_writes_each_row_once",
+			statement: "INSERT /* move */ FIRST WHEN id < 10 THEN INTO t1 VALUES (id) ELSE INTO t2 VALUES (id) SELECT id FROM src",
+			plan: [][]driver.Value{
+				{"0", nil, "INSERT STATEMENT", "1000"},
+				{"1", "0", "MULTI-TABLE INSERT", nil},
+				{"2", "1", "TABLE ACCESS", "1000"},
+				{"3", "1", "INTO", nil},
+				{"4", "1", "INTO", nil},
+			},
+			explained: "INSERT " + hint + " /* move */ FIRST WHEN id < 10 THEN INTO t1 VALUES (id) ELSE INTO t2 VALUES (id) SELECT id FROM src",
+			want:      1000,
+		},
+		{
 			name:      "merge_without_cardinality",
 			statement: "MERGE INTO t2 USING t ON (t2.id = t.id) WHEN MATCHED THEN UPDATE SET t2.v = t.v",
 			plan: [][]driver.Value{

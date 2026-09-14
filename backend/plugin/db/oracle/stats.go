@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -66,7 +67,7 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 	if err := rows.Err(); err != nil {
 		return 0, errors.Wrapf(err, "failed to get plan cardinality")
 	}
-	return getAffectedRowsFromPlan(plan)
+	return getAffectedRowsFromPlan(plan, isInsertFirst(statement))
 }
 
 type planRow struct {
@@ -78,8 +79,10 @@ type planRow struct {
 
 // getAffectedRowsFromPlan returns the cardinality of the statement row (ID 0). For a MERGE it returns
 // the cardinality of the rows the MERGE operation reads instead, because with dynamic sampling the
-// statement row of a MERGE plan no longer estimates them.
-func getAffectedRowsFromPlan(plan []planRow) (int64, error) {
+// statement row of a MERGE plan no longer estimates them. A multi-table INSERT ALL can write each row
+// it reads to every INTO operation, so its estimate is the statement row times those operations;
+// insertFirst marks an INSERT FIRST, which writes each row at most once.
+func getAffectedRowsFromPlan(plan []planRow, insertFirst bool) (int64, error) {
 	for _, row := range plan {
 		if row.operation != "MERGE" {
 			continue
@@ -103,7 +106,35 @@ func getAffectedRowsFromPlan(plan []planRow) (int64, error) {
 	if !plan[i].cardinality.Valid {
 		return 0, errors.New("plan has no cardinality estimate")
 	}
-	return plan[i].cardinality.Int64, nil
+	rows := plan[i].cardinality.Int64
+	targets := 0
+	for _, row := range plan {
+		if row.operation == "INTO" {
+			targets++
+		}
+	}
+	if targets > 1 && !insertFirst {
+		return common.RoundRows(float64(rows) * float64(targets)), nil
+	}
+	return rows, nil
+}
+
+// isInsertFirst reports whether statement is an INSERT FIRST.
+func isInsertFirst(statement string) bool {
+	start := skipSpaceAndComments(statement)
+	end := start
+	for end < len(statement) && isLetter(statement[end]) {
+		end++
+	}
+	if !strings.EqualFold(statement[start:end], "INSERT") {
+		return false
+	}
+	start = end + skipSpaceAndComments(statement[end:])
+	end = start
+	for end < len(statement) && isLetter(statement[end]) {
+		end++
+	}
+	return strings.EqualFold(statement[start:end], "FIRST")
 }
 
 // withDynamicSamplingHint adds dynamicSamplingHint to the hint of an UPDATE, DELETE, INSERT, or MERGE
