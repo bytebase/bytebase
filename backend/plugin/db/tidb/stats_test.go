@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 )
 
@@ -137,9 +138,20 @@ func TestGetAffectedRowsFromPlan(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, tc.want, got)
+			require.Equal(t, tc.want, common.RoundRows(got))
 		})
 	}
+}
+
+func TestGetAffectedRows(t *testing.T) {
+	plan := []planRow{
+		{"Delete_7", "N/A"},
+		{"└─HashJoin_20", "0.40"},
+	}
+	// 0.4 joined rows change a row in each of two tables.
+	got, err := getAffectedRows(plan, "DELETE a, b FROM a JOIN b ON a.id = b.id")
+	require.NoError(t, err)
+	require.Equal(t, int64(1), got)
 }
 
 func TestCountDMLTargets(t *testing.T) {

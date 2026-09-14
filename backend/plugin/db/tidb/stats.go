@@ -52,13 +52,18 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 	if err := rows.Err(); err != nil {
 		return 0, err
 	}
-	count, err := getAffectedRowsFromPlan(plan)
+	return getAffectedRows(plan, statement)
+}
+
+// getAffectedRows returns the rows statement modifies according to its plan. The plan estimates the
+// rows the statement reads, and a multi-table UPDATE or DELETE can change a row of each target table
+// for every one of them.
+func getAffectedRows(plan []planRow, statement string) (int64, error) {
+	estimate, err := getAffectedRowsFromPlan(plan)
 	if err != nil {
 		return 0, err
 	}
-	// The plan estimates the rows the statement reads, and a multi-table UPDATE or DELETE can change
-	// a row of each target table for every one of them.
-	return common.RoundRows(float64(count) * float64(countDMLTargets(statement))), nil
+	return common.RoundRows(estimate * float64(countDMLTargets(statement))), nil
 }
 
 // countDMLTargets returns how many tables an UPDATE or DELETE can change for each row it reads: the
@@ -119,7 +124,7 @@ type planRow struct {
 // INSERT, UPDATE, or DELETE at the plan root. The root itself reports N/A, operators
 // deeper in the tree estimate rows before the filters, joins, and limits above them
 // apply, and a later root plans a CTE or subquery.
-func getAffectedRowsFromPlan(plan []planRow) (int64, error) {
+func getAffectedRowsFromPlan(plan []planRow) (float64, error) {
 	if len(plan) == 0 {
 		return 0, errors.New("EXPLAIN returned no plan")
 	}
@@ -136,5 +141,5 @@ func getAffectedRowsFromPlan(plan []planRow) (int64, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to parse estRows of %q", plan[1].id)
 	}
-	return common.RoundRows(estRows), nil
+	return estRows, nil
 }
