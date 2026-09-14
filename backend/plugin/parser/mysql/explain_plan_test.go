@@ -55,6 +55,21 @@ func TestAffectedRowsQuery(t *testing.T) {
 			want:      "DELETE FROM t /*!80000 WHERE id = 1 */;",
 		},
 		{
+			name:      "update with an optimizer hint",
+			statement: "UPDATE /*+ SET_VAR(optimizer_switch='condition_fanout_filter=off') */ t SET c = 1 WHERE id > 5;",
+			want:      "UPDATE /*+ SET_VAR(optimizer_switch='condition_fanout_filter=off') */ t SET c = 1 WHERE id > 5;",
+		},
+		{
+			name:      "delete with an optimizer hint",
+			statement: "DELETE /*+ NO_RANGE_OPTIMIZATION(t) */ FROM t WHERE id > 5;",
+			want:      "DELETE /*+ NO_RANGE_OPTIMIZATION(t) */ FROM t WHERE id > 5;",
+		},
+		{
+			name:      "update with a comment before the table",
+			statement: "UPDATE /* ticket 42 */ t SET c = 1 WHERE id > 5;",
+			want:      "SELECT 1 FROM t WHERE id > 5",
+		},
+		{
 			name:      "update with a CTE",
 			statement: "WITH x AS (SELECT id FROM s WHERE flag = 1) UPDATE t SET v = 'y' WHERE grp IN (SELECT id FROM x);",
 			want:      "WITH x AS (SELECT id FROM s WHERE flag = 1) SELECT 1 FROM t WHERE grp IN (SELECT id FROM x)",

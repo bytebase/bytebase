@@ -39,6 +39,11 @@ func AffectedRowsQuery(stmt ast.Node, statement string) string {
 	if loc.Start < 0 || loc.Start > table.Loc.Start || table.Loc.End > clausesStart || clausesStart > loc.End || loc.End > len(statement) {
 		return statement
 	}
+	// The SELECT leaves out the text before the table, where an optimizer hint or executable comment
+	// can change the plan.
+	if prefix := statement[loc.Start:table.Loc.Start]; strings.Contains(prefix, "/*!") || strings.Contains(prefix, "/*M!") || strings.Contains(prefix, "/*+") {
+		return statement
+	}
 	clauses := strings.TrimSpace(statement[clausesStart:loc.End])
 	if rest := trimLeadingComments(clauses); rest != "" && !startsWithKeyword(rest, "WHERE", "ORDER", "LIMIT") {
 		return statement
