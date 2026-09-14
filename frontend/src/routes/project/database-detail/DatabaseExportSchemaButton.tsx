@@ -25,16 +25,9 @@ const extractDatabaseName = (resource: string) => {
   return matches?.groups?.databaseName ?? "";
 };
 
-export function DatabaseExportSchemaButton({
-  database,
-  disabled = false,
-}: {
-  database: Database;
-  disabled?: boolean;
-}) {
+export function useDatabaseSchemaExport(database: Database) {
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const options = useMemo(
     () => [
@@ -53,7 +46,6 @@ export function DatabaseExportSchemaButton({
   const handleExport = useCallback(
     async (format: GetDatabaseSDLSchemaRequest_SDLFormat) => {
       setExporting(true);
-      setOpen(false);
 
       try {
         const response =
@@ -104,6 +96,20 @@ export function DatabaseExportSchemaButton({
     [database, t]
   );
 
+  return { exporting, options, exportSchema: handleExport };
+}
+
+export function DatabaseExportSchemaButton({
+  database,
+  disabled = false,
+}: {
+  database: Database;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const { exporting, options, exportSchema } =
+    useDatabaseSchemaExport(database);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
@@ -118,7 +124,10 @@ export function DatabaseExportSchemaButton({
         {options.map((option) => (
           <DropdownMenuItem
             key={option.key}
-            onClick={() => void handleExport(option.key)}
+            onClick={() => {
+              setOpen(false);
+              void exportSchema(option.key);
+            }}
           >
             {option.label}
           </DropdownMenuItem>
