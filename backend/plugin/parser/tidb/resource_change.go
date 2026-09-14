@@ -135,6 +135,11 @@ func addBatchSampleDML(summary *base.ChangeSummary, ast base.AST) {
 		summary.DMLCount++
 		return
 	}
+	// omni positions the text after an executable comment as if the comment's markers were removed.
+	if strings.Contains(omniAST.Text, "/*!") || strings.Contains(omniAST.Text, "/*T!") || strings.Contains(omniAST.Text, "/*M!") {
+		summary.DMLCount++
+		return
+	}
 	var loc omniast.Loc
 	switch dml := batch.DML.(type) {
 	case *omniast.DeleteStmt:

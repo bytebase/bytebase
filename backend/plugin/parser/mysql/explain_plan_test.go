@@ -13,7 +13,7 @@ import (
 // The fixtures are real `EXPLAIN FORMAT=JSON` outputs. Plans over target_table (400k rows) and
 // related_table (100k rows) come from MySQL 8.0 and MariaDB 11. The others come from MySQL 8.0.33
 // (unprefixed), MySQL 5.7, and MariaDB 11.8 against t (1000 rows), s (100 rows, 10 flagged), big
-// (10000 rows, 100 per s row), and the empty copies t2 and big2.
+// (10000 rows, 100 per s row), small (3 rows), and the empty copies t2 and big2.
 func TestAffectedRowsQuery(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
@@ -64,6 +64,12 @@ func TestAffectedRowsQuery(t *testing.T) {
 			name:      "delete with an optimizer hint",
 			statement: "DELETE /*+ NO_RANGE_OPTIMIZATION(t) */ FROM t WHERE id > 5;",
 			want:      "DELETE /*+ NO_RANGE_OPTIMIZATION(t) */ FROM t WHERE id > 5;",
+		},
+		{
+			// omni positions the text after an executable comment as if its markers were removed.
+			name:      "delete with an executable comment in WHERE",
+			statement: "DELETE FROM big WHERE /*!50700 v = 0 AND */ s_id < 10000000000;",
+			want:      "DELETE FROM big WHERE /*!50700 v = 0 AND */ s_id < 10000000000;",
 		},
 		{
 			name:      "update with a comment before the table",
@@ -210,6 +216,29 @@ func TestEstimateAffectedRowsFromExplainJSON(t *testing.T) {
 			fixture:   "mariadb_select_for_delete_all_rows.json",
 			statement: "DELETE FROM big;",
 			want:      10000,
+		},
+		{
+			// A target the plan does not name, such as a view, counts the final estimate.
+			fixture:   "select_only.json",
+			statement: "UPDATE other_table SET target_flag = 1;",
+			want:      200,
+		},
+		{
+			// UNION ALL of 3 joined rows and the first EXCEPT branch's 500.
+			fixture:   "insert_select_union_except.json",
+			statement: "INSERT INTO t2 SELECT t.* FROM small JOIN t USING (id) UNION ALL (SELECT * FROM t WHERE c < 50 EXCEPT SELECT * FROM t WHERE d = 1);",
+			want:      503,
+		},
+		{
+			// UNION ALL of 3 joined rows and the smaller INTERSECT branch's 100.
+			fixture:   "insert_select_union_intersect.json",
+			statement: "INSERT INTO t2 SELECT t.* FROM small JOIN t USING (id) UNION ALL (SELECT * FROM t WHERE c < 50 INTERSECT SELECT * FROM t WHERE d = 1);",
+			want:      103,
+		},
+		{
+			fixture:   "insert_select_parenthesized_limit.json",
+			statement: "INSERT INTO t2 (SELECT * FROM t ORDER BY c LIMIT 500) ORDER BY id LIMIT 400;",
+			want:      400,
 		},
 		{
 			fixture:   "update_impossible_where.json",
@@ -387,12 +416,6 @@ func TestEstimateAffectedRowsFromExplainJSONError(t *testing.T) {
 		statement string
 		wantErr   string
 	}{
-		{
-			name:      "plan without a flagged or named target",
-			plan:      readExplainPlanFixture(t, "select_only.json"),
-			statement: "UPDATE other_table SET target_flag = 1;",
-			wantErr:   `target table "other_table" is not in the plan`,
-		},
 		{
 			// MySQL 8.0 omits insert_from when the SELECT computes window functions.
 			name:      "insert without a source plan",

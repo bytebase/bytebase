@@ -67,9 +67,9 @@ INSERT INTO t DEFAULT VALUES;`,
 		},
 		{
 			name: "merge_is_counted_without_a_sample",
-			statement: `MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;
+			statement: `MERGE INTO m USING s ON m.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;
 UPDATE t SET c = 1 WHERE id = 1;`,
-			tables:        []table{{database: "db", schema: "public", name: "t"}},
+			tables:        []table{{database: "db", schema: "public", name: "m"}, {database: "db", schema: "public", name: "t"}},
 			dmlStatements: []string{"UPDATE t SET c = 1 WHERE id = 1;"},
 			dmlCount:      2,
 		},

@@ -303,13 +303,22 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			explained: "SELECT 1 FROM td WHERE c = 0 LIMIT 3",
 		},
 		{
-			name:        "plan without the target",
+			name:        "target the plan does not name",
 			engine:      storepb.Engine_MYSQL,
 			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
 			plan:        `{"query_block":{"select_id":1,"table":{"table_name":"other","access_type":"ALL","rows_examined_per_scan":1000,"filtered":"100.00"}}}`,
 			statement:   "UPDATE td SET c = 1;",
 			explained:   "SELECT 1 FROM td",
-			wantContent: `failed to get row count for "UPDATE td SET c = 1;": target table "td" is not in the plan`,
+			wantContent: `"UPDATE td SET c = 1;" affected 1000 rows (estimated). The count exceeds 5.`,
+			wantCode:    code.StatementAffectedRowExceedsLimit,
+		},
+		{
+			name:        "plan without an estimate falls back to the tabular plan",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			plan:        `{"query_block":{"select_id":1,"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}`,
+			statement:   "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;",
+			wantContent: `failed to get row count for "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;": table "t2" in the plan has no row estimate`,
 			wantCode:    code.Internal,
 			fallback:    true,
 		},
@@ -364,7 +373,7 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			}
 			jsonQueries := len(wantQueries)
 			if tc.fallback {
-				wantQueries = append(wantQueries, "EXPLAIN "+explained)
+				wantQueries = append(wantQueries, "EXPLAIN FORMAT=TRADITIONAL "+explained)
 			}
 			require.Equal(t, wantQueries, testMySQLAdvisorQueries)
 			for _, conn := range testMySQLAdvisorQueryConns[:jsonQueries] {

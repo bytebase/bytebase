@@ -285,7 +285,9 @@ func TestCountAffectedRowsFallsBackToTabularPlan(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
 		statement string
-		want      int64
+		// table is the tabular plan, which defaults to a single table with 1000 rows and 33.33% filtered.
+		table [][]driver.Value
+		want  int64
 	}{
 		{
 			name:      "rows of the first table estimated, scaled by filtered",
@@ -297,26 +299,41 @@ func TestCountAffectedRowsFallsBackToTabularPlan(t *testing.T) {
 			statement: "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER (ORDER BY id) FROM t WHERE c < 10 LIMIT 50;",
 			want:      50,
 		},
+		{
+			// 3 small rows each join 100 big rows; the subquery's own block does not count.
+			name:      "rows joined in the first query block",
+			statement: "INSERT INTO t2 SELECT big.id, ROW_NUMBER() OVER () FROM small JOIN big ON big.s_id = small.id WHERE small.id IN (SELECT id FROM s);",
+			table: [][]driver.Value{
+				{int64(1), "INSERT", "t2", nil, nil},
+				{int64(1), "SIMPLE", "small", int64(3), 100.0},
+				{int64(1), "SIMPLE", "big", int64(100), 100.0},
+				{int64(2), "SUBQUERY", "s", int64(100), 10.0},
+			},
+			want: 300,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			d := newTestMySQLDriver(t, plan)
-			testMySQLExplainTable = [][]driver.Value{
-				{int64(1), "INSERT", "t2", nil, nil},
-				{int64(1), "SIMPLE", "t", int64(1000), 33.33},
+			testMySQLExplainTable = tc.table
+			if testMySQLExplainTable == nil {
+				testMySQLExplainTable = [][]driver.Value{
+					{int64(1), "INSERT", "t2", nil, nil},
+					{int64(1), "SIMPLE", "t", int64(1000), 33.33},
+				}
 			}
 			got, err := d.CountAffectedRows(context.Background(), tc.statement)
 			require.NoError(t, err)
 			require.Equal(t, tc.want, got)
-			require.Equal(t, "EXPLAIN "+tc.statement, testMySQLStatements[len(testMySQLStatements)-1].query)
+			require.Equal(t, "EXPLAIN FORMAT=TRADITIONAL "+tc.statement, testMySQLStatements[len(testMySQLStatements)-1].query)
 		})
 	}
 }
 
 func TestCountAffectedRowsReportsUninterpretablePlan(t *testing.T) {
-	// A plan without the target table, with no tabular estimate either, fails rather than reading as zero rows.
-	d := newTestMySQLDriver(t, `{"query_block":{"select_id":1,"table":{"table_name":"other","access_type":"ALL","rows_examined_per_scan":1000,"filtered":"100.00"}}}`)
-	_, err := d.CountAffectedRows(context.Background(), "UPDATE td SET c = 1;")
-	require.ErrorContains(t, err, `target table "td" is not in the plan`)
+	// A plan without an estimate, with no tabular estimate either, fails rather than reading as zero rows.
+	d := newTestMySQLDriver(t, `{"query_block":{"select_id":1,"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}`)
+	_, err := d.CountAffectedRows(context.Background(), "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;")
+	require.ErrorContains(t, err, `table "t2" in the plan has no row estimate`)
 }
 
 func TestCountAffectedRowsForOceanBase(t *testing.T) {

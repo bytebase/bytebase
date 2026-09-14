@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -12,6 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -72,35 +74,36 @@ func (*statementAffectedRowLimitRule) Name() string {
 }
 
 func (r *statementAffectedRowLimitRule) OnStatement(node ast.Node) {
+	node, text := pgparser.UnwrapExplainAnalyze(node, r.StmtText)
 	switch n := node.(type) {
 	case *ast.VariableSetStmt:
 		if omniIsRoleOrSearchPathSet(n) {
 			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
 		}
 	case *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
-		r.checkAffectedRows()
+		r.checkAffectedRows(text)
 	case *ast.SelectStmt:
 		if hasDataModifyingCTE(n.WithClause) {
-			r.checkAffectedRows()
+			r.checkAffectedRows(text)
 		}
 	case *ast.InsertStmt:
 		if hasDataModifyingCTE(n.WithClause) {
-			r.checkAffectedRows()
+			r.checkAffectedRows(text)
 		}
 	case *ast.CreateTableAsStmt:
 		if query, ok := n.Query.(*ast.SelectStmt); ok && hasDataModifyingCTE(query.WithClause) {
-			r.checkAffectedRows()
+			r.checkAffectedRows(text)
 		}
 	default:
 	}
 }
 
-func (r *statementAffectedRowLimitRule) checkAffectedRows() {
+func (r *statementAffectedRowLimitRule) checkAffectedRows(text string) {
 	if !r.explains.Spend(&storepb.Position{Line: r.ContentStartLine() + int32(r.BaseLine)}) {
 		return
 	}
 
-	statementText := r.TrimmedStmtText()
+	statementText := strings.TrimRight(strings.TrimSpace(text), ";")
 
 	res, err := advisor.Query(r.ctx, advisor.QueryContext{
 		TenantMode:    r.tenantMode,

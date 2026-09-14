@@ -182,14 +182,14 @@ func omniAlterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
 	return cmds
 }
 
-// nolint:unused
-// omniIsRoleOrSearchPathSet checks if a VariableSetStmt is SET ROLE or SET search_path.
+// omniIsRoleOrSearchPathSet checks if a VariableSetStmt sets the role or search path, including a
+// RESET ALL.
 func omniIsRoleOrSearchPathSet(stmt *ast.VariableSetStmt) bool {
 	if stmt == nil {
 		return false
 	}
 	name := strings.ToLower(stmt.Name)
-	return name == "role" || name == "search_path"
+	return name == "role" || name == "search_path" || stmt.Kind == ast.VAR_RESET_ALL
 }
 
 // nolint:unused

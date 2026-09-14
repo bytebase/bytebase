@@ -11,13 +11,7 @@ import (
 // classifyStatementTypes returns the type of the statement followed by the types of its
 // data-modifying CTEs, each type once.
 func classifyStatementTypes(node ast.Node) []storepb.StatementType {
-	if explain, ok := node.(*ast.ExplainStmt); ok {
-		// Only EXPLAIN ANALYZE executes the statement it explains.
-		if !isExplainAnalyzeOmni(explain) {
-			return nil
-		}
-		node = explain.Query
-	}
+	node, _ = UnwrapExplainAnalyze(node, "")
 	var types []storepb.StatementType
 	add := func(statementType storepb.StatementType) {
 		if statementType != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED && !slices.Contains(types, statementType) {
@@ -25,12 +19,13 @@ func classifyStatementTypes(node ast.Node) []storepb.StatementType {
 		}
 	}
 	add(classifyStatementType(node))
-	ast.Inspect(node, func(n ast.Node) bool {
-		if cte, ok := n.(*ast.CommonTableExpr); ok {
-			add(classifyStatementType(cte.Ctequery))
+	if with := getWithClause(node); with != nil && with.Ctes != nil {
+		for _, item := range with.Ctes.Items {
+			if cte, ok := item.(*ast.CommonTableExpr); ok {
+				add(classifyStatementType(cte.Ctequery))
+			}
 		}
-		return true
-	})
+	}
 	return types
 }
 
@@ -63,6 +58,16 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	case *ast.CreateEnumStmt:
 		return storepb.StatementType_CREATE_TYPE
+	case *ast.CreateTableAsStmt:
+		if n.Objtype == ast.OBJECT_MATVIEW {
+			return storepb.StatementType_CREATE_VIEW
+		}
+		return storepb.StatementType_CREATE_TABLE
+	case *ast.SelectStmt:
+		if hasOmniIntoClause(n) {
+			return storepb.StatementType_CREATE_TABLE
+		}
+		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 
 	// DDL - DROP
 	case *ast.DropStmt:

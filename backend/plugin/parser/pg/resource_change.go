@@ -38,6 +38,9 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	var dmlCount, insertCount int
 	var dmlStatements []string
 	initialSearchPath := searchPath
+	// sessionSearchPath leaves out SET LOCAL, which lasts until the transaction ends, and
+	// transactionSearchPath is the session search path that ROLLBACK restores.
+	sessionSearchPath, transactionSearchPath := searchPath, searchPath
 	sampleDML := func(text string) {
 		dmlCount++
 		text = strings.TrimSpace(text)
@@ -71,21 +74,25 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		if omniAST.Node == nil {
 			continue
 		}
-		node, text := omniAST.Node, omniAST.Text
-		// EXPLAIN ANALYZE executes the statement it explains.
-		if explain, ok := node.(*ast.ExplainStmt); ok && isExplainAnalyzeOmni(explain) {
-			node = explain.Query
-			if loc := ast.NodeLoc(explain.Query); loc.Start >= 0 && loc.Start < loc.End && loc.End <= len(text) {
-				text = text[loc.Start:loc.End]
-			}
-		}
+		node, text := UnwrapExplainAnalyze(omniAST.Node, omniAST.Text)
 
 		switch n := node.(type) {
+		case *ast.TransactionStmt:
+			switch n.Kind {
+			case ast.TRANS_STMT_BEGIN, ast.TRANS_STMT_START:
+				transactionSearchPath = sessionSearchPath
+			case ast.TRANS_STMT_COMMIT:
+				searchPath = sessionSearchPath
+			case ast.TRANS_STMT_ROLLBACK:
+				searchPath, sessionSearchPath = transactionSearchPath, transactionSearchPath
+			default:
+			}
+
 		case *ast.VariableSetStmt:
+			var newSearchPath []string
 			if n.Kind == ast.VAR_RESET_ALL || (strings.EqualFold(n.Name, "search_path") && (n.Kind == ast.VAR_RESET || n.Kind == ast.VAR_SET_DEFAULT)) {
-				searchPath = initialSearchPath
+				newSearchPath = initialSearchPath
 			} else if strings.EqualFold(n.Name, "search_path") && n.Args != nil {
-				var newSearchPath []string
 				for _, arg := range n.Args.Items {
 					if ac, ok := arg.(*ast.A_Const); ok {
 						if s, ok := ac.Val.(*ast.String); ok {
@@ -93,8 +100,11 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 						}
 					}
 				}
-				if len(newSearchPath) > 0 {
-					searchPath = newSearchPath
+			}
+			if len(newSearchPath) > 0 {
+				searchPath = newSearchPath
+				if !n.IsLocal {
+					sessionSearchPath = newSearchPath
 				}
 			}
 
@@ -238,6 +248,27 @@ func getInsertValuesRowCount(n *ast.InsertStmt) (rows int, ok bool) {
 		return len(sel.ValuesLists.Items), true
 	}
 	return 0, false
+}
+
+// getWithClause returns the WITH clause of a statement, the only one where PostgreSQL allows
+// data-modifying statements.
+func getWithClause(node ast.Node) *ast.WithClause {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		return n.WithClause
+	case *ast.InsertStmt:
+		return n.WithClause
+	case *ast.UpdateStmt:
+		return n.WithClause
+	case *ast.DeleteStmt:
+		return n.WithClause
+	case *ast.MergeStmt:
+		return n.WithClause
+	case *ast.CreateTableAsStmt:
+		return getWithClause(n.Query)
+	default:
+		return nil
+	}
 }
 
 // getDataModifyingCTETargets returns the tables that INSERT, UPDATE, DELETE, and MERGE statements in

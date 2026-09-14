@@ -34,6 +34,11 @@ func TestOmniIsRoleOrSearchPathSet(t *testing.T) {
 			want: []string{"SET search_path = myschema, public"},
 		},
 		{
+			name: "reset all",
+			sql:  "SET search_path = myschema; RESET ALL; UPDATE t SET a = 1;",
+			want: []string{"SET search_path = myschema", "RESET ALL"},
+		},
+		{
 			name: "ignore unrelated set variable",
 			sql:  "SET statement_timeout = '1s'; DELETE FROM t;",
 			want: nil,

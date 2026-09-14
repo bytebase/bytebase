@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -12,6 +13,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -72,21 +74,22 @@ func (*insertRowLimitRule) Name() string {
 }
 
 func (r *insertRowLimitRule) OnStatement(node ast.Node) {
+	node, text := pgparser.UnwrapExplainAnalyze(node, r.StmtText)
 	switch n := node.(type) {
 	case *ast.VariableSetStmt:
 		if omniIsRoleOrSearchPathSet(n) {
 			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
 		}
 	case *ast.InsertStmt:
-		r.checkInsert(n)
+		r.checkInsert(n, text)
 	default:
 	}
 }
 
-func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt) {
+func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt, text string) {
 	code := advisorcode.Ok
 	rows := int64(0)
-	statementText := r.TrimmedStmtText()
+	statementText := strings.TrimRight(strings.TrimSpace(text), ";")
 
 	// Count VALUES rows if this is INSERT ... VALUES.
 	if sel, ok := ins.SelectStmt.(*ast.SelectStmt); ok && sel.ValuesLists != nil {

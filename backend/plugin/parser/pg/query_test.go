@@ -39,6 +39,16 @@ func TestValidateSQLForEditor(t *testing.T) {
 			allQuery: false,
 		},
 		{
+			sql:      `EXPLAIN (ANALYZE off) DELETE FROM t`,
+			valid:    true,
+			allQuery: true,
+		},
+		{
+			sql:      `EXPLAIN (ANALYZE on) DELETE FROM t`,
+			valid:    false,
+			allQuery: false,
+		},
+		{
 			sql: `
 				With t as (
 					select * from t1

@@ -215,6 +215,21 @@ DELETE FROM t4;`
 		"DELETE FROM t4",
 	}, got.DMLStatements)
 
+	t.Run("SET LOCAL lasts until the transaction ends, and ROLLBACK undoes SET", func(t *testing.T) {
+		const statement = `BEGIN;
+SET LOCAL search_path = app;
+DELETE FROM t1;
+COMMIT;
+DELETE FROM t2;
+BEGIN;
+SET search_path = app;
+ROLLBACK;
+DELETE FROM t3;`
+		got, err := extractChangedResources("db", "public", nil /* dbMetadata */, parseASTs(t, statement), statement)
+		require.NoError(t, err)
+		require.Equal(t, []string{"db.app.t1", "db.public.t2", "db.public.t3"}, getTableNames(got.ChangedResources))
+	})
+
 	t.Run("the synced search path applies without a current schema", func(t *testing.T) {
 		dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 			Name:       "db",
@@ -293,6 +308,12 @@ func TestExtractChangedResourcesDDL(t *testing.T) {
 	}{
 		{statement: `CREATE TABLE t3 (id INT PRIMARY KEY)`, wantTables: []string{"db.public.t3"}},
 		{statement: `CREATE INDEX idx ON t2 (c)`, wantTables: []string{"db.public.t2"}},
+		{statement: `CREATE MATERIALIZED VIEW mv AS SELECT * FROM t`, wantTables: []string{"db.public.mv"}},
+		{statement: `CREATE VIEW v AS SELECT * FROM t`},
+		{statement: `IMPORT INTO t2 (c) CSV DATA ('nodelocal://1/t2.csv')`, wantTables: []string{"db.public.t2"}},
+		{statement: `ALTER TABLE t2 CONFIGURE ZONE USING num_replicas = 5`, wantTables: []string{"db.public.t2"}, wantAffectedRows: 1000},
+		{statement: `ALTER INDEX t2_c_idx CONFIGURE ZONE USING num_replicas = 5`, wantTables: []string{"db.public.t2"}},
+		{statement: `ALTER RANGE default CONFIGURE ZONE USING num_replicas = 5`},
 		{statement: `DROP INDEX t2@t2_c_idx, t2_c_idx, app.t_c_idx, missing_idx`, wantTables: []string{"db.app.t", "db.public.t2"}},
 		{statement: `DROP INDEX db.public.t2_c_idx`, wantTables: []string{"db.public.t2"}},
 		{statement: `ALTER INDEX app.t@t_c_idx PARTITION BY NOTHING`, wantTables: []string{"db.app.t"}},
@@ -304,6 +325,8 @@ func TestExtractChangedResourcesDDL(t *testing.T) {
 		{statement: `ALTER TABLE t SET SCHEMA app`, wantTables: []string{"db.public.t"}, wantAffectedRows: 10},
 		{statement: `ALTER TABLE t OWNER TO u`, wantTables: []string{"db.public.t"}, wantAffectedRows: 10},
 		{statement: `ALTER VIEW t2 SET SCHEMA app`},
+		{statement: `ALTER MATERIALIZED VIEW t2 SET SCHEMA app`, wantTables: []string{"db.public.t2"}, wantAffectedRows: 1000},
+		{statement: `ALTER MATERIALIZED VIEW t2 OWNER TO u`, wantTables: []string{"db.public.t2"}, wantAffectedRows: 1000},
 		{statement: `ALTER TABLE t RENAME TO t_new`, wantTables: []string{"db.public.t", "db.public.t_new"}, wantAffectedRows: 10},
 		{statement: `ALTER TABLE app.t RENAME TO t_new`, wantTables: []string{"db.app.t", "db.app.t_new"}, wantAffectedRows: 100_000},
 		{statement: `ALTER MATERIALIZED VIEW t2 RENAME TO mv`, wantTables: []string{"db.public.mv", "db.public.t2"}, wantAffectedRows: 1000},

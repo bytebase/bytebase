@@ -93,6 +93,25 @@ func TestStatementAffectedRowLimit(t *testing.T) {
 			statement: "SELECT * FROM big;\nWITH x AS (SELECT id FROM s) SELECT * FROM x;\nINSERT INTO big_archive SELECT * FROM big;",
 		},
 		{
+			name:      "explain analyze runs the statement it explains",
+			statement: "EXPLAIN (ANALYZE, BUFFERS) DELETE FROM big WHERE s_id <= 50;",
+			plans: map[string]string{
+				"DELETE FROM big WHERE s_id <= 50": modifyTablePlan(5000),
+			},
+			wantExplained: []string{"DELETE FROM big WHERE s_id <= 50"},
+			want: []*storepb.Advice{{
+				Status:        storepb.Advice_WARNING,
+				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
+				Title:         title,
+				Content:       `The statement "DELETE FROM big WHERE s_id <= 50" affected 5000 rows (estimated). The count exceeds 1000.`,
+				StartPosition: &storepb.Position{Line: 1},
+			}},
+		},
+		{
+			name:      "explain without analyze is not explained",
+			statement: "EXPLAIN (ANALYZE off) DELETE FROM big;",
+		},
+		{
 			name:          "estimate within the limit",
 			statement:     "DELETE FROM big WHERE id = 1;",
 			plans:         map[string]string{"DELETE FROM big WHERE id = 1": modifyTablePlan(1)},

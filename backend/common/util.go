@@ -44,6 +44,14 @@ func RoundRows(rows float64) int64 {
 	return int64(math.Round(rows))
 }
 
+// AddRows adds row counts, saturating at math.MaxInt64 instead of wrapping negative.
+func AddRows(a, b int64) int64 {
+	if b > 0 && a > math.MaxInt64-b {
+		return math.MaxInt64
+	}
+	return a + b
+}
+
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 // ProtojsonMarshaler is a global protojson marshaler with DiscardUnknown set to true.

@@ -40,9 +40,10 @@ func AffectedRowsQuery(stmt ast.Node, statement string) string {
 	if loc.Start < 0 || loc.Start > table.Loc.Start || table.Loc.End > clausesStart || clausesStart > loc.End || loc.End > len(statement) {
 		return statement
 	}
-	// The SELECT leaves out the text before the table, where an optimizer hint or executable comment
-	// can change the plan.
-	if prefix := statement[loc.Start:table.Loc.Start]; strings.Contains(prefix, "/*!") || strings.Contains(prefix, "/*M!") || strings.Contains(prefix, "/*+") {
+	// omni positions the text after an executable comment as if the comment's markers were removed, so
+	// no SELECT is cut from a statement with one. The SELECT would also leave out an optimizer hint
+	// before the table, which can change the plan.
+	if strings.Contains(statement, "/*!") || strings.Contains(statement, "/*M!") || strings.Contains(statement[loc.Start:table.Loc.Start], "/*+") {
 		return statement
 	}
 	clauses := strings.TrimSpace(statement[clausesStart:loc.End])
@@ -210,38 +211,49 @@ func EstimateAffectedRowsFromOceanBaseExplainJSON(plan string) (int64, error) {
 	return common.RoundRows(maxRows), nil
 }
 
-// queryBlockRows returns the planner's estimate of the rows a query block produces, summed over
-// UNION branches.
+// queryBlockRows returns the planner's estimate of the rows a query block produces. A UNION sums its
+// branches, an INTERSECT takes the fewest, and an EXCEPT, or a parenthesized query with its own
+// ORDER BY or LIMIT, takes its first.
 func queryBlockRows(block map[string]any) (float64, error) {
-	union, ok := block["union_result"].(map[string]any)
-	if !ok {
-		_, cumulative, err := planJoin(block)
-		if err != nil {
-			return 0, err
-		}
-		return cumulative[len(cumulative)-1], nil
-	}
-	branches, ok := union["query_specifications"].([]any)
-	if !ok {
-		return 0, errors.New("union_result has no query_specifications")
-	}
-	var total float64
-	for _, branch := range branches {
-		specification, ok := branch.(map[string]any)
+	for _, operation := range []string{"union_result", "intersect_result", "except_result", "unary_result"} {
+		result, ok := block[operation].(map[string]any)
 		if !ok {
-			return 0, errors.New("unexpected query_specifications element")
+			continue
 		}
-		branchBlock, ok := specification["query_block"].(map[string]any)
-		if !ok {
-			return 0, errors.New("query_specifications element has no query_block")
+		branches, ok := result["query_specifications"].([]any)
+		if !ok || len(branches) == 0 {
+			return 0, errors.Errorf("%s has no query_specifications", operation)
 		}
-		rows, err := queryBlockRows(branchBlock)
-		if err != nil {
-			return 0, err
+		var total float64
+		for i, branch := range branches {
+			specification, ok := branch.(map[string]any)
+			if !ok {
+				return 0, errors.New("unexpected query_specifications element")
+			}
+			// MySQL nests a set operation as a branch without a query_block of its own.
+			branchBlock, ok := specification["query_block"].(map[string]any)
+			if !ok {
+				branchBlock = specification
+			}
+			rows, err := queryBlockRows(branchBlock)
+			if err != nil {
+				return 0, err
+			}
+			switch {
+			case i == 0 || operation == "union_result":
+				total += rows
+			case operation == "intersect_result":
+				total = min(total, rows)
+			default:
+			}
 		}
-		total += rows
+		return total, nil
 	}
-	return total, nil
+	_, cumulative, err := planJoin(block)
+	if err != nil {
+		return 0, err
+	}
+	return cumulative[len(cumulative)-1], nil
 }
 
 // dmlTargets holds the names a plan uses for the tables an UPDATE or DELETE modifies.
@@ -313,22 +325,26 @@ func targetRows(block map[string]any, targets dmlTargets) (float64, error) {
 		return total, nil
 	}
 
-	// MariaDB flags only single-table targets, so find the others by name.
+	// MariaDB flags only single-table targets, and the SELECT a single-table UPDATE or DELETE is
+	// explained as flags none, so find the targets by name. A name that no plan table has, such as a
+	// view's, or that several have, as when a subquery reads another table of that name, counts the
+	// final estimate.
 	if len(targets.names) == 0 && !targets.unqualified {
 		return 0, errors.New("the plan has no UPDATE or DELETE target")
 	}
 	for _, name := range targets.names {
-		index := -1
+		index, matches := -1, 0
 		for i, table := range tables {
 			if tableName, ok := table["table_name"].(string); ok && strings.EqualFold(tableName, name) {
 				index = i
-				break
+				matches++
 			}
 		}
-		if index < 0 {
-			return 0, errors.Errorf("target table %q is not in the plan", name)
+		if matches == 1 {
+			total += min(cumulative[index], final)
+		} else {
+			total += final
 		}
-		total += min(cumulative[index], final)
 	}
 	// An unqualified column may belong to any joined table, so it counts the final estimate.
 	if targets.unqualified {

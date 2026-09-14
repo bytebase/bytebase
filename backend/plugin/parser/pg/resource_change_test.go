@@ -79,7 +79,16 @@ RESET search_path;
 UPDATE t SET c = 4;
 SET search_path TO app;
 SET search_path TO DEFAULT;
-UPDATE t SET c = 5;`
+UPDATE t SET c = 5;
+BEGIN;
+SET LOCAL search_path TO app;
+UPDATE t SET c = 6;
+COMMIT;
+UPDATE t SET c = 7;
+BEGIN;
+SET search_path TO app;
+ROLLBACK;
+UPDATE t SET c = 8;`
 	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
 	require.NoError(t, err)
 	got, err := extractChangedResources("db", "", dbMetadata, base.ExtractASTs(stmts), statement)
@@ -90,6 +99,9 @@ UPDATE t SET c = 5;`
 		"UPDATE t SET c = 3;",
 		"UPDATE t SET c = 4;",
 		"UPDATE t SET c = 5;",
+		"SET LOCAL search_path TO \"app\";\nUPDATE t SET c = 6;",
+		"UPDATE t SET c = 7;",
+		"UPDATE t SET c = 8;",
 	}, got.DMLStatements)
 }
 
@@ -297,10 +309,12 @@ func TestExtractChangedResourcesExplainAnalyze(t *testing.T) {
 	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
 	const statement = `EXPLAIN (ANALYZE, BUFFERS) WITH d AS (DELETE FROM t RETURNING id) INSERT INTO t2 SELECT id FROM d;
 EXPLAIN ANALYZE MERGE INTO t3 USING t ON t3.id = t.id WHEN MATCHED THEN DELETE;
-EXPLAIN UPDATE t4 SET c = 1;`
+EXPLAIN UPDATE t4 SET c = 1;
+EXPLAIN (ANALYZE FALSE) DELETE FROM t5;
+EXPLAIN ANALYZE WITH d AS (DELETE FROM t6 RETURNING id) SELECT count(*) FROM d ORDER BY 1;`
 
 	want := model.NewChangedResources(dbMetadata)
-	for _, table := range []string{"t", "t2", "t3"} {
+	for _, table := range []string{"t", "t2", "t3", "t6"} {
 		want.AddTable("db", "public", &storepb.ChangedResourceTable{Name: table}, false)
 	}
 	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
@@ -309,10 +323,11 @@ EXPLAIN UPDATE t4 SET c = 1;`
 	require.NoError(t, err)
 	require.Equal(t, &base.ChangeSummary{
 		ChangedResources: want,
-		DMLCount:         2,
+		DMLCount:         3,
 		DMLStatements: []string{
 			"WITH d AS (DELETE FROM t RETURNING id) INSERT INTO t2 SELECT id FROM d;",
 			"MERGE INTO t3 USING t ON t3.id = t.id WHEN MATCHED THEN DELETE;",
+			"WITH d AS (DELETE FROM t6 RETURNING id) SELECT count(*) FROM d ORDER BY 1;",
 		},
 	}, got)
 }

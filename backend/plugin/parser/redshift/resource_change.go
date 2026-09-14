@@ -43,6 +43,16 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 	}
 
 	searchPath := schema
+	addTable := func(rv *redshiftast.RangeVar, affectedTable bool) {
+		tableDatabase, tableSchema := rv.Catalogname, rv.Schemaname
+		if tableDatabase == "" {
+			tableDatabase = database
+		}
+		if tableSchema == "" {
+			tableSchema = searchPath
+		}
+		summary.ChangedResources.AddTable(tableDatabase, tableSchema, &storepb.ChangedResourceTable{Name: rv.Relname}, affectedTable)
+	}
 	for _, stmt := range stmts {
 		switch n := stmt.AST.(type) {
 		case *redshiftast.InsertStmt:
@@ -56,23 +66,18 @@ func extractChangedResources(database string, schema string, dbMetadata *model.D
 		case *redshiftast.MergeStmt:
 			// Redshift documents EXPLAIN only for SELECT, CREATE TABLE AS, INSERT, UPDATE, and DELETE.
 			summary.DMLCount++
+			// omni records no MERGE target.
+			if n.Relation != nil {
+				addTable(n.Relation, false)
+			}
 		case *redshiftast.TruncateStmt:
 			if n.Relations == nil {
 				continue
 			}
 			for _, item := range n.Relations.Items {
-				rv, ok := item.(*redshiftast.RangeVar)
-				if !ok {
-					continue
+				if rv, ok := item.(*redshiftast.RangeVar); ok {
+					addTable(rv, true)
 				}
-				tableDatabase, tableSchema := rv.Catalogname, rv.Schemaname
-				if tableDatabase == "" {
-					tableDatabase = database
-				}
-				if tableSchema == "" {
-					tableSchema = searchPath
-				}
-				summary.ChangedResources.AddTable(tableDatabase, tableSchema, &storepb.ChangedResourceTable{Name: rv.Relname}, true)
 			}
 		case *redshiftast.VariableSetStmt:
 			if newSearchPath, ok := searchPathFromSet(n, schema); ok {

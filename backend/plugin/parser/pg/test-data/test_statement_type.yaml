@@ -149,3 +149,22 @@
     - DELETE
 - statement: EXPLAIN WITH d AS (DELETE FROM t1 RETURNING id) SELECT count(*) FROM d;
   want: []
+- statement: EXPLAIN (ANALYZE FALSE) DELETE FROM t1;
+  want: []
+- statement: EXPLAIN (ANALYZE 1) DELETE FROM t1;
+  want:
+    - DELETE
+- statement: CREATE TABLE archive AS WITH d AS (DELETE FROM t1 RETURNING *) SELECT * FROM d;
+  want:
+    - CREATE_TABLE
+    - DELETE
+- statement: WITH d AS (DELETE FROM t1 RETURNING *) SELECT * INTO archive FROM d;
+  want:
+    - CREATE_TABLE
+    - DELETE
+- statement: CREATE MATERIALIZED VIEW mv AS SELECT * FROM t1;
+  want:
+    - CREATE_VIEW
+- statement: CREATE FUNCTION purge() RETURNS bigint LANGUAGE sql BEGIN ATOMIC WITH d AS (DELETE FROM t1 RETURNING 1) SELECT count(*) FROM d; END;
+  want:
+    - CREATE_FUNCTION

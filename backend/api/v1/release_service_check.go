@@ -454,7 +454,7 @@ loop:
 				if summaryReport != nil {
 					checkResult.AffectedRows = summaryReport.AffectedRows
 					checkResult.RiskLevel = getRiskLevelFromStatementTypes(summaryReport.StatementTypes)
-					resp.AffectedRows += summaryReport.AffectedRows
+					resp.AffectedRows = common.AddRows(resp.AffectedRows, summaryReport.AffectedRows)
 					if checkResult.RiskLevel > resp.RiskLevel {
 						resp.RiskLevel = checkResult.RiskLevel
 					}

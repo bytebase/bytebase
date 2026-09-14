@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -292,7 +291,7 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 					failures = append(failures, err)
 					continue
 				}
-				shape.rows = addRows(shape.rows, count)
+				shape.rows = common.AddRows(shape.rows, count)
 				shape.estimated++
 			}
 			if !sampledInRound {
@@ -307,22 +306,22 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 	// statements of other shapes, and DML statements without text, count as the overall average.
 	unestimated := max(changeSummary.DMLCount-len(changeSummary.DMLStatements), 0)
 	for _, shape := range shapes {
-		estimatedRows = addRows(estimatedRows, shape.rows)
+		estimatedRows = common.AddRows(estimatedRows, shape.rows)
 		estimated += shape.estimated
 		switch {
 		case shape.estimated == len(shape.statements):
-			dmlRows = addRows(dmlRows, shape.rows)
+			dmlRows = common.AddRows(dmlRows, shape.rows)
 		case shape.estimated > 0:
-			dmlRows = addRows(dmlRows, common.RoundRows(float64(shape.rows)/float64(shape.estimated)*float64(len(shape.statements))))
+			dmlRows = common.AddRows(dmlRows, common.RoundRows(float64(shape.rows)/float64(shape.estimated)*float64(len(shape.statements))))
 		default:
 			unestimated += len(shape.statements)
 		}
 	}
 	if estimated > 0 && unestimated > 0 {
-		dmlRows = addRows(dmlRows, common.RoundRows(float64(estimatedRows)/float64(estimated)*float64(unestimated)))
+		dmlRows = common.AddRows(dmlRows, common.RoundRows(float64(estimatedRows)/float64(estimated)*float64(unestimated)))
 	}
-	totalAffectedRows := addRows(dmlRows, int64(changeSummary.InsertCount))
-	totalAffectedRows = addRows(totalAffectedRows, changeSummary.ChangedResources.CountAffectedTableRows())
+	totalAffectedRows := common.AddRows(dmlRows, int64(changeSummary.InsertCount))
+	totalAffectedRows = common.AddRows(totalAffectedRows, changeSummary.ChangedResources.CountAffectedTableRows())
 
 	var warning string
 	switch {
@@ -364,9 +363,12 @@ func groupStatementsByShape(statements []string, mysqlFamily bool) []*statementS
 
 // shapeKey replaces the string and numeric literals of a statement with ? and drops whitespace that
 // does not separate words. Everything else keeps its text, including identifiers, their case, and
-// comments with the numbers in them, such as optimizer hints. mysqlFamily applies the MySQL,
-// MariaDB, TiDB, and OceanBase rules that a backslash escapes the next character of a quoted string
-// and that # starts a line comment.
+// comments with the numbers in them, such as optimizer hints. A statement with text the scan does not
+// follow, such as an unclosed quote, an Oracle q'{...}' string, a dollar-quoted string, a nested
+// comment, or a quote in brackets, is its own key, because a quote in that text could make the scan
+// read the statement's clauses as a literal. mysqlFamily applies the MySQL, MariaDB, TiDB, and
+// OceanBase rules that a backslash escapes the next character of a quoted string and that # starts a
+// line comment.
 func shapeKey(statement string, mysqlFamily bool) string {
 	var b strings.Builder
 	space := false
@@ -386,16 +388,19 @@ func shapeKey(statement string, mysqlFamily bool) string {
 		c := statement[i]
 		switch {
 		case c == '\'':
+			word := wordBefore(statement, i)
+			if strings.EqualFold(word, "q") || strings.EqualFold(word, "nq") {
+				return statement
+			}
 			// PostgreSQL E'...' strings escape with backslashes too.
-			escapes := mysqlFamily || (i > 0 && (statement[i-1] == 'E' || statement[i-1] == 'e') && (i == 1 || !isWordByte(statement[i-2])))
-			end, closed := quotedEnd(statement, i, escapes)
+			end, closed := quotedEnd(statement, i, mysqlFamily || strings.EqualFold(word, "e"))
 			if !closed {
-				// An unclosed quote means the scan misread the statement, such as a quote inside a
-				// comment or a dollar-quoted string, so the statement keeps a shape of its own.
 				return statement
 			}
 			i = end
 			write('?')
+		case c == '$' && !mysqlFamily && (i == 0 || !isWordByte(statement[i-1])) && isDollarQuoteStart(statement[i:]):
+			return statement
 		case c == '[':
 			// A SQL Server bracketed identifier, where ]] continues it, or an array subscript, keeps its text.
 			end := i + 1
@@ -405,7 +410,7 @@ func shapeKey(statement string, mysqlFamily bool) string {
 				}
 				end++
 			}
-			if end >= len(statement) {
+			if end >= len(statement) || strings.ContainsAny(statement[i+1:end], `'"`) {
 				return statement
 			}
 			write(c)
@@ -420,8 +425,11 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			b.WriteString(statement[i+1 : end])
 			i = end
 		case strings.HasPrefix(statement[i:], "--") || strings.HasPrefix(statement[i:], "/*") || (mysqlFamily && c == '#'):
-			// Copying never drops text, so a marker misread as a comment only splits shapes.
 			end := commentEnd(statement, i)
+			if c == '/' && strings.Contains(statement[i+2:end], "/*") {
+				return statement
+			}
+			// Copying never drops text, so a marker misread as a comment only splits shapes.
 			write(c)
 			b.WriteString(statement[i+1 : end])
 			i = end
@@ -445,6 +453,24 @@ func shapeKey(statement string, mysqlFamily bool) string {
 		}
 	}
 	return b.String()
+}
+
+// wordBefore returns the word that ends at offset end of statement.
+func wordBefore(statement string, end int) string {
+	start := end
+	for start > 0 && isWordByte(statement[start-1]) {
+		start--
+	}
+	return statement[start:end]
+}
+
+// isDollarQuoteStart reports whether text starts with a dollar-quote delimiter, such as $$ or $tag$.
+func isDollarQuoteStart(text string) bool {
+	end := 1
+	for end < len(text) && text[end] != '$' && isWordByte(text[end]) && (end > 1 || text[end] < '0' || text[end] > '9') {
+		end++
+	}
+	return end < len(text) && text[end] == '$'
 }
 
 // commentEnd returns the offset just past the comment that starts at start: past the newline that
@@ -517,12 +543,4 @@ func quotedEnd(statement string, start int, backslashEscapes bool) (int, bool) {
 
 func isWordByte(c byte) bool {
 	return c == '_' || c == '$' || c >= 0x80 || ('0' <= c && c <= '9') || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
-}
-
-// addRows adds row counts, saturating at math.MaxInt64 instead of wrapping negative.
-func addRows(a, b int64) int64 {
-	if b > 0 && a > math.MaxInt64-b {
-		return math.MaxInt64
-	}
-	return a + b
 }

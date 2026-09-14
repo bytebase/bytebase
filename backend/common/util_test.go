@@ -457,3 +457,9 @@ func TestRoundRows(t *testing.T) {
 	require.Equal(t, int64(math.MaxInt64), RoundRows(math.MaxInt64))
 	require.Equal(t, int64(math.MaxInt64), RoundRows(1e30))
 }
+
+func TestAddRows(t *testing.T) {
+	require.Equal(t, int64(5), AddRows(2, 3))
+	require.Equal(t, int64(math.MaxInt64), AddRows(math.MaxInt64, 1))
+	require.Equal(t, int64(math.MaxInt64), AddRows(math.MaxInt64-1, math.MaxInt64-1))
+}

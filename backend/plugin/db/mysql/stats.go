@@ -53,24 +53,26 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 
 // EstimateAffectedRows returns the rows stmt modifies according to plan, the ExplainJSON output for
 // query, which is the statement's AffectedRowsQuery. When plan has no estimate to read, as MySQL 8.0
-// prints no source plan for an INSERT ... SELECT that computes window functions, the first estimate of
-// the tabular EXPLAIN stands in for it.
+// prints no source plan for an INSERT ... SELECT that computes window functions, the estimate of the
+// tabular EXPLAIN stands in for it.
 func EstimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query string, plan string) (int64, error) {
 	count, err := mysqlparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
 	if err == nil {
 		return count, nil
 	}
-	rows, ok := explainFirstEstimate(ctx, db, query)
+	rows, ok := explainTabularEstimate(ctx, db, query)
 	if !ok {
 		return 0, err
 	}
 	return mysqlparser.CapAffectedRowsByLimit(stmt, rows), nil
 }
 
-// explainFirstEstimate returns the rows of the first table the tabular EXPLAIN of query estimates,
-// scaled by its filtered percentage where the server prints one.
-func explainFirstEstimate(ctx context.Context, db *sql.DB, query string) (float64, bool) {
-	rows, err := db.QueryContext(ctx, "EXPLAIN "+query)
+// explainTabularEstimate returns the rows that the first query block of the tabular EXPLAIN of query
+// produces: the product, over the tables it joins, of the rows each reads scaled by its filtered
+// percentage where the server prints one.
+func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, bool) {
+	// MySQL 9 prints a plain EXPLAIN in the TREE format.
+	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
 	if err != nil {
 		return 0, false
 	}
@@ -79,9 +81,11 @@ func explainFirstEstimate(ctx context.Context, db *sql.DB, query string) (float6
 	if err != nil {
 		return 0, false
 	}
-	rowsIndex := slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, "rows") })
-	filteredIndex := slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, "filtered") })
-	if rowsIndex < 0 {
+	column := func(name string) int {
+		return slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, name) })
+	}
+	idIndex, rowsIndex, filteredIndex := column("id"), column("rows"), column("filtered")
+	if idIndex < 0 || rowsIndex < 0 {
 		return 0, false
 	}
 	values := make([]sql.NullString, len(columns))
@@ -89,17 +93,18 @@ func explainFirstEstimate(ctx context.Context, db *sql.DB, query string) (float6
 	for i := range values {
 		dest[i] = &values[i]
 	}
-	var estimate float64
-	found := false
-	for !found && rows.Next() {
+	var blockID string
+	estimate, found := 1.0, false
+	for rows.Next() {
 		if err := rows.Scan(dest...); err != nil {
 			return 0, false
 		}
 		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
-		if !values[rowsIndex].Valid || err != nil {
+		if !values[rowsIndex].Valid || err != nil || (found && values[idIndex].String != blockID) {
 			continue
 		}
-		estimate, found = tableRows, true
+		blockID, found = values[idIndex].String, true
+		estimate *= tableRows
 		if filteredIndex >= 0 && values[filteredIndex].Valid {
 			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
 				estimate *= filtered / 100

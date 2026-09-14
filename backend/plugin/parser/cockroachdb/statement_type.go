@@ -102,10 +102,16 @@ func getStatementType(stmt tree.Statement) storepb.StatementType {
 		*tree.AlterDatabaseDropSecondaryRegion, *tree.AlterDatabaseSetZoneConfigExtension:
 		return storepb.StatementType_ALTER_DATABASE
 	case *tree.SetZoneConfig:
-		if n.Database != "" {
+		switch {
+		case n.Database != "":
 			return storepb.StatementType_ALTER_DATABASE
+		case n.TableOrIndex.Index != "":
+			return storepb.StatementType_ALTER_INDEX
+		case n.TableOrIndex.Table.ObjectName != "":
+			return storepb.StatementType_ALTER_TABLE
+		default:
+			return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 		}
-		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED
 	case *tree.AlterRoleSet:
 		// ALTER DATABASE d SET parses as ALTER ROLE ALL IN DATABASE d SET, which sets the same defaults.
 		if n.AllRoles && n.DatabaseName != "" {

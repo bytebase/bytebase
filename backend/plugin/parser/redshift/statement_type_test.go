@@ -121,6 +121,13 @@ func TestGetStatementTypes(t *testing.T) {
 			},
 		},
 		{
+			name:      "merge",
+			statement: "MERGE INTO t1 USING t2 ON t1.id = t2.id WHEN MATCHED THEN DELETE;",
+			want: []storepb.StatementType{
+				storepb.StatementType_MERGE,
+			},
+		},
+		{
 			name:      "truncate table",
 			statement: "TRUNCATE TABLE t1;",
 			want: []storepb.StatementType{

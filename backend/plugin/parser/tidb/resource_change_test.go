@@ -124,6 +124,12 @@ func TestExtractChangedResourcesDMLCounts(t *testing.T) {
 			tables:    []string{"t"},
 		},
 		{
+			name:      "batch_with_an_executable_comment_is_counted_without_a_sample",
+			statement: `BATCH ON id LIMIT 1000 DELETE FROM t WHERE /*T![clustered_index] c = 0 AND */ id < 10000000000;`,
+			dmlCount:  1,
+			tables:    []string{"t"},
+		},
+		{
 			name:      "batch_dry_run_changes_nothing",
 			statement: `BATCH ON id LIMIT 1000 DRY RUN DELETE FROM t WHERE c = 1;`,
 		},

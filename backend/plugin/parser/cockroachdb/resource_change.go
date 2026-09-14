@@ -29,6 +29,9 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		}
 	}
 	searchPath := defaultSearchPath
+	// sessionSearchPath leaves out SET LOCAL, which lasts until the transaction ends, and
+	// transactionSearchPath is the session search path that ROLLBACK restores.
+	sessionSearchPath, transactionSearchPath := searchPath, searchPath
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
@@ -125,6 +128,17 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			if n.AsSource != nil && addMutations(n.AsSource) > 0 {
 				addDML(text)
 			}
+		case *tree.CreateView:
+			if n.Materialized {
+				db, schema, table := resolveTableName(&n.Name, database, searchPath[0])
+				summary.ChangedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
+			}
+		case *tree.Import:
+			// The plan cannot estimate the rows an import loads, so, as for LOAD DATA in the MySQL family,
+			// only its target is recorded.
+			if n.Into && n.Table != nil {
+				addTable(n.Table, false)
+			}
 		case *tree.AlterTable:
 			name := n.Table.ToTableName()
 			addTable(&name, true)
@@ -132,12 +146,12 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			name := n.Name.ToTableName()
 			addTable(&name, true)
 		case *tree.AlterTableSetSchema:
-			if !n.IsView && !n.IsSequence {
+			if !n.IsSequence && (!n.IsView || n.IsMaterialized) {
 				name := n.Name.ToTableName()
 				addTable(&name, true)
 			}
 		case *tree.AlterTableOwner:
-			if !n.IsView && !n.IsSequence {
+			if !n.IsSequence && (!n.IsView || n.IsMaterialized) {
 				name := n.Name.ToTableName()
 				addTable(&name, true)
 			}
@@ -179,9 +193,26 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			addIndexTable(&n.Index)
 		case *tree.RenameIndex:
 			addIndexTable(n.Index)
+		case *tree.SetZoneConfig:
+			switch {
+			case n.TableOrIndex.Index != "":
+				addIndexTable(&n.TableOrIndex)
+			case n.TableOrIndex.Table.ObjectName != "":
+				addTable(&n.TableOrIndex.Table, true)
+			default:
+			}
+		case *tree.BeginTransaction:
+			transactionSearchPath = sessionSearchPath
+		case *tree.CommitTransaction:
+			searchPath = sessionSearchPath
+		case *tree.RollbackTransaction:
+			searchPath, sessionSearchPath = transactionSearchPath, transactionSearchPath
 		case *tree.SetVar:
 			if n.ResetAll || strings.EqualFold(n.Name, "search_path") {
 				searchPath = getSearchPath(n, defaultSearchPath)
+				if !n.Local {
+					sessionSearchPath = searchPath
+				}
 			}
 		default:
 		}

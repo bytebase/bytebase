@@ -113,6 +113,12 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbMet
 				insertCount += vc.Rows.Len()
 				continue
 			}
+			// SHOWPLAN estimates one row for INSERT ... EXEC whatever the procedure returns, so the
+			// statement is counted without an estimate.
+			if _, ok := n.Source.(*ast.ExecStmt); ok {
+				dmlCount++
+				continue
+			}
 			addDML(omniAST.Text)
 
 		case *ast.UpdateStmt:

@@ -1,8 +1,6 @@
 package pg
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -43,7 +41,7 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 			}
 
 		case *ast.ExplainStmt:
-			if isExplainAnalyze(n) {
+			if isExplainAnalyzeOmni(n) {
 				// EXPLAIN ANALYZE executes the query, so it must be a read-only SELECT.
 				sel, ok := n.Query.(*ast.SelectStmt)
 				if !ok || isWriteSelect(sel) {
@@ -64,21 +62,6 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 	}
 
 	return true, !hasExecute, nil
-}
-
-// isExplainAnalyze checks if an ExplainStmt has the ANALYZE option.
-func isExplainAnalyze(n *ast.ExplainStmt) bool {
-	if n.Options == nil {
-		return false
-	}
-	for _, item := range n.Options.Items {
-		if de, ok := item.(*ast.DefElem); ok {
-			if strings.EqualFold(de.Defname, "analyze") {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 // isWriteSelect reports whether a SelectStmt actually writes — and so must not take
