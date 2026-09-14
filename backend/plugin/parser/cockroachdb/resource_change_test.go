@@ -207,6 +207,22 @@ DELETE FROM t4;`
 	got, err := extractChangedResources("db", "public", nil /* dbMetadata */, parseASTs(t, statement), statement)
 	require.NoError(t, err)
 	require.Equal(t, []string{"db.Reports.t3", "db.app.t2", "db.public.t1", "db.public.t4"}, getTableNames(got.ChangedResources))
+
+	t.Run("existing tables resolve to the first schema that has them", func(t *testing.T) {
+		dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+			Name: "db",
+			Schemas: []*metadatapb.SchemaMetadata{
+				{Name: "public", Tables: []*metadatapb.TableMetadata{{Name: "t", RowCount: 1000}}},
+				{Name: "empty"},
+			},
+		}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_COCKROACHDB, true /* caseSensitive */)
+		const statement = `SET search_path = empty, public;
+DELETE FROM t;
+CREATE TABLE t2 (id INT PRIMARY KEY);`
+		got, err := extractChangedResources("db", "public", dbMetadata, parseASTs(t, statement), statement)
+		require.NoError(t, err)
+		require.Equal(t, []string{"db.empty.t2", "db.public.t"}, getTableNames(got.ChangedResources))
+	})
 }
 
 func TestExtractChangedResourcesNames(t *testing.T) {

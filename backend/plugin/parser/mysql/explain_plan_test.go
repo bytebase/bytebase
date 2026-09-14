@@ -40,6 +40,21 @@ func TestAffectedRowsQuery(t *testing.T) {
 			want:      "SELECT 1 FROM t WHERE id = 1",
 		},
 		{
+			name:      "delete with a comment before WHERE",
+			statement: "DELETE FROM t -- ticket 42\nWHERE id = 1;",
+			want:      "SELECT 1 FROM t -- ticket 42\nWHERE id = 1",
+		},
+		{
+			name:      "update with a block comment before WHERE",
+			statement: "UPDATE t SET c = 1 /* ticket 42 */ WHERE id = 1;",
+			want:      "SELECT 1 FROM t WHERE id = 1",
+		},
+		{
+			name:      "delete with an executable comment",
+			statement: "DELETE FROM t /*!80000 WHERE id = 1 */;",
+			want:      "DELETE FROM t /*!80000 WHERE id = 1 */;",
+		},
+		{
 			name:      "update with a CTE",
 			statement: "WITH x AS (SELECT id FROM s WHERE flag = 1) UPDATE t SET v = 'y' WHERE grp IN (SELECT id FROM x);",
 			want:      "WITH x AS (SELECT id FROM s WHERE flag = 1) SELECT 1 FROM t WHERE grp IN (SELECT id FROM x)",

@@ -40,7 +40,7 @@ func AffectedRowsQuery(stmt ast.Node, statement string) string {
 		return statement
 	}
 	clauses := strings.TrimSpace(statement[clausesStart:loc.End])
-	if clauses != "" && !startsWithKeyword(clauses, "WHERE", "ORDER", "LIMIT") {
+	if rest := trimLeadingComments(clauses); rest != "" && !startsWithKeyword(rest, "WHERE", "ORDER", "LIMIT") {
 		return statement
 	}
 	// The text before the statement holds its WITH clause.
@@ -59,6 +59,32 @@ func singleTableRef(tables []ast.TableExpr) *ast.TableRef {
 		return table
 	}
 	return nil
+}
+
+// trimLeadingComments removes the whitespace and ordinary comments at the start of text. Executable
+// comments and optimizer hints stay, because they can change the statement.
+func trimLeadingComments(text string) string {
+	for {
+		text = strings.TrimLeftFunc(text, unicode.IsSpace)
+		switch {
+		case strings.HasPrefix(text, "/*!") || strings.HasPrefix(text, "/*M!") || strings.HasPrefix(text, "/*+"):
+			return text
+		case strings.HasPrefix(text, "/*"):
+			end := strings.Index(text[2:], "*/")
+			if end < 0 {
+				return text
+			}
+			text = text[2+end+2:]
+		case strings.HasPrefix(text, "--") || strings.HasPrefix(text, "#"):
+			end := strings.IndexByte(text, '\n')
+			if end < 0 {
+				return ""
+			}
+			text = text[end+1:]
+		default:
+			return text
+		}
+	}
 }
 
 func startsWithKeyword(text string, keywords ...string) bool {

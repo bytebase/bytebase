@@ -50,6 +50,7 @@ func TestCalculateAffectedRows(t *testing.T) {
 			statements:   []estimate{{"u1", 10, nil}, {"u2", 30, nil}},
 			dmlCount:     5,
 			wantRows:     100,
+			wantWarning:  "Affected rows could not be estimated for 3 of 5 DML statements.",
 			wantExplains: 2,
 		},
 		{
@@ -106,6 +107,7 @@ func TestCalculateAffectedRows(t *testing.T) {
 			statements:   []estimate{{"u1", math.MaxInt64/2 + 1, nil}, {"u2", math.MaxInt64/2 + 1, nil}},
 			dmlCount:     3,
 			wantRows:     math.MaxInt64,
+			wantWarning:  "Affected rows could not be estimated for 1 of 3 DML statements.",
 			wantExplains: 2,
 		},
 	} {
@@ -161,6 +163,14 @@ func TestShapeKey(t *testing.T) {
 			want:             "UPDATE t SET v=? WHERE id=?;",
 		},
 		{
+			name: "PostgreSQL escape strings",
+			statements: []string{
+				"UPDATE t SET v = E'it\\'s' WHERE id = 1;",
+				"UPDATE t SET v = E'x' WHERE id = 2;",
+			},
+			want: "UPDATE t SET v=E? WHERE id=?;",
+		},
+		{
 			name: "lists of literals",
 			statements: []string{
 				"DELETE FROM t WHERE id IN (1, 2, 3)",
@@ -192,6 +202,8 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1", "UPDATE t SET v = 1"},
 			{"UPDATE --+ CARDINALITY(t 1000000)\nt SET v = 1", "UPDATE t SET v = 1"},
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
+			// The quote inside the dollar-quoted string never closes, so each statement keeps its own shape.
+			{"UPDATE t SET v = $$it's$$ WHERE id = 1", "UPDATE t SET v = $$it's$$"},
 		} {
 			require.NotEqual(t, shapeKey(pair[0], false), shapeKey(pair[1], false), pair[0])
 		}

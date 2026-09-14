@@ -15,19 +15,33 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_COCKROACHDB, extractChangedResources)
 }
 
-// extractChangedResources resolves an unqualified table to the current database and to the first
-// schema of the search_path the statements set, or else to currentSchema, or "public" when it is
-// empty.
+// extractChangedResources resolves an unqualified table to the current database and to a schema of
+// the search path: currentSchema, or "public" when it is empty, until the statements SET another.
+// Like the PostgreSQL extractor, an existing table resolves to the first schema that has it in
+// dbMetadata, and a new table to the first schema.
 func extractChangedResources(database string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	if currentSchema == "" {
 		currentSchema = "public"
 	}
-	defaultSchema := currentSchema
+	defaultSearchPath := []string{currentSchema}
+	searchPath := defaultSearchPath
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
+	schemaOf := func(table string) string {
+		if dbMetadata == nil {
+			return searchPath[0]
+		}
+		for _, schemaName := range searchPath {
+			schema := dbMetadata.GetSchemaMetadata(schemaName)
+			if schema != nil && (schema.GetTable(table) != nil || schema.GetView(table) != nil || schema.GetMaterializedView(table) != nil) {
+				return schemaName
+			}
+		}
+		return searchPath[0]
+	}
 	addTable := func(name *tree.TableName, affectedTable bool) {
-		db, schema, table := resolveTableName(name, database, currentSchema)
+		db, schema, table := resolveTableName(name, database, schemaOf(name.Table()))
 		summary.ChangedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, affectedTable)
 	}
 	// addMutations records the target of each mutation in the statement and returns their number.
@@ -67,7 +81,8 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				addDML(crdbAST)
 			}
 		case *tree.CreateTable:
-			addTable(&n.Table, false)
+			db, schema, table := resolveTableName(&n.Table, database, searchPath[0])
+			summary.ChangedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			if n.AsSource != nil && addMutations(n.AsSource) > 0 {
 				addDML(crdbAST)
 			}
@@ -87,7 +102,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				continue
 			}
 			name := n.Name.ToTableName()
-			db, schema, table := resolveTableName(&name, database, currentSchema)
+			db, schema, table := resolveTableName(&name, database, schemaOf(name.Table()))
 			summary.ChangedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, true)
 			// An unqualified new name stays in the schema of the renamed table.
 			newName := n.NewName.ToTableName()
@@ -97,7 +112,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			addTable(&n.Table, false)
 		case *tree.SetVar:
 			if n.ResetAll || strings.EqualFold(n.Name, "search_path") {
-				currentSchema = getSearchPathSchema(n, defaultSchema)
+				searchPath = getSearchPath(n, defaultSearchPath)
 			}
 		default:
 		}
@@ -105,12 +120,13 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	return summary, nil
 }
 
-// getSearchPathSchema returns the first schema a SET search_path names, skipping "$user", or
-// defaultSchema when it names none or resets the search path.
-func getSearchPathSchema(set *tree.SetVar, defaultSchema string) string {
+// getSearchPath returns the schemas a SET search_path names, skipping "$user", or defaultSearchPath
+// when it names none or resets the search path.
+func getSearchPath(set *tree.SetVar, defaultSearchPath []string) []string {
 	if set.ResetAll {
-		return defaultSchema
+		return defaultSearchPath
 	}
+	var searchPath []string
 	for _, value := range set.Values {
 		var schema string
 		switch v := value.(type) {
@@ -119,13 +135,16 @@ func getSearchPathSchema(set *tree.SetVar, defaultSchema string) string {
 		case *tree.StrVal:
 			schema = v.RawString()
 		default:
-			return defaultSchema
+			return defaultSearchPath
 		}
 		if schema != "$user" {
-			return schema
+			searchPath = append(searchPath, schema)
 		}
 	}
-	return defaultSchema
+	if len(searchPath) == 0 {
+		return defaultSearchPath
+	}
+	return searchPath
 }
 
 func resolveTableName(name *tree.TableName, defaultDatabase string, defaultSchema string) (string, string, string) {

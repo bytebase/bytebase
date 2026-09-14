@@ -330,6 +330,8 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d sampled DML statements: %v", len(failures), sampled, failures[0])
 	case estimated == 0 && changeSummary.DMLCount > 0:
 		warning = fmt.Sprintf("Affected rows could not be estimated for %d DML statements.", changeSummary.DMLCount)
+	case changeSummary.DMLCount > len(changeSummary.DMLStatements):
+		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d DML statements.", changeSummary.DMLCount-len(changeSummary.DMLStatements), changeSummary.DMLCount)
 	default:
 	}
 	return totalAffectedRows, warning
@@ -379,10 +381,20 @@ func shapeKey(statement string, backslashEscapes bool) string {
 		c := statement[i]
 		switch {
 		case c == '\'':
-			i = quotedEnd(statement, i, backslashEscapes)
+			// PostgreSQL E'...' strings escape with backslashes too.
+			escapes := backslashEscapes || (i > 0 && (statement[i-1] == 'E' || statement[i-1] == 'e') && (i == 1 || !isWordByte(statement[i-2])))
+			end, closed := quotedEnd(statement, i, escapes)
+			if !closed {
+				// An unclosed quote means the scan misread the statement, so it keeps a shape of its own.
+				return statement
+			}
+			i = end
 			write('?')
 		case c == '"' || c == '`':
-			end := quotedEnd(statement, i, backslashEscapes && c == '"')
+			end, closed := quotedEnd(statement, i, backslashEscapes && c == '"')
+			if !closed {
+				return statement
+			}
 			write(c)
 			b.WriteString(statement[i+1 : end])
 			i = end
@@ -432,8 +444,9 @@ func isSkippedComment(text, opener string) bool {
 }
 
 // quotedEnd returns the offset just past the quoted text that starts at start, where a doubled
-// quote continues the text, and so does an escaped quote with backslashEscapes.
-func quotedEnd(statement string, start int, backslashEscapes bool) int {
+// quote continues the text, and so does an escaped quote with backslashEscapes. It reports false
+// when the text never closes.
+func quotedEnd(statement string, start int, backslashEscapes bool) (int, bool) {
 	quote := statement[start]
 	for i := start + 1; i < len(statement); i++ {
 		switch {
@@ -443,10 +456,10 @@ func quotedEnd(statement string, start int, backslashEscapes bool) int {
 		case i+1 < len(statement) && statement[i+1] == quote:
 			i++
 		default:
-			return i + 1
+			return i + 1, true
 		}
 	}
-	return len(statement)
+	return len(statement), false
 }
 
 func isWordByte(c byte) bool {
