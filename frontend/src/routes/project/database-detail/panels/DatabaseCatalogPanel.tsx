@@ -13,10 +13,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { FeatureModal } from "@/components/ui/feature-modal";
 import { Input } from "@/components/ui/input";
 import { useDatabaseCatalog } from "@/hooks/useDatabaseCatalog";
 import { useSemanticTypes } from "@/hooks/useSemanticTypes";
+import {
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/lib/productIntro";
 import type { MaskData, MaskDataTarget } from "@/lib/sensitive-data/types";
 import {
   getMaskDataIdentifier,
@@ -188,6 +192,14 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const hasGrantAccessPermission = GRANT_ACCESS_PERMISSIONS.every(
     (permission) => hasProjectPermissionV2(project, permission)
   );
+  useProductIntro({
+    id: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.intro.mark-sensitive-data-title"),
+    description: t(
+      "workspace-setup-guide.intro.mark-sensitive-data-description"
+    ),
+    disabled: !hasUpdateCatalogPermission || isMaskingForNoSQL,
+  });
 
   const { semanticTypes } = useSemanticTypes();
   const classificationConfig = useAppStore((s) =>
@@ -199,7 +211,9 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
 
   const [searchText, setSearchText] = useState("");
   const [checkedColumnList, setCheckedColumnList] = useState<MaskData[]>([]);
-  const [showFeatureDialog, setShowFeatureDialog] = useState(false);
+  const [pendingFeatureAction, setPendingFeatureAction] = useState<
+    "mark-sensitive-data" | "grant-access"
+  >();
   const [showMarkSensitiveDataSheet, setShowMarkSensitiveDataSheet] =
     useState(false);
   const [showGrantAccessDialog, setShowGrantAccessDialog] = useState(false);
@@ -222,7 +236,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   useEffect(() => {
     setSearchText("");
     setCheckedColumnList([]);
-    setShowFeatureDialog(false);
+    setPendingFeatureAction(undefined);
     setShowMarkSensitiveDataSheet(false);
     setShowGrantAccessDialog(false);
     setPendingDeleteItem(null);
@@ -369,7 +383,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
 
   const handleGrantAccessClick = () => {
     if (!hasSensitiveDataFeature) {
-      setShowFeatureDialog(true);
+      setPendingFeatureAction("grant-access");
       return;
     }
     setShowGrantAccessDialog(true);
@@ -377,7 +391,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
 
   const handleMarkSensitiveDataClick = () => {
     if (!hasSensitiveDataFeature) {
-      setShowFeatureDialog(true);
+      setPendingFeatureAction("mark-sensitive-data");
       return;
     }
     setShowMarkSensitiveDataSheet(true);
@@ -386,6 +400,16 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const closeGrantAccessDialog = () => {
     setShowGrantAccessDialog(false);
     setCheckedColumnList([]);
+  };
+
+  const handleFeatureUnlocked = () => {
+    const action = pendingFeatureAction;
+    setPendingFeatureAction(undefined);
+    if (action === "mark-sensitive-data") {
+      setShowMarkSensitiveDataSheet(true);
+    } else if (action === "grant-access") {
+      setShowGrantAccessDialog(true);
+    }
   };
 
   const handleDeleteConfirmed = async () => {
@@ -417,6 +441,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
             <Button
               type="button"
               className="w-full sm:w-auto"
+              data-product-intro-target={MARK_SENSITIVE_DATA_PRODUCT_INTRO}
               onClick={handleMarkSensitiveDataClick}
             >
               {hasSensitiveDataFeature ? (
@@ -484,26 +509,15 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
         onDelete={(item) => setPendingDeleteItem(item)}
       />
 
-      <Dialog open={showFeatureDialog} onOpenChange={setShowFeatureDialog}>
-        <DialogContent className="p-6">
-          <DialogTitle>{t("common.warning")}</DialogTitle>
-          <div className="mt-3">
-            <FeatureAttention
-              feature={PlanFeature.FEATURE_DATA_MASKING}
-              instance={instance}
-            />
-          </div>
-          <div className="mt-6 flex justify-end gap-x-2">
-            <Button
-              type="button"
-              appearance="outline"
-              onClick={() => setShowFeatureDialog(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <FeatureModal
+        open={!!pendingFeatureAction}
+        feature={PlanFeature.FEATURE_DATA_MASKING}
+        instance={instance}
+        onOpenChange={(open) => {
+          if (!open) setPendingFeatureAction(undefined);
+        }}
+        onFeatureUnlocked={handleFeatureUnlocked}
+      />
 
       <MarkSensitiveDataSheet
         database={database}

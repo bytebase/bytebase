@@ -1,3 +1,4 @@
+import { LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
@@ -27,9 +28,12 @@ export function FeatureAttention({
   instance?: Instance | InstanceResource;
 }) {
   const { t } = useTranslation();
-  const { trialingDays, isTrialing } = useSubscriptionState();
+  const { canStartTrial, isTrialing, startTrial, trialingDays } =
+    useSubscriptionState();
   const { totalInstanceCount, activatedInstanceCount } = useServerState();
   const [showInstanceAssignment, setShowInstanceAssignment] = useState(false);
+  const [startingTrial, setStartingTrial] = useState(false);
+  const [trialRejected, setTrialRejected] = useState(false);
 
   const hasFeature = useAppStore((state) => state.hasInstanceFeature(feature));
   const instanceMissingLicense = useAppStore((state) =>
@@ -88,14 +92,25 @@ export function FeatureAttention({
     descriptionText = `${featureDesc}\n${attention}`;
   }
 
-  const hasPermission = hasWorkspacePermissionV2("bb.settings.set");
+  const canManageSettings = hasWorkspacePermissionV2("bb.settings.set");
+  const canManageSubscription = hasWorkspacePermissionV2(
+    "bb.subscription.manage"
+  );
+  const canOfferTrial = canStartTrial && !trialRejected;
+  const hasPermission = canOfferTrial
+    ? canManageSubscription
+    : canManageSettings || (trialRejected && canManageSubscription);
 
   let actionText = "";
   if (hasPermission) {
     if (!hasFeature) {
-      actionText = t("subscription.request-n-days-trial", {
-        days: trialingDays,
-      });
+      actionText = canOfferTrial
+        ? t("subscription.plan.try")
+        : trialRejected
+          ? t("common.learn-more")
+          : t("subscription.request-n-days-trial", {
+              days: trialingDays,
+            });
     } else if (
       !hasUnifiedInstanceLicense &&
       hasWorkspacePermissionV2("bb.instances.update")
@@ -104,8 +119,23 @@ export function FeatureAttention({
     }
   }
 
-  const onAction = () => {
+  const onAction = async () => {
     if (!hasFeature) {
+      if (canOfferTrial) {
+        setStartingTrial(true);
+        try {
+          await startTrial();
+        } catch {
+          setTrialRejected(true);
+        } finally {
+          setStartingTrial(false);
+        }
+        return;
+      }
+      if (trialRejected) {
+        void router.push(autoSubscriptionRoute());
+        return;
+      }
       window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
       return;
     }
@@ -131,8 +161,10 @@ export function FeatureAttention({
               appearance="solid"
               size="sm"
               className="shrink-0 whitespace-nowrap"
-              onClick={onAction}
+              disabled={startingTrial}
+              onClick={() => void onAction()}
             >
+              {startingTrial && <LoaderCircle className="animate-spin" />}
               {actionText}
             </Button>
           </div>

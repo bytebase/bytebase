@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   useSubscriptionState: vi.fn(),
   useServerState: vi.fn(),
   useAppStore: vi.fn(),
+  startTrial: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
   autoSubscriptionRoute: vi.fn(() => "/subscription"),
   routerPush: vi.fn(),
@@ -95,13 +96,17 @@ const renderIntoContainer = (element: ReactElement) => {
 };
 
 beforeEach(async () => {
+  mocks.startTrial.mockReset();
+  mocks.startTrial.mockResolvedValue(undefined);
   mocks.useTranslation.mockReset();
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
   mocks.useSubscriptionState.mockReset();
   mocks.useSubscriptionState.mockReturnValue({
+    canStartTrial: false,
     isTrialing: false,
+    startTrial: mocks.startTrial,
     trialingDays: 14,
   });
   mocks.useServerState.mockReset();
@@ -180,9 +185,39 @@ describe("FeatureAttention", () => {
     unmount();
   });
 
+  test("starts an eligible SaaS trial from the feature attention", async () => {
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      isTrialing: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_AUDIT_LOG} />
+    );
+
+    render();
+
+    const actionButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("subscription.plan.try")
+    );
+    expect(actionButton).toBeDefined();
+    await act(async () => {
+      actionButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+    });
+
+    expect(mocks.startTrial).toHaveBeenCalledOnce();
+    unmount();
+  });
+
   test("does not show assignment attention in unified instance license mode", () => {
     mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: false,
       isTrialing: false,
+      startTrial: mocks.startTrial,
       trialingDays: 14,
     });
     mocks.useServerState.mockReturnValue({

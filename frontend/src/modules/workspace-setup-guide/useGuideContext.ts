@@ -9,7 +9,9 @@ import { useIntroStateByKey } from "@/hooks/useAppState";
 import { planEvents } from "@/lib/plan/events";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
+import { catalogResourceName } from "@/stores/app/databaseCatalog";
 import { State } from "@/types/proto-es/v1/common_pb";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { convertMemberToFullname } from "@/utils/v1/iam";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import { GUIDE_PROGRESS_KEYS } from "./progress";
@@ -31,12 +33,24 @@ const INITIAL_FACTS: GuideFacts = {
   hasExploredDatabase: false,
   hasRunStatement: false,
   hasCreatedChangeIssue: false,
+  hasMarkedSensitiveData: false,
   hasOtherHumanUser: false,
   projectName: "",
   instanceName: "",
   databaseProjectName: "",
   databaseName: "",
 };
+
+export const catalogHasMarkedSensitiveData = (
+  catalog: Pick<DatabaseCatalog, "schemas"> | undefined
+) =>
+  catalog?.schemas.some((schema) =>
+    schema.tables.some(
+      (table) =>
+        table.kind?.case === "columns" &&
+        table.kind.value.columns.some((column) => !!column.semanticType)
+    )
+  ) ?? false;
 
 export const hasOtherHumanWorkspaceMember = (
   policy:
@@ -121,6 +135,9 @@ export const useGuideContext = ({
   const changeIssueCreated = useIntroStateByKey(
     GUIDE_PROGRESS_KEYS.changeIssueCreated
   );
+  const sensitiveDataMarked = useIntroStateByKey(
+    GUIDE_PROGRESS_KEYS.sensitiveDataMarked
+  );
   const serverInfo = useAppStore((state) => state.serverInfo);
   const defaultProject = serverInfo?.defaultProject ?? "";
   const projectCacheSize = useAppStore(
@@ -147,6 +164,15 @@ export const useGuideContext = ({
   );
   const [facts, setFacts] = useState<GuideFacts>(INITIAL_FACTS);
   const [contextReady, setContextReady] = useState(false);
+  const targetCatalog = useAppStore((state) =>
+    facts.databaseName
+      ? state.catalogsByName[catalogResourceName(facts.databaseName)]
+      : undefined
+  );
+  const hasMarkedSensitiveData =
+    sensitiveDataMarked ||
+    facts.hasMarkedSensitiveData ||
+    catalogHasMarkedSensitiveData(targetCatalog);
   const eventTargetRef = useRef<
     { projectName: string; databaseName: string } | undefined
   >(undefined);
@@ -167,6 +193,18 @@ export const useGuideContext = ({
     }
     record(GUIDE_PROGRESS_KEYS.teammateAdded);
   }, [dismissed, enabled, hasOtherWorkspaceMember, workspaceUsage]);
+
+  useEffect(() => {
+    if (
+      !enabled ||
+      dismissed ||
+      scenarioId !== "mark-sensitive-data" ||
+      !hasMarkedSensitiveData
+    ) {
+      return;
+    }
+    record(GUIDE_PROGRESS_KEYS.sensitiveDataMarked);
+  }, [dismissed, enabled, hasMarkedSensitiveData, scenarioId]);
 
   useEffect(() => {
     if (!enabled || dismissed) return;
@@ -282,6 +320,15 @@ export const useGuideContext = ({
         const database = databases?.databases.find(
           ({ name, project }) => !!name && !!project
         );
+        const catalog =
+          scenarioId === "mark-sensitive-data" && database
+            ? await store
+                .getOrFetchDatabaseCatalog({
+                  database: database.name,
+                  silent: true,
+                })
+                .catch(() => undefined)
+            : undefined;
         const eventTarget = eventTargetRef.current;
 
         setFacts((state) => ({
@@ -292,6 +339,9 @@ export const useGuideContext = ({
           hasRunStatement: statementRun || state.hasRunStatement,
           hasCreatedChangeIssue:
             changeIssueCreated || state.hasCreatedChangeIssue,
+          hasMarkedSensitiveData:
+            catalogHasMarkedSensitiveData(catalog) ||
+            state.hasMarkedSensitiveData,
           hasOtherHumanUser: users.users.some(
             ({ name }) => !!name && name !== currentUserName
           ),
@@ -322,6 +372,7 @@ export const useGuideContext = ({
     instanceCacheSize,
     isSaaS,
     projectCacheSize,
+    scenarioId,
     statementRun,
     currentUserName,
     userCacheSize,
@@ -330,8 +381,14 @@ export const useGuideContext = ({
   ]);
 
   const context = useMemo(
-    () => ({ ...facts, isSaaS, hasOtherWorkspaceMember, route }),
-    [facts, hasOtherWorkspaceMember, isSaaS, route]
+    () => ({
+      ...facts,
+      hasMarkedSensitiveData,
+      isSaaS,
+      hasOtherWorkspaceMember,
+      route,
+    }),
+    [facts, hasMarkedSensitiveData, hasOtherWorkspaceMember, isSaaS, route]
   );
   return { context, contextReady };
 };

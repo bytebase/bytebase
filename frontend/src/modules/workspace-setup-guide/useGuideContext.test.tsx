@@ -18,10 +18,12 @@ const mocks = vi.hoisted(() => ({
   projectsByName: {} as Record<string, unknown>,
   instancesByName: {} as Record<string, unknown>,
   databasesByName: {} as Record<string, unknown>,
+  catalogsByName: {} as Record<string, unknown>,
   usersByName: {} as Record<string, unknown>,
   fetchProjectList: vi.fn(),
   fetchInstanceList: vi.fn(),
   fetchDatabases: vi.fn(),
+  getOrFetchDatabaseCatalog: vi.fn(),
   listUsers: vi.fn(),
   introState: {} as Record<string, boolean>,
   saveIntroStateByKey: vi.fn(),
@@ -54,6 +56,7 @@ vi.mock("@/stores/app", () => {
     projectsByName: mocks.projectsByName,
     instancesByName: mocks.instancesByName,
     databasesByName: mocks.databasesByName,
+    catalogsByName: mocks.catalogsByName,
     usersByName: mocks.usersByName,
     workspaceResourceName: () => mocks.workspaceResourceName,
     currentUserName: mocks.currentUserName,
@@ -69,6 +72,7 @@ vi.mock("@/stores/app", () => {
         fetchProjectList: mocks.fetchProjectList,
         fetchInstanceList: mocks.fetchInstanceList,
         fetchDatabases: mocks.fetchDatabases,
+        getOrFetchDatabaseCatalog: mocks.getOrFetchDatabaseCatalog,
         listUsers: mocks.listUsers,
         getIntroStateByKey: (key: string) => mocks.introState[key] ?? false,
         saveIntroStateByKey: mocks.saveIntroStateByKey,
@@ -79,6 +83,7 @@ vi.mock("@/stores/app", () => {
 });
 
 import {
+  catalogHasMarkedSensitiveData,
   hasOtherHumanWorkspaceMember,
   useGuideContext,
 } from "./useGuideContext";
@@ -99,6 +104,42 @@ const renderGuideContext = (
   }
 ) => renderHook((value) => useGuideContext(value), { initialProps: props });
 
+const mockDiscoveredDatabase = () => {
+  mocks.fetchProjectList.mockResolvedValue({
+    projects: [{ name: "projects/app" }],
+    nextPageToken: "",
+  });
+  mocks.fetchInstanceList.mockResolvedValue({
+    instances: [{ name: "instances/sample" }],
+    nextPageToken: "",
+  });
+  mocks.fetchDatabases.mockResolvedValue({
+    databases: [
+      {
+        name: "instances/sample/databases/employee",
+        project: "projects/app",
+      },
+    ],
+    nextPageToken: "",
+  });
+};
+
+const catalogWithColumn = (column: {
+  semanticType?: string;
+  classification?: string;
+}) =>
+  ({
+    schemas: [
+      {
+        tables: [
+          {
+            kind: { case: "columns", value: { columns: [column] } },
+          },
+        ],
+      },
+    ],
+  }) as never;
+
 describe("useGuideContext", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,6 +147,7 @@ describe("useGuideContext", () => {
     mocks.projectsByName = {};
     mocks.instancesByName = {};
     mocks.databasesByName = {};
+    mocks.catalogsByName = {};
     mocks.usersByName = {};
     mocks.fetchProjectList.mockResolvedValue({ projects: [], nextPageToken: "" });
     mocks.fetchInstanceList.mockResolvedValue({
@@ -113,6 +155,7 @@ describe("useGuideContext", () => {
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
+    mocks.getOrFetchDatabaseCatalog.mockResolvedValue({ schemas: [] });
     mocks.listUsers.mockResolvedValue({ users: [], nextPageToken: "" });
     mocks.currentUserName = "users/ed@example.com";
     mocks.isSaaS = false;
@@ -126,6 +169,71 @@ describe("useGuideContext", () => {
     };
     mocks.saveIntroStateByKey.mockImplementation(({ key, newState }) => {
       mocks.introState[key] = newState;
+    });
+  });
+
+  test("recognizes only a non-empty column semantic type as marked sensitive data", () => {
+    expect(
+      catalogHasMarkedSensitiveData(
+        catalogWithColumn({ semanticType: "bb.default" })
+      )
+    ).toBe(true);
+    expect(
+      catalogHasMarkedSensitiveData(
+        catalogWithColumn({ classification: "classification.column" })
+      )
+    ).toBe(false);
+  });
+
+  test("loads existing sensitive-data completion for its target database", async () => {
+    mockDiscoveredDatabase();
+    mocks.getOrFetchDatabaseCatalog.mockResolvedValue(
+      catalogWithColumn({ semanticType: "bb.default" })
+    );
+
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "mark-sensitive-data",
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    expect(mocks.getOrFetchDatabaseCatalog).toHaveBeenCalledWith({
+      database: "instances/sample/databases/employee",
+      silent: true,
+    });
+    expect(result.current.context.hasMarkedSensitiveData).toBe(true);
+  });
+
+  test("reacts when the target catalog marks a sensitive column", async () => {
+    mockDiscoveredDatabase();
+
+    const props = {
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "mark-sensitive-data" as const,
+    };
+    const { result, rerender } = renderGuideContext(props);
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.hasMarkedSensitiveData).toBe(false);
+
+    mocks.catalogsByName = {
+      "instances/sample/databases/employee/catalog": catalogWithColumn({
+        semanticType: "bb.default",
+      }),
+    };
+    rerender(props);
+
+    await waitFor(() =>
+      expect(result.current.context.hasMarkedSensitiveData).toBe(true)
+    );
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: "workspace-setup-guide.sensitive-data-marked",
+      newState: true,
     });
   });
 

@@ -46,6 +46,7 @@ import type { DatabaseFilter } from "@/lib/databaseFilter";
 import { preCreateIssue } from "@/lib/plan/issue";
 import {
   CONNECT_DATABASE_PRODUCT_INTRO,
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
   useProductIntro,
@@ -74,6 +75,7 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import {
+  autoDatabaseRoute,
   engineNameV1,
   extractInstanceResourceName,
   getDefaultPagination,
@@ -561,6 +563,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
           ),
           showCreateChange: true,
           showSqlEditor: false,
+          showMarkSensitiveData: false,
         }
       : selectedGuideScenarioId === "query-data"
         ? {
@@ -568,13 +571,25 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
             description: t("db.project-instance-synced-query-data-description"),
             showCreateChange: false,
             showSqlEditor: true,
+            showMarkSensitiveData: false,
           }
-        : {
-            title: t("db.project-instance-synced-title"),
-            description: t("db.project-instance-synced-description"),
-            showCreateChange: true,
-            showSqlEditor: true,
-          };
+        : selectedGuideScenarioId === "mark-sensitive-data"
+          ? {
+              title: t("db.project-instance-synced-mark-sensitive-data-title"),
+              description: t(
+                "db.project-instance-synced-mark-sensitive-data-description"
+              ),
+              showCreateChange: false,
+              showSqlEditor: false,
+              showMarkSensitiveData: true,
+            }
+          : {
+              title: t("db.project-instance-synced-title"),
+              description: t("db.project-instance-synced-description"),
+              showCreateChange: true,
+              showSqlEditor: true,
+              showMarkSensitiveData: false,
+            };
   const checkingAvailableInstance =
     !hasVisibleDatabase &&
     !showSyncingInstanceHint &&
@@ -610,6 +625,20 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       })
     );
   }, [projectName]);
+
+  const handleMarkSensitiveData = useCallback(() => {
+    const firstDatabase = visibleDatabases[0];
+    if (!firstDatabase) return;
+    const target = autoDatabaseRoute(firstDatabase);
+    void router.push({
+      ...target,
+      query: {
+        ...target.query,
+        [PRODUCT_INTRO_QUERY_KEY]: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+      },
+      hash: "#catalog",
+    });
+  }, [visibleDatabases]);
 
   useProductIntro({
     id: CONNECT_DATABASE_PRODUCT_INTRO,
@@ -775,6 +804,11 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                       />
                     </span>
                   </PermissionGuard>
+                )}
+                {databaseNextAction.showMarkSensitiveData && (
+                  <Button size="sm" onClick={handleMarkSensitiveData}>
+                    {t("db.project-instance-synced-mark-sensitive-data-action")}
+                  </Button>
                 )}
               </div>
             </div>

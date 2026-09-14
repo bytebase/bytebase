@@ -51,11 +51,11 @@ func TestSubscriptionServiceStartTrial(t *testing.T) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 	privateKeyPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
-	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, true, string(privateKeyPEM))
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeProd, stores, true, string(privateKeyPEM))
 	require.NoError(t, err)
 	setLicenseServicePublicKey(t, licenseService, &privateKey.PublicKey)
 
-	service := NewSubscriptionService(&config.Profile{SaaS: true, Mode: common.ReleaseModeDev}, stores, licenseService)
+	service := NewSubscriptionService(&config.Profile{SaaS: true, Mode: common.ReleaseModeProd}, stores, licenseService)
 	createWorkspace := func(t *testing.T, workspace string) context.Context {
 		t.Helper()
 		_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, workspace)
@@ -155,15 +155,17 @@ func TestSubscriptionServiceStartTrial(t *testing.T) {
 		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
 	})
 
-	t.Run("rejects SaaS production", func(t *testing.T) {
-		requestContext := createWorkspace(t, "saas-production")
-		productionService := NewSubscriptionService(&config.Profile{SaaS: true, Mode: common.ReleaseModeProd}, stores, licenseService)
-		_, err := productionService.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
-		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
+	t.Run("starts trial in SaaS development", func(t *testing.T) {
+		requestContext := createWorkspace(t, "saas-development")
+		developmentService := NewSubscriptionService(&config.Profile{SaaS: true, Mode: common.ReleaseModeDev}, stores, licenseService)
+		response, err := developmentService.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.PlanType_ENTERPRISE, response.Msg.Plan)
+		require.True(t, response.Msg.Trialing)
 	})
 
-	t.Run("rejects license upload in SaaS development", func(t *testing.T) {
-		requestContext := createWorkspace(t, "saas-development-upload")
+	t.Run("rejects license upload in SaaS production", func(t *testing.T) {
+		requestContext := createWorkspace(t, "saas-production-upload")
 		_, err := service.UploadLicense(requestContext, connect.NewRequest(&v1pb.UploadLicenseRequest{}))
 		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
 	})

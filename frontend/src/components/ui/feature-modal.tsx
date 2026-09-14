@@ -1,5 +1,5 @@
-import { Lock, Sparkles, X } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { LoaderCircle, Lock, Sparkles, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { captureFeatureGateMetric } from "@/app/analytics/feature-gate";
 import { router } from "@/app/router";
@@ -29,6 +29,7 @@ type Props = {
   readonly feature: PlanFeature | undefined;
   readonly instance?: Instance | InstanceResource;
   readonly onOpenChange: (open: boolean) => void;
+  readonly onFeatureUnlocked?: () => void;
 };
 
 const planLabel: Record<number, string> = {
@@ -44,11 +45,23 @@ const planLabel: Record<number, string> = {
  *  - Required plan above FREE → plan name + trial or contact-admin line.
  *  - Required plan equals FREE → trial-for-days line.
  */
-export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
+export function FeatureModal({
+  open,
+  feature,
+  instance,
+  onOpenChange,
+  onFeatureUnlocked,
+}: Props) {
   const { t } = useTranslation();
-  const { showTrial, trialingDays } = useSubscriptionState();
-  const hasPermission = hasWorkspacePermissionV2("bb.settings.set");
+  const { canStartTrial, showTrial, startTrial, trialingDays } =
+    useSubscriptionState();
+  const canManageSettings = hasWorkspacePermissionV2("bb.settings.set");
+  const canManageSubscription = hasWorkspacePermissionV2(
+    "bb.subscription.manage"
+  );
   const wasOpenRef = useRef(false);
+  const [startingTrial, setStartingTrial] = useState(false);
+  const [trialRejected, setTrialRejected] = useState(false);
 
   const resolvedFeature = feature ?? PlanFeature.FEATURE_UNSPECIFIED;
   const instanceMissingLicense = useAppStore((state) =>
@@ -61,6 +74,7 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
   useEffect(() => {
     const isOpen = open && !!feature;
     if (isOpen && !wasOpenRef.current) {
+      setTrialRejected(false);
       captureFeatureGateMetric(
         "locked feature clicked",
         resolvedFeature,
@@ -81,6 +95,12 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
 
   const close = () => onOpenChange(false);
 
+  const canOfferTrial =
+    canStartTrial && !instanceMissingLicense && !trialRejected;
+  const hasPermission = canOfferTrial
+    ? canManageSubscription
+    : canManageSettings || (trialRejected && canManageSubscription);
+
   const confirmLabel = instanceMissingLicense
     ? t("subscription.instance-assignment.assign-license")
     : t("common.learn-more");
@@ -98,6 +118,19 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
       void router.push(autoSubscriptionRoute());
     }
     close();
+  };
+
+  const handleStartTrial = async () => {
+    setStartingTrial(true);
+    try {
+      await startTrial();
+      close();
+      onFeatureUnlocked?.();
+    } catch {
+      setTrialRejected(true);
+    } finally {
+      setStartingTrial(false);
+    }
   };
 
   const requiredPlanLabel = t(
@@ -163,6 +196,15 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
             {!hasPermission ? (
               <Button variant="default" onClick={close}>
                 {t("common.ok")}
+              </Button>
+            ) : canOfferTrial ? (
+              <Button
+                variant="default"
+                disabled={startingTrial}
+                onClick={() => void handleStartTrial()}
+              >
+                {startingTrial && <LoaderCircle className="animate-spin" />}
+                {t("subscription.plan.try")}
               </Button>
             ) : showTrial && !instanceMissingLicense ? (
               <Button

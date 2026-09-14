@@ -417,7 +417,9 @@ export function WorkspaceSetupPage() {
                         ? "settings.profile.enable-sample-databases-query-data"
                         : selectedScenarioId === "create-database-change"
                           ? "settings.profile.enable-sample-databases-create-change"
-                          : "settings.profile.enable-sample-databases"
+                          : selectedScenarioId === "mark-sensitive-data"
+                            ? "settings.profile.enable-sample-databases-mark-sensitive-data"
+                            : "settings.profile.enable-sample-databases"
                     )}
                   </label>
                 </div>

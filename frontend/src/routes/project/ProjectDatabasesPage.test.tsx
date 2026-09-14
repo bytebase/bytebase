@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   scenarioId: undefined as
     | "query-data"
     | "create-database-change"
+    | "mark-sensitive-data"
     | undefined,
   removeDatabaseMetadataCache: vi.fn(),
   fetchInstance: vi.fn(),
@@ -222,6 +223,7 @@ vi.mock("@/lib/plan/issue", () => ({
 
 vi.mock("@/lib/productIntro", () => ({
   CONNECT_DATABASE_PRODUCT_INTRO: "connect-database",
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO: "mark-sensitive-data",
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO: "project-instance-synced",
   PRODUCT_INTRO_QUERY_KEY: "intro",
   useProductIntro: mocks.useProductIntro,
@@ -847,6 +849,67 @@ describe("ProjectDatabasesPage", () => {
         )
     ) as HTMLAnchorElement;
     expect(sqlEditorButton.className).toContain("bg-accent");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("only offers marking sensitive data for its scenario", async () => {
+    mocks.scenarioId = "mark-sensitive-data";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-title"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-description"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-sql-editor-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-action"
+    );
+
+    const markButton = Array.from(container.querySelectorAll("button")).find(
+      (button) =>
+        button.textContent?.includes(
+          "db.project-instance-synced-mark-sensitive-data-action"
+        )
+    ) as HTMLButtonElement;
+    await act(async () => {
+      markButton.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database.detail",
+      params: {
+        projectId: "demo",
+        instanceId: "prod",
+        databaseName: "app",
+      },
+      query: {
+        parent: "projects/demo/instances/prod",
+        intro: "mark-sensitive-data",
+      },
+      hash: "#catalog",
+    });
 
     act(() => {
       root.unmount();

@@ -25,7 +25,7 @@ export const updateColumnCatalog = async ({
   database: string;
   schema: string;
   table: string;
-  column: string;
+  column: string | string[];
   columnCatalog: Partial<ColumnCatalog>;
   notification: string;
 }) => {
@@ -60,22 +60,24 @@ export const updateColumnCatalog = async ({
   }
 
   const columns = targetTable.kind.value.columns || [];
-  const columnIndex = columns.findIndex((c) => c.name === column);
-  if (columnIndex < 0) {
-    columns.push(
-      create(ColumnCatalogSchema, {
-        name: column,
-        semanticType: columnCatalog.semanticType,
-        labels: columnCatalog.labels,
-        classification: columnCatalog.classification,
-        objectSchema: columnCatalog.objectSchema,
-      })
-    );
-  } else {
-    columns[columnIndex] = {
-      ...columns[columnIndex],
-      ...columnCatalog,
-    };
+  for (const name of Array.isArray(column) ? column : [column]) {
+    const columnIndex = columns.findIndex((c) => c.name === name);
+    if (columnIndex < 0) {
+      columns.push(
+        create(ColumnCatalogSchema, {
+          name,
+          semanticType: columnCatalog.semanticType,
+          labels: columnCatalog.labels,
+          classification: columnCatalog.classification,
+          objectSchema: columnCatalog.objectSchema,
+        })
+      );
+    } else {
+      columns[columnIndex] = {
+        ...columns[columnIndex],
+        ...columnCatalog,
+      };
+    }
   }
   await dbCatalogStore.updateDatabaseCatalog(pendingUpdateCatalog);
 

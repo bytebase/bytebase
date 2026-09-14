@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   instanceMissingLicense: false,
   requiredPlan: 1, // TEAM
   showTrial: false,
+  canStartTrial: false,
+  startTrial: vi.fn(),
   trialingDays: 14,
   hasWorkspacePermissionV2: vi.fn().mockReturnValue(true),
 }));
@@ -149,9 +151,13 @@ beforeEach(async () => {
   mocks.instanceMissingLicense = false;
   mocks.requiredPlan = 1;
   mocks.showTrial = false;
+  mocks.canStartTrial = false;
+  mocks.startTrial.mockResolvedValue(undefined);
   mocks.trialingDays = 14;
   mocks.useSubscriptionState.mockReturnValue({
+    canStartTrial: mocks.canStartTrial,
     showTrial: mocks.showTrial,
+    startTrial: mocks.startTrial,
     trialingDays: mocks.trialingDays,
   });
   mocks.useAppStore.mockImplementation(
@@ -266,6 +272,72 @@ describe("FeatureModal", () => {
     expect(buttons[0].textContent).toBe(
       "subscription.instance-assignment.assign-license"
     );
+    unmount();
+  });
+
+  test("starts an eligible SaaS trial and continues the guarded action", async () => {
+    mocks.canStartTrial = true;
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      showTrial: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const onOpenChange = vi.fn();
+    const onFeatureUnlocked = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureModal
+        open
+        feature={1}
+        onOpenChange={onOpenChange}
+        onFeatureUnlocked={onFeatureUnlocked}
+      />
+    );
+    render();
+
+    const button = [...container.querySelectorAll("[data-testid='button']")].find(
+      (element) => element.textContent === "subscription.plan.try"
+    );
+    expect(button).toBeDefined();
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(mocks.startTrial).toHaveBeenCalledOnce();
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(onFeatureUnlocked).toHaveBeenCalledOnce();
+    unmount();
+  });
+
+  test("falls back to plan details when trial activation is rejected", async () => {
+    mocks.startTrial.mockRejectedValue(new Error("not eligible"));
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      showTrial: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const onOpenChange = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureModal open feature={1} onOpenChange={onOpenChange} />
+    );
+    render();
+
+    const startButton = [
+      ...container.querySelectorAll("[data-testid='button']"),
+    ].find((element) => element.textContent === "subscription.plan.try");
+    await act(async () => {
+      startButton?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(
+      [...container.querySelectorAll("[data-testid='button']")].some(
+        (element) => element.textContent === "common.learn-more"
+      )
+    ).toBe(true);
     unmount();
   });
 });

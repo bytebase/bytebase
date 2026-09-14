@@ -190,6 +190,10 @@ vi.mock("react-i18next", () => ({
             "Query data",
           "settings.profile.setup-scenario.query-data.description":
             "Open SQL Editor and run a statement.",
+          "settings.profile.setup-scenario.mark-sensitive-data.title":
+            "Mark sensitive data",
+          "settings.profile.setup-scenario.mark-sensitive-data.description":
+            "Identify sensitive columns and apply masking.",
           "settings.profile.setup-scenario.workspace-usage.title":
             "Who will use Bytebase with you?",
           "settings.profile.setup-scenario.workspace-usage.team.title":
@@ -211,6 +215,8 @@ vi.mock("react-i18next", () => ({
             "Enable sample databases to start querying immediately",
           "settings.profile.enable-sample-databases-create-change":
             "Enable sample databases as a safe change target",
+          "settings.profile.enable-sample-databases-mark-sensitive-data":
+            "Enable sample databases to try data masking immediately",
           "settings.profile.setup-submit": "Setup my workspace",
           "instance.prepare-sample-instance-failed":
             "Failed to prepare Sample Project Instance.",
@@ -390,8 +396,9 @@ describe("WorkspaceSetupPage", () => {
     expect(page.container.textContent).toContain(
       "What would you like to do with Bytebase?"
     );
-    expect(page.container.querySelectorAll("[role='radio']")).toHaveLength(4);
+    expect(page.container.querySelectorAll("[role='radio']")).toHaveLength(5);
     expect(page.container.textContent).toContain("Create a database change");
+    expect(page.container.textContent).toContain("Mark sensitive data");
     expect(page.container.textContent).toContain("Who will use Bytebase with you?");
     expect(page.container.textContent).toContain("My team");
     expect(page.container.textContent).toContain("Just me");

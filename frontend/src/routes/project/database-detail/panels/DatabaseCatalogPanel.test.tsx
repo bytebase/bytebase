@@ -259,6 +259,22 @@ const mocks = vi.hoisted(() => {
       }
     ),
     FeatureAttention: vi.fn(() => <div data-testid="feature-attention" />),
+    FeatureModal: vi.fn(
+      ({
+        open,
+        onFeatureUnlocked,
+      }: {
+        open: boolean;
+        onFeatureUnlocked?: () => void;
+      }) =>
+        open ? (
+          <div data-testid="feature-modal">
+            <button type="button" onClick={onFeatureUnlocked}>
+              unlock-feature
+            </button>
+          </div>
+        ) : null
+    ),
     FeatureBadge: vi.fn(() => <div data-testid="feature-badge" />),
     Button: (props: ButtonHTMLAttributes<HTMLButtonElement>) => (
       <button {...props} />
@@ -379,6 +395,7 @@ const mocks = vi.hoisted(() => {
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
     })),
+    useProductIntro: vi.fn(),
   };
 });
 
@@ -394,6 +411,11 @@ vi.mock("react-i18next", async (importOriginal) => ({
 vi.mock("@/stores", () => ({
   featureToRef: mocks.featureToRef,
   pushNotification: mocks.pushNotification,
+}));
+
+vi.mock("@/lib/productIntro", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/productIntro")>()),
+  useProductIntro: mocks.useProductIntro,
 }));
 
 vi.mock("@/hooks/useDatabaseCatalog", () => ({
@@ -448,6 +470,10 @@ vi.mock("@/components/FeatureAttention", () => ({
 
 vi.mock("@/components/FeatureBadge", () => ({
   FeatureBadge: mocks.FeatureBadge,
+}));
+
+vi.mock("@/components/ui/feature-modal", () => ({
+  FeatureModal: mocks.FeatureModal,
 }));
 
 vi.mock("@/components/PermissionGuard", () => ({
@@ -650,6 +676,7 @@ beforeEach(async () => {
   mocks.hasProjectPermissionV2.mockReturnValue(true);
   mocks.PermissionGuard.mockClear();
   mocks.FeatureAttention.mockClear();
+  mocks.FeatureModal.mockClear();
   mocks.FeatureBadge.mockClear();
   mocks.GrantAccessDialog.mockClear();
   mocks.DatabaseResourceSelector.mockClear();
@@ -693,12 +720,14 @@ describe("DatabaseCatalogPanel", () => {
     render();
     await flush();
 
-    expect(
-      getButton(
-        container,
-        "settings.sensitive-data.mark-sensitive-data"
-      )
-    ).toBeDefined();
+    const button = getButton(
+      container,
+      "settings.sensitive-data.mark-sensitive-data"
+    );
+    expect(button).toBeDefined();
+    expect(button?.getAttribute("data-product-intro-target")).toBe(
+      "mark-sensitive-data"
+    );
 
     unmount();
   });
@@ -749,7 +778,7 @@ describe("DatabaseCatalogPanel", () => {
     unmount();
   });
 
-  test("opens the feature dialog when marking requires data masking", async () => {
+  test("opens the shared feature modal when marking requires data masking", async () => {
     mocks.featureToRef.mockReturnValue({ value: false });
 
     const { container, render, unmount } = renderIntoContainer(
@@ -769,11 +798,36 @@ describe("DatabaseCatalogPanel", () => {
     );
     await flush();
 
-    expect(
-      container.querySelector('[data-testid="dialog-root"]')
-    ).not.toBeNull();
+    expect(container.querySelector('[data-testid="feature-modal"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="sheet-root"]')).toBeNull();
 
+    unmount();
+  });
+
+  test("continues to mark sensitive data after the trial unlocks masking", async () => {
+    mocks.featureToRef.mockReturnValue({ value: false });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+    click(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      ) as HTMLElement
+    );
+    await flush();
+
+    click(getButton(container, "unlock-feature") as HTMLElement);
+    await flush();
+
+    expect(container.querySelector('[data-testid="feature-modal"]')).toBeNull();
+    expect(container.querySelector('[data-testid="sheet-root"]')).not.toBeNull();
     unmount();
   });
 
@@ -915,7 +969,7 @@ describe("DatabaseCatalogPanel", () => {
     unmount();
   });
 
-  test("opens the feature dialog instead of grant access when masking feature is missing", async () => {
+  test("continues to grant access after the trial unlocks masking", async () => {
     mocks.featureToRef.mockReturnValue({ value: false });
 
     const { container, render, unmount } = renderIntoContainer(
@@ -940,10 +994,7 @@ describe("DatabaseCatalogPanel", () => {
     );
     await flush();
 
-    expect(
-      container.querySelector('[data-testid="dialog-root"]')
-    ).not.toBeNull();
-    expect(container.textContent).toContain("common.warning");
+    expect(container.querySelector('[data-testid="feature-modal"]')).not.toBeNull();
     expect(mocks.GrantAccessDialog).toHaveBeenLastCalledWith(
       expect.objectContaining({
         open: false,
@@ -955,6 +1006,16 @@ describe("DatabaseCatalogPanel", () => {
         .querySelector('[data-testid="grant-access-dialog"]')
         ?.getAttribute("data-open")
     ).toBe("false");
+
+    click(getButton(container, "unlock-feature") as HTMLElement);
+    await flush();
+
+    expect(container.querySelector('[data-testid="feature-modal"]')).toBeNull();
+    expect(
+      container
+        .querySelector('[data-testid="grant-access-dialog"]')
+        ?.getAttribute("data-open")
+    ).toBe("true");
 
     unmount();
   });
