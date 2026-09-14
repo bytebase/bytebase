@@ -157,13 +157,26 @@ export function StatementThreadsLayer({
     setExpandedRoots(new Set(firstToExpand(markersByLine.get(line))));
   }, [editorThreads, markersByLine]);
 
+  // Bumped by every open gesture, so the zone reveals the thread again even
+  // when the same one is reopened.
+  const [openNonce, setOpenNonce] = useState(0);
   const openThreads = useCallback(
     (line: number | undefined, roots: Iterable<string>) => {
       initialExpansionAppliedRef.current = true;
       setOpenLine(line);
       setExpandedRoots(new Set(roots));
+      setOpenNonce((nonce) => nonce + 1);
     },
     []
+  );
+  const openEntries = useMemo(
+    () => (openLine !== undefined ? (markersByLine.get(openLine) ?? []) : []),
+    [markersByLine, openLine]
+  );
+  const expandedEntry = useMemo(
+    () =>
+      openEntries.find((entry) => expandedRoots.has(entry.thread.root.name)),
+    [expandedRoots, openEntries]
   );
 
   // Keep drafts across card collapses and closing/reopening a gutter group.
@@ -218,7 +231,8 @@ export function StatementThreadsLayer({
     openThreads(target.range.endLine, [target.thread.root.name]);
     setSelection(undefined);
     setFlashRoot(target.thread.root.name);
-    editor.revealLineNearTop(target.range.startLine);
+    // The thread's zone scrolls the editor when it opens; this only brings
+    // the editor itself onto the page.
     editor.getDomNode()?.scrollIntoView({ block: "nearest" });
     setWalkerAnnouncement(
       t("plan.review.thread.walker.position", { index: index + 1, count })
@@ -246,7 +260,6 @@ export function StatementThreadsLayer({
       return;
     }
     openThreads(target.range.endLine, [target.thread.root.name]);
-    editor.revealLineInCenter(target.range.startLine);
     editor
       .getDomNode()
       ?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -287,11 +300,6 @@ export function StatementThreadsLayer({
     const lineClasses = new Map<number, string>(
       commentedLines.map((line) => [line, "bb-thread-line--passive"])
     );
-    const activeThread = editorThreads.find(
-      (entry) =>
-        entry.range.endLine === openLine &&
-        expandedRoots.has(entry.thread.root.name)
-    );
     // A pending selection replaces the reading highlight; open composers
     // keep theirs beside it, and win where they overlap.
     const pendingSelection = canCreate ? selection : undefined;
@@ -300,8 +308,8 @@ export function StatementThreadsLayer({
         lineClasses.set(line, className);
       }
     };
-    if (activeThread && !pendingSelection) {
-      paint(activeThread.range, "bb-thread-line");
+    if (expandedEntry && !pendingSelection) {
+      paint(expandedEntry.range, "bb-thread-line");
     }
     for (const composer of composers.values()) {
       paint(composer.range, "bb-thread-line--selecting");
@@ -369,8 +377,7 @@ export function StatementThreadsLayer({
     commentedLines,
     composers,
     editor,
-    editorThreads,
-    expandedRoots,
+    expandedEntry,
     markersByLine,
     monacoModule,
     openLine,
@@ -601,9 +608,6 @@ export function StatementThreadsLayer({
     openThreads(line, [created.name]);
   };
 
-  const openEntries: EditorThread[] =
-    openLine !== undefined ? (markersByLine.get(openLine) ?? []) : [];
-
   return (
     <>
       {visitableThreads.length > 0 && !findWidgetVisible && (
@@ -621,7 +625,8 @@ export function StatementThreadsLayer({
         <MonacoViewZone
           afterLineNumber={openLine}
           editor={editor}
-          revealKey={expandedRoots.size > 0 ? expandedRoots : undefined}
+          revealFromLine={expandedEntry?.range.startLine}
+          revealKey={expandedEntry ? openNonce : undefined}
           revealTarget={expandedThreadRef}
         >
           <div className="py-2 pr-2">
@@ -652,6 +657,7 @@ export function StatementThreadsLayer({
           afterLineNumber={line}
           editor={editor}
           key={line}
+          revealFromLine={composer.range.startLine}
           revealKey={composer.revealNonce}
         >
           <div className="py-2 pr-2">

@@ -1248,3 +1248,84 @@ test.describe.skip("Inline comment threads: ranges, shared markers, walker detai
     await expect(planPage.inlineComposer).toHaveCount(0);
   });
 });
+
+// Inline comment threads, third pass: the editor scroll a walker step makes.
+// A thread taller than the editor's viewport used to be revealed twice, by
+// the walker and then by its zone, so the editor jumped and jumped back.
+// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
+// binary this suite runs against, so the thread UI is absent by design.
+// Re-enable together with the gate in src/utils/featureGates.ts.
+test.describe.skip("Inline comment threads: walker scrolls the editor once (CUJ N)", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+  let shortRootName = "";
+  const stamp = Date.now();
+  const shortRoot = `N short root line 1 ${stamp}`;
+  const longRoot = `N long root lines 4-7 ${stamp}`;
+  const longBody = [longRoot]
+    .concat(
+      Array.from({ length: 40 }, (_, i) => `Paragraph ${i + 1} of a review note taller than the editor.`),
+    )
+    .join("\n\n");
+
+  const expectLineAtTop = async (lineNumber: number) => {
+    const offset = await planPage.statementLineOffset(lineNumber);
+    expect(offset).toBeGreaterThanOrEqual(0);
+    expect(offset).toBeLessThan(24);
+  };
+  const stepTo = (root: string) => async () => {
+    await planPage.threadWalkerNext.click();
+    await expect(planPage.threadCardIn("changes", root)).toBeVisible({ timeout: 10_000 });
+  };
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review N",
+      sql: [1, 2, 3, 4, 5, 6, 7]
+        .map((n) => `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_n${n}_${stamp} TEXT;`)
+        .join("\n"),
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    const plan = await env.api.getPlan(seeded.planName);
+    const spec = plan.specs?.[0];
+    const specId = spec?.id ?? "";
+    const sheetSha256 = spec?.changeDatabaseConfig?.sheet?.split("/").pop() ?? "";
+    expect(specId).not.toBe("");
+    expect(sheetSha256).toMatch(/^[0-9a-f]{64}$/);
+    const anchor = (startLine: number, endLine: number) => ({
+      statementAnchor: { spec: specId, sheetSha256, startLine, endLine },
+    });
+    const short = await env.api.createIssueComment(seeded.issueName, shortRoot, anchor(1, 1));
+    shortRootName = short.name;
+    await env.api.createIssueComment(seeded.issueName, longBody, anchor(4, 7));
+    await goReview(planId);
+    await planPage.expandSection("Changes");
+  });
+
+  test("a step onto a thread taller than the editor scrolls once, to the thread's first line", async () => {
+    await expect(planPage.threadCardIn("changes", shortRoot)).toBeVisible({ timeout: 15_000 });
+    expect(await planPage.countStatementEditorScrolls(stepTo(longRoot))).toBe(1);
+    // Line 4 sits at the top of the viewport with the card below it.
+    await expectLineAtTop(4);
+    await expect(planPage.statementLineNumber(7)).toBeVisible();
+  });
+
+  test("stepping away from a scrolled card and back scrolls once each way", async () => {
+    await planPage.scrollStatementEditorPastLine(4);
+    expect(await planPage.countStatementEditorScrolls(stepTo(shortRoot))).toBe(1);
+    await expect(planPage.statementLineNumber(1)).toBeVisible();
+    expect(await planPage.countStatementEditorScrolls(stepTo(longRoot))).toBe(1);
+    await expectLineAtTop(4);
+  });
+
+  test("stepping onto the only thread scrolls once from the bottom and not at all once in place", async () => {
+    await env.api.setIssueCommentThreadState(shortRootName, "RESOLVED");
+    await expect(planPage.threadWalker).toContainText("1", { timeout: 15_000 });
+    await planPage.scrollStatementEditorPastLine(4);
+    expect(await planPage.countStatementEditorScrolls(stepTo(longRoot))).toBe(1);
+    await expectLineAtTop(4);
+    expect(await planPage.countStatementEditorScrolls(stepTo(longRoot))).toBe(0);
+  });
+});
