@@ -196,6 +196,19 @@ func TestExtractChangedResourcesDMLCounts(t *testing.T) {
 	}
 }
 
+func TestExtractChangedResourcesFollowsSearchPath(t *testing.T) {
+	const statement = `DELETE FROM t1;
+SET search_path = app, public;
+DELETE FROM t2;
+SET search_path TO '$user', "Reports";
+DELETE FROM t3;
+RESET search_path;
+DELETE FROM t4;`
+	got, err := extractChangedResources("db", "public", nil /* dbMetadata */, parseASTs(t, statement), statement)
+	require.NoError(t, err)
+	require.Equal(t, []string{"db.Reports.t3", "db.app.t2", "db.public.t1", "db.public.t4"}, getTableNames(got.ChangedResources))
+}
+
 func TestExtractChangedResourcesNames(t *testing.T) {
 	for _, tc := range []struct {
 		name          string

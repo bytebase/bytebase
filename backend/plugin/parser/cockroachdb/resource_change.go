@@ -15,12 +15,14 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_COCKROACHDB, extractChangedResources)
 }
 
-// extractChangedResources resolves an unqualified table to the current database and to currentSchema,
-// or to "public" when currentSchema is empty.
+// extractChangedResources resolves an unqualified table to the current database and to the first
+// schema of the search_path the statements set, or else to currentSchema, or "public" when it is
+// empty.
 func extractChangedResources(database string, currentSchema string, dbMetadata *model.DatabaseMetadata, asts []base.AST, _ string) (*base.ChangeSummary, error) {
 	if currentSchema == "" {
 		currentSchema = "public"
 	}
+	defaultSchema := currentSchema
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
@@ -93,10 +95,37 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			summary.ChangedResources.AddTable(newDB, newSchema, &storepb.ChangedResourceTable{Name: newTable}, false)
 		case *tree.CreateIndex:
 			addTable(&n.Table, false)
+		case *tree.SetVar:
+			if n.ResetAll || strings.EqualFold(n.Name, "search_path") {
+				currentSchema = getSearchPathSchema(n, defaultSchema)
+			}
 		default:
 		}
 	}
 	return summary, nil
+}
+
+// getSearchPathSchema returns the first schema a SET search_path names, skipping "$user", or
+// defaultSchema when it names none or resets the search path.
+func getSearchPathSchema(set *tree.SetVar, defaultSchema string) string {
+	if set.ResetAll {
+		return defaultSchema
+	}
+	for _, value := range set.Values {
+		var schema string
+		switch v := value.(type) {
+		case *tree.UnresolvedName:
+			schema = v.Parts[0]
+		case *tree.StrVal:
+			schema = v.RawString()
+		default:
+			return defaultSchema
+		}
+		if schema != "$user" {
+			return schema
+		}
+	}
+	return defaultSchema
 }
 
 func resolveTableName(name *tree.TableName, defaultDatabase string, defaultSchema string) (string, string, string) {

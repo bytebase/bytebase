@@ -154,9 +154,9 @@ func TestShapeKey(t *testing.T) {
 			name: "lists of literals",
 			statements: []string{
 				"DELETE FROM t WHERE id IN (1, 2, 3)",
-				"DELETE FROM t WHERE id IN ('a')",
+				"DELETE FROM t WHERE id IN ('a', 'b', 'c')",
 			},
-			want: "DELETE FROM t WHERE id IN(?)",
+			want: "DELETE FROM t WHERE id IN(?,?,?)",
 		},
 		{
 			name:       "identifiers keep their digits",
@@ -179,6 +179,9 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE Orders SET v = 1", "UPDATE orders SET v = 1"},
 			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1"},
 			{"UPDATE t SET v = 1 /*M! WHERE id = 1 */", "UPDATE t SET v = 1"},
+			{"UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1", "UPDATE t SET v = 1"},
+			{"UPDATE --+ CARDINALITY(t 1000000)\nt SET v = 1", "UPDATE t SET v = 1"},
+			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
 		} {
 			require.NotEqual(t, shapeKey(pair[0]), shapeKey(pair[1]), pair[0])
 		}

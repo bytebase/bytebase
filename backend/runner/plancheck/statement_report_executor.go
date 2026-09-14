@@ -358,8 +358,8 @@ func groupStatementsByShape(statements []string) []*statementShape {
 	return shapes
 }
 
-// shapeKey replaces the string and numeric literals of a statement with ? and a list of them with a
-// single ?, and removes comments and whitespace. Identifiers keep their text, including their case.
+// shapeKey replaces the string and numeric literals of a statement with ? and removes comments and
+// whitespace. Identifiers keep their text, including their case.
 func shapeKey(statement string) string {
 	var b strings.Builder
 	space := false
@@ -388,15 +388,14 @@ func shapeKey(statement string) string {
 				i++
 			}
 			write('?')
-		case strings.HasPrefix(statement[i:], "--"):
+		case isSkippedComment(statement[i:], "--"):
 			if end := strings.IndexByte(statement[i:], '\n'); end >= 0 {
 				i += end
 			} else {
 				i = len(statement)
 			}
 			space = true
-		// MySQL and MariaDB run the contents of /*! and /*M! comments, so those stay in the key.
-		case strings.HasPrefix(statement[i:], "/*") && !strings.HasPrefix(statement[i:], "/*!") && !strings.HasPrefix(statement[i:], "/*M!"):
+		case isSkippedComment(statement[i:], "/*"):
 			if end := strings.Index(statement[i+2:], "*/"); end >= 0 {
 				i += end + 4
 			} else {
@@ -411,11 +410,22 @@ func shapeKey(statement string) string {
 			i++
 		}
 	}
-	key := b.String()
-	for strings.Contains(key, "?,?") {
-		key = strings.ReplaceAll(key, "?,?", "?")
+	return b.String()
+}
+
+// isSkippedComment reports whether text starts with a comment that opens with opener and does not
+// change how the statement runs: MySQL and MariaDB run /*! and /*M! comments, and /*+ and --+
+// comments hold optimizer hints.
+func isSkippedComment(text, opener string) bool {
+	if !strings.HasPrefix(text, opener) {
+		return false
 	}
-	return key
+	for _, kept := range []string{"/*!", "/*M!", "/*+", "--+"} {
+		if strings.HasPrefix(text, kept) {
+			return false
+		}
+	}
+	return true
 }
 
 // quotedEnd returns the offset just past the quoted text that starts at start, where a doubled
