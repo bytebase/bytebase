@@ -379,6 +379,19 @@ func shapeKey(statement string, mysqlFamily bool) string {
 	}
 	for i := 0; i < len(statement); {
 		c := statement[i]
+		// A PostgreSQL dollar-quoted string can hold quotes and comment markers. The MySQL family
+		// allows identifiers that start with $ instead.
+		if c == '$' && !mysqlFamily && (i == 0 || !isWordByte(statement[i-1])) {
+			if tag := dollarQuoteTag(statement[i:]); tag != "" {
+				end := strings.Index(statement[i+len(tag):], tag)
+				if end < 0 {
+					return statement
+				}
+				i += 2*len(tag) + end
+				write('?')
+				continue
+			}
+		}
 		switch {
 		case c == '\'':
 			// PostgreSQL E'...' strings escape with backslashes too.
@@ -463,6 +476,22 @@ func quotedEnd(statement string, start int, backslashEscapes bool) (int, bool) {
 		}
 	}
 	return len(statement), false
+}
+
+// dollarQuoteTag returns the $$ or $tag$ that opens a PostgreSQL dollar-quoted string at the start
+// of text, or "" when text does not start with one.
+func dollarQuoteTag(text string) string {
+	for i := 1; i < len(text); i++ {
+		c := text[i]
+		switch {
+		case c == '$':
+			return text[:i+1]
+		case c == '_' || c >= 0x80 || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (i > 1 && '0' <= c && c <= '9'):
+		default:
+			return ""
+		}
+	}
+	return ""
 }
 
 func isWordByte(c byte) bool {

@@ -171,6 +171,14 @@ func TestShapeKey(t *testing.T) {
 			want: "UPDATE t SET v=E? WHERE id=?;",
 		},
 		{
+			name: "PostgreSQL dollar-quoted strings and parameters",
+			statements: []string{
+				"UPDATE t SET v = $$--$$ WHERE id = $1;",
+				"UPDATE t SET v = $body$it's$body$ WHERE id = $1;",
+			},
+			want: "UPDATE t SET v=? WHERE id=$1;",
+		},
+		{
 			name: "lists of literals",
 			statements: []string{
 				"DELETE FROM t WHERE id IN (1, 2, 3)",
@@ -202,8 +210,10 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1", "UPDATE t SET v = 1"},
 			{"UPDATE --+ CARDINALITY(t 1000000)\nt SET v = 1", "UPDATE t SET v = 1"},
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
-			// The quote inside the dollar-quoted string never closes, so each statement keeps its own shape.
-			{"UPDATE t SET v = $$it's$$ WHERE id = 1", "UPDATE t SET v = $$it's$$"},
+			{"UPDATE t SET v = $$--$$ WHERE id = 1", "UPDATE t SET v = $$--$$"},
+			{"UPDATE t SET v = $tag$it's$tag$ WHERE id = 1", "UPDATE t SET v = $tag$it's$tag$"},
+			// The quote never closes, so each statement keeps its own shape.
+			{"UPDATE t SET v = 'it WHERE id = 1", "UPDATE t SET v = 'it"},
 		} {
 			require.NotEqual(t, shapeKey(pair[0], false), shapeKey(pair[1], false), pair[0])
 		}
