@@ -29,34 +29,53 @@ func normalizeSchemaName(schemaName string) string {
 	return schemaName
 }
 
-// getExplainSQL returns the query whose result getAffectedRows reads.
+// getExplainSQL returns the query whose result getExplainPlan reads.
 func getExplainSQL(statement string) string {
 	return fmt.Sprintf("EXPLAIN (FORMAT JSON) %s", statement)
 }
 
-// getAffectedRows returns the estimated rows a statement modifies from the advisor.Query result of
-// its getExplainSQL query.
-func getAffectedRows(res []any) (int64, error) {
+// getExplainPlan returns the JSON plan from the advisor.Query result of a getExplainSQL query.
+func getExplainPlan(res []any) (string, error) {
 	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
-		return 0, errors.Errorf("expected 3 but got %d", len(res))
+		return "", errors.Errorf("expected 3 but got %d", len(res))
 	}
 	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []any but got %T", res[2])
+		return "", errors.Errorf("expected []any but got %T", res[2])
 	}
 	if len(rowList) != 1 {
-		return 0, errors.Errorf("expected one plan row but got %d", len(rowList))
+		return "", errors.Errorf("expected one plan row but got %d", len(rowList))
 	}
 	row, ok := rowList[0].([]any)
 	if !ok || len(row) != 1 {
-		return 0, errors.Errorf("expected one plan column but got %v", rowList[0])
+		return "", errors.Errorf("expected one plan column but got %v", rowList[0])
 	}
 	plan, ok := row[0].(string)
 	if !ok {
-		return 0, errors.Errorf("expected string but got %T", row[0])
+		return "", errors.Errorf("expected string but got %T", row[0])
+	}
+	return plan, nil
+}
+
+// getAffectedRows returns the estimated rows a statement and its data-modifying CTEs modify, from
+// the advisor.Query result of its getExplainSQL query.
+func getAffectedRows(res []any) (int64, error) {
+	plan, err := getExplainPlan(res)
+	if err != nil {
+		return 0, err
 	}
 	return pgparser.GetEstimatedAffectedRowsFromExplainJSON(plan)
+}
+
+// getInsertedRows returns the estimated rows an INSERT adds, without the rows its data-modifying
+// CTEs change, from the advisor.Query result of its getExplainSQL query.
+func getInsertedRows(res []any) (int64, error) {
+	plan, err := getExplainPlan(res)
+	if err != nil {
+		return 0, err
+	}
+	return pgparser.GetEstimatedInsertedRowsFromExplainJSON(plan)
 }
 
 // hasDataModifyingCTE reports whether a WITH clause contains INSERT, UPDATE, DELETE, or MERGE.

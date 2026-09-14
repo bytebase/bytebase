@@ -120,7 +120,7 @@ func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt) {
 			return
 		}
 
-		rowCount, err := getAffectedRows(res)
+		rowCount, err := getInsertedRows(res)
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.Level,

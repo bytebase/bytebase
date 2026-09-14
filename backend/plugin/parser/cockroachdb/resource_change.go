@@ -148,14 +148,23 @@ func getMutationTargets(stmt tree.Statement) []tree.TableExpr {
 	return c.targets
 }
 
+// getMutationTypes returns the statement type of each mutation getMutationTargets finds, in order.
+func getMutationTypes(stmt tree.Statement) []storepb.StatementType {
+	c := &mutationCollector{}
+	c.statement(stmt)
+	return c.types
+}
+
 type mutationCollector struct {
 	targets []tree.TableExpr
+	types   []storepb.StatementType
 }
 
 func (c *mutationCollector) statement(stmt tree.Statement) {
 	switch n := stmt.(type) {
 	case *tree.Insert:
 		c.targets = append(c.targets, n.Table)
+		c.types = append(c.types, storepb.StatementType_INSERT)
 		c.with(n.With)
 		c.selectQuery(n.Rows)
 		if n.OnConflict != nil {
@@ -166,6 +175,7 @@ func (c *mutationCollector) statement(stmt tree.Statement) {
 		c.returning(n.Returning)
 	case *tree.Update:
 		c.targets = append(c.targets, n.Table)
+		c.types = append(c.types, storepb.StatementType_UPDATE)
 		c.with(n.With)
 		c.updateExprs(n.Exprs)
 		c.tableExprs(n.From)
@@ -175,6 +185,7 @@ func (c *mutationCollector) statement(stmt tree.Statement) {
 		c.returning(n.Returning)
 	case *tree.Delete:
 		c.targets = append(c.targets, n.Table)
+		c.types = append(c.types, storepb.StatementType_DELETE)
 		c.with(n.With)
 		c.tableExprs(n.Using)
 		c.where(n.Where)

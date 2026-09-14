@@ -36,6 +36,20 @@ func TestInsertRowLimit(t *testing.T) {
 			}},
 		},
 		{
+			// The CTE's 5000 deleted rows are not inserted rows.
+			name:      "insert with a data-modifying CTE counts only the inserted rows",
+			statement: "WITH d AS (DELETE FROM big RETURNING id) INSERT INTO archive SELECT id FROM d LIMIT 1;",
+			plans: map[string]string{
+				"WITH d AS (DELETE FROM big RETURNING id) INSERT INTO archive SELECT id FROM d LIMIT 1": `[{"Plan": {"Node Type": "ModifyTable", "Operation": "Insert", "Plan Rows": 0, "Plans": [
+					{"Node Type": "ModifyTable", "Operation": "Delete", "Parent Relationship": "InitPlan", "Plan Rows": 5000, "Plans": [
+						{"Node Type": "Seq Scan", "Parent Relationship": "Outer", "Plan Rows": 5000}
+					]},
+					{"Node Type": "Limit", "Parent Relationship": "Outer", "Plan Rows": 1}
+				]}}]`,
+			},
+			wantExplained: []string{"WITH d AS (DELETE FROM big RETURNING id) INSERT INTO archive SELECT id FROM d LIMIT 1"},
+		},
+		{
 			name:          "insert select within the limit",
 			statement:     "INSERT INTO t2 SELECT * FROM t LIMIT 30;",
 			plans:         map[string]string{"INSERT INTO t2 SELECT * FROM t LIMIT 30": modifyTablePlan(30)},

@@ -61,6 +61,16 @@ func TestGetStatementTypes(t *testing.T) {
 			statement: `SET application_name = 'x'; CREATE TABLE t (id INT PRIMARY KEY); SELECT 1; INSERT INTO t VALUES (1)`,
 			want:      []storepb.StatementType{storepb.StatementType_CREATE_TABLE, storepb.StatementType_INSERT},
 		},
+		{statement: `WITH d AS (DELETE FROM t RETURNING id) SELECT count(*) FROM d`, want: []storepb.StatementType{storepb.StatementType_DELETE}},
+		{statement: `SELECT * FROM [UPDATE t SET c = 1 RETURNING id]`, want: []storepb.StatementType{storepb.StatementType_UPDATE}},
+		{
+			statement: `WITH d AS (DELETE FROM t RETURNING *) INSERT INTO t2 SELECT * FROM d`,
+			want:      []storepb.StatementType{storepb.StatementType_INSERT, storepb.StatementType_DELETE},
+		},
+		{
+			statement: `CREATE TABLE t_moved AS SELECT * FROM [DELETE FROM t RETURNING *]`,
+			want:      []storepb.StatementType{storepb.StatementType_CREATE_TABLE, storepb.StatementType_DELETE},
+		},
 		{statement: `SELECT * FROM t`},
 	} {
 		t.Run(tc.statement, func(t *testing.T) {

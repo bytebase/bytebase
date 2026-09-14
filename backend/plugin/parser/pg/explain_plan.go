@@ -19,11 +19,9 @@ type explainPlanNode struct {
 // sums every ModifyTable node, including those of data-modifying CTEs, and returns an error
 // when the plan has none or one cannot be interpreted.
 func GetEstimatedAffectedRowsFromExplainJSON(plan string) (int64, error) {
-	var statements []struct {
-		Plan *explainPlanNode `json:"Plan"`
-	}
-	if err := json.Unmarshal([]byte(plan), &statements); err != nil {
-		return 0, errors.Wrap(err, "failed to parse the EXPLAIN (FORMAT JSON) output")
+	roots, err := parseExplainJSON(plan)
+	if err != nil {
+		return 0, err
 	}
 
 	var total float64
@@ -45,11 +43,8 @@ func GetEstimatedAffectedRowsFromExplainJSON(plan string) (int64, error) {
 		}
 		return nil
 	}
-	for _, statement := range statements {
-		if statement.Plan == nil {
-			continue
-		}
-		if err := walk(statement.Plan); err != nil {
+	for _, root := range roots {
+		if err := walk(root); err != nil {
 			return 0, err
 		}
 	}
@@ -57,6 +52,40 @@ func GetEstimatedAffectedRowsFromExplainJSON(plan string) (int64, error) {
 		return 0, errors.New("the plan has no ModifyTable node")
 	}
 	return int64(math.Round(total)), nil
+}
+
+// GetEstimatedInsertedRowsFromExplainJSON returns the planner's estimate of the rows a top-level
+// INSERT adds in `EXPLAIN (FORMAT JSON)` output, without the rows its data-modifying CTEs change.
+func GetEstimatedInsertedRowsFromExplainJSON(plan string) (int64, error) {
+	roots, err := parseExplainJSON(plan)
+	if err != nil {
+		return 0, err
+	}
+	if len(roots) != 1 || roots[0].NodeType != "ModifyTable" {
+		return 0, errors.New("the plan root is not a ModifyTable node")
+	}
+	rows, err := getModifiedRows(roots[0])
+	if err != nil {
+		return 0, err
+	}
+	return int64(math.Round(rows)), nil
+}
+
+// parseExplainJSON returns the root plan node of each statement in `EXPLAIN (FORMAT JSON)` output.
+func parseExplainJSON(plan string) ([]*explainPlanNode, error) {
+	var statements []struct {
+		Plan *explainPlanNode `json:"Plan"`
+	}
+	if err := json.Unmarshal([]byte(plan), &statements); err != nil {
+		return nil, errors.Wrap(err, "failed to parse the EXPLAIN (FORMAT JSON) output")
+	}
+	var roots []*explainPlanNode
+	for _, statement := range statements {
+		if statement.Plan != nil {
+			roots = append(roots, statement.Plan)
+		}
+	}
+	return roots, nil
 }
 
 // getModifiedRows reads the estimate from the subplans feeding a ModifyTable node. PostgreSQL 14

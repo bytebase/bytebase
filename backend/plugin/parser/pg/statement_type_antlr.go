@@ -1,10 +1,31 @@
 package pg
 
 import (
+	"slices"
+
 	"github.com/bytebase/omni/pg/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+// classifyStatementTypes returns the type of the statement followed by the types of its
+// data-modifying CTEs, each type once.
+func classifyStatementTypes(node ast.Node) []storepb.StatementType {
+	var types []storepb.StatementType
+	add := func(statementType storepb.StatementType) {
+		if statementType != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED && !slices.Contains(types, statementType) {
+			types = append(types, statementType)
+		}
+	}
+	add(classifyStatementType(node))
+	ast.Inspect(node, func(n ast.Node) bool {
+		if cte, ok := n.(*ast.CommonTableExpr); ok {
+			add(classifyStatementType(cte.Ctequery))
+		}
+		return true
+	})
+	return types
+}
 
 // classifyStatementType returns the statement type for an omni AST node.
 func classifyStatementType(node ast.Node) storepb.StatementType {
@@ -75,6 +96,8 @@ func classifyStatementType(node ast.Node) storepb.StatementType {
 		return storepb.StatementType_UPDATE
 	case *ast.DeleteStmt:
 		return storepb.StatementType_DELETE
+	case *ast.MergeStmt:
+		return storepb.StatementType_MERGE
 
 	default:
 		return storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED

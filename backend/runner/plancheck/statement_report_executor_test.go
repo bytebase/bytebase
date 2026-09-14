@@ -142,13 +142,13 @@ func TestShapeKey(t *testing.T) {
 		want       string
 	}{
 		{
-			name: "literals, spacing, and case",
+			name: "literals and spacing",
 			statements: []string{
 				"UPDATE t SET v = 'it''s' WHERE id = 1;",
-				"update t set v='x' where id=20.5;",
+				"UPDATE t SET v='x' WHERE id=20.5;",
 				"UPDATE  t\n\tSET v = 'y'  -- comment\nWHERE /* note */ id = 3;",
 			},
-			want: "update t set v=? where id=?;",
+			want: "UPDATE t SET v=? WHERE id=?;",
 		},
 		{
 			name: "lists of literals",
@@ -156,12 +156,12 @@ func TestShapeKey(t *testing.T) {
 				"DELETE FROM t WHERE id IN (1, 2, 3)",
 				"DELETE FROM t WHERE id IN ('a')",
 			},
-			want: "delete from t where id in(?)",
+			want: "DELETE FROM t WHERE id IN(?)",
 		},
 		{
 			name:       "identifiers keep their digits",
 			statements: []string{"UPDATE t1 SET c2 = 0x1F WHERE t1.c3 > 1e3"},
-			want:       "update t1 set c2=? where t1.c3>?",
+			want:       "UPDATE t1 SET c2=? WHERE t1.c3>?",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -170,6 +170,17 @@ func TestShapeKey(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("identifiers keep their case and quoted text", func(t *testing.T) {
+		for _, pair := range [][2]string{
+			{`UPDATE "Orders" SET v = 1`, `UPDATE "orders" SET v = 1`},
+			{`UPDATE "2024_orders" SET v = 1`, `UPDATE "2025_orders" SET v = 1`},
+			{"UPDATE `Orders` SET v = 1", "UPDATE `orders` SET v = 1"},
+			{"UPDATE Orders SET v = 1", "UPDATE orders SET v = 1"},
+		} {
+			require.NotEqual(t, shapeKey(pair[0]), shapeKey(pair[1]), pair[0])
+		}
+	})
 }
 
 // reportEngines derives the list from common.EngineSupportStatementReport so a

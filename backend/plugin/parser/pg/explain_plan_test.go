@@ -40,6 +40,26 @@ func TestGetEstimatedAffectedRowsFromExplainJSON(t *testing.T) {
 	}
 }
 
+func TestGetEstimatedInsertedRowsFromExplainJSON(t *testing.T) {
+	for _, tc := range []struct {
+		fixture  string
+		wantRows int64
+	}{
+		{fixture: "insert_select.json", wantRows: 100},
+		// The outer INSERT adds the 5000 rows its CTE deletes.
+		{fixture: "cte_delete_insert.json", wantRows: 5000},
+	} {
+		t.Run(tc.fixture, func(t *testing.T) {
+			rows, err := GetEstimatedInsertedRowsFromExplainJSON(readExplainPlanFixture(t, tc.fixture))
+			require.NoError(t, err)
+			require.Equal(t, tc.wantRows, rows)
+		})
+	}
+
+	_, err := GetEstimatedInsertedRowsFromExplainJSON(readExplainPlanFixture(t, "select.json"))
+	require.EqualError(t, err, "the plan root is not a ModifyTable node")
+}
+
 func TestGetEstimatedAffectedRowsFromExplainJSONMemberSubplans(t *testing.T) {
 	// PostgreSQL 13 and earlier plan a partitioned UPDATE as one ModifyTable subplan per partition.
 	const plan = `[{"Plan": {"Node Type": "ModifyTable", "Operation": "Update", "Plan Rows": 0, "Plans": [

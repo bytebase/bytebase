@@ -340,8 +340,8 @@ type statementShape struct {
 	rows       int64
 }
 
-// groupStatementsByShape groups statements that differ only in literal values, comments, spacing,
-// or letter case, in the order each shape first appears.
+// groupStatementsByShape groups statements that differ only in literal values, comments, or
+// spacing, in the order each shape first appears.
 func groupStatementsByShape(statements []string) []*statementShape {
 	var shapes []*statementShape
 	byKey := map[string]*statementShape{}
@@ -359,7 +359,7 @@ func groupStatementsByShape(statements []string) []*statementShape {
 }
 
 // shapeKey replaces the string and numeric literals of a statement with ? and a list of them with a
-// single ?, removes comments and whitespace, and lowercases the rest.
+// single ?, and removes comments and whitespace. Identifiers keep their text, including their case.
 func shapeKey(statement string) string {
 	var b strings.Builder
 	space := false
@@ -376,18 +376,13 @@ func shapeKey(statement string) string {
 		c := statement[i]
 		switch {
 		case c == '\'':
-			// A doubled quote continues the literal.
-			for i++; i < len(statement); i++ {
-				if statement[i] == '\'' {
-					if i+1 < len(statement) && statement[i+1] == '\'' {
-						i++
-						continue
-					}
-					break
-				}
-			}
-			i++
+			i = quotedEnd(statement, i)
 			write('?')
+		case c == '"' || c == '`':
+			end := quotedEnd(statement, i)
+			write(c)
+			b.WriteString(statement[i+1 : end])
+			i = end
 		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])):
 			for i < len(statement) && (isWordByte(statement[i]) || statement[i] == '.') {
 				i++
@@ -411,9 +406,6 @@ func shapeKey(statement string) string {
 			space = true
 			i++
 		default:
-			if 'A' <= c && c <= 'Z' {
-				c += 'a' - 'A'
-			}
 			write(c)
 			i++
 		}
@@ -423,6 +415,23 @@ func shapeKey(statement string) string {
 		key = strings.ReplaceAll(key, "?,?", "?")
 	}
 	return key
+}
+
+// quotedEnd returns the offset just past the quoted text that starts at start, where a doubled
+// quote continues the text.
+func quotedEnd(statement string, start int) int {
+	quote := statement[start]
+	for i := start + 1; i < len(statement); i++ {
+		if statement[i] != quote {
+			continue
+		}
+		if i+1 < len(statement) && statement[i+1] == quote {
+			i++
+			continue
+		}
+		return i + 1
+	}
+	return len(statement)
 }
 
 func isWordByte(c byte) bool {

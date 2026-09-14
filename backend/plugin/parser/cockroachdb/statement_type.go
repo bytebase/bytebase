@@ -1,6 +1,8 @@
 package cockroachdb
 
 import (
+	"slices"
+
 	"github.com/cockroachdb/cockroachdb-parser/pkg/sql/sem/tree"
 	"github.com/pkg/errors"
 
@@ -12,7 +14,8 @@ func init() {
 	base.RegisterGetStatementTypes(storepb.Engine_COCKROACHDB, GetStatementTypes)
 }
 
-// GetStatementTypes returns the types of the statements that have one, in order.
+// GetStatementTypes returns the types of the statements that have one, in order, each followed by
+// the types of the mutations in its CTEs and statement sources, each type once per statement.
 func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 	var statementTypes []storepb.StatementType
 	for _, ast := range asts {
@@ -20,9 +23,21 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 		if !ok {
 			return nil, errors.New("expected CockroachDB AST")
 		}
-		if statementType := getStatementType(crdbAST.Stmt.AST); statementType != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
-			statementTypes = append(statementTypes, statementType)
+		var types []storepb.StatementType
+		add := func(statementType storepb.StatementType) {
+			if statementType != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED && !slices.Contains(types, statementType) {
+				types = append(types, statementType)
+			}
 		}
+		stmt := crdbAST.Stmt.AST
+		add(getStatementType(stmt))
+		if createTable, ok := stmt.(*tree.CreateTable); ok && createTable.AsSource != nil {
+			stmt = createTable.AsSource
+		}
+		for _, mutationType := range getMutationTypes(stmt) {
+			add(mutationType)
+		}
+		statementTypes = append(statementTypes, types...)
 	}
 	return statementTypes, nil
 }
