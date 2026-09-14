@@ -28,7 +28,7 @@ func TestExtractChangedResources(t *testing.T) {
 	)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS: []string{
+		DMLStatements: []string{
 			"UPDATE t1 SET c1 = 5;",
 		},
 		DMLCount:    1,
@@ -68,7 +68,7 @@ func TestExtractChangedResources_InsertDefaultValues(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, got.InsertCount)
 	require.Equal(t, 0, got.DMLCount)
-	require.Empty(t, got.SampleDMLS)
+	require.Empty(t, got.DMLStatements)
 }
 
 func TestExtractChangedResources_Truncate(t *testing.T) {

@@ -4,10 +4,10 @@ import (
 	"strings"
 	"unicode"
 
+	omniast "github.com/bytebase/omni/tidb/ast"
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -19,17 +19,23 @@ func init() {
 }
 
 func extractChangedResources(database string, _ string, dbMetadata *model.DatabaseMetadata, asts []base.AST, statement string) (*base.ChangeSummary, error) {
-	changedResources := model.NewChangedResources(dbMetadata)
-	dmlCount := 0
-	insertCount := 0
-	var sampleDMLs []string
+	summary := &base.ChangeSummary{
+		ChangedResources: model.NewChangedResources(dbMetadata),
+	}
 	for _, ast := range asts {
 		tidbAST, ok := GetTiDBAST(ast)
 		if !ok {
-			return nil, errors.New("expected TiDB AST")
+			// The pingcap re-parse rejects some statements omni accepts. Count those from the
+			// omni AST rather than failing the summary of every other statement.
+			omniAST, ok := ast.(*OmniAST)
+			if !ok {
+				return nil, errors.New("expected TiDB AST")
+			}
+			countOmniDML(summary, omniAST)
+			continue
 		}
 		node := tidbAST.Node
-		err := getResourceChanges(database, node, statement, changedResources)
+		err := getResourceChanges(database, node, statement, summary.ChangedResources)
 		if err != nil {
 			return nil, err
 		}
@@ -37,29 +43,82 @@ func extractChangedResources(database string, _ string, dbMetadata *model.Databa
 		switch n := node.(type) {
 		case *tidbast.InsertStmt:
 			if len(n.Lists) > 0 {
-				insertCount += len(n.Lists)
+				summary.InsertCount += len(n.Lists)
 				continue
 			}
-
-			dmlCount++
-			if len(sampleDMLs) < common.MaximumLintExplainSize {
-				sampleDMLs = append(sampleDMLs, trimStatement(n.Text()))
-			}
+			addSampleDML(summary, n.Text())
 		case *tidbast.UpdateStmt, *tidbast.DeleteStmt:
-			dmlCount++
-			if len(sampleDMLs) < common.MaximumLintExplainSize {
-				sampleDMLs = append(sampleDMLs, trimStatement(node.Text()))
+			addSampleDML(summary, node.Text())
+		case *tidbast.NonTransactionalDMLStmt:
+			if n.DryRun == tidbast.NoDryRun {
+				addBatchSampleDML(summary, ast)
 			}
 		default:
 		}
 	}
+	return summary, nil
+}
 
-	return &base.ChangeSummary{
-		ChangedResources: changedResources,
-		DMLCount:         dmlCount,
-		SampleDMLS:       sampleDMLs,
-		InsertCount:      insertCount,
-	}, nil
+func countOmniDML(summary *base.ChangeSummary, omniAST *OmniAST) {
+	switch n := omniAST.Node.(type) {
+	case *omniast.InsertStmt:
+		switch {
+		case len(n.Values) > 0:
+			summary.InsertCount += len(n.Values)
+		case len(n.SetList) > 0:
+			summary.InsertCount++
+		default:
+			addSampleDML(summary, omniAST.Text)
+		}
+	case *omniast.UpdateStmt, *omniast.DeleteStmt:
+		addSampleDML(summary, omniAST.Text)
+	case *omniast.BatchStmt:
+		if n.DryRun == omniast.BatchDryRunNone {
+			addBatchSampleDML(summary, omniAST)
+		}
+	default:
+	}
+}
+
+// addBatchSampleDML samples the DML inside a BATCH statement, because EXPLAIN rejects the
+// BATCH syntax. A BATCH without an omni AST is counted but not sampled.
+func addBatchSampleDML(summary *base.ChangeSummary, ast base.AST) {
+	omniAST, ok := ast.(*OmniAST)
+	if !ok {
+		summary.DMLCount++
+		return
+	}
+	batch, ok := omniAST.Node.(*omniast.BatchStmt)
+	if !ok {
+		summary.DMLCount++
+		return
+	}
+	var loc omniast.Loc
+	switch dml := batch.DML.(type) {
+	case *omniast.DeleteStmt:
+		loc = dml.Loc
+	case *omniast.UpdateStmt:
+		loc = dml.Loc
+	case *omniast.InsertStmt:
+		loc = dml.Loc
+	default:
+		summary.DMLCount++
+		return
+	}
+	end := loc.End
+	if end <= loc.Start || end > len(omniAST.Text) {
+		end = len(omniAST.Text)
+	}
+	if loc.Start <= 0 || loc.Start >= end {
+		summary.DMLCount++
+		return
+	}
+	addSampleDML(summary, omniAST.Text[loc.Start:end])
+}
+
+func addSampleDML(summary *base.ChangeSummary, text string) {
+	summary.DMLCount++
+	summary.DMLStatements = append(summary.DMLStatements, trimStatement(text))
 }
 
 // addTiDBObjectDatabase records a database-only write target for a non-table object DDL
@@ -292,6 +351,10 @@ func getResourceChanges(database string, node tidbast.StmtNode, _ string, change
 					false,
 				)
 			}
+		}
+	case *tidbast.NonTransactionalDMLStmt:
+		if node.DryRun == tidbast.NoDryRun {
+			return getResourceChanges(database, node.DMLStmt, "", changedResources)
 		}
 	default:
 	}

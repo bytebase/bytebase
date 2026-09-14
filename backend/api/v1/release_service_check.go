@@ -447,7 +447,7 @@ loop:
 
 				// Get SQL summary report for the statement and target database.
 				// Including affected rows.
-				summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
+				summaryReport, estimateWarning, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get SQL summary report"))
 				}
@@ -458,6 +458,14 @@ loop:
 					if checkResult.RiskLevel > resp.RiskLevel {
 						resp.RiskLevel = checkResult.RiskLevel
 					}
+				}
+				if estimateWarning != "" {
+					checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
+						Status:  v1pb.Advice_WARNING,
+						Code:    code.StatementExplainQueryFailed.Int32(),
+						Title:   plancheck.AffectedRowsEstimateIncompleteTitle,
+						Content: estimateWarning,
+					})
 				}
 				if common.EngineSupportSQLReview(engine) {
 					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, statement)

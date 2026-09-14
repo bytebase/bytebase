@@ -16,6 +16,7 @@ func TestExtractChangedResources(t *testing.T) {
 	ALTER TABLE t1 ADD COLUMN c1 INT;
 	RENAME TABLE t1 TO t2;
 	INSERT INTO t1 (c1) VALUES (1), (5);
+	INSERT INTO t1 SET c1 = 7;
 	UPDATE t1 SET c1 = 5;
 	CREATE PROCEDURE getUser(id INT) SELECT * FROM hello WHERE uid = id;
 	`
@@ -38,11 +39,11 @@ func TestExtractChangedResources(t *testing.T) {
 	)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS: []string{
+		DMLStatements: []string{
 			"UPDATE t1 SET c1 = 5;",
 		},
 		DMLCount:    1,
-		InsertCount: 2,
+		InsertCount: 3,
 	}
 
 	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, statement)

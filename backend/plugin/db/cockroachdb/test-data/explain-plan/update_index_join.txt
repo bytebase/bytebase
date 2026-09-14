@@ -1,0 +1,24 @@
+distribution: local
+vectorized: true
+
+• update
+│ table: t
+│ set: v
+│ auto commit
+│
+└── • render
+    │
+    └── • index join
+        │ estimated row count: 100
+        │ table: t@t_pkey
+        │ locking strength: for update
+        │
+        └── • scan
+              estimated row count: 100 (10% of the table; stats collected 40 seconds ago)
+              table: t@idx_c
+              spans: [ - /9]
+              locking strength: for update
+
+index recommendations: 1
+1. type: index replacement
+   SQL commands: CREATE INDEX ON capture.public.t (c) STORING (d, grp, v) /* After successfully creating the replacement index, manually run: `ALTER INDEX capture.public.t@idx_c NOT VISIBLE` and then, after verifying workload performance, manually run: `DROP INDEX capture.public.t@idx_c` */;

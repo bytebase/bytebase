@@ -1,15 +1,176 @@
 package plancheck
 
 import (
+	"context"
+	"fmt"
+	"math"
 	"slices"
 	"testing"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 )
+
+func TestCalculateAffectedRows(t *testing.T) {
+	type estimate struct {
+		statement string
+		rows      int64
+		err       error
+	}
+	repeat := func(count int, format string, rows int64) []estimate {
+		var estimates []estimate
+		for i := range count {
+			estimates = append(estimates, estimate{fmt.Sprintf(format, i+1), rows, nil})
+		}
+		return estimates
+	}
+	for _, tc := range []struct {
+		name         string
+		statements   []estimate
+		dmlCount     int
+		insertCount  int
+		wantRows     int64
+		wantWarning  string
+		wantExplains int
+	}{
+		{
+			name:         "every_dml_estimated_sums_exactly",
+			statements:   []estimate{{"u1", 10, nil}, {"u2", 17, nil}, {"u3", 34, nil}},
+			dmlCount:     3,
+			wantRows:     61,
+			wantExplains: 3,
+		},
+		{
+			name:         "dml_without_text_counts_as_the_average_estimate",
+			statements:   []estimate{{"u1", 10, nil}, {"u2", 30, nil}},
+			dmlCount:     5,
+			wantRows:     100,
+			wantExplains: 2,
+		},
+		{
+			// The ten one-row updates share a shape, so the delete after them is still estimated.
+			name: "samples_cover_every_shape",
+			statements: append(repeat(10, "UPDATE t SET v = 'y' WHERE id = %d;", 1),
+				estimate{"DELETE FROM big WHERE s_id <= 50;", 5000, nil}),
+			dmlCount:     11,
+			wantRows:     5010,
+			wantExplains: 10,
+		},
+		{
+			// Five statements of each shape are estimated: 2 * 15 + 100 * 5.
+			name: "shape_average_counts_for_its_unsampled_statements",
+			statements: append(repeat(15, "UPDATE t SET c = c + 1 WHERE id = %d;", 2),
+				repeat(5, "DELETE FROM big WHERE s_id = %d;", 100)...),
+			dmlCount:     20,
+			wantRows:     530,
+			wantExplains: 10,
+		},
+		{
+			// The first ten shapes are estimated at 10 rows each; the other two count as that average.
+			name:         "shapes_beyond_the_samples_count_as_the_average_estimate",
+			statements:   append(repeat(10, "UPDATE t%d SET c = 1;", 10), estimate{"DELETE FROM a;", 1000, nil}, estimate{"DELETE FROM b;", 1000, nil}),
+			dmlCount:     12,
+			wantRows:     120,
+			wantExplains: 10,
+		},
+		{
+			name:         "failed_sample_warns",
+			statements:   []estimate{{"u1", 3, nil}, {"d1", 0, errors.New("table t_new does not exist")}},
+			dmlCount:     2,
+			insertCount:  4,
+			wantRows:     10,
+			wantWarning:  "Affected rows could not be estimated for 1 of 2 sampled DML statements: table t_new does not exist",
+			wantExplains: 2,
+		},
+		{
+			name:         "every_sample_failed",
+			statements:   []estimate{{"d1", 0, errors.New("syntax error")}},
+			dmlCount:     1,
+			insertCount:  4,
+			wantRows:     4,
+			wantWarning:  "Affected rows could not be estimated for 1 of 1 sampled DML statements: syntax error",
+			wantExplains: 1,
+		},
+		{
+			name:        "dml_without_text",
+			dmlCount:    2,
+			wantWarning: "Affected rows could not be estimated for 2 DML statements.",
+		},
+		{
+			name:         "saturates_instead_of_overflowing",
+			statements:   []estimate{{"u1", math.MaxInt64/2 + 1, nil}, {"u2", math.MaxInt64/2 + 1, nil}},
+			dmlCount:     3,
+			wantRows:     math.MaxInt64,
+			wantExplains: 2,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			changeSummary := &parserbase.ChangeSummary{
+				ChangedResources: model.NewChangedResources(nil /* dbMetadata */),
+				DMLCount:         tc.dmlCount,
+				InsertCount:      tc.insertCount,
+			}
+			estimates := map[string]estimate{}
+			for _, e := range tc.statements {
+				changeSummary.DMLStatements = append(changeSummary.DMLStatements, e.statement)
+				estimates[e.statement] = e
+			}
+			explains := 0
+			explain := func(_ context.Context, statement string) (int64, error) {
+				explains++
+				e := estimates[statement]
+				return e.rows, e.err
+			}
+
+			rows, warning := calculateAffectedRows(context.Background(), changeSummary, explain)
+			require.Equal(t, tc.wantRows, rows)
+			require.Equal(t, tc.wantWarning, warning)
+			require.Equal(t, tc.wantExplains, explains)
+		})
+	}
+}
+
+func TestShapeKey(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		statements []string
+		want       string
+	}{
+		{
+			name: "literals, spacing, and case",
+			statements: []string{
+				"UPDATE t SET v = 'it''s' WHERE id = 1;",
+				"update t set v='x' where id=20.5;",
+				"UPDATE  t\n\tSET v = 'y'  -- comment\nWHERE /* note */ id = 3;",
+			},
+			want: "update t set v=? where id=?;",
+		},
+		{
+			name: "lists of literals",
+			statements: []string{
+				"DELETE FROM t WHERE id IN (1, 2, 3)",
+				"DELETE FROM t WHERE id IN ('a')",
+			},
+			want: "delete from t where id in(?)",
+		},
+		{
+			name:       "identifiers keep their digits",
+			statements: []string{"UPDATE t1 SET c2 = 0x1F WHERE t1.c3 > 1e3"},
+			want:       "update t1 set c2=? where t1.c3>?",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, statement := range tc.statements {
+				require.Equal(t, tc.want, shapeKey(statement), statement)
+			}
+		})
+	}
+}
 
 // reportEngines derives the list from common.EngineSupportStatementReport so a
 // newly admitted engine is covered without editing this test.

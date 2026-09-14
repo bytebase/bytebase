@@ -25,6 +25,10 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 		if hasOmniIntoClause(n) {
 			return base.DDL, false
 		}
+		// A data-modifying CTE writes, so the SELECT needs DML permission.
+		if containsWriteCTE(n) {
+			return base.DML, false
+		}
 		if allSystems {
 			return base.SelectInfoSchema, false
 		}
@@ -145,8 +149,11 @@ func classifyExplainedQuery(query ast.Node) base.QueryType {
 		if hasOmniIntoClause(n) {
 			return base.DDL
 		}
+		if containsWriteCTE(n) {
+			return base.DML
+		}
 		return base.Select
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
 		return base.DML
 	case *ast.DeclareCursorStmt:
 		return base.Select

@@ -3,11 +3,12 @@ package pg
 import (
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/pkg/errors"
+
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 func getTemplateRegexp(template string, templateList []string, tokens map[string]string) (*regexp.Regexp, error) {
@@ -28,7 +29,13 @@ func normalizeSchemaName(schemaName string) string {
 	return schemaName
 }
 
-// getAffectedRows extracts the estimated row count from a PostgreSQL EXPLAIN result.
+// getExplainSQL returns the query whose result getAffectedRows reads.
+func getExplainSQL(statement string) string {
+	return fmt.Sprintf("EXPLAIN (FORMAT JSON) %s", statement)
+}
+
+// getAffectedRows returns the estimated rows a statement modifies from the advisor.Query result of
+// its getExplainSQL query.
 func getAffectedRows(res []any) (int64, error) {
 	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
@@ -36,37 +43,40 @@ func getAffectedRows(res []any) (int64, error) {
 	}
 	rowList, ok := res[2].([]any)
 	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", res[2])
+		return 0, errors.Errorf("expected []any but got %T", res[2])
 	}
-	// EXPLAIN output has at least 2 rows
-	if len(rowList) < 2 {
-		return 0, errors.Errorf("not found any data")
+	if len(rowList) != 1 {
+		return 0, errors.Errorf("expected one plan row but got %d", len(rowList))
 	}
-	// We need row 2
-	rowTwo, ok := rowList[1].([]any)
+	row, ok := rowList[0].([]any)
+	if !ok || len(row) != 1 {
+		return 0, errors.Errorf("expected one plan column but got %v", rowList[0])
+	}
+	plan, ok := row[0].(string)
 	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", rowList[0])
+		return 0, errors.Errorf("expected string but got %T", row[0])
 	}
-	// PostgreSQL EXPLAIN result has one column
-	if len(rowTwo) != 1 {
-		return 0, errors.Errorf("expected one but got %d", len(rowTwo))
-	}
-	// Get the string value
-	text, ok := rowTwo[0].(string)
-	if !ok {
-		return 0, errors.Errorf("expected string but got %t", rowTwo[0])
-	}
+	return pgparser.GetEstimatedAffectedRowsFromExplainJSON(plan)
+}
 
-	rowsRegexp := regexp.MustCompile("rows=([0-9]+)")
-	matches := rowsRegexp.FindStringSubmatch(text)
-	if len(matches) != 2 {
-		return 0, errors.Errorf("failed to find rows in %q", text)
+// hasDataModifyingCTE reports whether a WITH clause contains INSERT, UPDATE, DELETE, or MERGE.
+// PostgreSQL only allows data-modifying statements in a top-level WITH.
+func hasDataModifyingCTE(with *ast.WithClause) bool {
+	if with == nil || with.Ctes == nil {
+		return false
 	}
-	value, err := strconv.ParseInt(matches[1], 10, 64)
-	if err != nil {
-		return 0, errors.Errorf("failed to get integer from %q", matches[1])
+	for _, item := range with.Ctes.Items {
+		cte, ok := item.(*ast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		switch cte.Ctequery.(type) {
+		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
+			return true
+		default:
+		}
 	}
-	return value, nil
+	return false
 }
 
 // nolint:unused

@@ -393,9 +393,12 @@ func isAllDMLImpl(engine storepb.Engine, statement string) bool {
 
 type ChangeSummary struct {
 	ChangedResources *model.ChangedResources
-	SampleDMLS       []string
-	DMLCount         int
-	InsertCount      int
+	// DMLStatements holds the text of every DML statement whose rows can be estimated, in order.
+	DMLStatements []string
+	// DMLCount counts the DML statements, including those DMLStatements omits.
+	DMLCount int
+	// InsertCount counts the rows of INSERT ... VALUES statements.
+	InsertCount int
 }
 
 // REFACTOR(zp): Put it here to avoid circular import for now.

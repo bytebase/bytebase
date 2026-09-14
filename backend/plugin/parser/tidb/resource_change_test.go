@@ -37,7 +37,7 @@ func TestExtractChangedResources(t *testing.T) {
 	)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS: []string{
+		DMLStatements: []string{
 			"UPDATE t1 SET c1 = 5",
 		},
 		DMLCount:    1,
@@ -105,4 +105,55 @@ func TestExtractChangedResourcesObjectDDLDatabaseOnly(t *testing.T) {
 	got, err := extractChangedResources("db", "", nil /* dbMetadata */, asts, unqualified)
 	require.NoError(t, err)
 	require.Empty(t, got.ChangedResources.GetDatabaseOnlyTargets())
+}
+
+func TestExtractChangedResourcesDMLCounts(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		statement   string
+		dmlCount    int
+		insertCount int
+		samples     []string
+		tables      []string
+	}{
+		{
+			name:      "batch_samples_inner_dml",
+			statement: `BATCH ON id LIMIT 1000 DELETE FROM t WHERE c = 1;`,
+			dmlCount:  1,
+			samples:   []string{"DELETE FROM t WHERE c = 1"},
+			tables:    []string{"t"},
+		},
+		{
+			name:      "batch_dry_run_changes_nothing",
+			statement: `BATCH ON id LIMIT 1000 DRY RUN DELETE FROM t WHERE c = 1;`,
+		},
+		{
+			// pingcap cannot parse the row alias, which omni accepts.
+			name:        "statement_without_pingcap_ast",
+			statement:   "INSERT INTO t VALUES (1, 2) AS new ON DUPLICATE KEY UPDATE c = new.c;\nUPDATE t2 SET c = 1 WHERE id = 1;",
+			dmlCount:    1,
+			insertCount: 1,
+			samples:     []string{"UPDATE t2 SET c = 1 WHERE id = 1"},
+			tables:      []string{"t2"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stmts, err := base.ParseStatements(storepb.Engine_TIDB, tc.statement)
+			require.NoError(t, err)
+			got, err := extractChangedResources("db", "", nil /* dbMetadata */, base.ExtractASTs(stmts), tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.dmlCount, got.DMLCount)
+			require.Equal(t, tc.insertCount, got.InsertCount)
+			require.Equal(t, tc.samples, got.DMLStatements)
+			var tables []string
+			for _, database := range got.ChangedResources.Build().GetDatabases() {
+				for _, schema := range database.GetSchemas() {
+					for _, table := range schema.GetTables() {
+						tables = append(tables, table.GetName())
+					}
+				}
+			}
+			require.Equal(t, tc.tables, tables)
+		})
+	}
 }

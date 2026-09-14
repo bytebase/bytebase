@@ -85,9 +85,8 @@ func isExplainAnalyze(n *ast.ExplainStmt) bool {
 // the read-only editor path. A SELECT writes if it has an INTO target (SELECT ...
 // INTO creates a table) or any of its CTE terms is data-modifying.
 //
-// This is the unified write-detection primitive for the read-only gate;
-// classifyQueryType (query_type.go) keeps reporting the root statement type for its
-// own consumers — only the detection is shared, not the classifiers' outputs.
+// The read-only gate uses it; classifyQueryType (query_type.go) shares containsWriteCTE
+// so the permission check treats the same SELECTs as DML.
 func isWriteSelect(n *ast.SelectStmt) bool {
 	if n == nil {
 		return false

@@ -9,7 +9,6 @@ import (
 
 	"github.com/bytebase/omni/pg/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
@@ -53,7 +52,8 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		TenantMode: checkCtx.TenantMode,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	adviceList := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return rule.explains.AppendSkippedAdvice(adviceList, rule.Title, advisorcode.InsertTooManyRows), nil
 }
 
 type insertRowLimitRule struct {
@@ -62,7 +62,7 @@ type insertRowLimitRule struct {
 	maxRow        int
 	driver        *sql.DB
 	ctx           context.Context
-	explainCount  int
+	explains      advisor.ExplainBudget
 	preExecutions []string
 	TenantMode    bool
 }
@@ -97,15 +97,14 @@ func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt) {
 		}
 	} else if ins.SelectStmt != nil && r.driver != nil {
 		// For INSERT ... SELECT, use EXPLAIN.
-		if r.explainCount >= common.MaximumLintExplainSize {
+		if !r.explains.Spend(&storepb.Position{Line: r.ContentStartLine() + int32(r.BaseLine)}) {
 			return
 		}
-		r.explainCount++
 
 		res, err := advisor.Query(r.ctx, advisor.QueryContext{
 			TenantMode:    r.TenantMode,
 			PreExecutions: r.preExecutions,
-		}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
+		}, r.driver, storepb.Engine_POSTGRES, getExplainSQL(statementText))
 
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{

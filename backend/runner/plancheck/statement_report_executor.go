@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -11,7 +13,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	cockroachdbdriver "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
 	mssqldriver "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	oracledriver "github.com/bytebase/bytebase/backend/plugin/db/oracle"
@@ -100,7 +104,7 @@ func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *Chec
 		Code:   common.Ok.Int32(),
 		Title:  "OK",
 	}
-	summaryReport, err := GetSQLSummaryReport(ctx, e.store, e.sheetManager, e.dbFactory, database, fullSheet.Statement)
+	summaryReport, estimateWarning, err := GetSQLSummaryReport(ctx, e.store, e.sheetManager, e.dbFactory, database, fullSheet.Statement)
 	if err != nil {
 		return nil, err
 	}
@@ -109,17 +113,28 @@ func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *Chec
 			SqlSummaryReport: summaryReport,
 		}
 	}
+	if estimateWarning != "" {
+		planCheckRunResult.Status = storepb.Advice_WARNING
+		planCheckRunResult.Code = code.StatementExplainQueryFailed.Int32()
+		planCheckRunResult.Title = AffectedRowsEstimateIncompleteTitle
+		planCheckRunResult.Content = estimateWarning
+	}
 	return []*storepb.PlanCheckRunResult_Result{planCheckRunResult}, nil
 }
 
-// GetSQLSummaryReport gets the SQL summary report for the given statement and database.
-func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, database *store.DatabaseMessage, statement string) (*storepb.PlanCheckRunResult_Result_SqlSummaryReport, error) {
+// AffectedRowsEstimateIncompleteTitle titles the warning for DML statements whose affected
+// rows could not be estimated.
+const AffectedRowsEstimateIncompleteTitle = "Affected rows estimate is incomplete"
+
+// GetSQLSummaryReport gets the SQL summary report for the given statement and database. The
+// returned warning is non-empty when some DML statements' affected rows could not be estimated.
+func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory, database *store.DatabaseMessage, statement string) (*storepb.PlanCheckRunResult_Result_SqlSummaryReport, string, error) {
 	instance, err := stores.GetInstanceByResourceID(ctx, database.InstanceID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if instance == nil {
-		return nil, errors.Errorf("instance not found: %s", database.InstanceID)
+		return nil, "", errors.Errorf("instance not found: %s", database.InstanceID)
 	}
 	databaseSchema, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 		Workspace:    instance.Workspace,
@@ -127,19 +142,19 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		DatabaseName: database.DatabaseName,
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if databaseSchema == nil {
-		return nil, errors.Errorf("database schema %s not found", database.String())
+		return nil, "", errors.Errorf("database schema %s not found", database.String())
 	}
 	if databaseSchema.GetProto() == nil {
-		return nil, errors.Errorf("database schema metadata %s not found", database.String())
+		return nil, "", errors.Errorf("database schema metadata %s not found", database.String())
 	}
 
 	stmts, syntaxAdvices := sheetManager.GetStatementsForChecks(instance.Metadata.GetEngine(), statement)
 	if len(syntaxAdvices) > 0 {
 		// Return nil as it should already be checked before running this function.
-		return nil, nil
+		return nil, "", nil
 	}
 	asts := parserbase.ExtractASTs(stmts)
 
@@ -147,13 +162,13 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	var defaultSchema string
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: instance.Workspace, ResourceID: &database.ProjectID})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
 		TenantMode: project.Setting.GetPostgresDatabaseTenantMode(),
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	defer driver.Close(ctx)
 
@@ -161,7 +176,7 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	case storepb.Engine_POSTGRES:
 		pd, ok := driver.(*pgdriver.Driver)
 		if !ok {
-			return nil, errors.Errorf("invalid pg driver type")
+			return nil, "", errors.Errorf("invalid pg driver type")
 		}
 		explainCalculator = pd.CountAffectedRows
 		// Empty so pg's extractChangedResources falls back to the database's actual
@@ -170,46 +185,53 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	case storepb.Engine_REDSHIFT:
 		rd, ok := driver.(*redshiftdriver.Driver)
 		if !ok {
-			return nil, errors.Errorf("invalid redshift driver type")
+			return nil, "", errors.Errorf("invalid redshift driver type")
 		}
 		explainCalculator = rd.CountAffectedRows
+		defaultSchema = "public"
+	case storepb.Engine_COCKROACHDB:
+		cd, ok := driver.(*cockroachdbdriver.Driver)
+		if !ok {
+			return nil, "", errors.Errorf("invalid cockroachdb driver type")
+		}
+		explainCalculator = cd.CountAffectedRows
 		defaultSchema = "public"
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		md, ok := driver.(*mysqldriver.Driver)
 		if !ok {
-			return nil, errors.Errorf("invalid mysql driver type")
+			return nil, "", errors.Errorf("invalid mysql driver type")
 		}
 		explainCalculator = md.CountAffectedRows
 		defaultSchema = ""
 	case storepb.Engine_TIDB:
 		md, ok := driver.(*tidbdriver.Driver)
 		if !ok {
-			return nil, errors.Errorf("invalid tidb driver type")
+			return nil, "", errors.Errorf("invalid tidb driver type")
 		}
 		explainCalculator = md.CountAffectedRows
 		defaultSchema = ""
 	case storepb.Engine_ORACLE:
 		od, ok := driver.(*oracledriver.Driver)
 		if !ok {
-			return nil, errors.Errorf("invalid oracle driver type")
+			return nil, "", errors.Errorf("invalid oracle driver type")
 		}
 		explainCalculator = od.CountAffectedRows
 		defaultSchema = database.DatabaseName
 	case storepb.Engine_MSSQL:
 		md, ok := driver.(*mssqldriver.Driver)
 		if !ok {
-			return nil, errors.Errorf("invalid mssql driver type")
+			return nil, "", errors.Errorf("invalid mssql driver type")
 		}
 		explainCalculator = md.CountAffectedRows
 		defaultSchema = "dbo"
 	default:
 		// Already checked in the Run().
-		return nil, nil
+		return nil, "", nil
 	}
 
 	sqlTypes, err := SummaryStatementTypes(instance.Metadata.GetEngine(), asts)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Database secrets feature has been removed
@@ -217,15 +239,15 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	// Database secrets feature removed - using original statement directly
 	changeSummary, err := parserbase.ExtractChangedResources(instance.Metadata.GetEngine(), database.DatabaseName, defaultSchema, databaseSchema, asts, statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract changed resources")
+		return nil, "", errors.Wrapf(err, "failed to extract changed resources")
 	}
-	totalAffectedRows := calculateAffectedRows(ctx, changeSummary, explainCalculator)
+	totalAffectedRows, estimateWarning := calculateAffectedRows(ctx, changeSummary, explainCalculator)
 
 	return &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 		StatementTypes:   sqlTypes,
 		AffectedRows:     totalAffectedRows,
 		ChangedResources: changeSummary.ChangedResources.Build(),
-	}, nil
+	}, estimateWarning, nil
 }
 
 // SummaryStatementTypes classifies a summary report's statements through the
@@ -244,27 +266,180 @@ func SummaryStatementTypes(engine storepb.Engine, asts []parserbase.AST) ([]stor
 
 type getAffectedRowsFromExplain func(context.Context, string) (int64, error)
 
-func calculateAffectedRows(ctx context.Context, changeSummary *parserbase.ChangeSummary, explainCalculator getAffectedRowsFromExplain) int64 {
-	var totalAffectedRows int64
-	// Count DMLs.
-	sampleCount := 0
+// calculateAffectedRows adds the estimated rows of the DML statements, the inserted VALUES rows,
+// and the rows of tables changed by DDL. The returned warning describes DML statements whose rows
+// could not be estimated.
+func calculateAffectedRows(ctx context.Context, changeSummary *parserbase.ChangeSummary, explainCalculator getAffectedRowsFromExplain) (int64, string) {
+	shapes := groupStatementsByShape(changeSummary.DMLStatements)
+	sampled := 0
+	var failures []error
 	if explainCalculator != nil {
-		for _, dml := range changeSummary.SampleDMLS {
-			count, err := explainCalculator(ctx, dml)
-			if err != nil {
-				slog.Error("failed to calculate affected rows", log.BBError(err))
-				continue
+		// Each round estimates the next statement of every shape, so the samples cover as many
+		// shapes as they can before sampling a shape twice.
+		for round := 0; sampled < common.MaximumLintExplainSize; round++ {
+			sampledInRound := false
+			for _, shape := range shapes {
+				if round >= len(shape.statements) || sampled >= common.MaximumLintExplainSize {
+					continue
+				}
+				sampledInRound = true
+				sampled++
+				count, err := explainCalculator(ctx, shape.statements[round])
+				if err != nil {
+					slog.Error("failed to calculate affected rows", log.BBError(err))
+					failures = append(failures, err)
+					continue
+				}
+				shape.rows = addRows(shape.rows, count)
+				shape.estimated++
 			}
-			sampleCount++
-			totalAffectedRows += count
+			if !sampledInRound {
+				break
+			}
 		}
 	}
-	if sampleCount > 0 {
-		totalAffectedRows = int64((float64(totalAffectedRows) / float64(sampleCount)) * float64(changeSummary.DMLCount))
-	}
-	totalAffectedRows += int64(changeSummary.InsertCount)
-	// Count affected rows by DDLs.
-	totalAffectedRows += changeSummary.ChangedResources.CountAffectedTableRows()
 
-	return totalAffectedRows
+	var dmlRows, estimatedRows int64
+	estimated := 0
+	// The unestimated statements of a sampled shape count as that shape's average estimate; the
+	// statements of other shapes, and DML statements without text, count as the overall average.
+	unestimated := max(changeSummary.DMLCount-len(changeSummary.DMLStatements), 0)
+	for _, shape := range shapes {
+		estimatedRows = addRows(estimatedRows, shape.rows)
+		estimated += shape.estimated
+		switch {
+		case shape.estimated == len(shape.statements):
+			dmlRows = addRows(dmlRows, shape.rows)
+		case shape.estimated > 0:
+			dmlRows = addRows(dmlRows, roundRows(float64(shape.rows)/float64(shape.estimated)*float64(len(shape.statements))))
+		default:
+			unestimated += len(shape.statements)
+		}
+	}
+	if estimated > 0 && unestimated > 0 {
+		dmlRows = addRows(dmlRows, roundRows(float64(estimatedRows)/float64(estimated)*float64(unestimated)))
+	}
+	totalAffectedRows := addRows(dmlRows, int64(changeSummary.InsertCount))
+	totalAffectedRows = addRows(totalAffectedRows, changeSummary.ChangedResources.CountAffectedTableRows())
+
+	var warning string
+	switch {
+	case len(failures) > 0:
+		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d sampled DML statements: %v", len(failures), sampled, failures[0])
+	case estimated == 0 && changeSummary.DMLCount > 0:
+		warning = fmt.Sprintf("Affected rows could not be estimated for %d DML statements.", changeSummary.DMLCount)
+	default:
+	}
+	return totalAffectedRows, warning
+}
+
+// statementShape is the DML statements that share a shape, with the estimates of those sampled.
+type statementShape struct {
+	statements []string
+	estimated  int
+	rows       int64
+}
+
+// groupStatementsByShape groups statements that differ only in literal values, comments, spacing,
+// or letter case, in the order each shape first appears.
+func groupStatementsByShape(statements []string) []*statementShape {
+	var shapes []*statementShape
+	byKey := map[string]*statementShape{}
+	for _, statement := range statements {
+		key := shapeKey(statement)
+		shape, ok := byKey[key]
+		if !ok {
+			shape = &statementShape{}
+			byKey[key] = shape
+			shapes = append(shapes, shape)
+		}
+		shape.statements = append(shape.statements, statement)
+	}
+	return shapes
+}
+
+// shapeKey replaces the string and numeric literals of a statement with ? and a list of them with a
+// single ?, removes comments and whitespace, and lowercases the rest.
+func shapeKey(statement string) string {
+	var b strings.Builder
+	space := false
+	// Whitespace is kept only between words, where ? counts as a word.
+	separates := func(c byte) bool { return c == '?' || isWordByte(c) }
+	write := func(c byte) {
+		if space && b.Len() > 0 && separates(b.String()[b.Len()-1]) && separates(c) {
+			b.WriteByte(' ')
+		}
+		space = false
+		b.WriteByte(c)
+	}
+	for i := 0; i < len(statement); {
+		c := statement[i]
+		switch {
+		case c == '\'':
+			// A doubled quote continues the literal.
+			for i++; i < len(statement); i++ {
+				if statement[i] == '\'' {
+					if i+1 < len(statement) && statement[i+1] == '\'' {
+						i++
+						continue
+					}
+					break
+				}
+			}
+			i++
+			write('?')
+		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])):
+			for i < len(statement) && (isWordByte(statement[i]) || statement[i] == '.') {
+				i++
+			}
+			write('?')
+		case strings.HasPrefix(statement[i:], "--"):
+			if end := strings.IndexByte(statement[i:], '\n'); end >= 0 {
+				i += end
+			} else {
+				i = len(statement)
+			}
+			space = true
+		case strings.HasPrefix(statement[i:], "/*"):
+			if end := strings.Index(statement[i+2:], "*/"); end >= 0 {
+				i += end + 4
+			} else {
+				i = len(statement)
+			}
+			space = true
+		case c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v':
+			space = true
+			i++
+		default:
+			if 'A' <= c && c <= 'Z' {
+				c += 'a' - 'A'
+			}
+			write(c)
+			i++
+		}
+	}
+	key := b.String()
+	for strings.Contains(key, "?,?") {
+		key = strings.ReplaceAll(key, "?,?", "?")
+	}
+	return key
+}
+
+func isWordByte(c byte) bool {
+	return c == '_' || c == '$' || c >= 0x80 || ('0' <= c && c <= '9') || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+}
+
+// addRows adds row counts, saturating at math.MaxInt64 instead of wrapping negative.
+func addRows(a, b int64) int64 {
+	if b > 0 && a > math.MaxInt64-b {
+		return math.MaxInt64
+	}
+	return a + b
+}
+
+func roundRows(rows float64) int64 {
+	if rows >= math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(math.Round(rows))
 }
