@@ -207,6 +207,13 @@ DELETE FROM t4;`
 	got, err := extractChangedResources("db", "public", nil /* dbMetadata */, parseASTs(t, statement), statement)
 	require.NoError(t, err)
 	require.Equal(t, []string{"db.Reports.t3", "db.app.t2", "db.public.t1", "db.public.t4"}, getTableNames(got.ChangedResources))
+	// A statement after the search path changes carries it for its EXPLAIN.
+	require.Equal(t, []string{
+		"DELETE FROM t1",
+		"SET LOCAL search_path TO \"app\", \"public\";\nDELETE FROM t2",
+		"SET LOCAL search_path TO \"Reports\";\nDELETE FROM t3",
+		"DELETE FROM t4",
+	}, got.DMLStatements)
 
 	t.Run("the synced search path applies without a current schema", func(t *testing.T) {
 		dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{

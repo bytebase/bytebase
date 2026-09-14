@@ -12,6 +12,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 // The fixtures are EXPLAIN outputs captured through this driver from CockroachDB v25.2. After ANALYZE,
@@ -76,13 +78,22 @@ func TestCountAffectedRows(t *testing.T) {
 	const statement = "DELETE FROM big2 WHERE id <= 100"
 	const setLocal = "SET LOCAL optimizer_use_delete_range_fast_path = off"
 	for _, tc := range []struct {
-		name           string
+		name string
+		// input is the statement passed to CountAffectedRows, when it is not statement.
+		input          string
 		plans          [][]string
 		setLocalErr    error
 		want           int64
 		wantErr        string
 		wantStatements []string
 	}{
+		{
+			name:           "search_path_is_set_for_the_explain",
+			input:          base.WithSearchPath(statement, []string{"app"}),
+			plans:          [][]string{readPlanFixture(t, "delete_range_fast_path_off.txt")},
+			want:           100,
+			wantStatements: []string{"BEGIN", `SET LOCAL search_path TO "app"`, "EXPLAIN " + statement, "ROLLBACK"},
+		},
 		{
 			name:           "plan_with_an_estimate",
 			plans:          [][]string{readPlanFixture(t, "delete_range_fast_path_off.txt")},
@@ -114,7 +125,11 @@ func TestCountAffectedRows(t *testing.T) {
 			db := sql.OpenDB(connector)
 			defer db.Close()
 
-			got, err := (&Driver{db: db}).CountAffectedRows(context.Background(), statement)
+			input := tc.input
+			if input == "" {
+				input = statement
+			}
+			got, err := (&Driver{db: db}).CountAffectedRows(context.Background(), input)
 			if tc.wantErr != "" {
 				require.EqualError(t, err, tc.wantErr)
 			} else {

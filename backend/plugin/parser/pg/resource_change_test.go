@@ -63,6 +63,28 @@ func TestExtractChangedResources(t *testing.T) {
 	require.Equal(t, want, got)
 }
 
+func TestExtractChangedResourcesReplaysSearchPath(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
+		Name:       "db",
+		SearchPath: `"$user", public`,
+		Schemas:    []*metadatapb.SchemaMetadata{{Name: "public"}, {Name: "app"}},
+	}, nil, nil, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	const statement = `UPDATE t SET c = 1;
+SET search_path TO app;
+UPDATE t SET c = 2;
+SET search_path TO public;
+UPDATE t SET c = 3;`
+	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+	require.NoError(t, err)
+	got, err := extractChangedResources("db", "", dbMetadata, base.ExtractASTs(stmts), statement)
+	require.NoError(t, err)
+	require.Equal(t, []string{
+		"UPDATE t SET c = 1;",
+		"SET LOCAL search_path TO \"app\";\nUPDATE t SET c = 2;",
+		"UPDATE t SET c = 3;",
+	}, got.DMLStatements)
+}
+
 func TestExtractChangedResourcesSelectedSchemaFallsBackToPublicForExistingTarget(t *testing.T) {
 	const statement = `INSERT INTO customer VALUES (1);`
 

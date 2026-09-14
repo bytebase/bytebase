@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
@@ -36,9 +37,15 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 	var dmlCount, insertCount int
 	var dmlStatements []string
+	initialSearchPath := searchPath
 	sampleDML := func(omniAST *OmniAST) {
 		dmlCount++
-		dmlStatements = append(dmlStatements, getOmniStatementText(omniAST))
+		text := getOmniStatementText(omniAST)
+		// The EXPLAIN connection starts with the initial search path, so a changed one is replayed.
+		if !slices.Equal(searchPath, initialSearchPath) {
+			text = base.WithSearchPath(text, searchPath)
+		}
+		dmlStatements = append(dmlStatements, text)
 	}
 	addTarget := func(rv *ast.RangeVar, affectedTable bool) {
 		db, schema, table := extractExistingRangeVarNames(rv, database, searchPath, dbMetadata)

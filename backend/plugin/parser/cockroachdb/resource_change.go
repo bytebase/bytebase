@@ -1,6 +1,7 @@
 package cockroachdb
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/cockroachdb/cockroachdb-parser/pkg/sql/sem/tree"
@@ -59,7 +60,12 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	}
 	addDML := func(crdbAST *AST) {
 		summary.DMLCount++
-		summary.DMLStatements = append(summary.DMLStatements, strings.TrimSpace(crdbAST.Stmt.SQL))
+		text := strings.TrimSpace(crdbAST.Stmt.SQL)
+		// The EXPLAIN connection starts with the default search path, so a changed one is replayed.
+		if !slices.Equal(searchPath, defaultSearchPath) {
+			text = base.WithSearchPath(text, searchPath)
+		}
+		summary.DMLStatements = append(summary.DMLStatements, text)
 	}
 
 	for _, ast := range asts {

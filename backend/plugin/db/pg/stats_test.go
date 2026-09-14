@@ -9,6 +9,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func TestCountAffectedRows(t *testing.T) {
@@ -57,4 +58,19 @@ func TestCountAffectedRows(t *testing.T) {
 
 	_, err = driver.CountAffectedRows(ctx, "SELECT * FROM big;")
 	require.Error(t, err)
+
+	_, err = rawDB.ExecContext(ctx, `
+		CREATE SCHEMA app;
+		CREATE TABLE app.only_in_app (id int);
+		INSERT INTO app.only_in_app SELECT generate_series(1, 100);
+		ANALYZE app.only_in_app;
+	`)
+	require.NoError(t, err)
+	// With one connection, the second estimate shows that the search path ended with the first.
+	driver.db.SetMaxOpenConns(1)
+	rows, err := driver.CountAffectedRows(ctx, base.WithSearchPath("DELETE FROM only_in_app;", []string{"app"}))
+	require.NoError(t, err)
+	require.Equal(t, int64(100), rows)
+	_, err = driver.CountAffectedRows(ctx, "DELETE FROM only_in_app;")
+	require.ErrorContains(t, err, "does not exist")
 }
