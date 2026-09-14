@@ -345,8 +345,11 @@ export function QueryPlanDiagram({
   }, []);
 
   const selectNode = useCallback(
-    (id: string) => {
-      if (draggedRef.current) return;
+    // The drag guard applies only to a pointer click, which is the one a drag
+    // ends with. A keyboard activation arrives without a pointer sequence, so
+    // nothing would clear the flag for it and the node could never be picked.
+    (id: string, fromPointer = true) => {
+      if (fromPointer && draggedRef.current) return;
       onSelect(id);
     },
     [onSelect]
@@ -420,7 +423,8 @@ export function QueryPlanDiagram({
               ]
                 .filter(Boolean)
                 .join(", ")}
-              onClick={() => selectNode(node.id)}
+              // `detail` is 0 for a click synthesized from Enter or Space.
+              onClick={(event) => selectNode(node.id, event.detail !== 0)}
               // Tabbing through a large plan has to be able to see where it
               // has got to, so a card off screen brings itself on.
               onFocus={() => {

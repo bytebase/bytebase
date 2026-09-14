@@ -1977,6 +1977,10 @@ func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 	case storepb.Engine_SPANNER:
 		// Spanner returns its plan as JSON and has no text form.
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}
+	case storepb.Engine_MONGODB, storepb.Engine_REDIS, storepb.Engine_DYNAMODB:
+		// These drivers refuse an explain outright, so there is no format to ask
+		// for. Saying TEXT here would send a caller down a path that fails later.
+		return nil
 	default:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
 	}
@@ -1993,6 +1997,9 @@ func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_Explai
 	supported := supportedExplainFormats(engine)
 	if slices.Contains(supported, format) {
 		return nil
+	}
+	if len(supported) == 0 {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain", engine))
 	}
 	names := make([]string, 0, len(supported))
 	for _, f := range supported {

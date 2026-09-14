@@ -203,7 +203,9 @@ describe("QueryPlanDiagram", () => {
     fireEvent.pointerDown(viewport, { button: 0, clientX: 0, clientY: 0 });
     fireEvent.pointerMove(window, { clientX: 120, clientY: 40 });
     fireEvent.pointerUp(window);
-    fireEvent.click(cardFor("Hash Join"));
+    // detail 1: a real mouse click. A keyboard activation reports 0 and is
+    // deliberately exempt from the drag guard.
+    fireEvent.click(cardFor("Hash Join"), { detail: 1 });
 
     expect(onSelect).not.toHaveBeenCalled();
   });
@@ -464,5 +466,24 @@ describe("QueryPlanDiagram", () => {
   test("leaves the mini-map out of an unmeasured viewport", () => {
     renderDiagram();
     expect(screen.queryByTestId("plan-mini-map")).toBeNull();
+  });
+
+  test("still selects a node from the keyboard after a drag", () => {
+    const onSelect = vi.fn();
+    renderDiagram({ onSelect });
+    const viewport = screen.getByTestId("plan-diagram-viewport");
+
+    // Drag the canvas: the click that ends this must not select.
+    fireEvent.pointerDown(viewport, { button: 0, clientX: 0, clientY: 0 });
+    fireEvent.pointerMove(window, { clientX: 120, clientY: 60 });
+    fireEvent.pointerUp(window);
+
+    const card = screen.getAllByRole("button", { name: /Seq Scan/ })[0];
+    // A pointer click still loses to the guard...
+    fireEvent.click(card, { detail: 1 });
+    expect(onSelect).not.toHaveBeenCalled();
+    // ...but Enter or Space, which arrive with detail 0, must not.
+    fireEvent.click(card, { detail: 0 });
+    expect(onSelect).toHaveBeenCalled();
   });
 });
