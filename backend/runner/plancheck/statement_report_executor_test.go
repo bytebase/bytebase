@@ -9,16 +9,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-
-	// Registers the PostgreSQL parser handlers the way backend/server ultimate.go
-	// does for the server binary; nothing else in this package's import graph links
-	// them, and the report-engine walk parses PostgreSQL through the registry.
-	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
-// reportEngines returns every engine the statement report runs for, derived from
-// common.EngineSupportStatementReport so a newly admitted engine is covered
-// without editing this test.
+// reportEngines derives the list from common.EngineSupportStatementReport so a
+// newly admitted engine is covered without editing this test.
 func reportEngines() []storepb.Engine {
 	values := make([]int32, 0, len(storepb.Engine_name))
 	for v := range storepb.Engine_name {
@@ -48,12 +42,8 @@ func dedupeStatementTypes(types []storepb.StatementType) []storepb.StatementType
 	return out
 }
 
-// TestSummaryStatementTypesCoverEveryReportEngine is the BYT-10136 regression.
-// Every engine the statement report runs for must classify the sheet: the
-// approval evaluator populates statement.sql_type from the report's
-// StatementTypes, and an empty list silently drops every rule naming it.
-// OceanBase went through the report path with the classifier call skipped,
-// so its report carried no types.
+// The approval evaluator reads statement.sql_type from the report, so every
+// report engine must classify the sheet (BYT-10136).
 func TestSummaryStatementTypesCoverEveryReportEngine(t *testing.T) {
 	const sheet = "CREATE TABLE t (id INT);\nUPDATE t SET id = 1 WHERE id = 2;\nDROP TABLE t;"
 	want := []storepb.StatementType{
@@ -77,10 +67,9 @@ func TestSummaryStatementTypesCoverEveryReportEngine(t *testing.T) {
 	}
 }
 
-// TestSummaryStatementTypesOceanBase walks the OceanBase statement inventory the
-// omni MySQL parser accepts. Unclassified statements must surface as
-// STATEMENT_TYPE_UNSPECIFIED rather than be dropped, so a DDL rule written as
-// the negation of a DML list fails closed.
+// The MySQL-family classifier keeps STATEMENT_TYPE_UNSPECIFIED, so a DDL rule
+// written as the negation of a DML list fails closed on an unclassified
+// OceanBase statement.
 func TestSummaryStatementTypesOceanBase(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -132,9 +121,8 @@ func TestSummaryStatementTypesOceanBase(t *testing.T) {
 	}
 }
 
-// TestSummaryStatementTypesRejectsEngineWithoutClassifier pins that an engine
-// with no registered classifier errors rather than yielding an empty list: an
-// empty list is exactly the silent state that hid the OceanBase gap.
+// An engine without a registered classifier must error rather than yield an
+// empty list, which would silently drop every statement.sql_type rule.
 func TestSummaryStatementTypesRejectsEngineWithoutClassifier(t *testing.T) {
 	_, err := SummaryStatementTypes(storepb.Engine_SNOWFLAKE, nil)
 	require.Error(t, err)

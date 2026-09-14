@@ -1027,14 +1027,11 @@ func TestExpandCELVarsDeduplicatesActivations(t *testing.T) {
 	a.Len(expandCELVars(base, unspecified, nil), 1)
 }
 
-// TestApprovalRuleMatchesOceanBaseSummaryReport is the BYT-10136 regression at
-// the evaluator. OceanBase runs the statement report, so its statement.sql_type
-// comes from the report's StatementTypes, which the plan check produces with
-// plancheck.SummaryStatementTypes. Before the fix that list was empty for
-// OceanBase, the variable was absent, and every rule naming it was dropped as a
-// non-match. The cells cover both rule polarities, the fail-closed handling of
-// an unclassified statement, first-matching-rule order on a mixed sheet, and
-// the risk level that the same list drives.
+// OceanBase runs the statement report, so its statement.sql_type comes from the
+// report's StatementTypes that plancheck.SummaryStatementTypes produces
+// (BYT-10136). Cells cover both rule polarities, fail-closed handling of an
+// unclassified statement, first-matching-rule order on a mixed sheet, and the
+// risk level derived from the same list.
 func TestApprovalRuleMatchesOceanBaseSummaryReport(t *testing.T) {
 	const ddlRule = `!(statement.sql_type in ["INSERT", "UPDATE", "DELETE"]) && resource.db_engine == "OCEANBASE"`
 	const dmlRule = `statement.sql_type in ["INSERT", "UPDATE", "DELETE"] && resource.db_engine == "OCEANBASE"`
@@ -1069,8 +1066,8 @@ func TestApprovalRuleMatchesOceanBaseSummaryReport(t *testing.T) {
 		{"ddl rule skips UPDATE", updateStmt, []*storepb.WorkspaceApprovalSetting_Rule{ddl}, "", storepb.RiskLevel_MODERATE},
 		{"INSERT is DML and low risk", insertStmt, []*storepb.WorkspaceApprovalSetting_Rule{dml}, "DML", storepb.RiskLevel_LOW},
 		{"DROP TABLE is DDL and high risk", dropStmt, []*storepb.WorkspaceApprovalSetting_Rule{ddl}, "DDL", storepb.RiskLevel_HIGH},
-		// An unclassified statement is UNSPECIFIED, which is outside the DML list,
-		// so the negated DML rule catches it: unknown fails closed to the DDL flow.
+		// The MySQL-family classifier keeps UNSPECIFIED, which is outside the DML
+		// list, so the negated DML rule catches it.
 		{"unclassified SET SESSION fails closed to the ddl rule", setSessionStmt, []*storepb.WorkspaceApprovalSetting_Rule{ddl}, "DDL", storepb.RiskLevel_LOW},
 		{"unclassified SET SESSION does not pass as DML", setSessionStmt, []*storepb.WorkspaceApprovalSetting_Rule{dml}, "", storepb.RiskLevel_LOW},
 		// Rules iterate outer, activations inner: the first rule any statement of

@@ -228,18 +228,12 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	}, nil
 }
 
-// SummaryStatementTypes classifies the statements a SQL summary report carries
-// for engine. It resolves through the parser registry so the report and the
-// approval evaluator's parser fallback share one classifier per engine, and the
-// executor keeps no per-engine classifier table of its own: a second table is
-// how OceanBase stayed registered for classification yet unreported for two
-// years (BYT-10136).
-//
-// Every engine common.EngineSupportStatementReport admits must have a registered
-// classifier. An unregistered engine is an error, never an empty list, because
-// an empty list silently drops every statement.sql_type approval rule. A
-// classifier only errors on an AST type mismatch, a programming error, so the
-// report fails loudly rather than logging and continuing.
+// SummaryStatementTypes classifies a summary report's statements through the
+// parser registry, the single classifier per engine that the approval
+// evaluator's parser fallback also uses. An engine without a registered
+// classifier is an error rather than an empty list, because an empty list
+// silently drops every statement.sql_type approval rule; classifier errors
+// propagate for the same reason.
 func SummaryStatementTypes(engine storepb.Engine, asts []parserbase.AST) ([]storepb.StatementType, error) {
 	sqlTypes, err := parserbase.GetStatementTypes(engine, asts)
 	if err != nil {
