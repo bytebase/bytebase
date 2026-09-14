@@ -22,14 +22,34 @@ const tokenSuffix = (): string => {
   );
 };
 
+const TOKEN_PREFIX = "explain-";
+
+/**
+ * Drops the plans this tab stashed earlier.
+ *
+ * A plan is read once, by the tab this token opens, and `window.open` gives
+ * that tab its own copy of sessionStorage — so the opener's copy is dead weight
+ * the moment the visualizer has it. Left to accumulate, a few hundred-kilobyte
+ * plans fill the origin's quota and every later click fails.
+ */
+const dropPreviousExplains = () => {
+  const stale: string[] = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (key?.startsWith(TOKEN_PREFIX)) stale.push(key);
+  }
+  for (const key of stale) sessionStorage.removeItem(key);
+};
+
 export const createExplainToken = ({
   statement,
   explain,
   engine,
 }: StoredExplain): string => {
-  const token = `explain-${tokenSuffix()}`;
+  const token = `${TOKEN_PREFIX}${tokenSuffix()}`;
 
   const json = JSON.stringify({ statement, explain, engine });
+  dropPreviousExplains();
   sessionStorage.setItem(token, json);
 
   return token;

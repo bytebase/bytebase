@@ -13,6 +13,7 @@ This file provides additional guidance to AI coding assistants working under `./
 
 - All user-facing UI text belongs in `src/locales/` and is consumed through `useTranslation()` from `react-i18next`.
 - Locale files must not contain empty JSON objects; remove them when encountered.
+- `src/apps/explain-visualizer/` is exempt and writes its text inline: the entry never initializes i18n, and doing so would pull every locale bundle into a standalone page that today ships 208 KB. Number formatting there is pinned to `en-US` for the same reason. Text in the main app that merely refers to the visualizer, such as the SQL editor's failure toasts, still belongs in `src/locales/`.
 
 ## UX contract
 

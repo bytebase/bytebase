@@ -89,6 +89,9 @@ export interface SingleResultViewProps {
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
+  // Which statement of a multi-statement run this view shows. Visualize re-runs
+  // the whole statement and has to pick the same one back out.
+  resultIndex?: number;
   showExport: boolean;
   // Optional tooltip shown on the export button — used to explain when the
   // export is enabled by a JIT access grant despite the policy disabling it.
@@ -118,7 +121,7 @@ type DocumentViewMode = "TABLE" | "JSON";
  * them twice and doubled the 100k-row allocation on large result sets.
  */
 export function SingleResultView(props: SingleResultViewProps) {
-  const { disallowCopyingData, database, result } = props;
+  const { disallowCopyingData, database, result, resultIndex = 0 } = props;
   const engine = getInstanceResource(database).engine;
   const [noSQLTableView, setNoSQLTableView] = useLocalStorageBoolean(
     STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW,
@@ -273,6 +276,7 @@ function SingleResultViewInner({
   params,
   database,
   result,
+  resultIndex = 0,
   showExport,
   exportTooltip,
   maximumExportCount,
@@ -410,7 +414,8 @@ function SingleResultViewInner({
           engine,
           engine === Engine.POSTGRES
             ? QueryOption_ExplainFormat.JSON
-            : QueryOption_ExplainFormat.XML
+            : QueryOption_ExplainFormat.XML,
+          resultIndex
         );
       }
       if (!token) {
@@ -423,7 +428,16 @@ function SingleResultViewInner({
         });
         return;
       }
-      window.open(`/explain-visualizer.html?token=${token}`, "_blank");
+      // A blocked popup returns null rather than throwing, and the wait for the
+      // plan can outlast the click's user activation, so say so instead of
+      // leaving the button looking dead.
+      if (!window.open(`/explain-visualizer.html?token=${token}`, "_blank")) {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("sql-editor.visualize-explain-blocked"),
+        });
+      }
     } catch {
       useAppStore.getState().notify({
         module: "bytebase",
@@ -828,7 +842,8 @@ async function getExplainTokenForFormat(
   params: SQLEditorQueryParams,
   runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
   engine: Engine,
-  explainFormat: QueryOption_ExplainFormat
+  explainFormat: QueryOption_ExplainFormat,
+  resultIndex: number
 ): Promise<string | undefined> {
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
@@ -839,7 +854,9 @@ async function getExplainTokenForFormat(
     status: "PENDING",
   };
   await runQuery(database, context);
-  const result = context.resultSet?.results[0];
+  // The re-run replays every statement the user submitted, so take the one this
+  // view is showing rather than the first.
+  const result = context.resultSet?.results[resultIndex];
   if (!result) return undefined;
   return getExplainTokenFromResult(result, engine);
 }

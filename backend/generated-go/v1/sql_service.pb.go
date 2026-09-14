@@ -2088,7 +2088,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"_container\"u\n" +
 	"\rQueryResponse\x122\n" +
 	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\x120\n" +
-	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\xed\x02\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\x83\x03\n" +
 	"\vQueryOption\x12^\n" +
 	"\x15redis_run_commands_on\x18\x01 \x01(\x0e2+.bytebase.v1.QueryOption.RedisRunCommandsOnR\x12redisRunCommandsOn\x12M\n" +
 	"\x0eexplain_format\x18\x03 \x01(\x0e2&.bytebase.v1.QueryOption.ExplainFormatR\rexplainFormat\"[\n" +
@@ -2100,7 +2100,7 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x1aEXPLAIN_FORMAT_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04TEXT\x10\x01\x12\b\n" +
 	"\x04JSON\x10\x02\x12\a\n" +
-	"\x03XML\x10\x03J\x04\b\x02\x10\x03\"\x97\r\n" +
+	"\x03XML\x10\x03J\x04\b\x02\x10\x03R\x14mssql_explain_format\"\x97\r\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12/\n" +
