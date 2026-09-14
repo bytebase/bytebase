@@ -399,6 +399,27 @@ func TestEstimateAffectedRowsFromExplainJSON(t *testing.T) {
 	}
 }
 
+func TestTableFreeSelectRows(t *testing.T) {
+	for _, tc := range []struct {
+		statement string
+		want      int
+		wantOK    bool
+	}{
+		{statement: "INSERT INTO t SELECT 1 UNION ALL SELECT 2 UNION SELECT 3", want: 3, wantOK: true},
+		{statement: "INSERT INTO t SELECT 1 INTERSECT SELECT 1 FROM DUAL", want: 1, wantOK: true},
+		{statement: "INSERT INTO t SELECT 1 EXCEPT SELECT 2", want: 1, wantOK: true},
+		{statement: "INSERT INTO t SELECT 1 UNION ALL SELECT id FROM s"},
+	} {
+		t.Run(tc.statement, func(t *testing.T) {
+			insert, ok := parseSingleStatement(t, tc.statement).(*ast.InsertStmt)
+			require.True(t, ok)
+			got, ok := tableFreeSelectRows(insert.Select)
+			require.Equal(t, tc.wantOK, ok)
+			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
 func TestDMLTargetCount(t *testing.T) {
 	for _, tc := range []struct {
 		statement string

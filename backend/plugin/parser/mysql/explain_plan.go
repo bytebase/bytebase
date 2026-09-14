@@ -128,8 +128,8 @@ func EstimateAffectedRowsFromExplainJSON(stmt ast.Node, plan string) (int64, err
 	case *ast.InsertStmt:
 		// MySQL prints no source plan for a SELECT that reads no table, such as
 		// SELECT ... FROM DUAL WHERE NOT EXISTS (...).
-		if branches, ok := tableFreeSelectBranches(s.Select); ok {
-			rows = float64(branches)
+		if tableFreeRows, ok := tableFreeSelectRows(s.Select); ok {
+			rows = float64(tableFreeRows)
 		} else {
 			rows, err = queryBlockRows(block)
 		}
@@ -516,22 +516,29 @@ func planNumber(value any) (float64, bool) {
 	}
 }
 
-// tableFreeSelectBranches returns how many branches a SELECT has when none of them reads a table,
-// each producing at most one row.
-func tableFreeSelectBranches(sel *ast.SelectStmt) (int, bool) {
+// tableFreeSelectRows returns the most rows a SELECT produces when none of its branches reads a
+// table: one for each branch, combined as queryBlockRows combines set operations.
+func tableFreeSelectRows(sel *ast.SelectStmt) (int, bool) {
 	if sel == nil {
 		return 0, false
 	}
 	if sel.ParenSource != nil {
-		return tableFreeSelectBranches(sel.ParenSource)
+		return tableFreeSelectRows(sel.ParenSource)
 	}
 	if sel.SetOp != ast.SetOpNone {
-		left, ok := tableFreeSelectBranches(sel.Left)
-		if !ok {
+		left, leftOK := tableFreeSelectRows(sel.Left)
+		right, rightOK := tableFreeSelectRows(sel.Right)
+		if !leftOK || !rightOK {
 			return 0, false
 		}
-		right, ok := tableFreeSelectBranches(sel.Right)
-		return left + right, ok
+		switch sel.SetOp {
+		case ast.SetOpIntersect:
+			return min(left, right), true
+		case ast.SetOpExcept:
+			return left, true
+		default:
+			return left + right, true
+		}
 	}
 	if sel.TableSource != nil || sel.ValuesSource != nil {
 		return 0, false
