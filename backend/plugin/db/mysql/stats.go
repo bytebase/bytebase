@@ -4,8 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"log/slog"
+	"slices"
+	"strconv"
 	"strings"
 
+	"github.com/bytebase/omni/mysql/ast"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 
@@ -40,11 +43,70 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 	if list == nil || len(list.Items) != 1 {
 		return 0, errors.New("expected exactly one statement")
 	}
-	plan, err := ExplainJSON(ctx, d.db, mysqlparser.AffectedRowsQuery(list.Items[0], statement))
+	query := mysqlparser.AffectedRowsQuery(list.Items[0], statement)
+	plan, err := ExplainJSON(ctx, d.db, query)
 	if err != nil {
 		return 0, err
 	}
-	return mysqlparser.EstimateAffectedRowsFromExplainJSON(list.Items[0], plan)
+	return EstimateAffectedRows(ctx, d.db, list.Items[0], query, plan)
+}
+
+// EstimateAffectedRows returns the rows stmt modifies according to plan, the ExplainJSON output for
+// query, which is the statement's AffectedRowsQuery. When plan has no estimate to read, as MySQL 8.0
+// prints no source plan for an INSERT ... SELECT that computes window functions, the first estimate of
+// the tabular EXPLAIN stands in for it.
+func EstimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query string, plan string) (int64, error) {
+	count, err := mysqlparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
+	if err == nil {
+		return count, nil
+	}
+	rows, ok := explainFirstEstimate(ctx, db, query)
+	if !ok {
+		return 0, err
+	}
+	return mysqlparser.CapAffectedRowsByLimit(stmt, rows), nil
+}
+
+// explainFirstEstimate returns the rows of the first table the tabular EXPLAIN of query estimates,
+// scaled by its filtered percentage where the server prints one.
+func explainFirstEstimate(ctx context.Context, db *sql.DB, query string) (float64, bool) {
+	rows, err := db.QueryContext(ctx, "EXPLAIN "+query)
+	if err != nil {
+		return 0, false
+	}
+	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		return 0, false
+	}
+	rowsIndex := slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, "rows") })
+	filteredIndex := slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, "filtered") })
+	if rowsIndex < 0 {
+		return 0, false
+	}
+	values := make([]sql.NullString, len(columns))
+	dest := make([]any, len(columns))
+	for i := range values {
+		dest[i] = &values[i]
+	}
+	var estimate float64
+	found := false
+	for !found && rows.Next() {
+		if err := rows.Scan(dest...); err != nil {
+			return 0, false
+		}
+		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
+		if !values[rowsIndex].Valid || err != nil {
+			continue
+		}
+		estimate, found = tableRows, true
+		if filteredIndex >= 0 && values[filteredIndex].Valid {
+			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
+				estimate *= filtered / 100
+			}
+		}
+	}
+	return estimate, found && rows.Err() == nil
 }
 
 // ExplainJSON returns the `EXPLAIN FORMAT=JSON` output for the statement in the JSON format

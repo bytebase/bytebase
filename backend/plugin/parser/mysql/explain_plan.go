@@ -121,15 +121,9 @@ func EstimateAffectedRowsFromExplainJSON(stmt ast.Node, plan string) (int64, err
 	}
 
 	var rows float64
-	var limit *ast.Limit
 	var err error
 	switch s := stmt.(type) {
 	case *ast.InsertStmt:
-		if s.Select != nil {
-			limit = s.Select.Limit
-		} else if s.TableSource != nil {
-			limit = s.TableSource.Limit
-		}
 		// MySQL prints no source plan for a SELECT that reads no table, such as
 		// SELECT ... FROM DUAL WHERE NOT EXISTS (...).
 		if branches, ok := tableFreeSelectBranches(s.Select); ok {
@@ -139,21 +133,39 @@ func EstimateAffectedRowsFromExplainJSON(stmt ast.Node, plan string) (int64, err
 		}
 	case *ast.UpdateStmt:
 		rows, err = targetRows(block, updateTargets(s))
-		limit = s.Limit
 	case *ast.DeleteStmt:
 		rows, err = targetRows(block, deleteTargets(s))
-		limit = s.Limit
 	default:
 		return 0, errors.Errorf("unsupported statement type %T", stmt)
 	}
 	if err != nil {
 		return 0, err
 	}
+	return CapAffectedRowsByLimit(stmt, rows), nil
+}
+
+// CapAffectedRowsByLimit rounds an estimate of the rows an INSERT, REPLACE, UPDATE, or DELETE
+// statement modifies and caps it by the statement's LIMIT.
+func CapAffectedRowsByLimit(stmt ast.Node, rows float64) int64 {
+	var limit *ast.Limit
+	switch s := stmt.(type) {
+	case *ast.InsertStmt:
+		if s.Select != nil {
+			limit = s.Select.Limit
+		} else if s.TableSource != nil {
+			limit = s.TableSource.Limit
+		}
+	case *ast.UpdateStmt:
+		limit = s.Limit
+	case *ast.DeleteStmt:
+		limit = s.Limit
+	default:
+	}
 	count := int64(math.Round(rows))
 	if limitRows, ok := limitCount(limit); ok && limitRows < count {
-		return limitRows, nil
+		return limitRows
 	}
-	return count, nil
+	return count
 }
 
 // EstimateAffectedRowsFromOceanBaseExplainJSON returns the EST.ROWS estimate from OceanBase

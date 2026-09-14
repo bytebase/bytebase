@@ -20,6 +20,9 @@ var testOceanBaseExplainRows [][]driver.Value
 var (
 	// testMySQLExplainJSON is the plan the fake MySQL server returns for EXPLAIN FORMAT=JSON.
 	testMySQLExplainJSON string
+	// testMySQLExplainTable is the plan the fake MySQL server returns for a tabular EXPLAIN, with the
+	// columns in testMySQLExplainTableColumns.
+	testMySQLExplainTable [][]driver.Value
 	// testMySQLSetErr is the error the fake MySQL server returns for SET statements.
 	testMySQLSetErr error
 	// testMySQLStatements records every statement the fake MySQL server receives, in order.
@@ -95,20 +98,31 @@ func (c *testMySQLExplainConn) ExecContext(_ context.Context, query string, _ []
 	return driver.ResultNoRows, nil
 }
 
+var testMySQLExplainTableColumns = []string{"id", "select_type", "table", "rows", "filtered"}
+
 func (c *testMySQLExplainConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	testMySQLStatements = append(testMySQLStatements, testMySQLStatement{conn: c.id, query: query})
-	if !strings.HasPrefix(query, "EXPLAIN FORMAT=JSON ") {
+	switch {
+	case strings.HasPrefix(query, "EXPLAIN FORMAT=JSON "):
+		return &testExplainResultRows{rows: [][]driver.Value{{testMySQLExplainJSON}}}, nil
+	case strings.HasPrefix(query, "EXPLAIN "):
+		return &testExplainResultRows{columns: testMySQLExplainTableColumns, rows: testMySQLExplainTable}, nil
+	default:
 		return nil, errors.Errorf("unexpected query %q", query)
 	}
-	return &testExplainResultRows{rows: [][]driver.Value{{testMySQLExplainJSON}}}, nil
 }
 
 type testExplainResultRows struct {
-	rows [][]driver.Value
-	idx  int
+	// columns defaults to the single EXPLAIN column of a JSON plan.
+	columns []string
+	rows    [][]driver.Value
+	idx     int
 }
 
-func (*testExplainResultRows) Columns() []string {
+func (r *testExplainResultRows) Columns() []string {
+	if r.columns != nil {
+		return r.columns
+	}
 	return []string{"EXPLAIN"}
 }
 
@@ -130,6 +144,7 @@ func (r *testExplainResultRows) Next(dest []driver.Value) error {
 func newTestMySQLDriver(t *testing.T, plan string) *Driver {
 	t.Helper()
 	testMySQLExplainJSON = plan
+	testMySQLExplainTable = nil
 	testMySQLSetErr = nil
 	testMySQLStatements = nil
 	db, err := sql.Open("test_mysql_explain", "")
@@ -264,8 +279,41 @@ func TestCountAffectedRowsScopesJSONFormatVersionToTheExplain(t *testing.T) {
 	})
 }
 
+func TestCountAffectedRowsFallsBackToTabularPlan(t *testing.T) {
+	// MySQL 8.0 prints no source plan for an INSERT ... SELECT that computes window functions.
+	const plan = `{"query_block":{"select_id":1,"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}`
+	for _, tc := range []struct {
+		name      string
+		statement string
+		want      int64
+	}{
+		{
+			name:      "rows of the first table estimated, scaled by filtered",
+			statement: "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER (ORDER BY id) FROM t WHERE c < 10;",
+			want:      333,
+		},
+		{
+			name:      "capped by LIMIT",
+			statement: "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER (ORDER BY id) FROM t WHERE c < 10 LIMIT 50;",
+			want:      50,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			d := newTestMySQLDriver(t, plan)
+			testMySQLExplainTable = [][]driver.Value{
+				{int64(1), "INSERT", "t2", nil, nil},
+				{int64(1), "SIMPLE", "t", int64(1000), 33.33},
+			}
+			got, err := d.CountAffectedRows(context.Background(), tc.statement)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
+			require.Equal(t, "EXPLAIN "+tc.statement, testMySQLStatements[len(testMySQLStatements)-1].query)
+		})
+	}
+}
+
 func TestCountAffectedRowsReportsUninterpretablePlan(t *testing.T) {
-	// A plan without the target table must fail rather than read as zero rows.
+	// A plan without the target table, with no tabular estimate either, fails rather than reading as zero rows.
 	d := newTestMySQLDriver(t, `{"query_block":{"select_id":1,"table":{"table_name":"other","access_type":"ALL","rows_examined_per_scan":1000,"filtered":"100.00"}}}`)
 	_, err := d.CountAffectedRows(context.Background(), "UPDATE td SET c = 1;")
 	require.ErrorContains(t, err, `target table "td" is not in the plan`)

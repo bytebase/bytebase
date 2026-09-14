@@ -71,7 +71,8 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			continue
 		}
 
-		plan, err := mysqldriver.ExplainJSON(ctx, driver, mysqlparser.AffectedRowsQuery(node, stmt.Text))
+		query := mysqlparser.AffectedRowsQuery(node, stmt.Text)
+		plan, err := mysqldriver.ExplainJSON(ctx, driver, query)
 		if err != nil {
 			advice = append(advice, &storepb.Advice{
 				Status:        level,
@@ -82,7 +83,7 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 			})
 			continue
 		}
-		rowCount, err := mysqlparser.EstimateAffectedRowsFromExplainJSON(node, plan)
+		rowCount, err := mysqldriver.EstimateAffectedRows(ctx, driver, node, query, plan)
 		if err != nil {
 			advice = append(advice, &storepb.Advice{
 				Status:        level,

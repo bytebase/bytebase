@@ -272,6 +272,8 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 		// wantContent is empty when the statement stays within the limit of 5.
 		wantContent string
 		wantCode    code.Code
+		// fallback is set when the JSON plan has no estimate to read, so the rule also runs the tabular EXPLAIN.
+		fallback bool
 	}{
 		{
 			name:        "update bounded by the join after the target",
@@ -309,6 +311,7 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			explained:   "SELECT 1 FROM td",
 			wantContent: `failed to get row count for "UPDATE td SET c = 1;": target table "td" is not in the plan`,
 			wantCode:    code.Internal,
+			fallback:    true,
 		},
 		{
 			name:        "insert select reads the source plan",
@@ -353,14 +356,18 @@ func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 			if explained == "" {
 				explained = tc.statement
 			}
-			// The rule sets the JSON format version on the connection that runs the only EXPLAIN and
+			// The rule sets the JSON format version on the connection that runs the JSON EXPLAIN and
 			// resets it where the server has the variable.
 			wantQueries := []string{"SET SESSION explain_json_format_version = 1", "EXPLAIN FORMAT=JSON " + explained}
 			if tc.setErr == nil {
 				wantQueries = append(wantQueries, "SET SESSION explain_json_format_version = DEFAULT")
 			}
+			jsonQueries := len(wantQueries)
+			if tc.fallback {
+				wantQueries = append(wantQueries, "EXPLAIN "+explained)
+			}
 			require.Equal(t, wantQueries, testMySQLAdvisorQueries)
-			for _, conn := range testMySQLAdvisorQueryConns {
+			for _, conn := range testMySQLAdvisorQueryConns[:jsonQueries] {
 				require.Equal(t, testMySQLAdvisorQueryConns[0], conn)
 			}
 		})

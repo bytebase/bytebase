@@ -84,7 +84,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 				})
 				continue
 			}
-			rowCount, err := mysqlparser.EstimateAffectedRowsFromExplainJSON(ins, plan)
+			rowCount, err := mysqldriver.EstimateAffectedRows(ctx, driver, ins, text, plan)
 			if err != nil {
 				advice = append(advice, &storepb.Advice{
 					Status:        level,
