@@ -3338,6 +3338,8 @@
     "view-issue": "Issue を表示",
     "view-schema-text": "テキストの表示 スキーマ",
     "visualize-explain": "視覚化の説明",
+    "visualize-explain-blocked": "クエリプランのタブがブロックされました。このサイトのポップアップを許可して再試行してください。",
+    "visualize-explain-failed": "クエリプランの読み込みに失敗しました",
     "web-socket": {
       "connection-status": {
         "connected": "接続済み",

@@ -8,7 +8,7 @@ export * from "./datetime";
 export * from "./label";
 export * from "./string";
 export * from "./sqlEditor";
-export * from "./pev2";
+export * from "./explainToken";
 export * from "./web-storage";
 export * from "./dom";
 export * from "./schemaEditor";

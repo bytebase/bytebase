@@ -134,7 +134,7 @@
   
     - [Advice.Level](#bytebase-v1-Advice-Level)
     - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
-    - [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat)
+    - [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
@@ -2561,7 +2561,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
-| mssql_explain_format | [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat) |  |  |
+| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
 
 
 
@@ -2817,16 +2817,22 @@ RuleType indicates the source of the linting rule.
 
 
 
-<a name="bytebase-v1-QueryOption-MSSQLExplainFormat"></a>
+<a name="bytebase-v1-QueryOption-ExplainFormat"></a>
 
-### QueryOption.MSSQLExplainFormat
+### QueryOption.ExplainFormat
+Which explain output the caller wants, for an explain request.
 
+Leave it unspecified for the engine&#39;s own default, which is the only
+output most engines have. Naming a format an engine cannot produce is
+INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+against an engine that has no explain at all.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| MSSQL_EXPLAIN_FORMAT_UNSPECIFIED | 0 | defaults to SHOWPLAN_ALL |
-| MSSQL_EXPLAIN_FORMAT_ALL | 1 | SHOWPLAN_ALL |
-| MSSQL_EXPLAIN_FORMAT_XML | 2 | SHOWPLAN_XML |
+| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. |
+| TEXT | 1 | The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server: SHOWPLAN_ALL. |
+| JSON | 2 | The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON). |
+| XML | 3 | The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server: SHOWPLAN_XML. |
 
 
 

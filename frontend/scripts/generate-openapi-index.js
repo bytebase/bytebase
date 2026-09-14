@@ -33,7 +33,8 @@ function isObjectSchema(schemaDef) {
     (schemaDef.type === "object" ||
       !!schemaDef.properties ||
       Array.isArray(schemaDef.allOf) ||
-      Array.isArray(schemaDef.oneOf))
+      Array.isArray(schemaDef.oneOf) ||
+      Array.isArray(schemaDef.anyOf))
   );
 }
 
@@ -58,8 +59,15 @@ function mergeObjectShape(schemaDef, mergedProperties, mergedRequired, options) 
     }
   }
 
-  if (Array.isArray(schemaDef.oneOf)) {
-    for (const branch of schemaDef.oneOf) {
+  // A proto oneof renders as `oneOf` or `anyOf` depending on the generator
+  // version, and both mean the same thing here: every branch's fields belong
+  // to the message, none of them required. Walking only one spelling silently
+  // drops whole branches — including their bytes fields, which then never get
+  // base64-encoded on the way out.
+  for (const key of ["oneOf", "anyOf"]) {
+    const branches = schemaDef[key];
+    if (!Array.isArray(branches)) continue;
+    for (const branch of branches) {
       mergeObjectShape(branch, mergedProperties, mergedRequired, {
         includeRequired: false,
       });
@@ -96,8 +104,27 @@ function extractPropertyInfo(propName, propDef, requiredSet) {
     return info;
   }
 
-  if (Array.isArray(propDef.oneOf)) {
-    const nonNullBranches = propDef.oneOf.filter(
+  // A message-typed field renders either as a bare `$ref` or as a one-branch
+  // `allOf` wrapping it, depending on the generator version — the wrapper is
+  // how OpenAPI 3.0 attaches a title and description to a reference. Unwrap it,
+  // or the field's type degrades to a bare object and nothing downstream knows
+  // what it points at.
+  if (Array.isArray(propDef.allOf)) {
+    const branches = propDef.allOf.filter(Boolean);
+    if (branches.length === 1) {
+      const unwrapped = { ...branches[0] };
+      if (propDef.description && !unwrapped.description) {
+        unwrapped.description = propDef.description;
+      }
+      return extractPropertyInfo(propName, unwrapped, requiredSet);
+    }
+  }
+
+  const propBranches = Array.isArray(propDef.oneOf)
+    ? propDef.oneOf
+    : propDef.anyOf;
+  if (Array.isArray(propBranches)) {
+    const nonNullBranches = propBranches.filter(
       (branch) => branch && branch.type !== "null"
     );
     if (nonNullBranches.length === 1) {

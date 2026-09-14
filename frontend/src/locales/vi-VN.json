@@ -3338,6 +3338,8 @@
     "view-issue": "Xem Issue",
     "view-schema-text": "Xem văn bản lược đồ",
     "visualize-explain": "Trực quan hóa Giải thích",
+    "visualize-explain-blocked": "Tab kế hoạch truy vấn đã bị chặn. Hãy cho phép cửa sổ bật lên cho trang này và thử lại.",
+    "visualize-explain-failed": "Không tải được kế hoạch truy vấn",
     "web-socket": {
       "connection-status": {
         "connected": "đã kết nối",

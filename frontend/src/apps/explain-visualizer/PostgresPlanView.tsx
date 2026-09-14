@@ -1,27 +1,39 @@
-import { Plan as pev2 } from "pev2";
-import { useEffect, useRef } from "react";
-import { type App, createApp } from "vue";
+import { useMemo } from "react";
+import { Alert } from "@/components/ui/alert";
+import { parsePostgresPlan } from "./postgres-plan";
+import { QueryPlanViewer } from "./QueryPlanViewer";
 
 interface Props {
+  /** `EXPLAIN (FORMAT JSON)` output as PostgreSQL returned it. */
   planSource: string;
   planQuery?: string;
 }
 
-// pev2 is a Vue 3 component; no React port exists. Reimplementing the
-// Postgres EXPLAIN renderer is out of scope, so we mount pev2 as a
-// short-lived Vue subapp inside this React node and unmount on cleanup.
-// Vue is already in this entry's bundle transitively via pev2.
 export function PostgresPlanView({ planSource, planQuery }: Props) {
-  const hostRef = useRef<HTMLDivElement>(null);
+  const result = useMemo(() => parsePostgresPlan(planSource), [planSource]);
 
-  useEffect(() => {
-    if (!hostRef.current) return;
-    const app: App = createApp(pev2, { planSource, planQuery });
-    app.mount(hostRef.current);
-    return () => {
-      app.unmount();
-    };
-  }, [planSource, planQuery]);
+  if (!result.ok) {
+    return (
+      <div className="flex h-full min-h-0 w-full flex-col gap-4 overflow-auto bg-background p-4">
+        <Alert
+          variant="error"
+          title="This query plan could not be read"
+          description={result.message}
+        />
+        {planSource.trim() ? (
+          <pre className="font-mono text-xs leading-4 break-words whitespace-pre-wrap text-control">
+            {planSource}
+          </pre>
+        ) : null}
+      </div>
+    );
+  }
 
-  return <div ref={hostRef} className="qp-root" />;
+  return (
+    <QueryPlanViewer
+      tree={result.tree}
+      rawPlan={planSource}
+      query={planQuery}
+    />
+  );
 }

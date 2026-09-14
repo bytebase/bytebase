@@ -10,8 +10,25 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
+
+func TestExplainStatement(t *testing.T) {
+	for _, tc := range []struct {
+		format v1pb.QueryOption_ExplainFormat
+		want   string
+	}{
+		{v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "EXPLAIN SELECT 1;"},
+		{v1pb.QueryOption_TEXT, "EXPLAIN SELECT 1;"},
+		{v1pb.QueryOption_JSON, "EXPLAIN (FORMAT JSON) SELECT 1;"},
+		{v1pb.QueryOption_XML, "EXPLAIN (FORMAT XML) SELECT 1;"},
+	} {
+		t.Run(tc.format.String(), func(t *testing.T) {
+			require.Equal(t, tc.want, explainStatement("SELECT 1;", tc.format))
+		})
+	}
+}
 
 func TestBuildTimestamptzRowValue(t *testing.T) {
 	tests := []struct {

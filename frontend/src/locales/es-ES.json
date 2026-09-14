@@ -3338,6 +3338,8 @@
     "view-issue": "Ver issue",
     "view-schema-text": "Ver texto del esquema",
     "visualize-explain": "Visualizar explicación",
+    "visualize-explain-blocked": "Se bloqueó la pestaña del plan de consulta. Permite las ventanas emergentes de este sitio e inténtalo de nuevo.",
+    "visualize-explain-failed": "No se pudo cargar el plan de consulta",
     "web-socket": {
       "connection-status": {
         "connected": "conectado",
