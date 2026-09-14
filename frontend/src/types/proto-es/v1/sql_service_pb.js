@@ -71,9 +71,12 @@ export const QueryOption_ExplainFormatSchema = /*@__PURE__*/
   enumDesc(file_v1_sql_service, 4, 1);
 
 /**
- * Which explain output the caller wants. An engine rejects a format it
- * cannot produce; an engine that publishes a single explain output ignores
- * the field.
+ * Which explain output the caller wants, for an explain request.
+ *
+ * Leave it unspecified for the engine's own default, which is the only
+ * output most engines have. Naming a format an engine cannot produce is
+ * INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+ * against an engine that has no explain at all.
  *
  * @generated from enum bytebase.v1.QueryOption.ExplainFormat
  */

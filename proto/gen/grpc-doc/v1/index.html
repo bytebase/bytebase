@@ -8794,7 +8794,7 @@ These are custom, flexible checks powered by AI models.</p></td>
         </table>
       
         <h3 id="bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</h3>
-        <p>Which explain output the caller wants. An engine rejects a format it</p><p>cannot produce; an engine that publishes a single explain output ignores</p><p>the field.</p>
+        <p>Which explain output the caller wants, for an explain request.</p><p>Leave it unspecified for the engine's own default, which is the only</p><p>output most engines have. Naming a format an engine cannot produce is</p><p>INVALID_ARGUMENT rather than a silent fallback, as is any explain request</p><p>against an engine that has no explain at all.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
