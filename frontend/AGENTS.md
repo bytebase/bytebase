@@ -7,7 +7,7 @@ This file provides additional guidance to AI coding assistants working under `./
 
 ## React
 
-- All product UI code is React. Use React, Base UI, Tailwind CSS v4, and the shadcn-style component patterns below. The `pev2` adapter under `src/apps/explain-visualizer/` is the only Vue runtime exception.
+- All product UI code is React. Use React, Base UI, Tailwind CSS v4, and the shadcn-style component patterns below. There is no Vue runtime.
 
 ## Localization
 
@@ -41,7 +41,7 @@ Use route ownership as the primary organization axis. Do not add a generic `feat
 | `src/hooks/` and `src/lib/` | Cross-cutting hooks and framework-neutral helpers only |
 | `src/types/` and `src/utils/` | Existing cross-module contracts and compatibility utilities; prefer owner-local code for new work |
 | `src/types/proto-es/` | Generated protobuf output; do not edit manually |
-| `src/apps/explain-visualizer/` | Isolated secondary entrypoint; the only source subtree allowed to use Vue through `pev2` |
+| `src/apps/explain-visualizer/` | Isolated secondary entrypoint for the query-plan viewer opened in its own tab |
 
 ### Placement and dependency rules
 
@@ -51,6 +51,7 @@ Use route ownership as the primary organization axis. Do not add a generic `feat
 - Put a large reusable workflow in `src/modules/<name>/`; do not spread one subsystem across `components` and `stores`.
 - Shared code and modules must not import from `src/routes/`. Move the shared implementation to its actual owner instead.
 - Prefer direct owner imports such as `@/modules/sql-editor/store` over broad barrels when the owner is known.
+- `src/apps/explain-visualizer/` must not use primitives backed by `styles.stylex.ts`. The build appends StyleX's rules to the main app's CSS asset only (`cssInjectionTarget` in `vite.config.ts`), so a StyleX-sized control renders unstyled in that entry.
 - Historical migration plans under `docs/` describe old paths and are not current architecture guidance.
 - `CLAUDE.md` files only import their adjacent `AGENTS.md`; update `AGENTS.md` as the source of truth.
 

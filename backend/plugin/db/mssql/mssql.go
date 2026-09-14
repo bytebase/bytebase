@@ -417,6 +417,17 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	return results, nil
 }
 
+// showplanStatistic picks the SET statement that turns on the requested explain
+// output. SQL Server has no JSON showplan; which formats an engine may be asked
+// for is decided at the API boundary (validateExplainFormat), so anything else
+// arriving here takes the default plan.
+func showplanStatistic(option *v1pb.QueryOption) string {
+	if option.GetExplainFormat() == v1pb.QueryOption_XML {
+		return "SHOWPLAN_XML"
+	}
+	return "SHOWPLAN_ALL"
+}
+
 // queryBatch queries a batch of SQL statements, for Result Set-Generating statements, it returns the results, for Row Count-Generating statements,
 // it returns the affected rows, for other statements, it returns the empty query result.
 // https://learn.microsoft.com/en-us/sql/odbc/reference/develop-app/result-generating-and-result-free-statements?view=sql-server-ver16
@@ -432,10 +443,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 
 	// Special handling for EXPLAIN queries in MSSQL using explain
 	if queryContext.Explain {
-		explain := "SHOWPLAN_ALL"
-		if queryContext.Option.MssqlExplainFormat == v1pb.QueryOption_MSSQL_EXPLAIN_FORMAT_XML {
-			explain = "SHOWPLAN_XML"
-		}
+		explain := showplanStatistic(queryContext.Option)
 		// Enable explain mode once for all statements
 		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET %s ON", explain)); err != nil { // NOSONAR(go:S2077) explain is a hardcoded constant ("SHOWPLAN_ALL" or "SHOWPLAN_XML"), not user input
 			return nil, errors.Wrap(err, "failed to enable explain mode")

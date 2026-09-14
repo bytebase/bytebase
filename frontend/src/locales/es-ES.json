@@ -3329,6 +3329,7 @@
     "view-issue": "Ver issue",
     "view-schema-text": "Ver texto del esquema",
     "visualize-explain": "Visualizar explicación",
+    "visualize-explain-failed": "No se pudo cargar el plan de consulta",
     "web-socket": {
       "connection-status": {
         "connected": "conectado",

@@ -1,5 +1,4 @@
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { randomString } from "./util";
 
 export type StoredExplain = {
   statement: string;
@@ -7,12 +6,28 @@ export type StoredExplain = {
   engine: Engine;
 };
 
+/**
+ * Deliberately not `randomString` from `./util`: the visualizer is a separate
+ * entry that imports this module and nothing else of the app, and `./util`
+ * drags dayjs, semver, DOMPurify and the i18n bundle in behind it.
+ *
+ * The token only has to be unique within one tab's sessionStorage — it is a
+ * lookup key, not a secret.
+ */
+const tokenSuffix = (): string => {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    ""
+  );
+};
+
 export const createExplainToken = ({
   statement,
   explain,
   engine,
 }: StoredExplain): string => {
-  const token = `pev2-${randomString(32)}`;
+  const token = `explain-${tokenSuffix()}`;
 
   const json = JSON.stringify({ statement, explain, engine });
   sessionStorage.setItem(token, json);

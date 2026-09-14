@@ -51,7 +51,7 @@
           "level": "error",
           "options": {
             "paths": {
-              "vue": "Only src/apps/explain-visualizer may use Vue."
+              "vue": "The frontend is React-only; do not reintroduce Vue."
             }
           }
         },
@@ -221,11 +221,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "src/shims-3rd-party.d.ts",
-        "tailwind.config.js",
-        "vite-plugin-export-csp-hashes.ts"
-      ],
+      "includes": ["tailwind.config.js", "vite-plugin-export-csp-hashes.ts"],
       "formatter": { "enabled": false },
       "linter": { "enabled": false }
     },
@@ -284,7 +280,7 @@
               "level": "error",
               "options": {
                 "paths": {
-                  "vue": "Only src/apps/explain-visualizer may use Vue."
+                  "vue": "The frontend is React-only; do not reintroduce Vue."
                 },
                 "patterns": [
                   {
@@ -306,12 +302,6 @@
         "!src/**/*.test.tsx"
       ],
       "plugins": ["./biome-plugins/cel-filter-literals.grit"]
-    },
-    {
-      "includes": ["src/apps/explain-visualizer/**"],
-      "linter": {
-        "rules": { "style": { "noRestrictedImports": "off" } }
-      }
     },
     {
       "includes": ["*.json", "**/*.json", "*.json5", "**/*.json5"],

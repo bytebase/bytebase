@@ -330,3 +330,39 @@ func TestResolveDataSourceIDKeepsReadOnlyForDocumentEngineAutomaticReadQueryWhen
 		})
 	}
 }
+
+// TestValidateExplainFormat pins the engine-to-format support table. A format an
+// engine cannot produce has to be refused here, because the drivers below map
+// anything that reaches them onto their own default rather than failing.
+func TestValidateExplainFormat(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name    string
+		engine  storepb.Engine
+		format  v1pb.QueryOption_ExplainFormat
+		wantErr bool
+	}{
+		{name: "unspecified is always the engine default", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{name: "postgres json", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_JSON},
+		{name: "postgres xml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_XML},
+		{name: "postgres text", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_TEXT},
+		{name: "mssql xml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_XML},
+		{name: "mssql json", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
+		{name: "spanner has no text plan", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_TEXT, wantErr: true},
+		{name: "mysql text", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_TEXT},
+		{name: "mysql json is not implemented yet", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "oracle xml is not implemented yet", engine: storepb.Engine_ORACLE, format: v1pb.QueryOption_XML, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateExplainFormat(tc.engine, tc.format)
+			if !tc.wantErr {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		})
+	}
+}

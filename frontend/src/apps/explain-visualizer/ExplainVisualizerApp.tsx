@@ -1,7 +1,7 @@
 import { parse } from "qs";
 import { type ReactNode, useMemo } from "react";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import { readExplainFromToken } from "@/utils/pev2";
+import { readExplainFromToken } from "@/utils/explainToken";
 import { MSSQLPlanView } from "./MSSQLPlanView";
 import { PostgresPlanView } from "./PostgresPlanView";
 import { SpannerQueryPlan } from "./SpannerQueryPlan";
@@ -16,7 +16,10 @@ export function ExplainVisualizerApp() {
   if (!storedQuery) {
     return (
       <div className="ev-app">
-        <h1>session expired</h1>
+        <div className="ev-unsupported">
+          <h2>Session expired</h2>
+          <p>Run the statement again to open a fresh query plan.</p>
+        </div>
       </div>
     );
   }

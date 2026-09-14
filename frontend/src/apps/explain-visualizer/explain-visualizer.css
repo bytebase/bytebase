@@ -1,7 +1,8 @@
-/* Standalone styles for the Explain Visualizer entry. Classes are
-   prefixed `ev-` because the page also loads `bootstrap`, `pev2`, and
-   `html-query-plan` CSS, none of which expect to coexist with the main
-   app's design tokens. */
+/* Standalone styles for the Explain Visualizer entry.
+   The page loads the product's Tailwind entry, so the PostgreSQL view uses the
+   shared semantic tokens. The `ev-` prefixed rules below belong to the SQL
+   Server and Spanner views, which predate that and also share the page with
+   `html-query-plan`'s stylesheet. */
 
 :root {
   --radius-xs: 2px;
@@ -17,40 +18,62 @@ body,
 
 body {
   margin: 0;
+  background-color: rgb(var(--color-background));
+  color: rgb(var(--color-main));
 }
 
 .ev-app {
   display: flex;
 }
 
-/* Font Awesome SVG sizing — pev2 renders icons via
-   @fortawesome/vue-fontawesome, which expects Font Awesome's
-   `autoAddCss` to inject these rules into <head> at runtime. That
-   injection fires in the standalone Vue app but not reliably when pev2
-   is mounted as a Vue island inside React, leaving icons unsized
-   (`<svg>` defaults to filling its container). Inline the minimum
-   sizing rules so behavior is deterministic without taking a direct
-   dependency on `@fortawesome/fontawesome-svg-core`. */
-.svg-inline--fa {
-  display: var(--fa-display, inline-block);
-  height: 1em;
-  overflow: visible;
-  vertical-align: -0.125em;
-}
-svg.svg-inline--fa:not(:root) {
-  overflow: visible;
-  box-sizing: content-box;
-}
-.svg-inline--fa.fa-fw {
-  width: var(--fa-fw-width, 1.25em);
-}
-.svg-inline--fa.fa-pull-left {
-  margin-right: var(--fa-pull-margin, 0.3em);
-  width: auto;
-}
-.svg-inline--fa.fa-pull-right {
-  margin-left: var(--fa-pull-margin, 0.3em);
-  width: auto;
+/* The page opens in its own tab with no workspace chrome to carry a theme
+   choice, so it follows the operating system instead. Only the semantic tokens
+   change; no component needs a dark variant. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --color-accent: 129 140 248;
+    --color-accent-disabled: 55 48 163;
+    --color-accent-hover: 165 180 252;
+    --color-accent-text: 24 24 27;
+
+    --color-main: 244 244 245;
+    --color-main-hover: 228 228 231;
+    --color-main-text: 24 24 27;
+
+    --color-control: 212 212 216;
+    --color-control-hover: 244 244 245;
+    --color-control-light: 161 161 170;
+    --color-control-light-hover: 212 212 216;
+    --color-control-bg: 39 39 42;
+    --color-control-bg-hover: 63 63 70;
+    --color-control-placeholder: 113 113 122;
+
+    --color-info: 96 165 250;
+    --color-info-hover: 147 197 253;
+    --color-warning: 251 191 36;
+    --color-warning-hover: 252 211 77;
+    --color-error: 248 113 113;
+    --color-error-hover: 252 165 165;
+    --color-success: 74 222 128;
+    --color-success-hover: 134 239 172;
+
+    --color-link-hover: 39 39 42;
+    --color-block-border: 63 63 70;
+    --color-control-border: 82 82 91;
+    --color-background: 24 24 27;
+  }
+
+  /* `html-query-plan` and the Spanner tree below ship fixed light colors. Pin
+     their containers to a light surface so a dark page does not leave them
+     unreadable. */
+  .ev-mssql-container,
+  .ev-spanner {
+    color-scheme: light;
+    background-color: #ffffff;
+    color: #333333;
+  }
 }
 
 .ev-unsupported {
@@ -64,13 +87,17 @@ svg.svg-inline--fa:not(:root) {
   text-align: center;
 }
 
+/* Tailwind's preflight strips heading sizing, so these state screens restate
+   it rather than relying on browser defaults. */
 .ev-unsupported h2 {
   margin-bottom: 8px;
-  color: #666;
+  font-size: 18px;
+  font-weight: 600;
+  color: rgb(var(--color-main));
 }
 
 .ev-unsupported p {
-  color: #999;
+  color: rgb(var(--color-control-light));
 }
 
 .ev-mssql-container {
@@ -78,25 +105,6 @@ svg.svg-inline--fa:not(:root) {
   height: 100%;
   overflow: auto;
   padding: 16px;
-}
-
-/* `.qp-root` is the wrapper that pev2 mounts into. The Vue version
-   placed pev2 directly inside `<div id="app" class="d-flex">` so pev2's
-   root (`.plan-container`) was a flex child and stretched on the cross
-   axis. Our React wrapper adds one extra layer, and `.plan-container`
-   has no explicit height in pev2's CSS — without help, it shrinks to
-   content height and the splitpanes inside (`height: 100%`) collapse.
-   Force the first child to fill so the cascade resolves. */
-.qp-root {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.qp-root > * {
-  flex: 1 1 0;
-  min-height: 0;
-  width: 100%;
 }
 
 /* Spanner query plan tree */

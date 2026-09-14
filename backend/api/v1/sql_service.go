@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -317,6 +318,11 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	// New query ACL experience.
 	if !request.Explain && !common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 		if err := validateQueryRequest(instance, statement); err != nil {
+			return nil, err
+		}
+	}
+	if request.Explain {
+		if err := validateExplainFormat(instance.Metadata.GetEngine(), request.GetQueryOption().GetExplainFormat()); err != nil {
 			return nil, err
 		}
 	}
@@ -1956,6 +1962,43 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 
 	return user, instance, database, nil
+}
+
+// supportedExplainFormats lists the explain formats an engine's driver actually
+// produces. TEXT is the human-readable plan every engine returns by default,
+// which is why only the engines with a machine-readable plan, or without a
+// readable one, need a case here.
+func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFormat {
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML}
+	case storepb.Engine_MSSQL:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}
+	case storepb.Engine_SPANNER:
+		// Spanner returns its plan as JSON and has no text form.
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}
+	default:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
+	}
+}
+
+// validateExplainFormat refuses a format the engine cannot produce. This is the
+// one place the engine-to-format support is decided: drivers below map whatever
+// reaches them onto their own syntax, so a request that slipped through would
+// silently come back in a format the caller cannot parse.
+func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) error {
+	if format == v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
+		return nil
+	}
+	supported := supportedExplainFormats(engine)
+	if slices.Contains(supported, format) {
+		return nil
+	}
+	names := make([]string, 0, len(supported))
+	for _, f := range supported {
+		names = append(names, f.String())
+	}
+	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain format %s, supported formats: %s", engine, format, strings.Join(names, ", ")))
 }
 
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {
