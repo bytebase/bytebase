@@ -78,7 +78,7 @@ interface QuickLinkDef {
 }
 
 // ---------------------------------------------------------------------------
-// Build the full quick-link catalogue (mirrors useDashboardSidebar + useQuickLink)
+// Build the full quick-link catalogue
 // ---------------------------------------------------------------------------
 
 function useFullQuickLinkList(): QuickLinkDef[] {
@@ -240,7 +240,7 @@ function useFullQuickLinkList(): QuickLinkDef[] {
 }
 
 // ---------------------------------------------------------------------------
-// localStorage-backed quick-access config (same keys as Vue version)
+// localStorage-backed quick-access config
 // ---------------------------------------------------------------------------
 
 const DEFAULT_CONFIG = [

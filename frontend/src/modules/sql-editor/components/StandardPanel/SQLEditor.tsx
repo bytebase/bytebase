@@ -50,9 +50,7 @@ interface SQLEditorProps {
 }
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/StandardPanel/SQLEditor.vue`.
- *
- * SavedQuery Monaco editor with full keybinding parity:
+ * SavedQuery Monaco editor with keybindings:
  * - Cmd+Enter run / Cmd+Shift+Enter run-in-new-tab
  * - Cmd+S save sheet
  * - Cmd+E explain (or "Dry Run" for BigQuery)
@@ -63,10 +61,6 @@ interface SQLEditorProps {
  * instance is published to `activeSQLEditorRef` (plain mutable
  * singleton) so ResultView's ErrorView "Goto Error" action can
  * imperatively focus the editor.
- *
- * Exposes `getActiveStatement` via `useImperativeHandle` so EditorMain
- * (parent) can read the active selection or full statement when a query
- * is run from the toolbar.
  */
 export function SQLEditor({ onExecute }: SQLEditorProps) {
   const { isReadOnly: readonly } = useSavedQueryAndTab();
@@ -127,8 +121,8 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
 
   // Publish the live "active statement" — Monaco's delimited
   // statement under the cursor, or the full content as fallback —
-  // to the module-level shared ref so the Vue EditorMain toolbar
-  // can read it without a React ref.
+  // to the module-level shared ref so the EditorMain toolbar can
+  // read it.
   const handleActiveContentChange = useCallback((value: string) => {
     activeStatementRef.value = value;
   }, []);
@@ -154,7 +148,7 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     getSQLEditorTabsState().updateCurrentTab({ selectedStatement: value });
   }, []);
 
-  // Guard flag so the Vue→Monaco selection watcher below doesn't fire
+  // Guard flag so the tab→Monaco selection effect below doesn't fire
   // when the change came from the editor itself (would interrupt
   // mouse-drag word selection).
   const selectionFromEditorRef = useRef(false);

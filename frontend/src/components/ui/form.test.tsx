@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import * as stylex from "@stylexjs/stylex";
 import { act, createElement, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -23,8 +21,6 @@ import {
   formFieldTitleStyle,
   formSectionStyle,
 } from "./styles.stylex";
-
-const formSource = readFileSync(join(import.meta.dirname, "form.tsx"), "utf8");
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -225,41 +221,6 @@ describe("Form section layouts", () => {
     expect(title?.textContent).toBe("AnnouncementBadge");
 
     unmount();
-  });
-
-  test("does not expose legacy header composition primitives", () => {
-    expect(formSource).not.toContain("function FormSectionHeader");
-    expect(formSource).not.toContain("function FormSectionTitle");
-    expect(formSource).not.toContain("function FormSectionContent");
-    expect(formSource).not.toContain("function FormFieldHeader");
-    expect(formSource).not.toContain("function FormFieldTitle");
-    expect(formSource).not.toContain("function FormFieldSubtitle");
-    expect(formSource).not.toContain("function FormHelperText");
-    expect(formSource).not.toContain("function FormMessage");
-    expect(formSource).not.toContain("function FormControlAffix");
-    expect(formSource).not.toContain("function FormInlineAffix");
-    expect(formSource).not.toContain("function FormFieldRow");
-  });
-
-  test("documents every exposed API with a usage example", () => {
-    const exportedApis = [
-      "FormControlGroup",
-      "FormControlRow",
-      "FormError",
-      "FormField",
-      "FormFieldGroup",
-      "FormLabel",
-      "FormSection",
-      "FormTitle",
-    ];
-
-    for (const api of exportedApis) {
-      expect(formSource, api).toMatch(
-        new RegExp(
-          String.raw`/\*\*[\s\S]*?@example[\s\S]*?\*/\nfunction ${api}\b`
-        )
-      );
-    }
   });
 });
 

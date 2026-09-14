@@ -65,9 +65,12 @@ export function SegmentedControl<T extends string>({
                 ? appearance === "soft"
                   ? "bg-accent/10 text-accent"
                   : "bg-accent text-accent-text"
-                : "bg-background text-control hover:bg-control-bg",
+                : cn(
+                    "bg-background text-control",
+                    !optionDisabled && "hover:bg-control-bg"
+                  ),
               optionDisabled
-                ? "cursor-not-allowed opacity-50 hover:bg-background"
+                ? "cursor-not-allowed opacity-50"
                 : "cursor-pointer"
             )}
             style={stylexProps.style}

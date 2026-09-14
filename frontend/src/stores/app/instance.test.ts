@@ -6,7 +6,7 @@ import {
   type ListInstancesRequest,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
-import { createInstanceSlice } from "./instance";
+import { createInstanceSlice, getListInstanceFilter } from "./instance";
 
 const mocks = vi.hoisted(() => ({
   getInstance: vi.fn(),
@@ -186,5 +186,22 @@ describe("instance store project parent", () => {
     expect(mocks.batchUpdateInstances.mock.calls[0][0]).toMatchObject({
       parent: "projects/app",
     });
+  });
+});
+
+describe("getListInstanceFilter", () => {
+  const QUOTED = 'SELECT * FROM "users"';
+  const ESCAPED = 'SELECT * FROM \\"users\\"';
+
+  test("escapes a quote in the free-text query", () => {
+    const filter = getListInstanceFilter({ query: QUOTED }).toLowerCase();
+    expect(filter).not.toContain(QUOTED.toLowerCase());
+    expect(filter).toContain(ESCAPED.toLowerCase());
+  });
+
+  test("escapes a quote in the host and port", () => {
+    expect(getListInstanceFilter({ host: 'h"1', port: 'p"2' })).toBe(
+      'host.contains("h\\"1") && port.contains("p\\"2")'
+    );
   });
 });

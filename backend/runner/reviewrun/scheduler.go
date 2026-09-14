@@ -59,6 +59,10 @@ type Scheduler struct {
 	licenseService *enterprise.LicenseService
 	productMetrics *productmetrics.ProductMetrics
 	executorMap    map[string]Executor
+
+	// runs tracks the goroutines dispatchReviewRun spawns; Run waits for them,
+	// or they outlive the store.
+	runs sync.WaitGroup
 }
 
 // Register registers an executor for a reviewer type. Call before Run.
@@ -74,6 +78,7 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	ticker := time.NewTicker(reviewRunSchedulerInterval)
 	defer ticker.Stop()
 	defer wg.Done()
+	defer s.runs.Wait()
 	slog.Debug(fmt.Sprintf("Review run scheduler started and will run every %v", reviewRunSchedulerInterval))
 	for {
 		select {
@@ -136,7 +141,7 @@ func (s *Scheduler) dispatchReviewRun(ctx context.Context, claimed *store.Claime
 		s.completeReviewRun(ctx, claimed, errors.Errorf("no executor registered for reviewer type %q", claimed.Type))
 		return
 	}
-	go s.runReviewRunOnce(ctx, claimed, executor)
+	s.runs.Go(func() { s.runReviewRunOnce(ctx, claimed, executor) })
 }
 
 func (s *Scheduler) runReviewRunOnce(ctx context.Context, claimed *store.ClaimedReviewRun, executor Executor) {

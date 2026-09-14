@@ -16,30 +16,27 @@ func TestArchiveProject(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// Add an instance.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "test",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "test",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
 	t.Run("ArchiveProjectWithDatabase", func(_ *testing.T) {
-		databaseName := "db1"
+		databaseName := uniqueDB("db1")
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 		a.NoError(err)
 

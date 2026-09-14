@@ -75,20 +75,6 @@ type omniQuerySpanExtractor struct {
 	// fallbackCTEAliases holds CTE column aliases (e.g., WITH t1(cc1, cc2) AS (...)).
 	// Keyed by lowercase CTE name.
 	fallbackCTEAliases map[string][]string
-
-	// Catalog loader state — populated by initCatalog.
-	// degraded records objects whose real install failed and fell back to
-	// pseudo. Keyed by loader object key (schema.name with kind prefix).
-	degraded map[string]error
-	// trulyBroken records objects whose pseudo install also failed.
-	trulyBroken map[string]error
-	// loaderObjects records every object collected from metadata. Used by
-	// tests to distinguish loader bugs from metadata gaps.
-	loaderObjects map[string]bool
-	// lastFallbackReason is the classifier's verdict for the most recent
-	// AnalyzeSelectStmt error at any of the three fallback sites. Used by
-	// tests; not consumed by production code.
-	lastFallbackReason fallbackReason
 }
 
 // newOmniQuerySpanExtractor creates a new omni-based query span extractor.
@@ -121,12 +107,9 @@ func (e *omniQuerySpanExtractor) getDatabaseMetadata(database string) (*model.Da
 	return meta, nil
 }
 
-// initCatalog initializes the omni catalog from the database metadata using
-// the Catalog loader. Every metadata object is installed in dependency order,
-// with an inline pseudo fallback at any failed slot (see query_span_e3_*.go).
-//
-// The DDL render + batch-parse path used before this refactor is deleted: BYT-9215 and
-// BYT-9261 are unreachable by construction here.
+// initCatalog loads the database metadata into a new omni catalog. An object
+// that fails to install gets a text-typed stand-in or is left out; either way
+// the rest of the catalog still loads.
 func (e *omniQuerySpanExtractor) initCatalog() error {
 	meta, err := e.getDatabaseMetadata(e.defaultDatabase)
 	if err != nil {
@@ -140,24 +123,20 @@ func (e *omniQuerySpanExtractor) initCatalog() error {
 		return nil
 	}
 
-	loader := newCatalogLoader(e.cat, meta.GetProto())
-	if err := loader.Load(e.ctx); err != nil {
-		return errors.Wrapf(err, "catalog loader failed for %q", e.defaultDatabase)
+	report, err := e.cat.LoadMetadata(e.ctx, meta.GetProto(), catalog.LoadMetadataOptions{})
+	if err != nil {
+		return errors.Wrapf(err, "failed to load the catalog for %q", e.defaultDatabase)
 	}
-	e.degraded = loader.degraded
-	e.trulyBroken = loader.trulyBroken
-	e.loaderObjects = loader.loaderObjects
-
-	if len(loader.degraded) > 0 || len(loader.trulyBroken) > 0 {
-		slog.Debug("catalog loader degraded objects",
+	if len(report.Degraded) > 0 || len(report.Missing) > 0 {
+		slog.Debug("catalog loaded with stand-ins",
 			slog.String("database", e.defaultDatabase),
-			slog.Int("degraded", len(loader.degraded)),
-			slog.Int("truly_broken", len(loader.trulyBroken)),
+			slog.Int("degraded", len(report.Degraded)),
+			slog.Int("missing", len(report.Missing)),
 		)
 	}
 
 	// Populate original (non-stubbed) function definitions for PL/pgSQL body
-	// analysis. This is independent of catalog loading and unchanged by the loader.
+	// analysis.
 	for _, s := range meta.GetProto().GetSchemas() {
 		for _, f := range s.GetFunctions() {
 			if f.Definition == "" {
@@ -340,10 +319,6 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 
 	query, err := e.cat.AnalyzeSelectStmt(selStmt)
 	if err != nil {
-		// Record the classifier's verdict for test inspection. This does not
-		// gate behavior — the fallback below always runs on analyzer errors.
-		e.lastFallbackReason = classifyAnalyzeError(err)
-
 		// Before falling back, try to handle user-defined table-returning functions
 		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
 		// used as table sources: SELECT * FROM func()).

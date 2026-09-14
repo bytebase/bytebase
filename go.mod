@@ -34,7 +34,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/bytebase/gomongo v0.0.0-20260730033313-67ba6e249735
 	github.com/bytebase/lsp-protocol v0.0.0-20250324071136-1586d0c10ff0
-	github.com/bytebase/omni v0.0.0-20260911085056-71713ba5c090
+	github.com/bytebase/omni v0.0.0-20260912023254-4574e69bb9f1
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/cockroachdb/cockroachdb-parser v0.25.2
@@ -66,7 +66,6 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/lor00x/goldap v0.0.0-20240304151906-8d785c64d1c8
 	github.com/microsoft/go-mssqldb v1.11.0
-	github.com/moby/moby/api v1.55.0
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/nyaruka/phonenumbers/v2 v2.0.5
 	github.com/opensearch-project/opensearch-go/v4 v4.7.2
@@ -210,6 +209,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.3.0 // indirect
+	github.com/moby/moby/api v1.55.0 // indirect
 	github.com/moby/moby/client v0.5.0 // indirect
 	github.com/moby/patternmatcher v0.6.1 // indirect
 	github.com/moby/sys/sequential v0.7.0 // indirect

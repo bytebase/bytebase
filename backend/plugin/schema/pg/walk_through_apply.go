@@ -2,6 +2,7 @@ package pg
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -34,7 +35,11 @@ func applyDiffToMetadata(original *metadatapb.DatabaseSchemaMetadata, catBefore,
 		}
 	}
 
+	renamed := renamePartitions(result, catAfter, diff.Relations)
 	for _, rel := range diff.Relations {
+		if (rel.From != nil && renamed[rel.From.OID]) || (rel.To != nil && renamed[rel.To.OID]) {
+			continue
+		}
 		if rel.Action == catalog.DiffDrop {
 			if sm := findSchema(result, rel.SchemaName); sm != nil {
 				dropRelation(sm, rel)
@@ -220,6 +225,9 @@ func dropRelation(sm *metadatapb.SchemaMetadata, rel catalog.RelationDiffEntry) 
 	sm.Tables = removeTableByName(sm.Tables, name)
 	sm.Views = removeViewByName(sm.Views, name)
 	sm.MaterializedViews = removeMatViewByName(sm.MaterializedViews, name)
+	for _, t := range sm.Tables {
+		t.Partitions = removePartitionByName(t.Partitions, name)
+	}
 }
 
 func modifyRelation(sm *metadatapb.SchemaMetadata, catBefore, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
@@ -230,6 +238,10 @@ func modifyRelation(sm *metadatapb.SchemaMetadata, catBefore, cat *catalog.Catal
 	case 'r', 'p', 'f':
 		tbl := findTable(sm, rel.Name)
 		if tbl == nil {
+			if p := findPartition(sm, rel.Name); p != nil {
+				applyPartitionDiffs(p, catBefore, cat, rel)
+				return
+			}
 			sm.Tables = append(sm.Tables, relationToTableProto(cat, rel.To))
 			return
 		}
@@ -244,6 +256,46 @@ func modifyRelation(sm *metadatapb.SchemaMetadata, catBefore, cat *catalog.Catal
 		sm.MaterializedViews = append(sm.MaterializedViews, relationToMatViewProto(cat, rel.To))
 	default:
 	}
+}
+
+// renamePartitions renames each partition the diff renames where it stands,
+// with its indexes and constraints as the catalog now has them. The diff shows
+// a rename as a drop and an add of the same relation, which would otherwise
+// turn the partition into a table of its own. It returns the OIDs it handled.
+func renamePartitions(result *metadatapb.DatabaseSchemaMetadata, catAfter *catalog.Catalog, relations []catalog.RelationDiffEntry) map[uint32]bool {
+	added := make(map[uint32]catalog.RelationDiffEntry)
+	for _, rel := range relations {
+		if rel.Action == catalog.DiffAdd && rel.To != nil {
+			added[rel.To.OID] = rel
+		}
+	}
+	renamed := make(map[uint32]bool)
+	for _, rel := range relations {
+		if rel.Action != catalog.DiffDrop || rel.From == nil {
+			continue
+		}
+		add, ok := added[rel.From.OID]
+		sm := findSchema(result, rel.SchemaName)
+		if !ok || add.SchemaName != rel.SchemaName || sm == nil {
+			continue
+		}
+		if p := findPartition(sm, rel.Name); p != nil {
+			tbl := relationToTableProto(catAfter, add.To)
+			p.Name = add.Name
+			p.Indexes, p.CheckConstraints, p.ExcludeConstraints = tbl.Indexes, tbl.CheckConstraints, tbl.ExcludeConstraints
+			renamed[rel.From.OID] = true
+		}
+	}
+	return renamed
+}
+
+// applyPartitionDiffs applies a partition's index and constraint changes. A
+// partition's metadata holds only those; its columns are its parent table's.
+func applyPartitionDiffs(p *metadatapb.TablePartitionMetadata, catBefore, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
+	tbl := &metadatapb.TableMetadata{Indexes: p.Indexes, CheckConstraints: p.CheckConstraints, ExcludeConstraints: p.ExcludeConstraints}
+	applyIndexDiffs(tbl, cat, rel)
+	applyConstraintDiffs(tbl, catBefore, cat, rel)
+	p.Indexes, p.CheckConstraints, p.ExcludeConstraints = tbl.Indexes, tbl.CheckConstraints, tbl.ExcludeConstraints
 }
 
 func applyColumnDiffs(tbl *metadatapb.TableMetadata, cat *catalog.Catalog, rel catalog.RelationDiffEntry) {
@@ -529,6 +581,37 @@ func findTable(sm *metadatapb.SchemaMetadata, name string) *metadatapb.TableMeta
 	return nil
 }
 
+// findPartition returns the partition named name, at any depth, of a table in sm.
+func findPartition(sm *metadatapb.SchemaMetadata, name string) *metadatapb.TablePartitionMetadata {
+	var find func(partitions []*metadatapb.TablePartitionMetadata) *metadatapb.TablePartitionMetadata
+	find = func(partitions []*metadatapb.TablePartitionMetadata) *metadatapb.TablePartitionMetadata {
+		for _, p := range partitions {
+			if p.Name == name {
+				return p
+			}
+			if sub := find(p.Subpartitions); sub != nil {
+				return sub
+			}
+		}
+		return nil
+	}
+	for _, t := range sm.Tables {
+		if p := find(t.Partitions); p != nil {
+			return p
+		}
+	}
+	return nil
+}
+
+// removePartitionByName removes the partition named name, at any depth.
+func removePartitionByName(partitions []*metadatapb.TablePartitionMetadata, name string) []*metadatapb.TablePartitionMetadata {
+	partitions = slices.DeleteFunc(partitions, func(p *metadatapb.TablePartitionMetadata) bool { return p.Name == name })
+	for _, p := range partitions {
+		p.Subpartitions = removePartitionByName(p.Subpartitions, name)
+	}
+	return partitions
+}
+
 func removeTableByName(tables []*metadatapb.TableMetadata, name string) []*metadatapb.TableMetadata {
 	out := make([]*metadatapb.TableMetadata, 0, len(tables))
 	for _, t := range tables {
@@ -719,7 +802,7 @@ func removeFunctionByIdentity(funcs []*metadatapb.FunctionMetadata, identity str
 // metadata (the catalog does not track comments, and it only keeps the bare
 // collation name) for attributes that survive by name. Attributes unchanged
 // between from and to keep their previous metadata verbatim, so a composite
-// degraded to the text-backed pseudo fallback does not rewrite untouched
+// degraded to a text-backed stand-in does not rewrite untouched
 // attributes to text — mirroring the per-column granularity of table diffs.
 //
 // Within a degraded composite this is a deliberate trade-off: an attribute
@@ -727,7 +810,7 @@ func removeFunctionByIdentity(funcs []*metadatapb.FunctionMetadata, identity str
 // read text in from and to), so that rare change is missed in favor of not
 // corrupting every untouched attribute. Walk-through metadata is advisory;
 // post-execution sync restores ground truth. The root fix is modeling the
-// types the loader cannot install today (e.g. domains).
+// types LoadMetadata cannot install today (e.g. domains).
 func compositeTypeToProto(cat *catalog.Catalog, name string, from, to *catalog.Relation, previous *metadatapb.CompositeTypeMetadata) *metadatapb.CompositeTypeMetadata {
 	previousAttributes := make(map[string]*metadatapb.CompositeTypeAttribute)
 	composite := &metadatapb.CompositeTypeMetadata{Name: name}
@@ -876,4 +959,12 @@ func quoteWalkThroughIdent(name string) string {
 		return name
 	}
 	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
+}
+
+func wtIsSystemSchema(s string) bool {
+	switch s {
+	case "pg_catalog", "pg_toast", "information_schema":
+		return true
+	}
+	return strings.HasPrefix(s, "pg_")
 }

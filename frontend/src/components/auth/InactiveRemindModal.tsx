@@ -34,8 +34,7 @@ export function InactiveRemindModal() {
       }
     };
     read();
-    // Poll for same-tab updates (VueUse writes aren't broadcast as `storage`
-    // events in the same tab).
+    // Poll for same-tab updates; `storage` events only fire in other tabs.
     const pollId = setInterval(read, 1000);
     const onStorage = (e: StorageEvent) => {
       if (e.key === storageKey) read();

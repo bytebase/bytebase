@@ -21,7 +21,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/SharePopover.vue.
  * Renders the share popover body: the saved query's grants, plus its deep
  * link. The link carries location, not access — opening it still runs the
  * same read check — so the two are shown together but do different work.

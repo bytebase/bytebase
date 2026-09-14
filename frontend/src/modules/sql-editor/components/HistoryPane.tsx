@@ -33,7 +33,6 @@ import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
 import { HistorySearchInput } from "./HistorySearchInput";
 
 /**
- * React migration of frontend/src/views/sql-editor/AsidePanel/HistoryPane/HistoryPane.vue.
  * Displays the query history list with search, copy, and click-to-append features.
  */
 export function HistoryPane() {
@@ -101,8 +100,8 @@ export function HistoryPane() {
   // already up-to-date by the time the event fires (`useExecuteSQL` /
   // `webTerminal` chain the emit in `.finally` after `mergeLatest`
   // resolves). The bumped reducer state triggers a render, which
-  // re-runs the Vue-bridge getter and reads the merged list —
-  // preserving any pages the user had already loaded.
+  // re-runs the `selectQueryHistoryEntry` selector and reads the merged
+  // list — preserving any pages the user had already loaded.
   useEffect(() => {
     sqlEditorEvents.on("query-executed", bumpRefresh);
     return () => {

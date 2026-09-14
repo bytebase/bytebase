@@ -429,7 +429,10 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
 // A thread anchors to whole lines of the spec's saved sheet; it renders as a
 // gutter marker + expanded card in the statement editor and as a card with
 // its recorded context in the Review Activity timeline.
-test.describe("Inline comment threads (CUJ K)", () => {
+// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
+// binary this suite runs against, so the thread UI is absent by design.
+// Re-enable together with the gate in src/utils/featureGates.ts.
+test.describe.skip("Inline comment threads (CUJ K)", () => {
   test.describe.configure({ mode: "serial" });
   let planId: string;
   let issueName: string;
@@ -843,7 +846,10 @@ test.describe("Long approval flow adaptive rendering (CUJ I)", () => {
 // Inline comment threads, second pass: several composers at once, the
 // reply composer's thread-state checkbox, the editor walker, and the
 // unresolved counts on the change tab and the Review summary.
-test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ L)", () => {
+// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
+// binary this suite runs against, so the thread UI is absent by design.
+// Re-enable together with the gate in src/utils/featureGates.ts.
+test.describe.skip("Inline comment threads: composers, checkbox, walker, counts (CUJ L)", () => {
   test.describe.configure({ mode: "serial" });
   let planId: string;
   let issueName: string;
@@ -1044,7 +1050,10 @@ test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ 
 // A reader who may reply but not resolve sees neither the standalone
 // Resolve action nor the reply composer's state checkbox. No predefined role
 // separates the two comment permissions, so the test provisions its own.
-test.describe("Inline comment threads as a reply-only reader (CUJ L, restricted)", () => {
+// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
+// binary this suite runs against, so the thread UI is absent by design.
+// Re-enable together with the gate in src/utils/featureGates.ts.
+test.describe.skip("Inline comment threads as a reply-only reader (CUJ L, restricted)", () => {
   const stamp = Date.now();
   const readerEmail = `e2e-reply-only-${stamp}@example.com`;
   const readerPassword = "12345678";
@@ -1129,7 +1138,10 @@ test.describe("Inline comment threads as a reply-only reader (CUJ L, restricted)
 // Inline comment threads, third pass: a range selected from the gutter, two
 // threads sharing one marker, the walker's announcement and its retreat
 // behind the find widget, and a narrow viewport.
-test.describe("Inline comment threads: ranges, shared markers, walker details, narrow view (CUJ M)", () => {
+// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
+// binary this suite runs against, so the thread UI is absent by design.
+// Re-enable together with the gate in src/utils/featureGates.ts.
+test.describe.skip("Inline comment threads: ranges, shared markers, walker details, narrow view (CUJ M)", () => {
   test.describe.configure({ mode: "serial" });
   let planId: string;
   let issueName: string;

@@ -79,14 +79,11 @@ import { useSQLEditorTreeByEnvironment } from "./tree";
 type Props = {
   readonly show: boolean;
   /**
-   * Bubble paywall triggers up to the parent `ConnectionPanel`. The Vue
-   * version owned the `<FeatureModal>` inside the same template as the
-   * tree, but in React both Sheet and FeatureModal are Base UI dialogs
-   * portaling to the same overlay layer — keeping the FeatureModal as a
-   * descendant of the Sheet caused stacking-order bugs (its backdrop
-   * could land below the Sheet's popup). The parent now hosts the modal
-   * as a sibling of the Sheet, and `ConnectionPaneInner` notifies it via
-   * this callback.
+   * Bubble paywall triggers up to the parent `ConnectionPanel`, which hosts
+   * the `<FeatureModal>` as a sibling of the Sheet. Both are Base UI dialogs
+   * portaling to the same overlay layer; keeping the FeatureModal as a
+   * descendant of the Sheet causes stacking-order bugs (its backdrop can
+   * land below the Sheet's popup).
    */
   readonly onMissingFeature: (feature: PlanFeature | undefined) => void;
 };
@@ -102,21 +99,13 @@ const getDataSourceTypeLabel = (
     : t("sql-editor.batch-query.select-data-source.readonly");
 
 /**
- * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/ConnectionPane.vue.
  * Environment-grouped database tree + batch-mode batch-query selection +
- * database-group selection tab. Consumes every Phase 3/4a/4b/4c artifact:
- *   - TreeNode/Label             (Phase 3)
- *   - DatabaseHoverPanel         (Phase 3)
- *   - DatabaseGroupTag           (Phase 4a)
- *   - tree.ts hook               (Phase 4a)
- *   - setConnection, useConnectionMenu, ConnectionContextMenu (Phase 4b)
- *   - FeatureModal               (Phase 4b)
- *   - DatabaseGroupTable         (Phase 4c)
+ * database-group selection tab.
  *
- * Uses the shared React `AdvancedSearch` + `useCommonSearchScopeOptions`
- * for `instance` / `label` / `engine` scope chips. Filter fields are
- * derived from `params.scopes` and forwarded to the per-environment
- * `useSQLEditorTreeByEnvironment` hook, matching the Vue behavior.
+ * Uses the shared `AdvancedSearch` + `useCommonSearchScopeOptions` for
+ * `instance` / `label` / `engine` scope chips. Filter fields are derived
+ * from `params.scopes` and forwarded to the per-environment
+ * `useSQLEditorTreeByEnvironment` hook.
  */
 export function ConnectionPane(props: Props) {
   return <ConnectionPaneWithHoverState {...props} />;
@@ -177,10 +166,9 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     () => readShowMissingFromStorage(currentUserEmail)
   );
 
-  // The Vue version re-bound to a computed storage key whenever the user
-  // email changed (initial hydration from anonymous → real email, or an
-  // account switch). Mirror that here: when the email key changes, reload
-  // from storage and skip the next write so we don't clobber the new
+  // The storage key is per user email, which can change (initial hydration
+  // from anonymous → real email, or an account switch). When it changes,
+  // reload from storage and skip the next write so we don't clobber the new
   // user's saved preference with the previous user's value.
   const loadedForEmailRef = useRef(currentUserEmail);
   useEffect(() => {
@@ -194,11 +182,9 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     writeShowMissingToStorage(currentUserEmail, showMissingQueryDatabases);
   }, [currentUserEmail, showMissingQueryDatabases]);
 
-  // Local state, seeded `READ_ONLY` on every panel mount. Matches Vue's
-  // `state.batchQueryDataSourceType: DataSourceType.READ_ONLY` initial +
-  // `watch(..., { immediate: true })` that pushes the value into the tab
-  // store on mount — i.e. the tab's saved data-source resets to READ_ONLY
-  // each time the drawer opens.
+  // Local state, seeded `READ_ONLY` on every panel mount and pushed into the
+  // tab store by the effect below — i.e. the tab's saved data-source resets
+  // to READ_ONLY each time the drawer opens.
   const [dataSourceType, setDataSourceType] = useState<QueryDataSourceType>(
     DataSourceType.READ_ONLY
   );
@@ -217,8 +203,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   }, [fetchDBGroup, selectedDatabaseGroupNames]);
 
   // Map<databaseResourceName, groupTitle> for every database covered by
-  // any currently-selected database group. Mirrors Vue's
-  // `flattenSelectedDatabasesFromGroup` and drives the tree-row checkbox
+  // any currently-selected database group. Drives the tree-row checkbox
   // so users can see which databases are already implicitly included via
   // group selection (rendered as checked + disabled + tooltip in batch
   // mode). `useShallow` over the Map keeps the snapshot stable (zustand's
@@ -262,9 +247,7 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     currentProject
   );
 
-  // Derive DatabaseFilter fields from the search scopes, matching the Vue
-  // version's slicing of `state.params` into `instance`, `labels`, and
-  // `engines`.
+  // Derive DatabaseFilter fields from the search scopes.
   const selectedLabels = useMemo(
     () => getValuesFromSearchParams(searchParams, "label"),
     [searchParams]
@@ -294,11 +277,10 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     [queryText, selectedInstance, selectedLabels, selectedEngines]
   );
 
-  // Vue's `watch(() => props.show, ..., { immediate: true })` only fires
-  // when `show` toggles, NOT when batch-mode selections change. Mirror
-  // that — depend on `show` alone so toggling a checkbox inside the panel
-  // doesn't yank the user back to the DATABASE tab. Read selection
-  // lengths through refs so they don't widen the dep array.
+  // Sync the selection tab only when `show` toggles, NOT when batch-mode
+  // selections change — depend on `show` alone so toggling a checkbox
+  // inside the panel doesn't yank the user back to the DATABASE tab. Read
+  // selection lengths through refs so they don't widen the dep array.
   const selectedDatabaseNamesRef = useRef(selectedDatabaseNames);
   selectedDatabaseNamesRef.current = selectedDatabaseNames;
   const selectedDatabaseGroupNamesRef = useRef(selectedDatabaseGroupNames);
@@ -326,11 +308,11 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     void batchGetOrFetchDatabases(selectedDatabaseNames);
   }, [currentTab, batchGetOrFetchDatabases, selectedDatabaseNames]);
 
-  // Drive treeStore.state transitions so the mask spinner lifts when the
+  // Drive `treeState` transitions so the mask spinner lifts when the
   // project is ready and hides again when the project changes.
   // `tree-ready` is NOT emitted here — at this point each env section is
   // still asynchronously fetching+building its slice of the tree, and the
-  // listener uses `treeStore.nodeKeysByTarget` which would return [] for
+  // listener uses `treeNodeKeysByTarget` which would return [] for
   // the current connection. Each `EnvironmentTreeSection` emits
   // `tree-ready` when its own buildTree resolves.
   useEffect(() => {
@@ -342,10 +324,9 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     setTreeState("READY");
   }, [projectName, projectContextReady, setTreeState]);
 
-  // Highlight the current tab's connection node in the tree. Mirrors
-  // Vue's `getSelectedKeys` + `tree-ready` event listener: when the tree
-  // becomes ready, resolve the current connection (database, then
-  // instance fallback) and ask `treeStore.nodeKeysByTarget` for the keys
+  // Highlight the current tab's connection node in the tree. When the tree
+  // becomes ready (`tree-ready`), resolve the current connection (database,
+  // then instance fallback) and ask `treeNodeKeysByTarget` for the keys
   // that point to that target.
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   useEffect(() => {
@@ -409,10 +390,10 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
           databases: [...new Set(batchQueryDatabases)],
         },
       });
-      // Mirror the Vue ConnectionPane: clicking a row commits the
-      // connection AND closes the drawer. Without this the drawer stays
-      // open and the user can't see the schema panel underneath, so
-      // subsequent re-clicks look like nothing happened.
+      // Clicking a row commits the connection AND closes the drawer.
+      // Without this the drawer stays open and the user can't see the
+      // schema panel underneath, so subsequent re-clicks look like nothing
+      // happened.
       setShowConnectionPanel(false);
     },
     [selectedDatabaseGroupNames, currentTab?.mode, setShowConnectionPanel]
@@ -533,9 +514,8 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     ]
   );
 
-  // Vue routes uncheck through `onDatabaseGroupSelectionUpdate`, which
-  // performs the feature gate + notification. Mirror that here so feature
-  // checks fire on remove too.
+  // Route uncheck through `handleSelectedGroupsChange`, which performs the
+  // feature gate + notification, so feature checks fire on remove too.
   const handleUncheckDatabaseGroup = useCallback(
     async (groupName: string) => {
       const next = selectedDatabaseGroupNames.filter((n) => n !== groupName);
@@ -840,8 +820,7 @@ function EnvironmentTreeSection(props: {
    *  with `selectedDatabaseNames` and uses the title for the disabled-
    *  checkbox tooltip. */
   groupCoveredDatabaseTitles: Map<string, string>;
-  /** Tree-row keys to highlight as the current connection (1:1 with Vue
-   *  `selectedKeys` from `getSelectedKeys()`). */
+  /** Tree-row keys to highlight as the current connection. */
   selectedKeys: string[];
   switchingConnection: boolean;
   onConnect: (node: SQLEditorTreeNode) => void;
@@ -884,7 +863,7 @@ function EnvironmentTreeSection(props: {
   // treeByEnv identity is stable per-render via the hook's internals.
   // After buildTree resolves we emit `tree-ready` so the parent's
   // current-connection-highlight effect can recompute against the now-
-  // populated `treeStore.nodeKeysByTarget`. Emitting here (per-env, after
+  // populated `treeNodeKeysByTarget`. Emitting here (per-env, after
   // populate) instead of in the project-readiness effect avoids a race
   // where the highlight is computed against an empty tree.
   useEffect(() => {
@@ -900,11 +879,10 @@ function EnvironmentTreeSection(props: {
     treeByEnv.buildTree(showMissingQueryDatabases);
   }, [showMissingQueryDatabases]);
 
-  // First-time default-expand. The Vue version did this by listening to the
-  // `tree-ready` event and seeding `expandedKeys` from the global tree
-  // store; in React each environment owns its own expand state, so we
-  // expand from the per-env tree directly. After the user toggles anything
-  // (`expandedState.initialized = true`), we leave their preference alone.
+  // First-time default-expand. Each environment owns its own expand state,
+  // so we expand from the per-env tree directly. After the user toggles
+  // anything (`expandedState.initialized = true`), we leave their preference
+  // alone.
   useEffect(() => {
     if (treeByEnv.expandedState.initialized) return;
     if (treeByEnv.tree.length === 0) return;
@@ -937,9 +915,8 @@ function EnvironmentTreeSection(props: {
   );
 
   // Hide the env section entirely when it's the "unknown" bucket with no
-  // children (matches Vue's `v-if="env !== UNKNOWN || !treeIsEmpty"` guard).
-  // Keep this guard AFTER all hook calls — early-returning before useMemo
-  // calls would change the hook order across renders and trigger the
+  // children. Keep this guard AFTER all hook calls — early-returning before
+  // useMemo calls would change the hook order across renders and trigger the
   // "Rendered more hooks than during the previous render" runtime error.
   if (isUnknownEnvironment && treeIsEmpty(treeByEnv.tree)) {
     return null;
@@ -1216,7 +1193,7 @@ function treeIsEmpty(nodes: SQLEditorTreeNode[]): boolean {
 /**
  * Walks the tree and returns every node key. Used to seed `expandedKeys`
  * the first time an environment subtree is rendered so the user sees a
- * fully-expanded list by default — matching the Vue ConnectionPane.
+ * fully-expanded list by default.
  */
 function collectAllNodeKeys(nodes: SQLEditorTreeNode[]): string[] {
   const out: string[] = [];
@@ -1229,12 +1206,12 @@ function collectAllNodeKeys(nodes: SQLEditorTreeNode[]): string[] {
 }
 
 /**
- * 1:1 port of `getQueryableDatabase` from the Vue ConnectionPane. Despite
- * the name, the original returns the *first* database in the group — it
- * does not filter for `isDatabaseV1Queryable`. The downstream
- * `setConnection` call attempts the connection regardless; the
- * "no-queriable-database" notification is only surfaced when the function
- * returns `undefined` (i.e. no databases at all in any picked group).
+ * Despite the name, returns the *first* selected database (or the first
+ * database of the first non-empty group) — it does not filter for
+ * `isDatabaseV1Queryable`. The downstream `setConnection` call attempts the
+ * connection regardless; the "no-queriable-database" notification is only
+ * surfaced when the function returns `undefined` (i.e. no databases at all
+ * in any picked group).
  */
 async function getQueryableDatabase(ctx: BatchQueryContext) {
   if (ctx.databases.length > 0) {

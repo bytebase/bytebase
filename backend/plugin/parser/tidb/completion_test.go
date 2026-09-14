@@ -128,10 +128,10 @@ func TestCompletion_ReservedWordIdentifiersSurface(t *testing.T) {
 }
 
 // A column whose stored type cannot be parsed must not silently vanish:
-// buildCatalog retries the whole table with a generic column type, so every
+// LoadMetadata stands the table in with text columns, so every
 // column name still surfaces. Without that retry the failing CREATE TABLE would
 // drop the entire table from the catalog.
-func TestCompletion_UnparseableColumnTypeFallsBackToGeneric(t *testing.T) {
+func TestCompletion_UnparseableColumnTypeFallsBackToStandIn(t *testing.T) {
 	meta := metadataFunc(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*metadatapb.SchemaMetadata{
@@ -140,7 +140,7 @@ func TestCompletion_UnparseableColumnTypeFallsBackToGeneric(t *testing.T) {
 				Tables: []*metadatapb.TableMetadata{
 					{Name: "t", Columns: []*metadatapb.ColumnMetadata{
 						{Name: "good", Type: "int"},
-						{Name: "weird", Type: ")"}, // unparseable type — forces the generic retry
+						{Name: "weird", Type: ")"}, // unparseable type — forces the stand-in
 					}},
 				},
 			},
@@ -154,7 +154,7 @@ func TestCompletion_UnparseableColumnTypeFallsBackToGeneric(t *testing.T) {
 	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "good"),
 		"column 'good' should surface; got %v", got)
 	require.True(t, hasCandidate(got, base.CandidateTypeColumn, "weird"),
-		"column 'weird' with an unparseable type should still surface via the generic-type retry; got %v", got)
+		"column 'weird' with an unparseable type should still surface via the stand-in; got %v", got)
 }
 
 // In the read-only query scene, write statements (DML/DDL incl. TiDB BATCH)

@@ -14,10 +14,9 @@ type Props = {
 };
 
 /**
- * Replaces `HoverPanel/TableInfo.vue`. Index size and collation are
- * hidden for ClickHouse + Snowflake; collation is also hidden for
- * Postgres because the engine reports it at the column level instead of
- * the table level. Comment is shown only when present.
+ * Index size and collation are hidden for ClickHouse + Snowflake; collation
+ * is also hidden for Postgres because the engine reports it at the column
+ * level instead of the table level. Comment is shown only when present.
  */
 export function TableInfo({ database, schema, table }: Props) {
   const { t } = useTranslation();

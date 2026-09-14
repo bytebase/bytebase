@@ -18,8 +18,6 @@ export type UseDelayedValueResult<T> = {
 };
 
 /**
- * React port of `src/composables/useDelayedValue.ts`.
- *
  * Schedules transitions to a value after a configurable delay; commits
  * immediately when delay is 0. The "before"/"after" direction lets the
  * caller use a longer open delay (e.g. 1000ms before showing a hover

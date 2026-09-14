@@ -9,14 +9,12 @@
 // has finished, so a failure reads the same as it did serially -- interleaved
 // live output from four concurrent stages would not.
 import { spawn } from "node:child_process";
+import { readdirSync } from "node:fs";
 
-const GUARDS = [
-  "check-frontend-structure",
-  "check-ui-guideline",
-  "check-no-crypto-randomuuid",
-  "check-react-i18n",
-  "check-react-layering",
-];
+// Every scripts/check-*.mjs runs, so a new check cannot be left out of the gate.
+const GUARDS = readdirSync(new URL(".", import.meta.url))
+  .filter((file) => /^check-.*(?<!\.test)\.mjs$/.test(file))
+  .sort();
 
 const BIG_HEAP = { NODE_OPTIONS: "--max_old_space_size=8000" };
 
@@ -28,7 +26,7 @@ const STAGES = [
     argv: [
       "sh",
       "-c",
-      [...GUARDS.map((g) => `node scripts/${g}.mjs`), "node scripts/sort_i18n_keys.mjs --check"].join(" && "),
+      [...GUARDS.map((g) => `node scripts/${g}`), "node scripts/sort-i18n-keys.mjs --check"].join(" && "),
     ],
   },
   { name: "tsc", argv: ["pnpm", "exec", "tsc", "--build", "--force"], env: BIG_HEAP },

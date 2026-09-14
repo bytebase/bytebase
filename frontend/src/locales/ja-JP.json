@@ -804,7 +804,6 @@
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
     "unassign-alert-title": "データベースの割り当てを解除する",
-    "unassigned-databases": "未割り当てのデータベース",
     "unique": "唯一",
     "visible": "見える"
   },
@@ -1319,9 +1318,6 @@
       "host": {
         "none-snowflake": "例: host.docker.internal | ホスト IP | ローカルソケット",
         "saas": "例: db.example.com | データベース IP"
-      },
-      "proxy": {
-        "snowflake": "プロキシ サーバーの場合は、@PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
       }
     },
     "show-how-to-create": "作成方法",
@@ -2033,9 +2029,6 @@
         }
       },
       "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
-    },
-    "overview": {
-      "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。"
     },
     "select": "プロジェクトを選択",
     "settings": {

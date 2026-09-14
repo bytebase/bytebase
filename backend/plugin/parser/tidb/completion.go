@@ -2,13 +2,11 @@ package tidb
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
-	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/tidb/catalog"
 	omnicompletion "github.com/bytebase/omni/tidb/completion"
 	tidbparser "github.com/bytebase/omni/tidb/parser"
@@ -16,11 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
-
-// genericColumnType is a syntactically valid fallback type used when a column's
-// real type is empty or fails to parse, so the column name still surfaces as a
-// completion candidate.
-const genericColumnType = "int"
 
 // writeStatementKeywords are statement-initiating keywords for write, DDL,
 // transaction-control, and admin statements. They are dropped from completion
@@ -112,13 +105,11 @@ func Completion(ctx context.Context, cCtx base.CompletionContext, statement stri
 	return result, nil
 }
 
-// buildCatalog constructs an omni TiDB catalog from Bytebase metadata by
-// replaying minimal DDL. It fully loads the default database plus any database
-// referenced as a qualifier in the statement (so cross-database qualified
-// completion like `other_db.tbl.col` resolves), and registers every other known
-// database name so database-name candidates still surface. Every identifier is
-// backticked so reserved words and special characters parse; tables are created
-// one at a time so a single unparseable column type cannot empty the catalog.
+// buildCatalog constructs an omni TiDB catalog from Bytebase metadata. It
+// fully loads the default database plus any database referenced as a qualifier
+// in the statement (so cross-database qualified completion like
+// `other_db.tbl.col` resolves), and registers every other known database name
+// so database-name candidates still surface.
 func buildCatalog(ctx context.Context, cCtx base.CompletionContext, statement string) *catalog.Catalog {
 	cat := catalog.New()
 	allNames := listAllDatabaseNames(ctx, cCtx)
@@ -166,33 +157,15 @@ func buildCatalog(ctx context.Context, cCtx base.CompletionContext, statement st
 	return cat
 }
 
-// loadDatabaseObjects fully loads one database's tables and views into the
-// catalog, under that database's namespace.
+// loadDatabaseObjects loads one database's tables and views into the catalog.
 func loadDatabaseObjects(ctx context.Context, cCtx base.CompletionContext, cat *catalog.Catalog, dbName string) {
-	db := backtickIdentifier(dbName)
 	_, dbMeta, err := cCtx.Metadata(ctx, cCtx.InstanceID, dbName)
 	if err != nil || dbMeta == nil {
 		// Still register the name so it can be a database candidate.
-		_, _ = cat.Exec("CREATE DATABASE "+db+";", &catalog.ExecOptions{ContinueOnError: true})
+		_, _ = cat.Exec("CREATE DATABASE "+backtickIdentifier(dbName)+";", &catalog.ExecOptions{ContinueOnError: true})
 		return
 	}
-	if _, err := cat.Exec("CREATE DATABASE "+db+"; USE "+db+";", &catalog.ExecOptions{ContinueOnError: true}); err != nil {
-		return
-	}
-	schema := dbMeta.GetSchemaMetadata("")
-	if schema == nil {
-		return
-	}
-	for _, tableName := range schema.ListTableNames() {
-		if table := schema.GetTable(tableName); table != nil {
-			defineTable(cat, tableName, table.GetProto().GetColumns())
-		}
-	}
-	for _, viewName := range schema.ListViewNames() {
-		if view := schema.GetView(viewName); view != nil {
-			defineView(cat, viewName, view.GetDefinition())
-		}
-	}
+	_, _ = cat.LoadMetadata(ctx, dbMeta.GetProto())
 }
 
 // listAllDatabaseNames returns the instance's database names, or nil if the
@@ -250,76 +223,6 @@ func isIdentByte(b byte) bool {
 		(b >= 'a' && b <= 'z') ||
 		(b >= 'A' && b <= 'Z') ||
 		(b >= '0' && b <= '9')
-}
-
-// defineTable installs a table in the catalog, retrying with generic column
-// types if the real types fail to parse so that column names still surface.
-func defineTable(cat *catalog.Catalog, name string, columns []*metadatapb.ColumnMetadata) {
-	if len(columns) == 0 {
-		return
-	}
-	if execTableDDL(cat, name, columns, false) {
-		return
-	}
-	execTableDDL(cat, name, columns, true)
-}
-
-func execTableDDL(cat *catalog.Catalog, name string, columns []*metadatapb.ColumnMetadata, generic bool) bool {
-	defs := make([]string, 0, len(columns))
-	for _, col := range columns {
-		colType := col.GetType()
-		if generic || colType == "" {
-			colType = genericColumnType
-		}
-		defs = append(defs, backtickIdentifier(col.GetName())+" "+colType)
-	}
-	ddl := fmt.Sprintf("CREATE TABLE %s (%s);", backtickIdentifier(name), strings.Join(defs, ", "))
-	return execOK(cat, ddl)
-}
-
-// defineView installs a view in the catalog. Unlike tables, the only structured
-// input is the view's definition SQL, whose exact shape varies (full
-// "CREATE VIEW ..." vs. a bare SELECT). We try the definition as-is, then
-// wrapped in CREATE VIEW, and finally fall back to a trivial view so the view
-// name still surfaces as a candidate (matching mysql, which reads view names
-// straight from metadata) even when the definition cannot be parsed.
-func defineView(cat *catalog.Catalog, name, definition string) {
-	var attempts []string
-	if definition != "" {
-		attempts = append(attempts,
-			definition,
-			fmt.Sprintf("CREATE VIEW %s AS %s", backtickIdentifier(name), definition),
-		)
-	}
-	attempts = append(attempts, fmt.Sprintf("CREATE VIEW %s AS SELECT 1", backtickIdentifier(name)))
-	for _, ddl := range attempts {
-		if execOK(cat, ddl) {
-			return
-		}
-	}
-}
-
-// execOK runs DDL against the catalog and reports whether it actually installed
-// a schema object: every statement parsed without error AND at least one was a
-// non-DML (utility) statement that mutated the catalog. A definition that
-// reduces to only skipped DML — e.g. a bare SELECT view body, which TiDB sync
-// stores in information_schema.VIEWS.VIEW_DEFINITION — is NOT a success, so the
-// caller falls through to the wrapped CREATE VIEW form.
-func execOK(cat *catalog.Catalog, ddl string) bool {
-	results, err := cat.Exec(ddl, &catalog.ExecOptions{ContinueOnError: true})
-	if err != nil {
-		return false
-	}
-	applied := false
-	for _, r := range results {
-		if r.Error != nil {
-			return false
-		}
-		if !r.Skipped {
-			applied = true
-		}
-	}
-	return applied
 }
 
 // backtickIdentifier quotes an identifier for TiDB DDL, escaping embedded

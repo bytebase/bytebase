@@ -38,10 +38,7 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
       if (!project) {
         return;
       }
-      // Fetch IAM policy so `hasProjectPermissionV2` sees the bindings. The
-      // Pinia permission store falls back to `app.projectPoliciesByName` when
-      // its own cache is empty, so populating the app `iam` slice is enough
-      // (see `src/store/modules/v1/permission.ts`).
+      // Fetch IAM policy so `hasProjectPermissionV2` sees the bindings.
       await useAppStore
         .getState()
         .loadProjectIamPolicy(project.name)

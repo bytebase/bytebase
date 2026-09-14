@@ -359,7 +359,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         updateMask: create(FieldMaskSchema, { paths: updateMaskPaths }),
       });
 
-      // Reset local state from the (now-updated) Vue store so isDirty clears
+      // Reset local state from the (now-updated) app store so isDirty clears
       // and the parent's bottom bar disappears.
       setToggleState(getInitialToggleState());
       setPasswordState(getInitialPasswordRestriction());

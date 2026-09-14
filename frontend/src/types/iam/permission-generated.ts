@@ -1,5 +1,5 @@
 // This file is auto-generated from permission.yaml. DO NOT EDIT manually.
-// Run 'pnpm run generate:permissions' or 'sh scripts/copy_config_files.sh' to regenerate.
+// Run 'sh scripts/copy-config-files.sh' to regenerate.
 
 export type Permission =
   | "bb.accessGrants.activate"

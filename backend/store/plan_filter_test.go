@@ -16,7 +16,6 @@ func TestGetListPlanFilter(t *testing.T) {
 		wantArgs    []any
 		wantErr     bool
 		errContains string
-		skipTest    bool // Skip tests that require database access
 	}{
 		{
 			name:     "empty filter",
@@ -127,11 +126,11 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:        "creator filter requires database",
-			filter:      `creator == "users/test@example.com"`,
-			skipTest:    true,
-			wantErr:     false, // Would work with database
-			errContains: "",
+			name:     "creator filter",
+			filter:   `creator == "users/test@example.com"`,
+			wantSQL:  "(plan.creator = $1)",
+			wantArgs: []any{"test@example.com"},
+			wantErr:  false,
 		},
 		{
 			name:        "invalid filter syntax",
@@ -180,10 +179,6 @@ func TestGetListPlanFilter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if tt.skipTest {
-				t.Skip("Test requires database connection")
-			}
-
 			q, err := GetListPlanFilter(tt.filter)
 
 			if tt.wantErr {

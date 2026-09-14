@@ -4,7 +4,7 @@ import { useAppStore } from "@/stores/app";
 /**
  * Workspace-scope common data bootstrap.
  *
- * Every top-level React shell (DashboardFrameShell, SQLEditorLayout, and any
+ * Every top-level shell (DashboardFrameShell, SQLEditorLayout, and any
  * future scope shell) calls this once. All loaders are idempotent (they
  * dedupe via in-flight request refs in the app store), so wiring this hook
  * up at multiple shells does not produce duplicate gRPC calls — it just

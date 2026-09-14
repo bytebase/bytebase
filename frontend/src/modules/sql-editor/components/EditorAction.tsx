@@ -39,11 +39,10 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/EditorAction.vue.
  * Top toolbar in the SQL editor: Run / QueryContextSettingPopover /
  * AdminModeButton / Save / Share / ChooserGroup / OpenAIButton.
  *
- * `onExecute` is optional because `TerminalPanel.vue` mounts the toolbar in
+ * `onExecute` is optional because `TerminalPanel` mounts the toolbar in
  * ADMIN mode where the Run button is not rendered.
  */
 export function EditorAction({ onExecute }: Props) {

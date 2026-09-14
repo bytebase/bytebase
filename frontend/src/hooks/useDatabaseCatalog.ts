@@ -12,9 +12,8 @@ import {
   hasProjectPermissionV2,
 } from "@/utils";
 
-// React port of the legacy Pinia `useDatabaseCatalog` composable: fetches the
-// catalog (gated by permission) and reactively returns the cached entry,
-// falling back to a stable empty catalog so the selector never loops.
+// Fetches the catalog (gated by permission) and reactively returns the cached
+// entry, falling back to a stable empty catalog so the selector never loops.
 export function useDatabaseCatalog(
   database: string,
   skipCache: boolean

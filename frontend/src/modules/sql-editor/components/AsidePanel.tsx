@@ -8,17 +8,11 @@ import { SavedQueryPane } from "./SavedQueryPane";
 import { SchemaPane } from "./SchemaPane/SchemaPane";
 
 /**
- * Replaces `frontend/src/views/sql-editor/AsidePanel/AsidePanel.vue`.
- *
  * Three-column shell:
  *   1. GutterBar (vertical icon rail) — fixed.
  *   2. ActionBar — only when `asidePanelTab === "SCHEMA"` and the tab is
  *      connected to a database. Vertical button column for view drill-downs.
  *   3. Main column — active pane (SavedQuery / Schema / History / Access).
- *
- * Schema-viewer modal stays in `SQLEditorHomePage.vue` (Vue parent) since
- * the embedded `TableSchemaViewer` is Vue-only; the React side triggers
- * it via the `show-schema-viewer` event on `sqlEditorEvents`.
  */
 export function AsidePanel() {
   const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);

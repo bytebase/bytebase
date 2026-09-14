@@ -20,7 +20,6 @@ const iconByTab = {
 
 /**
  * Single tab button in the SQL Editor aside panel's left gutter.
- * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/TabItem.vue.
  * Active state reflects `useSQLEditorStore().asidePanelTab`; click handler
  * is supplied by the GutterBar parent (which writes the store).
  */

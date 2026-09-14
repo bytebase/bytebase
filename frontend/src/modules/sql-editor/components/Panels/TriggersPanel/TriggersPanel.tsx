@@ -10,9 +10,8 @@ import { useViewStateNav } from "../common/useViewStateNav";
 import { TriggersTable } from "./TriggersTable";
 
 /**
- * Standalone TriggersPanel. The Vue version reads `viewState.table` to
- * scope the trigger list to a specific table; the React port preserves
- * that behavior.
+ * Standalone TriggersPanel. Reads `viewState.table` to scope the trigger
+ * list to a specific table.
  */
 export function TriggersPanel() {
   const { database } = useConnectionOfCurrentSQLEditorTab();

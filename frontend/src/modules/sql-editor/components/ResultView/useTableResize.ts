@@ -43,8 +43,7 @@ const measureTextWidth = (text: string, font: string): number => {
 
 /**
  * Measures and tracks per-column widths for the virtualized result-table
- * grid. Replaces Vue's `useTableResize` composable. Returns widths inclusive
- * of the leading index column at slot 0.
+ * grid. Returns widths inclusive of the leading index column at slot 0.
  */
 export function useTableResize({
   columns,
@@ -96,8 +95,8 @@ export function useTableResize({
   }, [computeInitialWidths]);
 
   // Recompute when columns change identity OR window/container width changes.
-  // We deliberately key on columns.length+col ids, not deep-watch, since the
-  // Vue version did the same via `watchDebounced` of column references.
+  // We deliberately key on columns.length+col ids rather than deep-comparing
+  // the columns.
   const columnsKey = useMemo(
     () => `${columns.length}:${columns.map((c) => c.id).join(",")}`,
     [columns]

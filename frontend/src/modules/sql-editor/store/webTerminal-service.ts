@@ -33,7 +33,7 @@ import {
   getErrorCode as extractGrpcStatusCode,
 } from "@/utils/connect";
 import { getSQLEditorEditorState } from "./editor";
-import { useSQLEditorStore as useSQLEditorReactStore } from "./index";
+import { useSQLEditorStore } from "./index";
 
 const ENDPOINT = "/v1:adminExecute";
 const SIG_ABORT = 3000 + Code.Aborted;
@@ -44,7 +44,7 @@ const QUERY_TIMEOUT_MS = 5000;
  * fields are framework-agnostic mutable services (Emittery / RxJS /
  * `createCancelableTimer`); the query items themselves live in the zustand
  * `webTerminalQueryItemsByTabId` slice so React consumers re-render via
- * selectors instead of a Vue-bridge call on a Vue ref.
+ * selectors.
  */
 export interface WebTerminalQuerySession {
   tab: SQLEditorTab;
@@ -65,14 +65,14 @@ export const getWebTerminalQuerySession = (
     controller: createStreamingQueryController(),
   };
   sessions.set(tab.id, session);
-  useSQLEditorReactStore.getState().ensureWebTerminalQueryState(tab.id);
+  useSQLEditorStore.getState().ensureWebTerminalQueryState(tab.id);
   bindStreamingLogic(session);
   return session;
 };
 
 export const disposeWebTerminalQuerySession = (tabId: string): void => {
   sessions.delete(tabId);
-  useSQLEditorReactStore.getState().clearWebTerminalQueryState(tabId);
+  useSQLEditorStore.getState().clearWebTerminalQueryState(tabId);
 };
 
 const createStreamingQueryController = () => {
@@ -88,8 +88,8 @@ const createStreamingQueryController = () => {
 
   // Holds the active WebSocket reference. Only written, never read —
   // the subscriptions inside `connect()` are what keep the socket alive
-  // and reactive. Kept as a named binding to match the historical
-  // pattern and make the lifecycle obvious to readers.
+  // and reactive. Kept as a named binding to make the lifecycle obvious to
+  // readers.
   let _ws: WebSocket | undefined;
 
   const controller: StreamingQueryController = {
@@ -230,8 +230,7 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
 
   const activeItem = () => {
     const list =
-      useSQLEditorReactStore.getState().webTerminalQueryItemsByTabId[tabId] ??
-      [];
+      useSQLEditorStore.getState().webTerminalQueryItemsByTabId[tabId] ?? [];
     return list[list.length - 1];
   };
 
@@ -239,12 +238,10 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
     session.timer.start();
     const tail = activeItem();
     if (!tail) return;
-    useSQLEditorReactStore
-      .getState()
-      .updateWebTerminalQueryItem(tabId, tail.id, {
-        params: cloneDeep(input),
-        status: "RUNNING",
-      });
+    useSQLEditorStore.getState().updateWebTerminalQueryItem(tabId, tail.id, {
+      params: cloneDeep(input),
+      status: "RUNNING",
+    });
   });
 
   session.controller.events.on("result", ({ data: resultSet }) => {
@@ -256,7 +253,7 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
     console.debug("event resultSet", resultSet);
     const tail = activeItem();
     if (tail) {
-      useSQLEditorReactStore
+      useSQLEditorStore
         .getState()
         .updateWebTerminalQueryItem(tabId, tail.id, { resultSet });
     }
@@ -276,7 +273,7 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
     const database = tail?.params?.connection.database;
     const project = getSQLEditorEditorState().project;
     if (database) {
-      useSQLEditorReactStore
+      useSQLEditorStore
         .getState()
         .mergeLatest({
           project,
@@ -297,14 +294,14 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
     // Finish the current item and append a fresh one for the next prompt.
     const finishedTail = activeItem();
     if (finishedTail) {
-      useSQLEditorReactStore
+      useSQLEditorStore
         .getState()
         .updateWebTerminalQueryItem(tabId, finishedTail.id, {
           status: "FINISHED",
         });
     }
     session.timer.stop();
-    useSQLEditorReactStore.getState().pushWebTerminalQueryItem(tabId);
+    useSQLEditorStore.getState().pushWebTerminalQueryItem(tabId);
   });
 };
 

@@ -21,9 +21,6 @@ import {
 import { instanceV1HasReadonlyMode } from "@/utils";
 import { EditorMain } from "./EditorMain";
 
-// Lazy-load EditorMain ↔ Pane callback to keep parity with Vue's
-// async-imported `AIChatToSQL`. The original `<Suspense>` fallback is
-// the matrix-style spinner; we mirror that with `<Loader2 />`.
 const AIPaneFallback = () => (
   <div className="w-full h-full grow flex flex-col items-center justify-center">
     <Loader2 className="size-6 animate-spin text-control-light" />
@@ -31,19 +28,15 @@ const AIPaneFallback = () => (
 );
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/StandardPanel/StandardPanel.vue`.
- *
  * SavedQuery-mode editor host. Layout, ordered top-to-bottom:
  *   1. Optional outer vertical split — editor / `<ResultPanel>`.
- *      Only rendered when the underlying instance supports read-only
- *      queries (mirrors the Vue `showResultPanel` gate that prevents
- *      the editor from being squeezed into an arbitrary top pane when
- *      the result pane wouldn't render anyway).
+ *      Only rendered when the tab is connected and the instance supports
+ *      read-only queries (`showResultPanel`), so the editor isn't
+ *      squeezed into an arbitrary top pane when the result pane wouldn't
+ *      render anyway.
  *   2. Inner horizontal split — `<EditorMain>` / `<AIChatToSQL>`.
- *      The AI side pane is now a React tree (Stage 22 port). `<AIContextProvider>`
- *      wraps the React `<AIChatToSQL>` to re-establish the per-tab AI
- *      state — the Vue `<VueMount component={AIChatToSQLBridgeHost}>`
- *      bridge is gone.
+ *      `<AIContextProvider>` wraps `<AIChatToSQL>` to provide the per-tab
+ *      AI state.
  *
  * State source: tab Zustand selectors for tab + disconnect state,
  * `useConnectionOfCurrentSQLEditorTab` for the current instance,
@@ -73,7 +66,7 @@ export function StandardPanel() {
 
   const handleAiPanelResize = (sizePct: number) => {
     // react-resizable-panels reports a `PanelSize` struct
-    // ({ asPercentage, inPixels }) on resize. Pinia stores a 0-1
+    // ({ asPercentage, inPixels }) on resize. The store keeps a 0-1
     // fraction (`{size: 0.7, ...}`); convert and forward — the store's
     // setter writes `1 - size` to localStorage.
     if (!Number.isFinite(sizePct)) return;

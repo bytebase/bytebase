@@ -27,27 +27,26 @@ func init() {
 
 // WalkThroughWithContext performs DDL simulation using the omni MySQL catalog.
 // Flow:
-//  1. Create the catalog and select the target database.
-//  2. loadWalkThroughCatalog: install each object individually with per-object
-//     pseudo fallback, so one broken CREATE TABLE can't disable the whole
-//     simulation.
+//  1. Create the catalog.
+//  2. catalog.LoadMetadata: install the snapshot, standing in for what fails.
 //  3. catalog.Exec(userSQL) → execute user DDL
 //  4. Map errors → *storepb.Advice
 //  5. Convert updated catalog → DatabaseMetadata (for downstream rules)
-func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
-	if ctx.RawSQL == "" {
+func WalkThroughWithContext(ctx context.Context, wtCtx schema.WalkThroughContext, d *model.DatabaseMetadata, asts []base.AST) *storepb.Advice {
+	if wtCtx.RawSQL == "" {
 		return nil
 	}
 
 	dbName := d.GetProto().GetName()
 	precheck := firstMySQLWalkThroughAdvice(
 		precheckMySQLOmniWalkThrough(d, asts),
-		precheckMySQLRawWalkThrough(d, ctx.RawSQL, asts),
+		precheckMySQLRawWalkThrough(d, wtCtx.RawSQL, asts),
 	)
 
-	// Step 1: Create the catalog and the target database.
+	// Step 1: Create the catalog. LoadMetadata creates and selects the target
+	// database itself; only a RENAME destination needs one made up front.
 	c := catalog.New()
-	initSQL := fmt.Sprintf("SET foreign_key_checks = 0;\nCREATE DATABASE IF NOT EXISTS %s;\nUSE %s;", mysqlQuoteIdentifier(dbName), mysqlQuoteIdentifier(dbName))
+	initSQL := "SET foreign_key_checks = 0;"
 	for _, targetDB := range mysqlRenameTargetDatabases(d, asts) {
 		initSQL += fmt.Sprintf("\nCREATE DATABASE IF NOT EXISTS %s;", mysqlQuoteIdentifier(targetDB))
 	}
@@ -61,10 +60,8 @@ func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMeta
 		}
 	}
 
-	// Step 2: Install every schema object individually with pseudo fallback.
-	// TODO: thread a real context.Context through WalkThroughContext; for now the
-	// loader only uses it for early cancellation during catalog bulk-load.
-	if err := loadWalkThroughCatalog(context.Background(), c, dbName, d.GetProto()); err != nil {
+	// Step 2: Install every schema object, with stand-ins for the ones that fail.
+	if _, err := c.LoadMetadata(ctx, d.GetProto()); err != nil {
 		return &storepb.Advice{
 			Status:        storepb.Advice_ERROR,
 			Code:          code.DDLSimulationFailed.Int32(),
@@ -75,7 +72,7 @@ func WalkThroughWithContext(ctx schema.WalkThroughContext, d *model.DatabaseMeta
 	}
 
 	// Step 3: Execute user SQL.
-	results, execErr := c.Exec(ctx.RawSQL, &catalog.ExecOptions{ContinueOnError: true})
+	results, execErr := c.Exec(wtCtx.RawSQL, &catalog.ExecOptions{ContinueOnError: true})
 	if execErr != nil {
 		errCode := code.DDLSimulationFailed
 		content := execErr.Error()
@@ -780,7 +777,11 @@ func tableToProto(t *catalog.Table) *metadatapb.TableMetadata {
 	for _, idx := range t.Indexes {
 		indexType := strings.ToUpper(idx.IndexType)
 		if indexType == "" {
+			// A key without USING gets the engine's default access method.
 			indexType = "BTREE"
+			if strings.EqualFold(t.Engine, "MEMORY") || strings.EqualFold(t.Engine, "HEAP") {
+				indexType = "HASH"
+			}
 		}
 		idxMeta := &metadatapb.IndexMetadata{
 			Name:    idx.Name,

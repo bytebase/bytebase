@@ -50,9 +50,8 @@ function loadSuggestionCache(key: string): string[] {
 const keyOf = (metadata: string) => String(hashCode(metadata));
 
 // ---------------------------------------------------------------------------
-// Framework-agnostic module store (replaces the Vue `reactive` cache). Entries
-// are replaced IMMUTABLY on every mutation so React's `useSyncExternalStore`
-// snapshot comparison detects the change.
+// Module store. Entries are replaced IMMUTABLY on every mutation so React's
+// `useSyncExternalStore` snapshot comparison detects the change.
 // ---------------------------------------------------------------------------
 type Entry = {
   metadata: string;
@@ -191,8 +190,6 @@ const subscribe = (onChange: () => void) => {
 };
 
 /**
- * React port of the former Vue `useDynamicSuggestions` composable.
- *
  * Per-(database, engine, schema) cache of LLM-suggested prompt chips. The
  * suggestion state lives in a module store updated immutably; this hook
  * subscribes via `useSyncExternalStore` so the consumer re-renders when the

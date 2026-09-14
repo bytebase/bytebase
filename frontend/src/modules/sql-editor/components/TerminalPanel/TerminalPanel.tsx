@@ -20,22 +20,18 @@ import { CompactSQLEditor } from "./CompactSQLEditor";
 import { useHistory } from "./useHistory";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/TerminalPanel/TerminalPanel.vue`.
- *
  * Hosts the admin-mode terminal: a top action bar, then a vertically
  * scrolling stack of `<CompactSQLEditor>` + `<ResultView>` rows (one per
  * historical query). Tail row is editable; older rows are read-only.
- * When the underlying Pinia tab is disconnected we render
- * `<ConnectionHolder>` instead (mirrors the Vue `v-if`).
+ * When the tab is disconnected we render `<ConnectionHolder>` instead.
  *
  * State source:
- * - `webTerminalStore.getQueryStateByTab(currentTab).queryItemList` — the
+ * - `useSQLEditorStore`'s `webTerminalQueryItemsByTabId[currentTabId]` — the
  *   per-tab list of query items (statements + their result sets).
- * - `useHistory()` — the up/down arrow command-history Pinia composable.
+ * - `useHistory()` — the up/down arrow command history.
  *
  * Auto-scroll: a ResizeObserver on the inner stack scrolls the outer
- * container to the bottom whenever the stack grows (replacing Vue's
- * `useElementSize` + watch).
+ * container to the bottom whenever the stack grows.
  */
 export function TerminalPanel() {
   const { t } = useTranslation();
@@ -70,7 +66,7 @@ export function TerminalPanel() {
 
   // Subscribe to the per-tab query items from the zustand slice — every
   // mutation (push, status flip, resultSet attach) produces a new array
-  // reference, so the component re-renders without any Vue `watch`.
+  // reference, so the component re-renders.
   const queryList = useSQLEditorStore(
     (s) =>
       (currentTabId
@@ -164,8 +160,7 @@ export function TerminalPanel() {
   };
 
   // Auto-scroll the outer container to the bottom whenever the inner
-  // stack resizes. ResizeObserver replaces `@vueuse/core`'s
-  // `useElementSize` + `watch(queryListHeight, ...)`.
+  // stack resizes.
   const containerRef = useRef<HTMLDivElement | null>(null);
   const stackRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {

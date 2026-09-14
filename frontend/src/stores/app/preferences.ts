@@ -76,9 +76,8 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     set((state) => ({ introStateVersion: state.introStateVersion + 1 }));
   },
 
-  // Mirrors the Pinia `useUIStateStore.getIntroStateByKey`. Reads the per-user
-  // localStorage map scoped to the current workspace. React callers should use
-  // `useIntroStateByKey` so writes can trigger a fresh read.
+  // Reads the per-user localStorage map scoped to the current workspace. React
+  // callers should use `useIntroStateByKey` so writes can trigger a fresh read.
   getIntroStateByKey: (key) => {
     const email = getCurrentUserEmail(get);
     if (!email) return false;
@@ -89,8 +88,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     return map[key] ?? false;
   },
 
-  // Mirrors the Pinia `useUIStateStore.saveIntroStateByKey`: persists a
-  // single intro flag to the per-user localStorage map.
+  // Persists a single intro flag to the per-user localStorage map.
   saveIntroStateByKey: ({ key, newState }) => {
     const email = getCurrentUserEmail(get);
     if (!email) return;

@@ -34,35 +34,29 @@ func TestSQLEditorTableScopedDML(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Save the owner token so we can swap identities and swap back.
 	ownerToken := ctl.authInterceptor.token
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// 1. Create a Postgres instance + database as the owner.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "pgInstance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "pgInstance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	const databaseName = "sup222"
+	databaseName := uniqueDB("sup222")
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, "postgres")
 	a.NoError(err)
 
@@ -202,34 +196,28 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	// with each other). The whole test still runs alongside other test binaries.
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	ownerToken := ctl.authInterceptor.token
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// Single Postgres instance + database shared by every subtest.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "pgInstance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "pgInstance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	const databaseName = "sup222edge"
+	databaseName := uniqueDB("sup222edge")
 	a.NoError(ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, "postgres"))
 
 	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
@@ -870,7 +858,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		testEnv, err := ctl.getEnvironment(ctx, "test")
 		ra.NoError(err)
 		// A second database on the SAME instance, in a DIFFERENT (test) environment.
-		const otherDBName = "sup222edge_other_env"
+		otherDBName := uniqueDB("sup222edge_other_env")
 		ra.NoError(ctl.createDatabase(ctx, ctl.project, instance, testEnv, otherDBName, "postgres"))
 
 		// Seed the granted table in the request (prod) database for the positive control.
@@ -915,7 +903,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 	//     catalog name, so the decision is observable.)
 	t.Run("MultiStatementCrossDatabaseNotBypassed", func(t *testing.T) {
 		ra := require.New(t)
-		const otherDBName = "sup222edge_mstmt_other"
+		otherDBName := uniqueDB("sup222edge_mstmt_other")
 		ra.NoError(ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, otherDBName, "postgres"))
 
 		// Seed the granted table in the request database for the positive control.
@@ -986,7 +974,7 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		otherProject, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{Name: fmt.Sprintf("projects/%s", projectID)}))
 		ra.NoError(err)
 		// A database in the OTHER project, on the SAME instance.
-		const otherProjDB = "sup222edge_other_proj"
+		otherProjDB := uniqueDB("sup222edge_other_proj")
 		ra.NoError(ctl.createDatabase(ctx, otherProject.Msg, instance, nil /* environment */, otherProjDB, "postgres"))
 
 		// An ENVIRONMENT-scoped DML grant in the session's project (no database clause), so it

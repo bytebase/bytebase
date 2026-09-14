@@ -19,9 +19,8 @@ type Props = {
 };
 
 /**
- * Replaces `HoverPanel/HoverPanel.vue`. Floating, cursor-anchored panel
- * that previews schema metadata for the hovered tree row. Mirrors Vue's
- * `v-if` chain — most-specific shape wins:
+ * Floating, cursor-anchored panel that previews schema metadata for the
+ * hovered tree row. Most-specific shape wins:
  *   column + table → ColumnInfo
  *   table  + partition → TablePartitionInfo
  *   table              → TableInfo

@@ -39,7 +39,6 @@ interface SchemaDiagramProps {
 }
 
 /**
- * React port of `frontend/src/components/SchemaDiagram/SchemaDiagram.vue`.
  * Composes Navigator + Canvas inside the per-instance React context;
  * an inner `<Body>` component runs the ELK layout when metadata /
  * selection changes.
@@ -93,9 +92,9 @@ function Body({ databaseName, onEditTable, onEditColumn }: BodyProps) {
     databaseMetadata,
   } = ctx;
 
-  // Vue mirrors: pick the first schema as the initial selection, NOT all
-  // of them. (Most diagrams target a single schema; users can opt into
-  // others via the SchemaSelector.)
+  // Pick the first schema as the initial selection, NOT all of them. (Most
+  // diagrams target a single schema; users can opt into others via the
+  // SchemaSelector.)
   const lastInitializedMetadataRef = useRef<DatabaseMetadata | null>(null);
   useEffect(() => {
     if (lastInitializedMetadataRef.current === databaseMetadata) return;

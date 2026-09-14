@@ -48,12 +48,18 @@ Use route ownership as the primary organization axis. Do not add a generic `feat
 - Start from the route in `src/app/router/routes/`, then open the matching subtree under `src/routes/`.
 - Keep route-only code beside its route. Promote code to `components`, `hooks`, or `lib` only after it has multiple independent consumers.
 - Colocate new types and helpers with their route or module. Do not grow the broad `types` and `utils` barrels without a cross-module need.
-- Put a large reusable workflow in `src/modules/<name>/`; do not spread one subsystem across `components`, `stores`, and a migration-era `views` directory.
+- Put a large reusable workflow in `src/modules/<name>/`; do not spread one subsystem across `components` and `stores`.
 - Shared code and modules must not import from `src/routes/`. Move the shared implementation to its actual owner instead.
 - Prefer direct owner imports such as `@/modules/sql-editor/store` over broad barrels when the owner is known.
 - Historical migration plans under `docs/` describe old paths and are not current architecture guidance.
 - `CLAUDE.md` files only import their adjacent `AGENTS.md`; update `AGENTS.md` as the source of truth.
-- `node frontend/scripts/check-frontend-structure.mjs` runs the structure guard. Do not bypass failures by recreating retired framework, view, or singular-store namespaces.
+
+## Tests and checks
+
+- Name a test after the file it tests and keep it beside that file: `Foo.tsx` → `Foo.test.tsx`. One test file per source file — no topic suffixes such as `Foo.i18n.test.ts` or `FooLayout.test.ts`, and no `__tests__/` directories.
+- Tests import and exercise code. Never read source files as text in a test.
+- Rules about code are checks, not tests. Prefer Biome: `noRestrictedImports` in `biome.json` for import boundaries, a GritQL plugin in `biome-plugins/` for code patterns. A check Biome cannot express goes in a `scripts/check-<name>.mjs`, which `pnpm test` runs automatically; locale rules live in `scripts/check-i18n.mjs`.
+- Browser flows belong in `tests/e2e/`.
 
 ## shadcn Skill
 
@@ -83,7 +89,7 @@ React UI components live in `src/components/ui/` and follow shadcn-style pattern
   - Menus, popovers, dropdowns, and custom floating panels should use shared `DropdownMenu`, `Popover`, `Combobox`, `Select`, `Dialog`, or `Sheet` primitives rather than ad hoc `absolute top-full z-*` markup.
   - Do not portal feature UI directly to `document.body` or a `document.body` alias. Use the shared overlay primitives, or explicitly mount into the correct semantic root with `getLayerRoot(<family>)`.
   - Do not hide raw global overlay classes in constants, imported helpers, `cn()` inputs, or interpolated template literals. A value like `fixed inset-0 z-50` is still forbidden even when it is not written directly in `className`.
-  - When adding or changing React overlays, run `node frontend/scripts/check-react-layering.mjs` before handing off. The scanner is intended to catch raw high-z overlays, forbidden body portals, and policy drift in feature code.
+  - When adding or changing React overlays, run `node frontend/scripts/check-layering.mjs` before handing off. The scanner is intended to catch raw high-z overlays, forbidden body portals, and policy drift in feature code.
   - The scanner is a guardrail, not proof of policy compliance. It intentionally avoids full static analysis, so imported, dynamic, shadowed, or complex expressions may be unresolved; passing the check does not permit raw global z-index overlays or body portals.
 
 ### Component Patterns

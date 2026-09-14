@@ -35,34 +35,34 @@ type createDatabaseGroupCase struct {
 // the very end of the package.
 func testCreateDatabaseGroup(t *testing.T, tc createDatabaseGroupCase) {
 	a := require.New(t)
-	ctl := &controller{}
 	ctx := context.Background()
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer func() {
-		_ = ctl.Close(ctx)
-	}()
+	ctl, ctx := startProject(ctx, t)
 
 	instanceResourceID2InstanceTitle := make(map[string]string)
+	physicalNames := make(map[string][]string)
 	for _, prepareInstance := range tc.prepareInstances {
-		pgContainer, err := provisionPgInstance(ctx, t)
-		a.NoError(err)
+		pgContainer := sharedPgTarget(t)
 		instanceResourceID := generateRandomString("instance")
 		instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 			InstanceId: instanceResourceID,
 			Instance: &v1pb.Instance{
-				Title:       prepareInstance.instanceTitle,
-				Engine:      v1pb.Engine_POSTGRES,
-				Environment: new("environments/prod"),
-				DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
-				Activation:  true,
+				SyncDatabases: &v1pb.SyncDatabases{},
+				Title:         prepareInstance.instanceTitle,
+				Engine:        v1pb.Engine_POSTGRES,
+				Environment:   new("environments/prod"),
+				DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
+				Activation:    true,
 			},
 		}))
 		a.NoError(err)
 		instance := instanceResp.Msg
 		instanceResourceID2InstanceTitle[instanceResourceID] = instance.Title
 		for preCreateDatabase := range prepareInstance.matchedDatabasesName {
-			err = ctl.createDatabase(ctx, ctl.project, instance, nil, preCreateDatabase, "")
+			// The cases share one Postgres, so the physical name carries a
+			// suffix. The group expressions match on a prefix, which survives it.
+			physical := uniqueDB(preCreateDatabase)
+			physicalNames[prepareInstance.instanceTitle] = append(physicalNames[prepareInstance.instanceTitle], physical)
+			err = ctl.createDatabase(ctx, ctl.project, instance, nil, physical, "")
 			a.NoError(err)
 		}
 	}
@@ -99,7 +99,7 @@ func testCreateDatabaseGroup(t *testing.T, tc createDatabaseGroupCase) {
 	for _, prepareInstance := range tc.prepareInstances {
 		gotMatchedDatabases := gotInstanceTitleToMatchedDatabases[prepareInstance.instanceTitle]
 		a.Equal(len(gotMatchedDatabases), len(prepareInstance.matchedDatabasesName))
-		for wantMatchedDatabase := range prepareInstance.matchedDatabasesName {
+		for _, wantMatchedDatabase := range physicalNames[prepareInstance.instanceTitle] {
 			a.Contains(gotMatchedDatabases, wantMatchedDatabase)
 		}
 	}

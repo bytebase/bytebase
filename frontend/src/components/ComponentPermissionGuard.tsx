@@ -268,7 +268,7 @@ export function PermissionDeniedFallback({
  *
  * - If the user has all required permissions, children are rendered normally.
  * - If the user is missing permissions, an error alert is shown listing the
- *   missing permissions — matching the Vue `ComponentPermissionGuard` behavior.
+ *   missing permissions.
  */
 export function ComponentPermissionGuard({
   permissions,
