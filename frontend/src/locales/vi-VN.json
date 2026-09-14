@@ -728,6 +728,7 @@
     "mixed-label-values": "giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "nullable": "Có thể null",
+    "open-sql-editor": "Mở trình soạn thảo SQL",
     "partition-tables": "Bảng phân vùng",
     "partitioned": "Đã phân vùng",
     "project-instance-transfer-disabled": "Không thể chuyển hoặc hủy gán cơ sở dữ liệu thuộc phiên bản gắn với dự án.",

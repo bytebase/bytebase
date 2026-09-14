@@ -8,6 +8,7 @@ import type {
   IStandaloneCodeEditor,
   MonacoModule,
 } from "@/components/monaco/types";
+import { fakeEditorLayout, lineTop } from "@/test-utils/monacoLayout";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
   IssueComment_ThreadState,
@@ -239,7 +240,7 @@ function createFakeEditor(lineMaxColumn = 20) {
     up: [],
     leave: [],
   };
-  const zones = new Map<string, { afterLineNumber: number; domNode: HTMLElement }>();
+  const zones = new Map<string, { afterLineNumber: number; domNode: HTMLElement; heightInPx: number }>();
   const widgets = new Set<{ getDomNode: () => HTMLElement }>();
   let zoneSeq = 0;
   // The DOM hit test used by the drag; tests set the line the pointer is on.
@@ -258,6 +259,9 @@ function createFakeEditor(lineMaxColumn = 20) {
   const domNode = document.createElement("div");
   document.body.append(domNode);
   domNode.scrollIntoView = vi.fn();
+  const layout = fakeEditorLayout(() =>
+    Array.from(zones, ([id, zone]) => ({ id, afterLineNumber: zone.afterLineNumber, height: zone.heightInPx }))
+  );
   const subscribe = (key: string) => (handler: MouseHandler) => {
     handlers[key].push(handler);
     return {
@@ -276,12 +280,7 @@ function createFakeEditor(lineMaxColumn = 20) {
       widgets.delete(widget);
     },
     getContribution: () => mocks.findController,
-    getLayoutInfo: () => ({
-      contentLeft: 52,
-      width: 800,
-      verticalScrollbarWidth: 14,
-      minimap: { minimapWidth: 0 },
-    }),
+    ...layout,
     getTargetAtClientPoint: () =>
       pointer.line === undefined
         ? null
@@ -289,7 +288,7 @@ function createFakeEditor(lineMaxColumn = 20) {
     onDidLayoutChange: () => ({ dispose: vi.fn() }),
     changeViewZones: (
       callback: (accessor: {
-        addZone: (zone: { afterLineNumber: number; domNode: HTMLElement }) => string;
+        addZone: (zone: { afterLineNumber: number; domNode: HTMLElement; heightInPx: number }) => string;
         removeZone: (id: string) => void;
         layoutZone: (id: string) => void;
       }) => void
@@ -327,8 +326,6 @@ function createFakeEditor(lineMaxColumn = 20) {
     onMouseLeave: subscribe("leave"),
     onMouseMove: subscribe("move"),
     onMouseUp: subscribe("up"),
-    revealLineInCenter: vi.fn(),
-    revealLineNearTop: vi.fn(),
   };
   const fire = (key: string, line: number | undefined, type: number, detail?: Record<string, unknown>) => {
     const event = {
@@ -360,6 +357,8 @@ function createFakeEditor(lineMaxColumn = 20) {
   return {
     editor: editor as unknown as IStandaloneCodeEditor,
     decorations,
+    scroll: layout.scroll,
+    setScrollTop: layout.setScrollTop,
     pressEscape: () => act(() => {
       domNode.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     }),
@@ -413,7 +412,15 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   document.body.replaceChildren();
+  vi.restoreAllMocks();
 });
+
+// Gives every element a 100px box so the zones' reveals have something to
+// measure; jsdom lays nothing out.
+const giveElementsHeight = () =>
+  vi
+    .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+    .mockReturnValue(new DOMRect(0, 0, 700, 100));
 
 const mount = (editor: IStandaloneCodeEditor) =>
   act(() =>
@@ -834,7 +841,7 @@ describe("StatementThreadsLayer", () => {
     expect((hosted(fake.widgets, "[data-testid='saved-draft']") as HTMLInputElement)?.value).toBe("");
   });
 
-  test("a focus request expands the thread, reveals its line, and is cleared", () => {
+  test("a focus request expands the thread, reveals it from its first line, and is cleared", () => {
     mocks.comments = [
       threadRoot("first", 3, 4, { createdAt: 2 }),
       threadRoot("target", 10, 12, { createdAt: 5 }),
@@ -844,13 +851,12 @@ describe("StatementThreadsLayer", () => {
       specId: "spec-1",
       nonce: 7,
     };
+    giveElementsHeight();
     const fake = createFakeEditor();
+    fake.scroll.top = 600;
     mount(fake.editor);
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/target`);
-    expect(
-      (fake.editor as unknown as { revealLineInCenter: ReturnType<typeof vi.fn> })
-        .revealLineInCenter
-    ).toHaveBeenCalledWith(10);
+    expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(10) - 8);
     expect(mocks.clearThreadFocus).toHaveBeenCalledWith(7);
   });
   test("the walker steps through unresolved threads in editor order and wraps", () => {
@@ -859,6 +865,7 @@ describe("StatementThreadsLayer", () => {
       threadRoot("done", 5, 5, { createdAt: 2, resolved: true }),
       threadRoot("c", 7, 8, { createdAt: 3 }),
     ];
+    giveElementsHeight();
     const fake = createFakeEditor();
     mount(fake.editor);
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/a`);
@@ -869,15 +876,24 @@ describe("StatementThreadsLayer", () => {
       "plan.review.thread.walker.count:2"
     );
 
+    // Scrolled past the threads: a step scrolls the editor exactly once, to
+    // the target's first line, and brings the editor onto the page.
+    fake.scroll.top = 600;
+    fake.setScrollTop.mockClear();
     pressWalker(fake.widgets, "next");
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/c`);
     expect(zoneAfter(fake.zones)).toEqual([8]);
-    expect(fake.editor.revealLineNearTop).toHaveBeenLastCalledWith(7);
+    expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(7) - 8);
     expect(fake.editor.getDomNode()?.scrollIntoView).toHaveBeenCalledWith({ block: "nearest" });
+    fake.setScrollTop.mockClear();
     pressWalker(fake.widgets, "next");
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/a`);
+    expect(fake.setScrollTop).toHaveBeenCalledExactlyOnceWith(lineTop(2) - 8);
+    // Stepping onto a thread already in view leaves the scroll alone.
+    fake.setScrollTop.mockClear();
     pressWalker(fake.widgets, "previous");
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/c`);
+    expect(fake.setScrollTop).not.toHaveBeenCalled();
 
     // Closing the open line leaves no current thread: down starts over, up ends.
     fake.fire("down", 8, MouseTargetType.GUTTER_GLYPH_MARGIN);

@@ -728,6 +728,7 @@
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "nullable": "Nullable",
+    "open-sql-editor": "Open SQL Editor",
     "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
     "project-instance-transfer-disabled": "Databases from a project-bound instance cannot be transferred or unassigned.",

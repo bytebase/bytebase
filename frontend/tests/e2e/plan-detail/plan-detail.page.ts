@@ -389,6 +389,68 @@ export class PlanDetailPage {
     );
   }
 
+  // The offset of a line's number cell from the statement editor's top edge.
+  // Monaco renders only the lines in view, so an unrendered line counts as
+  // scrolled above.
+  async statementLineOffset(lineNumber: number): Promise<number> {
+    const cell = this.statementLineNumber(lineNumber);
+    if ((await cell.count()) === 0) return Number.NEGATIVE_INFINITY;
+    const [editorBox, lineBox] = await Promise.all([
+      this.statementEditor.boundingBox(),
+      cell.boundingBox(),
+    ]);
+    if (!editorBox || !lineBox) return Number.NEGATIVE_INFINITY;
+    return lineBox.y - editorBox.y;
+  }
+
+  // Wheel the statement editor down until the line is scrolled above its top.
+  async scrollStatementEditorPastLine(lineNumber: number): Promise<void> {
+    await this.statementEditor.hover({ position: { x: 300, y: 60 } });
+    await expect
+      .poll(async () => {
+        await this.page.mouse.wheel(0, 240);
+        return this.statementLineOffset(lineNumber);
+      })
+      .toBeLessThan(0);
+  }
+
+  // How many times the statement editor scrolled while `step` ran, counted
+  // once the editor has stayed still for ten frames. Monaco writes every
+  // scroll as the `top` of its lines layer.
+  async countStatementEditorScrolls(step: () => Promise<void>): Promise<number> {
+    type ScrollLog = { tops: string[]; observer: MutationObserver };
+    await this.statementEditor.evaluate((node) => {
+      const lines = node.querySelector<HTMLElement>(".lines-content");
+      if (!lines) throw new Error("statement editor has no lines layer");
+      const host = window as unknown as { __bbScrollLog?: ScrollLog };
+      host.__bbScrollLog?.observer.disconnect();
+      const tops = [lines.style.top];
+      const observer = new MutationObserver(() => {
+        if (lines.style.top !== tops[tops.length - 1]) tops.push(lines.style.top);
+      });
+      observer.observe(lines, { attributes: true, attributeFilter: ["style"] });
+      host.__bbScrollLog = { tops, observer };
+    });
+    await step();
+    return this.page.evaluate(
+      () =>
+        new Promise<number>((resolve) => {
+          const log = (window as unknown as { __bbScrollLog?: ScrollLog }).__bbScrollLog;
+          if (!log) throw new Error("no scroll log is recording");
+          let seen = log.tops.length;
+          let still = 0;
+          const tick = () => {
+            if (log.tops.length === seen) still += 1;
+            else [seen, still] = [log.tops.length, 0];
+            if (still < 10) return requestAnimationFrame(tick);
+            log.observer.disconnect();
+            resolve(log.tops.length - 1);
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
+  }
+
   // Scroll the editor clear of the sticky page header, which otherwise
   // intercepts pointer actions on its top lines. The dashboard body, not the
   // window, owns the page scroll, so walk up to the nearest scrolling

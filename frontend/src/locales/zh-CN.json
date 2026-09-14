@@ -728,6 +728,7 @@
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "nullable": "可为空",
+    "open-sql-editor": "打开 SQL 编辑器",
     "partition-tables": "分区表",
     "partitioned": "分区",
     "project-instance-transfer-disabled": "项目绑定实例中的数据库无法转移或取消分配。",

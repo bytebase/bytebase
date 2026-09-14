@@ -185,8 +185,10 @@ export function ProjectDatabaseDetailPage({
         />
       )}
 
-      <div className="flex flex-col items-start gap-y-2 xl:flex-row xl:items-center xl:justify-between xl:gap-x-2">
-        <DatabaseDetailHeader database={detail.database} />
+      <div className="flex flex-col items-stretch gap-2 xl:flex-row xl:items-center">
+        <div className="min-w-0 xl:w-1/3">
+          <DatabaseDetailHeader database={detail.database} />
+        </div>
         <DatabaseDetailActions
           database={detail.database}
           isDefaultProject={detail.isDefaultProject}
