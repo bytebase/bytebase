@@ -186,6 +186,8 @@ export const defaultEditorOptions =
       codeLens: false,
       scrollbar: {
         alwaysConsumeMouseWheel: false,
+        // A thin strip rather than Monaco's 14px block.
+        verticalScrollbarSize: 8,
       },
       inlineSuggest: {
         showToolbar: "never",
@@ -223,6 +225,8 @@ export const defaultDiffEditorOptions =
       codeLens: false,
       scrollbar: {
         alwaysConsumeMouseWheel: false,
+        // A thin strip rather than Monaco's 14px block.
+        verticalScrollbarSize: 8,
       },
       inlineSuggest: {
         showToolbar: "never",

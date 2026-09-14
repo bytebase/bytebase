@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 // Touch has no hover and keeps focus on the tapped arrow, so coarse pointers
 // get no ring: the flash on the target card is the feedback there.
-// Size comes from the shared "sm" button, whose 28px height is the strip's.
+// The strip takes its height from the shared "sm" buttons.
 const ARROW_CLASS =
   "rounded-none border-l border-control-border text-control-light hover:text-control focus-visible:ring-inset focus-visible:ring-offset-0 pointer-coarse:focus-visible:ring-0";
 
@@ -35,7 +35,7 @@ export function StatementThreadWalker({
     .join(" · ");
   return (
     <div
-      className="flex h-7 items-stretch overflow-hidden rounded-sm border border-control-border bg-background text-xs shadow-sm pointer-coarse:shadow-none"
+      className="flex items-stretch overflow-hidden rounded-sm border border-control-border bg-background text-xs shadow-sm pointer-coarse:shadow-none"
       data-testid="thread-walker"
       title={title}
     >
