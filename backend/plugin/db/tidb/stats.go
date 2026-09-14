@@ -3,13 +3,16 @@ package tidb
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
+	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
@@ -49,7 +52,62 @@ func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64
 	if err := rows.Err(); err != nil {
 		return 0, err
 	}
-	return getAffectedRowsFromPlan(plan)
+	count, err := getAffectedRowsFromPlan(plan)
+	if err != nil {
+		return 0, err
+	}
+	// The plan estimates the rows the statement reads, and a multi-table UPDATE or DELETE can change
+	// a row of each target table for every one of them.
+	return common.RoundRows(float64(count) * float64(countDMLTargets(statement))), nil
+}
+
+// countDMLTargets returns how many tables an UPDATE or DELETE can change for each row it reads: the
+// targets a multi-table DELETE lists, or the tables its assignments qualify, counting an unqualified
+// assignment as another joined table, up to the number of joined tables. Other statements change one.
+func countDMLTargets(statement string) int {
+	nodes, err := tidbparser.ParseTiDB(statement, "", "")
+	if err != nil || len(nodes) != 1 {
+		return 1
+	}
+	switch n := nodes[0].(type) {
+	case *tidbast.DeleteStmt:
+		if n.IsMultiTable && n.Tables != nil {
+			return max(len(n.Tables.Tables), 1)
+		}
+	case *tidbast.UpdateStmt:
+		if n.TableRefs == nil {
+			return 1
+		}
+		var tables []string
+		unqualified := 0
+		for _, assignment := range n.List {
+			switch {
+			case assignment.Column == nil || assignment.Column.Table.L == "":
+				unqualified++
+			case !slices.Contains(tables, assignment.Column.Table.L):
+				tables = append(tables, assignment.Column.Table.L)
+			default:
+			}
+		}
+		return max(min(len(tables)+unqualified, countTableSources(n.TableRefs.TableRefs)), 1)
+	default:
+	}
+	return 1
+}
+
+func countTableSources(node tidbast.ResultSetNode) int {
+	switch n := node.(type) {
+	case *tidbast.Join:
+		count := countTableSources(n.Left)
+		if n.Right != nil {
+			count += countTableSources(n.Right)
+		}
+		return count
+	case *tidbast.TableSource:
+		return 1
+	default:
+		return 0
+	}
 }
 
 type planRow struct {

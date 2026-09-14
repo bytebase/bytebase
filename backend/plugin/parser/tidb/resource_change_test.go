@@ -117,6 +117,12 @@ func TestExtractChangedResourcesDMLCounts(t *testing.T) {
 		tables      []string
 	}{
 		{
+			name:        "insert_set_is_one_row",
+			statement:   `INSERT INTO t SET c = 1, d = 2;`,
+			insertCount: 1,
+			tables:      []string{"t"},
+		},
+		{
 			name:      "batch_samples_inner_dml",
 			statement: `BATCH ON id LIMIT 1000 DELETE FROM t WHERE c = 1;`,
 			dmlCount:  1,

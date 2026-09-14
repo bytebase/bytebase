@@ -141,3 +141,25 @@ func TestGetAffectedRowsFromPlan(t *testing.T) {
 		})
 	}
 }
+
+func TestCountDMLTargets(t *testing.T) {
+	for _, tc := range []struct {
+		statement string
+		want      int
+	}{
+		{statement: "UPDATE t SET a = 1, b = 2 WHERE id = 1", want: 1},
+		{statement: "UPDATE a JOIN b ON a.id = b.id SET a.c = 1, a.d = 2", want: 1},
+		{statement: "UPDATE a JOIN b ON a.id = b.id SET a.c = 1, b.c = 1", want: 2},
+		{statement: "UPDATE a AS x, b AS y SET x.c = 1, y.c = 1 WHERE x.id = y.id", want: 2},
+		// Either joined table may own each unqualified column, up to the two joined tables.
+		{statement: "UPDATE a JOIN b ON a.id = b.id SET c = 1, d = 2, e = 3", want: 2},
+		{statement: "DELETE a, b FROM a JOIN b ON a.id = b.id", want: 2},
+		{statement: "DELETE a FROM a JOIN b ON a.id = b.id", want: 1},
+		{statement: "DELETE FROM t WHERE id = 1", want: 1},
+		{statement: "INSERT INTO t SELECT * FROM s", want: 1},
+	} {
+		t.Run(tc.statement, func(t *testing.T) {
+			require.Equal(t, tc.want, countDMLTargets(tc.statement))
+		})
+	}
+}
