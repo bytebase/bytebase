@@ -32,6 +32,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	// sessionSearchPath leaves out SET LOCAL, which lasts until the transaction ends, and
 	// transactionSearchPath is the session search path that ROLLBACK restores.
 	sessionSearchPath, transactionSearchPath := searchPath, searchPath
+	inTransaction := false
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
@@ -206,11 +207,13 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				searchPath, sessionSearchPath = defaultSearchPath, defaultSearchPath
 			}
 		case *tree.BeginTransaction:
-			transactionSearchPath = sessionSearchPath
+			if !inTransaction {
+				transactionSearchPath, inTransaction = sessionSearchPath, true
+			}
 		case *tree.CommitTransaction:
-			searchPath, transactionSearchPath = sessionSearchPath, sessionSearchPath
+			searchPath, transactionSearchPath, inTransaction = sessionSearchPath, sessionSearchPath, false
 		case *tree.RollbackTransaction:
-			searchPath, sessionSearchPath = transactionSearchPath, transactionSearchPath
+			searchPath, sessionSearchPath, inTransaction = transactionSearchPath, transactionSearchPath, false
 		case *tree.SetVar:
 			if n.ResetAll || strings.EqualFold(n.Name, "search_path") {
 				searchPath = getSearchPath(n, defaultSearchPath)

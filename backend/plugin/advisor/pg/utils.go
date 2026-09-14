@@ -183,41 +183,46 @@ func omniAlterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
 	return cmds
 }
 
-// sessionSettings holds the statements that set the role or search path, which an EXPLAIN replays:
-// session settings, and SET LOCAL settings until their transaction ends. ROLLBACK also drops the
-// session settings of its transaction, and DISCARD ALL drops every setting.
+// sessionSettings holds, in order, the statements that set the role or search path, which an EXPLAIN
+// replays. A SET LOCAL setting lasts until its transaction ends, ROLLBACK also drops the settings of
+// its transaction, and DISCARD ALL drops every setting.
 type sessionSettings struct {
-	session []string
-	local   []string
-	// transactionStart is the number of session settings when the current transaction began.
+	settings []sessionSetting
+	// transactionStart is the number of settings when the current transaction began.
 	transactionStart int
+	inTransaction    bool
+}
+
+type sessionSetting struct {
+	text  string
+	local bool
 }
 
 // add records node, whose text is text, when it changes the settings.
 func (s *sessionSettings) add(node ast.Node, text string) {
 	switch n := node.(type) {
 	case *ast.VariableSetStmt:
-		switch {
-		case !omniIsRoleOrSearchPathSet(n):
-		case n.IsLocal:
-			s.local = append(s.local, text)
-		default:
-			s.session = append(s.session, text)
+		if omniIsRoleOrSearchPathSet(n) {
+			s.settings = append(s.settings, sessionSetting{text: text, local: n.IsLocal})
 		}
 	case *ast.DiscardStmt:
 		if n.Target == ast.DISCARD_ALL {
-			s.session, s.local, s.transactionStart = nil, nil, 0
+			s.settings, s.transactionStart = nil, 0
 		}
 	case *ast.TransactionStmt:
 		switch n.Kind {
 		case ast.TRANS_STMT_BEGIN, ast.TRANS_STMT_START:
-			s.transactionStart, s.local = len(s.session), nil
+			// A BEGIN inside a transaction only warns.
+			if !s.inTransaction {
+				s.transactionStart, s.inTransaction = len(s.settings), true
+			}
 		case ast.TRANS_STMT_COMMIT, ast.TRANS_STMT_ROLLBACK:
 			if n.Kind == ast.TRANS_STMT_ROLLBACK {
-				s.session = s.session[:s.transactionStart]
+				s.settings = s.settings[:s.transactionStart]
 			}
+			s.settings = slices.DeleteFunc(s.settings, func(setting sessionSetting) bool { return setting.local })
 			// COMMIT AND CHAIN and ROLLBACK AND CHAIN start the next transaction from here.
-			s.transactionStart, s.local = len(s.session), nil
+			s.transactionStart, s.inTransaction = len(s.settings), n.Chain
 		default:
 		}
 	default:
@@ -225,7 +230,11 @@ func (s *sessionSettings) add(node ast.Node, text string) {
 }
 
 func (s *sessionSettings) statements() []string {
-	return append(slices.Clone(s.session), s.local...)
+	var statements []string
+	for _, setting := range s.settings {
+		statements = append(statements, setting.text)
+	}
+	return statements
 }
 
 // omniIsRoleOrSearchPathSet checks if a VariableSetStmt sets the role or search path, including a

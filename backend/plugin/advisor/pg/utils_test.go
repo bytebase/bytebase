@@ -72,7 +72,18 @@ func TestOmniIsRoleOrSearchPathSet(t *testing.T) {
 }
 
 func TestSessionSettings(t *testing.T) {
-	const statement = `SET search_path = z;
+	var settings sessionSettings
+	add := func(statement string) {
+		statements, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+		require.NoError(t, err)
+		for _, stmt := range statements {
+			node, ok := pgparser.GetOmniNode(stmt.AST)
+			require.True(t, ok)
+			settings.add(node, strings.TrimRight(strings.TrimSpace(stmt.Text), ";"))
+		}
+	}
+
+	add(`SET search_path = z;
 DISCARD ALL;
 SET search_path = a;
 BEGIN;
@@ -87,14 +98,17 @@ SET search_path = d;
 COMMIT AND CHAIN;
 ROLLBACK;
 SET LOCAL search_path = e;
-SET statement_timeout = '1s';`
-	statements, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
-	require.NoError(t, err)
-	var settings sessionSettings
-	for _, stmt := range statements {
-		node, ok := pgparser.GetOmniNode(stmt.AST)
-		require.True(t, ok)
-		settings.add(node, strings.TrimRight(strings.TrimSpace(stmt.Text), ";"))
-	}
-	require.Equal(t, []string{"SET search_path = a", "SET ROLE r", "SET search_path = d", "SET LOCAL search_path = e"}, settings.statements())
+SET statement_timeout = '1s';
+RESET search_path;`)
+	// The settings replay in statement order, so RESET follows the SET LOCAL it overrides.
+	require.Equal(t, []string{"SET search_path = a", "SET ROLE r", "SET search_path = d", "SET LOCAL search_path = e", "RESET search_path"}, settings.statements())
+
+	// A nested BEGIN only warns, so the ROLLBACK returns to the settings before the first BEGIN, and
+	// the transaction's end also ends the SET LOCAL.
+	add(`BEGIN;
+SET search_path = f;
+BEGIN;
+SET search_path = g;
+ROLLBACK;`)
+	require.Equal(t, []string{"SET search_path = a", "SET ROLE r", "SET search_path = d", "RESET search_path"}, settings.statements())
 }

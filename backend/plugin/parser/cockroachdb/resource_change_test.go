@@ -227,10 +227,16 @@ ROLLBACK;
 DELETE FROM t3;
 SET search_path = app;
 DISCARD ALL;
-DELETE FROM t4;`
+DELETE FROM t4;
+SET search_path = app;
+BEGIN;
+SET search_path = other;
+BEGIN;
+ROLLBACK;
+DELETE FROM t5;`
 		got, err := extractChangedResources("db", "public", nil /* dbMetadata */, parseASTs(t, statement), statement)
 		require.NoError(t, err)
-		require.Equal(t, []string{"db.app.t1", "db.public.t2", "db.public.t3", "db.public.t4"}, getTableNames(got.ChangedResources))
+		require.Equal(t, []string{"db.app.t1", "db.app.t5", "db.public.t2", "db.public.t3", "db.public.t4"}, getTableNames(got.ChangedResources))
 	})
 
 	t.Run("the synced search path applies without a current schema", func(t *testing.T) {

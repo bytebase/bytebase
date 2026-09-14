@@ -41,6 +41,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	// sessionSearchPath leaves out SET LOCAL, which lasts until the transaction ends, and
 	// transactionSearchPath is the session search path that ROLLBACK restores.
 	sessionSearchPath, transactionSearchPath := searchPath, searchPath
+	inTransaction := false
 	sampleDML := func(text string) {
 		dmlCount++
 		text = strings.TrimSpace(text)
@@ -80,12 +81,15 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		case *ast.TransactionStmt:
 			switch n.Kind {
 			case ast.TRANS_STMT_BEGIN, ast.TRANS_STMT_START:
-				transactionSearchPath = sessionSearchPath
+				// A BEGIN inside a transaction only warns.
+				if !inTransaction {
+					transactionSearchPath, inTransaction = sessionSearchPath, true
+				}
 			case ast.TRANS_STMT_COMMIT:
 				// COMMIT AND CHAIN starts the next transaction from the committed search path.
-				searchPath, transactionSearchPath = sessionSearchPath, sessionSearchPath
+				searchPath, transactionSearchPath, inTransaction = sessionSearchPath, sessionSearchPath, n.Chain
 			case ast.TRANS_STMT_ROLLBACK:
-				searchPath, sessionSearchPath = transactionSearchPath, transactionSearchPath
+				searchPath, sessionSearchPath, inTransaction = transactionSearchPath, transactionSearchPath, n.Chain
 			default:
 			}
 
