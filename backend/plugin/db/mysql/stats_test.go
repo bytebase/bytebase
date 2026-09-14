@@ -311,6 +311,16 @@ func TestCountAffectedRowsFallsBackToTabularPlan(t *testing.T) {
 			},
 			want: 300,
 		},
+		{
+			// Each of the 300 joined rows changes a row of a and a row of b.
+			name:      "multi-table update counts each target",
+			statement: "UPDATE small JOIN big ON big.s_id = small.id SET small.x = 1, big.v = 1;",
+			table: [][]driver.Value{
+				{int64(1), "UPDATE", "small", int64(3), 100.0},
+				{int64(1), "UPDATE", "big", int64(100), 100.0},
+			},
+			want: 600,
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			d := newTestMySQLDriver(t, plan)

@@ -60,33 +60,34 @@ func EstimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query 
 	if err == nil {
 		return count, nil
 	}
-	rows, ok := explainTabularEstimate(ctx, db, query)
+	rows, tables, ok := explainTabularEstimate(ctx, db, query)
 	if !ok {
 		return 0, err
 	}
-	return mysqlparser.CapAffectedRowsByLimit(stmt, rows), nil
+	// A multi-table UPDATE or DELETE can change a row of each target for every row its join produces.
+	return mysqlparser.CapAffectedRowsByLimit(stmt, rows*float64(mysqlparser.DMLTargetCount(stmt, tables))), nil
 }
 
 // explainTabularEstimate returns the rows that the first query block of the tabular EXPLAIN of query
-// produces: the product, over the tables it joins, of the rows each reads scaled by its filtered
-// percentage where the server prints one.
-func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, bool) {
+// produces, and how many tables it joins: the product, over those tables, of the rows each reads
+// scaled by its filtered percentage where the server prints one.
+func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
 	// MySQL 9 prints a plain EXPLAIN in the TREE format.
 	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
 	if err != nil {
-		return 0, false
+		return 0, 0, false
 	}
 	defer rows.Close()
 	columns, err := rows.Columns()
 	if err != nil {
-		return 0, false
+		return 0, 0, false
 	}
 	column := func(name string) int {
 		return slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, name) })
 	}
 	idIndex, rowsIndex, filteredIndex := column("id"), column("rows"), column("filtered")
 	if idIndex < 0 || rowsIndex < 0 {
-		return 0, false
+		return 0, 0, false
 	}
 	values := make([]sql.NullString, len(columns))
 	dest := make([]any, len(columns))
@@ -94,16 +95,17 @@ func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (floa
 		dest[i] = &values[i]
 	}
 	var blockID string
-	estimate, found := 1.0, false
+	estimate, tables := 1.0, 0
 	for rows.Next() {
 		if err := rows.Scan(dest...); err != nil {
-			return 0, false
+			return 0, 0, false
 		}
 		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
-		if !values[rowsIndex].Valid || err != nil || (found && values[idIndex].String != blockID) {
+		if !values[rowsIndex].Valid || err != nil || (tables > 0 && values[idIndex].String != blockID) {
 			continue
 		}
-		blockID, found = values[idIndex].String, true
+		blockID = values[idIndex].String
+		tables++
 		estimate *= tableRows
 		if filteredIndex >= 0 && values[filteredIndex].Valid {
 			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
@@ -111,7 +113,7 @@ func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (floa
 			}
 		}
 	}
-	return estimate, found && rows.Err() == nil
+	return estimate, tables, tables > 0 && rows.Err() == nil
 }
 
 // ExplainJSON returns the `EXPLAIN FORMAT=JSON` output for the statement in the JSON format

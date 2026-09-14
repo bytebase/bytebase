@@ -263,6 +263,22 @@ type dmlTargets struct {
 	unqualified int
 }
 
+// DMLTargetCount returns how many tables stmt can change for each row its join produces: the targets
+// of a multi-table UPDATE or DELETE, counting each unqualified assignment as another joined table, up
+// to joinedTables, and one for any other statement.
+func DMLTargetCount(stmt ast.Node, joinedTables int) int {
+	var targets dmlTargets
+	switch s := stmt.(type) {
+	case *ast.UpdateStmt:
+		targets = updateTargets(s)
+	case *ast.DeleteStmt:
+		targets = deleteTargets(s)
+	default:
+		return 1
+	}
+	return max(min(len(targets.names)+targets.unqualified, joinedTables), 1)
+}
+
 func updateTargets(stmt *ast.UpdateStmt) dmlTargets {
 	if len(stmt.Tables) == 1 {
 		if table, ok := stmt.Tables[0].(*ast.TableRef); ok {

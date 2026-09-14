@@ -399,6 +399,24 @@ func TestEstimateAffectedRowsFromExplainJSON(t *testing.T) {
 	}
 }
 
+func TestDMLTargetCount(t *testing.T) {
+	for _, tc := range []struct {
+		statement string
+		want      int
+	}{
+		{statement: "UPDATE t SET a = 1, b = 2 WHERE id = 1", want: 1},
+		{statement: "UPDATE a JOIN b ON a.id = b.id SET a.x = 1, b.y = 1", want: 2},
+		{statement: "UPDATE a JOIN b ON a.id = b.id SET x = 1, y = 2, z = 3", want: 2},
+		{statement: "DELETE a, b FROM a JOIN b ON a.id = b.id", want: 2},
+		{statement: "DELETE FROM t WHERE id = 1", want: 1},
+		{statement: "INSERT INTO t SELECT * FROM s", want: 1},
+	} {
+		t.Run(tc.statement, func(t *testing.T) {
+			require.Equal(t, tc.want, DMLTargetCount(parseSingleStatement(t, tc.statement), 2))
+		})
+	}
+}
+
 func TestCapAffectedRowsByLimit(t *testing.T) {
 	for _, tc := range []struct {
 		statement string
