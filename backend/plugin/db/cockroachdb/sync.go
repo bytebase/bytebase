@@ -78,6 +78,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMe
 	if databaseMetadata == nil {
 		return nil, common.Errorf(common.NotFound, "database %q not found", d.databaseName)
 	}
+	if err := d.db.QueryRowContext(ctx, "SHOW search_path").Scan(&databaseMetadata.SearchPath); err != nil {
+		return nil, errors.Wrapf(err, "failed to get search path for database %q", d.databaseName)
+	}
 	isAtLeastPG10 := isAtLeastPG10(d.connectionCtx.EngineVersion)
 
 	txn, err := d.db.BeginTx(ctx, nil)

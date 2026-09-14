@@ -4,15 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/omni/pg/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -53,18 +54,19 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 		TenantMode: checkCtx.TenantMode,
 	}
 
-	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	adviceList := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return rule.explains.AppendSkippedAdvice(adviceList, rule.Title, advisorcode.InsertTooManyRows), nil
 }
 
 type insertRowLimitRule struct {
 	OmniBaseRule
 
-	maxRow        int
-	driver        *sql.DB
-	ctx           context.Context
-	explainCount  int
-	preExecutions []string
-	TenantMode    bool
+	maxRow     int
+	driver     *sql.DB
+	ctx        context.Context
+	explains   advisor.ExplainBudget
+	settings   sessionSettings
+	TenantMode bool
 }
 
 func (*insertRowLimitRule) Name() string {
@@ -72,21 +74,19 @@ func (*insertRowLimitRule) Name() string {
 }
 
 func (r *insertRowLimitRule) OnStatement(node ast.Node) {
+	r.settings.add(node, r.TrimmedStmtText())
+	node, text := pgparser.UnwrapExplainAnalyze(node, r.StmtText)
 	switch n := node.(type) {
-	case *ast.VariableSetStmt:
-		if omniIsRoleOrSearchPathSet(n) {
-			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
-		}
 	case *ast.InsertStmt:
-		r.checkInsert(n)
+		r.checkInsert(n, text)
 	default:
 	}
 }
 
-func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt) {
+func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt, text string) {
 	code := advisorcode.Ok
 	rows := int64(0)
-	statementText := r.TrimmedStmtText()
+	statementText := strings.TrimRight(strings.TrimSpace(text), ";")
 
 	// Count VALUES rows if this is INSERT ... VALUES.
 	if sel, ok := ins.SelectStmt.(*ast.SelectStmt); ok && sel.ValuesLists != nil {
@@ -97,15 +97,14 @@ func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt) {
 		}
 	} else if ins.SelectStmt != nil && r.driver != nil {
 		// For INSERT ... SELECT, use EXPLAIN.
-		if r.explainCount >= common.MaximumLintExplainSize {
+		if !r.explains.Spend(&storepb.Position{Line: r.ContentStartLine() + int32(r.BaseLine)}) {
 			return
 		}
-		r.explainCount++
 
 		res, err := advisor.Query(r.ctx, advisor.QueryContext{
 			TenantMode:    r.TenantMode,
-			PreExecutions: r.preExecutions,
-		}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
+			PreExecutions: r.settings.statements(),
+		}, r.driver, storepb.Engine_POSTGRES, getExplainSQL(statementText))
 
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
@@ -121,7 +120,7 @@ func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt) {
 			return
 		}
 
-		rowCount, err := getAffectedRows(res)
+		rowCount, err := getInsertedRows(res)
 		if err != nil {
 			r.AddAdvice(&storepb.Advice{
 				Status:  r.Level,

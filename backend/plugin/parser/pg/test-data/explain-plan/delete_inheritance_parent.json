@@ -1,0 +1,67 @@
+[
+  {
+    "Plan": {
+      "Node Type": "ModifyTable",
+      "Operation": "Delete",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Relation Name": "inh_parent",
+      "Alias": "inh_parent",
+      "Startup Cost": 0.00,
+      "Total Cost": 18.00,
+      "Plan Rows": 0,
+      "Plan Width": 0,
+      "Target Tables": [
+        {
+          "Relation Name": "inh_parent",
+          "Alias": "inh_parent_1"
+        },
+        {
+          "Relation Name": "inh_child",
+          "Alias": "inh_parent_2"
+        }
+      ],
+      "Plans": [
+        {
+          "Node Type": "Append",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 0.00,
+          "Total Cost": 18.00,
+          "Plan Rows": 101,
+          "Plan Width": 10,
+          "Subplans Removed": 0,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Member",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "inh_parent",
+              "Alias": "inh_parent_1",
+              "Startup Cost": 0.00,
+              "Total Cost": 0.00,
+              "Plan Rows": 1,
+              "Plan Width": 10,
+              "Filter": "(c < 10)"
+            },
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Member",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "inh_child",
+              "Alias": "inh_parent_2",
+              "Startup Cost": 0.00,
+              "Total Cost": 17.50,
+              "Plan Rows": 100,
+              "Plan Width": 10,
+              "Filter": "(c < 10)"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

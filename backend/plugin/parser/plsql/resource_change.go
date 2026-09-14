@@ -5,7 +5,6 @@ import (
 
 	oracleast "github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -35,7 +34,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS:       extractor.sampleDMLs,
+		DMLStatements:    extractor.dmlStatements,
 		DMLCount:         extractor.dmlCount,
 		InsertCount:      extractor.insertCount,
 	}, nil
@@ -46,7 +45,7 @@ type omniChangedResourceExtractor struct {
 	dbMetadata       *model.DatabaseMetadata
 	changedResources *model.ChangedResources
 	statement        string
-	sampleDMLs       []string
+	dmlStatements    []string
 	dmlCount         int
 	insertCount      int
 }
@@ -215,9 +214,7 @@ func (e *omniChangedResourceExtractor) addIndexTable(name *oracleast.ObjectName)
 
 func (e *omniChangedResourceExtractor) trackDML(text string) {
 	e.dmlCount++
-	if len(e.sampleDMLs) < common.MaximumLintExplainSize {
-		e.sampleDMLs = append(e.sampleDMLs, omniStatementText(text))
-	}
+	e.dmlStatements = append(e.dmlStatements, omniStatementText(text))
 }
 
 func omniStatementText(text string) string {

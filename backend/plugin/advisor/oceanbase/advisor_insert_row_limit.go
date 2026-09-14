@@ -61,25 +61,18 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 			continue
 		}
 		checker.checkInsert(stmt.Text, stmt.BaseLine(), insert)
-		if checker.explainCount >= common.MaximumLintExplainSize {
-			break
-		}
 	}
-	return checker.generateAdvice()
+	return checker.explains.AppendSkippedAdvice(checker.adviceList, checker.title, code.InsertTooManyRows), nil
 }
 
 type insertRowLimitChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
-}
-
-func (checker *insertRowLimitChecker) generateAdvice() ([]*storepb.Advice, error) {
-	return checker.adviceList, nil
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	maxRow     int
+	driver     *sql.DB
+	ctx        context.Context
+	explains   advisor.ExplainBudget
 }
 
 func (checker *insertRowLimitChecker) checkInsert(text string, baseLine int, stmt *ast.InsertStmt) {
@@ -94,8 +87,10 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 	if checker.driver == nil {
 		return
 	}
+	if !checker.explains.Spend(common.ConvertANTLRLineToPosition(line)) {
+		return
+	}
 
-	checker.explainCount++
 	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_OCEANBASE, fmt.Sprintf("EXPLAIN format=json %s", text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{

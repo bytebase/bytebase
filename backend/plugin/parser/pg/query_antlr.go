@@ -1,8 +1,6 @@
 package pg
 
 import (
-	"strings"
-
 	"github.com/bytebase/omni/pg/ast"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -43,7 +41,7 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 			}
 
 		case *ast.ExplainStmt:
-			if isExplainAnalyze(n) {
+			if isExplainAnalyzeOmni(n) {
 				// EXPLAIN ANALYZE executes the query, so it must be a read-only SELECT.
 				sel, ok := n.Query.(*ast.SelectStmt)
 				if !ok || isWriteSelect(sel) {
@@ -66,28 +64,12 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 	return true, !hasExecute, nil
 }
 
-// isExplainAnalyze checks if an ExplainStmt has the ANALYZE option.
-func isExplainAnalyze(n *ast.ExplainStmt) bool {
-	if n.Options == nil {
-		return false
-	}
-	for _, item := range n.Options.Items {
-		if de, ok := item.(*ast.DefElem); ok {
-			if strings.EqualFold(de.Defname, "analyze") {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // isWriteSelect reports whether a SelectStmt actually writes — and so must not take
 // the read-only editor path. A SELECT writes if it has an INTO target (SELECT ...
 // INTO creates a table) or any of its CTE terms is data-modifying.
 //
-// This is the unified write-detection primitive for the read-only gate;
-// classifyQueryType (query_type.go) keeps reporting the root statement type for its
-// own consumers — only the detection is shared, not the classifiers' outputs.
+// The read-only gate uses it; classifyQueryType (query_type.go) shares containsWriteCTE
+// so the permission check treats the same SELECTs as DML.
 func isWriteSelect(n *ast.SelectStmt) bool {
 	if n == nil {
 		return false
