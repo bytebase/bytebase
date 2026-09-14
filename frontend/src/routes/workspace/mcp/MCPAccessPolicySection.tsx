@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { useLocalStorageBoolean } from "@/hooks/useLocalStorageBoolean";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -30,10 +29,6 @@ import {
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  STORAGE_KEY_MCP_LADDER_DETAILS,
-  STORAGE_KEY_MCP_LADDER_OPEN,
-} from "@/utils/storage-keys";
 import { MCPCapabilityLadder } from "./MCPCapabilityLadder";
 
 export function MCPAccessPolicySection() {
@@ -44,16 +39,10 @@ export function MCPAccessPolicySection() {
   const [pick, setPick] = useState<MCPMode | undefined>(undefined);
   const [ignoreMasking, setIgnoreMasking] = useState(false);
   const [readSettled, setReadSettled] = useState(false);
-  // A habit of the person, not a fact about the workspace: an admin who opened
-  // the list once wants it open the next time they come to compare.
-  const [ladderOpen, setLadderOpen] = useLocalStorageBoolean(
-    STORAGE_KEY_MCP_LADDER_OPEN,
-    false
-  );
-  const [ladderDetails, setLadderDetails] = useLocalStorageBoolean(
-    STORAGE_KEY_MCP_LADDER_DETAILS,
-    false
-  );
+  // Held here rather than in the ladder so the open state carries from the view
+  // into the editor, which renders the ladder in a different place.
+  const [ladderOpen, setLadderOpen] = useState(false);
+  const [ladderDetails, setLadderDetails] = useState(false);
   const serverInfo = useAppStore((state) => state.serverInfo);
   const loadServerInfo = useAppStore((state) => state.loadServerInfo);
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);

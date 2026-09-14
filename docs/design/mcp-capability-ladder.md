@@ -232,8 +232,9 @@ name, which the chip (view) or the
 selector (edit) already shows. Expanded, it becomes the list heading "Read-write allows", with a
 "Show details" control on the right. In view state it sits under the chip line; in edit state it
 sits under the selector and its "Best for" line, above the masking toggle, so the cause and its
-effect are adjacent. The open state persists per browser and carries across the view-to-edit
-transition within a page visit.
+effect are adjacent. The open state carries across the view-to-edit transition within a page
+visit, and starts collapsed on the next one. Remembering it per browser was cut in review as more
+machinery than a settings page visited this rarely earns.
 
 **D2 — Content: rows first, sub-items behind one toggle.** Expanded, each row shows its title and
 its tier tag, nothing else. "Show details" reveals the sub-item line for every row at once, so
@@ -417,7 +418,7 @@ reference.
 
 | State | What the section shows |
 |---|---|
-| View · Read-only or Read-write | Chip line with Edit policy, plus the masking chip when the flag is stored (D7); the disclosure line as the description, collapsed by default. The open state persists per browser (D1), so neither the product nor a test may treat collapsed as an invariant. |
+| View · Read-only or Read-write | Chip line with Edit policy, plus the masking chip when the flag is stored (D7); the disclosure line as the description, collapsed on every visit (D1). |
 | View · Disabled | Chip line, with the masking chip naming MCP as off when the flag is stored (D7); "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
 | Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). No masking chip: in edit the toggle is the flag's disclosure (D7). |
@@ -515,8 +516,8 @@ under
   parity over all of them; the four template-keyed families (`ladder.row.`, `.stops.`, `.summary.`,
   `.tier.`) are registered in its `DYNAMIC_PREFIXES`, which exempts them from the unused-key check
   as well, so their coverage comes from `mcpCapabilityRows.i18n.test.ts` instead.
-- Tests: the served set per mode; the disclosure collapsed by default, opens, persists, and follows
-  the pick; the details toggle reveals sub-items on every row and persists with the open state; the
+- Tests: the served set per mode; the disclosure collapsed by default, opens, follows the pick, and
+  starts over on the next visit; the details toggle reveals sub-items on every row; the
   "Best for" line follows the selection; Disabled renders the static line in edit and the sentence in
   view; the consent page renders the row titles; one e2e case that edits Read-only to Read-write,
   saves, and sees the chip change.

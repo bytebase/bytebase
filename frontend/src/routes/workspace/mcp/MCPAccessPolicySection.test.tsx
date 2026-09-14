@@ -118,9 +118,6 @@ const clickText = (container: HTMLElement, text: string) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  // The disclosure remembers itself per browser, so each case starts from the
-  // default rather than from whatever the previous one left open.
-  localStorage.clear();
   mocks.permissionDisabled.value = false;
   mocks.dataMaskingAvailable.value = true;
   storePolicy(MCPSetting_Capability.READ_ONLY);
@@ -399,7 +396,7 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  test("the open and details state survive leaving the page", async () => {
+  test("the open and details state start over when the page is reopened", async () => {
     const first = renderIntoContainer(<MCPAccessPolicySection />);
     first.render();
     await flush();
@@ -415,7 +412,11 @@ describe("MCPAccessPolicySection", () => {
     const second = renderIntoContainer(<MCPAccessPolicySection />);
     second.render();
     await flush();
-    expect(second.container.textContent).toContain(
+    expect(second.container.querySelectorAll("li")).toHaveLength(0);
+    clickText(second.container, "settings.mcp.ladder.summary.read-only");
+    await flush();
+    expect(second.container.querySelectorAll("li").length).toBeGreaterThan(0);
+    expect(second.container.textContent).not.toContain(
       "settings.mcp.ladder.row.read-schemas.details"
     );
     second.unmount();

@@ -10,10 +10,6 @@ import { join } from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { rowsInTier } from "../../../src/components/mcp/mcpCapabilityRows";
 import enUS from "../../../src/locales/en-US.json";
-import {
-  STORAGE_KEY_MCP_LADDER_DETAILS,
-  STORAGE_KEY_MCP_LADDER_OPEN,
-} from "../../../src/utils/storage-keys";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
 
@@ -70,22 +66,6 @@ async function gotoMCPPage(page: Page): Promise<void> {
 // name reached the accessibility tree.
 function chip(page: Page, mode: string) {
   return page.getByText(COPY.policy.current.replace("{{mode}}", mode));
-}
-
-// The disclosure remembers itself per browser, so a case that asserts the
-// collapsed default states the precondition rather than assuming it. Proving it
-// beats forcing it: if a future setup-project run ever captures these keys into
-// .auth/state.json, this fails where a silent clear would have masked it.
-async function expectDisclosureUnset(page: Page): Promise<void> {
-  expect(
-    await page.evaluate(
-      ([open, details]) => [
-        localStorage.getItem(open),
-        localStorage.getItem(details),
-      ],
-      [STORAGE_KEY_MCP_LADDER_OPEN, STORAGE_KEY_MCP_LADDER_DETAILS]
-    )
-  ).toEqual([null, null]);
 }
 
 // The row's list item, so a title that also appears inside a summary sentence
@@ -164,7 +144,6 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
-    await expectDisclosureUnset(page);
 
     await expect(chip(page, "Read-only")).toBeVisible();
     await expect(page.getByText(READ_ONLY_SUMMARY)).toBeVisible();
@@ -198,8 +177,6 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
-    // Owns its precondition: this case asserts that details start hidden.
-    await expectDisclosureUnset(page);
     await openLadder(page);
 
     // Rows a mode does not serve stay visible and muted, so comparing two
@@ -231,12 +208,6 @@ test.describe("MCP access policy capability ladder", () => {
       page.getByText(COPY.ladder.row["read-workflow"].details)
     ).toBeVisible();
 
-    // Both preferences are remembered per browser.
-    await page.reload();
-    await page.waitForLoadState("networkidle").catch(() => {});
-    await expect(page.getByText(EXPORT_DETAILS)).toBeVisible({
-      timeout: 10_000,
-    });
   });
 
   test("picking Read-write renders the post-save list, and Save persists it (M3)", async ({
@@ -244,7 +215,6 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
-    await expectDisclosureUnset(page);
     await page.getByRole("button", { name: "Edit policy" }).click();
 
     // The cards are an icon, the mode name and a three-word caption; the
