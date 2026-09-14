@@ -212,6 +212,8 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE t SET v = v--1 WHERE id = 1", "UPDATE t SET v = v"},
 			{"UPDATE t SET v = $$--$$ WHERE id = 1", "UPDATE t SET v = $$--$$"},
 			{"UPDATE t SET v = 1 -- don't\nWHERE id = 1", "UPDATE t SET v = 1 -- don't\n"},
+			{"UPDATE t SET v = v - -1 WHERE flag", "UPDATE t SET v = v --? WHERE flag"},
+			{"UPDATE t SET v = 1 -- x\nWHERE id = 1", "UPDATE t SET v = 1 -- x WHERE id=?"},
 			// The quote never closes, so each statement keeps its own shape.
 			{"UPDATE t SET v = $$it's$$ WHERE id = 1", "UPDATE t SET v = $$it's$$"},
 		} {
@@ -220,6 +222,7 @@ func TestShapeKey(t *testing.T) {
 		}
 		require.NotEqual(t, shapeKey("UPDATE t SET v = 'it\\'s' WHERE id = 1", true), shapeKey("UPDATE t SET v = 'it\\'s'", true))
 		require.NotEqual(t, shapeKey(`UPDATE t SET v = "a\"b" WHERE id = 1`, true), shapeKey(`UPDATE t SET v = "a\"b"`, true))
+		require.NotEqual(t, shapeKey("UPDATE t SET v = 1 # x\nWHERE id = 1", true), shapeKey("UPDATE t SET v = 1 # x WHERE id=?", true))
 	})
 }
 

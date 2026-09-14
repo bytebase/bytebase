@@ -365,15 +365,19 @@ func groupStatementsByShape(statements []string, mysqlFamily bool) []*statementS
 // shapeKey replaces the string and numeric literals of a statement with ? and drops whitespace that
 // does not separate words. Everything else keeps its text, including identifiers, their case, and
 // comments with the numbers in them, such as optimizer hints. mysqlFamily applies the MySQL,
-// MariaDB, TiDB, and OceanBase rule that a backslash escapes the next character of a quoted string.
+// MariaDB, TiDB, and OceanBase rules that a backslash escapes the next character of a quoted string
+// and that # starts a line comment.
 func shapeKey(statement string, mysqlFamily bool) string {
 	var b strings.Builder
 	space := false
-	// Whitespace is kept only between words, where ? counts as a word.
-	separates := func(c byte) bool { return c == '?' || isWordByte(c) }
+	// Whitespace is kept between words, where ? counts as a word, and in - - so that it never reads
+	// as a comment marker.
+	isWord := func(c byte) bool { return c == '?' || isWordByte(c) }
 	write := func(c byte) {
-		if space && b.Len() > 0 && separates(b.String()[b.Len()-1]) && separates(c) {
-			b.WriteByte(' ')
+		if space && b.Len() > 0 {
+			if last := b.String()[b.Len()-1]; (isWord(last) && isWord(c)) || (last == '-' && c == '-') {
+				b.WriteByte(' ')
+			}
 		}
 		space = false
 		b.WriteByte(c)
@@ -415,7 +419,7 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			write(c)
 			b.WriteString(statement[i+1 : end])
 			i = end
-		case strings.HasPrefix(statement[i:], "--") || strings.HasPrefix(statement[i:], "/*"):
+		case strings.HasPrefix(statement[i:], "--") || strings.HasPrefix(statement[i:], "/*") || (mysqlFamily && c == '#'):
 			// Copying never drops text, so a marker misread as a comment only splits shapes.
 			end := commentEnd(statement, i)
 			write(c)
@@ -443,12 +447,13 @@ func shapeKey(statement string, mysqlFamily bool) string {
 	return b.String()
 }
 
-// commentEnd returns the offset just past the -- or /* comment that starts at start: the end of its
-// line or its closing */, or the end of the statement when it does not close.
+// commentEnd returns the offset just past the comment that starts at start: past the newline that
+// ends a -- or # comment, which keeps the next line out of the comment's copied text, or past the */
+// that closes a /* comment, or the end of the statement when it does not close.
 func commentEnd(statement string, start int) int {
-	if statement[start+1] == '-' {
+	if statement[start] != '/' {
 		if end := strings.IndexByte(statement[start:], '\n'); end >= 0 {
-			return start + end
+			return start + end + 1
 		}
 		return len(statement)
 	}
