@@ -139,7 +139,7 @@ func TestGitOpsCheck(t *testing.T) {
 		updateChecked = true
 		a.Len(estimateWarnings, 1)
 		a.Equal(v1pb.Advice_WARNING, estimateWarnings[0].Status)
-		a.Contains(estimateWarnings[0].Content, "Affected rows could not be estimated for 1 of 1 sampled DML statements")
+		a.Contains(estimateWarnings[0].Content, "Affected rows could not be estimated for 1 of 1 DML statements")
 	}
 	a.True(updateChecked)
 	// Should have 3 results for the single target (one for each file)

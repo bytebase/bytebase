@@ -86,8 +86,26 @@ func TestCalculateAffectedRows(t *testing.T) {
 			dmlCount:     2,
 			insertCount:  4,
 			wantRows:     10,
-			wantWarning:  "Affected rows could not be estimated for 1 of 2 sampled DML statements: table t_new does not exist",
+			wantWarning:  "Affected rows could not be estimated for 1 of 2 DML statements: table t_new does not exist",
 			wantExplains: 2,
+		},
+		{
+			// The shape's other statement is estimated, so the failed one counts as that estimate.
+			name:         "failed_sample_of_an_estimated_shape_warns",
+			statements:   []estimate{{"UPDATE t SET c = 1;", 0, errors.New("deadlock detected")}, {"UPDATE t SET c = 2;", 5, nil}},
+			dmlCount:     2,
+			wantRows:     10,
+			wantWarning:  "Affected rows could not be estimated for 1 of 2 DML statements: deadlock detected",
+			wantExplains: 2,
+		},
+		{
+			// One sampled shape fails and two shapes are never sampled; all three count as the average of the other nine.
+			name:         "failures_and_unsampled_shapes_warn_together",
+			statements:   append(append([]estimate{{"DELETE FROM missing;", 0, errors.New("table missing does not exist")}}, repeat(9, "UPDATE t%d SET c = 1;", 10)...), estimate{"DELETE FROM a;", 1000, nil}, estimate{"DELETE FROM b;", 1000, nil}),
+			dmlCount:     12,
+			wantRows:     120,
+			wantWarning:  "Affected rows could not be estimated for 3 of 12 DML statements: table missing does not exist",
+			wantExplains: 10,
 		},
 		{
 			name:         "every_sample_failed",
@@ -95,13 +113,13 @@ func TestCalculateAffectedRows(t *testing.T) {
 			dmlCount:     1,
 			insertCount:  4,
 			wantRows:     4,
-			wantWarning:  "Affected rows could not be estimated for 1 of 1 sampled DML statements: syntax error",
+			wantWarning:  "Affected rows could not be estimated for 1 of 1 DML statements: syntax error",
 			wantExplains: 1,
 		},
 		{
 			name:        "dml_without_text",
 			dmlCount:    2,
-			wantWarning: "Affected rows could not be estimated for 2 DML statements.",
+			wantWarning: "Affected rows could not be estimated for 2 of 2 DML statements.",
 		},
 		{
 			name:         "saturates_instead_of_overflowing",

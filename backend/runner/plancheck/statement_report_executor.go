@@ -289,6 +289,7 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 				if err != nil {
 					slog.Error("failed to calculate affected rows", log.BBError(err))
 					failures = append(failures, err)
+					shape.failed++
 					continue
 				}
 				shape.rows = common.AddRows(shape.rows, count)
@@ -324,14 +325,20 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 	totalAffectedRows := common.AddRows(dmlRows, int64(changeSummary.InsertCount))
 	totalAffectedRows = common.AddRows(totalAffectedRows, changeSummary.ChangedResources.CountAffectedTableRows())
 
+	// A failed sample of a shape with other estimates counts as that shape's average, but is still
+	// not estimated.
+	notEstimated := unestimated
+	for _, shape := range shapes {
+		if shape.estimated > 0 {
+			notEstimated += shape.failed
+		}
+	}
 	var warning string
 	switch {
 	case len(failures) > 0:
-		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d sampled DML statements: %v", len(failures), sampled, failures[0])
-	case estimated == 0 && changeSummary.DMLCount > 0:
-		warning = fmt.Sprintf("Affected rows could not be estimated for %d DML statements.", changeSummary.DMLCount)
-	case unestimated > 0:
-		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d DML statements.", unestimated, changeSummary.DMLCount)
+		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d DML statements: %v", notEstimated, changeSummary.DMLCount, failures[0])
+	case notEstimated > 0:
+		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d DML statements.", notEstimated, changeSummary.DMLCount)
 	default:
 	}
 	return totalAffectedRows, warning
@@ -341,6 +348,7 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 type statementShape struct {
 	statements []string
 	estimated  int
+	failed     int
 	rows       int64
 }
 
