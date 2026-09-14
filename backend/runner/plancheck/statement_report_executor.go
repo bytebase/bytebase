@@ -313,13 +313,13 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 		case shape.estimated == len(shape.statements):
 			dmlRows = addRows(dmlRows, shape.rows)
 		case shape.estimated > 0:
-			dmlRows = addRows(dmlRows, roundRows(float64(shape.rows)/float64(shape.estimated)*float64(len(shape.statements))))
+			dmlRows = addRows(dmlRows, common.RoundRows(float64(shape.rows)/float64(shape.estimated)*float64(len(shape.statements))))
 		default:
 			unestimated += len(shape.statements)
 		}
 	}
 	if estimated > 0 && unestimated > 0 {
-		dmlRows = addRows(dmlRows, roundRows(float64(estimatedRows)/float64(estimated)*float64(unestimated)))
+		dmlRows = addRows(dmlRows, common.RoundRows(float64(estimatedRows)/float64(estimated)*float64(unestimated)))
 	}
 	totalAffectedRows := addRows(dmlRows, int64(changeSummary.InsertCount))
 	totalAffectedRows = addRows(totalAffectedRows, changeSummary.ChangedResources.CountAffectedTableRows())
@@ -525,11 +525,4 @@ func addRows(a, b int64) int64 {
 		return math.MaxInt64
 	}
 	return a + b
-}
-
-func roundRows(rows float64) int64 {
-	if rows >= math.MaxInt64 {
-		return math.MaxInt64
-	}
-	return int64(math.Round(rows))
 }

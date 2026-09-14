@@ -2,9 +2,10 @@ package pg
 
 import (
 	"encoding/json"
-	"math"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 type explainPlanNode struct {
@@ -51,7 +52,7 @@ func GetEstimatedAffectedRowsFromExplainJSON(plan string) (int64, error) {
 	if modifyTableCount == 0 {
 		return 0, errors.New("the plan has no ModifyTable node")
 	}
-	return int64(math.Round(total)), nil
+	return common.RoundRows(total), nil
 }
 
 // GetEstimatedInsertedRowsFromExplainJSON returns the planner's estimate of the rows a top-level
@@ -68,7 +69,7 @@ func GetEstimatedInsertedRowsFromExplainJSON(plan string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return int64(math.Round(rows)), nil
+	return common.RoundRows(rows), nil
 }
 
 // parseExplainJSON returns the root plan node of each statement in `EXPLAIN (FORMAT JSON)` output.

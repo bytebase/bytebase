@@ -2,6 +2,7 @@
 package common
 
 import (
+	"math"
 	"testing"
 	"unicode/utf8"
 
@@ -448,4 +449,11 @@ func TestSanitizeUTF8MessageNameFields(t *testing.T) {
 	require.Equal(t, "测试列", metadata.Schemas[0].Tables[0].Columns[1].Name,
 		"valid UTF-8 must pass through unchanged")
 	require.True(t, utf8.ValidString(metadata.Schemas[0].Tables[0].Name))
+}
+
+func TestRoundRows(t *testing.T) {
+	require.Equal(t, int64(3), RoundRows(2.5))
+	require.Equal(t, int64(1000), RoundRows(999.6))
+	require.Equal(t, int64(math.MaxInt64), RoundRows(math.MaxInt64))
+	require.Equal(t, int64(math.MaxInt64), RoundRows(1e30))
 }

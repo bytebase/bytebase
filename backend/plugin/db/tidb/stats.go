@@ -3,12 +3,12 @@ package tidb
 import (
 	"context"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
@@ -78,5 +78,5 @@ func getAffectedRowsFromPlan(plan []planRow) (int64, error) {
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to parse estRows of %q", plan[1].id)
 	}
-	return int64(math.Round(estRows)), nil
+	return common.RoundRows(estRows), nil
 }

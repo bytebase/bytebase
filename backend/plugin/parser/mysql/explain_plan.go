@@ -2,13 +2,14 @@ package mysql
 
 import (
 	"encoding/json"
-	"math"
 	"strconv"
 	"strings"
 	"unicode"
 
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 // AffectedRowsQuery returns the statement to EXPLAIN for the rows stmt, parsed from statement,
@@ -161,7 +162,7 @@ func CapAffectedRowsByLimit(stmt ast.Node, rows float64) int64 {
 		limit = s.Limit
 	default:
 	}
-	count := int64(math.Round(rows))
+	count := common.RoundRows(rows)
 	if limitRows, ok := limitCount(limit); ok && limitRows < count {
 		return limitRows
 	}
@@ -181,7 +182,7 @@ func EstimateAffectedRowsFromOceanBaseExplainJSON(plan string) (int64, error) {
 		if !ok {
 			return 0, errors.Errorf("operator %q has no EST.ROWS", operator)
 		}
-		return int64(math.Round(rows)), nil
+		return common.RoundRows(rows), nil
 	}
 	var maxRows float64
 	found := false
@@ -206,7 +207,7 @@ func EstimateAffectedRowsFromOceanBaseExplainJSON(plan string) (int64, error) {
 	if !found {
 		return 0, errors.New("the plan has no operator")
 	}
-	return int64(math.Round(maxRows)), nil
+	return common.RoundRows(maxRows), nil
 }
 
 // queryBlockRows returns the planner's estimate of the rows a query block produces, summed over

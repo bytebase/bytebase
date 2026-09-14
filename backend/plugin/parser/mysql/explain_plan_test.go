@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"math"
 	"os"
 	"path/filepath"
 	"testing"
@@ -359,6 +360,22 @@ func TestEstimateAffectedRowsFromExplainJSON(t *testing.T) {
 			got, err := EstimateAffectedRowsFromExplainJSON(parseSingleStatement(t, tc.statement), readExplainPlanFixture(t, tc.fixture))
 			require.NoError(t, err)
 			require.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestCapAffectedRowsByLimit(t *testing.T) {
+	for _, tc := range []struct {
+		statement string
+		rows      float64
+		want      int64
+	}{
+		{statement: "INSERT INTO t2 SELECT t.id FROM t, big, big AS big3", rows: 1e30, want: math.MaxInt64},
+		{statement: "INSERT INTO t2 SELECT t.id FROM t, big, big AS big3 LIMIT 10", rows: 1e30, want: 10},
+		{statement: "DELETE FROM t WHERE id > 0 LIMIT 5", rows: 2.5, want: 3},
+	} {
+		t.Run(tc.statement, func(t *testing.T) {
+			require.Equal(t, tc.want, CapAffectedRowsByLimit(parseSingleStatement(t, tc.statement), tc.rows))
 		})
 	}
 }

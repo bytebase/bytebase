@@ -14,6 +14,7 @@ import (
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -162,10 +163,7 @@ func getAffectedRowsFromPlan(plan []string) (int64, error) {
 	if mutationCount == 0 {
 		return 0, errors.New("the plan has no mutation node")
 	}
-	if total >= math.MaxInt64 {
-		return math.MaxInt64, nil
-	}
-	return int64(total), nil
+	return common.RoundRows(total), nil
 }
 
 // getMutationRows returns the rows written by the mutation node nodes[i]. A mutation that returns
