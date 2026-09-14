@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -20,21 +21,21 @@ func TestPriorBackupLongColumnWarning(t *testing.T) {
 	// The real Oracle sync stores the connection schema's tables under an
 	// EMPTY schema name (db/oracle/sync.go) — the fixture must match that
 	// shape or the schema comparison is never exercised realistically.
-	dbSchema := &storepb.DatabaseSchemaMetadata{
+	dbSchema := &metadatapb.DatabaseSchemaMetadata{
 		Name: "DB",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "",
-				Tables: []*storepb.TableMetadata{
-					{Name: "T_LONG", Columns: []*storepb.ColumnMetadata{
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "T_LONG", Columns: []*metadatapb.ColumnMetadata{
 						{Name: "ID", Type: "NUMBER"},
 						{Name: "PAYLOAD", Type: "LONG"},
 					}},
-					{Name: "T_LONG_RAW", Columns: []*storepb.ColumnMetadata{
+					{Name: "T_LONG_RAW", Columns: []*metadatapb.ColumnMetadata{
 						{Name: "ID", Type: "NUMBER"},
 						{Name: "BLOB_ISH", Type: "LONG RAW"},
 					}},
-					{Name: "T_CLOB", Columns: []*storepb.ColumnMetadata{
+					{Name: "T_CLOB", Columns: []*metadatapb.ColumnMetadata{
 						{Name: "ID", Type: "NUMBER"},
 						{Name: "DOC", Type: "CLOB"},
 					}},
@@ -121,24 +122,24 @@ func TestPriorBackupLongColumnWarning(t *testing.T) {
 	// catalogued upper-case: T_LONG and a quoted "t_long" are DIFFERENT
 	// tables. The lookup must honor that instead of EqualFold-ing across it.
 	t.Run("quoted_identifier_case_semantics", func(t *testing.T) {
-		csSchema := &storepb.DatabaseSchemaMetadata{
+		csSchema := &metadatapb.DatabaseSchemaMetadata{
 			Name: "DB",
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name: "",
-					Tables: []*storepb.TableMetadata{
+					Tables: []*metadatapb.TableMetadata{
 						// Unquoted DDL: catalogued upper, has a LONG column.
-						{Name: "T_LONG", Columns: []*storepb.ColumnMetadata{
+						{Name: "T_LONG", Columns: []*metadatapb.ColumnMetadata{
 							{Name: "ID", Type: "NUMBER"},
 							{Name: "PAYLOAD", Type: "LONG"},
 						}},
 						// Quoted DDL twin: exact-case lower, NO LONG column.
-						{Name: "t_long", Columns: []*storepb.ColumnMetadata{
+						{Name: "t_long", Columns: []*metadatapb.ColumnMetadata{
 							{Name: "ID", Type: "NUMBER"},
 							{Name: "NOTE", Type: "VARCHAR2"},
 						}},
 						// Quoted DDL with a LONG column.
-						{Name: "t_raw", Columns: []*storepb.ColumnMetadata{
+						{Name: "t_raw", Columns: []*metadatapb.ColumnMetadata{
 							{Name: "ID", Type: "NUMBER"},
 							{Name: "RAWCOL", Type: "LONG RAW"},
 						}},

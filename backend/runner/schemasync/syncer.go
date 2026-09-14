@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/conc/pool"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -449,7 +450,7 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 }
 
 // SyncInstance syncs the schema for all databases in an instance.
-func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (updatedInstance *store.InstanceMessage, allDatabases []*storepb.DatabaseSchemaMetadata, newDatabases []*store.DatabaseMessage, retErr error) {
+func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (updatedInstance *store.InstanceMessage, allDatabases []*metadatapb.DatabaseSchemaMetadata, newDatabases []*store.DatabaseMessage, retErr error) {
 	startedAt := time.Now()
 	defer func() {
 		panicValue := recover()
@@ -488,7 +489,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
 	}
-	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
+	var filteredDatabaseMetadatas []*metadatapb.DatabaseSchemaMetadata
 	var databaseProjectID string
 	if instance.ProjectID != nil {
 		databaseProjectID = *instance.ProjectID
@@ -522,7 +523,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	}
 
 	for _, database := range databases {
-		idx := slices.IndexFunc(filteredDatabaseMetadatas, func(db *storepb.DatabaseSchemaMetadata) bool { return db.Name == database.DatabaseName })
+		idx := slices.IndexFunc(filteredDatabaseMetadatas, func(db *metadatapb.DatabaseSchemaMetadata) bool { return db.Name == database.DatabaseName })
 		if idx < 0 {
 			if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 				InstanceID:   instance.ResourceID,
@@ -590,7 +591,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	// If the schema does not exist, then we create a new one.
 	// This happens when creating a new database in the test.
 	if dbMetadata == nil {
-		dbMetadata = model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, nil, &storepb.DatabaseConfig{}, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
+		dbMetadata = model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, nil, &storepb.DatabaseConfig{}, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
 	}
 
 	dbConfig := dbMetadata.GetConfig()
@@ -667,7 +668,7 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 	return err
 }
 
-func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbMetadata *storepb.DatabaseSchemaMetadata) bool {
+func (s *Syncer) databaseBackupAvailable(ctx context.Context, instance *store.InstanceMessage, dbMetadata *metadatapb.DatabaseSchemaMetadata) bool {
 	if !common.EngineSupportPriorBackup(instance.Metadata.GetEngine()) {
 		return false
 	}

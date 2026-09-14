@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
@@ -284,7 +285,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 		}, nil
 	}
 
-	var viewSchema *storepb.ViewMetadata
+	var viewSchema *metadatapb.ViewMetadata
 	if q.ignoreCaseSensitive {
 		for _, view := range schema.ListViewNames() {
 			if strings.EqualFold(view, tableName) {

@@ -4,10 +4,9 @@ import { Button } from "@/components/ui/button";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/ConnectionHolder.vue.
- * Rendered as the v-else fallback inside the admin-mode Terminal panel when
- * there is no active database connection. Click opens the connection panel
- * via the SQL Editor UI store.
+ * Rendered as the fallback inside the admin-mode Terminal panel when there
+ * is no active database connection. Click opens the connection panel via
+ * the SQL Editor UI store.
  */
 export function ConnectionHolder() {
   const { t } = useTranslation();

@@ -6,7 +6,7 @@ import (
 	"slices"
 	"strings"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	metadatapb "github.com/bytebase/omni/metadata"
 )
 
 type databaseState struct {
@@ -20,7 +20,7 @@ func newDatabaseState() *databaseState {
 	}
 }
 
-func convertToDatabaseState(database *storepb.DatabaseSchemaMetadata) *databaseState {
+func convertToDatabaseState(database *metadatapb.DatabaseSchemaMetadata) *databaseState {
 	state := newDatabaseState()
 	state.name = database.Name
 	for _, schema := range database.Schemas {
@@ -74,7 +74,7 @@ func newSchemaState() *schemaState {
 	}
 }
 
-func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
+func convertToSchemaState(schema *metadatapb.SchemaMetadata) *schemaState {
 	state := newSchemaState()
 	state.name = schema.Name
 	for i, table := range schema.Tables {
@@ -204,7 +204,7 @@ func sortedColumns(columns map[string]*columnState) []*columnState {
 	return sorted
 }
 
-func convertToTableState(id int, schemaName string, table *storepb.TableMetadata) *tableState {
+func convertToTableState(id int, schemaName string, table *metadatapb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
 	state.schema = schemaName
 	state.comment = table.Comment
@@ -229,7 +229,7 @@ type foreignKeyState struct {
 	referencedColumns []string
 }
 
-func convertToForeignKeyState(id int, foreignKey *storepb.ForeignKeyMetadata) *foreignKeyState {
+func convertToForeignKeyState(id int, foreignKey *metadatapb.ForeignKeyMetadata) *foreignKeyState {
 	return &foreignKeyState{
 		id:                id,
 		name:              foreignKey.Name,
@@ -273,7 +273,7 @@ type indexState struct {
 	tp      string
 }
 
-func convertToIndexState(id int, index *storepb.IndexMetadata) *indexState {
+func convertToIndexState(id int, index *metadatapb.IndexMetadata) *indexState {
 	return &indexState{
 		id:      id,
 		name:    index.Name,
@@ -386,7 +386,7 @@ func (c *columnState) toString(buf *strings.Builder) error {
 	return nil
 }
 
-func convertToColumnState(id int, column *storepb.ColumnMetadata) *columnState {
+func convertToColumnState(id int, column *metadatapb.ColumnMetadata) *columnState {
 	result := &columnState{
 		id:       id,
 		name:     column.Name,
@@ -429,7 +429,7 @@ type viewState struct {
 	comment    string
 }
 
-func convertToViewState(id int, schemaName string, view *storepb.ViewMetadata) *viewState {
+func convertToViewState(id int, schemaName string, view *metadatapb.ViewMetadata) *viewState {
 	return &viewState{
 		id:         id,
 		schema:     schemaName,

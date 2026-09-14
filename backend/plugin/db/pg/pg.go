@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -315,8 +316,8 @@ func (d *Driver) GetDB() *sql.DB {
 }
 
 // getDatabases gets all databases of an instance.
-func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
-	var databases []*storepb.DatabaseSchemaMetadata
+func (d *Driver) getDatabases(ctx context.Context) ([]*metadatapb.DatabaseSchemaMetadata, error) {
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	rows, err := d.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate, pg_catalog.pg_get_userbyid(datdba) as db_owner FROM pg_database;")
 	if err != nil {
 		return nil, err
@@ -324,7 +325,7 @@ func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMet
 	defer rows.Close()
 
 	for rows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
+		database := &metadatapb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation, &database.Owner); err != nil {
 			return nil, err
 		}

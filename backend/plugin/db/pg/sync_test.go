@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -325,7 +326,7 @@ CREATE INDEX idx_secret_name ON restricted.secret_table (name);
 	metadata, err := pgDriver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
-	var secretTable *storepb.TableMetadata
+	var secretTable *metadatapb.TableMetadata
 	for _, schema := range metadata.Schemas {
 		if schema.Name != "restricted" {
 			continue
@@ -456,7 +457,7 @@ COMMENT ON TABLE test_defaults IS 'Test table for column default schema qualific
 	require.NotNil(t, metadata)
 
 	// Find our test table
-	var testTable *storepb.TableMetadata
+	var testTable *metadatapb.TableMetadata
 	for _, schema := range metadata.Schemas {
 		if schema.Name == "public" {
 			for _, table := range schema.Tables {
@@ -470,7 +471,7 @@ COMMENT ON TABLE test_defaults IS 'Test table for column default schema qualific
 	require.NotNil(t, testTable, "test_defaults table should be found")
 
 	// Create a map for easier column lookup
-	columnMap := make(map[string]*storepb.ColumnMetadata)
+	columnMap := make(map[string]*metadatapb.ColumnMetadata)
 	for _, col := range testTable.Columns {
 		columnMap[col.Name] = col
 	}
@@ -644,7 +645,7 @@ CREATE TABLE critical_test (
 	require.NoError(t, err)
 
 	// Find the test table
-	var testTable *storepb.TableMetadata
+	var testTable *metadatapb.TableMetadata
 	for _, schema := range metadata.Schemas {
 		if schema.Name == "public" {
 			for _, table := range schema.Tables {
@@ -658,7 +659,7 @@ CREATE TABLE critical_test (
 	require.NotNil(t, testTable)
 
 	// Verify cross-schema qualification
-	columnMap := make(map[string]*storepb.ColumnMetadata)
+	columnMap := make(map[string]*metadatapb.ColumnMetadata)
 	for _, col := range testTable.Columns {
 		columnMap[col.Name] = col
 	}
@@ -746,9 +747,9 @@ CREATE TYPE coll_qualified AS (v text COLLATE locale.mycoll);
 	metadata, err := pgDriver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
-	compositesBySchema := make(map[string]map[string]*storepb.CompositeTypeMetadata)
+	compositesBySchema := make(map[string]map[string]*metadatapb.CompositeTypeMetadata)
 	for _, schemaMeta := range metadata.Schemas {
-		m := make(map[string]*storepb.CompositeTypeMetadata)
+		m := make(map[string]*metadatapb.CompositeTypeMetadata)
 		for _, composite := range schemaMeta.CompositeTypes {
 			m[composite.Name] = composite
 		}
@@ -913,7 +914,7 @@ func TestSyncForeignTablesWithoutTablePrivilege(t *testing.T) {
 	metadata, err := pgDriver.SyncDBSchema(ctx)
 	require.NoError(t, err)
 
-	var fdwSchema *storepb.SchemaMetadata
+	var fdwSchema *metadatapb.SchemaMetadata
 	for _, schema := range metadata.Schemas {
 		if schema.Name == "fdw_schema" {
 			fdwSchema = schema

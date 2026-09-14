@@ -10,15 +10,15 @@ import { useAppStore } from "@/stores/app";
 import { getDateForPbTimestampProtoEs, isValidDatabaseName } from "@/types";
 
 /**
- * Replaces `SchemaPane/SyncSchemaButton.vue`. RefreshCcw button with a
- * hover popover showing the last sync time + click-to-sync hint.
+ * RefreshCcw button with a hover tooltip showing the last sync time +
+ * click-to-sync hint.
  *
  *  - Disabled when the active tab has no valid database connection (no
  *    `database.name`) or while a sync is in flight.
- *  - On click, calls `databaseStore.syncDatabase(name, refresh=true)`,
- *    then `dbSchemaStore.getOrFetchDatabaseMetadata({ skipCache: true })`
- *    so the SchemaPane reactively rebuilds with the fresh metadata.
- *  - Spinner: same Vue rule — `animate-spin` while `isSyncing` is true.
+ *  - On click, calls the app store's `syncDatabase(name, refresh=true)`,
+ *    then `getOrFetchDatabaseMetadata({ skipCache: true })` so the
+ *    SchemaPane reactively rebuilds with the fresh metadata.
+ *  - Spinner: the icon spins while `isSyncing` is true.
  */
 export function SyncSchemaButton({ className }: { className?: string }) {
   const { t } = useTranslation();
@@ -68,8 +68,8 @@ export function SyncSchemaButton({ className }: { className?: string }) {
   );
 
   if (disabled) {
-    // Vue disables the popover on disabled state — match that so we don't
-    // surface a "last synced" tooltip with stale-looking placeholder data.
+    // No tooltip when disabled, so we don't surface a "last synced" tooltip
+    // with stale-looking placeholder data.
     return button;
   }
 

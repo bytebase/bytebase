@@ -10,8 +10,7 @@ interface LabelProps {
 }
 
 /**
- * React port of `Navigator/TreeNode/Label.vue`. Uses the shared
- * `HighlightLabelText` for keyword highlighting (per the
+ * Uses the shared `HighlightLabelText` for keyword highlighting (per the
  * use-highlightlabeltext memory rule — never inline highlight HTML).
  */
 export function Label({ node, keyword }: LabelProps) {

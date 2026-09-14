@@ -511,7 +511,7 @@ under
 - `MCPConsentCeiling.tsx`: replace the read, write and workflow lines with the row titles from the
   same table.
 - Locale: keys under `settings.mcp.ladder.*` in all five locale files. The retired mode-description
-  keys are removed, not left empty. `frontend/scripts/check-react-i18n.mjs` enforces cross-locale
+  keys are removed, not left empty. `frontend/scripts/check-i18n.mjs` enforces cross-locale
   parity over all of them; the four template-keyed families (`ladder.row.`, `.stops.`, `.summary.`,
   `.tier.`) are registered in its `DYNAMIC_PREFIXES`, which exempts them from the unused-key check
   as well, so their coverage comes from `mcpCapabilityRows.i18n.test.ts` instead.

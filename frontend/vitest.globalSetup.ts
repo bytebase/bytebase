@@ -10,6 +10,6 @@ import { fileURLToPath } from "node:url";
 // entry point self-sufficient without another package.json script.
 export default function setup() {
   const cwd = fileURLToPath(new URL("./", import.meta.url));
-  execFileSync("sh", ["./scripts/copy_config_files.sh"], { cwd, stdio: "inherit" });
-  execFileSync("node", ["scripts/generate_openapi_index.js"], { cwd, stdio: "inherit" });
+  execFileSync("sh", ["./scripts/copy-config-files.sh"], { cwd, stdio: "inherit" });
+  execFileSync("node", ["scripts/generate-openapi-index.js"], { cwd, stdio: "inherit" });
 }

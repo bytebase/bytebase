@@ -26,7 +26,6 @@ import type { EditStatus } from "../types";
 
 /**
  * Minimal context surface that DiffMerge depends on.
- * Both Vue and React adapters supply an object satisfying this shape.
  */
 export interface DiffMergeContext {
   markEditStatusByKey: (key: string, status: EditStatus) => void;

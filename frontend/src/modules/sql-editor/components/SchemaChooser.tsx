@@ -13,7 +13,6 @@ import { ConnectChooser } from "./ConnectChooser";
 const SchemaOptionValueUnspecified = "-1";
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/SchemaChooser.vue.
  * Visible only for engines that support schema-scoped queries.
  * Selected schema persists to the current tab's connection.schema.
  */
@@ -26,8 +25,8 @@ export function SchemaChooser() {
   const tabSchema = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.connection.schema
   );
-  // Parent SchemaPane (E4 migration) drives the metadata fetch; here we
-  // only need the cached read.
+  // The ancestor `Panels` drives the metadata fetch; here we only need the
+  // cached read.
   const { schemas } = useAppDatabaseMetadata(databaseName, {
     autoFetch: false,
   });
@@ -65,10 +64,8 @@ export function SchemaChooser() {
   };
 
   // Seed from URL query parameter on mount and whenever the query param OR
-  // the active tab changes. Mirrors Vue's watchEffect, which implicitly
-  // tracked both `route.query.schema` and `tab.value` (the latter via the
-  // setter's reactive reads) so that switching to a new tab with the URL
-  // query still present re-seeded the new tab's connection.schema.
+  // the active tab changes, so switching to a new tab with the URL query
+  // still present re-seeds the new tab's connection.schema.
   const queryParam = useReactiveRoute().query.schema as string | undefined;
   const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
   useEffect(() => {

@@ -15,8 +15,6 @@ interface SQLUploadButtonProps {
 }
 
 /**
- * React port of `frontend/src/components/misc/SQLUploadButton.vue`.
- *
  * Hidden `<input type="file">` triggered by clicking the button. After
  * the user picks a file, mounts a preview modal that decodes + shows
  * the content; the parent receives the final text via `onUpdateSql`.

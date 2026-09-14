@@ -23,7 +23,6 @@ type DatabaseChooserProps = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/DatabaseChooser.vue.
  * Breadcrumb-style chooser showing the current connection
  * (Environment > Instance > Database). Click opens the connection panel.
  */

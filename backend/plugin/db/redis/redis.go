@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/shlex"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
@@ -210,7 +211,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // Dump and restore
 // Dump the database, if dbName is empty, then dump all databases.
 // Redis is schemaless, we don't support dump Redis data currently.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }
 

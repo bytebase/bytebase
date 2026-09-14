@@ -39,11 +39,9 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/components/DatabaseGroup/DatabaseGroupDataTable.vue.
- * Shared React port. Columns — in order — are: optional selection, title,
- * expression, optional external-link, optional actions (kebab menu with
- * Delete). Supports optional client-side pagination for the "manage
- * groups" admin use case.
+ * Columns — in order — are: optional selection, title, expression, optional
+ * external-link, optional actions (kebab menu with Delete). Supports optional
+ * client-side pagination for the "manage groups" admin use case.
  */
 export function DatabaseGroupDataTable({
   databaseGroupList,

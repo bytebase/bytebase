@@ -40,7 +40,6 @@ const SIGNIN_QUERY_PARAMS = [
 ] as const;
 
 // Auth/landing route names that don't require an authenticated session.
-// Inlined (rather than importing `@/utils/auth`, which pulls the Vue router).
 export function isAuthRelatedRoute(routeName: string): boolean {
   return [
     AUTH_SIGNIN_MODULE,
@@ -116,8 +115,8 @@ const ALLOWED_ROUTE_PATTERNS = [
   "sql-editor",
 ];
 
-// Resolve the redirect target for the bare workspace root ("/"), mirroring the
-// legacy `DummyRootView`. The root path has no page of its own:
+// Resolve the redirect target for the bare workspace root ("/"). The root path
+// has no page of its own:
 //   - EDITOR change-mode workspaces go to the SQL Editor home
 //   - otherwise the user's last meaningful visit, if any
 //   - falling back to the landing page
@@ -166,7 +165,7 @@ function readLastVisit(
 }
 
 // Ignore root-ish / transient paths so we don't redirect "/" back to itself or
-// to a route that itself redirects (mirrors `DummyRootView`'s ignore list).
+// to a route that itself redirects.
 function isMeaningfulVisit(path: string): boolean {
   return !(
     path === "" ||
@@ -182,12 +181,11 @@ function isMeaningfulVisit(path: string): boolean {
 }
 
 /**
- * Faithful port of the legacy vue-router `beforeEach` guard
- * (`src/router/index.ts`). Runs as the react-router root-route loader: the
- * root `.tsx` loader resolves the matched leaf route's `handle.name` (via
- * `matchRoutes`) and calls this. Returns a `redirect()` Response to navigate
- * elsewhere, or `null` to allow the navigation. Session state is read from the
- * app store (the single source of truth).
+ * Runs as the react-router root-route loader: the root `.tsx` loader resolves
+ * the matched leaf route's `handle.name` (via `matchRoutes`) and calls this.
+ * Returns a `redirect()` Response to navigate elsewhere, or `null` to allow the
+ * navigation. Session state is read from the app store (the single source of
+ * truth).
  */
 export function rootGuard({
   name,
@@ -303,7 +301,7 @@ export function rootGuard({
     return redirect(resolvePath(AUTH_PASSWORD_RESET_MODULE));
   }
 
-  // The bare workspace root ("/") has no page — redirect like DummyRootView.
+  // The bare workspace root ("/") has no page, so always redirect.
   if (toName === WORKSPACE_ROOT_MODULE) {
     return redirect(resolveRootRedirect(store));
   }

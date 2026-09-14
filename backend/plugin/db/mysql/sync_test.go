@@ -5,9 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestSetColumnMetadataDefault(t *testing.T) {
@@ -90,7 +89,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 		// binaryFormat is how the server encodes binary-family defaults; zero value
 		// (binaryDefaultVerbatim) matches the legacy MariaDB/OceanBase path.
 		binaryFormat binaryDefaultFormat
-		want         *storepb.ColumnMetadata
+		want         *metadatapb.ColumnMetadata
 	}{
 		// MySQL 8.0.
 		{
@@ -98,7 +97,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: false,
 			extra:        "auto_increment",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "AUTO_INCREMENT",
 			},
 		},
@@ -107,7 +106,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "NULL",
 			},
 		},
@@ -116,7 +115,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -125,7 +124,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "hello"},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "hello",
 			},
 		},
@@ -134,14 +133,14 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: false,
 			extra:        "",
-			want:         &storepb.ColumnMetadata{},
+			want:         &metadatapb.ColumnMetadata{},
 		},
 		{
 			name:         "age1",
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -150,7 +149,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -159,7 +158,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -168,7 +167,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -177,7 +176,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0.00"},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0.00",
 			},
 		},
@@ -186,7 +185,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "NULL",
 			},
 		},
@@ -195,14 +194,14 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: false,
 			extra:        "",
-			want:         &storepb.ColumnMetadata{},
+			want:         &metadatapb.ColumnMetadata{},
 		},
 		{
 			name:         "time2",
 			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
 			nullableBool: false,
 			extra:        "DEFAULT_GENERATED",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "CURRENT_TIMESTAMP",
 			},
 		},
@@ -211,7 +210,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
 			nullableBool: false,
 			extra:        "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default:  "CURRENT_TIMESTAMP",
 				OnUpdate: "CURRENT_TIMESTAMP",
 			},
@@ -221,7 +220,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default:  "CURRENT_TIMESTAMP",
 				OnUpdate: "CURRENT_TIMESTAMP",
 			},
@@ -231,7 +230,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP(6)"},
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "CURRENT_TIMESTAMP(6)",
 			},
 		},
@@ -240,7 +239,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP(6)"},
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "CURRENT_TIMESTAMP(6)",
 			},
 		},
@@ -249,7 +248,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "CURRENT_TIMESTAMP"},
 			nullableBool: true,
 			extra:        "DEFAULT_GENERATED",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "CURRENT_TIMESTAMP",
 			},
 		},
@@ -259,7 +258,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: false,
 			extra:        "auto_increment",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "AUTO_INCREMENT",
 			},
 		},
@@ -268,7 +267,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "NULL",
 			},
 		},
@@ -277,7 +276,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -286,7 +285,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "hello"},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "hello",
 			},
 		},
@@ -295,14 +294,14 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: false,
 			extra:        "",
-			want:         &storepb.ColumnMetadata{},
+			want:         &metadatapb.ColumnMetadata{},
 		},
 		{
 			name:         "age1",
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -311,7 +310,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -320,7 +319,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -329,7 +328,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0"},
 			nullableBool: false,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0",
 			},
 		},
@@ -338,7 +337,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{Valid: true, String: "0.00"},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "0.00",
 			},
 		},
@@ -347,7 +346,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: true,
 			extra:        "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "NULL",
 			},
 		},
@@ -356,7 +355,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			defaultStr:   sql.NullString{},
 			nullableBool: false,
 			extra:        "",
-			want:         &storepb.ColumnMetadata{},
+			want:         &metadatapb.ColumnMetadata{},
 		},
 		{
 			name:         "time2",
@@ -364,7 +363,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			// Different from 8.0, DEFAULT_GENERATED.
 			extra: "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "CURRENT_TIMESTAMP",
 			},
 		},
@@ -374,7 +373,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			// Different from 8.0, DEFAULT_GENERATED on update CURRENT_TIMESTAMP.
 			extra: "on update CURRENT_TIMESTAMP",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default:  "CURRENT_TIMESTAMP",
 				OnUpdate: "CURRENT_TIMESTAMP",
 			},
@@ -385,7 +384,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			// Different from 8.0, DEFAULT_GENERATED on update CURRENT_TIMESTAMP.
 			extra: "on update CURRENT_TIMESTAMP",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default:  "CURRENT_TIMESTAMP",
 				OnUpdate: "CURRENT_TIMESTAMP",
 			},
@@ -396,7 +395,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			// Different from 8.0, DEFAULT_GENERATED.
 			extra: "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "CURRENT_TIMESTAMP(6)",
 			},
 		},
@@ -406,7 +405,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			// Different from 8.0, DEFAULT_GENERATED.
 			extra: "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "CURRENT_TIMESTAMP(6)",
 			},
 		},
@@ -416,7 +415,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: true,
 			// Different from 8.0, DEFAULT_GENERATED.
 			extra: "",
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Default: "CURRENT_TIMESTAMP",
 			},
 		},
@@ -437,7 +436,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "binary(16)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "binary(16)",
 				Default: "''",
 			},
@@ -449,7 +448,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "binary(16)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "binary(16)",
 				Default: "'ab'",
 			},
@@ -461,7 +460,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "'ab'",
 			},
@@ -473,7 +472,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "''",
 			},
@@ -485,7 +484,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "0xab",
 			},
@@ -497,7 +496,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: `'a\'b'`,
 			},
@@ -510,7 +509,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "'0x6162'",
 			},
@@ -523,7 +522,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varchar(24)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varchar(24)",
 				Default: "'0x6162'",
 			},
@@ -537,7 +536,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			extra:        "DEFAULT_GENERATED",
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "(0x6162)",
 			},
@@ -550,7 +549,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			extra:        "DEFAULT_GENERATED",
 			columnType:   "binary(16)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "binary(16)",
 				Default: "(uuid_to_bin(uuid()))",
 			},
@@ -562,7 +561,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultHexNotation,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "'zz'",
 			},
@@ -576,7 +575,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "binary(16)",
 			binaryFormat: binaryDefaultRawBytes,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "binary(16)",
 				Default: "''",
 			},
@@ -588,7 +587,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "binary(16)",
 			binaryFormat: binaryDefaultRawBytes,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "binary(16)",
 				Default: "'ab'",
 			},
@@ -600,7 +599,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultRawBytes,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "'ab'",
 			},
@@ -612,7 +611,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultRawBytes,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "''",
 			},
@@ -625,7 +624,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(8)",
 			binaryFormat: binaryDefaultRawBytes,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(8)",
 				Default: "0x6100",
 			},
@@ -637,7 +636,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultRawBytes,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: `'a\'b'`,
 			},
@@ -650,7 +649,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultRawBytes,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "'0x6162'",
 			},
@@ -663,7 +662,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(20)",
 			binaryFormat: binaryDefaultRawBytes,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(20)",
 				Default: "'CURRENT_TIMESTAMP'",
 			},
@@ -676,7 +675,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 			nullableBool: false,
 			columnType:   "varbinary(24)",
 			binaryFormat: binaryDefaultVerbatim,
-			want: &storepb.ColumnMetadata{
+			want: &metadatapb.ColumnMetadata{
 				Type:    "varbinary(24)",
 				Default: "'0x6162'",
 			},
@@ -685,7 +684,7 @@ func TestSetColumnMetadataDefault(t *testing.T) {
 
 	a := require.New(t)
 	for _, tc := range tests {
-		column := &storepb.ColumnMetadata{Type: tc.columnType}
+		column := &metadatapb.ColumnMetadata{Type: tc.columnType}
 		setColumnMetadataDefault(column, tc.defaultStr, tc.nullableBool, tc.extra, tc.binaryFormat)
 		a.Equal(tc.want, column, tc.name)
 	}

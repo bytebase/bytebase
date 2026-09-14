@@ -12,14 +12,8 @@ interface PanelSearchBoxProps {
 }
 
 /**
- * 1:1 React port of `frontend/src/components/v2/Form/SearchBox.vue` for
- * the SQL Editor panels. Naive UI's NInput at `size="small"` renders at
- * 28px tall with a leading prefix icon and a clearable affordance —
- * this wrapper recreates that exactly so the panel toolbar matches the
- * pre-migration look.
- *
- * Width grows to fill the flex container, capped at 18rem (matching
- * the Vue SearchBox's `max-width: 18rem; flex: 1 1 0%`).
+ * Search box for the SQL Editor panels, with a leading search icon and a
+ * clear button. Width grows to fill the flex container, capped at 18rem.
  */
 export function PanelSearchBox({
   value,

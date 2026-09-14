@@ -21,7 +21,6 @@ interface PurchaseSectionProps {
   readonly onRequireEnterprise: () => void;
 }
 
-// Data model matching the Vue PlanCardData interface.
 interface PlanCardData {
   type: PlanType;
   title: string;
@@ -161,7 +160,6 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
     [currentPlan, isExpired]
   );
 
-  // Helpers matching Vue computed functions.
   const planTitle = (type: PlanType): string => {
     switch (type) {
       case PlanType.FREE:
@@ -196,7 +194,6 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
       bold: key === "everything",
     }));
 
-  // Build planCards matching the Vue computed.
   const planCards = useMemo((): PlanCardData[] => {
     if (purchasePlans.length === 0) return [];
 
@@ -536,7 +533,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           <span>
                             {t("subscription.purchase.accept-terms-prefix")}{" "}
                             <a
-                              href="https://www.bytebase.com/terms"
+                              href="https://www.bytebase.com/legal/terms"
                               target="_blank"
                               rel="noopener noreferrer"
                               className="underline hover:text-main"
@@ -603,7 +600,6 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   );
 }
 
-// Plan card component matching Vue's PlanCard.vue.
 function PlanCard({
   title,
   description,

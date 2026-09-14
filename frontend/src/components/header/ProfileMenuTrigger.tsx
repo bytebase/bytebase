@@ -1,6 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import {
   ACCOUNT_ROUTE,
   isSqlEditorRouteName,
@@ -239,6 +241,15 @@ export function ProfileMenuTrigger({
           {workspaceSetupGuideEnabled ? (
             <DropdownMenuItem
               onClick={() => {
+                behaviorAnalytics.captureMetric(
+                  createBehaviorMetric("workspace setup guide opened", {
+                    properties: {
+                      journey: journey.id,
+                      scenario: scenarioId ?? "unselected",
+                      collaboration_type: workspaceUsage ?? "unselected",
+                    },
+                  })
+                );
                 resumeWorkspaceSetupGuide();
                 setOpen(false);
               }}
@@ -274,8 +285,8 @@ export function ProfileMenuTrigger({
           <DropdownMenuItem
             onClick={() => {
               setOpen(false);
-              // logout() computes the signin redirect itself (mirrors the
-              // legacy Pinia auth store) and hard-redirects to clear state.
+              // logout() computes the signin redirect itself and
+              // hard-redirects to clear state.
               void useAppStore.getState().logout();
             }}
           >

@@ -8,8 +8,7 @@ type Props = {
   readonly keyword: string;
 };
 
-/** Replaces `TreeNode/FunctionNode.vue`. Same signature-vs-name fallback
- *  as ProcedureNode. */
+/** Same signature-vs-name fallback as ProcedureNode. */
 export function FunctionNode({ node, keyword }: Props) {
   const target = (node as TreeNode<"function">).meta.target;
   const schemaMetadata = useAppStore((s) =>

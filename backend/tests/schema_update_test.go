@@ -19,31 +19,28 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Provision an instance.
 	instanceName := "testInstance1"
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       instanceName,
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         instanceName,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
 	// Create an issue that creates a database.
-	databaseName := "testSchemaUpdate"
+	databaseName := uniqueDB("test_schema_update")
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
 	a.NoError(err)
 
@@ -176,12 +173,7 @@ CREATE TABLE "public"."book" (
 	}
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer func() {
-		_ = ctl.Close(ctx)
-	}()
+	ctl, ctx := startWorkspace(ctx, t)
 	environmentName := strings.ToLower(t.Name())
 	environment, err := ctl.createEnvironment(ctx, environmentName, environmentName)
 	a.NoError(err)
@@ -189,19 +181,16 @@ CREATE TABLE "public"."book" (
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
-			pgContainer, err := getPgContainer(ctx)
-			defer func() {
-				pgContainer.Close(ctx)
-			}()
-			a.NoError(err)
+			pgContainer := sharedPgTarget(t)
 			instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 				InstanceId: test.instanceID,
 				Instance: &v1pb.Instance{
-					Title:       test.name,
-					Engine:      v1pb.Engine_POSTGRES,
-					Environment: new(environment.Name),
-					Activation:  true,
-					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+					SyncDatabases: &v1pb.SyncDatabases{},
+					Title:         test.name,
+					Engine:        v1pb.Engine_POSTGRES,
+					Environment:   new(environment.Name),
+					Activation:    true,
+					DataSources:   []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "postgres", Password: "root-password", Id: "admin"}},
 				},
 			}))
 			a.NoError(err)
@@ -250,32 +239,29 @@ func TestMarkTaskAsDone(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Provision an instance.
 	instanceName := "testInstance1"
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// Add an instance.
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       instanceName,
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         instanceName,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
 	// Create an issue that creates a database.
-	databaseName := "testSchemaUpdate"
+	databaseName := uniqueDB("test_schema_update")
 	err = ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, "")
 	a.NoError(err)
 

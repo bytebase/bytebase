@@ -20,7 +20,7 @@ import {
 
 /**
  * The row table keys its copy by row id through a template literal, which
- * `check-react-i18n.mjs` cannot trace — the family is exempt from the
+ * `check-i18n.mjs` cannot trace — the family is exempt from the
  * missing-key check for exactly that reason, and the ladder's own tests mock
  * `t` to echo keys, so a gap is invisible there too.
  *
@@ -48,7 +48,7 @@ const read = (tree: Tree, path: string): unknown =>
 
 // Every key the product assembles by template literal, built through the same
 // helpers it renders with — so this is the shape the ladder asks for, not a
-// shape retyped here. `check-react-i18n.mjs` exempts these families from BOTH
+// shape retyped here. `check-i18n.mjs` exempts these families from BOTH
 // its missing-key and its unused-key check, so both directions are this file's
 // job, and enumerating them twice would be the disagreement it exists to catch.
 const TEMPLATED_KEYS = [

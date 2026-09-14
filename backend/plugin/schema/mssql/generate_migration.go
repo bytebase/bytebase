@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
@@ -491,7 +492,7 @@ func generateMigration(diff *schema.MetadataDiff) (string, error) {
 	return buf.String(), nil
 }
 
-func generateCreateTable(schemaName, tableName string, table *storepb.TableMetadata) string {
+func generateCreateTable(schemaName, tableName string, table *metadatapb.TableMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("CREATE TABLE [")
@@ -683,7 +684,7 @@ func generateAlterTable(tableDiff *schema.TableDiff) string {
 	return buf.String()
 }
 
-func generateColumnDefinition(column *storepb.ColumnMetadata) string {
+func generateColumnDefinition(column *metadatapb.ColumnMetadata) string {
 	var buf strings.Builder
 	_, _ = buf.WriteString("[")
 	_, _ = buf.WriteString(column.Name)
@@ -804,7 +805,7 @@ func generateAlterColumn(schemaName, tableName string, colDiff *schema.ColumnDif
 }
 
 // getColumnDefaultValue extracts the default value from a column
-func getColumnDefaultValue(column *storepb.ColumnMetadata) string {
+func getColumnDefaultValue(column *metadatapb.ColumnMetadata) string {
 	if column == nil {
 		return ""
 	}
@@ -814,7 +815,7 @@ func getColumnDefaultValue(column *storepb.ColumnMetadata) string {
 	return ""
 }
 
-func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetadata) string {
+func generateCreateIndex(schemaName, tableName string, index *metadatapb.IndexMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("CREATE")
@@ -894,7 +895,7 @@ func generateCreateIndex(schemaName, tableName string, index *storepb.IndexMetad
 	}
 }
 
-func generateAddForeignKey(schemaName, tableName string, fk *storepb.ForeignKeyMetadata) string {
+func generateAddForeignKey(schemaName, tableName string, fk *metadatapb.ForeignKeyMetadata) string {
 	var buf strings.Builder
 
 	_, _ = buf.WriteString("ALTER TABLE [")
@@ -953,7 +954,7 @@ func generateAddForeignKey(schemaName, tableName string, fk *storepb.ForeignKeyM
 }
 
 // hasConstraintsInTable checks if the table has any constraints (primary key or unique)
-func hasConstraintsInTable(table *storepb.TableMetadata) bool {
+func hasConstraintsInTable(table *metadatapb.TableMetadata) bool {
 	for _, idx := range table.Indexes {
 		if idx.IsConstraint {
 			return true
@@ -1099,12 +1100,12 @@ func getViewDependencies(viewDef string, schemaName string) ([]string, error) {
 		base.GetQuerySpanContext{
 			GetDatabaseMetadataFunc: func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 				// Return minimal metadata - we only need table references, not column info
-				metadata := &storepb.DatabaseSchemaMetadata{
+				metadata := &metadatapb.DatabaseSchemaMetadata{
 					Name: databaseName,
-					Schemas: []*storepb.SchemaMetadata{
+					Schemas: []*metadatapb.SchemaMetadata{
 						{
 							Name:   schemaName,
-							Tables: []*storepb.TableMetadata{},
+							Tables: []*metadatapb.TableMetadata{},
 						},
 					},
 				}
@@ -1493,7 +1494,7 @@ func hasCreateProcedures(diff *schema.MetadataDiff) bool {
 	return false
 }
 
-func generateSpatialIndexDDL(index *storepb.IndexMetadata, schemaName, tableName string) string {
+func generateSpatialIndexDDL(index *metadatapb.IndexMetadata, schemaName, tableName string) string {
 	var buf strings.Builder
 
 	// Build the CREATE SPATIAL INDEX statement
@@ -1553,7 +1554,7 @@ func generateSpatialIndexDDL(index *storepb.IndexMetadata, schemaName, tableName
 	return buf.String()
 }
 
-func buildMigrationTessellationParams(tessellation *storepb.TessellationConfig) []string {
+func buildMigrationTessellationParams(tessellation *metadatapb.TessellationConfig) []string {
 	params := []string{}
 
 	// BOUNDING_BOX for GEOMETRY indexes
@@ -1582,7 +1583,7 @@ func buildMigrationTessellationParams(tessellation *storepb.TessellationConfig) 
 	return params
 }
 
-func buildMigrationStorageParams(storage *storepb.StorageConfig) []string {
+func buildMigrationStorageParams(storage *metadatapb.StorageConfig) []string {
 	params := []string{}
 
 	// PAD_INDEX (defaults to OFF, so only output when ON)

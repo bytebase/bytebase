@@ -561,8 +561,7 @@ function FileHintLabel({
   repository?: string;
 }) {
   const { t } = useTranslation();
-  // Split the translated template around placeholders to render bold spans,
-  // matching the Vue <i18n-t> slot behavior.
+  // Split the translated template around placeholders to render bold spans.
   const raw = t("gitops.workflow.file-hint", {
     filePath: "\x00FP\x00",
     repository: "\x00RP\x00",

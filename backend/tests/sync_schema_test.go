@@ -29,19 +29,12 @@ func TestSyncSchema(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := provisionPgInstance(t)
 
-	pgDB := pgContainer.db
-	err = pgDB.Ping()
+	pgDB := pgContainer.GetDB()
+	err := pgDB.Ping()
 	a.NoError(err)
 
 	_, err = pgDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
@@ -58,7 +51,7 @@ func TestSyncSchema(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
@@ -130,19 +123,12 @@ func TestSyncSchemaWithTempSchema(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pgContainer, err := getPgContainer(ctx)
-	defer func() {
-		pgContainer.Close(ctx)
-	}()
-	a.NoError(err)
+	pgContainer := provisionPgInstance(t)
 
-	pgDB := pgContainer.db
-	err = pgDB.Ping()
+	pgDB := pgContainer.GetDB()
+	err := pgDB.Ping()
 	a.NoError(err)
 
 	// Create database and user
@@ -160,7 +146,7 @@ func TestSyncSchemaWithTempSchema(t *testing.T) {
 	a.NoError(err)
 
 	// Connect to the test database to create temp tables and schemas
-	testDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password dbname=%s sslmode=disable", pgContainer.host, pgContainer.port, databaseName))
+	testDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=postgres password=root-password dbname=%s sslmode=disable", pgContainer.GetHost(), pgContainer.GetPort(), databaseName))
 	a.NoError(err)
 	defer testDB.Close()
 
@@ -200,7 +186,7 @@ func TestSyncSchemaWithTempSchema(t *testing.T) {
 			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "testuser", Password: "testpass", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.GetHost(), Port: pgContainer.GetPort(), Username: "testuser", Password: "testpass", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)

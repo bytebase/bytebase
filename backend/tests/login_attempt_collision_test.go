@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -10,8 +9,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // TestCollision_LoginAttempt is the composite-PK collision gate for
@@ -24,14 +21,7 @@ import (
 func TestCollision_LoginAttempt(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
+	metadataDB, s, _ := testcontainer.NewMetadataDB(t)
 
 	const window = 10 * time.Minute
 	const victim = "victim@example.com"
@@ -59,7 +49,7 @@ func TestCollision_LoginAttempt(t *testing.T) {
 	attempts := func(identity string, kind storepb.LoginAttemptKind) int {
 		t.Helper()
 		var count int
-		require.NoError(t, container.GetDB().QueryRowContext(ctx, `
+		require.NoError(t, metadataDB.QueryRowContext(ctx, `
 			SELECT COALESCE((SELECT attempts FROM login_attempt WHERE identity = $1 AND kind = $2), 0)
 		`, identity, kind.String()).Scan(&count))
 		return count
@@ -91,7 +81,7 @@ func TestCollision_LoginAttempt(t *testing.T) {
 
 	// The time-scoped purge must not use the lock as a shortcut: backdate only
 	// the neighbor and confirm the purge takes it and nothing else.
-	_, err = container.GetDB().ExecContext(ctx, `
+	_, err = metadataDB.ExecContext(ctx, `
 		UPDATE login_attempt SET last_attempt_at = last_attempt_at - make_interval(secs => $3)
 		WHERE identity = $1 AND kind = $2
 	`, neighbor, storepb.LoginAttemptKind_PASSWORD.String(), (2 * time.Hour).Seconds())

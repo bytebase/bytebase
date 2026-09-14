@@ -11,15 +11,13 @@ import { findAncestor } from "@/utils/dom";
 import { useHoverState } from "./hover-state";
 import { ColumnIcon, IndexIcon } from "./TreeNode/icons";
 
-const PAGE_SIZE = 500;
 /**
- * Hard cap matching Vue's PAGE_SIZE × default page count behavior. The
- * design risk note flagged that `react-window` isn't a dep yet and the
- * table-row count for FlatTableList mode is bounded — pure DOM rendering
- * with a load-more cursor keeps this within ~500 rows (28px × 500 = ~14k
- * px of DOM) per page, which modern browsers handle without
- * virtualization. Revisit only if the cap becomes a real bottleneck.
+ * Pure DOM rendering with a load-more cursor keeps the list within ~500
+ * rows (28px × 500 = ~14k px of DOM) per page, which modern browsers
+ * handle without virtualization. Revisit only if this cap becomes a real
+ * bottleneck.
  */
+const PAGE_SIZE = 500;
 
 export interface FlatTableItem {
   readonly key: string;
@@ -37,10 +35,9 @@ type Props = {
 };
 
 /**
- * Replaces `SchemaPane/FlatTableList.vue`. Flat list of tables with
- * inline expand-to-show-columns/indexes for large databases (Vue
- * threshold is >1000 tables). Search-filterable, paged at 500 rows
- * with a load-more button at the bottom.
+ * Flat list of tables with inline expand-to-show-columns/indexes for large
+ * databases (SchemaPane uses it above 1000 tables). Search-filterable,
+ * paged at 500 rows with a load-more button at the bottom.
  *
  * Hover sets the SchemaPane's hover state so the shared HoverPanel can
  * preview the table — same wiring as the Tree mode.
@@ -108,8 +105,7 @@ export function FlatTableList({
     const delay = hoverState.state ? 150 : undefined;
     hoverState.update(target, "before", delay);
 
-    // Microtask: position computed against the actual DOM bounding rect,
-    // matching Vue's `await nextTick()` before reading getBoundingClientRect.
+    // Compute position from the row's bounding rect.
     const wrapper = findAncestor(e.target as HTMLElement, ".bb-flat-table-row");
     if (!wrapper) {
       hoverState.update(undefined, "after", 150);
@@ -124,9 +120,6 @@ export function FlatTableList({
   };
 
   if (filteredTables.length === 0) {
-    // Vue's source uses hardcoded English here; preserve verbatim for
-    // 1:1 parity. If we ever i18n this, update the Vue side at the same
-    // time so the two surfaces don't drift.
     return (
       <div className="flex flex-col items-center justify-center mt-16 text-control-light text-sm">
         {search ? "No tables found" : "No tables in this database"}

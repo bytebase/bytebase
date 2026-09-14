@@ -445,12 +445,6 @@
       "count": 1
     },
     {
-      "path": "src/components/instance/SslCertificateForm.tsx",
-      "rule": "no-native-control",
-      "token": "textarea",
-      "count": 1
-    },
-    {
       "path": "src/components/InstanceAssignmentSheet.tsx",
       "rule": "no-raw-table",
       "token": "table",

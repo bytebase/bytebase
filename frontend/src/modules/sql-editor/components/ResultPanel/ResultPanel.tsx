@@ -25,8 +25,6 @@ import { BatchQuerySelect } from "./BatchQuerySelect";
 import { DatabaseQueryContext } from "./DatabaseQueryContext";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/ResultPanel/ResultPanel.vue`.
- *
  * Hosts the batch-query database selector at the top, then a card-style
  * tab strip of query contexts for the currently selected database, with
  * each tab rendering a `<DatabaseQueryContext>` (spinner / cancelled /
@@ -75,8 +73,7 @@ export function ResultPanel() {
 
   const hasMultipleContexts = (queryContexts?.length ?? 0) > 1;
 
-  // Mirror Vue's `watch(queryContexts.[0]?.id, ..., { immediate: true })`:
-  // when the head of the contexts list changes, switch the active tab to
+  // When the head of the contexts list changes, switch the active tab to
   // it (newest run becomes selected).
   const headId = queryContexts?.[0]?.id;
   useEffect(() => {
@@ -275,8 +272,8 @@ const CLOSE_ACTION_KEYS: Record<CloseAction, string> = {
 /**
  * Right-click context menu wrapper for a single tab. Local to ResultPanel
  * so the close-tab handler is delivered directly via prop, sidestepping
- * the cross-component `resultTabEvents` channel that Stage 18's
- * `BatchQuerySelect` already owns for its database-strip tabs.
+ * the cross-component `resultTabEvents` channel that `BatchQuerySelect`
+ * owns for its database-strip tabs.
  */
 function TabContextMenu({
   children,

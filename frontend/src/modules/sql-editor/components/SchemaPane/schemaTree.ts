@@ -14,18 +14,14 @@ import type {
   TablePartitionMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
 // Deep-import both helpers to avoid pulling barrels that transitively
-// reach monaco / Vue surfaces. Both files are framework-agnostic pure TS.
+// reach monaco. Both files are framework-agnostic pure TS.
 import { keyForDependencyColumn } from "@/utils/v1/dbSchema";
 
 /**
- * React port of `src/views/sql-editor/AsidePanel/SchemaPane/tree.ts`.
- *
  * Pure type-driven tree builder: walks DatabaseMetadata and produces a
- * TreeNode tree with stable string keys that mirror the Vue version
- * byte-for-byte (so persisted `tab.treeState.keys` survives the migration).
- *
- * Renamed from `tree.ts` → `schemaTree.ts` to disambiguate from
- * `src/components/sql-editor/ConnectionPane/tree.ts`.
+ * TreeNode tree with stable string keys. Persisted `tab.treeState.keys`
+ * reference these keys, so changing the key format breaks stored expand
+ * state.
  */
 
 export type NodeType =
@@ -725,9 +721,8 @@ const mapSequenceNodes = (
     })
   );
   if (children.length === 0) {
-    // Vue passes "function" here intentionally; preserve the bug for parity
-    // so persisted treeState keys match. Fixing would silently break stored
-    // expand state.
+    // Intentionally passes "function", not "sequence": persisted treeState
+    // keys depend on it, so fixing would silently break stored expand state.
     return [createDummyNode("function", parentKey)];
   }
   return children;
@@ -742,8 +737,8 @@ const mapTriggerNodes = (
     mapTreeNodeByType("trigger", { ...target, trigger: trigger.name, position })
   );
   if (children.length === 0) {
-    // Same intentional Vue parity quirk as mapSequenceNodes — passes
-    // "function" instead of "trigger". Preserve.
+    // Same intentional quirk as mapSequenceNodes — passes "function"
+    // instead of "trigger". Preserve.
     return [createDummyNode("function", parentKey)];
   }
   return children;

@@ -14,11 +14,10 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/TabItem/Label.vue.
  * Tab title with:
  *  - Double-click to enter in-place rename.
  *  - Listens for external `rename-tab` events (fired from the context menu)
- *    so right-click → Rename still works during the Vue → React migration.
+ *    so right-click → Rename works.
  *  - Ellipsis + native tooltip via EllipsisText.
  */
 export function Label({ tab }: Props) {
@@ -87,8 +86,9 @@ export function Label({ tab }: Props) {
   }, [tab.title, editing]);
 
   // Respond to external rename-tab events (fired from the context menu).
-  // `readonly` + `tab.id` are the only closure values we care about; the
-  // other helpers are referentially stable via the Pinia store singletons.
+  // `tab.id`, `tab.title`, and `readonly` are the only closure values we care
+  // about; the other helpers (store accessor, state setters) are
+  // referentially stable.
   useEffect(() => {
     const unsubscribe = tabListEvents.on("rename-tab", ({ data: payload }) => {
       if (payload.tab.id !== tab.id) return;

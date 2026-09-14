@@ -6,29 +6,29 @@ import (
 	"strconv"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mssql/ast"
 	"github.com/pkg/errors"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
 const noAction = "NO ACTION"
 
 // GetDatabaseMetadata parses the SQL schema text and returns the database metadata.
-func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, error) {
+func GetDatabaseMetadata(schemaText string) (*metadatapb.DatabaseSchemaMetadata, error) {
 	stmts, err := tsql.ParseTSQL(schemaText)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse SQL schema")
 	}
 
 	if len(stmts) == 0 {
-		return &storepb.DatabaseSchemaMetadata{
+		return &metadatapb.DatabaseSchemaMetadata{
 			Name: "",
-			Schemas: []*storepb.SchemaMetadata{
+			Schemas: []*metadatapb.SchemaMetadata{
 				{
 					Name:   "dbo",
-					Tables: []*storepb.TableMetadata{},
+					Tables: []*metadatapb.TableMetadata{},
 				},
 			},
 		}, nil
@@ -36,8 +36,8 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 
 	extractor := &omniMetadataExtractor{
 		currentSchema: "dbo",
-		schemas:       make(map[string]*storepb.SchemaMetadata),
-		tables:        make(map[tableKey]*storepb.TableMetadata),
+		schemas:       make(map[string]*metadatapb.SchemaMetadata),
+		tables:        make(map[tableKey]*metadatapb.TableMetadata),
 		schemaText:    schemaText,
 	}
 
@@ -51,7 +51,7 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 		return nil, extractor.err
 	}
 
-	schemaMetadata := &storepb.DatabaseSchemaMetadata{
+	schemaMetadata := &metadatapb.DatabaseSchemaMetadata{
 		Name: extractor.currentDatabase,
 	}
 
@@ -71,23 +71,23 @@ func GetDatabaseMetadata(schemaText string) (*storepb.DatabaseSchemaMetadata, er
 type omniMetadataExtractor struct {
 	currentDatabase string
 	currentSchema   string
-	schemas         map[string]*storepb.SchemaMetadata
-	tables          map[tableKey]*storepb.TableMetadata
+	schemas         map[string]*metadatapb.SchemaMetadata
+	tables          map[tableKey]*metadatapb.TableMetadata
 	indexCounter    int
 	schemaText      string
 	err             error
 }
 
-func (e *omniMetadataExtractor) getOrCreateSchema(schemaName string) *storepb.SchemaMetadata {
+func (e *omniMetadataExtractor) getOrCreateSchema(schemaName string) *metadatapb.SchemaMetadata {
 	if schemaName == "" {
 		schemaName = "dbo"
 	}
 	if schema, exists := e.schemas[schemaName]; exists {
 		return schema
 	}
-	schema := &storepb.SchemaMetadata{
+	schema := &metadatapb.SchemaMetadata{
 		Name:       schemaName,
-		Tables:     []*storepb.TableMetadata{},
+		Tables:     []*metadatapb.TableMetadata{},
 		Views:      nil,
 		Procedures: nil,
 		Functions:  nil,
@@ -97,15 +97,15 @@ func (e *omniMetadataExtractor) getOrCreateSchema(schemaName string) *storepb.Sc
 	return schema
 }
 
-func (e *omniMetadataExtractor) getOrCreateTable(schemaName, tableName string) *storepb.TableMetadata {
+func (e *omniMetadataExtractor) getOrCreateTable(schemaName, tableName string) *metadatapb.TableMetadata {
 	key := tableKey{schema: schemaName, table: tableName}
 	if table, exists := e.tables[key]; exists {
 		return table
 	}
-	table := &storepb.TableMetadata{
+	table := &metadatapb.TableMetadata{
 		Name:             tableName,
-		Columns:          []*storepb.ColumnMetadata{},
-		Indexes:          []*storepb.IndexMetadata{},
+		Columns:          []*metadatapb.ColumnMetadata{},
+		Indexes:          []*metadatapb.IndexMetadata{},
 		ForeignKeys:      nil,
 		CheckConstraints: nil,
 	}
@@ -138,9 +138,9 @@ func (e *omniMetadataExtractor) extractStatement(node ast.Node) {
 		schemaName, viewName := tableRefSchemaObject(n.Name, e.currentSchema)
 		schemaMetadata := e.getOrCreateSchema(schemaName)
 		if schemaMetadata.Views == nil {
-			schemaMetadata.Views = []*storepb.ViewMetadata{}
+			schemaMetadata.Views = []*metadatapb.ViewMetadata{}
 		}
-		schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
+		schemaMetadata.Views = append(schemaMetadata.Views, &metadatapb.ViewMetadata{
 			Name:       viewName,
 			Definition: e.definitionText(n),
 		})
@@ -148,9 +148,9 @@ func (e *omniMetadataExtractor) extractStatement(node ast.Node) {
 		schemaName, procedureName := tableRefSchemaObject(n.Name, e.currentSchema)
 		schemaMetadata := e.getOrCreateSchema(schemaName)
 		if schemaMetadata.Procedures == nil {
-			schemaMetadata.Procedures = []*storepb.ProcedureMetadata{}
+			schemaMetadata.Procedures = []*metadatapb.ProcedureMetadata{}
 		}
-		schemaMetadata.Procedures = append(schemaMetadata.Procedures, &storepb.ProcedureMetadata{
+		schemaMetadata.Procedures = append(schemaMetadata.Procedures, &metadatapb.ProcedureMetadata{
 			Name:       procedureName,
 			Definition: e.definitionText(n),
 		})
@@ -158,9 +158,9 @@ func (e *omniMetadataExtractor) extractStatement(node ast.Node) {
 		schemaName, functionName := tableRefSchemaObject(n.Name, e.currentSchema)
 		schemaMetadata := e.getOrCreateSchema(schemaName)
 		if schemaMetadata.Functions == nil {
-			schemaMetadata.Functions = []*storepb.FunctionMetadata{}
+			schemaMetadata.Functions = []*metadatapb.FunctionMetadata{}
 		}
-		schemaMetadata.Functions = append(schemaMetadata.Functions, &storepb.FunctionMetadata{
+		schemaMetadata.Functions = append(schemaMetadata.Functions, &metadatapb.FunctionMetadata{
 			Name:       functionName,
 			Definition: e.definitionText(n),
 		})
@@ -205,8 +205,8 @@ func (e *omniMetadataExtractor) extractCreateTable(n *ast.CreateTableStmt) {
 	}
 }
 
-func (e *omniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *storepb.TableMetadata, schemaName string) {
-	column := &storepb.ColumnMetadata{
+func (e *omniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *metadatapb.TableMetadata, schemaName string) {
+	column := &metadatapb.ColumnMetadata{
 		Name:     n.Name,
 		Position: int32(len(table.Columns) + 1),
 		Nullable: true,
@@ -267,7 +267,7 @@ func (e *omniMetadataExtractor) extractColumn(n *ast.ColumnDef, table *storepb.T
 	table.Columns = append(table.Columns, column)
 }
 
-func (e *omniMetadataExtractor) extractTableConstraint(n *ast.ConstraintDef, table *storepb.TableMetadata, schemaName string) {
+func (e *omniMetadataExtractor) extractTableConstraint(n *ast.ConstraintDef, table *metadatapb.TableMetadata, schemaName string) {
 	switch n.Type {
 	case ast.ConstraintPrimaryKey:
 		table.Indexes = append(table.Indexes, e.constraintIndexMetadata(n, "", indexColumnNames(n.Columns), true))
@@ -285,7 +285,7 @@ func (e *omniMetadataExtractor) extractCreateIndex(n *ast.CreateIndexStmt) {
 	schemaName, tableName := tableRefSchemaObject(n.Table, e.currentSchema)
 	table := e.getOrCreateTable(schemaName, tableName)
 
-	index := &storepb.IndexMetadata{
+	index := &metadatapb.IndexMetadata{
 		Name:         n.Name,
 		Unique:       n.Unique,
 		Type:         indexType(n.Columnstore, n.Clustered),
@@ -301,18 +301,18 @@ func (e *omniMetadataExtractor) extractCreateSpatialIndex(n *ast.CreateSpatialIn
 	schemaName, tableName := tableRefSchemaObject(n.Table, e.currentSchema)
 	table := e.getOrCreateTable(schemaName, tableName)
 
-	index := &storepb.IndexMetadata{
+	index := &metadatapb.IndexMetadata{
 		Name:         n.Name,
 		Type:         "SPATIAL",
 		Expressions:  []string{},
 		Descending:   []bool{},
 		IsConstraint: false,
-		SpatialConfig: &storepb.SpatialIndexConfig{
+		SpatialConfig: &metadatapb.SpatialIndexConfig{
 			Method: "SPATIAL",
-			Tessellation: &storepb.TessellationConfig{
+			Tessellation: &metadatapb.TessellationConfig{
 				Scheme: strings.ToUpper(n.Using),
 			},
-			Dimensional: &storepb.DimensionalConfig{
+			Dimensional: &metadatapb.DimensionalConfig{
 				Dimensions: 2,
 			},
 		},
@@ -333,23 +333,23 @@ func (e *omniMetadataExtractor) extractCreateSpatialIndex(n *ast.CreateSpatialIn
 func (e *omniMetadataExtractor) extractCreateSequence(n *ast.CreateSequenceStmt) {
 	schemaName, sequenceName := tableRefSchemaObject(n.Name, e.currentSchema)
 	schemaMetadata := e.getOrCreateSchema(schemaName)
-	sequence := &storepb.SequenceMetadata{Name: sequenceName}
+	sequence := &metadatapb.SequenceMetadata{Name: sequenceName}
 	if n.DataType != nil {
 		sequence.DataType = e.nodeText(n.DataType)
 	}
 	if schemaMetadata.Sequences == nil {
-		schemaMetadata.Sequences = []*storepb.SequenceMetadata{}
+		schemaMetadata.Sequences = []*metadatapb.SequenceMetadata{}
 	}
 	schemaMetadata.Sequences = append(schemaMetadata.Sequences, sequence)
 }
 
-func (e *omniMetadataExtractor) constraintIndexMetadata(n *ast.ConstraintDef, prefix string, columns []string, primary bool) *storepb.IndexMetadata {
+func (e *omniMetadataExtractor) constraintIndexMetadata(n *ast.ConstraintDef, prefix string, columns []string, primary bool) *metadatapb.IndexMetadata {
 	name := n.Name
 	if name == "" && prefix != "" {
 		e.indexCounter++
 		name = fmt.Sprintf("%s_%d", prefix, e.indexCounter)
 	}
-	index := &storepb.IndexMetadata{
+	index := &metadatapb.IndexMetadata{
 		Name:         name,
 		Primary:      primary,
 		Unique:       true,
@@ -368,8 +368,8 @@ func (e *omniMetadataExtractor) constraintIndexMetadata(n *ast.ConstraintDef, pr
 	return index
 }
 
-func (*omniMetadataExtractor) inlineIndexMetadata(n *ast.InlineIndexDef) *storepb.IndexMetadata {
-	index := &storepb.IndexMetadata{
+func (*omniMetadataExtractor) inlineIndexMetadata(n *ast.InlineIndexDef) *metadatapb.IndexMetadata {
+	index := &metadatapb.IndexMetadata{
 		Name:         n.Name,
 		Unique:       n.Unique,
 		Type:         indexType(n.Columnstore, n.Clustered),
@@ -381,19 +381,19 @@ func (*omniMetadataExtractor) inlineIndexMetadata(n *ast.InlineIndexDef) *storep
 	return index
 }
 
-func (e *omniMetadataExtractor) appendCheckConstraint(table *storepb.TableMetadata, n *ast.ConstraintDef) {
-	check := &storepb.CheckConstraintMetadata{
+func (e *omniMetadataExtractor) appendCheckConstraint(table *metadatapb.TableMetadata, n *ast.ConstraintDef) {
+	check := &metadatapb.CheckConstraintMetadata{
 		Name:       n.Name,
 		Expression: e.nodeText(n.Expr),
 	}
 	if table.CheckConstraints == nil {
-		table.CheckConstraints = []*storepb.CheckConstraintMetadata{}
+		table.CheckConstraints = []*metadatapb.CheckConstraintMetadata{}
 	}
 	table.CheckConstraints = append(table.CheckConstraints, check)
 }
 
-func appendForeignKey(table *storepb.TableMetadata, n *ast.ConstraintDef, columns []string, fallbackSchema string) {
-	fk := &storepb.ForeignKeyMetadata{
+func appendForeignKey(table *metadatapb.TableMetadata, n *ast.ConstraintDef, columns []string, fallbackSchema string) {
+	fk := &metadatapb.ForeignKeyMetadata{
 		Name:              n.Name,
 		Columns:           columns,
 		ReferencedColumns: stringNodeList(n.RefColumns),
@@ -412,7 +412,7 @@ func appendForeignKey(table *storepb.TableMetadata, n *ast.ConstraintDef, column
 		fk.ReferencedTable = refTable
 	}
 	if table.ForeignKeys == nil {
-		table.ForeignKeys = []*storepb.ForeignKeyMetadata{}
+		table.ForeignKeys = []*metadatapb.ForeignKeyMetadata{}
 	}
 	table.ForeignKeys = append(table.ForeignKeys, fk)
 }
@@ -478,11 +478,11 @@ func (e *omniMetadataExtractor) applyComment(schemaName, tableName, columnName, 
 	table.Comment = comment
 }
 
-func parseSpatialOptions(options *ast.List, index *storepb.IndexMetadata) {
+func parseSpatialOptions(options *ast.List, index *metadatapb.IndexMetadata) {
 	if options == nil {
 		return
 	}
-	index.SpatialConfig.Storage = &storepb.StorageConfig{
+	index.SpatialConfig.Storage = &metadatapb.StorageConfig{
 		AllowRowLocks:  true,
 		AllowPageLocks: true,
 	}
@@ -513,7 +513,7 @@ func parseSpatialOptions(options *ast.List, index *storepb.IndexMetadata) {
 	}
 }
 
-func parseBoundingBox(value string, index *storepb.IndexMetadata) {
+func parseBoundingBox(value string, index *metadatapb.IndexMetadata) {
 	value = strings.TrimSpace(strings.Trim(value, "()"))
 	parts := strings.Split(value, ",")
 	if len(parts) != 4 {
@@ -527,7 +527,7 @@ func parseBoundingBox(value string, index *storepb.IndexMetadata) {
 		}
 		nums[i] = num
 	}
-	index.SpatialConfig.Tessellation.BoundingBox = &storepb.BoundingBox{
+	index.SpatialConfig.Tessellation.BoundingBox = &metadatapb.BoundingBox{
 		Xmin: nums[0],
 		Ymin: nums[1],
 		Xmax: nums[2],
@@ -535,9 +535,9 @@ func parseBoundingBox(value string, index *storepb.IndexMetadata) {
 	}
 }
 
-func parseGridLevels(value string, index *storepb.IndexMetadata) {
+func parseGridLevels(value string, index *metadatapb.IndexMetadata) {
 	value = strings.TrimSpace(strings.Trim(value, "()"))
-	var gridLevels []*storepb.GridLevel
+	var gridLevels []*metadatapb.GridLevel
 	for _, part := range strings.Split(value, ",") {
 		levelPart, densityPart, ok := strings.Cut(part, "=")
 		if !ok {
@@ -551,7 +551,7 @@ func parseGridLevels(value string, index *storepb.IndexMetadata) {
 				levelNum = int32(num)
 			}
 		}
-		gridLevels = append(gridLevels, &storepb.GridLevel{
+		gridLevels = append(gridLevels, &metadatapb.GridLevel{
 			Level:   levelNum,
 			Density: strings.ToUpper(densityPart),
 		})
@@ -559,9 +559,9 @@ func parseGridLevels(value string, index *storepb.IndexMetadata) {
 	index.SpatialConfig.Tessellation.GridLevels = gridLevels
 }
 
-func parseSpatialStorageOption(name, value string, index *storepb.IndexMetadata) {
+func parseSpatialStorageOption(name, value string, index *metadatapb.IndexMetadata) {
 	if index.SpatialConfig.Storage == nil {
-		index.SpatialConfig.Storage = &storepb.StorageConfig{}
+		index.SpatialConfig.Storage = &metadatapb.StorageConfig{}
 	}
 	storage := index.SpatialConfig.Storage
 	switch name {
@@ -644,7 +644,7 @@ func indexType(columnstore bool, clustered *bool) string {
 	return "NONCLUSTERED"
 }
 
-func appendIndexColumns(index *storepb.IndexMetadata, columns *ast.List) {
+func appendIndexColumns(index *metadatapb.IndexMetadata, columns *ast.List) {
 	if columns == nil {
 		return
 	}

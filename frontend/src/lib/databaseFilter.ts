@@ -1,10 +1,7 @@
 import type { Engine } from "@/types/proto-es/v1/common_pb";
 
 /**
- * Structured filter consumed by the app store's `fetchDatabases` and the
- * Pinia `useDatabaseV1Store.fetchDatabases`. Lives under `@/lib/` so
- * React code can import it without reaching into `@/stores/modules/v1/`.
- * The Pinia store re-exports this type for back-compat.
+ * Structured filter consumed by the app store's `fetchDatabases`.
  */
 export interface DatabaseFilter {
   project?: string;

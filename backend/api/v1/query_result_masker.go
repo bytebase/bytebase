@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -317,7 +318,7 @@ func (p *maskingDataProvider) getProject(projectID string) *store.ProjectMessage
 	return p.projects[projectID]
 }
 
-func (p *maskingDataProvider) getColumn(col *parserbase.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog) {
+func (p *maskingDataProvider) getColumn(col *parserbase.ColumnResource) (*metadatapb.ColumnMetadata, *storepb.ColumnCatalog) {
 	schema := p.schemas[col.Database]
 	if schema == nil {
 		return nil, nil

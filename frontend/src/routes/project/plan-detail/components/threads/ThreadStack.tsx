@@ -6,6 +6,7 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useUserByIdentifier } from "@/hooks/useAppState";
+import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -51,6 +52,8 @@ function includeNewThreads(
 export function ThreadStack({
   expandedRoots,
   expandedThreadRef,
+  flashRoot,
+  onFlashEnd,
   issueName,
   onCollapse,
   onExpand,
@@ -61,6 +64,9 @@ export function ThreadStack({
 }: {
   expandedRoots: ReadonlySet<string>;
   expandedThreadRef?: Ref<HTMLDivElement>;
+  // The thread the walker just landed on; its card flashes once.
+  flashRoot?: string;
+  onFlashEnd?: () => void;
   issueName: string;
   onCollapse: (rootName: string) => void;
   onExpand: (rootName: string) => void;
@@ -116,7 +122,13 @@ export function ThreadStack({
     >
       {ordered.map((entry) => (
         <div
+          className={cn(
+            flashRoot === entry.thread.root.name && "bb-thread-card--flash"
+          )}
           key={entry.thread.root.name}
+          onAnimationEnd={
+            flashRoot === entry.thread.root.name ? onFlashEnd : undefined
+          }
           ref={
             expandedRoots.has(entry.thread.root.name)
               ? expandedThreadRef

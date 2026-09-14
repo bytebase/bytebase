@@ -7,7 +7,6 @@ import { useViewStateNav } from "../common/useViewStateNav";
 import { SequencesTable } from "./SequencesTable";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/SequencesPanel/*`.
  * List-only panel — clicking a row updates `viewState.detail.sequence`
  * to scroll that row into view (no separate detail surface).
  */

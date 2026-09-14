@@ -365,11 +365,10 @@ func TestQueryConnMergeCTEDoesNotLeakRows(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := testcontainer.GetTestPg17Container(ctx, t)
-	defer pgContainer.Close(ctx)
+	pgContainer := testcontainer.SharedPg17Container(t)
+	dbName, rawDB := testcontainer.NewPg17Database(t)
 
 	const secret = "TOP-SECRET-SSN-123-45-6789"
-	rawDB := pgContainer.GetDB()
 	require.NoError(t, rawDB.Ping())
 	_, err := rawDB.ExecContext(ctx, `CREATE TABLE secret_doc (id int PRIMARY KEY, secret text);`)
 	require.NoError(t, err)
@@ -383,7 +382,7 @@ func TestQueryConnMergeCTEDoesNotLeakRows(t *testing.T) {
 			Username: "postgres",
 		},
 		Password:          "root-password",
-		ConnectionContext: db.ConnectionContext{DatabaseName: "postgres"},
+		ConnectionContext: db.ConnectionContext{DatabaseName: dbName},
 	})
 	require.NoError(t, err)
 	defer driver.Close(ctx)

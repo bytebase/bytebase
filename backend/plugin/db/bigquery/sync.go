@@ -5,16 +5,16 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/bigquery"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"google.golang.org/api/iterator"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
 // SyncInstance syncs the instance.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 
 	it := d.client.Datasets(ctx)
 	for {
@@ -25,7 +25,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		if err != nil {
 			return nil, err
 		}
-		databases = append(databases, &storepb.DatabaseSchemaMetadata{Name: dataset.DatasetID})
+		databases = append(databases, &metadatapb.DatabaseSchemaMetadata{Name: dataset.DatasetID})
 	}
 
 	return &db.InstanceMetadata{
@@ -44,10 +44,10 @@ type columnRow struct {
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
-	schemaMetadata := &storepb.SchemaMetadata{}
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
+	schemaMetadata := &metadatapb.SchemaMetadata{}
 
-	columnMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+	columnMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 	q := d.client.Query(fmt.Sprintf(`
 		SELECT
 			table_name,
@@ -76,7 +76,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			return nil, err
 		}
 
-		column := &storepb.ColumnMetadata{
+		column := &metadatapb.ColumnMetadata{
 			Name:     row.ColumnName,
 			Position: row.OrdinalPosition,
 			Nullable: nullableBool,
@@ -110,7 +110,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		if err != nil {
 			return nil, err
 		}
-		schemaMetadata.Tables = append(schemaMetadata.Tables, &storepb.TableMetadata{
+		schemaMetadata.Tables = append(schemaMetadata.Tables, &metadatapb.TableMetadata{
 			Name:     t.TableID,
 			Columns:  columns,
 			RowCount: int64(tmd.NumRows),
@@ -118,8 +118,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			DataSize: tmd.NumBytes,
 		})
 	}
-	return &storepb.DatabaseSchemaMetadata{
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name:    d.databaseName,
-		Schemas: []*storepb.SchemaMetadata{schemaMetadata},
+		Schemas: []*metadatapb.SchemaMetadata{schemaMetadata},
 	}, nil
 }

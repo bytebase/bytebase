@@ -45,9 +45,9 @@ export const authRoutes: RouteObject[] = [
         ),
       },
       {
-        // vue used `alias: "signin"` on the index child; react-router has no
-        // alias, so `/auth/signin` is an explicit sibling rendering the same
-        // page under the same route name.
+        // react-router has no route alias, so `/auth/signin` is an explicit
+        // sibling rendering the same page under the same route name as the
+        // index child.
         path: "signin",
         handle: { name: AUTH_SIGNIN_MODULE },
         lazy: lazyPage(

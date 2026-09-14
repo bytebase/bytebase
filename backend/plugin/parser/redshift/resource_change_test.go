@@ -3,6 +3,7 @@ package redshift
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -16,7 +17,7 @@ ALTER TABLE t1 ADD COLUMN c2 INT;
 INSERT INTO t1 VALUES (1);
 UPDATE t1 SET c2 = 2;`
 
-	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_REDSHIFT, true /* caseSensitive */)
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_REDSHIFT, true /* caseSensitive */)
 	changedResources := model.NewChangedResources(dbMetadata)
 	changedResources.AddTable(
 		"db",
@@ -50,7 +51,7 @@ SELECT * INTO copied_rows FROM public.rows;
 DROP TABLE old_rows;
 DELETE FROM copied_rows WHERE id = 1;`
 
-	dbMetadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_REDSHIFT, true /* caseSensitive */)
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_REDSHIFT, true /* caseSensitive */)
 	changedResources := model.NewChangedResources(dbMetadata)
 	changedResources.AddTable(
 		"db",

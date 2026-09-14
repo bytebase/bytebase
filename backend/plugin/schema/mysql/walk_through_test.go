@@ -1,11 +1,13 @@
 package mysql
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	omniast "github.com/bytebase/omni/mysql/ast"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
@@ -31,7 +33,7 @@ type testData struct {
 }
 
 func TestWalkThrough(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
+	originDatabase := &metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
 	}
 
@@ -49,7 +51,7 @@ func TestWalkThrough(t *testing.T) {
 
 	for _, test := range tests {
 		// Make a deep copy to avoid mutation across tests
-		protoData, ok := proto.Clone(originDatabase).(*storepb.DatabaseSchemaMetadata)
+		protoData, ok := proto.Clone(originDatabase).(*metadatapb.DatabaseSchemaMetadata)
 		require.True(t, ok)
 
 		// Create DatabaseMetadata for walk-through
@@ -57,7 +59,7 @@ func TestWalkThrough(t *testing.T) {
 
 		stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, test.Statement)
 		asts := base.ExtractASTs(stmts)
-		advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
+		advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: test.Statement}, state, asts)
 		if advice != nil {
 			// Compare the advice fields
 			require.NotNil(t, test.Advice, "unexpected advice for statement %q: %+v", test.Statement, advice)
@@ -71,28 +73,28 @@ func TestWalkThrough(t *testing.T) {
 			continue
 		}
 
-		want := &storepb.DatabaseSchemaMetadata{}
+		want := &metadatapb.DatabaseSchemaMetadata{}
 		err = common.ProtojsonUnmarshaler.Unmarshal([]byte(test.Want), want)
 		require.NoError(t, err)
 		result := state.GetProto()
 		diff := cmp.Diff(want, result, protocmp.Transform(),
-			protocmp.SortRepeatedFields(&storepb.DatabaseSchemaMetadata{}, "schemas"),
-			protocmp.SortRepeatedFields(&storepb.SchemaMetadata{}, "tables", "views"),
-			protocmp.SortRepeatedFields(&storepb.TableMetadata{}, "indexes", "columns"),
+			protocmp.SortRepeatedFields(&metadatapb.DatabaseSchemaMetadata{}, "schemas"),
+			protocmp.SortRepeatedFields(&metadatapb.SchemaMetadata{}, "tables", "views"),
+			protocmp.SortRepeatedFields(&metadatapb.TableMetadata{}, "indexes", "columns"),
 		)
 		require.Empty(t, diff, "statement %q", test.Statement)
 	}
 }
 
 func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
-	originDatabase := &storepb.DatabaseSchemaMetadata{
+	originDatabase := &metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t1",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name:     "a",
 								Position: 1,
@@ -118,18 +120,18 @@ func TestWalkThroughCreateTableIfNotExistsCTASExistingTable(t *testing.T) {
 	require.True(t, ok)
 	require.True(t, createTable.IfNotExists)
 
-	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 	require.NotNil(t, state.GetSchemaMetadata("").GetTable("t1"))
 }
 
-// TestWalkThroughSRIDInvisible verifies the omni catalog -> storepb.ColumnMetadata
+// TestWalkThroughSRIDInvisible verifies the omni catalog -> metadatapb.ColumnMetadata
 // conversion (tableToProto) carries the spatial SRID (presence + value, including the
 // valid explicit SRID 0) and the INVISIBLE flag. Without this the WalkThroughWithContext
 // simulation path — used to compute the schema a changeset would produce — would silently
 // drop these attributes, mirroring the v1-converter gap.
 func TestWalkThroughSRIDInvisible(t *testing.T) {
-	state := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MYSQL, true)
+	state := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{Name: "test"}, nil, nil, storepb.Engine_MYSQL, true)
 	statement := "CREATE TABLE t (" +
 		"id INT PRIMARY KEY, " +
 		"g4326 GEOMETRY NOT NULL SRID 4326, " +
@@ -140,10 +142,10 @@ func TestWalkThroughSRIDInvisible(t *testing.T) {
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
 	asts := base.ExtractASTs(stmts)
 
-	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 
-	cols := map[string]*storepb.ColumnMetadata{}
+	cols := map[string]*metadatapb.ColumnMetadata{}
 	for _, c := range state.GetProto().GetSchemas()[0].GetTables()[0].GetColumns() {
 		cols[c.GetName()] = c
 	}
@@ -163,25 +165,25 @@ func TestWalkThroughSRIDInvisible(t *testing.T) {
 
 // TestWalkThroughSRIDInvisibleSeeded verifies the reverse leg of the WalkThroughWithContext
 // round-trip: when the walk-through starts from already-synced metadata that carries SRID
-// / INVISIBLE columns, the proto->catalog seeding (wtBuildColumnDef) must install those
+// / INVISIBLE columns, LoadMetadata must install those
 // attributes into the omni catalog so that running an UNRELATED DDL does not strip them
 // from the resulting proto. Without seeding, the pre-existing columns load as
 // plain/no-SRID and — because columnsEqual now compares these fields — surface as phantom
 // changes.
 func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
-	origin := &storepb.DatabaseSchemaMetadata{
+	origin := &metadatapb.DatabaseSchemaMetadata{
 		Name: "test",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "",
-			Tables: []*storepb.TableMetadata{
+			Tables: []*metadatapb.TableMetadata{
 				{
 					Name: "geo",
-					Columns: []*storepb.ColumnMetadata{
+					Columns: []*metadatapb.ColumnMetadata{
 						{Name: "id", Position: 1, Type: "int", Nullable: false, Default: "AUTO_INCREMENT"},
 						{Name: "pt", Position: 2, Type: "point", Nullable: false, Srid: func() *uint32 { v := uint32(4326); return &v }()},
 						{Name: "secret", Position: 3, Type: "int", Nullable: false, Default: "0", IsInvisible: true},
 					},
-					Indexes: []*storepb.IndexMetadata{
+					Indexes: []*metadatapb.IndexMetadata{
 						{Name: "PRIMARY", Expressions: []string{"id"}, Primary: true, Unique: true},
 					},
 				},
@@ -195,12 +197,12 @@ func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
 	sm := sheet.NewManager()
 	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
 	asts := base.ExtractASTs(stmts)
-	advice := WalkThroughWithContext(schema.WalkThroughContext{RawSQL: statement}, state, asts)
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, asts)
 	require.Nil(t, advice)
 
 	geo := state.GetSchemaMetadata("").GetTable("geo")
 	require.NotNil(t, geo)
-	cols := map[string]*storepb.ColumnMetadata{}
+	cols := map[string]*metadatapb.ColumnMetadata{}
 	for _, c := range geo.GetProto().GetColumns() {
 		cols[c.GetName()] = c
 	}
@@ -209,4 +211,46 @@ func TestWalkThroughSRIDInvisibleSeeded(t *testing.T) {
 	require.NotNil(t, cols["pt"].Srid, "seeded SRID must survive (no phantom strip)")
 	require.Equal(t, uint32(4326), *cols["pt"].Srid)
 	require.True(t, cols["secret"].IsInvisible, "seeded INVISIBLE must survive")
+}
+
+func TestWalkThroughKeepsSeededIndexTypes(t *testing.T) {
+	origin := &metadatapb.DatabaseSchemaMetadata{
+		Name: "test",
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Tables: []*metadatapb.TableMetadata{
+				{
+					Name:    "disk",
+					Engine:  "InnoDB",
+					Columns: []*metadatapb.ColumnMetadata{{Name: "a", Position: 1, Type: "int"}},
+					Indexes: []*metadatapb.IndexMetadata{{Name: "k", Expressions: []string{"a"}, Type: "BTREE", Visible: true}},
+				},
+				{
+					Name:    "mem",
+					Engine:  "MEMORY",
+					Columns: []*metadatapb.ColumnMetadata{{Name: "a", Position: 1, Type: "int"}},
+					Indexes: []*metadatapb.IndexMetadata{
+						{Name: "k_hash", Expressions: []string{"a"}, Type: "HASH", Visible: true},
+						{Name: "k_btree", Expressions: []string{"a"}, Type: "BTREE", Visible: true},
+					},
+				},
+			},
+		}},
+	}
+	state := model.NewDatabaseMetadata(origin, nil, nil, storepb.Engine_MYSQL, true)
+
+	statement := "CREATE TABLE unrelated (x INT PRIMARY KEY);"
+	sm := sheet.NewManager()
+	stmts, _ := sm.GetStatementsForChecks(storepb.Engine_MYSQL, statement)
+	advice := WalkThroughWithContext(context.Background(), schema.WalkThroughContext{RawSQL: statement}, state, base.ExtractASTs(stmts))
+	require.Nil(t, advice)
+
+	// Each index reports its effective access method, the engine's default one
+	// included.
+	types := map[string]string{}
+	for _, name := range []string{"disk", "mem"} {
+		for _, idx := range state.GetSchemaMetadata("").GetTable(name).GetProto().GetIndexes() {
+			types[name+"."+idx.GetName()] = idx.GetType()
+		}
+	}
+	require.Equal(t, map[string]string{"disk.k": "BTREE", "mem.k_hash": "HASH", "mem.k_btree": "BTREE"}, types)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mssql/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -113,9 +114,9 @@ type FindIndexesKey struct {
 }
 
 // The value in the map represents the column list of a certain index.
-type IndexMap = map[FindIndexesKey][]*storepb.IndexMetadata
+type IndexMap = map[FindIndexesKey][]*metadatapb.IndexMetadata
 
-func getIndexMapFromMetadata(dbMetadata *storepb.DatabaseSchemaMetadata) *IndexMap {
+func getIndexMapFromMetadata(dbMetadata *metadatapb.DatabaseSchemaMetadata) *IndexMap {
 	indexMap := IndexMap{}
 	if dbMetadata == nil {
 		return &indexMap

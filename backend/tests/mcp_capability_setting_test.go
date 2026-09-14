@@ -75,11 +75,7 @@ func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// A fresh workspace starts with the safe, immediately useful ceiling.
 	capability, err := ctl.getMCPCapability(ctx)
@@ -129,10 +125,7 @@ func TestMCPSettingExistsWithTheWorkspace(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	got, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
 		Name: "settings/" + v1pb.Setting_MCP.String(),
@@ -177,10 +170,7 @@ func TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspaceID := currentWorkspaceID(ctx, t, ctl)
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
@@ -222,10 +212,7 @@ func TestMCPMissingRowUsesGenericUpdateSemantics(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspaceID := currentWorkspaceID(ctx, t, ctl)
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
@@ -268,10 +255,7 @@ func TestMCPRepairKeepsTheMaskingToggle(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspaceID := currentWorkspaceID(ctx, t, ctl)
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
@@ -306,10 +290,7 @@ func TestMCPMissingCapabilityRefusesPartialUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspaceID := currentWorkspaceID(ctx, t, ctl)
 	db, err := sql.Open("pgx", ctl.profile.PgURL)

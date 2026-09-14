@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -19,16 +20,16 @@ import (
 // exercises the full extractor path metadata -> catalog -> omni -> resource
 // mapping. The view vectors are covered in query_span_view_test.go.
 
-func lineageAuditMetadata() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func lineageAuditMetadata() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "customer",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "phone", Type: "varchar"},
 							{Name: "name", Type: "varchar"},
@@ -43,7 +44,7 @@ func lineageAuditMetadata() *storepb.DatabaseSchemaMetadata {
 
 func lineageAuditSpan(t *testing.T, sql string) *base.QuerySpan {
 	t.Helper()
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{lineageAuditMetadata()})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{lineageAuditMetadata()})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,

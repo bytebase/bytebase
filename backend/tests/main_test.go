@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
 func TestMain(m *testing.M) {
-	ctx := context.Background()
-	code, err := startMain(ctx, m)
+	code, err := startMain(m)
 	if err != nil {
 		panic(err)
 	}
@@ -20,21 +20,22 @@ func TestMain(m *testing.M) {
 	}
 }
 
-func startMain(ctx context.Context, m *testing.M) (int, error) {
-	pgContainer, err := getPgContainer(ctx)
+func startMain(m *testing.M) (int, error) {
+	// The package's own Postgres: every server the tests start takes a metadata
+	// database on it, as does every test that builds a Store without a server.
+	pgContainer, err := testcontainer.StartSharedPg()
 	if err != nil {
 		return 0, err
 	}
+	defer testcontainer.CloseShared()
+	// Runs before CloseShared takes the Postgres out from under it.
 	defer func() {
-		if pgContainer != nil {
-			pgContainer.Close(ctx)
-		}
-		if sampleTargetContainer != nil {
-			sampleTargetContainer.Close(ctx)
+		if sharedServerCtl != nil {
+			_ = sharedServerCtl.Close(context.Background())
 		}
 	}()
-	externalPgHost = pgContainer.host
-	externalPgPort = pgContainer.port
+	externalPgHost = pgContainer.GetHost()
+	externalPgPort = pgContainer.GetPort()
 
 	// Seeded once here, before any test starts, and never mutated afterwards:
 	// ValidateWebhookURL reads this map without synchronization, and the tests

@@ -642,7 +642,7 @@
       "ssh-key": "Khóa SSH",
       "user": "Người dùng"
     },
-    "ssh-connection": "Kết nối SSH",
+    "ssh-connection": "Đường hầm SSH",
     "ssh-type": {
       "none": "Không có",
       "tunnel-and-private-key": "Đường hầm + Khóa riêng"
@@ -673,7 +673,7 @@
       "client-key-path": "Đường dẫn khóa riêng",
       "client-key-placeholder": "Nhập hoặc kéo thả YOUR_CLIENT_KEY",
       "configured": "Đã cấu hình",
-      "connection-security": "Bảo mật kết nối",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "TLS lẫn nhau không khả dụng cho engine này.",
       "posture": {
         "disabled": "Đã tắt",
@@ -685,7 +685,7 @@
       "verification-disabled-description": "Xác minh đã tắt. Kết nối vẫn được mã hóa nhưng danh tính máy chủ không được xác minh; cài đặt CA bị bỏ qua. Điều này không an toàn. Hãy bật xác minh để bảo đảm kết nối an toàn; chỉ tạm tắt khi phát triển hoặc khắc phục sự cố.",
       "verify-certificate": "Xác minh chứng chỉ máy chủ"
     },
-    "ssl-connection": "Kết nối SSL"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "Bạn không có quyền truy cập cơ sở dữ liệu này.",
@@ -804,7 +804,6 @@
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
     "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
-    "unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "unique": "Duy nhất",
     "visible": "Hiển thị"
   },
@@ -1319,9 +1318,6 @@
       "host": {
         "none-snowflake": "ví dụ: host.docker.internal | IP máy chủ | local socket",
         "saas": "ví dụ: db.example.com | IP cơ sở dữ liệu"
-      },
-      "proxy": {
-        "snowflake": "Đối với máy chủ proxy, thêm @PROXY_HOST và chỉ định PROXY_PORT trong cổng"
       }
     },
     "show-how-to-create": "Hiển thị cách tạo",
@@ -1358,6 +1354,22 @@
     "use-sample-instance": "Sử dụng phiên bản mẫu (Có sẵn trong 7 ngày)",
     "use-sample-instance-self-host": "Sử dụng phiên bản mẫu",
     "users": "Người dùng",
+    "validation": {
+      "absolute-path": "Nhập đường dẫn tuyệt đối bắt đầu bằng /.",
+      "aws-credential": "Nhập ID khóa truy cập hoặc ARN của vai trò.",
+      "cloud-sql-host": "Nhập tên phiên bản theo định dạng project:region:instance.",
+      "forbidden-parameter": "Tham số allowAllFiles không được phép vì làm lộ các tệp trên máy chủ Bytebase.",
+      "gcp-instance": "Sử dụng chữ thường, số hoặc dấu gạch nối.",
+      "gcp-project": "Sử dụng chữ thường, số, dấu chấm, dấu hai chấm hoặc dấu gạch nối.",
+      "keytab-resupply": "Tải lại tệp keytab cho đích kết nối mới.",
+      "oracle-service": "Nhập tên dịch vụ hoặc SID.",
+      "pem-certificate": "Nhập chứng chỉ PEM, bao gồm các dòng BEGIN và END CERTIFICATE.",
+      "pem-key": "Nhập khóa riêng PEM (PKCS#1, PKCS#8 hoặc EC).",
+      "required": "Trường này là bắt buộc.",
+      "specific-credential": "Cung cấp thông tin xác thực cụ thể. Bytebase Cloud không hỗ trợ thông tin xác thực mặc định.",
+      "tls-pair": "Cung cấp cả chứng chỉ máy khách và khóa riêng.",
+      "tls-source-conflict": "Sử dụng nội dung PEM hoặc đường dẫn tệp, không dùng cả hai."
+    },
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },
   "issue": {
@@ -1809,21 +1821,29 @@
           "view-in-statement": "Xem trong câu lệnh"
         },
         "comment-on-lines": "Bình luận các dòng đã chọn",
-        "comment-required": "Nhập bình luận trước khi gửi.",
         "n-replies-hidden_one": "{{count}} phản hồi bị ẩn",
         "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
         "n-replies_one": "{{count}} phản hồi",
         "n-replies_other": "{{count}} phản hồi",
         "publish": "Đăng",
-        "reopen-with-comment": "Mở lại kèm bình luận",
+        "reopen-thread": "Mở lại luồng",
         "reply": "Trả lời",
         "reply-placeholder": "Trả lời...",
         "reply-posted-status-failed": "Đã đăng phản hồi nhưng không thể cập nhật trạng thái chủ đề. Hãy thử lại thao tác cập nhật trạng thái.",
         "resolve": "Giải quyết",
-        "resolve-with-comment": "Giải quyết kèm bình luận",
+        "resolve-thread": "Giải quyết luồng",
         "resolved": "Đã giải quyết",
         "threads-on-line_one": "{{count}} chủ đề trên dòng này",
         "threads-on-line_other": "{{count}} chủ đề trên dòng này",
+        "walker": {
+          "count_one": "{{count}} luồng chưa giải quyết ở phiên bản này",
+          "count_other": "{{count}} luồng chưa giải quyết ở phiên bản này",
+          "next": "Luồng chưa giải quyết tiếp theo",
+          "position": "Luồng {{index}} trên {{count}}",
+          "previous": "Luồng chưa giải quyết trước đó",
+          "remainder_one": "Còn {{count}} luồng không hiển thị ở phiên bản này",
+          "remainder_other": "Còn {{count}} luồng không hiển thị ở phiên bản này"
+        },
         "write-comment": "Viết bình luận..."
       }
     },
@@ -1867,6 +1887,8 @@
       "n-of-m-approved": "{{n}} trên {{m}} đã được phê duyệt",
       "n-of-m-tasks": "{{n}}/{{m}} tác vụ",
       "n-passed": "{{n}} đã vượt qua",
+      "n-unresolved-threads_one": "{{count}} luồng chưa giải quyết",
+      "n-unresolved-threads_other": "{{count}} luồng chưa giải quyết",
       "n-warning": "{{n}} cảnh báo"
     },
     "targets": {
@@ -2005,9 +2027,6 @@
         }
       },
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
-    },
-    "overview": {
-      "info-slot-content": "Bytebase định kỳ đồng bộ hóa lược đồ phiên bản. Các cơ sở dữ liệu mới được đồng bộ hóa trước tiên được đặt ở đây. Người dùng nên chuyển chúng đến dự án ứng dụng thích hợp."
     },
     "select": "Chọn dự án",
     "settings": {

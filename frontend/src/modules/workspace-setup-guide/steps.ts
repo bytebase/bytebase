@@ -19,7 +19,7 @@ import { extractProjectResourceName } from "@/utils/v1/project";
 import type {
   GuideContext,
   GuideStepActions,
-  GuideStepRegistry,
+  GuideStepDefinition,
 } from "./types";
 
 const isRouteInside = (name: string | undefined, parent: string) =>
@@ -57,10 +57,9 @@ const databaseActions = (context: GuideContext): GuideStepActions => ({
   },
 });
 
-export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
-  "create-project": {
+export const GUIDE_STEP_REGISTRY: readonly GuideStepDefinition[] = [
+  {
     id: "create-project",
-    analyticsKey: "create-project",
     labelKey: "workspace-setup-guide.steps.project",
     descriptionKey: "workspace-setup-guide.descriptions.project",
     isComplete: (context) => context.hasProject,
@@ -77,9 +76,8 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       },
     }),
   },
-  "connect-instance": {
+  {
     id: "connect-instance",
-    analyticsKey: "connect-instance",
     labelKey: "workspace-setup-guide.steps.instance",
     descriptionKey: "workspace-setup-guide.descriptions.instance",
     isComplete: (context) => context.hasInstance,
@@ -87,9 +85,8 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       isRouteInside(route.name, PROJECT_V1_ROUTE_INSTANCES),
     resolveActions: connectInstanceActions,
   },
-  "explore-database": {
+  {
     id: "explore-database",
-    analyticsKey: "explore-database",
     labelKey: "workspace-setup-guide.steps.database",
     descriptionKey: "workspace-setup-guide.descriptions.database",
     isComplete: (context) =>
@@ -100,9 +97,8 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       isRouteInside(route.name, PROJECT_V1_ROUTE_DATABASES),
     resolveActions: databaseActions,
   },
-  "query-data": {
+  {
     id: "query-data",
-    analyticsKey: "query-data",
     labelKey: "workspace-setup-guide.steps.query-data",
     descriptionKey: "workspace-setup-guide.descriptions.query-data",
     isComplete: (context) => context.hasRunStatement,
@@ -118,9 +114,8 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       },
     }),
   },
-  "create-database-change": {
+  {
     id: "create-database-change",
-    analyticsKey: "create-database-change",
     labelKey: "workspace-setup-guide.steps.create-database-change",
     descriptionKey: "workspace-setup-guide.descriptions.create-database-change",
     isComplete: (context) => context.hasCreatedChangeIssue,
@@ -134,9 +129,8 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       },
     }),
   },
-  "add-member": {
+  {
     id: "add-member",
-    analyticsKey: "add-teammate",
     labelKey: "workspace-setup-guide.steps.add-teammate",
     descriptionKey: "workspace-setup-guide.descriptions.add-teammate",
     isComplete: (context) => context.hasOtherWorkspaceMember,
@@ -165,4 +159,4 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       };
     },
   },
-};
+];

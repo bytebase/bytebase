@@ -149,7 +149,11 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 			return
 		}
 		if approved {
-			r.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}
+			// Give up on shutdown rather than blocking on a stopped consumer.
+			select {
+			case r.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}:
+			case <-ctx.Done():
+			}
 		}
 	}
 }

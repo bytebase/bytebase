@@ -11,6 +11,7 @@ import {
   type SetStateAction,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -23,13 +24,7 @@ import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone"
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Popover, PopoverContent } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useCurrentUser, useUserByIdentifier } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
@@ -45,11 +40,12 @@ import {
 // A long thread keeps its tail visible and folds the middle behind a count.
 const VISIBLE_TAIL_REPLIES = 2;
 const FOLD_REPLIES_ABOVE = 4;
-type ReplyAction = "reply" | "resolve" | "reopen";
 
 // The same thread presentation for the statement editor and the Review
 // Activity timeline: root and replies in one card, Reply and Resolve or Reopen
-// in the footer. Resolved threads collapse to a summary row.
+// in the footer. The reply composer carries a checkbox that mirrors the thread
+// state and, when toggled, settles the thread after the reply is posted.
+// Resolved threads collapse to a summary row.
 export function CommentThreadCard({
   className,
   collapsible = true,
@@ -99,12 +95,8 @@ export function CommentThreadCard({
   const replyDraft = savedReplyDraft ?? localReplyDraft;
   const setReplyDraft = onReplyDraftChange ?? setLocalReplyDraft;
   const [submitting, setSubmitting] = useState(false);
-  const [replyAction, setReplyAction] = useState<ReplyAction>("reply");
-  const [replyAttempted, setReplyAttempted] = useState(false);
-  const replyButtonRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (replyDraft.trim() || !replyOpen) setReplyAttempted(false);
-  }, [replyDraft, replyOpen]);
+  const [settleWithReply, setSettleWithReply] = useState(thread.resolved);
+  const resolveCheckboxId = useId();
   const submissionPending = useRef(false);
   const busy = actions.pending || submitting;
   const draftRef = useRef(replyDraft);
@@ -138,19 +130,18 @@ export function CommentThreadCard({
 
   const allowReply = canReplyToThread(project);
   const allowSettle = canSettleThread(project);
-  const selectedAction =
-    allowSettle && replyAction === (thread.resolved ? "reopen" : "resolve")
-      ? replyAction
-      : "reply";
-  const replyActionLabel =
-    selectedAction === "resolve"
-      ? t("plan.review.thread.resolve-with-comment")
-      : selectedAction === "reopen"
-        ? t("plan.review.thread.reopen-with-comment")
-        : t("plan.review.thread.reply");
+  // The reply composer's checkbox names the action for the thread's current
+  // state and, when checked, performs it after the reply is posted:
+  //   open thread     -> "Resolve thread", unchecked; a reply keeps it open.
+  //   resolved thread -> "Reopen thread", checked; a reply reopens it.
+  // The resolved default is deliberate: replying to a resolved thread is
+  // rare and nearly always means the matter is not settled, so reopening is
+  // the expected outcome and keeping it resolved is the opt-out. A state
+  // change from elsewhere or a fresh composer resets the box to its default.
   useEffect(() => {
-    setReplyAction("reply");
-  }, [thread.resolved, allowSettle]);
+    setSettleWithReply(thread.resolved);
+  }, [thread.resolved, replyOpen]);
+  const settleAfterReply = allowSettle && settleWithReply;
 
   const { hiddenCount, visibleReplies } = useMemo(() => {
     const replies = thread.replies;
@@ -163,30 +154,25 @@ export function CommentThreadCard({
     };
   }, [showAllReplies, thread.replies]);
 
-  const submitReply = async (action: ReplyAction = "reply") => {
+  const submitReply = async () => {
     if (busy || submissionPending.current) return;
-    if (!allowReply || (action !== "reply" && !allowSettle)) return;
-    if (!replyDraft.trim()) {
-      setReplyAttempted(true);
-      return;
-    }
+    if (!allowReply) return;
+    if (!replyDraft.trim()) return;
     submissionPending.current = true;
     setSubmitting(true);
     const submittedDraft = replyDraft;
     try {
       const created = await actions.reply(thread.root.name, submittedDraft);
       if (!created) return;
-      setReplyAttempted(false);
-      setReplyAction("reply");
       // Once published, this draft must never be sent again when retrying a
       // failed status update. Preserve any new text typed while publishing.
       setReplyDraft((current) => (current === submittedDraft ? "" : current));
       if (mounted.current && draftRef.current === submittedDraft) {
         setReplyOpen(false);
       }
-      if (action === "reply") return;
+      if (!settleAfterReply) return;
       const failureTitle = t("plan.review.thread.reply-posted-status-failed");
-      const resolved = action === "resolve";
+      const resolved = !thread.resolved;
       const updated = await (resolved
         ? actions.resolve(thread.root.name, failureTitle)
         : actions.reopen(thread.root.name, failureTitle));
@@ -318,83 +304,44 @@ export function CommentThreadCard({
                     compact
                     content={replyDraft}
                     onChange={setReplyDraft}
-                    onSubmit={() => void submitReply(selectedAction)}
+                    onSubmit={() => void submitReply()}
                     placeholder={t("plan.review.thread.reply-placeholder")}
                   />
-                  <div className="flex flex-wrap items-center justify-end gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {allowSettle && (
+                      <div className="flex items-center gap-x-2">
+                        <Checkbox
+                          id={resolveCheckboxId}
+                          checked={settleWithReply}
+                          disabled={busy}
+                          onCheckedChange={setSettleWithReply}
+                        />
+                        <label
+                          htmlFor={resolveCheckboxId}
+                          className="cursor-pointer text-sm"
+                        >
+                          {thread.resolved
+                            ? t("plan.review.thread.reopen-thread")
+                            : t("plan.review.thread.resolve-thread")}
+                        </label>
+                      </div>
+                    )}
                     <Button
+                      className="ml-auto"
                       onClick={() => setReplyOpen(false)}
                       size="sm"
                       appearance="secondary"
                     >
                       {t("common.cancel")}
                     </Button>
-                    <div className="inline-flex items-center">
-                      <Button
-                        ref={replyButtonRef}
-                        size="sm"
-                        className="rounded-r-none"
-                        disabled={busy}
-                        onClick={() => void submitReply(selectedAction)}
-                      >
-                        {busy && <Loader2 className="size-4 animate-spin" />}
-                        {replyActionLabel}
-                      </Button>
-                      <Popover
-                        open={replyAttempted && !replyDraft.trim()}
-                        onOpenChange={(open) => {
-                          if (!open) setReplyAttempted(false);
-                        }}
-                      >
-                        <PopoverContent
-                          anchor={replyButtonRef}
-                          side="top"
-                          align="end"
-                          initialFocus={false}
-                          className="max-w-64 px-3 py-2 text-xs"
-                        >
-                          <p role="alert">
-                            {t("plan.review.thread.comment-required")}
-                          </p>
-                        </PopoverContent>
-                      </Popover>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          aria-label={t("common.actions")}
-                          disabled={busy}
-                          render={
-                            <Button
-                              size="sm"
-                              className="rounded-l-none border-l border-accent-text/20"
-                            />
-                          }
-                        >
-                          <ChevronDown className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            disabled={busy}
-                            onClick={() => setReplyAction("reply")}
-                          >
-                            {t("plan.review.thread.reply")}
-                          </DropdownMenuItem>
-                          {allowSettle && (
-                            <DropdownMenuItem
-                              disabled={busy}
-                              onClick={() =>
-                                setReplyAction(
-                                  thread.resolved ? "reopen" : "resolve"
-                                )
-                              }
-                            >
-                              {thread.resolved
-                                ? t("plan.review.thread.reopen-with-comment")
-                                : t("plan.review.thread.resolve-with-comment")}
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                    <Button
+                      size="sm"
+                      disabled={busy || !replyDraft.trim()}
+                      onClick={() => void submitReply()}
+                    >
+                      {busy && <Loader2 className="size-4 animate-spin" />}
+                      {t("plan.review.thread.reply")}
+                    </Button>
                   </div>
                 </div>
               ) : (

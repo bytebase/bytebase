@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
@@ -1410,7 +1411,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 		if schemaMetadata == nil {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("schema %q not found", req.Msg.Schema))
 		}
-		var functionMetadata *storepb.FunctionMetadata
+		var functionMetadata *metadatapb.FunctionMetadata
 		for _, fn := range schemaMetadata.GetProto().GetFunctions() {
 			if fn.Name == req.Msg.Object {
 				functionMetadata = fn
@@ -1458,7 +1459,7 @@ func (s *DatabaseService) GetSchemaString(ctx context.Context, req *connect.Requ
 	}
 }
 
-func (*DatabaseService) getSingleFileSDL(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+func (*DatabaseService) getSingleFileSDL(engine storepb.Engine, metadata *metadatapb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
 	sdlText, err := schema.GetDatabaseDefinition(engine, schema.GetDefinitionContext{
 		SkipBackupSchema: true,
 		SDLFormat:        true,
@@ -1473,7 +1474,7 @@ func (*DatabaseService) getSingleFileSDL(engine storepb.Engine, metadata *storep
 	}), nil
 }
 
-func (*DatabaseService) getMultiFileSDL(engine storepb.Engine, metadata *storepb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
+func (*DatabaseService) getMultiFileSDL(engine storepb.Engine, metadata *metadatapb.DatabaseSchemaMetadata) (*connect.Response[v1pb.DatabaseSDLSchema], error) {
 	// Get multi-file schema from schema package
 	result, err := schema.GetMultiFileDatabaseDefinition(engine, schema.GetDefinitionContext{
 		SkipBackupSchema: true,

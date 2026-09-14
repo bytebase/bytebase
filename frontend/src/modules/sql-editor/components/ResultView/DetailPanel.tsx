@@ -217,8 +217,7 @@ export function DetailPanel({
     [matchCount]
   );
 
-  // Replicates Vue's onKeyStroke("ArrowUp"/"ArrowDown") row navigation while
-  // the panel is open.
+  // ArrowUp / ArrowDown row navigation while the panel is open.
   useEffect(() => {
     if (!detail) return;
     const handler = (e: KeyboardEvent) => {

@@ -12,8 +12,8 @@ interface RequestRoleButtonStateArgs {
   readonly allowRequestRole: boolean;
   // True when the current user already holds every PROJECT_OWNER permission
   // (workspace- or project-scoped), so they can grant access directly and have
-  // no reason to request a role. Mirrors the Vue `hasMissingPermission` gate,
-  // which checks the full owner permission set rather than `setIamPolicy` alone.
+  // no reason to request a role. The check covers the full owner permission
+  // set, not `setIamPolicy` alone.
   readonly hasFullProjectAccess: boolean;
   readonly hasRequestRoleFeature: boolean;
 }

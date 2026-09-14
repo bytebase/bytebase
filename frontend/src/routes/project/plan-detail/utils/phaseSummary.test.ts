@@ -26,6 +26,7 @@ const templates: Record<string, string> = {
   "plan.summary.n-of-m-approved": "{{n}} of {{m}} approved",
   "plan.summary.n-of-m-tasks": "{{n}}/{{m}} tasks",
   "plan.summary.n-passed": "{{n}} passed",
+  "plan.summary.n-unresolved-threads": "{{count}} unresolved threads",
   "plan.summary.n-warning": "{{n}} warning",
 };
 
@@ -86,6 +87,18 @@ describe("plan detail phase summaries", () => {
 
     expect(buildReviewSummary(issue, t)).toBe(
       "1 of 2 approved · Last approved by alice"
+    );
+  });
+
+  test("appends the unresolved thread count only when there are any", () => {
+    const issue = {
+      approvalTemplate: { flow: { roles: ["roles/PROJECT_OWNER"] } },
+      approvers: [],
+    } as unknown as Issue;
+
+    expect(buildReviewSummary(issue, t, 0)).toBe("0 of 1 approved");
+    expect(buildReviewSummary(issue, t, 3)).toBe(
+      "0 of 1 approved · 3 unresolved threads"
     );
   });
 

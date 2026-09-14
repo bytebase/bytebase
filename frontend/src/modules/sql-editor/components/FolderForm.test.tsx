@@ -182,9 +182,6 @@ const setupDefaultMocks = () => {
     makeFolderNode("/my/bar"),
   ]);
 
-  // The migrated `useSheetContextByView` returns plain values:
-  // `folderTree` is a SavedQueryFolderNode (not a Vue ref) and
-  // `folderContext.rootPath` is a plain string.
   const viewContext = {
     folderTree: rootNode,
     folderContext: {

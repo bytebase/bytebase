@@ -29,7 +29,7 @@ import {
   useAgentStore,
 } from "../store/agent";
 
-// Module-level map — survives across renders, same as Vue version.
+// Module-level map — survives across renders.
 const runTokens = new Map<string, number>();
 
 // Module-level request token for dom ref suggestion loading.
@@ -38,7 +38,7 @@ let domRefRequestToken = 0;
 const tokenFormatter = new Intl.NumberFormat();
 
 // ---------------------------------------------------------------------------
-// Helper functions (same logic as the Vue version)
+// Helper functions
 // ---------------------------------------------------------------------------
 
 const normalizeSearchText = (value?: string) =>
@@ -349,7 +349,7 @@ export function AgentInput() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Agent loop execution (same logic as Vue version)
+  // Agent loop execution
   // ---------------------------------------------------------------------------
 
   const buildChatHistory = useCallback(

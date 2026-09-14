@@ -149,7 +149,7 @@ describe("useGuideContext", () => {
     });
     const { result } = renderGuideContext();
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
 
     expect(result.current.context).toMatchObject({
       hasProject: true,
@@ -161,6 +161,31 @@ describe("useGuideContext", () => {
       databaseName: "instances/sample/databases/employee",
     });
     expect(mocks.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test("loads fresh guide facts after a dismissed guide is reopened", async () => {
+    const { result, rerender } = renderGuideContext();
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    rerender({ enabled: true, dismissed: true, route: home });
+    expect(result.current.contextReady).toBe(false);
+
+    let resolveProjectList: (
+      value: { projects: []; nextPageToken: string }
+    ) => void;
+    mocks.fetchProjectList.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveProjectList = resolve;
+      })
+    );
+    rerender({ enabled: true, dismissed: false, route: home });
+
+    expect(result.current.contextReady).toBe(false);
+
+    await act(async () => {
+      resolveProjectList!({ projects: [], nextPageToken: "" });
+    });
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
   });
 
   test.each([
@@ -209,7 +234,7 @@ describe("useGuideContext", () => {
       workspaceUsage: "team",
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
 
     expect(mocks.listUsers).toHaveBeenCalledWith({
       pageSize: 100,
@@ -235,7 +260,7 @@ describe("useGuideContext", () => {
       workspaceUsage: input.workspaceUsage,
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
     expect(mocks.listUsers).not.toHaveBeenCalled();
   });
 
@@ -255,7 +280,7 @@ describe("useGuideContext", () => {
       workspaceUsage: "team",
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
     expect(result.current.context.hasOtherWorkspaceMember).toBe(true);
     expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
       key: GUIDE_PROGRESS_KEYS.teammateAdded,
@@ -343,7 +368,7 @@ describe("useGuideContext", () => {
       },
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
     expect(result.current.context.hasExploredDatabase).toBe(false);
     expect(mocks.saveIntroStateByKey).not.toHaveBeenCalledWith({
       key: GUIDE_PROGRESS_KEYS.databaseExplored,
@@ -358,7 +383,7 @@ describe("useGuideContext", () => {
       route: home,
       scenarioId: "query-data",
     });
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
 
     await act(async () => {
       await sqlEditorEvents.emit("query-executed", {
@@ -386,7 +411,7 @@ describe("useGuideContext", () => {
       route: home,
       scenarioId: "create-database-change",
     });
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
 
     await act(async () => {
       await planEvents.emit("database-change-issue-created", {
@@ -436,13 +461,13 @@ describe("useGuideContext", () => {
       workspaceUsage: "team",
     });
 
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
     expect(result.current.context.hasOtherHumanUser).toBe(false);
   });
 
   test("ignores statement events without a database", async () => {
     const { result } = renderGuideContext();
-    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
 
     await act(async () => {
       await sqlEditorEvents.emit("query-executed", {

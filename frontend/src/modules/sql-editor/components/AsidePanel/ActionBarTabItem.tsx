@@ -13,15 +13,12 @@ type Props = {
 };
 
 /**
- * Replaces `frontend/src/views/sql-editor/AsidePanel/ActionBar/TabItem.vue`.
- *
  * One vertical-rail button per panel view. Active state lights up when
  * the current tab's `viewState.view` equals the action's view. Click
  * opens (or focuses) a tab for that view via
  * `useSchemaPaneActions().openNewTab`.
  *
- * The label rides in a right-aligned tooltip — same UX as Vue's
- * `<NTooltip placement="right">`.
+ * The label rides in a right-aligned tooltip.
  */
 export function ActionBarTabItem({ action, disabled }: Props) {
   const { database } = useConnectionOfCurrentSQLEditorTab();

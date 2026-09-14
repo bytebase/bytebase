@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => ({
   },
   getSQLEditorTabsState: vi.fn(),
   project: "projects/proj1",
-  // The new zustand store mock — only `createSavedQuery` is used by SheetTree.
+  // SQL Editor store mock — only `createSavedQuery` is used by SheetTree.
   createSavedQuery: vi.fn().mockResolvedValue({}),
   useSheetContext: vi.fn(),
   useSheetContextByView: vi.fn(),
@@ -396,11 +396,10 @@ const makeLoadMoreNode = (key: string): SavedQueryFolderNode => ({
   children: [],
 });
 
-// The migrated `useSheetContext()` exposes `expandedKeys` / `selectedKeys`
-// as plain values plus setters. We model the live state behind a `value`
-// holder (so the existing per-test assertions like
-// `expandedKeys.value.has(...)` keep working) and wire the component's
-// `setExpandedKeys` setter to mutate that same holder.
+// `useSheetContext()` exposes `expandedKeys` / `selectedKeys` as plain
+// values plus setters. We model the live state behind a `value` holder so
+// assertions like `expandedKeys.value.has(...)` can read it, and wire the
+// component's `setExpandedKeys` setter to mutate that same holder.
 const makeExpandedKeysRef = (keys: string[] = []) => ({
   value: new Set(keys),
 });
@@ -674,7 +673,7 @@ describe("SheetTree", () => {
     unmount();
   });
 
-  test("3. Click folder → toggles expand in Pinia store", () => {
+  test("3. Click folder → toggles expand in the sheet context", () => {
     const defaultMocks = setupDefaultMocks();
     const folder = makeFolderNode("/my/folder1", []);
     const rootNode = makeFolderNode("/my", [folder]);
@@ -981,7 +980,7 @@ describe("SheetTree", () => {
     unmount();
   });
 
-  test("6. Delete confirm → fires savedQueryV1Store.deleteSavedQueryByName", async () => {
+  test("6. Delete confirm → fires appStore.deleteSavedQueryByName", async () => {
     const defaultMocks = setupDefaultMocks();
     const wsNode = makeSavedQueryNode("/my/ws2", "savedQueries/ws2");
     const rootNode = makeFolderNode("/my", [wsNode]);

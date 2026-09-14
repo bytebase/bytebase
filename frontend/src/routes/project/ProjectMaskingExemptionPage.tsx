@@ -129,7 +129,7 @@ export function ProjectMaskingExemptionPage({
     s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
 
-  const membersFromVue = useExemptionDataReact(projectName);
+  const exemptionData = useExemptionData(projectName);
 
   const [searchParams, setSearchParams] = useState<SearchParams>({
     query: "",
@@ -168,7 +168,7 @@ export function ProjectMaskingExemptionPage({
   );
 
   const filteredMembers = useMemo(() => {
-    let result = membersFromVue.members;
+    let result = exemptionData.members;
 
     // Free-text query
     const query = searchParams.query.trim().toLowerCase();
@@ -214,7 +214,7 @@ export function ProjectMaskingExemptionPage({
 
     return result;
   }, [
-    membersFromVue.members,
+    exemptionData.members,
     searchParams,
     activeDatabaseFilter,
     withFilteredGrants,
@@ -259,9 +259,9 @@ export function ProjectMaskingExemptionPage({
 
   const confirmRevoke = useCallback(async () => {
     if (!revokeConfirm) return;
-    await membersFromVue.revokeGrant(revokeConfirm.member, revokeConfirm.grant);
+    await exemptionData.revokeGrant(revokeConfirm.member, revokeConfirm.grant);
     setRevokeConfirm(null);
-  }, [revokeConfirm, membersFromVue]);
+  }, [revokeConfirm, exemptionData]);
 
   // Scope options for advanced search
   const searchDatabases = useCallback(
@@ -436,13 +436,13 @@ export function ProjectMaskingExemptionPage({
             className="w-[360px] shrink-0 border-r border-block-border overflow-y-auto"
             members={filteredMembers}
             disabled={!hasPermission}
-            loading={membersFromVue.loading}
+            loading={exemptionData.loading}
             selectedMemberKey={selectedMemberKey}
             onSelect={setSelectedMemberKey}
             onRevoke={handleRevoke}
           />
           <div className="flex-1 min-w-0 overflow-y-auto">
-            {!membersFromVue.loading && selectedMemberData ? (
+            {!exemptionData.loading && selectedMemberData ? (
               <ExemptionDetailPanel
                 member={selectedMemberData}
                 disabled={!hasPermission}
@@ -450,7 +450,7 @@ export function ProjectMaskingExemptionPage({
                 databaseFilter={activeDatabaseFilter}
                 onRevoke={(grant) => handleRevoke(selectedMemberData, grant)}
               />
-            ) : !membersFromVue.loading ? (
+            ) : !exemptionData.loading ? (
               <div className="flex items-center justify-center h-full text-control-placeholder text-sm">
                 {t("project.masking-exemption.no-exemptions")}
               </div>
@@ -462,7 +462,7 @@ export function ProjectMaskingExemptionPage({
         <ExemptionMemberList
           members={filteredMembers}
           disabled={!hasPermission}
-          loading={membersFromVue.loading}
+          loading={exemptionData.loading}
           expandable
           showDatabaseLink={showDatabaseLink}
           databaseFilter={activeDatabaseFilter}
@@ -510,7 +510,7 @@ export function ProjectMaskingExemptionPage({
 }
 
 // ============================================================
-// useExemptionDataReact — reimplements useExemptionData for React
+// useExemptionData
 // ============================================================
 
 function getAccessUsers(
@@ -584,7 +584,7 @@ function rebuildExemptions(accessList: AccessUser[]) {
   return exemptions;
 }
 
-function useExemptionDataReact(projectName: string) {
+function useExemptionData(projectName: string) {
   const { t } = useTranslation();
   const batchGetOrFetchGroups = useAppStore(
     (state) => state.batchGetOrFetchGroups

@@ -14,10 +14,6 @@ export type GuideWorkspaceUsage = "team" | "solo";
 
 export type GuideJourneyId = "workspace-setup" | GuideScenarioId;
 
-export type GuideAnalyticsKey =
-  | Exclude<GuideStepId, "add-member">
-  | "add-teammate";
-
 export type GuideRoute = Pick<ReactRoute, "name" | "params">;
 
 export type GuideContext = {
@@ -58,17 +54,12 @@ export type GuideStepActions = {
 
 export type GuideStepDefinition = {
   id: GuideStepId;
-  analyticsKey: GuideAnalyticsKey;
   labelKey: string;
   descriptionKey: string;
   isComplete: (context: GuideContext) => boolean;
   matchesRoute: (route: GuideRoute) => boolean;
   resolveActions: (context: GuideContext) => GuideStepActions;
 };
-
-export type GuideStepRegistry = Readonly<
-  Record<GuideStepId, GuideStepDefinition>
->;
 
 export type GuideJourneyStep = {
   stepId: GuideStepId;

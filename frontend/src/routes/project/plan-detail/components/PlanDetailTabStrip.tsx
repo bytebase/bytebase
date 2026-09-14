@@ -75,7 +75,10 @@ export function PlanDetailTabItem({
       >
         {children}
       </button>
-      {action}
+      {action && (
+        // Pulled into the label's right padding so it sits close to the text.
+        <div className="-ml-3 mr-2 flex shrink-0 items-center">{action}</div>
+      )}
     </div>
   );
 }

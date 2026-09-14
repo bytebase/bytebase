@@ -4,34 +4,34 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func column(name, typ string) *storepb.ColumnMetadata {
-	return &storepb.ColumnMetadata{Name: name, Type: typ}
+func column(name, typ string) *metadatapb.ColumnMetadata {
+	return &metadatapb.ColumnMetadata{Name: name, Type: typ}
 }
 
-func healthySchema() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func healthySchema() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{
-				{Name: "t", Columns: []*storepb.ColumnMetadata{column("id", "int4"), column("email", "text"), column("ssn", "text")}},
-				{Name: "o", Columns: []*storepb.ColumnMetadata{column("id", "int4"), column("amt", "numeric")}},
+			Tables: []*metadatapb.TableMetadata{
+				{Name: "t", Columns: []*metadatapb.ColumnMetadata{column("id", "int4"), column("email", "text"), column("ssn", "text")}},
+				{Name: "o", Columns: []*metadatapb.ColumnMetadata{column("id", "int4"), column("amt", "numeric")}},
 			},
-			Views: []*storepb.ViewMetadata{{
+			Views: []*metadatapb.ViewMetadata{{
 				Name:       "v",
 				Definition: "SELECT id, email FROM public.t",
-				Columns:    []*storepb.ColumnMetadata{column("id", "int4"), column("email", "text")},
+				Columns:    []*metadatapb.ColumnMetadata{column("id", "int4"), column("email", "text")},
 			}},
-			MaterializedViews: []*storepb.MaterializedViewMetadata{{
+			MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
 				Name:       "mv",
 				Definition: "SELECT id, ssn FROM public.t",
-				DependencyColumns: []*storepb.DependencyColumn{
+				DependencyColumns: []*metadatapb.DependencyColumn{
 					{Schema: "public", Table: "t", Column: "id"},
 					{Schema: "public", Table: "t", Column: "ssn"},
 				},
@@ -41,44 +41,40 @@ func healthySchema() *storepb.DatabaseSchemaMetadata {
 }
 
 // A table with no columns models a snapshot from a sync before #20581.
-func degradedSchema() *storepb.DatabaseSchemaMetadata {
-	return degradedSchemaNamed("t")
-}
-
-func degradedSchemaNamed(table string) *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func degradedSchema() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name:   "public",
-			Tables: []*storepb.TableMetadata{{Name: table}},
+			Tables: []*metadatapb.TableMetadata{{Name: "t"}},
 		}},
 	}
 }
 
-func degradedViewSchema() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func degradedViewSchema() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name:   "public",
-			Tables: []*storepb.TableMetadata{{Name: "t"}},
-			Views:  []*storepb.ViewMetadata{{Name: "v", Definition: "SELECT id, email FROM public.t"}},
+			Tables: []*metadatapb.TableMetadata{{Name: "t"}},
+			Views:  []*metadatapb.ViewMetadata{{Name: "v", Definition: "SELECT id, email FROM public.t"}},
 		}},
 	}
 }
 
-func partialSchema() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func partialSchema() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name:   "public",
-			Tables: []*storepb.TableMetadata{{Name: "t", Columns: []*storepb.ColumnMetadata{column("email", "text"), column("ssn", "text")}}},
+			Tables: []*metadatapb.TableMetadata{{Name: "t", Columns: []*metadatapb.ColumnMetadata{column("email", "text"), column("ssn", "text")}}},
 		}},
 	}
 }
 
-func spanFor(t *testing.T, statement string, metadata *storepb.DatabaseSchemaMetadata) *base.QuerySpan {
+func spanFor(t *testing.T, statement string, metadata *metadatapb.DatabaseSchemaMetadata) *base.QuerySpan {
 	t.Helper()
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
 	span, err := GetQuerySpan(context.Background(), base.GetQuerySpanContext{
 		InstanceID:              "inst",
 		GetDatabaseMetadataFunc: getter,
@@ -100,6 +96,8 @@ func TestUnresolvedColumnsSignalFiresOnDegradedSnapshot(t *testing.T) {
 		"WITH t AS (SELECT count(*) FILTER (WHERE EXISTS (SELECT 1 FROM t)) AS c FROM (SELECT 1) x) SELECT * FROM t",
 		"WITH t AS (SELECT string_agg('x', ',' ORDER BY (SELECT count(*) FROM t)) AS c FROM (SELECT 1) x) SELECT * FROM t",
 		`WITH "T" AS (SELECT 1 AS n) SELECT count(*) FILTER (WHERE EXISTS (SELECT 1 FROM t)) FROM "T"`,
+		"SELECT * FROM generate_series(1, (SELECT count(*)::int FROM public.t))",
+		"SELECT * FROM (VALUES ((SELECT count(*) FROM public.t))) v(x)",
 	}
 	for _, statement := range statements {
 		t.Run(statement, func(t *testing.T) {
@@ -160,11 +158,11 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	})
 
 	t.Run("a foreign table with no synced columns is not refused", func(t *testing.T) {
-		metadata := &storepb.DatabaseSchemaMetadata{
+		metadata := &metadatapb.DatabaseSchemaMetadata{
 			Name: "db",
-			Schemas: []*storepb.SchemaMetadata{{
+			Schemas: []*metadatapb.SchemaMetadata{{
 				Name:           "public",
-				ExternalTables: []*storepb.ExternalTableMetadata{{Name: "ft"}},
+				ExternalTables: []*metadatapb.ExternalTableMetadata{{Name: "ft"}},
 			}},
 		}
 		span := spanFor(t, "SELECT * FROM public.ft", metadata)
@@ -207,7 +205,7 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 
 	t.Run("error names every unresolved relation", func(t *testing.T) {
 		metadata := degradedSchema()
-		metadata.Schemas[0].Tables = append(metadata.Schemas[0].Tables, &storepb.TableMetadata{Name: "o"})
+		metadata.Schemas[0].Tables = append(metadata.Schemas[0].Tables, &metadatapb.TableMetadata{Name: "o"})
 		span := spanFor(t, "SELECT * FROM public.t, public.o", metadata)
 		require.NotNil(t, span.UnresolvedColumnsError)
 		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.o")
@@ -217,12 +215,12 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 
 func TestUnresolvedColumnsSignalResolvesRelationsNotRoutines(t *testing.T) {
 	// Routines do not shadow relations in PostgreSQL search_path resolution.
-	shadowed := &storepb.DatabaseSchemaMetadata{
+	shadowed := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "db",
 		SearchPath: "a, b",
-		Schemas: []*storepb.SchemaMetadata{
-			{Name: "a", Functions: []*storepb.FunctionMetadata{{Name: "t", Signature: "t()"}}},
-			{Name: "b", Tables: []*storepb.TableMetadata{{Name: "t"}}},
+		Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "a", Functions: []*metadatapb.FunctionMetadata{{Name: "t", Signature: "t()"}}},
+			{Name: "b", Tables: []*metadatapb.TableMetadata{{Name: "t"}}},
 		},
 	}
 	span := spanFor(t, "SELECT * FROM t", shadowed)
@@ -231,32 +229,15 @@ func TestUnresolvedColumnsSignalResolvesRelationsNotRoutines(t *testing.T) {
 	require.Contains(t, span.UnresolvedColumnsError.Error(), "b.t")
 
 	// Sequences share the relation namespace and do shadow later tables.
-	sequenceFirst := &storepb.DatabaseSchemaMetadata{
+	sequenceFirst := &metadatapb.DatabaseSchemaMetadata{
 		Name:       "db",
 		SearchPath: "a, b",
-		Schemas: []*storepb.SchemaMetadata{
-			{Name: "a", Sequences: []*storepb.SequenceMetadata{{Name: "t"}}},
-			{Name: "b", Tables: []*storepb.TableMetadata{{Name: "t"}}},
+		Schemas: []*metadatapb.SchemaMetadata{
+			{Name: "a", Sequences: []*metadatapb.SequenceMetadata{{Name: "t"}}},
+			{Name: "b", Tables: []*metadatapb.TableMetadata{{Name: "t"}}},
 		},
 	}
 	span = spanFor(t, "SELECT * FROM t", sequenceFirst)
 	require.Nil(t, span.UnresolvedColumnsError,
 		"the sequence in a is the relation this query reads, and a sequence carries no column list to judge")
-}
-
-// BYT-10076 tracks reads omitted from the access set; these cases record that gap.
-func TestUnresolvedColumnsSignalNotCoveredShapes(t *testing.T) {
-	notCovered := map[string]string{
-		"subquery in a FROM-clause function argument": "SELECT * FROM generate_series(1, (SELECT count(*)::int FROM public.d))",
-		"subquery inside a VALUES list":               "SELECT * FROM (VALUES ((SELECT count(*) FROM public.d))) v(x)",
-	}
-	for name, statement := range notCovered {
-		t.Run(name, func(t *testing.T) {
-			span := spanFor(t, statement, degradedSchemaNamed("d"))
-			require.Empty(t, span.SourceColumns,
-				"the premise of this gap is that the access set is empty; if this fails the gap may have been closed upstream")
-			require.Nil(t, span.UnresolvedColumnsError,
-				"documented gap: no access reported, so nothing to check (BYT-10076)")
-		})
-	}
 }

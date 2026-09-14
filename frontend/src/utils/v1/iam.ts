@@ -201,9 +201,8 @@ export const getUserListInBinding = ({
 }: {
   binding: Binding;
   ignoreGroup: boolean;
-  // Resolves a group from its binding member string. Defaults to the Pinia
-  // group store; React callers pass a resolver backed by the app store so
-  // group expansion reads from the same cache they populate.
+  // Resolves a group from its binding member string. Defaults to the app
+  // store's group cache via the util bridge.
   getGroupByIdentifier?: (identifier: string) => Group | undefined;
 }): string[] => {
   if (isBindingPolicyExpired(binding)) {
@@ -309,9 +308,8 @@ export const filterBindingsByUserName = ({
   });
 };
 
-// Project-level IAM permission check. Reads the React app store (project IAM
-// policy + roles) via the util bridge — relocated from the deleted Pinia
-// `projectIamPolicy` store, whose data was never populated in the React shell.
+// Project-level IAM permission check. Reads the app store (project IAM policy +
+// roles) via the util bridge.
 const checkProjectIAMPolicyWithExpr = (
   user: User,
   project: Project,

@@ -1,0 +1,3173 @@
+- description: basic_tables_with_constraints
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "posts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.posts_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "integer"
+                },
+                {
+                  "name": "title",
+                  "position": 3,
+                  "type": "character varying(200)"
+                },
+                {
+                  "name": "content",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "published",
+                  "position": 5,
+                  "default": "false",
+                  "nullable": true,
+                  "type": "boolean"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx_posts_published",
+                  "expressions": [
+                    "published"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "definition": "CREATE INDEX idx_posts_published ON public.posts USING btree (published) WHERE (published = true);",
+                  "opclass_names": [
+                    "bool_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                },
+                {
+                  "name": "idx_posts_user_id",
+                  "expressions": [
+                    "user_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "definition": "CREATE INDEX idx_posts_user_id ON public.posts USING btree (user_id);",
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                },
+                {
+                  "name": "posts_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX posts_pkey ON public.posts USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "data_size": 8192,
+              "index_size": 24576,
+              "foreign_keys": [
+                {
+                  "name": "fk_user",
+                  "columns": [
+                    "user_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "users",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ],
+              "owner": "postgres"
+            },
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.users_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "username",
+                  "position": 2,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                },
+                {
+                  "name": "updated_at",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "users_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                },
+                {
+                  "name": "users_username_key",
+                  "expressions": [
+                    "username"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "definition": "CREATE UNIQUE INDEX users_username_key ON public.users USING btree (username);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "text_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 16384,
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "posts_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "posts",
+              "owner_column": "id"
+            },
+            {
+              "name": "users_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "users",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SEQUENCE "public"."posts_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    CREATE SEQUENCE "public"."users_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."posts" (
+        "id" integer DEFAULT nextval('public.posts_id_seq'::regclass) NOT NULL,
+        "user_id" integer NOT NULL,
+        "title" character varying(200) NOT NULL,
+        "content" text,
+        "published" boolean DEFAULT false
+    );
+
+    ALTER SEQUENCE "public"."posts_id_seq" OWNED BY "public"."posts"."id";
+
+    ALTER TABLE ONLY "public"."posts" ADD CONSTRAINT "posts_pkey" PRIMARY KEY (id);
+
+    CREATE INDEX "idx_posts_published" ON "public"."posts" (published) WHERE published = true;
+
+    CREATE INDEX "idx_posts_user_id" ON "public"."posts" (user_id);
+
+    CREATE TABLE "public"."users" (
+        "id" integer DEFAULT nextval('public.users_id_seq'::regclass) NOT NULL,
+        "username" character varying(50) NOT NULL,
+        "email" character varying(100) NOT NULL,
+        "created_at" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" timestamp(6) without time zone
+    );
+
+    ALTER SEQUENCE "public"."users_id_seq" OWNED BY "public"."users"."id";
+
+    ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_username_key" UNIQUE (username);
+
+    ALTER TABLE "public"."posts"
+        ADD CONSTRAINT "fk_user" FOREIGN KEY ("user_id")
+        REFERENCES "public"."users" ("id")
+        ON DELETE CASCADE;
+
+- description: sequences_and_custom_types
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "items",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.custom_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "status",
+                  "position": 3,
+                  "default": "'pending'::public.status_enum",
+                  "nullable": true,
+                  "type": "public.status_enum"
+                },
+                {
+                  "name": "user_mood",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "public.mood"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "items_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX items_pkey ON public.items USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "custom_id_seq",
+              "data_type": "bigint",
+              "start": "1000",
+              "min_value": "1",
+              "max_value": "9223372036854775807",
+              "increment": "10",
+              "cache_size": "1"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema",
+          "enum_types": [
+            {
+              "name": "mood",
+              "values": [
+                "happy",
+                "sad",
+                "neutral"
+              ]
+            },
+            {
+              "name": "status_enum",
+              "values": [
+                "pending",
+                "active",
+                "inactive",
+                "deleted"
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE TYPE "public"."mood" AS ENUM (
+        'happy',
+        'sad',
+        'neutral'
+    );
+
+    CREATE TYPE "public"."status_enum" AS ENUM (
+        'pending',
+        'active',
+        'inactive',
+        'deleted'
+    );
+
+    CREATE SEQUENCE "public"."custom_id_seq"
+        AS bigint
+    	START WITH 1000
+    	INCREMENT BY 10
+    	MINVALUE 1
+    	MAXVALUE 9223372036854775807
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."items" (
+        "id" integer DEFAULT nextval('public.custom_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "status" public.status_enum DEFAULT 'pending'::public.status_enum,
+        "user_mood" public.mood
+    );
+
+    ALTER TABLE ONLY "public"."items" ADD CONSTRAINT "items_pkey" PRIMARY KEY (id);
+
+- description: composite_types
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "geo",
+          "owner": "postgres",
+          "composite_types": [
+            {
+              "name": "point2",
+              "attributes": [
+                {
+                  "name": "lat",
+                  "type": "numeric(9,6)"
+                },
+                {
+                  "name": "lng",
+                  "type": "numeric(9,6)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.orders_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "info",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "public.order_info"
+                },
+                {
+                  "name": "addresses",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "public.aa_nested"
+                },
+                {
+                  "name": "location",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "geo.point2"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "orders_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "data_size": 8192,
+              "index_size": 8192,
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "orders_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "orders",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema",
+          "enum_types": [
+            {
+              "name": "order_status",
+              "values": [
+                "pending",
+                "shipped"
+              ]
+            }
+          ],
+          "composite_types": [
+            {
+              "name": "aa_nested",
+              "attributes": [
+                {
+                  "name": "home",
+                  "type": "public.zz_base"
+                },
+                {
+                  "name": "homes",
+                  "type": "public.zz_base[]"
+                },
+                {
+                  "name": "tags",
+                  "type": "text[]"
+                }
+              ]
+            },
+            {
+              "name": "empty_type"
+            },
+            {
+              "name": "order_info",
+              "attributes": [
+                {
+                  "name": "status",
+                  "type": "public.order_status"
+                },
+                {
+                  "name": "note",
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "name": "wrapper",
+              "attributes": [
+                {
+                  "name": "p",
+                  "type": "geo.point2"
+                }
+              ]
+            },
+            {
+              "name": "zz_base",
+              "attributes": [
+                {
+                  "name": "street",
+                  "type": "text",
+                  "collation": "\"C\"",
+                  "comment": "street line"
+                },
+                {
+                  "name": "city",
+                  "type": "character varying(50)"
+                }
+              ],
+              "comment": "base address type"
+            }
+          ]
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SCHEMA IF NOT EXISTS "geo";
+
+    CREATE TYPE "public"."order_status" AS ENUM (
+        'pending',
+        'shipped'
+    );
+
+    CREATE TYPE "geo"."point2" AS (
+        "lat" numeric(9,6),
+        "lng" numeric(9,6)
+    );
+
+    CREATE TYPE "public"."empty_type" AS (
+
+    );
+
+    CREATE TYPE "public"."order_info" AS (
+        "status" public.order_status,
+        "note" text
+    );
+
+    CREATE TYPE "public"."wrapper" AS (
+        "p" geo.point2
+    );
+
+    CREATE TYPE "public"."zz_base" AS (
+        "street" text COLLATE "C",
+        "city" character varying(50)
+    );
+
+    COMMENT ON TYPE "public"."zz_base" IS 'base address type';
+
+    COMMENT ON COLUMN "public"."zz_base"."street" IS 'street line';
+
+    CREATE TYPE "public"."aa_nested" AS (
+        "home" public.zz_base,
+        "homes" public.zz_base[],
+        "tags" text[]
+    );
+
+    CREATE SEQUENCE "public"."orders_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."orders" (
+        "id" integer DEFAULT nextval('public.orders_id_seq'::regclass) NOT NULL,
+        "info" public.order_info,
+        "addresses" public.aa_nested,
+        "location" geo.point2
+    );
+
+    ALTER SEQUENCE "public"."orders_id_seq" OWNED BY "public"."orders"."id";
+
+    ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
+
+- description: owned_sequence_dependency_order
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "history_audit",
+              "columns": [
+                {
+                  "name": "audit_id",
+                  "position": 1,
+                  "default": "nextval('public.history_cost_changes_id_seq'::regclass)",
+                  "type": "bigint"
+                },
+                {
+                  "name": "change_type",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "character varying(50)"
+                }
+              ],
+              "owner": "postgres"
+            },
+            {
+              "name": "history_cost_changes",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.history_cost_changes_id_seq'::regclass)",
+                  "type": "bigint"
+                },
+                {
+                  "name": "amount",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "description",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "history_cost_changes_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX history_cost_changes_pkey ON public.history_cost_changes USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int8_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "data_size": 8192,
+              "index_size": 8192,
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "history_cost_changes_id_seq",
+              "data_type": "bigint",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "9223372036854775807",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "history_cost_changes",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SEQUENCE "public"."history_cost_changes_id_seq"
+        AS bigint
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 9223372036854775807
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."history_audit" (
+        "audit_id" bigint DEFAULT nextval('public.history_cost_changes_id_seq'::regclass) NOT NULL,
+        "change_type" character varying(50)
+    );
+
+    CREATE TABLE "public"."history_cost_changes" (
+        "id" bigint DEFAULT nextval('public.history_cost_changes_id_seq'::regclass) NOT NULL,
+        "amount" numeric(10,2),
+        "description" text,
+        "created_at" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER SEQUENCE "public"."history_cost_changes_id_seq" OWNED BY "public"."history_cost_changes"."id";
+
+    ALTER TABLE ONLY "public"."history_cost_changes" ADD CONSTRAINT "history_cost_changes_pkey" PRIMARY KEY (id);
+
+- description: views_and_functions
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.employees_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "department",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "salary",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "numeric(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "employees_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX employees_pkey ON public.employees USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "owner": "postgres"
+            }
+          ],
+          "views": [
+            {
+              "name": "active_employees",
+              "definition": " SELECT id,\n    name,\n    department\n   FROM public.employees\n  WHERE (department IS NOT NULL);",
+              "dependency_columns": [
+                {
+                  "schema": "public",
+                  "table": "employees",
+                  "column": "department"
+                },
+                {
+                  "schema": "public",
+                  "table": "employees",
+                  "column": "id"
+                },
+                {
+                  "schema": "public",
+                  "table": "employees",
+                  "column": "name"
+                }
+              ],
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "department",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(50)"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "calculate_bonus",
+              "definition": "CREATE OR REPLACE FUNCTION public.calculate_bonus(emp_id integer)\n RETURNS numeric\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    emp_salary DECIMAL;\nBEGIN\n    SELECT salary INTO emp_salary FROM employees WHERE id = emp_id;\n    RETURN emp_salary * 0.1;\nEND;\n$function$\n",
+              "signature": "calculate_bonus(emp_id integer)"
+            },
+            {
+              "name": "get_employee_count",
+              "definition": "CREATE OR REPLACE FUNCTION public.get_employee_count(dept character varying)\n RETURNS integer\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);\nEND;\n$function$\n",
+              "signature": "get_employee_count(dept character varying)"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "employees_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "employees",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCREATE SEQUENCE \"public\".\"employees_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE OR REPLACE FUNCTION public.calculate_bonus(emp_id integer)\n RETURNS numeric\n LANGUAGE plpgsql\nAS $function$\nDECLARE\n    emp_salary DECIMAL;\nBEGIN\n    SELECT salary INTO emp_salary FROM employees WHERE id = emp_id;\n    RETURN emp_salary * 0.1;\nEND;\n$function$\n;\n\nCREATE TABLE \"public\".\"employees\" (\n    \"id\" integer DEFAULT nextval('public.employees_id_seq'::regclass) NOT NULL,\n    \"name\" character varying(100) NOT NULL,\n    \"department\" character varying(50),\n    \"salary\" numeric(10,2)\n);\n\nALTER SEQUENCE \"public\".\"employees_id_seq\" OWNED BY \"public\".\"employees\".\"id\";\n\nALTER TABLE ONLY \"public\".\"employees\" ADD CONSTRAINT \"employees_pkey\" PRIMARY KEY (id);\n\nCREATE OR REPLACE FUNCTION public.get_employee_count(dept character varying)\n RETURNS integer\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);\nEND;\n$function$\n;\n\nCREATE VIEW \"public\".\"active_employees\" AS \n SELECT id,\n    name,\n    department\n   FROM public.employees\n  WHERE (department IS NOT NULL);\n\n"
+- description: partitioned_tables
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "sales",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.sales_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "region",
+                  "position": 4,
+                  "type": "character varying(50)"
+                }
+              ],
+              "partitions": [
+                {
+                  "name": "sales_2023_q1",
+                  "type": 1,
+                  "expression": "RANGE (sale_date)",
+                  "value": "FOR VALUES FROM ('2023-01-01') TO ('2023-04-01')"
+                },
+                {
+                  "name": "sales_2023_q2",
+                  "type": 1,
+                  "expression": "RANGE (sale_date)",
+                  "value": "FOR VALUES FROM ('2023-04-01') TO ('2023-07-01')"
+                },
+                {
+                  "name": "sales_2023_q3",
+                  "type": 1,
+                  "expression": "RANGE (sale_date)",
+                  "value": "FOR VALUES FROM ('2023-07-01') TO ('2023-10-01')"
+                },
+                {
+                  "name": "sales_2023_q4",
+                  "type": 1,
+                  "expression": "RANGE (sale_date)",
+                  "value": "FOR VALUES FROM ('2023-10-01') TO ('2024-01-01')"
+                }
+              ],
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "sales_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "sales",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SEQUENCE "public"."sales_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."sales" (
+        "id" integer DEFAULT nextval('public.sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    ) PARTITION BY RANGE (sale_date);
+
+    ALTER SEQUENCE "public"."sales_id_seq" OWNED BY "public"."sales"."id";
+
+    CREATE TABLE "public"."sales_2023_q1" (
+        "id" integer DEFAULT nextval('public.sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+    CREATE TABLE "public"."sales_2023_q2" (
+        "id" integer DEFAULT nextval('public.sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+    CREATE TABLE "public"."sales_2023_q3" (
+        "id" integer DEFAULT nextval('public.sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+    CREATE TABLE "public"."sales_2023_q4" (
+        "id" integer DEFAULT nextval('public.sales_id_seq'::regclass) NOT NULL,
+        "sale_date" date NOT NULL,
+        "amount" numeric(10,2) NOT NULL,
+        "region" character varying(50) NOT NULL
+    );
+
+    ALTER TABLE ONLY "public"."sales" ATTACH PARTITION "public"."sales_2023_q1" FOR VALUES FROM ('2023-01-01') TO ('2023-04-01');
+
+    ALTER TABLE ONLY "public"."sales" ATTACH PARTITION "public"."sales_2023_q2" FOR VALUES FROM ('2023-04-01') TO ('2023-07-01');
+
+    ALTER TABLE ONLY "public"."sales" ATTACH PARTITION "public"."sales_2023_q3" FOR VALUES FROM ('2023-07-01') TO ('2023-10-01');
+
+    ALTER TABLE ONLY "public"."sales" ATTACH PARTITION "public"."sales_2023_q4" FOR VALUES FROM ('2023-10-01') TO ('2024-01-01');
+
+- description: extensions_and_advanced_features
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "documents",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "public.uuid_generate_v4()",
+                  "type": "uuid"
+                },
+                {
+                  "name": "title",
+                  "position": 2,
+                  "type": "character varying(200)"
+                },
+                {
+                  "name": "content",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "text"
+                },
+                {
+                  "name": "tags",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "_text"
+                },
+                {
+                  "name": "metadata",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "jsonb"
+                },
+                {
+                  "name": "created_at",
+                  "position": 6,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp(6) with time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "documents_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX documents_pkey ON public.documents USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "uuid_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                },
+                {
+                  "name": "idx_documents_metadata",
+                  "expressions": [
+                    "metadata"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "gin",
+                  "definition": "CREATE INDEX idx_documents_metadata ON public.documents USING gin (metadata);",
+                  "opclass_names": [
+                    "jsonb_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                },
+                {
+                  "name": "idx_documents_tags",
+                  "expressions": [
+                    "tags"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "gin",
+                  "definition": "CREATE INDEX idx_documents_tags ON public.documents USING gin (tags);",
+                  "opclass_names": [
+                    "array_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "data_size": 8192,
+              "index_size": 40960,
+              "owner": "postgres"
+            }
+          ],
+          "functions": [
+            {
+              "name": "uuid_generate_v1",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v1()\n RETURNS uuid\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_generate_v1$function$\n",
+              "signature": "uuid_generate_v1()",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_generate_v1mc",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v1mc()\n RETURNS uuid\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_generate_v1mc$function$\n",
+              "signature": "uuid_generate_v1mc()",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_generate_v3",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v3(namespace uuid, name text)\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_generate_v3$function$\n",
+              "signature": "uuid_generate_v3(namespace uuid, name text)",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_generate_v4",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v4()\n RETURNS uuid\n LANGUAGE c\n PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_generate_v4$function$\n",
+              "signature": "uuid_generate_v4()",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_generate_v5",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_generate_v5(namespace uuid, name text)\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_generate_v5$function$\n",
+              "signature": "uuid_generate_v5(namespace uuid, name text)",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_nil",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_nil()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_nil$function$\n",
+              "signature": "uuid_nil()",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_ns_dns",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_ns_dns()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_ns_dns$function$\n",
+              "signature": "uuid_ns_dns()",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_ns_oid",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_ns_oid()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_ns_oid$function$\n",
+              "signature": "uuid_ns_oid()",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_ns_url",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_ns_url()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_ns_url$function$\n",
+              "signature": "uuid_ns_url()",
+              "skip_dump": true
+            },
+            {
+              "name": "uuid_ns_x500",
+              "definition": "CREATE OR REPLACE FUNCTION public.uuid_ns_x500()\n RETURNS uuid\n LANGUAGE c\n IMMUTABLE PARALLEL SAFE STRICT\nAS '$libdir/uuid-ossp', $function$uuid_ns_x500$function$\n",
+              "signature": "uuid_ns_x500()",
+              "skip_dump": true
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "extensions": [
+        {
+          "name": "uuid-ossp",
+          "schema": "public",
+          "version": "1.1",
+          "description": "generate universally unique identifiers (UUIDs)"
+        }
+      ],
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "public" VERSION '1.1';
+
+    COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."documents" (
+        "id" uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+        "title" character varying(200) NOT NULL,
+        "content" text,
+        "tags" _text,
+        "metadata" jsonb,
+        "created_at" timestamp(6) with time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER TABLE ONLY "public"."documents" ADD CONSTRAINT "documents_pkey" PRIMARY KEY (id);
+
+    CREATE INDEX "idx_documents_metadata" ON "public"."documents" USING GIN (metadata);
+
+    CREATE INDEX "idx_documents_tags" ON "public"."documents" USING GIN (tags);
+
+- description: check_constraints_and_comments
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.products_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)",
+                  "comment": "Product name"
+                },
+                {
+                  "name": "price",
+                  "position": 3,
+                  "type": "numeric(10,2)",
+                  "comment": "Product price in USD"
+                },
+                {
+                  "name": "quantity",
+                  "position": 4,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "products_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX products_pkey ON public.products USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "comment": "Product catalog table",
+              "check_constraints": [
+                {
+                  "name": "chk_price",
+                  "expression": "(price \u003e 0::numeric)"
+                },
+                {
+                  "name": "chk_quantity",
+                  "expression": "(quantity \u003e= 0)"
+                }
+              ],
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "products_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "products",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SEQUENCE "public"."products_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."products" (
+        "id" integer DEFAULT nextval('public.products_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "price" numeric(10,2) NOT NULL,
+        "quantity" integer NOT NULL,
+        CONSTRAINT "chk_price" CHECK (price > 0::numeric),
+        CONSTRAINT "chk_quantity" CHECK (quantity >= 0)
+    );
+
+    ALTER SEQUENCE "public"."products_id_seq" OWNED BY "public"."products"."id";
+
+    COMMENT ON TABLE "public"."products" IS 'Product catalog table';
+
+    COMMENT ON COLUMN "public"."products"."name" IS 'Product name';
+
+    COMMENT ON COLUMN "public"."products"."price" IS 'Product price in USD';
+
+    ALTER TABLE ONLY "public"."products" ADD CONSTRAINT "products_pkey" PRIMARY KEY (id);
+
+- description: materialized_views
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "raw_data",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.raw_data_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "data_value",
+                  "position": 2,
+                  "type": "numeric"
+                },
+                {
+                  "name": "category",
+                  "position": 3,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "raw_data_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX raw_data_pkey ON public.raw_data USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "data_size": 8192,
+              "index_size": 8192,
+              "owner": "postgres"
+            }
+          ],
+          "materialized_views": [
+            {
+              "name": "data_summary",
+              "definition": " SELECT category,\n    count(*) AS count,\n    avg(data_value) AS avg_value,\n    max(data_value) AS max_value,\n    min(data_value) AS min_value\n   FROM public.raw_data\n  GROUP BY category;",
+              "dependency_columns": [
+                {
+                  "schema": "public",
+                  "table": "raw_data",
+                  "column": "category"
+                },
+                {
+                  "schema": "public",
+                  "table": "raw_data",
+                  "column": "data_value"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx_data_summary_category",
+                  "expressions": [
+                    "category"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "definition": "CREATE INDEX idx_data_summary_category ON public.data_summary USING btree (category);",
+                  "opclass_names": [
+                    "text_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ]
+            }
+          ],
+          "sequences": [
+            {
+              "name": "raw_data_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "raw_data",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCREATE SEQUENCE \"public\".\"raw_data_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE TABLE \"public\".\"raw_data\" (\n    \"id\" integer DEFAULT nextval('public.raw_data_id_seq'::regclass) NOT NULL,\n    \"data_value\" numeric NOT NULL,\n    \"category\" character varying(50) NOT NULL,\n    \"created_at\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP\n);\n\nALTER SEQUENCE \"public\".\"raw_data_id_seq\" OWNED BY \"public\".\"raw_data\".\"id\";\n\nALTER TABLE ONLY \"public\".\"raw_data\" ADD CONSTRAINT \"raw_data_pkey\" PRIMARY KEY (id);\n\nCREATE MATERIALIZED VIEW \"public\".\"data_summary\" AS \n SELECT category,\n    count(*) AS count,\n    avg(data_value) AS avg_value,\n    max(data_value) AS max_value,\n    min(data_value) AS min_value\n   FROM public.raw_data\n  GROUP BY category\n  WITH NO DATA;\n\nCREATE INDEX \"idx_data_summary_category\" ON \"public\".\"data_summary\" (category);\n\n"
+- description: comprehensive_views
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "customers",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.customers_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "active",
+                  "position": 4,
+                  "default": "true",
+                  "nullable": true,
+                  "type": "boolean"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "customers_email_key",
+                  "expressions": [
+                    "email"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "definition": "CREATE UNIQUE INDEX customers_email_key ON public.customers USING btree (email);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "text_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                },
+                {
+                  "name": "customers_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX customers_pkey ON public.customers USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 16384,
+              "owner": "postgres"
+            },
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.orders_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "customer_id",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "total_amount",
+                  "position": 3,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "order_date",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                },
+                {
+                  "name": "status",
+                  "position": 5,
+                  "default": "'pending'::character varying",
+                  "nullable": true,
+                  "type": "character varying(20)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "orders_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "foreign_keys": [
+                {
+                  "name": "orders_customer_id_fkey",
+                  "columns": [
+                    "customer_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "customers",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ],
+              "owner": "postgres"
+            }
+          ],
+          "views": [
+            {
+              "name": "active_customer_orders",
+              "definition": " SELECT c.id AS customer_id,\n    c.name,\n    c.email,\n    o.id AS order_id,\n    o.total_amount,\n    o.order_date\n   FROM (public.customers c\n     JOIN public.orders o ON ((c.id = o.customer_id)))\n  WHERE ((c.active = true) AND ((o.status)::text = 'completed'::text));",
+              "dependency_columns": [
+                {
+                  "schema": "public",
+                  "table": "customers",
+                  "column": "active"
+                },
+                {
+                  "schema": "public",
+                  "table": "customers",
+                  "column": "email"
+                },
+                {
+                  "schema": "public",
+                  "table": "customers",
+                  "column": "id"
+                },
+                {
+                  "schema": "public",
+                  "table": "customers",
+                  "column": "name"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "customer_id"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "id"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "order_date"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "status"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "total_amount"
+                }
+              ],
+              "columns": [
+                {
+                  "name": "customer_id",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "order_id",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "total_amount",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "order_date",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                }
+              ]
+            },
+            {
+              "name": "customer_summary",
+              "definition": " SELECT id,\n    name,\n    email,\n    ( SELECT count(*) AS count\n           FROM public.orders\n          WHERE (orders.customer_id = customers.id)) AS order_count\n   FROM public.customers\n  WHERE (active = true);",
+              "dependency_columns": [
+                {
+                  "schema": "public",
+                  "table": "customers",
+                  "column": "active"
+                },
+                {
+                  "schema": "public",
+                  "table": "customers",
+                  "column": "email"
+                },
+                {
+                  "schema": "public",
+                  "table": "customers",
+                  "column": "id"
+                },
+                {
+                  "schema": "public",
+                  "table": "customers",
+                  "column": "name"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "customer_id"
+                }
+              ],
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "order_count",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "bigint"
+                }
+              ]
+            }
+          ],
+          "materialized_views": [
+            {
+              "name": "monthly_sales_summary",
+              "definition": " SELECT date_trunc('month'::text, order_date) AS month,\n    count(*) AS order_count,\n    sum(total_amount) AS total_revenue,\n    avg(total_amount) AS avg_order_value,\n    count(DISTINCT customer_id) AS unique_customers\n   FROM public.orders\n  WHERE ((status)::text = 'completed'::text)\n  GROUP BY (date_trunc('month'::text, order_date))\n  ORDER BY (date_trunc('month'::text, order_date));",
+              "dependency_columns": [
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "customer_id"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "order_date"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "status"
+                },
+                {
+                  "schema": "public",
+                  "table": "orders",
+                  "column": "total_amount"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "idx_monthly_sales_month",
+                  "expressions": [
+                    "month"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "definition": "CREATE UNIQUE INDEX idx_monthly_sales_month ON public.monthly_sales_summary USING btree (month);",
+                  "opclass_names": [
+                    "timestamp_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ]
+            }
+          ],
+          "sequences": [
+            {
+              "name": "customers_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "customers",
+              "owner_column": "id"
+            },
+            {
+              "name": "orders_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "orders",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: "SET statement_timeout = 0;\nSET lock_timeout = 0;\nSET idle_in_transaction_session_timeout = 0;\nSET client_encoding = 'UTF8';\nSET standard_conforming_strings = on;\nSELECT pg_catalog.set_config('search_path', '', false);\nSET check_function_bodies = false;\nSET xmloption = content;\nSET client_min_messages = warning;\nSET row_security = off;\n\nCREATE SEQUENCE \"public\".\"customers_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tNO CYCLE;\n\nCREATE SEQUENCE \"public\".\"orders_id_seq\"\n    AS integer\n\tSTART WITH 1\n\tINCREMENT BY 1\n\tMINVALUE 1\n\tMAXVALUE 2147483647\n\tNO CYCLE;\n\nSET default_tablespace = '';\n\nCREATE TABLE \"public\".\"customers\" (\n    \"id\" integer DEFAULT nextval('public.customers_id_seq'::regclass) NOT NULL,\n    \"name\" character varying(100) NOT NULL,\n    \"email\" character varying(100),\n    \"active\" boolean DEFAULT true,\n    \"created_at\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP\n);\n\nALTER SEQUENCE \"public\".\"customers_id_seq\" OWNED BY \"public\".\"customers\".\"id\";\n\nALTER TABLE ONLY \"public\".\"customers\" ADD CONSTRAINT \"customers_pkey\" PRIMARY KEY (id);\n\nALTER TABLE ONLY \"public\".\"customers\" ADD CONSTRAINT \"customers_email_key\" UNIQUE (email);\n\nCREATE TABLE \"public\".\"orders\" (\n    \"id\" integer DEFAULT nextval('public.orders_id_seq'::regclass) NOT NULL,\n    \"customer_id\" integer,\n    \"total_amount\" numeric(10,2) NOT NULL,\n    \"order_date\" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP,\n    \"status\" character varying(20) DEFAULT 'pending'::character varying\n);\n\nALTER SEQUENCE \"public\".\"orders_id_seq\" OWNED BY \"public\".\"orders\".\"id\";\n\nALTER TABLE ONLY \"public\".\"orders\" ADD CONSTRAINT \"orders_pkey\" PRIMARY KEY (id);\n\nCREATE VIEW \"public\".\"active_customer_orders\" AS \n SELECT c.id AS customer_id,\n    c.name,\n    c.email,\n    o.id AS order_id,\n    o.total_amount,\n    o.order_date\n   FROM (public.customers c\n     JOIN public.orders o ON ((c.id = o.customer_id)))\n  WHERE ((c.active = true) AND ((o.status)::text = 'completed'::text));\n\nCREATE VIEW \"public\".\"customer_summary\" AS \n SELECT id,\n    name,\n    email,\n    ( SELECT count(*) AS count\n           FROM public.orders\n          WHERE (orders.customer_id = customers.id)) AS order_count\n   FROM public.customers\n  WHERE (active = true);\n\nCREATE MATERIALIZED VIEW \"public\".\"monthly_sales_summary\" AS \n SELECT date_trunc('month'::text, order_date) AS month,\n    count(*) AS order_count,\n    sum(total_amount) AS total_revenue,\n    avg(total_amount) AS avg_order_value,\n    count(DISTINCT customer_id) AS unique_customers\n   FROM public.orders\n  WHERE ((status)::text = 'completed'::text)\n  GROUP BY (date_trunc('month'::text, order_date))\n  ORDER BY (date_trunc('month'::text, order_date))\n  WITH NO DATA;\n\nCREATE UNIQUE INDEX \"idx_monthly_sales_month\" ON \"public\".\"monthly_sales_summary\" (month);\n\nALTER TABLE \"public\".\"orders\"\n    ADD CONSTRAINT \"orders_customer_id_fkey\" FOREIGN KEY (\"customer_id\")\n    REFERENCES \"public\".\"customers\" (\"id\");\n\n"
+- description: triggers
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "accounts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.accounts_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "balance",
+                  "position": 3,
+                  "default": "0",
+                  "nullable": true,
+                  "type": "numeric(10,2)"
+                },
+                {
+                  "name": "last_modified",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "accounts_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX accounts_pkey ON public.accounts USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "owner": "postgres",
+              "triggers": [
+                {
+                  "name": "trg_audit_accounts",
+                  "body": "CREATE TRIGGER trg_audit_accounts AFTER INSERT OR DELETE OR UPDATE ON public.accounts FOR EACH ROW EXECUTE FUNCTION public.log_account_changes()"
+                },
+                {
+                  "name": "trg_update_last_modified",
+                  "body": "CREATE TRIGGER trg_update_last_modified BEFORE UPDATE ON public.accounts FOR EACH ROW EXECUTE FUNCTION public.update_last_modified()"
+                }
+              ]
+            },
+            {
+              "name": "audit_log",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.audit_log_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "table_name",
+                  "position": 2,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "operation",
+                  "position": 3,
+                  "type": "character varying(10)"
+                },
+                {
+                  "name": "user_name",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "character varying(50)"
+                },
+                {
+                  "name": "timestamp",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp(6) without time zone"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "audit_log_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX audit_log_pkey ON public.audit_log USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "owner": "postgres"
+            }
+          ],
+          "functions": [
+            {
+              "name": "log_account_changes",
+              "definition": "CREATE OR REPLACE FUNCTION public.log_account_changes()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    INSERT INTO audit_log (table_name, operation, user_name)\n    VALUES ('accounts', TG_OP, current_user);\n    RETURN NEW;\nEND;\n$function$\n",
+              "signature": "log_account_changes()"
+            },
+            {
+              "name": "update_last_modified",
+              "definition": "CREATE OR REPLACE FUNCTION public.update_last_modified()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    NEW.last_modified = CURRENT_TIMESTAMP;\n    RETURN NEW;\nEND;\n$function$\n",
+              "signature": "update_last_modified()"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "accounts_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "accounts",
+              "owner_column": "id"
+            },
+            {
+              "name": "audit_log_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "audit_log",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SEQUENCE "public"."accounts_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    CREATE SEQUENCE "public"."audit_log_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."accounts" (
+        "id" integer DEFAULT nextval('public.accounts_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "balance" numeric(10,2) DEFAULT 0,
+        "last_modified" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER SEQUENCE "public"."accounts_id_seq" OWNED BY "public"."accounts"."id";
+
+    ALTER TABLE ONLY "public"."accounts" ADD CONSTRAINT "accounts_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."audit_log" (
+        "id" integer DEFAULT nextval('public.audit_log_id_seq'::regclass) NOT NULL,
+        "table_name" character varying(50) NOT NULL,
+        "operation" character varying(10) NOT NULL,
+        "user_name" character varying(50),
+        "timestamp" timestamp(6) without time zone DEFAULT CURRENT_TIMESTAMP
+    );
+
+    ALTER SEQUENCE "public"."audit_log_id_seq" OWNED BY "public"."audit_log"."id";
+
+    ALTER TABLE ONLY "public"."audit_log" ADD CONSTRAINT "audit_log_pkey" PRIMARY KEY (id);
+
+    CREATE OR REPLACE FUNCTION public.log_account_changes()
+     RETURNS trigger
+     LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+        INSERT INTO audit_log (table_name, operation, user_name)
+        VALUES ('accounts', TG_OP, current_user);
+        RETURN NEW;
+    END;
+    $function$
+    ;
+
+    CREATE OR REPLACE FUNCTION public.update_last_modified()
+     RETURNS trigger
+     LANGUAGE plpgsql
+    AS $function$
+    BEGIN
+        NEW.last_modified = CURRENT_TIMESTAMP;
+        RETURN NEW;
+    END;
+    $function$
+    ;
+
+    CREATE TRIGGER trg_audit_accounts AFTER INSERT OR DELETE OR UPDATE ON public.accounts FOR EACH ROW EXECUTE FUNCTION public.log_account_changes();
+
+    CREATE TRIGGER trg_update_last_modified BEFORE UPDATE ON public.accounts FOR EACH ROW EXECUTE FUNCTION public.update_last_modified();
+
+- description: foreign_key_on_delete_cascade
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "categories",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.categories_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "categories_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX categories_pkey ON public.categories USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "owner": "postgres"
+            },
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.orders_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "product_id",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "quantity",
+                  "position": 3,
+                  "default": "1",
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "orders_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX orders_pkey ON public.orders USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "foreign_keys": [
+                {
+                  "name": "fk_product_cascade",
+                  "columns": [
+                    "product_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "products",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ],
+              "owner": "postgres"
+            },
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.products_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "category_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "products_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX products_pkey ON public.products USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "foreign_keys": [
+                {
+                  "name": "fk_category",
+                  "columns": [
+                    "category_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "categories",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ],
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "categories_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "categories",
+              "owner_column": "id"
+            },
+            {
+              "name": "orders_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "orders",
+              "owner_column": "id"
+            },
+            {
+              "name": "products_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "products",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SEQUENCE "public"."categories_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    CREATE SEQUENCE "public"."orders_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    CREATE SEQUENCE "public"."products_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."categories" (
+        "id" integer DEFAULT nextval('public.categories_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL
+    );
+
+    ALTER SEQUENCE "public"."categories_id_seq" OWNED BY "public"."categories"."id";
+
+    ALTER TABLE ONLY "public"."categories" ADD CONSTRAINT "categories_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."orders" (
+        "id" integer DEFAULT nextval('public.orders_id_seq'::regclass) NOT NULL,
+        "product_id" integer,
+        "quantity" integer DEFAULT 1
+    );
+
+    ALTER SEQUENCE "public"."orders_id_seq" OWNED BY "public"."orders"."id";
+
+    ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."products" (
+        "id" integer DEFAULT nextval('public.products_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "category_id" integer
+    );
+
+    ALTER SEQUENCE "public"."products_id_seq" OWNED BY "public"."products"."id";
+
+    ALTER TABLE ONLY "public"."products" ADD CONSTRAINT "products_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE "public"."orders"
+        ADD CONSTRAINT "fk_product_cascade" FOREIGN KEY ("product_id")
+        REFERENCES "public"."products" ("id")
+        ON DELETE SET NULL;
+
+    ALTER TABLE "public"."products"
+        ADD CONSTRAINT "fk_category" FOREIGN KEY ("category_id")
+        REFERENCES "public"."categories" ("id")
+        ON DELETE CASCADE;
+
+- description: foreign_key_on_update_actions
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "departments",
+              "columns": [
+                {
+                  "name": "code",
+                  "position": 1,
+                  "type": "character varying(10)"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "departments_pkey",
+                  "expressions": [
+                    "code"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX departments_pkey ON public.departments USING btree (code);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "text_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "owner": "postgres"
+            },
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.employees_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "dept_code",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "character varying(10)"
+                },
+                {
+                  "name": "manager_id",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "employees_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX employees_pkey ON public.employees USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "foreign_keys": [
+                {
+                  "name": "fk_dept_restrict",
+                  "columns": [
+                    "dept_code"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "code"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "RESTRICT",
+                  "match_type": "SIMPLE"
+                },
+                {
+                  "name": "fk_manager_cascade",
+                  "columns": [
+                    "manager_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "employees",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "CASCADE",
+                  "match_type": "SIMPLE"
+                }
+              ],
+              "owner": "postgres"
+            },
+            {
+              "name": "projects",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.projects_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "lead_emp_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "dept_code",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "character varying(10)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "projects_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "foreign_keys": [
+                {
+                  "name": "fk_lead_setnull",
+                  "columns": [
+                    "lead_emp_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "employees",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "SET NULL",
+                  "match_type": "SIMPLE"
+                },
+                {
+                  "name": "fk_proj_dept",
+                  "columns": [
+                    "dept_code"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "departments",
+                  "referenced_columns": [
+                    "code"
+                  ],
+                  "on_delete": "RESTRICT",
+                  "on_update": "RESTRICT",
+                  "match_type": "SIMPLE"
+                }
+              ],
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "employees_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "employees",
+              "owner_column": "id"
+            },
+            {
+              "name": "projects_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "projects",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SEQUENCE "public"."employees_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    CREATE SEQUENCE "public"."projects_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."departments" (
+        "code" character varying(10) NOT NULL,
+        "name" character varying(100) NOT NULL
+    );
+
+    ALTER TABLE ONLY "public"."departments" ADD CONSTRAINT "departments_pkey" PRIMARY KEY (code);
+
+    CREATE TABLE "public"."employees" (
+        "id" integer DEFAULT nextval('public.employees_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "dept_code" character varying(10),
+        "manager_id" integer
+    );
+
+    ALTER SEQUENCE "public"."employees_id_seq" OWNED BY "public"."employees"."id";
+
+    ALTER TABLE ONLY "public"."employees" ADD CONSTRAINT "employees_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."projects" (
+        "id" integer DEFAULT nextval('public.projects_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "lead_emp_id" integer,
+        "dept_code" character varying(10)
+    );
+
+    ALTER SEQUENCE "public"."projects_id_seq" OWNED BY "public"."projects"."id";
+
+    ALTER TABLE ONLY "public"."projects" ADD CONSTRAINT "projects_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE "public"."employees"
+        ADD CONSTRAINT "fk_dept_restrict" FOREIGN KEY ("dept_code")
+        REFERENCES "public"."departments" ("code")
+        ON DELETE SET NULL
+        ON UPDATE RESTRICT;
+
+    ALTER TABLE "public"."employees"
+        ADD CONSTRAINT "fk_manager_cascade" FOREIGN KEY ("manager_id")
+        REFERENCES "public"."employees" ("id")
+        ON DELETE CASCADE
+        ON UPDATE CASCADE;
+
+    ALTER TABLE "public"."projects"
+        ADD CONSTRAINT "fk_lead_setnull" FOREIGN KEY ("lead_emp_id")
+        REFERENCES "public"."employees" ("id")
+        ON DELETE SET NULL
+        ON UPDATE SET NULL;
+
+    ALTER TABLE "public"."projects"
+        ADD CONSTRAINT "fk_proj_dept" FOREIGN KEY ("dept_code")
+        REFERENCES "public"."departments" ("code")
+        ON DELETE RESTRICT
+        ON UPDATE RESTRICT;
+
+- description: foreign_key_no_action
+  metadata: |
+    {
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "cities",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.cities_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "state_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "cities_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX cities_pkey ON public.cities USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "foreign_keys": [
+                {
+                  "name": "fk_state_implicit",
+                  "columns": [
+                    "state_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "states",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ],
+              "owner": "postgres"
+            },
+            {
+              "name": "countries",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.countries_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "code",
+                  "position": 2,
+                  "type": "character varying(3)"
+                },
+                {
+                  "name": "name",
+                  "position": 3,
+                  "type": "character varying(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "countries_code_key",
+                  "expressions": [
+                    "code"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "definition": "CREATE UNIQUE INDEX countries_code_key ON public.countries USING btree (code);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "text_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                },
+                {
+                  "name": "countries_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX countries_pkey ON public.countries USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 16384,
+              "owner": "postgres"
+            },
+            {
+              "name": "states",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "nextval('public.states_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "character varying(100)"
+                },
+                {
+                  "name": "country_id",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "states_pkey",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "btree",
+                  "unique": true,
+                  "primary": true,
+                  "definition": "CREATE UNIQUE INDEX states_pkey ON public.states USING btree (id);",
+                  "is_constraint": true,
+                  "opclass_names": [
+                    "int4_ops"
+                  ],
+                  "opclass_defaults": [
+                    true
+                  ]
+                }
+              ],
+              "index_size": 8192,
+              "foreign_keys": [
+                {
+                  "name": "fk_country_explicit",
+                  "columns": [
+                    "country_id"
+                  ],
+                  "referenced_schema": "public",
+                  "referenced_table": "countries",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION",
+                  "match_type": "SIMPLE"
+                }
+              ],
+              "owner": "postgres"
+            }
+          ],
+          "sequences": [
+            {
+              "name": "cities_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "cities",
+              "owner_column": "id"
+            },
+            {
+              "name": "countries_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "countries",
+              "owner_column": "id"
+            },
+            {
+              "name": "states_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "states",
+              "owner_column": "id"
+            }
+          ],
+          "owner": "pg_database_owner",
+          "comment": "standard public schema"
+        }
+      ],
+      "character_set": "UTF8",
+      "collation": "en_US.UTF-8",
+      "owner": "postgres",
+      "search_path": "\"$user\", public"
+    }
+  expected: |+
+    SET statement_timeout = 0;
+    SET lock_timeout = 0;
+    SET idle_in_transaction_session_timeout = 0;
+    SET client_encoding = 'UTF8';
+    SET standard_conforming_strings = on;
+    SELECT pg_catalog.set_config('search_path', '', false);
+    SET check_function_bodies = false;
+    SET xmloption = content;
+    SET client_min_messages = warning;
+    SET row_security = off;
+
+    CREATE SEQUENCE "public"."cities_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    CREATE SEQUENCE "public"."countries_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    CREATE SEQUENCE "public"."states_id_seq"
+        AS integer
+    	START WITH 1
+    	INCREMENT BY 1
+    	MINVALUE 1
+    	MAXVALUE 2147483647
+    	NO CYCLE;
+
+    SET default_tablespace = '';
+
+    CREATE TABLE "public"."cities" (
+        "id" integer DEFAULT nextval('public.cities_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "state_id" integer
+    );
+
+    ALTER SEQUENCE "public"."cities_id_seq" OWNED BY "public"."cities"."id";
+
+    ALTER TABLE ONLY "public"."cities" ADD CONSTRAINT "cities_pkey" PRIMARY KEY (id);
+
+    CREATE TABLE "public"."countries" (
+        "id" integer DEFAULT nextval('public.countries_id_seq'::regclass) NOT NULL,
+        "code" character varying(3) NOT NULL,
+        "name" character varying(100) NOT NULL
+    );
+
+    ALTER SEQUENCE "public"."countries_id_seq" OWNED BY "public"."countries"."id";
+
+    ALTER TABLE ONLY "public"."countries" ADD CONSTRAINT "countries_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE ONLY "public"."countries" ADD CONSTRAINT "countries_code_key" UNIQUE (code);
+
+    CREATE TABLE "public"."states" (
+        "id" integer DEFAULT nextval('public.states_id_seq'::regclass) NOT NULL,
+        "name" character varying(100) NOT NULL,
+        "country_id" integer
+    );
+
+    ALTER SEQUENCE "public"."states_id_seq" OWNED BY "public"."states"."id";
+
+    ALTER TABLE ONLY "public"."states" ADD CONSTRAINT "states_pkey" PRIMARY KEY (id);
+
+    ALTER TABLE "public"."cities"
+        ADD CONSTRAINT "fk_state_implicit" FOREIGN KEY ("state_id")
+        REFERENCES "public"."states" ("id");
+
+    ALTER TABLE "public"."states"
+        ADD CONSTRAINT "fk_country_explicit" FOREIGN KEY ("country_id")
+        REFERENCES "public"."countries" ("id");
+

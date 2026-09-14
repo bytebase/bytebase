@@ -16,7 +16,7 @@ SA=devbox@${PROJECT}.iam.gserviceaccount.com
 HERE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 
 gcloud services enable secretmanager.googleapis.com oslogin.googleapis.com \
-  monitoring.googleapis.com logging.googleapis.com --project=$PROJECT
+  monitoring.googleapis.com logging.googleapis.com cloudscheduler.googleapis.com --project=$PROJECT
 
 # Service account; its roles are granted below, nothing more.
 gcloud iam service-accounts create devbox --project=$PROJECT \
@@ -54,3 +54,11 @@ gcloud compute instances create devbox --project=$PROJECT --zone=$ZONE \
   --service-account=$SA --scopes=cloud-platform \
   --metadata=enable-oslogin=TRUE \
   --metadata-from-file=startup-script="$HERE/startup.sh"
+
+# Restarts the instance after a preemption; a no-op while it runs. It relies on the
+# Compute Engine default account's Editor role. Montréal: no Cloud Scheduler in Toronto.
+PN=$(gcloud projects describe $PROJECT --format='value(projectNumber)')
+gcloud scheduler jobs create http devbox-start --project=$PROJECT \
+  --location=northamerica-northeast1 --schedule='* * * * *' --http-method=POST \
+  --uri="https://compute.googleapis.com/compute/v1/projects/$PROJECT/zones/$ZONE/instances/devbox/start" \
+  --oauth-service-account-email="${PN}-compute@developer.gserviceaccount.com"

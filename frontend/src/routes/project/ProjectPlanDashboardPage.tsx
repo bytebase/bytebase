@@ -92,7 +92,6 @@ import {
   extractPlanUID,
   generatePlanTitle,
   getDefaultPagination,
-  type SearchParams as VueSearchParams,
 } from "@/utils";
 import {
   extractStageUID,
@@ -207,7 +206,7 @@ export function ProjectPlanDashboardPage({ projectId }: { projectId: string }) {
 
   // Build plan filter
   const planFilter = useMemo(() => {
-    const merged: VueSearchParams = {
+    const merged: SearchParams = {
       query: searchParams.query.trim().toLowerCase(),
       scopes: [
         ...searchParams.scopes.map((s) => ({ id: s.id, value: s.value })),

@@ -704,3 +704,54 @@ test.each(["timeline", "threads"])(
     expect(store.getIssueComments(parent)).toEqual([old, remote]);
   }
 );
+
+test("a release build loads the timeline but never the reply pass", async () => {
+  vi.resetModules();
+  vi.doMock("@/utils/featureGates", () => ({
+    inlineThreadsEnabled: () => false,
+  }));
+  const { createIssueCommentSlice: createGatedSlice } = await import(
+    "./issueComment"
+  );
+  const state: Record<string, unknown> = {};
+  const set = (updater: unknown) => {
+    Object.assign(
+      state,
+      typeof updater === "function" ? updater(state) : updater
+    );
+  };
+  Object.assign(
+    state,
+    createGatedSlice(set as never, (() => state) as never, {} as never)
+  );
+  const store = state as ReturnType<typeof createIssueCommentSlice>;
+
+  const parent = "projects/p/issues/1";
+  const root = create(IssueCommentSchema, {
+    name: parent + "/issueComments/root",
+    threadState: IssueComment_ThreadState.OPEN,
+  });
+  const general = create(IssueCommentSchema, {
+    name: parent + "/issueComments/general",
+  });
+  mocks.listIssueComments.mockResolvedValueOnce({
+    issueComments: [root, general],
+    nextPageToken: "",
+  });
+
+  const loaded = await store.fetchIssueCommentThreads({ parent });
+
+  // One call: the timeline. No `root in [...]` follow-up.
+  expect(mocks.listIssueComments).toHaveBeenCalledTimes(1);
+  expect(mocks.listIssueComments.mock.calls[0][0]).toMatchObject({
+    parent,
+    filter: "",
+  });
+  // The plain timeline still reaches every comment surface, thread roots
+  // included — they simply render as ordinary comments.
+  expect(loaded).toEqual([root, general]);
+  expect(store.getIssueComments(parent)).toEqual(loaded);
+
+  vi.doUnmock("@/utils/featureGates");
+  vi.resetModules();
+});

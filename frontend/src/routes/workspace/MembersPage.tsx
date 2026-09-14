@@ -2068,7 +2068,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   );
   const roleList = useAppStore((state) => state.roleList);
 
-  // IAM policy loads are owned by the parent shells: ProjectRouteShell
+  // IAM policy loads are owned by the parent shells: ProjectRouteGate
   // loads project IAM on /projects/:projectId/members, and
   // DashboardFrameShell's useEnsureWorkspaceCommonData loads workspace IAM
   // (+ referenced groups) on /settings/members. This page just reads them.
@@ -2127,8 +2127,8 @@ export function MembersPage({ projectId }: { projectId?: string }) {
 
   // Whether the current user already holds every PROJECT_OWNER permission
   // (workspace- or project-scoped). hasProjectPermissionV2 falls back to
-  // workspace permissions, so a single check covers both contexts. Mirrors the
-  // Vue `hasMissingPermission` gate rather than checking `setIamPolicy` alone.
+  // workspace permissions, so a single check covers both contexts. It checks
+  // every owner permission rather than `setIamPolicy` alone.
   // Computed inline (not memoized) so it tracks live IAM policy changes, the
   // same way canSetIamPolicy above does — the permission check reads
   // current-user state that isn't captured by [project, roleList] deps.

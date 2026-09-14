@@ -3,7 +3,7 @@ package mysql
 // Unit tests for formatViewBodySDL, the whitespace-only pretty-printer the SDL dump
 // applies to MySQL's one-line stored view bodies (writeViewSDL).
 //
-// Golden corpus: testdata/format-view-body/<case>.stored.sql holds a REAL SHOW CREATE
+// Golden corpus: testdata/format_view_body/<case>.stored.sql holds a REAL SHOW CREATE
 // VIEW line captured from a live oracle (8.0.32 / 5.7.25 — sakila, the stock sys
 // schema, and hand-built edge views), and <case>.golden.sql pins the pretty body the
 // dump emits for it (after stripViewBodyDatabaseQualifier, exactly like writeViewSDL).
@@ -24,9 +24,9 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -79,7 +79,7 @@ func requireFormatProperties(t *testing.T, body string) string {
 }
 
 func TestFormatViewBodySDLGolden(t *testing.T) {
-	stored, err := filepath.Glob(filepath.Join("testdata", "format-view-body", "*.stored.sql"))
+	stored, err := filepath.Glob(filepath.Join("testdata", "format_view_body", "*.stored.sql"))
 	require.NoError(t, err)
 	require.NotEmpty(t, stored, "no golden captures found")
 
@@ -89,7 +89,7 @@ func TestFormatViewBodySDLGolden(t *testing.T) {
 			db, def := loadStoredViewCase(t, path)
 			body := stripViewBodyDatabaseQualifier(def, db)
 
-			golden, err := os.ReadFile(filepath.Join("testdata", "format-view-body", name+".golden.sql"))
+			golden, err := os.ReadFile(filepath.Join("testdata", "format_view_body", name+".golden.sql"))
 			require.NoError(t, err)
 
 			got := requireFormatProperties(t, body)
@@ -237,12 +237,12 @@ func TestFormatViewBodySDLShapes(t *testing.T) {
 // TestWriteViewSDLPretty pins the full writeViewSDL statement framing around the pretty
 // body: header, AS on the header line, body from column 0, terminating ";\n\n".
 func TestWriteViewSDLPretty(t *testing.T) {
-	db, def := loadStoredViewCase(t, filepath.Join("testdata", "format-view-body", "film_list_80.stored.sql"))
-	golden, err := os.ReadFile(filepath.Join("testdata", "format-view-body", "film_list_80.golden.sql"))
+	db, def := loadStoredViewCase(t, filepath.Join("testdata", "format_view_body", "film_list_80.stored.sql"))
+	golden, err := os.ReadFile(filepath.Join("testdata", "format_view_body", "film_list_80.golden.sql"))
 	require.NoError(t, err)
 
 	var buf strings.Builder
-	require.NoError(t, writeViewSDL(&buf, db, &storepb.ViewMetadata{Name: "film_list", Definition: def}))
+	require.NoError(t, writeViewSDL(&buf, db, &metadatapb.ViewMetadata{Name: "film_list", Definition: def}))
 	want := "CREATE OR REPLACE VIEW `film_list` AS\n" + strings.TrimRight(string(golden), "\n") + ";\n\n"
 	require.Equal(t, want, buf.String())
 }
@@ -251,10 +251,10 @@ func TestWriteViewSDLPretty(t *testing.T) {
 // view content as the single-file dump (both share writeViewSDL — the multi-file ≡
 // single-file concat invariant the live suite checks at scale).
 func TestMultiFileViewSDLPretty(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "testdb",
-		Schemas: []*storepb.SchemaMetadata{{
-			Views: []*storepb.ViewMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
+			Views: []*metadatapb.ViewMetadata{{
 				Name:       "v_pretty",
 				Definition: "select `testdb`.`t1`.`a` AS `a` from `testdb`.`t1`",
 			}},
@@ -278,7 +278,7 @@ func TestMultiFileViewSDLPretty(t *testing.T) {
 func TestGetDatabaseMetadataParsesPrettyView(t *testing.T) {
 	var buf strings.Builder
 	buf.WriteString("CREATE TABLE `t1` (\n  `a` int NOT NULL,\n  `b` varchar(10) DEFAULT NULL,\n  PRIMARY KEY (`a`)\n) ENGINE=InnoDB;\n\n")
-	require.NoError(t, writeViewSDL(&buf, "testdb", &storepb.ViewMetadata{
+	require.NoError(t, writeViewSDL(&buf, "testdb", &metadatapb.ViewMetadata{
 		Name:       "v_pretty",
 		Definition: "select `testdb`.`t1`.`a` AS `a`,`testdb`.`t1`.`b` AS `b` from `testdb`.`t1` where (`testdb`.`t1`.`a` > 0)",
 	}))

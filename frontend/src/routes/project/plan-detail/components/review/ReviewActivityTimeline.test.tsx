@@ -129,6 +129,11 @@ vi.mock("../threads/CommentThreadCard", () => ({
   ),
 }));
 
+const gateMocks = vi.hoisted(() => ({
+  inlineThreadsEnabled: vi.fn(() => true),
+}));
+vi.mock("@/utils/featureGates", () => gateMocks);
+
 vi.mock("../threads/StatementAnchorContext", () => ({
   StatementAnchorContext: () => <div data-testid="anchor-context" />,
 }));
@@ -271,5 +276,48 @@ describe("ReviewActivityTimeline", () => {
     ).toHaveLength(1);
 
     act(() => root.unmount());
+  });
+
+  test("a release build renders a thread root as an ordinary comment", () => {
+    gateMocks.inlineThreadsEnabled.mockReturnValue(false);
+    const issue = create(IssueSchema, {
+      name: "projects/p1/issues/1",
+      creator: "users/issue-creator@example.com",
+      draft: false,
+    });
+    const plan = create(PlanSchema, { name: "projects/p1/plans/1" });
+    const rootName = "projects/p1/issues/1/issueComments/root";
+    const comments = [
+      create(IssueCommentSchema, {
+        name: rootName,
+        comment: "Root",
+        creator: "users/submitter@example.com",
+        threadState: IssueComment_ThreadState.OPEN,
+        statementAnchor: create(StatementAnchorSchema, { spec: "spec-1" }),
+      }),
+      create(IssueCommentSchema, {
+        name: "projects/p1/issues/1/issueComments/general",
+        comment: "General",
+        creator: "users/submitter@example.com",
+      }),
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline comments={comments} issue={issue} plan={plan} />
+      );
+    });
+
+    // The root keeps its stored thread state; with the gate off it must still
+    // reach the reader, as a plain comment rather than a card.
+    expect(container.querySelector("[data-testid='thread-card']")).toBeNull();
+    expect(
+      container.querySelectorAll("[data-testid='comment-row']")
+    ).toHaveLength(2);
+
+    act(() => root.unmount());
+    gateMocks.inlineThreadsEnabled.mockReturnValue(true);
   });
 });

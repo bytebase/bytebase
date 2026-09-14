@@ -642,7 +642,7 @@
       "ssh-key": "SSH Key",
       "user": "User"
     },
-    "ssh-connection": "SSH Connection",
+    "ssh-connection": "SSH tunnel",
     "ssh-type": {
       "none": "None",
       "tunnel-and-private-key": "Tunnel + Private Key"
@@ -673,7 +673,7 @@
       "client-key-path": "Private key path",
       "client-key-placeholder": "Input or drag and drop YOUR_CLIENT_KEY",
       "configured": "Configured",
-      "connection-security": "Connection security",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "Mutual TLS is not available for this engine.",
       "posture": {
         "disabled": "Disabled",
@@ -685,7 +685,7 @@
       "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored. This is insecure. Enable verification for secure connections; disable it only temporarily for development or troubleshooting.",
       "verify-certificate": "Verify server certificate"
     },
-    "ssl-connection": "SSL Connection"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "You don't have the permission to access this database.",
@@ -804,7 +804,6 @@
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
     "unassign-alert-title": "Unassign databases",
-    "unassigned-databases": "Unassigned databases",
     "unique": "Unique",
     "visible": "Visible"
   },
@@ -1319,9 +1318,6 @@
       "host": {
         "none-snowflake": "e.g. host.docker.internal | host IP | local socket",
         "saas": "e.g. db.example.com | database IP"
-      },
-      "proxy": {
-        "snowflake": "For proxy server, append @PROXY_HOST and specify PROXY_PORT in the port"
       }
     },
     "show-how-to-create": "Show how to create",
@@ -1358,6 +1354,22 @@
     "use-sample-instance": "Use sample instance (Available for 7 days)",
     "use-sample-instance-self-host": "Use sample instance",
     "users": "Users",
+    "validation": {
+      "absolute-path": "Enter an absolute path, starting with /.",
+      "aws-credential": "Enter an access key ID or a role ARN.",
+      "cloud-sql-host": "Enter the instance name as project:region:instance.",
+      "forbidden-parameter": "The allowAllFiles parameter is not allowed because it exposes files on the Bytebase server.",
+      "gcp-instance": "Use lowercase letters, numbers, or hyphens.",
+      "gcp-project": "Use lowercase letters, numbers, periods, colons, or hyphens.",
+      "keytab-resupply": "Upload the keytab again for the new connection destination.",
+      "oracle-service": "Enter a service name or SID.",
+      "pem-certificate": "Enter a PEM certificate, including the BEGIN and END CERTIFICATE lines.",
+      "pem-key": "Enter a PEM private key (PKCS#1, PKCS#8, or EC).",
+      "required": "This field is required.",
+      "specific-credential": "Provide specific credentials. Default credentials are unavailable in Bytebase Cloud.",
+      "tls-pair": "Provide both the client certificate and private key.",
+      "tls-source-conflict": "Use either PEM content or a file path, not both."
+    },
     "your-snowflake-account-locator": "Your Snowflake account locator"
   },
   "issue": {
@@ -1809,21 +1821,29 @@
           "view-in-statement": "View in Statement"
         },
         "comment-on-lines": "Comment on lines",
-        "comment-required": "Enter a comment before submitting.",
         "n-replies-hidden_one": "{{count}} reply hidden",
         "n-replies-hidden_other": "{{count}} replies hidden",
         "n-replies_one": "{{count}} reply",
         "n-replies_other": "{{count}} replies",
         "publish": "Publish",
-        "reopen-with-comment": "Reopen with comment",
+        "reopen-thread": "Reopen thread",
         "reply": "Reply",
         "reply-placeholder": "Reply...",
         "reply-posted-status-failed": "Reply posted, but the thread status could not be updated. Retry the status action.",
         "resolve": "Resolve",
-        "resolve-with-comment": "Resolve with comment",
+        "resolve-thread": "Resolve thread",
         "resolved": "Resolved",
         "threads-on-line_one": "{{count}} thread on this line",
         "threads-on-line_other": "{{count}} threads on this line",
+        "walker": {
+          "count_one": "{{count}} unresolved thread on this version",
+          "count_other": "{{count}} unresolved threads on this version",
+          "next": "Next unresolved thread",
+          "position": "Thread {{index}} of {{count}}",
+          "previous": "Previous unresolved thread",
+          "remainder_one": "{{count}} more not shown on this version",
+          "remainder_other": "{{count}} more not shown on this version"
+        },
         "write-comment": "Write a comment..."
       }
     },
@@ -1867,6 +1887,8 @@
       "n-of-m-approved": "{{n}} of {{m}} approved",
       "n-of-m-tasks": "{{n}}/{{m}} tasks",
       "n-passed": "{{n}} passed",
+      "n-unresolved-threads_one": "{{count}} unresolved thread",
+      "n-unresolved-threads_other": "{{count}} unresolved threads",
       "n-warning": "{{n}} warning"
     },
     "targets": {
@@ -2005,9 +2027,6 @@
         }
       },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
-    },
-    "overview": {
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
     },
     "select": "Select project",
     "settings": {

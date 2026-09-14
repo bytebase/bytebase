@@ -1,14 +1,27 @@
 import type {
   GuideContext,
   GuideJourney,
+  GuideStepDefinition,
   GuideStepId,
-  GuideStepRegistry,
   ResolvedGuide,
 } from "./types";
 
-export const validateGuideJourney = (
+const definitionsById = (definitions: readonly GuideStepDefinition[]) => {
+  const byId = new Map<GuideStepId, GuideStepDefinition>();
+  for (const definition of definitions) {
+    if (byId.has(definition.id)) {
+      throw new Error(
+        `Guide contains duplicate step definition ${definition.id}`
+      );
+    }
+    byId.set(definition.id, definition);
+  }
+  return byId;
+};
+
+const validateGuideJourneyWithDefinitions = (
   journey: GuideJourney,
-  registry: GuideStepRegistry
+  definitions: ReadonlyMap<GuideStepId, GuideStepDefinition>
 ) => {
   if (journey.steps.length === 0) {
     throw new Error(
@@ -18,7 +31,7 @@ export const validateGuideJourney = (
 
   const indexById = new Map<GuideStepId, number>();
   for (const [index, step] of journey.steps.entries()) {
-    if (!registry[step.stepId]) {
+    if (!definitions.has(step.stepId)) {
       throw new Error(
         `Guide journey ${journey.id} references unregistered step ${step.stepId}`
       );
@@ -74,10 +87,18 @@ export const validateGuideJourney = (
   }
 };
 
+export const validateGuideJourney = (
+  journey: GuideJourney,
+  definitions: readonly GuideStepDefinition[]
+) => {
+  validateGuideJourneyWithDefinitions(journey, definitionsById(definitions));
+};
+
 export const validateGuideJourneys = (
   journeys: readonly GuideJourney[],
-  registry: GuideStepRegistry
+  definitions: readonly GuideStepDefinition[]
 ) => {
+  const definitionById = definitionsById(definitions);
   const ids = new Set<string>();
   for (const journey of journeys) {
     if (ids.has(journey.id)) {
@@ -86,29 +107,35 @@ export const validateGuideJourneys = (
       );
     }
     ids.add(journey.id);
-    validateGuideJourney(journey, registry);
+    validateGuideJourneyWithDefinitions(journey, definitionById);
   }
 };
 
 export const resolveGuide = ({
   journey,
-  registry,
+  definitions,
   context,
   selectedStepId,
 }: {
   journey: GuideJourney;
-  registry: GuideStepRegistry;
+  definitions: readonly GuideStepDefinition[];
   context: GuideContext;
   selectedStepId?: GuideStepId;
 }): ResolvedGuide => {
+  const definitionById = definitionsById(definitions);
   const doneById = new Map(
     journey.steps.map(({ stepId }) => [
       stepId,
-      registry[stepId].isComplete(context),
+      definitionById.get(stepId)?.isComplete(context) ?? false,
     ])
   );
   const allSteps = journey.steps.map((journeyStep) => {
-    const definition = registry[journeyStep.stepId];
+    const definition = definitionById.get(journeyStep.stepId);
+    if (!definition) {
+      throw new Error(
+        `Guide journey ${journey.id} references unregistered step ${journeyStep.stepId}`
+      );
+    }
     const done = doneById.get(journeyStep.stepId) ?? false;
     return {
       journeyStep,

@@ -15,15 +15,14 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/TabItem/AdminLabel.vue.
  * Breadcrumb shown in the tab title when a tab is in ADMIN mode:
  * `environment > instance > database`. Hides the environment segment when
  * the database has no environment (unknown).
  */
 export function AdminLabel({ tab }: Props) {
   const dbName = tab.connection.database;
-  // Mirrors Vue's `useDatabaseV1ByName`: self-fetches on mount / name change
-  // and reactively re-reads the cached database.
+  // Self-fetches on mount / name change and reactively re-reads the cached
+  // database.
   const database = useAppDatabase(dbName);
   const instance = getInstanceResource(database);
   const environment = getDatabaseEnvironment(database);

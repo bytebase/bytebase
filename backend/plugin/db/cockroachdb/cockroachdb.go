@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/cockroachdb/cockroach-go/v2/crdb"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -194,8 +195,8 @@ func (d *Driver) GetDB() *sql.DB {
 }
 
 // getDatabases gets all databases of an instance.
-func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
-	var databases []*storepb.DatabaseSchemaMetadata
+func (d *Driver) getDatabases(ctx context.Context) ([]*metadatapb.DatabaseSchemaMetadata, error) {
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	if err := crdb.Execute(func() error {
 		rows, err := d.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
 		if err != nil {
@@ -204,7 +205,7 @@ func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMet
 		defer rows.Close()
 
 		for rows.Next() {
-			database := &storepb.DatabaseSchemaMetadata{}
+			database := &metadatapb.DatabaseSchemaMetadata{}
 			if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
 				return err
 			}

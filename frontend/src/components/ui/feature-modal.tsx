@@ -113,10 +113,9 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
         <div>
           <div className="flex items-center justify-between border-b pb-2 mb-4">
             <DialogTitle className="text-base font-medium">{title}</DialogTitle>
-            {/* Vue's BBModal had a built-in X close affordance; the React
-                Dialog primitive does not, so render one explicitly so
-                users can dismiss the paywall regardless of which CTA path
-                renders below. */}
+            {/* The Dialog primitive has no built-in close button; render one
+                explicitly so users can dismiss the paywall regardless of
+                which CTA path renders below. */}
             <DialogClose
               aria-label={t("common.close")}
               className="rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
@@ -170,8 +169,7 @@ export function FeatureModal({ open, feature, instance, onOpenChange }: Props) {
                 variant="default"
                 onClick={() => {
                   window.open(ENTERPRISE_INQUIRE_LINK, "_blank");
-                  // Vue's BBModal default-closes after a CTA click; mirror
-                  // that so the paywall doesn't linger after the inquiry
+                  // Close so the paywall doesn't linger after the inquiry
                   // tab opens.
                   close();
                 }}

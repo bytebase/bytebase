@@ -40,6 +40,10 @@ type Scheduler struct {
 	// haFailSince is when CheckReplicaLimit first started failing.
 	// Zero means the check is currently passing.
 	haFailSince time.Time
+
+	// runs tracks the task goroutines; the scheduler that spawns them waits for
+	// them before it returns, or they outlive the store.
+	runs sync.WaitGroup
 }
 
 // NewScheduler will create a new scheduler.
@@ -159,7 +163,7 @@ func (s *Scheduler) failTaskRunsForHA(ctx context.Context, haErr error) {
 func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	go s.runTaskCompletionListener(ctx)
+	wg.Go(func() { s.runTaskCompletionListener(ctx) })
 
 	// Start rollout creator component
 	rolloutCreator := NewRolloutCreator(s.store, s.bus, s.webhookManager)
@@ -194,6 +198,23 @@ func (s *Scheduler) runTaskCompletionListener(ctx context.Context) {
 	}
 }
 
+// planTasksComplete reports whether every task has reached a state that counts
+// as finishing the pipeline: a task run that is DONE or SKIPPED, or a task the
+// user skipped. FAILED and CANCELED do not count, so a pipeline holding one is
+// not complete until it is retried into DONE or skipped.
+func planTasksComplete(tasks []*store.TaskMessage) bool {
+	for _, task := range tasks {
+		switch {
+		case task.LatestTaskRunStatus == storepb.TaskRun_DONE,
+			task.LatestTaskRunStatus == storepb.TaskRun_SKIPPED,
+			task.Payload.GetSkipped():
+		default:
+			return false
+		}
+	}
+	return true
+}
+
 // checkPlanCompletion checks if all tasks in a plan are complete and successful.
 // If so, sends PIPELINE_COMPLETED webhook and auto-resolves issues for deferred rollout plans.
 // Deferred rollout plans (createDatabaseConfig) auto-resolve when tasks complete.
@@ -213,20 +234,8 @@ func (s *Scheduler) checkPlanCompletion(ctx context.Context, ref bus.PlanRef) {
 		return
 	}
 
-	// Check if all tasks are complete (DONE or SKIPPED)
-	for _, task := range tasks {
-		status := task.LatestTaskRunStatus
-
-		// Only DONE and SKIPPED are considered complete
-		// FAILED and CANCELED are not complete states
-		isComplete := status == storepb.TaskRun_DONE ||
-			status == storepb.TaskRun_SKIPPED ||
-			task.Payload.GetSkipped()
-
-		if !isComplete {
-			// Not all tasks complete - no webhook
-			return
-		}
+	if !planTasksComplete(tasks) {
+		return
 	}
 
 	project, err := s.store.GetProjectByResourceID(ctx, plan.ProjectID)

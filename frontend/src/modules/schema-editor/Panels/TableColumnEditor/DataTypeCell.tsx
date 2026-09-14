@@ -29,10 +29,10 @@ interface Props {
 }
 
 /**
- * Free-text type input with a clickable suggestion dropdown, mirroring the old
- * Vue `DropdownInput`: users can type any custom type (e.g. `varchar(255)`) or
- * pick one of the engine's known types from the dropdown. The native
- * `<input list>` it replaced never opened reliably on click.
+ * Free-text type input with a clickable suggestion dropdown: users can type
+ * any custom type (e.g. `varchar(255)`) or pick one of the engine's known
+ * types from the dropdown. A native `<input list>` doesn't open reliably on
+ * click.
  *
  * Focus/click handlers live on the wrapping container because Base UI's Input
  * can swallow `onClick`/`onFocus`; React focus/click events still bubble there.
@@ -52,9 +52,9 @@ export function DataTypeCell({
   const value = column.type ?? "";
 
   // The type as first rendered. We only filter once the user edits the value
-  // away from this; an unchanged value shows the full list (matches Vue's
-  // `allowFilter`). Otherwise opening e.g. a `bigint` cell would filter to just
-  // "bigint" while a `timestamp(...)` cell — matching nothing — shows them all.
+  // away from this; an unchanged value shows the full list. Otherwise opening
+  // e.g. a `bigint` cell would filter to just "bigint" while a `timestamp(...)`
+  // cell — matching nothing — shows them all.
   const originalTypeRef = useRef(value);
 
   const allSuggestions = useMemo(

@@ -16,7 +16,6 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import type { AppSliceCreator, PolicySlice } from "./types";
 
-// Mirror of the Pinia `getUpdateMaskFromPolicyType`.
 const getUpdateMaskFromPolicyType = (policyType: PolicyType): string[] => {
   switch (policyType) {
     case PolicyType.ROLLOUT_POLICY:
@@ -37,8 +36,8 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType): string[] => {
 // Inlined to keep the app store's load graph free of `@/stores/modules/v1/common`.
 const POLICY_NAME_PREFIX = "policies/";
 
-// Mirror of the Pinia helper — normalizes `policies/{TYPE}` segments to
-// lowercase so the cache key matches what the server returns.
+// Normalizes `policies/{TYPE}` segments to lowercase so the cache key matches
+// what the server returns.
 const replacePolicyTypeNameToLowerCase = (name: string): string => {
   const pattern = /(^|\/)policies\/([^/]+)($|\/)/;
   const replaced = name.replace(
@@ -50,13 +49,12 @@ const replacePolicyTypeNameToLowerCase = (name: string): string => {
 };
 
 // Stable empty singleton — subscribers compare by reference, so we MUST NOT
-// build a fresh object on every call (mirrors the Pinia behavior).
+// build a fresh object on every call.
 const EMPTY_QUERY_DATA_POLICY: QueryDataPolicy = createProto(
   QueryDataPolicySchema,
   { maximumResultRows: -1 }
 );
 
-// Pure helper relocated from the legacy Pinia policy module.
 export const getEmptyRolloutPolicy = (
   parentPath: string,
   resourceType: PolicyResourceType
@@ -79,10 +77,7 @@ const policyResourceName = (parent: string, policyType: PolicyType) =>
   );
 
 /**
- * Port of the SQL-editor-used subset of the legacy Pinia `usePolicyV1Store`:
  * `policyMapByName` cache + sync/async getters keyed by resource name.
- * Failures on `getOrFetchPolicyByName` cache an empty Policy under the
- * requested name (matches Pinia's "don't re-hit a missing policy" behavior).
  */
 export const createPolicySlice: AppSliceCreator<PolicySlice> = (set, get) => ({
   policyMapByName: {},
@@ -119,7 +114,7 @@ export const createPolicySlice: AppSliceCreator<PolicySlice> = (set, get) => ({
         set((state) => {
           const { [key]: _, ...policyRequests } = state.policyRequests;
           // Cache an empty policy on NotFound so repeated lookups don't
-          // hammer the backend (parity with Pinia).
+          // hammer the backend.
           if (error instanceof ConnectError && error.code === Code.NotFound) {
             return {
               policyMapByName: {

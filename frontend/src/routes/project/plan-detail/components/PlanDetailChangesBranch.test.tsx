@@ -3,6 +3,7 @@ import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import { IssueComment_ThreadState } from "@/types/proto-es/v1/issue_service_pb";
 import type { PlanCheckRun } from "@/types/proto-es/v1/plan_service_pb";
 import type { CheckReleaseResponse_CheckResult } from "@/types/proto-es/v1/release_service_pb";
 import type { PlanDetailPageState } from "../shell/hooks/types";
@@ -17,6 +18,7 @@ import {
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  issueComments: [] as unknown[],
   fetchDatabases: vi.fn(),
   fetchDBGroupListByProjectName: vi.fn(),
   getDatabaseByName: vi.fn(),
@@ -65,6 +67,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (
       key: string,
@@ -250,6 +253,7 @@ vi.mock("@/app/router", async (importOriginal) => ({
 }));
 
 vi.mock("@/types", () => ({
+  getTimeForPbTimestampProtoEs: () => 0,
   isValidDatabaseGroupName: (name: string) =>
     name?.includes("/databaseGroups/"),
   isValidDatabaseName: (name: string) => name?.includes("/databases/"),
@@ -268,6 +272,11 @@ vi.mock("@/stores", () => ({
   getProjectNameAndDatabaseGroupName: (name: string) =>
     name.split("/databaseGroups/"),
   pushNotification: vi.fn(),
+}));
+
+vi.mock("../shared/stores/usePlanDetailStore", () => ({
+  usePlanDetailStore: (selector: (state: unknown) => unknown) =>
+    selector({ placements: new Map(), placementTargets: new Map() }),
 }));
 
 // The migrated component reads resource state via imperative
@@ -308,6 +317,7 @@ vi.mock("@/stores/app", async () => {
         dbGroupViewByName: Record<string, unknown>;
         projectsByName: Record<string, unknown>;
         environmentList: unknown[];
+        getIssueComments: (issueName: string) => unknown[];
       }) => unknown
     ) =>
       selector({
@@ -316,6 +326,7 @@ vi.mock("@/stores/app", async () => {
         dbGroupViewByName,
         projectsByName,
         environmentList: [],
+        getIssueComments: () => mocks.issueComments,
       }),
     {
       getState: () => ({
@@ -323,6 +334,8 @@ vi.mock("@/stores/app", async () => {
         ...mocks.dbGroupStore,
         getProjectByName: mocks.projectStore.getProjectByName,
         getEnvironmentByName: mocks.environmentStore.getEnvironmentByName,
+        getSheetByName: () => undefined,
+        getOrFetchSheetByName: async () => undefined,
       }),
     }
   );
@@ -527,6 +540,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
   mocks.localSheets.clear();
+  mocks.issueComments = [];
   mocks.getPlanOptionVisibility.mockReturnValue({
     shouldShow: false,
     showGhost: false,
@@ -703,6 +717,51 @@ async function flush() {
 }
 
 describe("PlanDetailChangesBranch", () => {
+  it("shows a count of unresolved threads on the tabs of the changes they anchor to", async () => {
+    const page = buildPageState();
+    page.issue = { name: "projects/foo/issues/1" } as PlanDetailPageState["issue"];
+    const sha = "a".repeat(64);
+    page.plan.specs = [
+      { id: "spec-orders", config: { case: "changeDatabaseConfig", value: { targets: [DB_WIDGETS], sheet: `projects/foo/sheets/${sha}` } } },
+      { id: "spec-cogs", config: { case: "changeDatabaseConfig", value: { targets: [DB_COGS], sheet: `projects/foo/sheets/${sha}` } } },
+    ] as unknown as PlanDetailPageState["plan"]["specs"];
+    const thread = (id: string, spec: string, opts: { resolved?: boolean; sheetSha256?: string } = {}) => ({
+      name: `projects/foo/issues/1/issueComments/${id}`,
+      comment: id,
+      threadState: opts.resolved
+        ? IssueComment_ThreadState.RESOLVED
+        : IssueComment_ThreadState.OPEN,
+      statementAnchor: {
+        spec,
+        sheetSha256: opts.sheetSha256 ?? sha,
+        startPosition: { line: 1, column: 0 },
+        endPosition: { line: 1, column: 0 },
+      },
+    });
+    mocks.issueComments = [
+      thread("a", "spec-orders"),
+      thread("b", "spec-orders"),
+      thread("c", "spec-orders", { resolved: true }),
+      // Anchored to an older statement: unresolved, but not shown in the editor.
+      thread("stale", "spec-orders", { sheetSha256: "b".repeat(64) }),
+      thread("d", "spec-cogs", { resolved: true }),
+      { name: "projects/foo/issues/1/issueComments/reply", comment: "reply", root: thread("a", "spec-orders").name },
+    ];
+
+    act(() => {
+      root.render(
+        <PlanDetailProvider value={page}>
+          <PlanDetailChangesBranch selectedSpecId="spec-orders" onSelectedSpecIdChange={vi.fn()} />
+        </PlanDetailProvider>
+      );
+    });
+    await flush();
+
+    const pills = [...container.querySelectorAll("[data-testid='spec-unresolved-threads']")];
+    expect(pills.map((pill) => pill.textContent)).toEqual(["2"]);
+    expect(pills[0].closest("[aria-label]")?.getAttribute("aria-label")).toContain("widgets");
+  });
+
   it("renders target-derived change references instead of generic types", async () => {
     const page = buildPageState();
     page.plan.specs = [

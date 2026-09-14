@@ -10,3 +10,6 @@ export const GUIDE_PROGRESS_KEYS = {
 
 export const guideCompletionAcknowledgedKey = (id: GuideJourneyId) =>
   `workspace-setup-guide.completed.${id}`;
+
+export const guideProgressObservedKey = (id: GuideJourneyId) =>
+  `workspace-setup-guide.progress-observed.${id}.v1`;

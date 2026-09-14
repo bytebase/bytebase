@@ -11,7 +11,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/SheetConnectionIcon.vue.
  * Renders the engine icon when the tab has a live connection, otherwise the
  * "unlink" glyph.
  */

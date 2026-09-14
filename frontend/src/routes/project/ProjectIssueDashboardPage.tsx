@@ -5,7 +5,7 @@ import {
   useListScrollRestorationKey,
   useListScrollRestorationLoadMore,
 } from "@/app/router/NavigationScrollRestoration";
-import type { SearchParams } from "@/components/AdvancedSearch";
+import type { SearchParams, SearchScope } from "@/components/AdvancedSearch";
 import {
   BatchActionBar,
   BatchIssueStatusActionDrawer,
@@ -33,7 +33,6 @@ import {
   buildSearchParamsBySearchText,
   buildSearchTextBySearchParams,
   mergeSearchParams,
-  type SearchScope as VueSearchScope,
 } from "@/utils";
 
 const serializeSearchParams = (params: SearchParams): string =>
@@ -57,7 +56,7 @@ export function ProjectIssueDashboardPage({
   const projectName = `${projectNamePrefix}${projectId}`;
 
   // Read-only scopes
-  const readonlyScopes: VueSearchScope[] = useMemo(
+  const readonlyScopes: SearchScope[] = useMemo(
     () => [{ id: "project", value: projectId, readonly: true }],
     [projectId]
   );

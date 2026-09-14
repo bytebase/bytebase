@@ -18,16 +18,13 @@ const MAX_ROWS = 10;
 const RESIZE_HANDLE_SIZE_PX = 16;
 
 /**
- * React port of `plugins/ai/components/PromptInput.vue`.
- *
  * Autosizing textarea (1-10 visible rows) bound to local state. Users can
  * resize it vertically, after which their chosen height is preserved. Enter
  * submits; Shift+Enter inserts a newline. The trailing button is a tooltipped
  * ⏎ that submits when clicked.
  *
- * Naive UI's `NInput type="textarea" autosize` isn't available; we
- * hand-roll the autosize by measuring `scrollHeight` after each value
- * change and clamping to `[MIN_ROWS, MAX_ROWS] * lineHeight`. Adding a
+ * The autosize is hand-rolled: measure `scrollHeight` after each value
+ * change and clamp to `[MIN_ROWS, MAX_ROWS] * lineHeight`. Adding a
  * runtime dep (`react-textarea-autosize`) just for this surface isn't
  * worth it — the hand-rolled version is ~10 lines and behaves
  * identically for plain text input.
@@ -61,9 +58,8 @@ export function PromptInput({ disabled = false, onEnter }: Props) {
   }, [events]);
 
   // Consume `pendingPreInput`: when the provider sets it, copy into
-  // local state and clear the trigger. rAF mirrors the Vue version's
-  // `flush: "post"` watch — defers to the next paint so any conversation
-  // creation that triggered the seed has landed first.
+  // local state and clear the trigger. rAF defers to the next paint so any
+  // conversation creation that triggered the seed has landed first.
   useEffect(() => {
     if (!pendingPreInput) return;
     const raf = requestAnimationFrame(() => {

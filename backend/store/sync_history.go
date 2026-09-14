@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 type SyncHistory struct {
@@ -19,7 +19,7 @@ type SyncHistory struct {
 	InstanceID   string
 	DatabaseName string
 	Schema       string
-	Metadata     *storepb.DatabaseSchemaMetadata
+	Metadata     *metadatapb.DatabaseSchemaMetadata
 
 	CreatedAt time.Time
 }
@@ -43,7 +43,7 @@ func (s *Store) GetSyncHistory(ctx context.Context, resourceID string) (*SyncHis
 	}
 
 	h := SyncHistory{
-		Metadata: &storepb.DatabaseSchemaMetadata{},
+		Metadata: &metadatapb.DatabaseSchemaMetadata{},
 	}
 
 	var m []byte
@@ -68,7 +68,7 @@ func (s *Store) GetSyncHistory(ctx context.Context, resourceID string) (*SyncHis
 	return &h, nil
 }
 
-func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName string, metadata *storepb.DatabaseSchemaMetadata, schema string) (string, error) {
+func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName string, metadata *metadatapb.DatabaseSchemaMetadata, schema string) (string, error) {
 	// Sanitize schema to prevent storing invalid UTF-8 bytes from external databases.
 	schema = strings.ToValidUTF8(schema, "")
 

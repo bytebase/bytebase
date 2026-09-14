@@ -557,8 +557,8 @@ describe("buildDatabaseSchemaTree", () => {
   });
 
   test("nested partitions recurse and reuse the table-level key prefix", () => {
-    // Vue's keyForNodeTarget("partition-table", ...) always keys directly
-    // under the table — not under the parent partition. Sub-partitions
+    // keyForNodeTarget("partition-table", ...) always keys directly under
+    // the table — not under the parent partition. Sub-partitions
     // therefore share the same `<table>/partitionTables/<name>` prefix as
     // top-level partitions; preserving this behavior keeps persisted
     // treeState keys valid.
@@ -591,7 +591,7 @@ describe("buildDatabaseSchemaTree", () => {
     expect(q1!.type).toBe("partition-table");
   });
 
-  test("empty Tables folder still emits an <Empty> child for parity", () => {
+  test("empty Tables folder still emits an <Empty> child", () => {
     const md = makeMetadata([
       makeSchema("public", {
         tables: [],
