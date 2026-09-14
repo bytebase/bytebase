@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import cteNestedLoopInitplan from "./fixtures/cte-nested-loop-initplan.json";
+import cteNestedLoopInitplan from "./test-data/cte-nested-loop-initplan.json";
 import { PostgresPlanView } from "./PostgresPlanView";
 import {
   POSTGRES_PLAN_EMPTY_MESSAGE,

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import cteNestedLoopInitplan from "./fixtures/cte-nested-loop-initplan.json";
+import cteNestedLoopInitplan from "./test-data/cte-nested-loop-initplan.json";
 import type { PlanTree } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import { QueryPlanGrid } from "./QueryPlanGrid";

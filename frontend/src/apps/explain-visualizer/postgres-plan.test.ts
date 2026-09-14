@@ -1,8 +1,4 @@
 import { describe, expect, test } from "vitest";
-import bitmapIndexScan from "./fixtures/bitmap-index-scan.json";
-import cteNestedLoopInitplan from "./fixtures/cte-nested-loop-initplan.json";
-import hashJoinAggregateSort from "./fixtures/hash-join-aggregate-sort.json";
-import seqScanFilter from "./fixtures/seq-scan-filter.json";
 import type { PlanNode, PlanTree } from "./plan-model";
 import {
   POSTGRES_PLAN_EMPTY_MESSAGE,
@@ -11,6 +7,10 @@ import {
   POSTGRES_PLAN_TOO_DEEP_MESSAGE,
   parsePostgresPlan,
 } from "./postgres-plan";
+import bitmapIndexScan from "./test-data/bitmap-index-scan.json";
+import cteNestedLoopInitplan from "./test-data/cte-nested-loop-initplan.json";
+import hashJoinAggregateSort from "./test-data/hash-join-aggregate-sort.json";
+import seqScanFilter from "./test-data/seq-scan-filter.json";
 
 /** A chain of `depth` nodes, the shape that drives every recursive walk. */
 const nestedPlan = (depth: number): string => {

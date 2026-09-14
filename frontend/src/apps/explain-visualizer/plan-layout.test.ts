@@ -1,6 +1,4 @@
 import { describe, expect, test } from "vitest";
-import hashJoinAggregateSort from "./fixtures/hash-join-aggregate-sort.json";
-import seqScanFilter from "./fixtures/seq-scan-filter.json";
 import {
   layoutPlan,
   PLAN_NODE_HEIGHT,
@@ -15,6 +13,8 @@ import {
 } from "./plan-layout";
 import type { PlanNode, PlanTree } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
+import hashJoinAggregateSort from "./test-data/hash-join-aggregate-sort.json";
+import seqScanFilter from "./test-data/seq-scan-filter.json";
 
 const parseFixture = (fixture: unknown): PlanTree => {
   const result = parsePostgresPlan(JSON.stringify(fixture));

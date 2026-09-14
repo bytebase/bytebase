@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import bitmapIndexScan from "./fixtures/bitmap-index-scan.json";
+import bitmapIndexScan from "./test-data/bitmap-index-scan.json";
 import type { PlanTree } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import { QueryPlanViewer } from "./QueryPlanViewer";

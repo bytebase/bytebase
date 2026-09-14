@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import hashJoinAggregateSort from "./fixtures/hash-join-aggregate-sort.json";
-import seqScanFilter from "./fixtures/seq-scan-filter.json";
+import hashJoinAggregateSort from "./test-data/hash-join-aggregate-sort.json";
+import seqScanFilter from "./test-data/seq-scan-filter.json";
 import {
   PLAN_EDGE_MAX_WIDTH,
   PLAN_EDGE_MIN_WIDTH,

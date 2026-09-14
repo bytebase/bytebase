@@ -1,4 +1,4 @@
-# Plan fixtures
+# Plan test data
 
 Real `EXPLAIN (FORMAT JSON)` output, captured from PostgreSQL 17 against a seeded
 schema, one file per plan shape. The tests in this directory parse these instead

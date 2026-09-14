@@ -26,50 +26,6 @@ body {
   display: flex;
 }
 
-/* `tailwind.css` defines the semantic tokens for a light theme only, and this
-   page opens in its own tab with no workspace chrome to carry a theme choice
-   and nothing to set a theme class. Restating the tokens this entry actually
-   draws with is what gives it a dark mode; it follows the operating system,
-   and no component needs a dark variant. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-
-    --color-accent: 129 140 248;
-    --color-accent-hover: 165 180 252;
-    --color-accent-text: 24 24 27;
-
-    --color-main: 244 244 245;
-    --color-main-text: 24 24 27;
-
-    --color-control: 212 212 216;
-    --color-control-light: 161 161 170;
-    --color-control-bg: 39 39 42;
-    --color-control-bg-hover: 63 63 70;
-    --color-control-placeholder: 113 113 122;
-
-    --color-info: 96 165 250;
-    --color-warning: 251 191 36;
-    --color-error: 248 113 113;
-    --color-error-hover: 252 165 165;
-    --color-success: 74 222 128;
-
-    --color-block-border: 63 63 70;
-    --color-control-border: 82 82 91;
-    --color-background: 24 24 27;
-  }
-
-  /* `html-query-plan` and the Spanner tree below ship fixed light colors. Pin
-     their containers to a light surface so a dark page does not leave them
-     unreadable. */
-  .ev-mssql-container,
-  .ev-spanner {
-    color-scheme: light;
-    background-color: #ffffff;
-    color: #333333;
-  }
-}
-
 .ev-unsupported {
   display: flex;
   flex-direction: column;
