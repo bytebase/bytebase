@@ -399,7 +399,8 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			write(c)
 			b.WriteString(statement[i+1 : end])
 			i = end
-		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])):
+		// The version after /*! or /*M! decides whether MySQL or MariaDB runs the comment, so it stays.
+		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])) && !strings.HasSuffix(statement[:i], "/*!") && !strings.HasSuffix(statement[:i], "/*M!"):
 			for i < len(statement) && (isWordByte(statement[i]) || statement[i] == '.') {
 				i++
 			}

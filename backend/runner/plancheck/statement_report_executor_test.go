@@ -200,6 +200,8 @@ func TestShapeKey(t *testing.T) {
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
 			// Comments stay in the shape, so no comment marker can hide the rest of a statement.
 			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1"},
+			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1 /*!99999 WHERE id = 1 */"},
+			{"UPDATE t SET v = 1 /*M!100100 WHERE id = 1 */", "UPDATE t SET v = 1 /*M!999999 WHERE id = 1 */"},
 			{"UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1", "UPDATE t SET v = 1"},
 			{"UPDATE [t--x] SET v = 1 WHERE id = 1", "UPDATE [t--x] SET v = 1"},
 			{"UPDATE t SET v = v--1 WHERE id = 1", "UPDATE t SET v = v"},
