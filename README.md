@@ -62,6 +62,10 @@ docker run --init \
   bytebase/bytebase:latest
 ```
 
+### Easypanel
+
+[Easypanel](https://easypanel.io/) can deploy Bytebase with one click using its [official template](https://easypanel.io/templates/bytebase), which runs the Docker image above with a persistent volume for you.
+
 ### Kubernetes
 
 ```bash
