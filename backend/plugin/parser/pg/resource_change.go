@@ -82,7 +82,8 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			case ast.TRANS_STMT_BEGIN, ast.TRANS_STMT_START:
 				transactionSearchPath = sessionSearchPath
 			case ast.TRANS_STMT_COMMIT:
-				searchPath = sessionSearchPath
+				// COMMIT AND CHAIN starts the next transaction from the committed search path.
+				searchPath, transactionSearchPath = sessionSearchPath, sessionSearchPath
 			case ast.TRANS_STMT_ROLLBACK:
 				searchPath, sessionSearchPath = transactionSearchPath, transactionSearchPath
 			default:

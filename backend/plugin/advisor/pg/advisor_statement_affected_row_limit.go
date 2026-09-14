@@ -61,12 +61,12 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 
 type statementAffectedRowLimitRule struct {
 	OmniBaseRule
-	maxRow        int
-	driver        *sql.DB
-	ctx           context.Context
-	explains      advisor.ExplainBudget
-	preExecutions []string
-	tenantMode    bool
+	maxRow     int
+	driver     *sql.DB
+	ctx        context.Context
+	explains   advisor.ExplainBudget
+	settings   sessionSettings
+	tenantMode bool
 }
 
 func (*statementAffectedRowLimitRule) Name() string {
@@ -74,12 +74,9 @@ func (*statementAffectedRowLimitRule) Name() string {
 }
 
 func (r *statementAffectedRowLimitRule) OnStatement(node ast.Node) {
+	r.settings.add(node, r.TrimmedStmtText())
 	node, text := pgparser.UnwrapExplainAnalyze(node, r.StmtText)
 	switch n := node.(type) {
-	case *ast.VariableSetStmt:
-		if omniIsRoleOrSearchPathSet(n) {
-			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
-		}
 	case *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
 		r.checkAffectedRows(text)
 	case *ast.SelectStmt:
@@ -107,7 +104,7 @@ func (r *statementAffectedRowLimitRule) checkAffectedRows(text string) {
 
 	res, err := advisor.Query(r.ctx, advisor.QueryContext{
 		TenantMode:    r.tenantMode,
-		PreExecutions: r.preExecutions,
+		PreExecutions: r.settings.statements(),
 	}, r.driver, storepb.Engine_POSTGRES, getExplainSQL(statementText))
 
 	if err != nil {

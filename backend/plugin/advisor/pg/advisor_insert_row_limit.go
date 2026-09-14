@@ -61,12 +61,12 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 type insertRowLimitRule struct {
 	OmniBaseRule
 
-	maxRow        int
-	driver        *sql.DB
-	ctx           context.Context
-	explains      advisor.ExplainBudget
-	preExecutions []string
-	TenantMode    bool
+	maxRow     int
+	driver     *sql.DB
+	ctx        context.Context
+	explains   advisor.ExplainBudget
+	settings   sessionSettings
+	TenantMode bool
 }
 
 func (*insertRowLimitRule) Name() string {
@@ -74,12 +74,9 @@ func (*insertRowLimitRule) Name() string {
 }
 
 func (r *insertRowLimitRule) OnStatement(node ast.Node) {
+	r.settings.add(node, r.TrimmedStmtText())
 	node, text := pgparser.UnwrapExplainAnalyze(node, r.StmtText)
 	switch n := node.(type) {
-	case *ast.VariableSetStmt:
-		if omniIsRoleOrSearchPathSet(n) {
-			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
-		}
 	case *ast.InsertStmt:
 		r.checkInsert(n, text)
 	default:
@@ -106,7 +103,7 @@ func (r *insertRowLimitRule) checkInsert(ins *ast.InsertStmt, text string) {
 
 		res, err := advisor.Query(r.ctx, advisor.QueryContext{
 			TenantMode:    r.TenantMode,
-			PreExecutions: r.preExecutions,
+			PreExecutions: r.settings.statements(),
 		}, r.driver, storepb.Engine_POSTGRES, getExplainSQL(statementText))
 
 		if err != nil {

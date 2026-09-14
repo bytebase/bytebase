@@ -204,7 +204,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		case *tree.BeginTransaction:
 			transactionSearchPath = sessionSearchPath
 		case *tree.CommitTransaction:
-			searchPath = sessionSearchPath
+			searchPath, transactionSearchPath = sessionSearchPath, sessionSearchPath
 		case *tree.RollbackTransaction:
 			searchPath, sessionSearchPath = transactionSearchPath, transactionSearchPath
 		case *tree.SetVar:

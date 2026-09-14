@@ -70,3 +70,29 @@ func TestOmniIsRoleOrSearchPathSet(t *testing.T) {
 		})
 	}
 }
+
+func TestSessionSettings(t *testing.T) {
+	const statement = `SET search_path = a;
+BEGIN;
+SET LOCAL search_path = b;
+SET ROLE r;
+COMMIT;
+BEGIN;
+SET search_path = c;
+ROLLBACK;
+BEGIN;
+SET search_path = d;
+COMMIT AND CHAIN;
+ROLLBACK;
+SET LOCAL search_path = e;
+SET statement_timeout = '1s';`
+	statements, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+	require.NoError(t, err)
+	var settings sessionSettings
+	for _, stmt := range statements {
+		node, ok := pgparser.GetOmniNode(stmt.AST)
+		require.True(t, ok)
+		settings.add(node, strings.TrimRight(strings.TrimSpace(stmt.Text), ";"))
+	}
+	require.Equal(t, []string{"SET search_path = a", "SET ROLE r", "SET search_path = d", "SET LOCAL search_path = e"}, settings.statements())
+}

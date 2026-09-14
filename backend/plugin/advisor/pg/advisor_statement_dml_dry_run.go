@@ -58,11 +58,11 @@ func (*StatementDMLDryRunAdvisor) Check(ctx context.Context, checkCtx advisor.Co
 
 type statementDMLDryRunRule struct {
 	OmniBaseRule
-	driver        *sql.DB
-	ctx           context.Context
-	explainCount  int
-	preExecutions []string
-	tenantMode    bool
+	driver       *sql.DB
+	ctx          context.Context
+	explainCount int
+	settings     sessionSettings
+	tenantMode   bool
 }
 
 // Name returns the rule name.
@@ -71,11 +71,8 @@ func (*statementDMLDryRunRule) Name() string {
 }
 
 func (r *statementDMLDryRunRule) OnStatement(node ast.Node) {
-	switch n := node.(type) {
-	case *ast.VariableSetStmt:
-		if omniIsRoleOrSearchPathSet(n) {
-			r.preExecutions = append(r.preExecutions, r.TrimmedStmtText())
-		}
+	r.settings.add(node, r.TrimmedStmtText())
+	switch node.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
 		r.checkDMLDryRun()
 	default:
@@ -95,7 +92,7 @@ func (r *statementDMLDryRunRule) checkDMLDryRun() {
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{
 		TenantMode:    r.tenantMode,
-		PreExecutions: r.preExecutions,
+		PreExecutions: r.settings.statements(),
 	}, r.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", statementText))
 
 	if err != nil {

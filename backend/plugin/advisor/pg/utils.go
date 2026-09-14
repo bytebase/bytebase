@@ -3,6 +3,7 @@ package pg
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
@@ -180,6 +181,47 @@ func omniAlterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
 		}
 	}
 	return cmds
+}
+
+// sessionSettings holds the statements that set the role or search path, which an EXPLAIN replays:
+// session settings, and SET LOCAL settings until their transaction ends. ROLLBACK also drops the
+// session settings of its transaction.
+type sessionSettings struct {
+	session []string
+	local   []string
+	// transactionStart is the number of session settings when the current transaction began.
+	transactionStart int
+}
+
+// add records node, whose text is text, when it changes the settings.
+func (s *sessionSettings) add(node ast.Node, text string) {
+	switch n := node.(type) {
+	case *ast.VariableSetStmt:
+		switch {
+		case !omniIsRoleOrSearchPathSet(n):
+		case n.IsLocal:
+			s.local = append(s.local, text)
+		default:
+			s.session = append(s.session, text)
+		}
+	case *ast.TransactionStmt:
+		switch n.Kind {
+		case ast.TRANS_STMT_BEGIN, ast.TRANS_STMT_START:
+			s.transactionStart, s.local = len(s.session), nil
+		case ast.TRANS_STMT_COMMIT, ast.TRANS_STMT_ROLLBACK:
+			if n.Kind == ast.TRANS_STMT_ROLLBACK {
+				s.session = s.session[:s.transactionStart]
+			}
+			// COMMIT AND CHAIN and ROLLBACK AND CHAIN start the next transaction from here.
+			s.transactionStart, s.local = len(s.session), nil
+		default:
+		}
+	default:
+	}
+}
+
+func (s *sessionSettings) statements() []string {
+	return append(slices.Clone(s.session), s.local...)
 }
 
 // omniIsRoleOrSearchPathSet checks if a VariableSetStmt sets the role or search path, including a
