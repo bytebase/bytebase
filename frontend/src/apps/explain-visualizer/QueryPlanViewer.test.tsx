@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import bitmapIndexScan from "./fixtures/bitmap-index-scan.json";
@@ -92,13 +92,19 @@ describe("QueryPlanViewer", () => {
     renderViewer();
 
     fireEvent.click(screen.getByRole("tab", { name: "Grid" }));
-    expect(screen.queryByTestId("plan-diagram-viewport")).toBeNull();
+    expect(screen.getByTestId("plan-diagram-viewport")).not.toBeVisible();
     expect(
       screen
         .getAllByTestId("plan-grid-node-type")
         .map((cell) => cell.textContent)
     ).toEqual(["Bitmap Heap Scan", "Bitmap Index Scan"]);
-    expect(screen.getByText("2 nodes · estimated cost 39.18")).toBeVisible();
+    // The diagram stays mounted behind this tab, so the totals it also draws
+    // are in the document; this one belongs to the panel on screen.
+    expect(
+      within(screen.getByRole("tabpanel")).getByText(
+        "2 nodes · estimated cost 39.18"
+      )
+    ).toBeVisible();
   });
 
   test("keeps the selection when moving between the diagram and grid", () => {
@@ -133,7 +139,7 @@ describe("QueryPlanViewer", () => {
     renderViewer();
 
     fireEvent.click(screen.getByRole("tab", { name: "Summary" }));
-    expect(screen.queryByTestId("plan-diagram-viewport")).toBeNull();
+    expect(screen.getByTestId("plan-diagram-viewport")).not.toBeVisible();
     expect(screen.getByTestId("plan-summary")).toBeInTheDocument();
     expect(
       screen
@@ -177,10 +183,10 @@ describe("QueryPlanViewer", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Raw plan" }));
     expect(screen.getByText(/"Node Type": "Bitmap Heap Scan"/)).toBeVisible();
-    expect(screen.queryByTestId("plan-diagram-viewport")).toBeNull();
+    expect(screen.getByTestId("plan-diagram-viewport")).not.toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: "Diagram" }));
-    expect(screen.getByTestId("plan-diagram-viewport")).toBeInTheDocument();
+    expect(screen.getByTestId("plan-diagram-viewport")).toBeVisible();
   });
 
   test("shows the statement on the query tab", () => {
@@ -249,10 +255,17 @@ describe("QueryPlanViewer", () => {
 
   test("names the selected node in the URL, which is what shares it", () => {
     renderViewer();
-    expect(location.hash).toBe("#node-0");
 
     fireEvent.click(screen.getByRole("button", { name: /Bitmap Index Scan/ }));
     expect(location.hash).toBe("#node-0.0");
+  });
+
+  test("leaves the URL alone until the reader picks a node", () => {
+    renderViewer();
+
+    // A fragment written on load would make the next reload look like a
+    // followed deep link, which reveals its node over the view the page fits.
+    expect(location.hash).toBe("");
   });
 
   test("opens on the node a fragment names", () => {
@@ -274,8 +287,8 @@ describe("QueryPlanViewer", () => {
     expect(
       screen.getByRole("heading", { name: "Bitmap Heap Scan" })
     ).toBeInTheDocument();
-    // The stale fragment is replaced by one that does name a node.
-    expect(location.hash).toBe("#node-0");
+    // The fragment is the reader's; a load neither follows nor rewrites it.
+    expect(location.hash).toBe("#node-9.9.9");
   });
 
   test("ignores a fragment that is not about a node at all", () => {
@@ -296,6 +309,20 @@ describe("QueryPlanViewer", () => {
     expect(
       screen.getByRole("heading", { name: "Bitmap Index Scan" })
     ).toBeInTheDocument();
+  });
+
+  test("keeps the diagram's zoom while the reader moves between tabs", () => {
+    renderViewer();
+    const canvas = () => screen.getByTestId("plan-diagram-canvas").style.transform;
+
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    const zoomed = canvas();
+    expect(zoomed).toContain("scale(1.25)");
+
+    openTab("Grid");
+    openTab("Diagram");
+
+    expect(canvas()).toBe(zoomed);
   });
 
   test("keeps a subtree folded while the reader moves between tabs", () => {

@@ -35,7 +35,7 @@ const cellsOf = (row: HTMLElement) =>
     .map((cell) => cell.textContent);
 const barWidth = (index: number) =>
   Number.parseFloat(
-    screen.getAllByTestId("plan-grid-cost-bar")[index].style.width
+    screen.getAllByTestId("plan-cost-share-bar")[index].style.width
   );
 
 describe("QueryPlanGrid", () => {

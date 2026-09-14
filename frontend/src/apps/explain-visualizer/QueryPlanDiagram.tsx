@@ -17,6 +17,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+// Deep import: `@/utils` (the barrel) transitively pulls in Monaco, which this
+// standalone entry never loads. `minmax` itself is a leaf math helper.
+import { minmax } from "@/utils/math";
 import { PlanMiniMap } from "./PlanMiniMap";
 import {
   layoutPlan,
@@ -43,6 +46,7 @@ import {
   planHighlightIntensity,
   planSelfCostShare,
 } from "./plan-model";
+import { PlanCostShareBar } from "./plan-shared";
 
 interface Props {
   readonly tree: PlanTree;
@@ -66,8 +70,23 @@ const PAN_THRESHOLD = 4;
 const IDENTITY_VIEWPORT: PlanViewport = { scale: 1, x: 0, y: 0 };
 const UNMEASURED: PlanViewportSize = { width: 0, height: 0 };
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
+/**
+ * What one wheel notch means in CSS pixels when the event reports something
+ * else. Firefox reports the wheel in lines and some devices in pages; read as
+ * pixels, a line-mode notch would move the zoom by a fraction of a percent.
+ */
+const WHEEL_LINE_PIXELS = 40;
+const WHEEL_PAGE_PIXELS = 800;
+
+function wheelPixels(event: WheelEvent): number {
+  if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+    return event.deltaY * WHEEL_LINE_PIXELS;
+  }
+  if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+    return event.deltaY * WHEEL_PAGE_PIXELS;
+  }
+  return event.deltaY;
+}
 
 /** Semantic surface each shading scale tints a card with. */
 const HIGHLIGHT_CLASS: Record<Exclude<PlanHighlightMode, "off">, string> = {
@@ -202,7 +221,7 @@ export function QueryPlanDiagram({
   const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
     viewIsUsersRef.current = true;
     setView((prev) => {
-      const scale = clamp(prev.scale * factor, MIN_SCALE, MAX_SCALE);
+      const scale = minmax(prev.scale * factor, MIN_SCALE, MAX_SCALE);
       const ratio = scale / prev.scale;
       return {
         scale,
@@ -228,7 +247,7 @@ export function QueryPlanDiagram({
       setView(IDENTITY_VIEWPORT);
       return;
     }
-    const scale = clamp(
+    const scale = minmax(
       Math.min(measured.width / layout.width, measured.height / layout.height),
       MIN_SCALE,
       1
@@ -246,6 +265,10 @@ export function QueryPlanDiagram({
   }, []);
 
   useLayoutEffect(() => {
+    // `fitToView` is rebuilt whenever the layout is, so this also runs when a
+    // collapse re-lays out the plan. Folding a subtree away must not throw out
+    // a view the reader placed, so only an untouched view refits.
+    if (viewIsUsersRef.current) return;
     fitToView();
   }, [fitToView]);
 
@@ -271,7 +294,7 @@ export function QueryPlanDiagram({
       event.preventDefault();
       const rect = element.getBoundingClientRect();
       zoomAt(
-        Math.exp(-event.deltaY / 400),
+        Math.exp(-wheelPixels(event) / 400),
         event.clientX - rect.left,
         event.clientY - rect.top
       );
@@ -329,6 +352,154 @@ export function QueryPlanDiagram({
     [onSelect]
   );
 
+  // Panning and zooming change `view` on every frame of a drag. The cards and
+  // edges do not depend on it — the canvas they sit on carries the transform —
+  // so they are built once per layout and reused across those frames.
+  const edges = useMemo(
+    () =>
+      layout.edges.map((edge) => (
+        <path
+          key={edge.id}
+          data-testid="plan-diagram-edge"
+          data-plan-edge-rows={edge.target.rows}
+          d={edge.path}
+          // The enclosing svg stays transparent to pointers so a drag anywhere
+          // on the canvas pans; the stroke takes them back so its title
+          // surfaces on hover.
+          className="pointer-events-auto fill-none stroke-control-border"
+          strokeWidth={planEdgeWidth(edge.target.rows, tree)}
+          strokeLinecap="round"
+        >
+          <title>{`${formatPlanCount(edge.target.rows)} estimated rows`}</title>
+        </path>
+      )),
+    [layout, tree]
+  );
+
+  const cards = useMemo(
+    () =>
+      layout.nodes.map((placed) => {
+        const { node, x, y } = placed;
+        const selected = node.id === selectedId;
+        const metrics = `cost ${formatPlanCost(node.totalCost)} · rows ${formatPlanCount(node.rows)}`;
+        const share = planSelfCostShare(node, tree);
+        const fullScan = isFlaggedFullScan(node);
+        const collapsed = collapsedIds.has(node.id);
+        const subtreeCount = planDescendantCount(node);
+        // "Outer" is the default relationship and carries no information.
+        const relationship =
+          node.relationship === "Outer" ? undefined : node.relationship;
+        return (
+          <div
+            key={node.id}
+            className="absolute"
+            style={{
+              left: x,
+              top: y,
+              width: PLAN_NODE_WIDTH,
+              height: PLAN_NODE_HEIGHT,
+            }}
+          >
+            <Button
+              appearance="outline"
+              data-testid="plan-node-card"
+              aria-pressed={selected}
+              // The card's stacked lines concatenate into an unreadable name,
+              // so it states its own. The full-scan warning is an icon with a
+              // hover-only explanation, so the label has to carry it too.
+              aria-label={[
+                node.nodeType,
+                relationship,
+                node.subject,
+                metrics,
+                `${formatPlanShare(share)} of plan cost`,
+                fullScan ? "full table scan" : undefined,
+                collapsed
+                  ? `${formatPlanCount(subtreeCount)} nodes hidden`
+                  : undefined,
+              ]
+                .filter(Boolean)
+                .join(", ")}
+              onClick={() => selectNode(node.id)}
+              // Tabbing through a large plan has to be able to see where it
+              // has got to, so a card off screen brings itself on.
+              onFocus={() => {
+                if (
+                  !planNodeOnScreen(placed, sizeRef.current, viewRef.current)
+                ) {
+                  panTo(planNodeCenter(placed));
+                }
+              }}
+              className={cn(
+                "absolute inset-0 h-auto items-stretch justify-start overflow-hidden rounded-sm bg-background p-0 text-left",
+                selected
+                  ? "border-accent ring-2 ring-accent"
+                  : "hover:border-control"
+              )}
+            >
+              <PlanNodeTint node={node} tree={tree} highlight={highlight} />
+              <span className="relative flex min-w-0 flex-1 flex-col gap-1 px-2.5 py-2">
+                <span className="flex w-full items-center gap-1">
+                  <span className="min-w-0 flex-1 truncate text-sm leading-5 font-medium text-main">
+                    {node.nodeType}
+                  </span>
+                  {fullScan ? (
+                    // A native SVG title rather than a `Tooltip`: a large plan
+                    // would otherwise mount one tooltip provider per flagged
+                    // scan, and the detail pane states the same warning in the
+                    // accessibility tree.
+                    <TriangleAlert
+                      aria-hidden="true"
+                      data-testid="plan-node-full-scan"
+                      className="size-3.5 shrink-0 text-warning"
+                    >
+                      <title>{PLAN_FULL_SCAN_HINT}</title>
+                    </TriangleAlert>
+                  ) : null}
+                  {relationship ? (
+                    <span className="shrink-0 rounded-xs bg-control-bg px-1 text-xs leading-4 text-control-light">
+                      {relationship}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="w-full truncate text-xs leading-4 text-control-light">
+                  {node.subject ?? "—"}
+                </span>
+                <span className="w-full truncate text-xs leading-4 text-control">
+                  {metrics}
+                </span>
+                <span className="flex w-full items-center gap-2">
+                  <PlanCostShareBar share={share} className="min-w-0 flex-1" />
+                  <span className="shrink-0 text-xs leading-4 text-control-light tabular-nums">
+                    {formatPlanShare(share)}
+                  </span>
+                </span>
+              </span>
+            </Button>
+
+            {node.children.length > 0 ? (
+              <PlanCollapseToggle
+                node={node}
+                collapsed={collapsed}
+                hiddenCount={subtreeCount}
+                onToggle={() => onToggleCollapse(node.id)}
+              />
+            ) : null}
+          </div>
+        );
+      }),
+    [
+      layout,
+      tree,
+      highlight,
+      selectedId,
+      collapsedIds,
+      selectNode,
+      panTo,
+      onToggleCollapse,
+    ]
+  );
+
   return (
     <div
       ref={viewportRef}
@@ -352,139 +523,10 @@ export function QueryPlanDiagram({
           width={layout.width}
           height={layout.height}
         >
-          {layout.edges.map((edge) => (
-            <path
-              key={edge.id}
-              data-testid="plan-diagram-edge"
-              data-plan-edge-rows={edge.target.rows}
-              d={edge.path}
-              // The enclosing svg stays transparent to pointers so a drag
-              // anywhere on the canvas pans; the stroke takes them back so its
-              // title surfaces on hover.
-              className="pointer-events-auto fill-none stroke-control-border"
-              strokeWidth={planEdgeWidth(edge.target.rows, tree)}
-              strokeLinecap="round"
-            >
-              <title>{`${formatPlanCount(edge.target.rows)} estimated rows`}</title>
-            </path>
-          ))}
+          {edges}
         </svg>
 
-        {layout.nodes.map((placed) => {
-          const { node, x, y } = placed;
-          const selected = node.id === selectedId;
-          const metrics = `cost ${formatPlanCost(node.totalCost)} · rows ${formatPlanCount(node.rows)}`;
-          const share = planSelfCostShare(node, tree);
-          const fullScan = isFlaggedFullScan(node);
-          const collapsed = collapsedIds.has(node.id);
-          const subtreeCount = planDescendantCount(node);
-          // "Outer" is the default relationship and carries no information.
-          const relationship =
-            node.relationship === "Outer" ? undefined : node.relationship;
-          return (
-            <div
-              key={node.id}
-              className="absolute"
-              style={{
-                left: x,
-                top: y,
-                width: PLAN_NODE_WIDTH,
-                height: PLAN_NODE_HEIGHT,
-              }}
-            >
-              <Button
-                appearance="outline"
-                data-testid="plan-node-card"
-                aria-pressed={selected}
-                // The card's stacked lines concatenate into an unreadable name,
-                // so it states its own. The full-scan warning is an icon with a
-                // hover-only explanation, so the label has to carry it too.
-                aria-label={[
-                  node.nodeType,
-                  relationship,
-                  node.subject,
-                  metrics,
-                  `${formatPlanShare(share)} of plan cost`,
-                  fullScan ? "full table scan" : undefined,
-                  collapsed
-                    ? `${formatPlanCount(subtreeCount)} nodes hidden`
-                    : undefined,
-                ]
-                  .filter(Boolean)
-                  .join(", ")}
-                onClick={() => selectNode(node.id)}
-                // Tabbing through a large plan has to be able to see where it
-                // has got to, so a card off screen brings itself on.
-                onFocus={() => {
-                  if (
-                    !planNodeOnScreen(placed, sizeRef.current, viewRef.current)
-                  ) {
-                    panTo(planNodeCenter(placed));
-                  }
-                }}
-                className={cn(
-                  "absolute inset-0 h-auto items-stretch justify-start overflow-hidden rounded-sm bg-background p-0 text-left",
-                  selected
-                    ? "border-accent ring-2 ring-accent"
-                    : "hover:border-control"
-                )}
-              >
-                <PlanNodeTint node={node} tree={tree} highlight={highlight} />
-                <span className="relative flex min-w-0 flex-1 flex-col gap-1 px-2.5 py-2">
-                  <span className="flex w-full items-center gap-1">
-                    <span className="min-w-0 flex-1 truncate text-sm leading-5 font-medium text-main">
-                      {node.nodeType}
-                    </span>
-                    {fullScan ? (
-                      <Tooltip content={PLAN_FULL_SCAN_HINT}>
-                        <TriangleAlert
-                          aria-hidden="true"
-                          data-testid="plan-node-full-scan"
-                          className="size-3.5 shrink-0 text-warning"
-                        />
-                      </Tooltip>
-                    ) : null}
-                    {relationship ? (
-                      <span className="shrink-0 rounded-xs bg-control-bg px-1 text-xs leading-4 text-control-light">
-                        {relationship}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="w-full truncate text-xs leading-4 text-control-light">
-                    {node.subject ?? "—"}
-                  </span>
-                  <span className="w-full truncate text-xs leading-4 text-control">
-                    {metrics}
-                  </span>
-                  <span className="flex w-full items-center gap-2">
-                    <span
-                      aria-hidden="true"
-                      className="h-1 min-w-0 flex-1 overflow-hidden rounded-full bg-control-bg"
-                    >
-                      <span
-                        data-testid="plan-node-cost-share-bar"
-                        className="block h-full rounded-full bg-warning"
-                        style={{ width: `${share * 100}%` }}
-                      />
-                    </span>
-                    <span className="shrink-0 text-xs leading-4 text-control-light tabular-nums">
-                      {formatPlanShare(share)}
-                    </span>
-                  </span>
-                </span>
-              </Button>
-
-              {node.children.length > 0 ? (
-                <PlanCollapseToggle
-                  node={node}
-                  collapsed={collapsed}
-                  hiddenCount={subtreeCount}
-                  onToggle={() => onToggleCollapse(node.id)}
-                />
-              ) : null}
-            </div>
-          );
-        })}
+        {cards}
       </div>
 
       {planFitsViewport(layout, size, view) ? null : (

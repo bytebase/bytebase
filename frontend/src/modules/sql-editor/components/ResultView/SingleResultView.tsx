@@ -121,7 +121,7 @@ type DocumentViewMode = "TABLE" | "JSON";
  * them twice and doubled the 100k-row allocation on large result sets.
  */
 export function SingleResultView(props: SingleResultViewProps) {
-  const { disallowCopyingData, database, result, resultIndex = 0 } = props;
+  const { disallowCopyingData, database, result } = props;
   const engine = getInstanceResource(database).engine;
   const [noSQLTableView, setNoSQLTableView] = useLocalStorageBoolean(
     STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW,

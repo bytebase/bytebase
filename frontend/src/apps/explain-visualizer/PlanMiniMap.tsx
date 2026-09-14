@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import {
   PLAN_NODE_HEIGHT,
@@ -81,18 +81,11 @@ export function PlanMiniMap({
     [panToEvent]
   );
 
-  if (map.scale <= 0) return null;
-
-  return (
-    <div
-      ref={surfaceRef}
-      aria-hidden="true"
-      data-testid="plan-mini-map"
-      onPointerDown={startDrag}
-      style={{ width: map.width, height: map.height }}
-      className="absolute bottom-2 left-2 cursor-pointer overflow-hidden rounded-xs border border-control-border bg-background/90"
-    >
-      {layout.nodes.map(({ node, x, y }) => (
+  // Only the frame moves as the reader pans, and a pan re-renders on every
+  // frame, so the dots are built once per plan rather than once per frame.
+  const dots = useMemo(
+    () =>
+      layout.nodes.map(({ node, x, y }) => (
         <span
           key={node.id}
           data-testid="plan-mini-map-node"
@@ -107,7 +100,22 @@ export function PlanMiniMap({
             height: PLAN_NODE_HEIGHT * map.scale,
           }}
         />
-      ))}
+      )),
+    [layout, map.scale, selectedId]
+  );
+
+  if (map.scale <= 0) return null;
+
+  return (
+    <div
+      ref={surfaceRef}
+      aria-hidden="true"
+      data-testid="plan-mini-map"
+      onPointerDown={startDrag}
+      style={{ width: map.width, height: map.height }}
+      className="absolute bottom-2 left-2 cursor-pointer overflow-hidden rounded-xs border border-control-border bg-background/90"
+    >
+      {dots}
       <span
         data-testid="plan-mini-map-viewport"
         className="absolute border border-accent bg-accent/15"

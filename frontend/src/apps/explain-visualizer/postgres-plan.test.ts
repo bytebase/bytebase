@@ -8,8 +8,18 @@ import {
   POSTGRES_PLAN_EMPTY_MESSAGE,
   POSTGRES_PLAN_INVALID_JSON_MESSAGE,
   POSTGRES_PLAN_NO_PLAN_MESSAGE,
+  POSTGRES_PLAN_TOO_DEEP_MESSAGE,
   parsePostgresPlan,
 } from "./postgres-plan";
+
+/** A chain of `depth` nodes, the shape that drives every recursive walk. */
+const nestedPlan = (depth: number): string => {
+  let plan: Record<string, unknown> = { "Node Type": "Seq Scan" };
+  for (let level = 1; level < depth; level += 1) {
+    plan = { "Node Type": "Nested Loop", Plans: [plan] };
+  }
+  return JSON.stringify([{ Plan: plan }]);
+};
 
 const parseFixture = (fixture: unknown): PlanTree => {
   const result = parsePostgresPlan(JSON.stringify(fixture));
@@ -217,5 +227,19 @@ describe("parsePostgresPlan", () => {
     ['[{"Plan": "not an object"}]', POSTGRES_PLAN_NO_PLAN_MESSAGE],
   ])("rejects %j with a specific message", (source, message) => {
     expect(parsePostgresPlan(source)).toEqual({ ok: false, message });
+  });
+
+  test("reads a plan nested deeper than anything the planner produces", () => {
+    const result = parsePostgresPlan(nestedPlan(100));
+    expect(result.ok && result.tree.nodes).toHaveLength(100);
+  });
+
+  test("rejects a plan nested deeper than the walks over it can go", () => {
+    // Past the cap, a plan is refused here rather than overflowing the stack
+    // later, in a render with no error boundary over it.
+    expect(parsePostgresPlan(nestedPlan(2000))).toEqual({
+      ok: false,
+      message: POSTGRES_PLAN_TOO_DEEP_MESSAGE,
+    });
   });
 });

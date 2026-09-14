@@ -32,12 +32,28 @@ const PROMOTED_KEYS = new Set([
   "Subplan Name",
 ]);
 
+/**
+ * Deepest plan this file will build.
+ *
+ * Both this parser and the model's walks (`flattenPlan`, `planRows`,
+ * `planPath`) recurse once per level, so a pathological nesting depth
+ * overflows the stack. Without a cap that happens during render, where there
+ * is no error boundary to catch it and React unmounts the page instead of
+ * showing the parse error. The cap is an order of magnitude below the depth
+ * any of those walks fails at, and far above any plan PostgreSQL produces.
+ */
+const MAX_PLAN_DEPTH = 500;
+
 export const POSTGRES_PLAN_EMPTY_MESSAGE =
   "PostgreSQL returned no query plan for this statement.";
 export const POSTGRES_PLAN_INVALID_JSON_MESSAGE =
   "The query plan is not valid JSON. EXPLAIN (FORMAT JSON) output is expected.";
 export const POSTGRES_PLAN_NO_PLAN_MESSAGE =
   'The query plan JSON does not contain a "Plan" object.';
+export const POSTGRES_PLAN_TOO_DEEP_MESSAGE = `The query plan nests more than ${MAX_PLAN_DEPTH} levels deep, which is deeper than this visualizer can draw.`;
+
+/** Raised by `toPlanNode` and caught by `parsePostgresPlan` alone. */
+const PLAN_TOO_DEEP = new Error(POSTGRES_PLAN_TOO_DEEP_MESSAGE);
 
 type JsonRecord = Record<string, unknown>;
 
@@ -169,16 +185,17 @@ function toRelationship(raw: JsonRecord): string | undefined {
   return undefined;
 }
 
-function toChildren(raw: JsonRecord, id: string): PlanNode[] {
+function toChildren(raw: JsonRecord, id: string, depth: number): PlanNode[] {
   const rawChildren = raw[CHILDREN_KEY];
   if (!Array.isArray(rawChildren)) return [];
   return rawChildren
     .filter(isRecord)
-    .map((child, index) => toPlanNode(child, `${id}.${index}`));
+    .map((child, index) => toPlanNode(child, `${id}.${index}`, depth + 1));
 }
 
-function toPlanNode(raw: JsonRecord, id: string): PlanNode {
-  const children = toChildren(raw, id);
+function toPlanNode(raw: JsonRecord, id: string, depth: number): PlanNode {
+  if (depth > MAX_PLAN_DEPTH) throw PLAN_TOO_DEEP;
+  const children = toChildren(raw, id, depth);
   const totalCost = toNumber(raw["Total Cost"]);
   const childCost = children.reduce((sum, child) => sum + child.totalCost, 0);
   return {
@@ -238,5 +255,10 @@ export function parsePostgresPlan(source: string): PlanParseResult {
     return { ok: false, message: POSTGRES_PLAN_NO_PLAN_MESSAGE };
   }
 
-  return { ok: true, tree: buildPlanTree(toPlanNode(entry["Plan"], "0")) };
+  try {
+    return { ok: true, tree: buildPlanTree(toPlanNode(entry["Plan"], "0", 0)) };
+  } catch (error) {
+    if (error !== PLAN_TOO_DEEP) throw error;
+    return { ok: false, message: POSTGRES_PLAN_TOO_DEEP_MESSAGE };
+  }
 }

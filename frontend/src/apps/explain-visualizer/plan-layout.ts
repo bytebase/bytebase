@@ -1,4 +1,7 @@
 import { hierarchy, tree } from "d3-hierarchy";
+// Deep import: `@/utils` (the barrel) transitively pulls in Monaco, which this
+// standalone entry never loads. `minmax` itself is a leaf math helper.
+import { minmax } from "@/utils/math";
 import type { PlanNode } from "./plan-model";
 
 /**
@@ -153,9 +156,6 @@ export interface PlanRect {
   readonly height: number;
 }
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
-
 /** The middle of a card, in content space. */
 export function planNodeCenter(placed: PlanLayoutNode): {
   x: number;
@@ -263,19 +263,25 @@ export function planMiniMap(
   );
   const width = layout.width * scale;
   const height = layout.height * scale;
-  // Undo the pan and zoom to get the visible window in content space, then
-  // redraw it at the mini-map's own scale, trimmed to the plan's bounds.
-  const x = clamp((-view.x / view.scale) * scale, 0, width);
-  const y = clamp((-view.y / view.scale) * scale, 0, height);
+  // Undo the pan and zoom to place a screen coordinate on the mini-map. Both
+  // edges of the window are trimmed to the plan's bounds and the size comes
+  // from the trimmed edges: taking it from the untrimmed window instead would
+  // draw a pan past the left or top edge as more of the plan than is on screen.
+  const onMap = (screen: number, pan: number) =>
+    ((screen - pan) / view.scale) * scale;
+  const left = minmax(onMap(0, view.x), 0, width);
+  const top = minmax(onMap(0, view.y), 0, height);
+  const right = minmax(onMap(size.width, view.x), left, width);
+  const bottom = minmax(onMap(size.height, view.y), top, height);
   return {
     scale,
     width,
     height,
     viewport: {
-      x,
-      y,
-      width: clamp((size.width / view.scale) * scale, 0, width - x),
-      height: clamp((size.height / view.scale) * scale, 0, height - y),
+      x: left,
+      y: top,
+      width: right - left,
+      height: bottom - top,
     },
   };
 }

@@ -210,7 +210,7 @@ describe("QueryPlanSummary", () => {
     ]);
     expect(
       Number.parseFloat(
-        screen.getAllByTestId("plan-operation-share-bar")[0].style.width
+        screen.getAllByTestId("plan-cost-share-bar")[0].style.width
       )
     ).toBeCloseTo((897 / 1465.93) * 100, 4);
   });

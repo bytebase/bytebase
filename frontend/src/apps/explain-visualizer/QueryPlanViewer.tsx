@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Panel,
   Group as PanelGroup,
@@ -227,7 +227,14 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
   // Naming the selection in the fragment is what makes a node shareable. It
   // replaces rather than pushes, so Back leaves the page instead of walking
   // through every node the reader clicked on the way here.
+  //
+  // Only a selection the reader moved is written: naming the root on load
+  // would turn every reload into a followed deep link, which reveals the node
+  // and takes the view away from the fit the page opened on.
+  const writtenSelection = useRef(selectedId);
   useEffect(() => {
+    if (selectedId === writtenSelection.current) return;
+    writtenSelection.current = selectedId;
     const fragment = planNodeFragment(selectedId);
     if (location.hash !== fragment) {
       history.replaceState(null, "", fragment);
@@ -265,6 +272,9 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
 
       <TabsPanel
         value="diagram"
+        // The diagram holds the reader's zoom and pan, which unmounting would
+        // throw away; the other tabs keep nothing a remount would lose.
+        keepMounted
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         <PlanWithDetails stacked={stacked} node={selectedNode}>

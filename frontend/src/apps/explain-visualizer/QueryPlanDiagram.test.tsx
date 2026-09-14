@@ -144,7 +144,7 @@ describe("QueryPlanDiagram", () => {
     renderDiagram();
     const barOf = (label: string) =>
       cardFor(label).querySelector<HTMLElement>(
-        "[data-testid='plan-node-cost-share-bar']"
+        "[data-testid='plan-cost-share-bar']"
       );
 
     // The scan of `orders` owns 819 of the plan's 1,465.93 cost units.
@@ -228,6 +228,69 @@ describe("QueryPlanDiagram", () => {
     expect(canvasTransform()).toContain("scale(1.25)");
     fireEvent.click(screen.getByRole("button", { name: "Zoom out" }));
     expect(canvasTransform()).toContain("scale(1)");
+  });
+
+  test("zooms the same amount whether a notch arrives in pixels or lines", () => {
+    sizeViewport(600, 400);
+    renderDiagram();
+    const viewport = screen.getByTestId("plan-diagram-viewport");
+    const scaleNow = () =>
+      Number(/scale\(([\d.]+)\)/.exec(canvasTransform())?.[1] ?? "0");
+    const fitted = scaleNow();
+
+    // Chrome sends one notch as pixels; Firefox sends the same notch as lines.
+    fireEvent.wheel(viewport, { deltaY: 120, deltaMode: 0 });
+    const byPixels = scaleNow();
+    expect(byPixels).toBeLessThan(fitted);
+
+    fireEvent.click(screen.getByRole("button", { name: "Fit to view" }));
+    fireEvent.wheel(viewport, { deltaY: 3, deltaMode: 1 });
+
+    expect(scaleNow()).toBeCloseTo(byPixels, 10);
+  });
+
+  test("keeps a view the reader placed when a collapse re-lays out the plan", () => {
+    sizeViewport(600, 400);
+    const plan = tree();
+    const { rerender } = renderDiagram({ tree: plan });
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
+    const placed = canvasTransform();
+
+    rerender(
+      <QueryPlanDiagram
+        tree={plan}
+        selectedId="0"
+        onSelect={() => undefined}
+        highlight="off"
+        collapsedIds={new Set(["0.0.0"])}
+        onToggleCollapse={() => undefined}
+      />
+    );
+
+    expect(screen.getAllByTestId("plan-node-card")).toHaveLength(3);
+    expect(canvasTransform()).toBe(placed);
+  });
+
+  test("still fits a plan the reader has not moved when it re-lays out", () => {
+    sizeViewport(600, 400);
+    const plan = tree();
+    const { rerender } = renderDiagram({ tree: plan });
+    const fitted = canvasTransform();
+
+    rerender(
+      <QueryPlanDiagram
+        tree={plan}
+        selectedId="0"
+        onSelect={() => undefined}
+        highlight="off"
+        collapsedIds={new Set(["0.0.0"])}
+        onToggleCollapse={() => undefined}
+      />
+    );
+
+    // A narrower plan fits at a larger scale, so the fit has to be redone.
+    expect(canvasTransform()).not.toBe(fitted);
+    expect(screen.getAllByTestId("plan-node-card")).toHaveLength(3);
   });
 
   test("tints cards only while a highlight mode is on", () => {

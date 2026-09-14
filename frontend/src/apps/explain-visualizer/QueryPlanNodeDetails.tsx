@@ -7,18 +7,10 @@ import {
   PLAN_FULL_SCAN_HINT,
   type PlanNode,
 } from "./plan-model";
+import { PlanMetric } from "./plan-shared";
 
 interface Props {
   readonly node: PlanNode | undefined;
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-32 flex-1 flex-col gap-1">
-      <dt className="text-xs leading-4 text-control-light">{label}</dt>
-      <dd className="text-sm leading-5 text-main tabular-nums">{value}</dd>
-    </div>
-  );
 }
 
 export function QueryPlanNodeDetails({ node }: Props) {
@@ -65,11 +57,14 @@ export function QueryPlanNodeDetails({ node }: Props) {
       <Separator />
 
       <dl className="flex flex-wrap gap-4">
-        <Metric label="Startup cost" value={formatPlanCost(node.startupCost)} />
-        <Metric label="Total cost" value={formatPlanCost(node.totalCost)} />
-        <Metric label="Self cost" value={formatPlanCost(node.selfCost)} />
-        <Metric label="Estimated rows" value={formatPlanCount(node.rows)} />
-        <Metric
+        <PlanMetric
+          label="Startup cost"
+          value={formatPlanCost(node.startupCost)}
+        />
+        <PlanMetric label="Total cost" value={formatPlanCost(node.totalCost)} />
+        <PlanMetric label="Self cost" value={formatPlanCost(node.selfCost)} />
+        <PlanMetric label="Estimated rows" value={formatPlanCount(node.rows)} />
+        <PlanMetric
           label="Row width"
           value={`${formatPlanCount(node.width)} bytes`}
         />

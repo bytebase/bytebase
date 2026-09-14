@@ -1,6 +1,6 @@
 import { Info } from "lucide-react";
 import type { ReactNode } from "react";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -24,6 +24,11 @@ import {
   planSelfCostShare,
   planTimeline,
 } from "./plan-model";
+import {
+  PlanCostShareBar,
+  PlanMetric,
+  SECONDARY_COLUMN_CLASS,
+} from "./plan-shared";
 
 interface Props {
   readonly tree: PlanTree;
@@ -57,8 +62,6 @@ function spanGeometry(start: number, end: number) {
 const LABEL_COLUMN_CLASS = "sm:w-56 sm:shrink-0";
 /** Width of the trailing share column in the lists that carry one. */
 const SHARE_COLUMN_CLASS = "w-12 shrink-0 text-right";
-/** Estimates a phone-width reader can give up to keep the identity readable. */
-const SECONDARY_COLUMN_CLASS = "hidden sm:table-cell";
 
 const ROW_BUTTON_CLASS =
   "h-auto w-full justify-start rounded-xs px-2 py-1.5 text-left font-normal";
@@ -85,25 +88,16 @@ function Section({
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex min-w-32 flex-1 flex-col gap-1">
-      <dt className="text-xs leading-4 text-control-light">{label}</dt>
-      <dd className="text-sm leading-5 text-main tabular-nums">{value}</dd>
-    </div>
-  );
-}
-
 function PlanTotals({ tree }: { tree: PlanTree }) {
   return (
     <div className="flex flex-col gap-3">
       <dl className="flex flex-wrap gap-4">
-        <Metric label="Nodes" value={formatPlanCount(tree.nodes.length)} />
-        <Metric
+        <PlanMetric label="Nodes" value={formatPlanCount(tree.nodes.length)} />
+        <PlanMetric
           label="Total estimated cost"
           value={formatPlanCost(tree.root.totalCost)}
         />
-        <Metric
+        <PlanMetric
           label="Estimated rows returned"
           value={formatPlanCount(tree.root.rows)}
         />
@@ -120,7 +114,13 @@ function PlanTotals({ tree }: { tree: PlanTree }) {
   );
 }
 
-function TimelineRow({
+/**
+ * One node as a span on the plan's cost axis.
+ *
+ * Memoized because a selection change re-renders the timeline, and every other
+ * row of a large plan is drawing exactly what it drew before.
+ */
+const TimelineRow = memo(function TimelineRow({
   row,
   tree,
   selected,
@@ -190,7 +190,7 @@ function TimelineRow({
       </Button>
     </li>
   );
-}
+});
 
 function CostTimeline({
   tree,
@@ -345,16 +345,10 @@ function CostByOperation({ tree }: { tree: PlanTree }) {
             </TableCell>
             <TableCell className="py-2 pr-4">
               <span className="flex items-center justify-end gap-2">
-                <span
-                  aria-hidden="true"
-                  className="h-1.5 w-10 shrink-0 overflow-hidden rounded-full bg-control-bg sm:w-20"
-                >
-                  <span
-                    data-testid="plan-operation-share-bar"
-                    className="block h-full rounded-full bg-warning"
-                    style={{ width: `${operation.share * 100}%` }}
-                  />
-                </span>
+                <PlanCostShareBar
+                  share={operation.share}
+                  className="w-10 shrink-0 sm:w-20"
+                />
                 <span className="w-12 shrink-0 text-right text-xs leading-4 text-main tabular-nums">
                   {formatPlanShare(operation.share)}
                 </span>

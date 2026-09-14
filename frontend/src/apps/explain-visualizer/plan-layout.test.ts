@@ -334,6 +334,19 @@ describe("planMiniMap", () => {
     expect(past.viewport).toMatchObject({ x: 160, width: 0 });
   });
 
+  test("reports only the part of an over-panned window that is on the plan", () => {
+    // Panned 300px past the plan's left edge, so only 100 of the window's 400
+    // pixels have any plan under them.
+    const map = planMiniMap(
+      { ...layout, width: 1000, height: 500 },
+      { width: 400, height: 300 },
+      { scale: 1, x: 300, y: 0 },
+      box
+    );
+
+    expect(map.viewport).toMatchObject({ x: 0, width: 16 });
+  });
+
   test("has nothing to draw for an empty or unscaled plan", () => {
     expect(planMiniMap({ ...layout, width: 0 }, box, VIEW, box).scale).toBe(0);
     expect(planMiniMap(layout, box, { scale: 0, x: 0, y: 0 }, box).scale).toBe(

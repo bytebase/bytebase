@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import {
   Table,
   TableBody,
@@ -16,10 +16,12 @@ import {
 import {
   formatPlanCost,
   formatPlanCount,
+  type PlanRow,
   type PlanTree,
   planRows,
   planSelfCostShare,
 } from "./plan-model";
+import { PlanCostShareBar, SECONDARY_COLUMN_CLASS } from "./plan-shared";
 
 interface Props {
   readonly tree: PlanTree;
@@ -28,8 +30,6 @@ interface Props {
 }
 
 const HEAD_CLASS = "sticky top-0 z-10 bg-control-bg text-xs leading-4";
-/** Estimates a phone-width reader can give up to keep the node column usable. */
-const SECONDARY_COLUMN_CLASS = "hidden sm:table-cell";
 const NUMERIC_CELL_CLASS =
   "py-2 text-right text-xs leading-4 text-control tabular-nums";
 
@@ -97,6 +97,103 @@ function PlanTreeGuides({
   );
 }
 
+/**
+ * One plan node as a row.
+ *
+ * Memoized because a selection change re-renders the grid, and every other row
+ * of a large plan is drawing exactly what it drew before.
+ */
+const PlanGridRow = memo(function PlanGridRow({
+  row: { node, depth, branchContinues },
+  index,
+  tree,
+  selected,
+  tabStop,
+  onSelect,
+  onKeyDown,
+}: {
+  row: PlanRow;
+  index: number;
+  tree: PlanTree;
+  selected: boolean;
+  tabStop: boolean;
+  onSelect: (id: string) => void;
+  onKeyDown: (
+    event: React.KeyboardEvent<HTMLTableRowElement>,
+    id: string
+  ) => void;
+}) {
+  return (
+    <TableRow
+      data-testid="plan-grid-row"
+      data-plan-node-id={node.id}
+      aria-selected={selected}
+      aria-level={depth + 1}
+      tabIndex={tabStop ? 0 : -1}
+      onClick={() => onSelect(node.id)}
+      onKeyDown={(event) => onKeyDown(event, node.id)}
+      className={cn(
+        "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+        selected && "bg-accent/10 hover:bg-accent/15"
+      )}
+    >
+      <TableCell className="px-3 py-2 text-right text-xs leading-4 text-control-light tabular-nums">
+        {index + 1}
+      </TableCell>
+
+      <TableCell className="relative py-2">
+        <PlanTreeGuides branchContinues={branchContinues} />
+        <div
+          data-testid="plan-grid-node"
+          className="relative flex min-w-0 items-baseline gap-2"
+          style={{ paddingLeft: planIndentPixels(depth) }}
+        >
+          <span
+            data-testid="plan-grid-node-type"
+            className={cn(
+              "truncate text-sm leading-5",
+              selected ? "font-medium text-accent" : "text-main"
+            )}
+          >
+            {node.nodeType}
+          </span>
+          {node.subject ? (
+            <span
+              data-testid="plan-grid-node-subject"
+              title={node.subject}
+              className="min-w-0 flex-1 truncate text-xs leading-4 text-control-light"
+            >
+              {node.subject}
+            </span>
+          ) : null}
+        </div>
+      </TableCell>
+
+      <TableCell className="py-2 pr-4 pl-2">
+        <div className="flex items-center justify-end gap-2">
+          <PlanCostShareBar
+            share={planSelfCostShare(node, tree)}
+            className="w-10 shrink-0 sm:w-16"
+          />
+          <span className="text-xs leading-4 text-main tabular-nums">
+            {formatPlanCost(node.selfCost)}
+          </span>
+        </div>
+      </TableCell>
+
+      <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+        {formatPlanCost(node.totalCost)}
+      </TableCell>
+      <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+        {formatPlanCount(node.rows)}
+      </TableCell>
+      <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+        {formatPlanCount(node.width)}
+      </TableCell>
+    </TableRow>
+  );
+});
+
 export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
   const rows = useMemo(() => planRows(tree.root), [tree]);
 
@@ -106,43 +203,43 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
     ? selectedId
     : rows[0]?.node.id;
 
-  // Each row carries its own node id, so arrow navigation can walk siblings
-  // instead of holding a ref per row.
-  const moveTo = (element: Element | null | undefined) => {
-    if (!(element instanceof HTMLTableRowElement)) return;
-    const id = element.dataset.planNodeId;
-    if (id === undefined) return;
-    element.focus();
-    onSelect(id);
-  };
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTableRowElement>, id: string) => {
+      // Each row carries its own node id, so arrow navigation can walk
+      // siblings instead of holding a ref per row.
+      const moveTo = (element: Element | null | undefined) => {
+        if (!(element instanceof HTMLTableRowElement)) return;
+        const next = element.dataset.planNodeId;
+        if (next === undefined) return;
+        element.focus();
+        onSelect(next);
+      };
 
-  const handleKeyDown = (
-    event: React.KeyboardEvent<HTMLTableRowElement>,
-    id: string
-  ) => {
-    const row = event.currentTarget;
-    switch (event.key) {
-      case "ArrowDown":
-        moveTo(row.nextElementSibling);
-        break;
-      case "ArrowUp":
-        moveTo(row.previousElementSibling);
-        break;
-      case "Home":
-        moveTo(row.parentElement?.firstElementChild);
-        break;
-      case "End":
-        moveTo(row.parentElement?.lastElementChild);
-        break;
-      case "Enter":
-      case " ":
-        onSelect(id);
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-  };
+      const row = event.currentTarget;
+      switch (event.key) {
+        case "ArrowDown":
+          moveTo(row.nextElementSibling);
+          break;
+        case "ArrowUp":
+          moveTo(row.previousElementSibling);
+          break;
+        case "Home":
+          moveTo(row.parentElement?.firstElementChild);
+          break;
+        case "End":
+          moveTo(row.parentElement?.lastElementChild);
+          break;
+        case "Enter":
+        case " ":
+          onSelect(id);
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+    },
+    [onSelect]
+  );
 
   return (
     <div
@@ -199,93 +296,18 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
         </TableHeader>
 
         <TableBody striped={false}>
-          {rows.map(({ node, depth, branchContinues }, index) => {
-            const selected = node.id === selectedId;
-            return (
-              <TableRow
-                key={node.id}
-                data-testid="plan-grid-row"
-                data-plan-node-id={node.id}
-                aria-selected={selected}
-                aria-level={depth + 1}
-                tabIndex={node.id === tabStopId ? 0 : -1}
-                onClick={() => onSelect(node.id)}
-                onKeyDown={(event) => handleKeyDown(event, node.id)}
-                className={cn(
-                  "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
-                  selected && "bg-accent/10 hover:bg-accent/15"
-                )}
-              >
-                <TableCell className="px-3 py-2 text-right text-xs leading-4 text-control-light tabular-nums">
-                  {index + 1}
-                </TableCell>
-
-                <TableCell className="relative py-2">
-                  <PlanTreeGuides branchContinues={branchContinues} />
-                  <div
-                    data-testid="plan-grid-node"
-                    className="relative flex min-w-0 items-baseline gap-2"
-                    style={{ paddingLeft: planIndentPixels(depth) }}
-                  >
-                    <span
-                      data-testid="plan-grid-node-type"
-                      className={cn(
-                        "truncate text-sm leading-5",
-                        selected ? "font-medium text-accent" : "text-main"
-                      )}
-                    >
-                      {node.nodeType}
-                    </span>
-                    {node.subject ? (
-                      <span
-                        data-testid="plan-grid-node-subject"
-                        title={node.subject}
-                        className="min-w-0 flex-1 truncate text-xs leading-4 text-control-light"
-                      >
-                        {node.subject}
-                      </span>
-                    ) : null}
-                  </div>
-                </TableCell>
-
-                <TableCell className="py-2 pr-4 pl-2">
-                  <div className="flex items-center justify-end gap-2">
-                    <span
-                      aria-hidden="true"
-                      className="h-1.5 w-10 shrink-0 overflow-hidden rounded-full bg-control-bg sm:w-16"
-                    >
-                      <span
-                        data-testid="plan-grid-cost-bar"
-                        className="block h-full rounded-full bg-warning"
-                        style={{
-                          width: `${planSelfCostShare(node, tree) * 100}%`,
-                        }}
-                      />
-                    </span>
-                    <span className="text-xs leading-4 text-main tabular-nums">
-                      {formatPlanCost(node.selfCost)}
-                    </span>
-                  </div>
-                </TableCell>
-
-                <TableCell
-                  className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}
-                >
-                  {formatPlanCost(node.totalCost)}
-                </TableCell>
-                <TableCell
-                  className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}
-                >
-                  {formatPlanCount(node.rows)}
-                </TableCell>
-                <TableCell
-                  className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}
-                >
-                  {formatPlanCount(node.width)}
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          {rows.map((row, index) => (
+            <PlanGridRow
+              key={row.node.id}
+              row={row}
+              index={index}
+              tree={tree}
+              selected={row.node.id === selectedId}
+              tabStop={row.node.id === tabStopId}
+              onSelect={onSelect}
+              onKeyDown={handleKeyDown}
+            />
+          ))}
         </TableBody>
       </Table>
     </div>

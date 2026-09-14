@@ -642,8 +642,6 @@ describe("SingleResultView explain visualizer", () => {
         result={create(QueryResultSchema, {
           columnNames: ["QUERY PLAN"],
           columnTypeNames: ["TEXT"],
-          columnNames: ["QUERY PLAN"],
-          columnTypeNames: ["TEXT"],
           statement: "SELECT 1",
           rows: [
             create(QueryRowSchema, {
@@ -800,8 +798,6 @@ describe("SingleResultView explain visualizer", () => {
         result={create(QueryResultSchema, {
           columnNames: ["QUERY PLAN"],
           columnTypeNames: ["JSON"],
-          columnNames: ["QUERY PLAN"],
-          columnTypeNames: ["TEXT"],
           statement: "SELECT 1",
           rows: [
             create(QueryRowSchema, {
