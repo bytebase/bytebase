@@ -77,7 +77,7 @@ export function DatabaseActionBar({
     return () => observer.disconnect();
   }, [actions]);
 
-  const inline = actions.slice(0, visibleCount);
+  const inline = actions.slice(0, visibleCount).reverse();
   const overflow = actions.slice(visibleCount);
   return (
     <div
@@ -106,47 +106,13 @@ export function DatabaseActionBar({
           </span>
         </div>
       </div>
-      {inline.map((action) => (
-        <div key={action.key} className="shrink-0">
-          {action.wrap(
-            action.options ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={<Button appearance="outline" />}
-                  disabled={action.disabled}
-                >
-                  <action.icon className="size-4" />
-                  {action.label}
-                  <ChevronDown className="size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  {action.options.map((option) => (
-                    <DropdownMenuItem key={option.key} onClick={option.onClick}>
-                      {option.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button
-                appearance="outline"
-                disabled={action.disabled}
-                onClick={action.onClick}
-              >
-                <action.icon className="size-4" />
-                {action.label}
-              </Button>
-            )
-          )}
-        </div>
-      ))}
       {overflow.length > 0 && (
         <DropdownMenu>
           <DropdownMenuTrigger render={<Button appearance="outline" />}>
             <MoreHorizontal className="size-4" />
             {t("common.more")}
           </DropdownMenuTrigger>
-          <DropdownMenuContent>
+          <DropdownMenuContent align="start">
             {overflow.map((action) => (
               <div key={action.key}>
                 {action.wrap(
@@ -183,6 +149,40 @@ export function DatabaseActionBar({
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+      {inline.map((action) => (
+        <div key={action.key} className="shrink-0">
+          {action.wrap(
+            action.options ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={<Button appearance="outline" />}
+                  disabled={action.disabled}
+                >
+                  <action.icon className="size-4" />
+                  {action.label}
+                  <ChevronDown className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {action.options.map((option) => (
+                    <DropdownMenuItem key={option.key} onClick={option.onClick}>
+                      {option.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                appearance="outline"
+                disabled={action.disabled}
+                onClick={action.onClick}
+              >
+                <action.icon className="size-4" />
+                {action.label}
+              </Button>
+            )
+          )}
+        </div>
+      ))}
       <div ref={primaryRef} className="shrink-0">
         {primary}
       </div>

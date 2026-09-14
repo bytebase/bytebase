@@ -46,6 +46,14 @@ test("keeps actions visible when they fit and overflows by priority as space shr
   expect(screen.queryByRole("button", { name: "common.more" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Transfer Project" })).toBeDisabled();
 
+  expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
+    "Transfer Project", "Export Schema", "Sync Database", "Change Database",
+  ]);
+  resize(450);
+  expect(screen.getAllByRole("button").map((button) => button.textContent)).toEqual([
+    "common.more", "Sync Database", "Change Database",
+  ]);
+
   resize(350);
   expect(screen.getByRole("button", { name: "Change Database" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Sync Database" })).not.toBeInTheDocument();
