@@ -72,7 +72,9 @@ func TestOmniIsRoleOrSearchPathSet(t *testing.T) {
 }
 
 func TestSessionSettings(t *testing.T) {
-	const statement = `SET search_path = a;
+	const statement = `SET search_path = z;
+DISCARD ALL;
+SET search_path = a;
 BEGIN;
 SET LOCAL search_path = b;
 SET ROLE r;

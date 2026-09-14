@@ -201,6 +201,10 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				addTable(&n.TableOrIndex.Table, true)
 			default:
 			}
+		case *tree.Discard:
+			if n.Mode == tree.DiscardModeAll {
+				searchPath, sessionSearchPath = defaultSearchPath, defaultSearchPath
+			}
 		case *tree.BeginTransaction:
 			transactionSearchPath = sessionSearchPath
 		case *tree.CommitTransaction:

@@ -93,7 +93,9 @@ BEGIN;
 SET search_path TO app;
 COMMIT AND CHAIN;
 ROLLBACK;
-UPDATE t SET c = 9;`
+UPDATE t SET c = 9;
+DISCARD ALL;
+UPDATE t SET c = 10;`
 	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
 	require.NoError(t, err)
 	got, err := extractChangedResources("db", "", dbMetadata, base.ExtractASTs(stmts), statement)
@@ -108,6 +110,7 @@ UPDATE t SET c = 9;`
 		"UPDATE t SET c = 7;",
 		"UPDATE t SET c = 8;",
 		"SET LOCAL search_path TO \"app\";\nUPDATE t SET c = 9;",
+		"UPDATE t SET c = 10;",
 	}, got.DMLStatements)
 }
 

@@ -89,6 +89,11 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			default:
 			}
 
+		case *ast.DiscardStmt:
+			if n.Target == ast.DISCARD_ALL {
+				searchPath, sessionSearchPath = initialSearchPath, initialSearchPath
+			}
+
 		case *ast.VariableSetStmt:
 			var newSearchPath []string
 			if n.Kind == ast.VAR_RESET_ALL || (strings.EqualFold(n.Name, "search_path") && (n.Kind == ast.VAR_RESET || n.Kind == ast.VAR_SET_DEFAULT)) {

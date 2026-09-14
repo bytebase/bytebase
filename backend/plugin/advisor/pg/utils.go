@@ -185,7 +185,7 @@ func omniAlterTableCmds(alter *ast.AlterTableStmt) []*ast.AlterTableCmd {
 
 // sessionSettings holds the statements that set the role or search path, which an EXPLAIN replays:
 // session settings, and SET LOCAL settings until their transaction ends. ROLLBACK also drops the
-// session settings of its transaction.
+// session settings of its transaction, and DISCARD ALL drops every setting.
 type sessionSettings struct {
 	session []string
 	local   []string
@@ -203,6 +203,10 @@ func (s *sessionSettings) add(node ast.Node, text string) {
 			s.local = append(s.local, text)
 		default:
 			s.session = append(s.session, text)
+		}
+	case *ast.DiscardStmt:
+		if n.Target == ast.DISCARD_ALL {
+			s.session, s.local, s.transactionStart = nil, nil, 0
 		}
 	case *ast.TransactionStmt:
 		switch n.Kind {
