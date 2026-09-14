@@ -219,6 +219,11 @@ func TestShapeKey(t *testing.T) {
 			want:       "UPDATE t1 SET c2=? WHERE t1.c3>?",
 		},
 		{
+			name:       "leading-dot decimals",
+			statements: []string{"UPDATE t SET v = .1 WHERE id > .5", "UPDATE t SET v = .10 WHERE id > .75e2"},
+			want:       "UPDATE t SET v=.? WHERE id>.?",
+		},
+		{
 			name:        "MySQL family numbers",
 			statements:  []string{"UPDATE t1 SET c2 = 0x1F WHERE t1.c3 > 1e3", "UPDATE t1 SET c2 = 0b101 WHERE t1.c3 > 7"},
 			mysqlFamily: true,
