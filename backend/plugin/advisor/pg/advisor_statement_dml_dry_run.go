@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
 
@@ -11,6 +12,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 )
 
 var (
@@ -72,14 +74,19 @@ func (*statementDMLDryRunRule) Name() string {
 
 func (r *statementDMLDryRunRule) OnStatement(node ast.Node) {
 	r.settings.add(node, r.TrimmedStmtText())
-	switch node.(type) {
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
-		r.checkDMLDryRun()
+	node, text := pgparser.UnwrapExplainAnalyze(node, r.StmtText)
+	switch n := node.(type) {
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
+		r.checkDMLDryRun(text)
+	case *ast.SelectStmt:
+		if hasDataModifyingCTE(n.WithClause) {
+			r.checkDMLDryRun(text)
+		}
 	default:
 	}
 }
 
-func (r *statementDMLDryRunRule) checkDMLDryRun() {
+func (r *statementDMLDryRunRule) checkDMLDryRun(text string) {
 	// Check if we've hit the maximum number of EXPLAIN queries
 	if r.explainCount >= common.MaximumLintExplainSize {
 		return
@@ -87,7 +94,7 @@ func (r *statementDMLDryRunRule) checkDMLDryRun() {
 
 	r.explainCount++
 
-	statementText := r.TrimmedStmtText()
+	statementText := strings.TrimRight(strings.TrimSpace(text), ";")
 
 	// Run EXPLAIN to perform dry run
 	_, err := advisor.Query(r.ctx, advisor.QueryContext{

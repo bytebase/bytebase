@@ -18,8 +18,8 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 )
 
-// explainFake stands in for PostgreSQL behind advisor.Query. It answers `EXPLAIN (FORMAT JSON)`
-// with the plan registered for the statement and fails to explain any other statement.
+// explainFake stands in for PostgreSQL behind advisor.Query. It answers `EXPLAIN (FORMAT JSON)` or
+// `EXPLAIN` with the plan registered for the statement and fails to explain any other statement.
 type explainFake struct {
 	plans map[string]string
 
@@ -71,6 +71,9 @@ func (explainFakeConn) ExecContext(context.Context, string, []driver.NamedValue)
 
 func (c explainFakeConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	statement, ok := strings.CutPrefix(query, "EXPLAIN (FORMAT JSON) ")
+	if !ok {
+		statement, ok = strings.CutPrefix(query, "EXPLAIN ")
+	}
 	if !ok {
 		return nil, errors.Errorf("unexpected query %q", query)
 	}
