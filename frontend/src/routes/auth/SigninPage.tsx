@@ -294,7 +294,7 @@ export function SigninPage(props: SigninPageProps) {
                 // with the localized text inside <terms>/<privacy> tags.
                 terms: (
                   <a
-                    href="https://www.bytebase.com/terms"
+                    href="https://www.bytebase.com/legal/terms"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-control"
