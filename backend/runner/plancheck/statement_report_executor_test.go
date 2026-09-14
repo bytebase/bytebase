@@ -215,8 +215,14 @@ func TestShapeKey(t *testing.T) {
 		},
 		{
 			name:       "numbers",
-			statements: []string{"UPDATE t1 SET c2 = 0x1F WHERE t1.c3 > 1e3", "UPDATE t1 SET c2 = 7 WHERE t1.c3 > 1.5e-3"},
+			statements: []string{"UPDATE t1 SET c2 = 0x1F WHERE t1.c3 > 1e3", "UPDATE t1 SET c2 = 7 WHERE t1.c3 > 1.5e-3", "UPDATE t1 SET c2 = 0B1010 WHERE t1.c3 > 0o17", "UPDATE t1 SET c2 = 0xFF_FF WHERE t1.c3 > 1_000.5"},
 			want:       "UPDATE t1 SET c2=? WHERE t1.c3>?",
+		},
+		{
+			name:        "MySQL family numbers",
+			statements:  []string{"UPDATE t1 SET c2 = 0x1F WHERE t1.c3 > 1e3", "UPDATE t1 SET c2 = 0b101 WHERE t1.c3 > 7"},
+			mysqlFamily: true,
+			want:        "UPDATE t1 SET c2=? WHERE t1.c3>?",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -256,6 +262,10 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE t SET v = $$it's$$ WHERE id = 1", "UPDATE t SET v = $$it's$$"},
 		} {
 			require.NotEqual(t, shapeKey(pair[0], false), shapeKey(pair[1], false), pair[0])
+			require.NotEqual(t, shapeKey(pair[0], true), shapeKey(pair[1], true), pair[0])
+		}
+		// On MySQL, a word such as 0X1F, 0o17, or 1_000 is an identifier.
+		for _, pair := range [][2]string{{"UPDATE t SET v = 0X1F", "UPDATE t SET v = 0X20"}, {"UPDATE t SET v = 0o17", "UPDATE t SET v = 0o20"}, {"UPDATE t SET v = 1_000", "UPDATE t SET v = 1_001"}} {
 			require.NotEqual(t, shapeKey(pair[0], true), shapeKey(pair[1], true), pair[0])
 		}
 		// -- starts a comment on PostgreSQL, but on MySQL only before whitespace.

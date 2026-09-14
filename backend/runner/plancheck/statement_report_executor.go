@@ -439,7 +439,7 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			}
 			i = end
 		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])):
-			if end := numberEnd(statement, i); end >= 0 {
+			if end := numberEnd(statement, i, mysqlFamily); end >= 0 {
 				i = end
 				write('?')
 				break
@@ -506,18 +506,37 @@ func commentEnd(statement string, start int) int {
 	return len(statement)
 }
 
-// numberEnd returns the offset just past the decimal or hexadecimal number that starts at start, or
-// -1 when the word there is not a number.
-func numberEnd(statement string, start int) int {
-	isDigit := func(i int) bool { return i < len(statement) && '0' <= statement[i] && statement[i] <= '9' }
+// numberEnd returns the offset just past the number that starts at start, or -1 when the word there
+// is not a number: a decimal, or a 0x hexadecimal or 0b binary integer. Outside mysqlFamily, where
+// words such as 0X1F, 0o17, and 1_000 are identifiers, it also reads uppercase prefixes, PostgreSQL's
+// 0o octal integers, and _ between digits.
+func numberEnd(statement string, start int, mysqlFamily bool) int {
+	isDigit := func(i int, digits string) bool {
+		return i < len(statement) && (strings.IndexByte(digits, statement[i]) >= 0 || (!mysqlFamily && statement[i] == '_'))
+	}
+	prefixDigits := ""
+	if start+1 < len(statement) && statement[start] == '0' {
+		switch c := statement[start+1]; {
+		case c == 'x' || (c == 'X' && !mysqlFamily):
+			prefixDigits = "0123456789abcdefABCDEF"
+		case c == 'b' || (c == 'B' && !mysqlFamily):
+			prefixDigits = "01"
+		case (c == 'o' || c == 'O') && !mysqlFamily:
+			prefixDigits = "01234567"
+		default:
+		}
+	}
 	i := start
-	if strings.HasPrefix(statement[i:], "0x") || strings.HasPrefix(statement[i:], "0X") {
+	if prefixDigits != "" {
 		i += 2
-		for i < len(statement) && strings.IndexByte("0123456789abcdefABCDEF", statement[i]) >= 0 {
+		for isDigit(i, prefixDigits) {
 			i++
 		}
+		if i == start+2 {
+			return -1
+		}
 	} else {
-		for isDigit(i) || (i < len(statement) && statement[i] == '.') {
+		for isDigit(i, "0123456789.") {
 			i++
 		}
 		if i < len(statement) && (statement[i] == 'e' || statement[i] == 'E') {
@@ -525,9 +544,9 @@ func numberEnd(statement string, start int) int {
 			if exponent < len(statement) && (statement[exponent] == '+' || statement[exponent] == '-') {
 				exponent++
 			}
-			if isDigit(exponent) {
+			if isDigit(exponent, "0123456789") {
 				i = exponent
-				for isDigit(i) {
+				for isDigit(i, "0123456789") {
 					i++
 				}
 			}
