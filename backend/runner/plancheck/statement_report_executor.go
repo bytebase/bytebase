@@ -363,8 +363,8 @@ func groupStatementsByShape(statements []string, mysqlFamily bool) []*statementS
 
 // shapeKey replaces the string and numeric literals of a statement with ? and drops whitespace that
 // does not separate words. Everything else keeps its text, including identifiers, their case, and
-// comments. mysqlFamily applies the MySQL, MariaDB, TiDB, and OceanBase rule that a backslash escapes
-// the next character of a quoted string.
+// comments with the numbers in them, such as optimizer hints. mysqlFamily applies the MySQL,
+// MariaDB, TiDB, and OceanBase rule that a backslash escapes the next character of a quoted string.
 func shapeKey(statement string, mysqlFamily bool) string {
 	var b strings.Builder
 	space := false
@@ -399,8 +399,13 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			write(c)
 			b.WriteString(statement[i+1 : end])
 			i = end
-		// The version after /*! or /*M! decides whether MySQL or MariaDB runs the comment, so it stays.
-		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])) && !strings.HasSuffix(statement[:i], "/*!") && !strings.HasSuffix(statement[:i], "/*M!"):
+		case strings.HasPrefix(statement[i:], "--") || strings.HasPrefix(statement[i:], "/*"):
+			// Copying never drops text, so a marker misread as a comment only splits shapes.
+			end := commentEnd(statement, i)
+			write(c)
+			b.WriteString(statement[i+1 : end])
+			i = end
+		case c >= '0' && c <= '9' && (i == 0 || !isWordByte(statement[i-1])):
 			if end := numberEnd(statement, i); end >= 0 {
 				i = end
 				write('?')
@@ -420,6 +425,21 @@ func shapeKey(statement string, mysqlFamily bool) string {
 		}
 	}
 	return b.String()
+}
+
+// commentEnd returns the offset just past the -- or /* comment that starts at start: the end of its
+// line or its closing */, or the end of the statement when it does not close.
+func commentEnd(statement string, start int) int {
+	if statement[start+1] == '-' {
+		if end := strings.IndexByte(statement[start:], '\n'); end >= 0 {
+			return start + end
+		}
+		return len(statement)
+	}
+	if end := strings.Index(statement[start+2:], "*/"); end >= 0 {
+		return start + 2 + end + 2
+	}
+	return len(statement)
 }
 
 // numberEnd returns the offset just past the decimal or hexadecimal number that starts at start, or

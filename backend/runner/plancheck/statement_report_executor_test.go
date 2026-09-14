@@ -200,17 +200,18 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE [2024_orders] SET v = 1", "UPDATE [2025_orders] SET v = 1"},
 			{"UPDATE 2024_orders SET v = 1", "UPDATE 2025_orders SET v = 1"},
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
-			// Comments stay in the shape, so no comment marker can hide the rest of a statement.
+			// Comments keep their text, so no comment marker can hide the rest of a statement.
 			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1"},
+			{"UPDATE /*+ CARDINALITY(t 1) */ t SET v = 1", "UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1"},
 			{"UPDATE t SET v = 1 /*!80000 WHERE id = 1 */", "UPDATE t SET v = 1 /*!99999 WHERE id = 1 */"},
 			{"UPDATE t SET v = 1 /*M!100100 WHERE id = 1 */", "UPDATE t SET v = 1 /*M!999999 WHERE id = 1 */"},
 			{"UPDATE /*+ CARDINALITY(t 1000000) */ t SET v = 1", "UPDATE t SET v = 1"},
 			{"UPDATE [t--x] SET v = 1 WHERE id = 1", "UPDATE [t--x] SET v = 1"},
 			{"UPDATE t SET v = v--1 WHERE id = 1", "UPDATE t SET v = v"},
 			{"UPDATE t SET v = $$--$$ WHERE id = 1", "UPDATE t SET v = $$--$$"},
+			{"UPDATE t SET v = 1 -- don't\nWHERE id = 1", "UPDATE t SET v = 1 -- don't\n"},
 			// The quote never closes, so each statement keeps its own shape.
 			{"UPDATE t SET v = $$it's$$ WHERE id = 1", "UPDATE t SET v = $$it's$$"},
-			{"UPDATE t SET v = 1 -- don't\nWHERE id = 1", "UPDATE t SET v = 1 -- don't\n"},
 		} {
 			require.NotEqual(t, shapeKey(pair[0], false), shapeKey(pair[1], false), pair[0])
 			require.NotEqual(t, shapeKey(pair[0], true), shapeKey(pair[1], true), pair[0])
