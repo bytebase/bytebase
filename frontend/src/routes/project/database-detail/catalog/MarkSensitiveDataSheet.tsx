@@ -81,7 +81,7 @@ export function MarkSensitiveDataSheet({
         columnCatalog: {
           semanticType: semanticTypeId,
         },
-        notification: "common.updated",
+        notification: t("common.updated"),
       });
       onOpenChange(false);
     } finally {

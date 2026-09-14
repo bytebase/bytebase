@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
-import i18n from "@/lib/i18n";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type {
@@ -84,7 +83,7 @@ export const updateColumnCatalog = async ({
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: i18n.t(notification),
+    title: notification,
   });
 };
 
@@ -93,13 +92,13 @@ export const updateTableCatalog = async ({
   schema,
   table,
   tableCatalog,
-  notification = "common.updated",
+  notification,
 }: {
   database: string;
   schema: string;
   table: string;
   tableCatalog: Partial<TableCatalog>;
-  notification?: string;
+  notification: string;
 }) => {
   const dbCatalogStore = useAppStore.getState();
   const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });
@@ -134,6 +133,6 @@ export const updateTableCatalog = async ({
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: i18n.t(notification),
+    title: notification,
   });
 };

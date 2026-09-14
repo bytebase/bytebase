@@ -18,9 +18,11 @@ vi.mock("@/stores/app", () => ({
   useAppStore: { getState: () => mocks },
 }));
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
-vi.mock("@/lib/i18n", () => ({ default: { t: (key: string) => key } }));
+vi.mock("@/lib/i18n", () => ({
+  default: { t: (key: string) => `translated:${key}` },
+}));
 
-test("updates multiple columns together without losing existing catalog data", async () => {
+test("updates multiple columns and uses the provided localized notification", async () => {
   const catalog = create(DatabaseCatalogSchema, {
     name: "instances/instance/databases/database/catalog",
     schemas: [
@@ -52,7 +54,7 @@ test("updates multiple columns together without losing existing catalog data", a
     table: "customers",
     column: ["email", "phone"],
     columnCatalog: { semanticType: "bb.default" },
-    notification: "common.updated",
+    notification: "Updated",
   });
 
   expect(mocks.updateDatabaseCatalog).toHaveBeenCalledTimes(1);
@@ -91,4 +93,7 @@ test("updates multiple columns together without losing existing catalog data", a
     },
   });
   expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
+  expect(mocks.pushNotification).toHaveBeenCalledWith(
+    expect.objectContaining({ title: "Updated" })
+  );
 });
