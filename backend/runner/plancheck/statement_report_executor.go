@@ -303,7 +303,8 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 	var dmlRows, estimatedRows int64
 	estimated := 0
 	// The unestimated statements of a sampled shape count as that shape's average estimate; the
-	// statements of other shapes, and DML statements without text, count as the overall average.
+	// statements of other shapes, and DML statements without text, count as the overall average and
+	// are reported as not estimated.
 	unestimated := max(changeSummary.DMLCount-len(changeSummary.DMLStatements), 0)
 	for _, shape := range shapes {
 		estimatedRows = common.AddRows(estimatedRows, shape.rows)
@@ -329,8 +330,8 @@ func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSum
 		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d sampled DML statements: %v", len(failures), sampled, failures[0])
 	case estimated == 0 && changeSummary.DMLCount > 0:
 		warning = fmt.Sprintf("Affected rows could not be estimated for %d DML statements.", changeSummary.DMLCount)
-	case changeSummary.DMLCount > len(changeSummary.DMLStatements):
-		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d DML statements.", changeSummary.DMLCount-len(changeSummary.DMLStatements), changeSummary.DMLCount)
+	case unestimated > 0:
+		warning = fmt.Sprintf("Affected rows could not be estimated for %d of %d DML statements.", unestimated, changeSummary.DMLCount)
 	default:
 	}
 	return totalAffectedRows, warning

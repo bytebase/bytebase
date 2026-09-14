@@ -77,6 +77,7 @@ func TestCalculateAffectedRows(t *testing.T) {
 			statements:   append(repeat(10, "UPDATE t%d SET c = 1;", 10), estimate{"DELETE FROM a;", 1000, nil}, estimate{"DELETE FROM b;", 1000, nil}),
 			dmlCount:     12,
 			wantRows:     120,
+			wantWarning:  "Affected rows could not be estimated for 2 of 12 DML statements.",
 			wantExplains: 10,
 		},
 		{
