@@ -3677,6 +3677,7 @@
       "instance-title": "Conectar la instancia",
       "mark-sensitive-data-description": "Selecciona una columna y asigna un tipo semántico para que Bytebase pueda aplicar enmascaramiento de datos.",
       "mark-sensitive-data-title": "Marcar datos sensibles",
+      "mark-sensitive-fields-description": "Abre una tabla o colección y asigna tipos semánticos a los campos sensibles de su catálogo.",
       "project-description": "Crea primero un proyecto. Las bases de datos se pueden sincronizar en él después de conectar la instancia.",
       "project-title": "Crear un proyecto",
       "transfer-description": "Selecciona una o más bases de datos y transfiérelas al proyecto.",

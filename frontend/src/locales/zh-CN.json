@@ -3677,6 +3677,7 @@
       "instance-title": "连接实例",
       "mark-sensitive-data-description": "选择一列并分配语义类型，以便 Bytebase 应用数据脱敏。",
       "mark-sensitive-data-title": "标记敏感数据",
+      "mark-sensitive-fields-description": "打开表或集合，在其目录中为敏感字段分配语义类型。",
       "project-description": "先创建一个项目。实例连接后，数据库可以同步到该项目中。",
       "project-title": "创建项目",
       "transfer-description": "选择一个或多个数据库，然后转移到项目。",

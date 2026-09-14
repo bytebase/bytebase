@@ -3677,6 +3677,7 @@
       "instance-title": "インスタンスを接続",
       "mark-sensitive-data-description": "カラムを選択してセマンティックタイプを割り当て、Bytebase がデータマスキングを適用できるようにします。",
       "mark-sensitive-data-title": "機密データをマーク",
+      "mark-sensitive-fields-description": "テーブルまたはコレクションを開き、カタログ内の機密フィールドにセマンティックタイプを割り当てます。",
       "project-description": "まずプロジェクトを作成します。インスタンス接続後、データベースをそのプロジェクトに同期できます。",
       "project-title": "プロジェクトを作成",
       "transfer-description": "1つ以上のデータベースを選択し、プロジェクトに転送します。",

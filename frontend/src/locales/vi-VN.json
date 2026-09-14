@@ -3677,6 +3677,7 @@
       "instance-title": "Kết nối instance",
       "mark-sensitive-data-description": "Chọn một cột và gán kiểu ngữ nghĩa để Bytebase có thể áp dụng che dữ liệu.",
       "mark-sensitive-data-title": "Đánh dấu dữ liệu nhạy cảm",
+      "mark-sensitive-fields-description": "Mở bảng hoặc bộ sưu tập và gán kiểu ngữ nghĩa cho các trường nhạy cảm trong catalog.",
       "project-description": "Tạo một dự án trước. Cơ sở dữ liệu có thể được đồng bộ vào dự án đó sau khi instance được kết nối.",
       "project-title": "Tạo dự án",
       "transfer-description": "Chọn một hoặc nhiều cơ sở dữ liệu, sau đó chuyển chúng vào dự án.",
