@@ -11,6 +11,13 @@ import (
 // classifyStatementTypes returns the type of the statement followed by the types of its
 // data-modifying CTEs, each type once.
 func classifyStatementTypes(node ast.Node) []storepb.StatementType {
+	if explain, ok := node.(*ast.ExplainStmt); ok {
+		// Only EXPLAIN ANALYZE executes the statement it explains.
+		if !isExplainAnalyzeOmni(explain) {
+			return nil
+		}
+		node = explain.Query
+	}
 	var types []storepb.StatementType
 	add := func(statementType storepb.StatementType) {
 		if statementType != storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED && !slices.Contains(types, statementType) {

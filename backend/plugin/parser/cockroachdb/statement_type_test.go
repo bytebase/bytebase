@@ -48,6 +48,7 @@ func TestGetStatementTypes(t *testing.T) {
 		{statement: `ALTER TYPE e ADD VALUE 'c'`, want: []storepb.StatementType{storepb.StatementType_ALTER_TYPE}},
 		{statement: `ALTER TABLE t RENAME TO t2`, want: []storepb.StatementType{storepb.StatementType_ALTER_TABLE}},
 		{statement: `ALTER VIEW v RENAME TO v2`, want: []storepb.StatementType{storepb.StatementType_ALTER_VIEW}},
+		{statement: `ALTER MATERIALIZED VIEW mv RENAME TO mv2`, want: []storepb.StatementType{storepb.StatementType_ALTER_TABLE}},
 		{statement: `ALTER SEQUENCE s RENAME TO s2`, want: []storepb.StatementType{storepb.StatementType_RENAME_SEQUENCE}},
 		{statement: `ALTER INDEX t@idx RENAME TO idx2`, want: []storepb.StatementType{storepb.StatementType_RENAME_INDEX}},
 		{statement: `ALTER SCHEMA app RENAME TO app2`, want: []storepb.StatementType{storepb.StatementType_RENAME_SCHEMA}},
@@ -71,6 +72,9 @@ func TestGetStatementTypes(t *testing.T) {
 			statement: `CREATE TABLE t_moved AS SELECT * FROM [DELETE FROM t RETURNING *]`,
 			want:      []storepb.StatementType{storepb.StatementType_CREATE_TABLE, storepb.StatementType_DELETE},
 		},
+		{statement: `EXPLAIN ANALYZE DELETE FROM t WHERE id = 1`, want: []storepb.StatementType{storepb.StatementType_DELETE}},
+		{statement: `EXPLAIN ANALYZE (VERBOSE) UPSERT INTO t VALUES (1)`, want: []storepb.StatementType{storepb.StatementType_INSERT}},
+		{statement: `EXPLAIN DELETE FROM t WHERE id = 1`},
 		{statement: `SELECT * FROM t`},
 	} {
 		t.Run(tc.statement, func(t *testing.T) {

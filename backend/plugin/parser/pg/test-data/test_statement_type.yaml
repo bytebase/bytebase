@@ -140,3 +140,12 @@
     - INSERT
     - DELETE
     - UPDATE
+- statement: EXPLAIN ANALYZE MERGE INTO t1 USING t2 ON t1.id = t2.id WHEN MATCHED THEN DELETE;
+  want:
+    - MERGE
+- statement: EXPLAIN (ANALYZE, BUFFERS) WITH d AS (DELETE FROM t1 RETURNING id) UPDATE t2 SET c = 1 FROM d;
+  want:
+    - UPDATE
+    - DELETE
+- statement: EXPLAIN WITH d AS (DELETE FROM t1 RETURNING id) SELECT count(*) FROM d;
+  want: []

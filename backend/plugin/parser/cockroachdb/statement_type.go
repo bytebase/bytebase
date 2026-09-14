@@ -30,6 +30,10 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 			}
 		}
 		stmt := crdbAST.Stmt.AST
+		// EXPLAIN ANALYZE executes the statement it explains.
+		if explain, ok := stmt.(*tree.ExplainAnalyze); ok {
+			stmt = explain.Statement
+		}
 		add(getStatementType(stmt))
 		if createTable, ok := stmt.(*tree.CreateTable); ok && createTable.AsSource != nil {
 			stmt = createTable.AsSource
@@ -108,7 +112,7 @@ func getStatementType(stmt tree.Statement) storepb.StatementType {
 		switch {
 		case n.IsSequence:
 			return storepb.StatementType_RENAME_SEQUENCE
-		case n.IsView:
+		case n.IsView && !n.IsMaterialized:
 			return storepb.StatementType_ALTER_VIEW
 		default:
 			return storepb.StatementType_ALTER_TABLE
