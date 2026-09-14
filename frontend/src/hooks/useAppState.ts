@@ -82,6 +82,8 @@ export function useSubscriptionState() {
   const currentPlan = useAppStore((state) => state.currentPlan());
   const isFreePlan = useAppStore((state) => state.isFreePlan());
   const isTrialing = useAppStore((state) => state.isTrialing());
+  const canStartTrial = useAppStore((state) => state.canStartTrial());
+  const startTrial = useAppStore((state) => state.startTrial);
   const isExpired = useAppStore((state) => state.isExpired());
   const daysBeforeExpire = useAppStore((state) => state.daysBeforeExpire());
   const trialingDays = useAppStore((state) => state.trialingDays());
@@ -104,6 +106,8 @@ export function useSubscriptionState() {
     currentPlan,
     isFreePlan,
     isTrialing,
+    canStartTrial,
+    startTrial,
     isExpired,
     daysBeforeExpire,
     trialingDays,

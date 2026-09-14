@@ -847,6 +847,9 @@
     "project-instance-synced-create-change-description": "Tu base de datos está lista en este proyecto. Crea un cambio de base de datos gobernado para continuar.",
     "project-instance-synced-create-change-title": "Base de datos lista para cambios",
     "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza consultando datos en SQL Editor, o crea un cambio de base de datos gobernado cuando lo necesites.",
+    "project-instance-synced-mark-sensitive-data-action": "Marcar datos sensibles",
+    "project-instance-synced-mark-sensitive-data-description": "Tu base de datos está lista en este proyecto. Marca una columna sensible para aplicar enmascaramiento de datos.",
+    "project-instance-synced-mark-sensitive-data-title": "Lista para proteger datos sensibles",
     "project-instance-synced-query-data-description": "Tu base de datos está lista en este proyecto. Abre SQL Editor para consultarla.",
     "project-instance-synced-query-data-title": "Base de datos lista para consultar",
     "project-instance-synced-sql-editor-action": "Abrir SQL Editor",
@@ -2861,6 +2864,7 @@
       "email": "Correo electrónico",
       "enable-sample-databases": "Habilitar bases de datos de ejemplo",
       "enable-sample-databases-create-change": "Habilitar bases de datos de ejemplo como destino seguro para el cambio",
+      "enable-sample-databases-mark-sensitive-data": "Habilitar bases de datos de ejemplo para probar el enmascaramiento de datos de inmediato",
       "enable-sample-databases-query-data": "Habilitar bases de datos de ejemplo para empezar a consultar de inmediato",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
@@ -2876,6 +2880,10 @@
         "create-database-change": {
           "description": "Defina un cambio y cree una incidencia rastreable.",
           "title": "Crear un cambio de base de datos"
+        },
+        "mark-sensitive-data": {
+          "description": "Identifica columnas sensibles y aplica enmascaramiento de datos.",
+          "title": "Marcar datos sensibles"
         },
         "outcome-title": "¿Qué le gustaría hacer con Bytebase?",
         "query-data": {
@@ -3641,21 +3649,20 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "Crear cambio de base de datos",
       "query": "Ir a SQL Editor"
     },
+    "all-steps-completed": "Todos los pasos completados",
     "descriptions": {
       "add-teammate": "Invite a un compañero y concédale acceso al espacio de trabajo.",
       "create-database-change": "Define un cambio de base de datos y crea su incidencia.",
       "database": "Abre una base de datos y explora sus esquemas y tablas.",
       "instance": "Conecta una instancia para que Bytebase pueda sincronizar sus bases de datos.",
+      "mark-sensitive-data": "Abre la base de datos seleccionada y asigna un tipo semántico a una columna sensible.",
       "project": "Crea un proyecto para organizar bases de datos y cambios.",
       "query-data": "Abre la base de datos seleccionada en SQL Editor y ejecuta cualquier sentencia."
     },
     "dismiss": "Cerrar guía",
     "generic": {
-      "completion-description": "Exploraste cómo se conectan tu proyecto, instancia y base de datos.",
-      "completion-title": "Tu espacio de trabajo de bases de datos está listo",
       "title": "Configurar Bytebase"
     },
     "getting-started": "Primeros pasos",
@@ -3668,6 +3675,9 @@
       "grant-access-title": "Conceder acceso al espacio de trabajo",
       "instance-description": "Crea una instancia para que Bytebase pueda conectarse a tu servidor de base de datos.",
       "instance-title": "Conectar la instancia",
+      "mark-sensitive-data-description": "Selecciona una columna y asigna un tipo semántico para que Bytebase pueda aplicar enmascaramiento de datos.",
+      "mark-sensitive-data-title": "Marcar datos sensibles",
+      "mark-sensitive-fields-description": "Abre una tabla o colección y asigna tipos semánticos a los campos sensibles de su catálogo.",
       "project-description": "Crea primero un proyecto. Las bases de datos se pueden sincronizar en él después de conectar la instancia.",
       "project-title": "Crear un proyecto",
       "transfer-description": "Selecciona una o más bases de datos y transfiérelas al proyecto.",
@@ -3678,13 +3688,12 @@
     "product-model": "Cómo funciona Bytebase",
     "scenarios": {
       "create-database-change": {
-        "completion-description": "Tu cambio de base de datos ya tiene una incidencia rastreable en Bytebase.",
-        "completion-title": "Creaste tu primer cambio de base de datos",
         "title": "Crear un cambio de base de datos"
       },
+      "mark-sensitive-data": {
+        "title": "Marcar datos sensibles"
+      },
       "query-data": {
-        "completion-description": "Abriste SQL Editor y ejecutaste una sentencia en tu base de datos.",
-        "completion-title": "Ejecutaste tu primera sentencia",
         "title": "Consultar datos"
       }
     },
@@ -3694,6 +3703,7 @@
       "create-database-change": "Crear cambio de base de datos",
       "database": "Explorar base de datos",
       "instance": "Conectar instancia",
+      "mark-sensitive-data": "Marcar datos sensibles",
       "project": "Crear proyecto",
       "query-data": "Consultar datos"
     },

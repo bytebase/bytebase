@@ -18,6 +18,7 @@ const STEP_IDS: GuideStepId[] = [
   "explore-database",
   "query-data",
   "create-database-change",
+  "mark-sensitive-data",
   "add-member",
 ];
 
@@ -29,6 +30,7 @@ const createContext = (
   hasExploredDatabase: false,
   hasRunStatement: false,
   hasCreatedChangeIssue: false,
+  hasMarkedSensitiveData: false,
   isSaaS: false,
   hasOtherHumanUser: false,
   hasOtherWorkspaceMember: false,
@@ -46,6 +48,7 @@ const completionById: Record<GuideStepId, keyof GuideContext> = {
   "explore-database": "hasExploredDatabase",
   "query-data": "hasRunStatement",
   "create-database-change": "hasCreatedChangeIssue",
+  "mark-sensitive-data": "hasMarkedSensitiveData",
   "add-member": "hasOtherWorkspaceMember",
 };
 
@@ -62,9 +65,6 @@ const definitions = STEP_IDS.map(definition);
 
 const generic: GuideJourney = {
   id: "workspace-setup",
-  completionTitleKey: "completion.generic.title",
-  completionDescriptionKey: "completion.generic.description",
-  completionActions: ["open-sql-editor", "create-change"],
   steps: [
     { stepId: "create-project" },
     { stepId: "connect-instance", dependsOn: ["create-project"] },
@@ -75,9 +75,6 @@ const generic: GuideJourney = {
 const queryData: GuideJourney = {
   id: "query-data",
   scenarioId: "query-data",
-  completionTitleKey: "completion.query.title",
-  completionDescriptionKey: "completion.query.description",
-  completionActions: ["create-change"],
   steps: [
     { stepId: "create-project", kind: "prerequisite" },
     {
@@ -135,6 +132,15 @@ describe("validateGuideJourney", () => {
     expect(() =>
       validateGuideJourney(journey as GuideJourney, definitions)
     ).toThrow(message);
+  });
+
+  test("rejects duplicate step definition ids", () => {
+    expect(() =>
+      validateGuideJourney(generic, [
+        ...definitions,
+        definition("create-project"),
+      ])
+    ).toThrow("duplicate step definition");
   });
 
   test("rejects duplicate journey ids", () => {

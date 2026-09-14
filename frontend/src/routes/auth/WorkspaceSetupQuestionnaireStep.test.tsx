@@ -28,6 +28,10 @@ vi.mock("react-i18next", () => ({
           "settings.profile.setup-scenario.query-data.title": "Query data",
           "settings.profile.setup-scenario.query-data.description":
             "Open SQL Editor and run a statement.",
+          "settings.profile.setup-scenario.mark-sensitive-data.title":
+            "Mark sensitive data",
+          "settings.profile.setup-scenario.mark-sensitive-data.description":
+            "Identify sensitive columns and apply masking.",
           "settings.profile.setup-scenario.workspace-usage.title":
             "Who will use Bytebase with you?",
           "settings.profile.setup-scenario.workspace-usage.team.title":
@@ -87,7 +91,7 @@ describe("WorkspaceSetupQuestionnaireStep", () => {
     const radios = [...page.container.querySelectorAll("[role='radio']")];
     const buttons = [...page.container.querySelectorAll("button")];
 
-    expect(radios).toHaveLength(4);
+    expect(radios).toHaveLength(5);
     expect(radios.every((radio) => radio.getAttribute("aria-checked") === "false"))
       .toBe(true);
     expect(buttons).toHaveLength(1);
@@ -97,6 +101,7 @@ describe("WorkspaceSetupQuestionnaireStep", () => {
     expect(page.container.querySelector("h1")).toHaveTextContent(
       "What would you like to do with Bytebase?"
     );
+    expect(page.container.textContent).toContain("Mark sensitive data");
     expect(page.container.textContent).not.toContain(
       "Tell us about your setup"
     );

@@ -847,6 +847,9 @@
     "project-instance-synced-create-change-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy tạo một thay đổi cơ sở dữ liệu được quản trị để tiếp tục.",
     "project-instance-synced-create-change-title": "Cơ sở dữ liệu đã sẵn sàng để thay đổi",
     "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng cách truy vấn dữ liệu trong SQL Editor, hoặc tạo thay đổi cơ sở dữ liệu được quản trị khi cần.",
+    "project-instance-synced-mark-sensitive-data-action": "Đánh dấu dữ liệu nhạy cảm",
+    "project-instance-synced-mark-sensitive-data-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Đánh dấu một cột nhạy cảm để áp dụng che dữ liệu.",
+    "project-instance-synced-mark-sensitive-data-title": "Sẵn sàng bảo vệ dữ liệu nhạy cảm",
     "project-instance-synced-query-data-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy mở SQL Editor để truy vấn.",
     "project-instance-synced-query-data-title": "Cơ sở dữ liệu đã sẵn sàng để truy vấn",
     "project-instance-synced-sql-editor-action": "Mở SQL Editor",
@@ -2861,6 +2864,7 @@
       "email": "Email",
       "enable-sample-databases": "Bật cơ sở dữ liệu mẫu",
       "enable-sample-databases-create-change": "Bật cơ sở dữ liệu mẫu làm đích thay đổi an toàn",
+      "enable-sample-databases-mark-sensitive-data": "Bật cơ sở dữ liệu mẫu để thử che dữ liệu ngay",
       "enable-sample-databases-query-data": "Bật cơ sở dữ liệu mẫu để bắt đầu truy vấn ngay",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
@@ -2876,6 +2880,10 @@
         "create-database-change": {
           "description": "Xác định thay đổi và tạo issue có thể theo dõi.",
           "title": "Tạo thay đổi cơ sở dữ liệu"
+        },
+        "mark-sensitive-data": {
+          "description": "Xác định các cột nhạy cảm và áp dụng che dữ liệu.",
+          "title": "Đánh dấu dữ liệu nhạy cảm"
         },
         "outcome-title": "Bạn muốn làm gì với Bytebase?",
         "query-data": {
@@ -3641,21 +3649,20 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "Tạo thay đổi cơ sở dữ liệu",
       "query": "Đi tới SQL Editor"
     },
+    "all-steps-completed": "Đã hoàn thành tất cả các bước",
     "descriptions": {
       "add-teammate": "Mời một thành viên và cấp quyền truy cập không gian làm việc.",
       "create-database-change": "Xác định thay đổi cơ sở dữ liệu và tạo issue cho thay đổi đó.",
       "database": "Mở một cơ sở dữ liệu và khám phá schema cùng các bảng của cơ sở dữ liệu đó.",
       "instance": "Kết nối một instance để Bytebase có thể đồng bộ các cơ sở dữ liệu.",
+      "mark-sensitive-data": "Mở cơ sở dữ liệu đã chọn và gán kiểu ngữ nghĩa cho một cột nhạy cảm.",
       "project": "Tạo một dự án để tổ chức cơ sở dữ liệu và các thay đổi.",
       "query-data": "Mở cơ sở dữ liệu đã chọn trong SQL Editor và chạy bất kỳ câu lệnh nào."
     },
     "dismiss": "Đóng hướng dẫn",
     "generic": {
-      "completion-description": "Bạn đã khám phá cách dự án, instance và cơ sở dữ liệu kết nối với nhau.",
-      "completion-title": "Không gian làm việc cơ sở dữ liệu của bạn đã sẵn sàng",
       "title": "Thiết lập Bytebase"
     },
     "getting-started": "Bắt đầu",
@@ -3668,6 +3675,9 @@
       "grant-access-title": "Cấp quyền truy cập không gian làm việc",
       "instance-description": "Tạo instance để Bytebase có thể kết nối tới máy chủ cơ sở dữ liệu của bạn.",
       "instance-title": "Kết nối instance",
+      "mark-sensitive-data-description": "Chọn một cột và gán kiểu ngữ nghĩa để Bytebase có thể áp dụng che dữ liệu.",
+      "mark-sensitive-data-title": "Đánh dấu dữ liệu nhạy cảm",
+      "mark-sensitive-fields-description": "Mở bảng hoặc bộ sưu tập và gán kiểu ngữ nghĩa cho các trường nhạy cảm trong catalog.",
       "project-description": "Tạo một dự án trước. Cơ sở dữ liệu có thể được đồng bộ vào dự án đó sau khi instance được kết nối.",
       "project-title": "Tạo dự án",
       "transfer-description": "Chọn một hoặc nhiều cơ sở dữ liệu, sau đó chuyển chúng vào dự án.",
@@ -3678,13 +3688,12 @@
     "product-model": "Cách Bytebase hoạt động",
     "scenarios": {
       "create-database-change": {
-        "completion-description": "Thay đổi cơ sở dữ liệu của bạn hiện có một issue có thể theo dõi trong Bytebase.",
-        "completion-title": "Bạn đã tạo thay đổi cơ sở dữ liệu đầu tiên",
         "title": "Tạo thay đổi cơ sở dữ liệu"
       },
+      "mark-sensitive-data": {
+        "title": "Đánh dấu dữ liệu nhạy cảm"
+      },
       "query-data": {
-        "completion-description": "Bạn đã mở SQL Editor và chạy một câu lệnh trên cơ sở dữ liệu.",
-        "completion-title": "Bạn đã chạy câu lệnh đầu tiên",
         "title": "Truy vấn dữ liệu"
       }
     },
@@ -3694,6 +3703,7 @@
       "create-database-change": "Tạo thay đổi cơ sở dữ liệu",
       "database": "Khám phá cơ sở dữ liệu",
       "instance": "Kết nối instance",
+      "mark-sensitive-data": "Đánh dấu dữ liệu nhạy cảm",
       "project": "Tạo dự án",
       "query-data": "Truy vấn dữ liệu"
     },

@@ -847,6 +847,9 @@
     "project-instance-synced-create-change-description": "你的数据库已在此项目中就绪。请创建受管数据库变更以继续。",
     "project-instance-synced-create-change-title": "数据库已可进行变更",
     "project-instance-synced-description": "你的数据库已在此项目中就绪。可以先在 SQL Editor 中查询数据，也可以在需要时创建受管数据库变更。",
+    "project-instance-synced-mark-sensitive-data-action": "标记敏感数据",
+    "project-instance-synced-mark-sensitive-data-description": "你的数据库已在此项目中就绪。标记敏感列以应用数据脱敏。",
+    "project-instance-synced-mark-sensitive-data-title": "数据库已可保护敏感数据",
     "project-instance-synced-query-data-description": "你的数据库已在此项目中就绪。请打开 SQL Editor 进行查询。",
     "project-instance-synced-query-data-title": "数据库已可查询",
     "project-instance-synced-sql-editor-action": "打开 SQL Editor",
@@ -2861,6 +2864,7 @@
       "email": "邮箱",
       "enable-sample-databases": "启用示例数据库",
       "enable-sample-databases-create-change": "启用示例数据库作为安全的变更目标",
+      "enable-sample-databases-mark-sensitive-data": "启用示例数据库以立即试用数据脱敏",
       "enable-sample-databases-query-data": "启用示例数据库以立即开始查询",
       "password": "密码",
       "password-confirm": "确认密码",
@@ -2876,6 +2880,10 @@
         "create-database-change": {
           "description": "定义变更并创建可追踪的工单。",
           "title": "创建数据库变更"
+        },
+        "mark-sensitive-data": {
+          "description": "识别敏感列并应用数据脱敏。",
+          "title": "标记敏感数据"
         },
         "outcome-title": "您想使用 Bytebase 做什么？",
         "query-data": {
@@ -3641,21 +3649,20 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "创建数据库变更",
       "query": "前往 SQL Editor"
     },
+    "all-steps-completed": "所有步骤已完成",
     "descriptions": {
       "add-teammate": "邀请团队成员并授予工作空间访问权限。",
       "create-database-change": "定义数据库变更并创建对应工单。",
       "database": "打开数据库，浏览其中的 schema 和表。",
       "instance": "连接实例，以便 Bytebase 同步其中的数据库。",
+      "mark-sensitive-data": "打开所选数据库，为敏感列分配语义类型。",
       "project": "创建项目来组织数据库和变更。",
       "query-data": "在 SQL Editor 中打开所选数据库并运行任意语句。"
     },
     "dismiss": "关闭指南",
     "generic": {
-      "completion-description": "你已了解项目、实例和数据库之间的连接关系。",
-      "completion-title": "你的数据库工作空间已准备就绪",
       "title": "设置 Bytebase"
     },
     "getting-started": "入门指南",
@@ -3668,6 +3675,9 @@
       "grant-access-title": "授予工作空间访问权限",
       "instance-description": "创建实例，让 Bytebase 可以连接到你的数据库服务器。",
       "instance-title": "连接实例",
+      "mark-sensitive-data-description": "选择一列并分配语义类型，以便 Bytebase 应用数据脱敏。",
+      "mark-sensitive-data-title": "标记敏感数据",
+      "mark-sensitive-fields-description": "打开表或集合，在其目录中为敏感字段分配语义类型。",
       "project-description": "先创建一个项目。实例连接后，数据库可以同步到该项目中。",
       "project-title": "创建项目",
       "transfer-description": "选择一个或多个数据库，然后转移到项目。",
@@ -3678,13 +3688,12 @@
     "product-model": "Bytebase 的运作方式",
     "scenarios": {
       "create-database-change": {
-        "completion-description": "你的数据库变更现在已在 Bytebase 中创建为可追踪工单。",
-        "completion-title": "你已创建第一个数据库变更",
         "title": "创建数据库变更"
       },
+      "mark-sensitive-data": {
+        "title": "标记敏感数据"
+      },
       "query-data": {
-        "completion-description": "你已打开 SQL Editor 并对数据库运行了一条语句。",
-        "completion-title": "你已运行第一条语句",
         "title": "查询数据"
       }
     },
@@ -3694,6 +3703,7 @@
       "create-database-change": "创建数据库变更",
       "database": "浏览数据库",
       "instance": "连接实例",
+      "mark-sensitive-data": "标记敏感数据",
       "project": "创建项目",
       "query-data": "查询数据"
     },

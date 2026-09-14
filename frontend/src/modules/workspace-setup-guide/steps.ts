@@ -1,5 +1,6 @@
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -12,9 +13,12 @@ import {
   CREATE_PROJECT_PRODUCT_INTRO,
   CREATE_USER_PRODUCT_INTRO,
   GRANT_ACCESS_PRODUCT_INTRO,
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
+import { autoSQLEditorDatabaseRoute } from "@/utils/auto-route";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import type {
   GuideContext,
@@ -57,7 +61,7 @@ const databaseActions = (context: GuideContext): GuideStepActions => ({
   },
 });
 
-export const GUIDE_STEP_REGISTRY: readonly GuideStepDefinition[] = [
+export const GUIDE_STEP_DEFINITIONS: readonly GuideStepDefinition[] = [
   {
     id: "create-project",
     labelKey: "workspace-setup-guide.steps.project",
@@ -105,6 +109,13 @@ export const GUIDE_STEP_REGISTRY: readonly GuideStepDefinition[] = [
     matchesRoute: (route) =>
       isRouteInside(route.name, SQL_EDITOR_DATABASE_MODULE),
     resolveActions: (context) => ({
+      select: {
+        type: "navigate",
+        target: autoSQLEditorDatabaseRoute({
+          name: context.databaseName,
+          project: context.databaseProjectName,
+        }),
+      },
       primary: {
         type: "open-sql-editor",
         database: {
@@ -128,6 +139,38 @@ export const GUIDE_STEP_REGISTRY: readonly GuideStepDefinition[] = [
         database: context.databaseName,
       },
     }),
+  },
+  {
+    id: "mark-sensitive-data",
+    labelKey: "workspace-setup-guide.steps.mark-sensitive-data",
+    descriptionKey: "workspace-setup-guide.descriptions.mark-sensitive-data",
+    isComplete: (context) => context.hasMarkedSensitiveData,
+    matchesRoute: (route) =>
+      isRouteInside(route.name, PROJECT_V1_ROUTE_DATABASE_DETAIL),
+    resolveActions: (context) => {
+      const { instance, instanceName, databaseName } =
+        extractDatabaseResourceName(context.databaseName);
+      return {
+        select: {
+          type: "navigate",
+          target: {
+            name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+            params: {
+              projectId: extractProjectResourceName(
+                context.databaseProjectName
+              ),
+              instanceId: instanceName,
+              databaseName,
+            },
+            query: {
+              parent: instance,
+              [PRODUCT_INTRO_QUERY_KEY]: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+            },
+            hash: "#catalog",
+          },
+        },
+      };
+    },
   },
   {
     id: "add-member",

@@ -38,9 +38,9 @@ export function MarkSensitiveDataSheet({
 }: MarkSensitiveDataSheetProps) {
   const { t } = useTranslation();
   const metadata = useAppDatabaseMetadata(database.name, { autoFetch: open });
-  const [schemaIndex, setSchemaIndex] = useState("");
+  const [schemaIndex, setSchemaIndex] = useState("0");
   const [tableIndex, setTableIndex] = useState("");
-  const [columnName, setColumnName] = useState("");
+  const [columnNames, setColumnNames] = useState<string[]>([]);
   const [semanticTypeId, setSemanticTypeId] = useState("bb.default");
   const [saving, setSaving] = useState(false);
 
@@ -51,7 +51,7 @@ export function MarkSensitiveDataSheet({
   const canSave =
     !!selectedSchema &&
     !!selectedTable &&
-    !!columnName &&
+    columnNames.length > 0 &&
     !!semanticTypeId &&
     !saving;
 
@@ -59,9 +59,9 @@ export function MarkSensitiveDataSheet({
     if (open) {
       return;
     }
-    setSchemaIndex("");
+    setSchemaIndex("0");
     setTableIndex("");
-    setColumnName("");
+    setColumnNames([]);
     setSemanticTypeId("bb.default");
     setSaving(false);
   }, [database.name, open]);
@@ -77,11 +77,11 @@ export function MarkSensitiveDataSheet({
         database: database.name,
         schema: selectedSchema.name,
         table: selectedTable.name,
-        column: columnName,
+        column: columnNames,
         columnCatalog: {
           semanticType: semanticTypeId,
         },
-        notification: "common.updated",
+        notification: t("common.updated"),
       });
       onOpenChange(false);
     } finally {
@@ -111,7 +111,7 @@ export function MarkSensitiveDataSheet({
                 onValueChange={(value) => {
                   setSchemaIndex(value ?? "");
                   setTableIndex("");
-                  setColumnName("");
+                  setColumnNames([]);
                 }}
               >
                 <SelectTrigger
@@ -146,7 +146,7 @@ export function MarkSensitiveDataSheet({
                 disabled={!selectedSchema}
                 onValueChange={(value) => {
                   setTableIndex(value ?? "");
-                  setColumnName("");
+                  setColumnNames([]);
                 }}
               >
                 <SelectTrigger
@@ -171,16 +171,21 @@ export function MarkSensitiveDataSheet({
             </FormField>
 
             <FormField>
-              <FormLabel htmlFor="mark-sensitive-data-column">
+              <FormLabel
+                id="mark-sensitive-data-column-label"
+                htmlFor="mark-sensitive-data-column"
+              >
                 {t("common.column")}
               </FormLabel>
               <Select
-                value={columnName}
+                multiple
+                value={columnNames}
                 disabled={!selectedTable}
-                onValueChange={(value) => setColumnName(value ?? "")}
+                onValueChange={setColumnNames}
               >
                 <SelectTrigger
                   id="mark-sensitive-data-column"
+                  aria-labelledby="mark-sensitive-data-column-label"
                   className="w-full"
                 >
                   <SelectValue placeholder={t("common.select")} />

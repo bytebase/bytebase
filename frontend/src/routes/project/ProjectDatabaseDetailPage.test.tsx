@@ -3,6 +3,11 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/lib/productIntro";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
   PROJECT_DATABASE_DETAIL_TAB_OVERVIEW,
   PROJECT_DATABASE_DETAIL_TAB_REVISION,
   PROJECT_DATABASE_DETAIL_TAB_SETTING,
@@ -453,6 +458,62 @@ beforeEach(() => {
 });
 
 describe("ProjectDatabaseDetailPage", () => {
+  test.each([
+    [Engine.MONGODB, true, "overview"],
+    [Engine.COSMOSDB, true, "overview"],
+    [Engine.ELASTICSEARCH, true, "overview"],
+    [Engine.POSTGRES, true, "catalog"],
+    [Engine.MONGODB, false, "catalog"],
+  ])(
+    "opens the supported masking tab for engine %s with intro %s",
+    (engine, intro, tab) => {
+      mocks.useProjectDatabaseDetail.mockReturnValue({
+        database: {
+          name: "instances/inst1/databases/db1",
+          project: "projects/proj1",
+          effectiveEnvironment: "environments/prod",
+          instanceResource: { name: "instances/inst1", engine },
+        },
+        ready: true,
+        isDefaultProject: false,
+      });
+      const { container, render, unmount } = renderIntoContainer(
+        createElement(ProjectDatabaseDetailPage, {
+          projectId: "proj1",
+          instanceId: "inst1",
+          databaseName: "db1",
+          routeHash: "#catalog",
+          routeQuery: intro
+            ? {
+                [PRODUCT_INTRO_QUERY_KEY]: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+                foo: "bar",
+              }
+            : {},
+        }),
+      );
+      render();
+      expect(
+        container
+          .querySelector('[data-testid="tabs"]')
+          ?.getAttribute("data-value"),
+      ).toBe(tab);
+      if (tab === "overview") {
+        expect(mocks.routerReplace).toHaveBeenCalledWith(
+          expect.objectContaining({
+            hash: "#overview",
+            query: {
+              [PRODUCT_INTRO_QUERY_KEY]: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+              foo: "bar",
+              parent: "instances/inst1",
+            },
+          }),
+        );
+      } else {
+        expect(mocks.routerReplace).not.toHaveBeenCalled();
+      }
+      unmount();
+    },
+  );
   test("shows project binding attention for a project instance database", async () => {
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {

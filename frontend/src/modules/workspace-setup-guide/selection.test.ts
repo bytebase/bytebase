@@ -3,10 +3,10 @@ import {
   storageKeyWorkspaceSetupGuideScenario,
   storageKeyWorkspaceSetupGuideWorkspaceUsage,
 } from "@/utils/storage-keys";
+import { isGuideScenarioId } from "./scenarios";
 import {
   clearGuideWorkspaceUsage,
   clearSelectedGuideScenarioId,
-  isGuideScenarioId,
   isGuideWorkspaceUsage,
   readGuideWorkspaceUsage,
   readSelectedGuideScenarioId,
@@ -72,9 +72,10 @@ describe("workspace setup guide scenario selection", () => {
     vi.restoreAllMocks();
   });
 
-  test("accepts only registered phase-one scenario ids", () => {
+  test("accepts only registered scenario ids", () => {
     expect(isGuideScenarioId("query-data")).toBe(true);
     expect(isGuideScenarioId("create-database-change")).toBe(true);
+    expect(isGuideScenarioId("mark-sensitive-data")).toBe(true);
     expect(isGuideScenarioId("learn-bytebase-basics")).toBe(false);
     expect(isGuideScenarioId("protect-sensitive-data")).toBe(false);
     expect(isGuideScenarioId("toString")).toBe(false);

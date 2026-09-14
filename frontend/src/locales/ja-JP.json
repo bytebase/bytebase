@@ -847,6 +847,9 @@
     "project-instance-synced-create-change-description": "このプロジェクトでデータベースを利用できます。管理されたデータベース変更を作成して続行してください。",
     "project-instance-synced-create-change-title": "データベース変更の準備ができました",
     "project-instance-synced-description": "このプロジェクトでデータベースを利用できるようになりました。まず SQL Editor でデータをクエリし、必要に応じて管理されたデータベース変更を作成できます。",
+    "project-instance-synced-mark-sensitive-data-action": "機密データをマーク",
+    "project-instance-synced-mark-sensitive-data-description": "このプロジェクトでデータベースを利用できます。機密カラムをマークしてデータマスキングを適用します。",
+    "project-instance-synced-mark-sensitive-data-title": "機密データを保護する準備ができました",
     "project-instance-synced-query-data-description": "このプロジェクトでデータベースを利用できます。SQL Editor を開いてクエリしてください。",
     "project-instance-synced-query-data-title": "データベースをクエリする準備ができました",
     "project-instance-synced-sql-editor-action": "SQL Editor を開く",
@@ -2861,6 +2864,7 @@
       "email": "メールアドレス",
       "enable-sample-databases": "サンプルデータベースを有効にする",
       "enable-sample-databases-create-change": "安全な変更対象としてサンプルデータベースを有効にする",
+      "enable-sample-databases-mark-sensitive-data": "データマスキングをすぐに試せるようサンプルデータベースを有効にする",
       "enable-sample-databases-query-data": "すぐにクエリを試せるようサンプルデータベースを有効にする",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
@@ -2876,6 +2880,10 @@
         "create-database-change": {
           "description": "変更を定義し、追跡可能なイシューを作成します。",
           "title": "データベース変更を作成"
+        },
+        "mark-sensitive-data": {
+          "description": "機密カラムを特定してデータマスキングを適用します。",
+          "title": "機密データをマーク"
         },
         "outcome-title": "Bytebase で何をしたいですか？",
         "query-data": {
@@ -3641,21 +3649,20 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "データベース変更を作成",
       "query": "SQL Editor に移動"
     },
+    "all-steps-completed": "すべてのステップが完了しました",
     "descriptions": {
       "add-teammate": "チームメンバーを招待し、ワークスペースへのアクセスを付与します。",
       "create-database-change": "データベース変更を定義し、そのイシューを作成します。",
       "database": "データベースを開き、スキーマとテーブルを確認します。",
       "instance": "Bytebase がデータベースを同期できるようにインスタンスを接続します。",
+      "mark-sensitive-data": "選択したデータベースを開き、機密カラムにセマンティックタイプを割り当てます。",
       "project": "データベースと変更を整理するプロジェクトを作成します。",
       "query-data": "選択したデータベースを SQL Editor で開き、任意のステートメントを実行します。"
     },
     "dismiss": "ガイドを閉じる",
     "generic": {
-      "completion-description": "プロジェクト、インスタンス、データベースのつながりを確認しました。",
-      "completion-title": "データベースワークスペースの準備ができました",
       "title": "Bytebase をセットアップ"
     },
     "getting-started": "はじめに",
@@ -3668,6 +3675,9 @@
       "grant-access-title": "ワークスペースアクセスを付与",
       "instance-description": "Bytebase がデータベースサーバーに接続できるようにインスタンスを作成します。",
       "instance-title": "インスタンスを接続",
+      "mark-sensitive-data-description": "カラムを選択してセマンティックタイプを割り当て、Bytebase がデータマスキングを適用できるようにします。",
+      "mark-sensitive-data-title": "機密データをマーク",
+      "mark-sensitive-fields-description": "テーブルまたはコレクションを開き、カタログ内の機密フィールドにセマンティックタイプを割り当てます。",
       "project-description": "まずプロジェクトを作成します。インスタンス接続後、データベースをそのプロジェクトに同期できます。",
       "project-title": "プロジェクトを作成",
       "transfer-description": "1つ以上のデータベースを選択し、プロジェクトに転送します。",
@@ -3678,13 +3688,12 @@
     "product-model": "Bytebase の仕組み",
     "scenarios": {
       "create-database-change": {
-        "completion-description": "データベース変更が Bytebase の追跡可能なイシューになりました。",
-        "completion-title": "最初のデータベース変更を作成しました",
         "title": "データベース変更を作成"
       },
+      "mark-sensitive-data": {
+        "title": "機密データをマーク"
+      },
       "query-data": {
-        "completion-description": "SQL Editor を開き、データベースでステートメントを実行しました。",
-        "completion-title": "最初のステートメントを実行しました",
         "title": "データをクエリ"
       }
     },
@@ -3694,6 +3703,7 @@
       "create-database-change": "データベース変更を作成",
       "database": "データベースを確認",
       "instance": "インスタンスを接続",
+      "mark-sensitive-data": "機密データをマーク",
       "project": "プロジェクトを作成",
       "query-data": "データをクエリ"
     },

@@ -975,6 +975,7 @@ function TableDetailSheetContent({
       tableCatalog: {
         classification: classificationId,
       },
+      notification: t("common.updated"),
     });
   };
 

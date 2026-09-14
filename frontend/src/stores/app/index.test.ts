@@ -115,6 +115,7 @@ const mocks = vi.hoisted(() => ({
   updateRole: vi.fn(),
   deleteRole: vi.fn(),
   getSubscription: vi.fn(),
+  startTrial: vi.fn(),
   uploadLicense: vi.fn(),
   getSetting: vi.fn(),
   getProject: vi.fn(),
@@ -302,6 +303,7 @@ vi.mock("@/api", () => ({
   },
   subscriptionServiceClientConnect: {
     getSubscription: mocks.getSubscription,
+    startTrial: mocks.startTrial,
     uploadLicense: mocks.uploadLicense,
   },
   userServiceClientConnect: {
@@ -2688,6 +2690,58 @@ describe("useAppStore", () => {
     expect(subscription?.plan).toBe(PlanType.TEAM);
     expect(store.getState().currentPlan()).toBe(PlanType.TEAM);
     expect(store.getState().userCountLimit()).toBe(12);
+  });
+
+  test("starts a trial and applies the returned subscription", async () => {
+    const trial = createProto(SubscriptionSchema, {
+      plan: PlanType.ENTERPRISE,
+      trialing: true,
+    });
+    mocks.startTrial.mockResolvedValue(trial);
+    const store = createAppStore();
+
+    const subscription = await store.getState().startTrial();
+
+    expect(mocks.startTrial).toHaveBeenCalledOnce();
+    expect(subscription).toBe(trial);
+    expect(store.getState().subscription).toBe(trial);
+  });
+
+  test("offers trial activation only to free SaaS workspaces in any mode", () => {
+    vi.stubEnv("MODE", "release-aws");
+    const store = createAppStore();
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
+      subscription: undefined,
+    });
+    expect(store.getState().canStartTrial()).toBe(false);
+
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
+      subscription: createProto(SubscriptionSchema, { plan: PlanType.FREE }),
+    });
+
+    expect(store.getState().canStartTrial()).toBe(true);
+
+    store.setState({
+      subscription: createProto(SubscriptionSchema, {
+        plan: PlanType.ENTERPRISE,
+        trialing: true,
+      }),
+    });
+    expect(store.getState().canStartTrial()).toBe(false);
+
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: false }),
+      subscription: createProto(SubscriptionSchema, { plan: PlanType.FREE }),
+    });
+    expect(store.getState().canStartTrial()).toBe(false);
+
+    vi.stubEnv("MODE", "development");
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
+    });
+    expect(store.getState().canStartTrial()).toBe(true);
   });
 
   test("loads environment settings into React state", async () => {

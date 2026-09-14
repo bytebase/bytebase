@@ -49,6 +49,7 @@ import {
   GetSubscriptionRequestSchema,
   ListPurchasePlansRequestSchema,
   PlanType,
+  StartTrialRequestSchema,
   UpdatePurchaseRequestSchema,
   UploadLicenseRequestSchema,
   VerifyCheckoutSessionRequestSchema,
@@ -517,6 +518,14 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       return request;
     },
 
+    startTrial: async () => {
+      const subscription = await subscriptionServiceClientConnect.startTrial(
+        createProto(StartTrialRequestSchema, {})
+      );
+      set({ subscription, subscriptionRequest: undefined });
+      return subscription;
+    },
+
     uploadLicense: async (license) => {
       const subscription = await subscriptionServiceClientConnect.uploadLicense(
         createProto(UploadLicenseRequestSchema, { license })
@@ -532,6 +541,12 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     isFreePlan: () => get().currentPlan() === PlanType.FREE,
 
     isTrialing: () => Boolean(get().subscription?.trialing),
+
+    canStartTrial: () =>
+      get().isSaaSMode() &&
+      !!get().subscription &&
+      get().isFreePlan() &&
+      !get().isTrialing(),
 
     isExpired: () => {
       const subscription = get().subscription;

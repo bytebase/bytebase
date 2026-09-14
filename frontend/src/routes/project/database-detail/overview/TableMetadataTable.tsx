@@ -188,6 +188,7 @@ export function TableMetadataTable({
                             tableCatalog: {
                               classification: classificationId,
                             },
+                            notification: t("common.updated"),
                           });
                         }}
                       />
