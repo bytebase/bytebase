@@ -1,0 +1,16 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Seq Scan",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Relation Name": "customers",
+      "Alias": "customers",
+      "Startup Cost": 0.0,
+      "Total Cost": 90.5,
+      "Plan Rows": 1667,
+      "Plan Width": 12,
+      "Filter": "(region = 'eu'::text)"
+    }
+  }
+]

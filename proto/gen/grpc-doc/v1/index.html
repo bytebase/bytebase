@@ -679,7 +679,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.QueryOption.MSSQLExplainFormat"><span class="badge">E</span>QueryOption.MSSQLExplainFormat</a>
+                  <a href="#bytebase.v1.QueryOption.ExplainFormat"><span class="badge">E</span>QueryOption.ExplainFormat</a>
                 </li>
               
                 <li>
@@ -8056,8 +8056,8 @@ Empty when the user was authorized through normal ACL rather than a grant. </p><
                 </tr>
               
                 <tr>
-                  <td>mssql_explain_format</td>
-                  <td><a href="#bytebase.v1.QueryOption.MSSQLExplainFormat">QueryOption.MSSQLExplainFormat</a></td>
+                  <td>explain_format</td>
+                  <td><a href="#bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -8793,8 +8793,8 @@ These are custom, flexible checks powered by AI models.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.QueryOption.MSSQLExplainFormat">QueryOption.MSSQLExplainFormat</h3>
-        <p></p>
+        <h3 id="bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</h3>
+        <p>Which explain output the caller wants, for an explain request.</p><p>Leave it unspecified for the engine's own default, which is the only</p><p>output most engines have. Naming a format an engine cannot produce is</p><p>INVALID_ARGUMENT rather than a silent fallback, as is any explain request</p><p>against an engine that has no explain at all.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -8802,21 +8802,29 @@ These are custom, flexible checks powered by AI models.</p></td>
           <tbody>
             
               <tr>
-                <td>MSSQL_EXPLAIN_FORMAT_UNSPECIFIED</td>
+                <td>EXPLAIN_FORMAT_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>defaults to SHOWPLAN_ALL</p></td>
+                <td><p>The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL.</p></td>
               </tr>
             
               <tr>
-                <td>MSSQL_EXPLAIN_FORMAT_ALL</td>
+                <td>TEXT</td>
                 <td>1</td>
-                <td><p>SHOWPLAN_ALL</p></td>
+                <td><p>The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
+SHOWPLAN_ALL.</p></td>
               </tr>
             
               <tr>
-                <td>MSSQL_EXPLAIN_FORMAT_XML</td>
+                <td>JSON</td>
                 <td>2</td>
-                <td><p>SHOWPLAN_XML</p></td>
+                <td><p>The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON).</p></td>
+              </tr>
+            
+              <tr>
+                <td>XML</td>
+                <td>3</td>
+                <td><p>The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
+SHOWPLAN_XML.</p></td>
               </tr>
             
           </tbody>

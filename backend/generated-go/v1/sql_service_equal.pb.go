@@ -117,7 +117,7 @@ func (x *QueryOption) Equal(y *QueryOption) bool {
 	if x.RedisRunCommandsOn != y.RedisRunCommandsOn {
 		return false
 	}
-	if x.MssqlExplainFormat != y.MssqlExplainFormat {
+	if x.ExplainFormat != y.ExplainFormat {
 		return false
 	}
 	return true

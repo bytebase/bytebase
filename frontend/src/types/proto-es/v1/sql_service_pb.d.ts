@@ -191,9 +191,9 @@ export declare type QueryOption = Message<"bytebase.v1.QueryOption"> & {
   redisRunCommandsOn: QueryOption_RedisRunCommandsOn;
 
   /**
-   * @generated from field: bytebase.v1.QueryOption.MSSQLExplainFormat mssql_explain_format = 2;
+   * @generated from field: bytebase.v1.QueryOption.ExplainFormat explain_format = 3;
    */
-  mssqlExplainFormat: QueryOption_MSSQLExplainFormat;
+  explainFormat: QueryOption_ExplainFormat;
 };
 
 /**
@@ -234,35 +234,51 @@ export enum QueryOption_RedisRunCommandsOn {
 export declare const QueryOption_RedisRunCommandsOnSchema: GenEnum<QueryOption_RedisRunCommandsOn>;
 
 /**
- * @generated from enum bytebase.v1.QueryOption.MSSQLExplainFormat
+ * Which explain output the caller wants, for an explain request.
+ *
+ * Leave it unspecified for the engine's own default, which is the only
+ * output most engines have. Naming a format an engine cannot produce is
+ * INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+ * against an engine that has no explain at all.
+ *
+ * @generated from enum bytebase.v1.QueryOption.ExplainFormat
  */
-export enum QueryOption_MSSQLExplainFormat {
+export enum QueryOption_ExplainFormat {
   /**
-   * defaults to SHOWPLAN_ALL
+   * The engine's default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL.
    *
-   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0;
+   * @generated from enum value: EXPLAIN_FORMAT_UNSPECIFIED = 0;
    */
-  MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0,
+  EXPLAIN_FORMAT_UNSPECIFIED = 0,
 
   /**
-   * SHOWPLAN_ALL
+   * The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
+   * SHOWPLAN_ALL.
    *
-   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_ALL = 1;
+   * @generated from enum value: TEXT = 1;
    */
-  MSSQL_EXPLAIN_FORMAT_ALL = 1,
+  TEXT = 1,
 
   /**
-   * SHOWPLAN_XML
+   * The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON).
    *
-   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_XML = 2;
+   * @generated from enum value: JSON = 2;
    */
-  MSSQL_EXPLAIN_FORMAT_XML = 2,
+  JSON = 2,
+
+  /**
+   * The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
+   * SHOWPLAN_XML.
+   *
+   * @generated from enum value: XML = 3;
+   */
+  XML = 3,
 }
 
 /**
- * Describes the enum bytebase.v1.QueryOption.MSSQLExplainFormat.
+ * Describes the enum bytebase.v1.QueryOption.ExplainFormat.
  */
-export declare const QueryOption_MSSQLExplainFormatSchema: GenEnum<QueryOption_MSSQLExplainFormat>;
+export declare const QueryOption_ExplainFormatSchema: GenEnum<QueryOption_ExplainFormat>;
 
 /**
  * @generated from message bytebase.v1.QueryResult

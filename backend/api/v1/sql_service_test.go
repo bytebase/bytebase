@@ -330,3 +330,48 @@ func TestResolveDataSourceIDKeepsReadOnlyForDocumentEngineAutomaticReadQueryWhen
 		})
 	}
 }
+
+// TestValidateExplainFormat pins the engine-to-format support table. A format an
+// engine cannot produce has to be refused here, because the drivers below map
+// anything that reaches them onto their own default rather than failing.
+func TestValidateExplainFormat(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name    string
+		engine  storepb.Engine
+		format  v1pb.QueryOption_ExplainFormat
+		wantErr bool
+	}{
+		{name: "unspecified is always the engine default", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{name: "postgres json", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_JSON},
+		{name: "postgres xml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_XML},
+		{name: "postgres text", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_TEXT},
+		{name: "mssql xml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_XML},
+		{name: "mssql json", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
+		{name: "spanner has no text plan", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_TEXT, wantErr: true},
+		{name: "mysql text", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_TEXT},
+		{name: "mysql json is not implemented yet", engine: storepb.Engine_MYSQL, format: v1pb.QueryOption_JSON, wantErr: true},
+		{name: "oracle xml is not implemented yet", engine: storepb.Engine_ORACLE, format: v1pb.QueryOption_XML, wantErr: true},
+		{name: "redis explains nothing at all", engine: storepb.Engine_REDIS, format: v1pb.QueryOption_TEXT, wantErr: true},
+		{name: "mongodb explains nothing at all", engine: storepb.Engine_MONGODB, format: v1pb.QueryOption_JSON, wantErr: true},
+		// A driver that ignores the explain flag runs the statement instead, and
+		// the explain path skips the read-only validation, so an unspecified
+		// format must be refused here too rather than reaching the driver.
+		{name: "cassandra refuses even an unspecified format", engine: storepb.Engine_CASSANDRA, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
+		{name: "cosmosdb refuses even an unspecified format", engine: storepb.Engine_COSMOSDB, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
+		{name: "databricks refuses even an unspecified format", engine: storepb.Engine_DATABRICKS, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
+		{name: "elasticsearch refuses even an unspecified format", engine: storepb.Engine_ELASTICSEARCH, format: v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateExplainFormat(tc.engine, tc.format)
+			if !tc.wantErr {
+				require.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		})
+	}
+}

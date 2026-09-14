@@ -1,0 +1,84 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Limit",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Startup Cost": 944.3,
+      "Total Cost": 979.51,
+      "Plan Rows": 10,
+      "Plan Width": 9,
+      "Plans": [
+        {
+          "Node Type": "Aggregate",
+          "Strategy": "Plain",
+          "Partial Mode": "Simple",
+          "Parent Relationship": "InitPlan",
+          "Subplan Name": "InitPlan 1",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 944.0,
+          "Total Cost": 944.01,
+          "Plan Rows": 1,
+          "Plan Width": 32,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders_1",
+              "Startup Cost": 0.0,
+              "Total Cost": 819.0,
+              "Plan Rows": 50000,
+              "Plan Width": 4
+            }
+          ]
+        },
+        {
+          "Node Type": "Nested Loop",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Join Type": "Inner",
+          "Startup Cost": 0.28,
+          "Total Cost": 1634.2,
+          "Plan Rows": 464,
+          "Plan Width": 9,
+          "Inner Unique": true,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "orders",
+              "Startup Cost": 0.0,
+              "Total Cost": 1319.0,
+              "Plan Rows": 464,
+              "Plan Width": 8,
+              "Filter": "((total > (InitPlan 1).col1) AND (created_at > (now() - '1 day'::interval)))"
+            },
+            {
+              "Node Type": "Index Scan",
+              "Parent Relationship": "Inner",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Scan Direction": "Forward",
+              "Index Name": "customers_pkey",
+              "Relation Name": "customers",
+              "Alias": "c",
+              "Startup Cost": 0.28,
+              "Total Cost": 0.68,
+              "Plan Rows": 1,
+              "Plan Width": 9,
+              "Index Cond": "(id = orders.customer_id)"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

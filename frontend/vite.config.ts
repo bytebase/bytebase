@@ -101,14 +101,6 @@ export default defineConfig({
       },
       output: {
         manualChunks: (id) => {
-          const normalizedId = id.replaceAll("\\", "/");
-          if (
-            normalizedId.includes("/node_modules/vue/") ||
-            normalizedId.includes("/node_modules/@vue/") ||
-            normalizedId.includes("/node_modules/pev2/")
-          ) {
-            return "explain-visualizer-vue";
-          }
           // Monaco Editor - separate chunk
           if (id.includes("monaco-editor") || id.includes("monaco-vscode")) {
             return "monaco-editor";
