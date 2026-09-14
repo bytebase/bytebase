@@ -270,9 +270,8 @@ type getAffectedRowsFromExplain func(context.Context, string) (int64, error)
 // and the rows of tables changed by DDL. The returned warning describes DML statements whose rows
 // could not be estimated.
 func calculateAffectedRows(ctx context.Context, engine storepb.Engine, changeSummary *parserbase.ChangeSummary, explainCalculator getAffectedRowsFromExplain) (int64, string) {
-	// The MySQL family escapes quotes in string literals with backslashes by default.
-	backslashEscapes := engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB || engine == storepb.Engine_TIDB || engine == storepb.Engine_OCEANBASE
-	shapes := groupStatementsByShape(changeSummary.DMLStatements, backslashEscapes)
+	mysqlFamily := engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB || engine == storepb.Engine_TIDB || engine == storepb.Engine_OCEANBASE
+	shapes := groupStatementsByShape(changeSummary.DMLStatements, mysqlFamily)
 	sampled := 0
 	var failures []error
 	if explainCalculator != nil {
@@ -346,11 +345,11 @@ type statementShape struct {
 
 // groupStatementsByShape groups statements that differ only in literal values, comments, or
 // spacing, in the order each shape first appears.
-func groupStatementsByShape(statements []string, backslashEscapes bool) []*statementShape {
+func groupStatementsByShape(statements []string, mysqlFamily bool) []*statementShape {
 	var shapes []*statementShape
 	byKey := map[string]*statementShape{}
 	for _, statement := range statements {
-		key := shapeKey(statement, backslashEscapes)
+		key := shapeKey(statement, mysqlFamily)
 		shape, ok := byKey[key]
 		if !ok {
 			shape = &statementShape{}
@@ -363,9 +362,10 @@ func groupStatementsByShape(statements []string, backslashEscapes bool) []*state
 }
 
 // shapeKey replaces the string and numeric literals of a statement with ? and removes comments and
-// whitespace. Identifiers keep their text, including their case. With backslashEscapes, a
-// backslash escapes the next character of a quoted string.
-func shapeKey(statement string, backslashEscapes bool) string {
+// whitespace. Identifiers keep their text, including their case. mysqlFamily applies the lexical
+// rules of MySQL, MariaDB, TiDB, and OceanBase: a backslash escapes the next character of a quoted
+// string, and -- opens a comment only before whitespace or a control character.
+func shapeKey(statement string, mysqlFamily bool) string {
 	var b strings.Builder
 	space := false
 	// Whitespace is kept only between words, where ? counts as a word.
@@ -382,7 +382,7 @@ func shapeKey(statement string, backslashEscapes bool) string {
 		switch {
 		case c == '\'':
 			// PostgreSQL E'...' strings escape with backslashes too.
-			escapes := backslashEscapes || (i > 0 && (statement[i-1] == 'E' || statement[i-1] == 'e') && (i == 1 || !isWordByte(statement[i-2])))
+			escapes := mysqlFamily || (i > 0 && (statement[i-1] == 'E' || statement[i-1] == 'e') && (i == 1 || !isWordByte(statement[i-2])))
 			end, closed := quotedEnd(statement, i, escapes)
 			if !closed {
 				// An unclosed quote means the scan misread the statement, so it keeps a shape of its own.
@@ -391,7 +391,7 @@ func shapeKey(statement string, backslashEscapes bool) string {
 			i = end
 			write('?')
 		case c == '"' || c == '`':
-			end, closed := quotedEnd(statement, i, backslashEscapes && c == '"')
+			end, closed := quotedEnd(statement, i, mysqlFamily && c == '"')
 			if !closed {
 				return statement
 			}
@@ -403,14 +403,14 @@ func shapeKey(statement string, backslashEscapes bool) string {
 				i++
 			}
 			write('?')
-		case isSkippedComment(statement[i:], "--"):
+		case isSkippedComment(statement[i:], "--", mysqlFamily):
 			if end := strings.IndexByte(statement[i:], '\n'); end >= 0 {
 				i += end
 			} else {
 				i = len(statement)
 			}
 			space = true
-		case isSkippedComment(statement[i:], "/*"):
+		case isSkippedComment(statement[i:], "/*", mysqlFamily):
 			if end := strings.Index(statement[i+2:], "*/"); end >= 0 {
 				i += end + 4
 			} else {
@@ -431,8 +431,11 @@ func shapeKey(statement string, backslashEscapes bool) string {
 // isSkippedComment reports whether text starts with a comment that opens with opener and does not
 // change how the statement runs: MySQL and MariaDB run /*! and /*M! comments, and /*+ and --+
 // comments hold optimizer hints.
-func isSkippedComment(text, opener string) bool {
+func isSkippedComment(text, opener string, mysqlFamily bool) bool {
 	if !strings.HasPrefix(text, opener) {
+		return false
+	}
+	if mysqlFamily && opener == "--" && len(text) > 2 && text[2] > ' ' {
 		return false
 	}
 	for _, kept := range []string{"/*!", "/*M!", "/*+", "--+"} {

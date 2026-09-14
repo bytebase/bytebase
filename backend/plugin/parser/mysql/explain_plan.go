@@ -61,8 +61,9 @@ func singleTableRef(tables []ast.TableExpr) *ast.TableRef {
 	return nil
 }
 
-// trimLeadingComments removes the whitespace and ordinary comments at the start of text. Executable
-// comments and optimizer hints stay, because they can change the statement.
+// trimLeadingComments removes the whitespace and ordinary comments at the start of text, where -- opens
+// a comment only before whitespace or a control character. Executable comments and optimizer hints
+// stay, because they can change the statement.
 func trimLeadingComments(text string) string {
 	for {
 		text = strings.TrimLeftFunc(text, unicode.IsSpace)
@@ -75,7 +76,7 @@ func trimLeadingComments(text string) string {
 				return text
 			}
 			text = text[2+end+2:]
-		case strings.HasPrefix(text, "--") || strings.HasPrefix(text, "#"):
+		case (strings.HasPrefix(text, "--") && (len(text) == 2 || text[2] <= ' ')) || strings.HasPrefix(text, "#"):
 			end := strings.IndexByte(text, '\n')
 			if end < 0 {
 				return ""

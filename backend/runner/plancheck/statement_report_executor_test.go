@@ -139,10 +139,10 @@ func TestCalculateAffectedRows(t *testing.T) {
 
 func TestShapeKey(t *testing.T) {
 	for _, tc := range []struct {
-		name             string
-		statements       []string
-		backslashEscapes bool
-		want             string
+		name        string
+		statements  []string
+		mysqlFamily bool
+		want        string
 	}{
 		{
 			name: "literals and spacing",
@@ -154,13 +154,13 @@ func TestShapeKey(t *testing.T) {
 			want: "UPDATE t SET v=? WHERE id=?;",
 		},
 		{
-			name: "backslash escapes",
+			name: "MySQL family escapes and comments",
 			statements: []string{
 				"UPDATE t SET v = 'it\\'s' WHERE id = 1;",
-				"UPDATE t SET v = 'C:\\\\' WHERE id = 2;",
+				"UPDATE t SET v = 'C:\\\\' -- note\nWHERE id = 2;",
 			},
-			backslashEscapes: true,
-			want:             "UPDATE t SET v=? WHERE id=?;",
+			mysqlFamily: true,
+			want:        "UPDATE t SET v=? WHERE id=?;",
 		},
 		{
 			name: "PostgreSQL escape strings",
@@ -186,7 +186,7 @@ func TestShapeKey(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, statement := range tc.statements {
-				require.Equal(t, tc.want, shapeKey(statement, tc.backslashEscapes), statement)
+				require.Equal(t, tc.want, shapeKey(statement, tc.mysqlFamily), statement)
 			}
 		})
 	}
@@ -209,6 +209,8 @@ func TestShapeKey(t *testing.T) {
 		}
 		require.NotEqual(t, shapeKey("UPDATE t SET v = 'it\\'s' WHERE id = 1", true), shapeKey("UPDATE t SET v = 'it\\'s'", true))
 		require.NotEqual(t, shapeKey(`UPDATE t SET v = "a\"b" WHERE id = 1`, true), shapeKey(`UPDATE t SET v = "a\"b"`, true))
+		// MySQL reads c--1 as c - (-1), not as the start of a comment.
+		require.NotEqual(t, shapeKey("UPDATE t SET c = c--1 WHERE id = 1", true), shapeKey("UPDATE t SET c = c", true))
 	})
 }
 
