@@ -362,13 +362,14 @@ func groupStatementsByShape(statements []string, mysqlFamily bool) []*statementS
 }
 
 // shapeKey replaces the string and numeric literals of a statement with ? and drops whitespace that
-// does not separate words. Everything else keeps its text, including identifiers, their case, and
-// comments with the numbers in them, such as optimizer hints. A statement with text the scan does not
-// follow, such as an unclosed quote, an Oracle q'{...}' string, a dollar-quoted string, a nested
-// comment, or a quote in brackets, is its own key, because a quote in that text could make the scan
-// read the statement's clauses as a literal. mysqlFamily applies the MySQL, MariaDB, TiDB, and
-// OceanBase rules that a backslash escapes the next character of a quoted string and that # starts a
-// line comment.
+// does not separate words. Everything else keeps its text, including identifiers, their case,
+// double-quoted text, which MySQL's ANSI_QUOTES makes an identifier, and comments with the numbers in
+// them, such as optimizer hints. A statement with text the scan does not follow, such as an unclosed
+// quote, an Oracle q'{...}' string, a dollar-quoted string, a nested comment, or a quote in brackets,
+// is its own key, because a quote in that text could make the scan read the statement's clauses as a
+// literal. mysqlFamily applies the MySQL, MariaDB, TiDB, and OceanBase rules that a backslash escapes
+// the next character of a quoted string, that # starts a line comment, and that -- starts one only
+// before whitespace or a control character.
 func shapeKey(statement string, mysqlFamily bool) string {
 	var b strings.Builder
 	space := false
@@ -392,8 +393,8 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			if strings.EqualFold(word, "q") || strings.EqualFold(word, "nq") {
 				return statement
 			}
-			// PostgreSQL E'...' strings escape with backslashes too.
-			end, closed := quotedEnd(statement, i, mysqlFamily || strings.EqualFold(word, "e"))
+			// PostgreSQL E'...' and CockroachDB b'...' strings escape with backslashes too.
+			end, closed := quotedEnd(statement, i, mysqlFamily || strings.EqualFold(word, "e") || strings.EqualFold(word, "b"))
 			if !closed {
 				return statement
 			}
@@ -424,7 +425,8 @@ func shapeKey(statement string, mysqlFamily bool) string {
 			write(c)
 			b.WriteString(statement[i+1 : end])
 			i = end
-		case strings.HasPrefix(statement[i:], "--") || strings.HasPrefix(statement[i:], "/*") || (mysqlFamily && c == '#'):
+		case (strings.HasPrefix(statement[i:], "--") && (!mysqlFamily || i+2 == len(statement) || statement[i+2] <= ' ')) ||
+			strings.HasPrefix(statement[i:], "/*") || (mysqlFamily && c == '#'):
 			end := commentEnd(statement, i)
 			if c == '/' && strings.Contains(statement[i+2:end], "/*") {
 				return statement

@@ -171,6 +171,23 @@ func TestShapeKey(t *testing.T) {
 			want: "UPDATE t SET v=E? WHERE id=?;",
 		},
 		{
+			name: "CockroachDB byte strings",
+			statements: []string{
+				"UPDATE t SET v = b'it\\'s' WHERE id = 1;",
+				"UPDATE t SET v = b'x' WHERE id = 2;",
+			},
+			want: "UPDATE t SET v=b? WHERE id=?;",
+		},
+		{
+			name: "MySQL family -- without whitespace is not a comment",
+			statements: []string{
+				"UPDATE t SET c = c--1 WHERE id = 1;",
+				"UPDATE t SET c = c--2 WHERE id = 20;",
+			},
+			mysqlFamily: true,
+			want:        "UPDATE t SET c=c--? WHERE id=?;",
+		},
+		{
 			name: "lists of literals",
 			statements: []string{
 				"DELETE FROM t WHERE id IN (1, 2, 3)",
