@@ -293,6 +293,30 @@ func TestExtractChangedResourcesDMLCounts(t *testing.T) {
 	}
 }
 
+func TestExtractChangedResourcesExplainAnalyze(t *testing.T) {
+	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_POSTGRES, true /* caseSensitive */)
+	const statement = `EXPLAIN (ANALYZE, BUFFERS) WITH d AS (DELETE FROM t RETURNING id) INSERT INTO t2 SELECT id FROM d;
+EXPLAIN ANALYZE MERGE INTO t3 USING t ON t3.id = t.id WHEN MATCHED THEN DELETE;
+EXPLAIN UPDATE t4 SET c = 1;`
+
+	want := model.NewChangedResources(dbMetadata)
+	for _, table := range []string{"t", "t2", "t3"} {
+		want.AddTable("db", "public", &storepb.ChangedResourceTable{Name: table}, false)
+	}
+	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
+	require.NoError(t, err)
+	got, err := extractChangedResources("db", "public", dbMetadata, base.ExtractASTs(stmts), statement)
+	require.NoError(t, err)
+	require.Equal(t, &base.ChangeSummary{
+		ChangedResources: want,
+		DMLCount:         2,
+		DMLStatements: []string{
+			"WITH d AS (DELETE FROM t RETURNING id) INSERT INTO t2 SELECT id FROM d;",
+			"MERGE INTO t3 USING t ON t3.id = t.id WHEN MATCHED THEN DELETE;",
+		},
+	}, got)
+}
+
 func TestExtractChangedResourcesRename(t *testing.T) {
 	dbMetadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",

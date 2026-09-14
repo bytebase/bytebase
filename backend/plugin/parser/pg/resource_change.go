@@ -38,9 +38,12 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 	var dmlCount, insertCount int
 	var dmlStatements []string
 	initialSearchPath := searchPath
-	sampleDML := func(omniAST *OmniAST) {
+	sampleDML := func(text string) {
 		dmlCount++
-		text := getOmniStatementText(omniAST)
+		text = strings.TrimSpace(text)
+		if !strings.HasSuffix(text, ";") {
+			text += ";"
+		}
 		// The EXPLAIN connection starts with the initial search path, so a changed one is replayed.
 		if !slices.Equal(searchPath, initialSearchPath) {
 			text = base.WithSearchPath(text, searchPath)
@@ -68,8 +71,16 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		if omniAST.Node == nil {
 			continue
 		}
+		node, text := omniAST.Node, omniAST.Text
+		// EXPLAIN ANALYZE executes the statement it explains.
+		if explain, ok := node.(*ast.ExplainStmt); ok && isExplainAnalyzeOmni(explain) {
+			node = explain.Query
+			if loc := ast.NodeLoc(explain.Query); loc.Start >= 0 && loc.Start < loc.End && loc.End <= len(text) {
+				text = text[loc.Start:loc.End]
+			}
+		}
 
-		switch n := omniAST.Node.(type) {
+		switch n := node.(type) {
 		case *ast.VariableSetStmt:
 			if n.Kind == ast.VAR_RESET_ALL || (strings.EqualFold(n.Name, "search_path") && (n.Kind == ast.VAR_RESET || n.Kind == ast.VAR_SET_DEFAULT)) {
 				searchPath = initialSearchPath
@@ -149,7 +160,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			if rows, ok := getInsertValuesRowCount(n); ok && !hasDataModifyingCTE {
 				insertCount += rows
 			} else {
-				sampleDML(omniAST)
+				sampleDML(text)
 			}
 
 		case *ast.UpdateStmt:
@@ -157,14 +168,14 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			if n.Relation != nil {
 				addTarget(n.Relation, false)
 			}
-			sampleDML(omniAST)
+			sampleDML(text)
 
 		case *ast.DeleteStmt:
 			addDataModifyingCTETargets(n.WithClause)
 			if n.Relation != nil {
 				addTarget(n.Relation, false)
 			}
-			sampleDML(omniAST)
+			sampleDML(text)
 
 		case *ast.TruncateStmt:
 			if n.Relations != nil {
@@ -183,7 +194,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			if n.Relation != nil {
 				addTarget(n.Relation, false)
 			}
-			sampleDML(omniAST)
+			sampleDML(text)
 
 		case *ast.CreateTableAsStmt:
 			if n.Into != nil && n.Into.Rel != nil {
@@ -191,7 +202,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			if query, ok := n.Query.(*ast.SelectStmt); ok && addDataModifyingCTETargets(query.WithClause) {
-				sampleDML(omniAST)
+				sampleDML(text)
 			}
 
 		case *ast.SelectStmt:
@@ -202,7 +213,7 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				changedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			}
 			if addDataModifyingCTETargets(n.WithClause) {
-				sampleDML(omniAST)
+				sampleDML(text)
 			}
 
 		default:
@@ -383,13 +394,4 @@ func extractNameListParts(nameList *ast.List, defaultDB string) (string, string,
 	default:
 		return defaultDB, "", ""
 	}
-}
-
-// getOmniStatementText returns the text of a statement from OmniAST, including semicolon.
-func getOmniStatementText(omniAST *OmniAST) string {
-	text := strings.TrimSpace(omniAST.Text)
-	if !strings.HasSuffix(text, ";") {
-		text += ";"
-	}
-	return text
 }

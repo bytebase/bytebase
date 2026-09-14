@@ -277,12 +277,12 @@ func TestExtractChangedResourcesDDL(t *testing.T) {
 				Name: "public",
 				Tables: []*metadatapb.TableMetadata{
 					{Name: "t", RowCount: 10},
-					{Name: "t2", RowCount: 1000},
+					{Name: "t2", RowCount: 1000, Indexes: []*metadatapb.IndexMetadata{{Name: "t2_c_idx"}}},
 				},
 			},
 			{
 				Name:   "app",
-				Tables: []*metadatapb.TableMetadata{{Name: "t", RowCount: 100_000}},
+				Tables: []*metadatapb.TableMetadata{{Name: "t", RowCount: 100_000, Indexes: []*metadatapb.IndexMetadata{{Name: "t_c_idx"}}}},
 			},
 		},
 	}, []byte{}, &storepb.DatabaseConfig{}, storepb.Engine_COCKROACHDB, true /* caseSensitive */)
@@ -293,6 +293,10 @@ func TestExtractChangedResourcesDDL(t *testing.T) {
 	}{
 		{statement: `CREATE TABLE t3 (id INT PRIMARY KEY)`, wantTables: []string{"db.public.t3"}},
 		{statement: `CREATE INDEX idx ON t2 (c)`, wantTables: []string{"db.public.t2"}},
+		{statement: `DROP INDEX t2@t2_c_idx, t2_c_idx, app.t_c_idx, missing_idx`, wantTables: []string{"db.app.t", "db.public.t2"}},
+		{statement: `ALTER INDEX app.t@t_c_idx PARTITION BY NOTHING`, wantTables: []string{"db.app.t"}},
+		{statement: `ALTER INDEX t2_c_idx NOT VISIBLE`, wantTables: []string{"db.public.t2"}},
+		{statement: `ALTER INDEX t2_c_idx RENAME TO t2_idx`, wantTables: []string{"db.public.t2"}},
 		{statement: `ALTER TABLE t ADD COLUMN c2 INT, DROP COLUMN c`, wantTables: []string{"db.public.t"}, wantAffectedRows: 10},
 		{statement: `ALTER TABLE t RENAME COLUMN c TO c2`, wantTables: []string{"db.public.t"}, wantAffectedRows: 10},
 		{statement: `ALTER TABLE t SET LOCALITY REGIONAL BY ROW`, wantTables: []string{"db.public.t"}, wantAffectedRows: 10},
@@ -315,6 +319,16 @@ func TestExtractChangedResourcesDDL(t *testing.T) {
 			require.Zero(t, got.DMLCount)
 		})
 	}
+}
+
+func TestExtractChangedResourcesExplainAnalyze(t *testing.T) {
+	const statement = `EXPLAIN ANALYZE (VERBOSE) DELETE FROM t WHERE id = 1;
+EXPLAIN ANALYZE UPSERT INTO t2 SELECT * FROM t;
+EXPLAIN UPDATE t3 SET c = 1;`
+	got, err := extractChangedResources("db", "public", nil /* dbMetadata */, parseASTs(t, statement), statement)
+	require.NoError(t, err)
+	require.Equal(t, []string{"db.public.t", "db.public.t2"}, getTableNames(got.ChangedResources))
+	require.Equal(t, []string{"DELETE FROM t WHERE id = 1", "UPSERT INTO t2 SELECT * FROM t"}, got.DMLStatements)
 }
 
 func TestExtractChangedResourcesListsEveryDMLStatement(t *testing.T) {

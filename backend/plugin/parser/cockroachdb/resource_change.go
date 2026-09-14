@@ -48,6 +48,26 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		db, schema, table := resolveTableName(name, database, schemaOf(name.Table()))
 		summary.ChangedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, affectedTable)
 	}
+	// addIndexTable records the table of an index, which dbMetadata supplies when the name omits it.
+	addIndexTable := func(index *tree.TableIndexName) {
+		if index.Table.ObjectName != "" {
+			addTable(&index.Table, false)
+			return
+		}
+		if dbMetadata == nil {
+			return
+		}
+		schemas := searchPath
+		if index.Table.ExplicitSchema {
+			schemas = []string{index.Table.Schema()}
+		}
+		schema, indexMetadata := dbMetadata.SearchIndex(schemas, string(index.Index))
+		if indexMetadata == nil {
+			return
+		}
+		db, _, _ := resolveTableName(&index.Table, database, schema)
+		summary.ChangedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: indexMetadata.GetTableProto().GetName()}, false)
+	}
 	// addMutations records the target of each mutation in the statement and returns their number.
 	addMutations := func(stmt tree.Statement) int {
 		targets := getMutationTargets(stmt)
@@ -58,9 +78,9 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		}
 		return len(targets)
 	}
-	addDML := func(crdbAST *AST) {
+	addDML := func(text string) {
 		summary.DMLCount++
-		text := strings.TrimSpace(crdbAST.Stmt.SQL)
+		text = strings.TrimSpace(text)
 		// The EXPLAIN connection starts with the default search path, so a changed one is replayed.
 		if !slices.Equal(searchPath, defaultSearchPath) {
 			text = base.WithSearchPath(text, searchPath)
@@ -73,27 +93,32 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		if !ok {
 			return nil, errors.New("expected CockroachDB AST")
 		}
-		switch n := crdbAST.Stmt.AST.(type) {
+		stmt, text := crdbAST.Stmt.AST, crdbAST.Stmt.SQL
+		// EXPLAIN ANALYZE executes the statement it explains.
+		if explain, ok := stmt.(*tree.ExplainAnalyze); ok {
+			stmt, text = explain.Statement, tree.AsString(explain.Statement)
+		}
+		switch n := stmt.(type) {
 		case *tree.Insert:
 			mutationCount := addMutations(n)
 			// Nested mutations make the whole statement a sample, whose estimate includes the VALUES rows.
 			if rows, ok := getInsertValuesRowCount(n); ok && mutationCount == 1 {
 				summary.InsertCount += rows
 			} else {
-				addDML(crdbAST)
+				addDML(text)
 			}
 		case *tree.Update, *tree.Delete:
 			addMutations(n)
-			addDML(crdbAST)
+			addDML(text)
 		case *tree.Select:
 			if addMutations(n) > 0 {
-				addDML(crdbAST)
+				addDML(text)
 			}
 		case *tree.CreateTable:
 			db, schema, table := resolveTableName(&n.Table, database, searchPath[0])
 			summary.ChangedResources.AddTable(db, schema, &storepb.ChangedResourceTable{Name: table}, false)
 			if n.AsSource != nil && addMutations(n.AsSource) > 0 {
-				addDML(crdbAST)
+				addDML(text)
 			}
 		case *tree.AlterTable:
 			name := n.Table.ToTableName()
@@ -139,6 +164,16 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			summary.ChangedResources.AddTable(newDB, newSchema, &storepb.ChangedResourceTable{Name: newTable}, false)
 		case *tree.CreateIndex:
 			addTable(&n.Table, false)
+		case *tree.DropIndex:
+			for _, index := range n.IndexList {
+				addIndexTable(index)
+			}
+		case *tree.AlterIndex:
+			addIndexTable(&n.Index)
+		case *tree.AlterIndexVisible:
+			addIndexTable(&n.Index)
+		case *tree.RenameIndex:
+			addIndexTable(n.Index)
 		case *tree.SetVar:
 			if n.ResetAll || strings.EqualFold(n.Name, "search_path") {
 				searchPath = getSearchPath(n, defaultSearchPath)

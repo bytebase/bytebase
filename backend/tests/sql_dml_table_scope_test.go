@@ -1009,12 +1009,12 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		assertDeniedOn(t, resp, qErr, "/tables/t_other")
 	})
 
-	// 19. EXPLAIN ANALYZE executes the statement it explains, so explaining a write needs DML
-	//     permission.
+	// 19. EXPLAIN ANALYZE executes the statement it explains, so explaining a write is authorized
+	//     like the write, per target table.
 	t.Run("ExplainAnalyzeOfWriteAuthorizedAsDML", func(t *testing.T) {
 		ra := require.New(t)
 		email, token := newLimitedUser(t)
-		setProjectBindings(t, readBinding(email))
+		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_granted"))
 
 		before := countRows(t, "public.t_dst")
 		for _, statement := range []string{
@@ -1022,8 +1022,13 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 			"EXPLAIN ANALYZE WITH i AS (INSERT INTO public.t_dst (id) VALUES (1) RETURNING id) SELECT count(*) FROM i;",
 		} {
 			resp, qErr := runAs(token, statement)
-			assertDeniedOn(t, resp, qErr, dbFullName)
+			assertDeniedOn(t, resp, qErr, "/tables/t_dst")
 		}
 		ra.Equal(before, countRows(t, "public.t_dst"), "the denied statements must not write rows")
+
+		before = countRows(t, "public.t_granted")
+		resp, qErr := runAs(token, "EXPLAIN ANALYZE WITH i AS (INSERT INTO public.t_granted (id) VALUES (43) RETURNING id) SELECT count(*) FROM i;")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(before+1, countRows(t, "public.t_granted"))
 	})
 }
