@@ -215,7 +215,7 @@ DELETE FROM t4;`
 		"DELETE FROM t4",
 	}, got.DMLStatements)
 
-	t.Run("SET LOCAL lasts until the transaction ends, ROLLBACK undoes SET, and DISCARD ALL resets", func(t *testing.T) {
+	t.Run("SET LOCAL lasts until the transaction ends, SET outlasts ROLLBACK, and DISCARD ALL resets", func(t *testing.T) {
 		const statement = `BEGIN;
 SET LOCAL search_path = app;
 DELETE FROM t1;
@@ -223,20 +223,14 @@ COMMIT;
 DELETE FROM t2;
 BEGIN;
 SET search_path = app;
+SET LOCAL search_path = other;
 ROLLBACK;
 DELETE FROM t3;
-SET search_path = app;
 DISCARD ALL;
-DELETE FROM t4;
-SET search_path = app;
-BEGIN;
-SET search_path = other;
-BEGIN;
-ROLLBACK;
-DELETE FROM t5;`
+DELETE FROM t4;`
 		got, err := extractChangedResources("db", "public", nil /* dbMetadata */, parseASTs(t, statement), statement)
 		require.NoError(t, err)
-		require.Equal(t, []string{"db.app.t1", "db.app.t5", "db.public.t2", "db.public.t3", "db.public.t4"}, getTableNames(got.ChangedResources))
+		require.Equal(t, []string{"db.app.t1", "db.app.t3", "db.public.t2", "db.public.t4"}, getTableNames(got.ChangedResources))
 	})
 
 	t.Run("the synced search path applies without a current schema", func(t *testing.T) {

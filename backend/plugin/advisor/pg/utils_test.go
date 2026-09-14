@@ -111,4 +111,10 @@ BEGIN;
 SET search_path = g;
 ROLLBACK;`)
 	require.Equal(t, []string{"SET search_path = a", "SET ROLE r", "SET search_path = d", "RESET search_path"}, settings.statements())
+
+	// A ROLLBACK outside a transaction only warns, so it keeps the session settings.
+	add(`SET search_path = h;
+SET LOCAL search_path = i;
+ROLLBACK;`)
+	require.Equal(t, []string{"SET search_path = a", "SET ROLE r", "SET search_path = d", "RESET search_path", "SET search_path = h"}, settings.statements())
 }

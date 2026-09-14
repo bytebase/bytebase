@@ -29,10 +29,8 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		}
 	}
 	searchPath := defaultSearchPath
-	// sessionSearchPath leaves out SET LOCAL, which lasts until the transaction ends, and
-	// transactionSearchPath is the session search path that ROLLBACK restores.
-	sessionSearchPath, transactionSearchPath := searchPath, searchPath
-	inTransaction := false
+	// sessionSearchPath leaves out SET LOCAL, which lasts until the transaction ends.
+	sessionSearchPath := searchPath
 	summary := &base.ChangeSummary{
 		ChangedResources: model.NewChangedResources(dbMetadata),
 	}
@@ -206,14 +204,9 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 			if n.Mode == tree.DiscardModeAll {
 				searchPath, sessionSearchPath = defaultSearchPath, defaultSearchPath
 			}
-		case *tree.BeginTransaction:
-			if !inTransaction {
-				transactionSearchPath, inTransaction = sessionSearchPath, true
-			}
-		case *tree.CommitTransaction:
-			searchPath, transactionSearchPath, inTransaction = sessionSearchPath, sessionSearchPath, false
-		case *tree.RollbackTransaction:
-			searchPath, sessionSearchPath, inTransaction = transactionSearchPath, transactionSearchPath, false
+		case *tree.CommitTransaction, *tree.RollbackTransaction:
+			// Unlike PostgreSQL, CockroachDB keeps a SET made in a transaction that rolls back.
+			searchPath = sessionSearchPath
 		case *tree.SetVar:
 			if n.ResetAll || strings.EqualFold(n.Name, "search_path") {
 				searchPath = getSearchPath(n, defaultSearchPath)

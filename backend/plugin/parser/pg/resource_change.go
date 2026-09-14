@@ -85,11 +85,13 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 				if !inTransaction {
 					transactionSearchPath, inTransaction = sessionSearchPath, true
 				}
-			case ast.TRANS_STMT_COMMIT:
-				// COMMIT AND CHAIN starts the next transaction from the committed search path.
+			case ast.TRANS_STMT_COMMIT, ast.TRANS_STMT_ROLLBACK:
+				// A ROLLBACK outside a transaction only warns.
+				if n.Kind == ast.TRANS_STMT_ROLLBACK && inTransaction {
+					sessionSearchPath = transactionSearchPath
+				}
+				// COMMIT AND CHAIN and ROLLBACK AND CHAIN start the next transaction from here.
 				searchPath, transactionSearchPath, inTransaction = sessionSearchPath, sessionSearchPath, n.Chain
-			case ast.TRANS_STMT_ROLLBACK:
-				searchPath, sessionSearchPath, inTransaction = transactionSearchPath, transactionSearchPath, n.Chain
 			default:
 			}
 

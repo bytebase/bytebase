@@ -102,7 +102,11 @@ SET search_path TO other;
 BEGIN;
 SET search_path TO third;
 ROLLBACK;
-UPDATE t SET c = 11;`
+UPDATE t SET c = 11;
+SET search_path TO other;
+SET LOCAL search_path TO app;
+ROLLBACK;
+UPDATE t SET c = 12;`
 	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
 	require.NoError(t, err)
 	got, err := extractChangedResources("db", "", dbMetadata, base.ExtractASTs(stmts), statement)
@@ -119,6 +123,7 @@ UPDATE t SET c = 11;`
 		"SET LOCAL search_path TO \"app\";\nUPDATE t SET c = 9;",
 		"UPDATE t SET c = 10;",
 		"SET LOCAL search_path TO \"app\";\nUPDATE t SET c = 11;",
+		"SET LOCAL search_path TO \"other\";\nUPDATE t SET c = 12;",
 	}, got.DMLStatements)
 }
 

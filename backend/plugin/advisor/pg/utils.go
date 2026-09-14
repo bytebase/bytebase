@@ -217,7 +217,8 @@ func (s *sessionSettings) add(node ast.Node, text string) {
 				s.transactionStart, s.inTransaction = len(s.settings), true
 			}
 		case ast.TRANS_STMT_COMMIT, ast.TRANS_STMT_ROLLBACK:
-			if n.Kind == ast.TRANS_STMT_ROLLBACK {
+			// A ROLLBACK outside a transaction only warns.
+			if n.Kind == ast.TRANS_STMT_ROLLBACK && s.inTransaction {
 				s.settings = s.settings[:s.transactionStart]
 			}
 			s.settings = slices.DeleteFunc(s.settings, func(setting sessionSetting) bool { return setting.local })
