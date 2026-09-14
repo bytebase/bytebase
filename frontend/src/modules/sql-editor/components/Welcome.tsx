@@ -34,9 +34,9 @@ import { WelcomeButton } from "./WelcomeButton";
 
 export type WelcomeProps = {
   /**
-   * Called when the user clicks "Connect to a database". Vue parent
+   * Called when the user clicks "Connect to a database". `StandardPanel`
    * passes a callback that sets `asidePanelTab = "SCHEMA"` and
-   * `showConnectionPanel = true` on the Vue-side SQL Editor context.
+   * `showConnectionPanel = true` on the SQL Editor store.
    */
   readonly onChangeConnection: () => void;
 };

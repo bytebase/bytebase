@@ -3,13 +3,13 @@
   "license": "SEE LICENSE IN LICENSE",
   "packageManager": "pnpm@11.17.0",
   "scripts": {
-    "prepare": "sh ./scripts/copy_config_files.sh && node scripts/generate_openapi_index.js",
+    "prepare": "sh ./scripts/copy-config-files.sh && node scripts/generate-openapi-index.js",
     "dev": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare && vite --mode dev-local",
     "release": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare && vite build --mode release --outDir=../backend/server/dist --emptyOutDir",
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare && vite build --mode release",
     "release-aws": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare && vite build --mode release-aws",
     "test": "node scripts/run-gate.mjs",
-    "fix": "node scripts/sort_i18n_keys.mjs && biome check --write .",
+    "fix": "node scripts/sort-i18n-keys.mjs && biome check --write .",
     "i18n": "node i18n.ts && pnpm fix",
     "bundle-visualize": "export NODE_OPTIONS=--max_old_space_size=80000 && vite-bundle-visualizer -c vite.config.ts",
     "test:e2e:install": "playwright install chromium"

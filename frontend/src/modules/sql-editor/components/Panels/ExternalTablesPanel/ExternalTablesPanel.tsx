@@ -9,9 +9,7 @@ import { useViewStateNav } from "../common/useViewStateNav";
 import { ExternalTablesTable } from "./ExternalTablesTable";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/ExternalTablesPanel/*`.
- * Single Columns detail tab — no viewer needed, fully unblocked from
- * the CodeViewer/AI carve-out that gates other panels.
+ * Single Columns detail tab — no viewer needed.
  */
 export function ExternalTablesPanel() {
   const { database } = useConnectionOfCurrentSQLEditorTab();

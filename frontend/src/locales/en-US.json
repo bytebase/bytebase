@@ -804,7 +804,6 @@
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
     "unassign-alert-title": "Unassign databases",
-    "unassigned-databases": "Unassigned databases",
     "unique": "Unique",
     "visible": "Visible"
   },
@@ -1319,9 +1318,6 @@
       "host": {
         "none-snowflake": "e.g. host.docker.internal | host IP | local socket",
         "saas": "e.g. db.example.com | database IP"
-      },
-      "proxy": {
-        "snowflake": "For proxy server, append @PROXY_HOST and specify PROXY_PORT in the port"
       }
     },
     "show-how-to-create": "Show how to create",
@@ -2033,9 +2029,6 @@
         }
       },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
-    },
-    "overview": {
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
     },
     "select": "Select project",
     "settings": {

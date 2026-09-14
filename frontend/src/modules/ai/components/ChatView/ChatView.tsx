@@ -13,21 +13,17 @@ type Props = {
 };
 
 /**
- * React port of `plugins/ai/components/ChatView/ChatView.vue`.
- *
- * Scrollable message list. Auto-scrolls to the bottom whenever the
- * inner container's height changes (a new message arrives, an AI
- * response streams in, etc.) — same `useElementSize` trigger as the
- * Vue version, ported to a `ResizeObserver`.
+ * Scrollable message list. A `ResizeObserver` auto-scrolls to the bottom
+ * whenever the inner container's height changes (a new message arrives, an
+ * AI response streams in, etc.).
  *
  * Two empty paths:
  *   - `mode="VIEW"` with a conversation that has no messages → `<EmptyView>`.
  *   - `mode="CHAT"` with no conversation at all → "select or create"
  *     prompt with a clickable Create. The `select-or-create` i18n
- *     string uses a `{create}` interpolation slot; we split manually
+ *     string uses a `{{create}}` interpolation slot; we split manually
  *     because `react-i18next`'s `Trans` v17 wipes child slots on
- *     empty placeholder tags (see SelectionCopyTooltips for the same
- *     fix in Stage 20).
+ *     empty placeholder tags (see SelectionCopyTooltips for the same fix).
  */
 export function ChatView({ mode = "CHAT", conversation }: Props) {
   const { t } = useTranslation();

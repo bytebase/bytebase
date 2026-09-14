@@ -118,12 +118,6 @@ const mocks = vi.hoisted(() => {
           <div data-testid="component-permission-guard" />
         )
     ),
-    useProjectV1Store: vi.fn(() => ({
-      getProjectByName: vi.fn(() => ({
-        name: "projects/proj1",
-        title: "Project 1",
-      })),
-    })),
     databaseStore: vi.fn(() => ({
       syncDatabase: vi.fn(),
       batchUpdateDatabases: vi.fn(),
@@ -138,41 +132,9 @@ const mocks = vi.hoisted(() => {
       getSchemaList: vi.fn(() => [] as unknown[]),
       getTableList: vi.fn(() => [] as unknown[]),
     })),
-    usePermissionStore: vi.fn(() => ({
-      currentPermissions: new Set([
-        "bb.databases.sync",
-        "bb.databases.getSchema",
-        "bb.databases.update",
-        "bb.plans.create",
-        "bb.sheets.create",
-      ]),
-      currentPermissionsInProjectV1: vi.fn(
-        () =>
-          new Set([
-            "bb.databases.sync",
-            "bb.databases.getSchema",
-            "bb.databases.update",
-            "bb.plans.create",
-            "bb.sheets.create",
-          ])
-      ),
-    })),
     getDatabaseSDLSchema: vi.fn(),
-    schemaDiagram: vi.fn(() => <div data-testid="schema-diagram-vue" />),
     preCreateIssue: vi.fn(),
-    useActuatorV1Store: vi.fn(() => ({
-      serverInfo: {
-        defaultProject: "projects/default",
-      },
-    })),
-    pinia: {
-      install: vi.fn(),
-    },
-    highlightPlugin: {
-      install: vi.fn(),
-    },
     i18nPlugin: {
-      install: vi.fn(),
       t: (key: string) => key,
     },
     routeNames: {
@@ -276,10 +238,7 @@ vi.mock("@/utils", async (importOriginal) => {
 });
 
 vi.mock("@/stores", () => ({
-  pinia: mocks.pinia,
   pushNotification: mocks.pushNotification,
-  useProjectV1Store: mocks.useProjectV1Store,
-  usePermissionStore: mocks.usePermissionStore,
 }));
 
 // Page composes child panels that now read dbSchema getters via the app
@@ -314,16 +273,8 @@ vi.mock("@/api", () => ({
   },
 }));
 
-vi.mock("@/lib/highlight", () => ({
-  default: mocks.highlightPlugin,
-}));
-
 vi.mock("@/lib/i18n", () => ({
   default: mocks.i18nPlugin,
-}));
-
-vi.mock("@/stores/modules/v1/actuator", () => ({
-  useActuatorV1Store: mocks.useActuatorV1Store,
 }));
 
 vi.mock("@/lib/plan/issue", () => ({
@@ -479,13 +430,6 @@ beforeEach(() => {
   mocks.DatabaseRevisionPanel.mockClear();
   mocks.DatabaseCatalogPanel.mockClear();
   mocks.ComponentPermissionGuard.mockClear();
-  mocks.useProjectV1Store.mockReset();
-  mocks.useProjectV1Store.mockReturnValue({
-    getProjectByName: vi.fn(() => ({
-      name: "projects/proj1",
-      title: "Project 1",
-    })),
-  });
   mocks.databaseStore.mockReset();
   mocks.databaseStore.mockReturnValue({
     syncDatabase: vi.fn(),
@@ -502,38 +446,8 @@ beforeEach(() => {
     getSchemaList: vi.fn(() => [] as unknown[]),
     getTableList: vi.fn(() => [] as unknown[]),
   });
-  mocks.usePermissionStore.mockReset();
-  mocks.usePermissionStore.mockReturnValue({
-    currentPermissions: new Set([
-      "bb.databases.sync",
-      "bb.databases.getSchema",
-      "bb.databases.update",
-      "bb.plans.create",
-      "bb.sheets.create",
-    ]),
-    currentPermissionsInProjectV1: vi.fn(
-      () =>
-        new Set([
-          "bb.databases.sync",
-          "bb.databases.getSchema",
-          "bb.databases.update",
-          "bb.plans.create",
-          "bb.sheets.create",
-        ])
-    ),
-  });
   mocks.getDatabaseSDLSchema.mockReset();
-  mocks.schemaDiagram.mockClear();
   mocks.preCreateIssue.mockReset();
-  mocks.pinia.install.mockReset();
-  mocks.highlightPlugin.install.mockReset();
-  mocks.i18nPlugin.install.mockReset();
-  mocks.useActuatorV1Store.mockReset();
-  mocks.useActuatorV1Store.mockReturnValue({
-    serverInfo: {
-      defaultProject: "projects/default",
-    },
-  });
   mocks.windowOpen.mockReset();
   latestTabsOnValueChange = undefined;
 });
@@ -658,25 +572,6 @@ describe("ProjectDatabaseDetailPage", () => {
   });
 
   test("selects the tab from a valid hash and keeps the query when the tab changes", async () => {
-    mocks.usePermissionStore.mockReturnValue({
-      currentPermissions: new Set([
-        "bb.databases.sync",
-        "bb.databases.getSchema",
-        "bb.databases.update",
-        "bb.changelogs.list",
-        "bb.revisions.list",
-      ]),
-      currentPermissionsInProjectV1: vi.fn(
-        () =>
-          new Set([
-            "bb.databases.sync",
-            "bb.databases.getSchema",
-            "bb.databases.update",
-            "bb.changelogs.list",
-            "bb.revisions.list",
-          ])
-      ),
-    });
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {
         name: "instances/inst1/databases/db1",
@@ -939,24 +834,7 @@ describe("ProjectDatabaseDetailPage", () => {
     unmount();
   });
 
-  test("renders the tab panels only when the matching list permissions are present", async () => {
-    mocks.usePermissionStore.mockReturnValue({
-      currentPermissions: new Set([
-        "bb.databases.sync",
-        "bb.databases.getSchema",
-        "bb.databases.update",
-        "bb.changelogs.list",
-      ]),
-      currentPermissionsInProjectV1: vi.fn(
-        () =>
-          new Set([
-            "bb.databases.sync",
-            "bb.databases.getSchema",
-            "bb.databases.update",
-            "bb.changelogs.list",
-          ])
-      ),
-    });
+  test("renders only the panel selected by the route hash", async () => {
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {
         name: "instances/inst1/databases/db1",
@@ -1116,10 +994,6 @@ describe("ProjectDatabaseDetailPage", () => {
   });
 
   test("renders action components for default-project databases", async () => {
-    mocks.usePermissionStore.mockReturnValue({
-      currentPermissions: new Set(),
-      currentPermissionsInProjectV1: vi.fn(() => new Set()),
-    });
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {
         name: "instances/inst1/databases/db1",
@@ -1159,11 +1033,7 @@ describe("ProjectDatabaseDetailPage", () => {
     unmount();
   });
 
-  test("renders action components when project permissions are missing", async () => {
-    mocks.usePermissionStore.mockReturnValue({
-      currentPermissions: new Set(),
-      currentPermissionsInProjectV1: vi.fn(() => new Set()),
-    });
+  test("renders the database detail actions", async () => {
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: {
         name: "instances/inst1/databases/db1",

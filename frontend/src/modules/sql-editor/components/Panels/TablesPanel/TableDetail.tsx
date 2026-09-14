@@ -48,7 +48,7 @@ export function TableDetail({ db, database, schema, table }: TableDetailProps) {
   const [keyword, setKeyword] = useState("");
 
   // Sync the active tab with the detail anchor (column / index / FK /
-  // partition / trigger). Mirrors the Vue watch in TableDetail.vue.
+  // partition / trigger).
   useEffect(() => {
     if (!detail?.table) return;
     if (detail.column) {

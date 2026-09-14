@@ -245,7 +245,7 @@ export function ProjectSidebar() {
   recordVisitRef.current = record;
 
   // Ensure the project is fetched into the store cache.
-  // ProjectRouteShell also fetches it, but this guards against race conditions.
+  // ProjectRouteGate also fetches it, but this guards against race conditions.
   useEffect(() => {
     if (projectId) {
       useAppStore

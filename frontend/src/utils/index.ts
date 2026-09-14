@@ -2,7 +2,6 @@ export * from "./css";
 export * from "./collections";
 export * from "./role";
 export * from "./slug";
-export * from "./types";
 export * from "./util";
 export * from "./featureGates";
 export * from "./datetime";

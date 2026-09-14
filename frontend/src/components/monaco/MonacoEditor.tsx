@@ -599,9 +599,7 @@ export function MonacoEditor({
   // LSP `setMetadata` — must run *after* the editor + its model are
   // attached so the language server has a document to bind the
   // metadata to. We gate on `ready`, which the big editor effect
-  // flips true once `editor.setModel(model)` has run. Mirrors Vue's
-  // `useAutoComplete` call site, which lives inside the post-setup
-  // path of `MonacoTextModelEditor.vue`.
+  // flips true once `editor.setModel(model)` has run.
   //
   // Skipped entirely when the caller does not opt in to SQL LSP via
   // `autoCompleteContext`, so editors like `SchemaEditorLite` that mount
@@ -718,9 +716,9 @@ export function MonacoEditor({
         ref={containerRef}
         className={cn(
           "w-full overflow-clip text-sm",
-          // Match Vue's `bb-monaco-editor` — flush against the host
-          // shell with no border or rounded corners. Consumers that
-          // want a chrome can wrap the component themselves.
+          // Flush against the host shell with no border or rounded
+          // corners. Consumers that want a chrome can wrap the component
+          // themselves.
           autoHeight ? "" : "h-full"
         )}
         style={autoHeight ? { height } : undefined}

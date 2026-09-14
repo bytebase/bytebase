@@ -8,13 +8,6 @@ type Props = {
   readonly keyword: string;
 };
 
-/**
- * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/TreeNode/InstanceNode.vue.
- * The Vue version also supported an "environment prefix" path gated on
- * `hasEnvironmentContext`, which was hard-coded to `true` — so in practice
- * only the instance name + engine icon was ever rendered. We mirror that
- * reduced behavior.
- */
 export function InstanceNode({ node, keyword }: Props) {
   const target = (node as SQLEditorTreeNode<"instance">).meta.target;
   const instance = {

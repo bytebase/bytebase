@@ -129,8 +129,8 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     return request;
   },
 
-  // Force re-fetch (mirrors the Pinia `fetchCurrentUser`, which always hits
-  // the server — login/signup need the fresh authenticated user).
+  // Force re-fetch: always hits the server — login/signup need the fresh
+  // authenticated user.
   fetchCurrentUser: async (silent = false) => {
     try {
       const user = await userServiceClientConnect.getCurrentUser(

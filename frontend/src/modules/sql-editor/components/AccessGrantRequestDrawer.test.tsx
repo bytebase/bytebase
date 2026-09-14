@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   currentTabDatabase: "instances/inst1/databases/db1" as string | undefined,
   currentTabSchema: undefined as string | undefined,
   currentTabTable: undefined as string | undefined,
-  // New zustand setters.
+  // SQL Editor store setters.
   setAsidePanelTab: vi.fn(),
   setHighlightAccessGrantName: vi.fn(),
   pushNotification: vi.fn(),
@@ -41,9 +41,6 @@ vi.mock("@/hooks/useAppState", () => ({
 }));
 
 vi.mock("@/stores/app", () => {
-  // `notify` reuses the `pushNotification` vi.fn so the existing test
-  // assertions on `mocks.pushNotification` keep working after the migration
-  // from the Pinia helper to the app-store notification slice.
   const state = () => ({
     fetchDatabases: mocks.fetchDatabases,
     notify: mocks.pushNotification,

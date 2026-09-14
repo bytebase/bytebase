@@ -252,7 +252,7 @@ function useSidebarItems(): SidebarItem[] {
 }
 
 // ---------------------------------------------------------------------------
-// Filter logic (mirrors CommonSidebar.vue filteredSidebarList)
+// Filter logic
 // ---------------------------------------------------------------------------
 
 function filterSidebarList(items: SidebarItem[]): SidebarItem[] {

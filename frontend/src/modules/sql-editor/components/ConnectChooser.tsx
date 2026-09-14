@@ -38,10 +38,9 @@ type ConnectChooserProps = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/ConnectChooser.vue.
- * Schema/Container chooser button used inside the SQL Editor toolbar's
- * NButtonGroup. Renders a chosen value (truncated) or a placeholder hint;
- * clicking opens a dropdown popover for selection.
+ * Schema/Container chooser button used in the SQL Editor toolbar. Renders a
+ * chosen value (truncated) or a placeholder hint; clicking opens a dropdown
+ * popover for selection.
  *
  * Note: uses a custom trigger button + portal dropdown rather than the
  * shared <Combobox> component, because <Combobox> does not expose a

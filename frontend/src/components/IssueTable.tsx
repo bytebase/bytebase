@@ -9,6 +9,7 @@ import {
   AdvancedSearch,
   type ScopeOption,
   type SearchParams,
+  type SearchScope,
   type ValueOption,
 } from "@/components/AdvancedSearch";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
@@ -72,8 +73,6 @@ import {
   getValuesFromSearchParams,
   projectOfIssue,
   upsertScope,
-  type SearchParams as VueSearchParams,
-  type SearchScope as VueSearchScope,
 } from "@/utils";
 
 // ===========================================================================
@@ -221,7 +220,7 @@ export function PresetButtons({
 
   const isActive = useCallback(
     (preset: PresetValue): boolean => {
-      const vp = params as VueSearchParams;
+      const vp = params as SearchParams;
       if (preset === "WAITING_APPROVAL") {
         return (
           getValueFromSearchParams(vp, "approval") ===
@@ -254,7 +253,7 @@ export function PresetButtons({
     (preset: PresetValue) => {
       const myEmail = me?.email ?? "";
       const readonlyScopes = params.scopes.filter((s) => s.readonly);
-      let newParams: VueSearchParams = {
+      let newParams: SearchParams = {
         query: "",
         scopes: [...readonlyScopes],
       };
@@ -292,7 +291,7 @@ export function PresetButtons({
         scopes: newParams.scopes.map((s) => ({
           id: s.id,
           value: s.value,
-          readonly: (s as VueSearchScope & { readonly?: boolean }).readonly,
+          readonly: (s as SearchScope & { readonly?: boolean }).readonly,
         })),
       });
     },

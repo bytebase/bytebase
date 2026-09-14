@@ -16,8 +16,6 @@ interface FocusButtonProps {
 }
 
 /**
- * React port of `frontend/src/components/SchemaDiagram/common/FocusButton.vue`.
- *
  * Toggles the `focusedTables` membership for the given table and (by
  * default) emits `set-center` so the canvas re-centers + zooms onto it.
  * Used inside Navigator tree node suffixes and on hover over each

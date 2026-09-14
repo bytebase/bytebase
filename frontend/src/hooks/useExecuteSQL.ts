@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { isConnectedSQLEditorTab } from "@/lib/sqlEditorConnection";
 import { getValidDataSourceByPolicy } from "@/lib/sqlEditorDataSource";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
-import { useSQLEditorStore as useSQLEditorReactStore } from "@/modules/sql-editor/store";
+import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { getSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import {
   getDatabaseQueryContext,
@@ -371,7 +371,7 @@ export const useExecuteSQL = () => {
       // the HistoryPane re-renders from it (store reactivity alone
       // doesn't reliably propagate into the React subscriber, so we
       // trigger the re-render explicitly).
-      useSQLEditorReactStore
+      useSQLEditorStore
         .getState()
         .mergeLatest({
           project: getSQLEditorEditorState().project,

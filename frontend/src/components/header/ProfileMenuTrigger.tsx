@@ -285,8 +285,8 @@ export function ProfileMenuTrigger({
           <DropdownMenuItem
             onClick={() => {
               setOpen(false);
-              // logout() computes the signin redirect itself (mirrors the
-              // legacy Pinia auth store) and hard-redirects to clear state.
+              // logout() computes the signin redirect itself and
+              // hard-redirects to clear state.
               void useAppStore.getState().logout();
             }}
           >

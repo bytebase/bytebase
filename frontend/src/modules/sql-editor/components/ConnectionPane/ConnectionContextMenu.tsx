@@ -21,8 +21,6 @@ type Target = {
 };
 
 /**
- * Replaces the `NDropdown placement="bottom-start" trigger="manual"` in
- * frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/ConnectionPane.vue.
  * Mirrors the TabContextMenu pattern: a 0×0 position-fixed trigger at the
  * cursor is programmatically .click()-ed so Base UI records a click-type
  * open event and the popup stays open when the pointer moves onto items.

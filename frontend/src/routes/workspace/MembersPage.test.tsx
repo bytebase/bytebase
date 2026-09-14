@@ -317,7 +317,6 @@ vi.mock("@/stores/app", () => {
     getProjectIamPolicy: () => projectIamPolicy,
     updateProjectIamPolicy: mockUpdateProjectIamPolicy,
     loadProjectIamPolicy: vi.fn(async () => undefined),
-    // Project store methods, migrated off the Pinia useProjectV1Store mock.
     projectsByName: {},
     getProjectByName: (name: string) => ({
       allowRequestRole: true,
@@ -325,7 +324,6 @@ vi.mock("@/stores/app", () => {
       permissions: ["bb.projects.setIamPolicy"],
       state: 1,
     }),
-    // Migrated off the Pinia actuator/setting/subscription store mocks.
     isSaaSMode: () => false,
     workspaceResourceName: () => "workspaces/default",
     userCountInIam: () => 1,

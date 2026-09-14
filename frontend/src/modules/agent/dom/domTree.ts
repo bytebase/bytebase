@@ -35,13 +35,6 @@ const INTERACTIVE_ROLES = new Set([
   "slider",
 ]);
 
-const NAIVE_INTERACTIVE_CLASSES = [
-  "n-button",
-  "n-switch",
-  "n-checkbox",
-  "n-base-selection",
-];
-
 const TERMINAL_INTERACTIVE_TAGS = new Set([
   "A",
   "BUTTON",
@@ -97,17 +90,6 @@ const ACTION_LIKE_HEADERS = new Set([
   "operations",
   "menu",
 ]);
-const NAIVE_CONTROL_TEXT_SELECTORS = [
-  ".n-input-prefix",
-  ".n-input-suffix",
-  ".n-input__placeholder",
-  ".n-base-selection-label",
-  ".n-base-selection-placeholder",
-  ".n-base-selection-tags",
-  ".n-base-selection-input",
-  ".n-base-suffix",
-  ".n-base-loading",
-].join(",");
 
 const MAIN_CONTENT_SELECTOR = [
   "main",
@@ -127,16 +109,9 @@ const SHELL_REGION_SELECTOR = [
   '[data-label="bb-dashboard-static-sidebar"]',
   '[data-label="bb-dashboard-header"]',
 ].join(",");
-const OVERLAY_REGION_SELECTOR = [
-  '[role="dialog"]',
-  '[aria-modal="true"]',
-  ".n-drawer",
-  ".n-modal",
-  ".n-popover",
-  ".n-dropdown-menu",
-  ".n-base-select-menu",
-  ".n-dialog",
-].join(",");
+const OVERLAY_REGION_SELECTOR = ['[role="dialog"]', '[aria-modal="true"]'].join(
+  ","
+);
 const SECONDARY_REGION_CAPS: Partial<
   Record<LineRegion, { lines: number; chars: number }>
 > = {
@@ -220,7 +195,7 @@ interface DomLine {
   semanticTag?: string;
 }
 
-type InteractiveReason = "native" | "role" | "class" | "editable" | "pointer";
+type InteractiveReason = "native" | "role" | "editable" | "pointer";
 
 interface WalkContext {
   lines: DomLine[];
@@ -291,14 +266,6 @@ function hasPointerCursor(el: Element): boolean {
   return !parent || window.getComputedStyle(parent).cursor !== "pointer";
 }
 
-function isNaiveSelectElement(el: Element): boolean {
-  return el.classList.contains("n-base-selection");
-}
-
-function isNaiveControlTextElement(el: Element): boolean {
-  return Boolean(el.closest(NAIVE_CONTROL_TEXT_SELECTORS));
-}
-
 function isMonacoEditor(el: Element): boolean {
   return el.classList.contains("monaco-editor");
 }
@@ -322,10 +289,6 @@ function getInteractiveReason(el: Element): InteractiveReason | undefined {
 
   const role = el.getAttribute("role");
   if (role && INTERACTIVE_ROLES.has(role)) return "role";
-
-  for (const cls of NAIVE_INTERACTIVE_CLASSES) {
-    if (el.classList.contains(cls)) return "class";
-  }
 
   if (isContentEditableElement(el)) return "editable";
   if (hasPointerCursor(el)) return "pointer";
@@ -435,15 +398,6 @@ function extractLabel(el: Element): string {
     if (placeholder) return truncateText(placeholder, MAX_LABEL_LENGTH);
   }
 
-  // Naive UI form-item label
-  const formItem = el.closest(".n-form-item");
-  if (formItem) {
-    const label = normalizeTextContent(
-      formItem.querySelector(".n-form-item-label__text")?.textContent ?? ""
-    );
-    if (label) return truncateText(label, MAX_LABEL_LENGTH);
-  }
-
   if (el instanceof HTMLInputElement && BUTTON_LIKE_INPUT_TYPES.has(el.type)) {
     const buttonValue = normalizeTextContent(el.value);
     if (buttonValue) return truncateText(buttonValue, MAX_LABEL_LENGTH);
@@ -456,8 +410,7 @@ function extractLabel(el: Element): string {
   if (
     el instanceof HTMLInputElement ||
     el instanceof HTMLTextAreaElement ||
-    el instanceof HTMLSelectElement ||
-    isNaiveSelectElement(el)
+    el instanceof HTMLSelectElement
   ) {
     const siblingLabel = getSiblingControlLabel(el);
     if (siblingLabel) return siblingLabel;
@@ -495,25 +448,6 @@ function extractValue(el: Element): string | undefined {
     return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
   }
 
-  // Naive UI select
-  if (el.classList.contains("n-base-selection")) {
-    const value = normalizeTextContent(
-      el.querySelector(".n-base-selection-label")?.textContent ?? ""
-    );
-    return value ? truncateText(value, MAX_LABEL_LENGTH) : undefined;
-  }
-
-  // Naive UI checkbox/switch
-  if (
-    el.classList.contains("n-checkbox") ||
-    el.classList.contains("n-switch")
-  ) {
-    const isChecked =
-      el.classList.contains("n-checkbox--checked") ||
-      el.classList.contains("n-switch--active");
-    return isChecked ? "checked" : "unchecked";
-  }
-
   return undefined;
 }
 function hasInteractiveState(el: Element): boolean {
@@ -523,7 +457,7 @@ function hasInteractiveState(el: Element): boolean {
   });
 }
 
-function getFallbackLabel(el: Element, reason: InteractiveReason): string {
+function getFallbackLabel(el: Element): string {
   if (el instanceof HTMLInputElement) {
     if (CHECKABLE_INPUT_TYPES.has(el.type)) return el.type;
     if (TEXTBOX_INPUT_TYPES.has(el.type)) return "textbox";
@@ -533,18 +467,10 @@ function getFallbackLabel(el: Element, reason: InteractiveReason): string {
   }
 
   if (el instanceof HTMLTextAreaElement) return "textbox";
-  if (el instanceof HTMLSelectElement || isNaiveSelectElement(el)) {
-    return "select";
-  }
+  if (el instanceof HTMLSelectElement) return "select";
 
   const role = el.getAttribute("role") ?? "";
   if (STATEFUL_INTERACTIVE_ROLES.has(role)) return role;
-  if (
-    reason === "class" &&
-    (el.classList.contains("n-checkbox") || el.classList.contains("n-switch"))
-  ) {
-    return el.classList.contains("n-switch") ? "switch" : "checkbox";
-  }
 
   return "";
 }
@@ -643,7 +569,6 @@ function classifyTextLine(
 
 function pushTextLine(node: Text, depth: number, context: WalkContext): void {
   if (!node.parentElement || !isPerceivable(node.parentElement)) return;
-  if (isNaiveControlTextElement(node.parentElement)) return;
   const text = normalizeTextContent(node.textContent ?? "");
   if (!text) return;
   if (context.interactiveLabels.includes(text)) return;
@@ -717,9 +642,7 @@ function collectSemanticTextSegments(node: Node, segments: string[]): void {
 
   if (node instanceof HTMLInputElement) {
     const text =
-      extractLabel(node) ||
-      extractValue(node) ||
-      getFallbackLabel(node, "native");
+      extractLabel(node) || extractValue(node) || getFallbackLabel(node);
     if (text) segments.push(text);
     return;
   }
@@ -729,9 +652,7 @@ function collectSemanticTextSegments(node: Node, segments: string[]): void {
     node instanceof HTMLSelectElement
   ) {
     const text =
-      extractLabel(node) ||
-      extractValue(node) ||
-      getFallbackLabel(node, "native");
+      extractLabel(node) || extractValue(node) || getFallbackLabel(node);
     if (text) segments.push(text);
     return;
   }
@@ -754,9 +675,7 @@ function collectSemanticTextSegments(node: Node, segments: string[]): void {
   if (!interactiveReason) return;
 
   const text =
-    extractLabel(node) ||
-    getFallbackLabel(node, interactiveReason) ||
-    extractValue(node);
+    extractLabel(node) || getFallbackLabel(node) || extractValue(node);
   if (text) segments.push(text);
 }
 
@@ -776,7 +695,6 @@ function collectNonInteractiveTextSegments(
   if (node.hasAttribute("data-agent-window")) return;
   if (!isPerceivable(node)) return;
   if (!isRoot && getInteractiveReason(node)) return;
-  if (isNaiveControlTextElement(node)) return;
 
   Array.from(node.childNodes).forEach((child) => {
     collectNonInteractiveTextSegments(child, segments);
@@ -804,8 +722,7 @@ function extractSemanticText(node: Node): string | undefined {
   if (node instanceof Element && uniqueSegments.length === 0) {
     const interactiveReason = getInteractiveReason(node);
     if (interactiveReason) {
-      const label =
-        extractLabel(node) || getFallbackLabel(node, interactiveReason);
+      const label = extractLabel(node) || getFallbackLabel(node);
       const value = extractValue(node);
       const semanticText = normalizeTextContent(label || value || "");
       if (semanticText) return semanticText;
@@ -849,8 +766,7 @@ function walkTableActionableDescendants(
   const interactiveReason = getInteractiveReason(node);
   if (interactiveReason) {
     const value = extractValue(node);
-    const label =
-      extractLabel(node) || getFallbackLabel(node, interactiveReason);
+    const label = extractLabel(node) || getFallbackLabel(node);
     if (
       shouldIndexInteractiveNode(node, interactiveReason, label, value, context)
     ) {
@@ -881,11 +797,7 @@ function isUtilityTableCell(
     return false;
   }
 
-  if (
-    !cell.querySelector(
-      "a, button, input, select, textarea, .n-button, .n-switch, .n-checkbox, .n-base-selection"
-    )
-  ) {
+  if (!cell.querySelector("a, button, input, select, textarea")) {
     return false;
   }
 
@@ -976,10 +888,7 @@ function walkTableNode(
     let childContext = context;
     if (interactiveReason) {
       const value = extractValue(row);
-      const label =
-        rowLabel ||
-        extractLabel(row) ||
-        getFallbackLabel(row, interactiveReason);
+      const label = rowLabel || extractLabel(row) || getFallbackLabel(row);
       if (
         shouldIndexInteractiveNode(
           row,
@@ -1074,12 +983,10 @@ function walkDomNode(
   let nextInteractiveLabels = context.interactiveLabels;
   let hasInteractiveAncestor = context.hasInteractiveAncestor;
   if (interactiveReason) {
-    const tag = isNaiveSelectElement(node)
-      ? "select"
-      : node.tagName.toLowerCase();
+    const tag = node.tagName.toLowerCase();
     const value = extractValue(node);
     const rawLabel = extractLabel(node);
-    const label = rawLabel || getFallbackLabel(node, interactiveReason);
+    const label = rawLabel || getFallbackLabel(node);
 
     if (
       shouldIndexInteractiveNode(node, interactiveReason, label, value, context)

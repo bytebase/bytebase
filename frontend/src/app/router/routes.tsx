@@ -42,7 +42,7 @@ function joinPath(parent: string, child: string): string {
 
 // Flatten the nested route table into a `name -> full path pattern` map,
 // joining parent/child segments. Registered into `navigation.ts` at app boot so
-// the ported guard + auth lifecycle can resolve their by-name redirects to
+// the route guard and auth lifecycle can resolve their by-name redirects to
 // paths. Lives here (a `.tsx` module) so `navigation.ts` stays a pure `.ts`.
 export function buildRouteNameIndex(
   list: RouteObject[] = routes,

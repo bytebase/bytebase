@@ -19,7 +19,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/ContainerChooser.vue.
  * Visible only for CosmosDB databases (container = table in CosmosDB).
  * Selected container persists to the current tab's connection.table.
  */
@@ -35,8 +34,8 @@ export function ContainerChooser({
   const tabTable = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.connection.table
   );
-  // Parent SchemaPane (E4 migration) drives the metadata fetch; here we
-  // only need the cached read.
+  // The ancestor `Panels` drives the metadata fetch; here we only need the
+  // cached read.
   const { schemas } = useAppDatabaseMetadata(databaseName, {
     autoFetch: false,
   });
@@ -87,10 +86,8 @@ export function ContainerChooser({
   );
 
   // Seed from URL query parameter on mount and whenever the query param OR
-  // the active tab changes. Mirrors Vue's watchEffect, which implicitly
-  // tracked both `route.query.table` and `tab.value` (the latter via the
-  // setter's reactive reads) so that switching to a new tab with the URL
-  // query still present re-seeded the new tab's connection.table.
+  // the active tab changes, so that switching to a new tab with the URL
+  // query still present re-seeds the new tab's connection.table.
   useEffect(() => {
     if (!queryParam) {
       ignoredRouteTableByTab.delete(currentTabId);

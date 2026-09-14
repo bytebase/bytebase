@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
+import sqlReviewMessages from "@/locales/sql-review/en-US.json";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   SQLReviewRule_Level,
@@ -15,10 +16,14 @@ import sqlReviewSchema from "./sql-review-schema.yaml";
 import {
   convertPolicyRuleToRuleTemplate,
   convertRuleMapToPolicyRuleList,
+  getRuleLocalizationKey,
   type RuleTemplateV2,
+  ruleTypeToString,
   TEMPLATE_LIST_V2,
   validateRuleMapByEngine,
 } from "./sqlReview";
+
+type LocaleMessages = { [key: string]: string | LocaleMessages };
 
 // Type for template rule data loaded from YAML
 interface TemplateRule {
@@ -471,5 +476,38 @@ describe("TEMPLATE_LIST_V2", () => {
 
     expect(template).toBeTruthy();
     expect(template?.ruleList).toHaveLength(0);
+  });
+
+  // Rule messages are looked up by computed keys, which check-i18n.mjs cannot
+  // trace; locale parity with en-US is enforced there.
+  test("localizes every template and rule", () => {
+    const section = (name: string) =>
+      (sqlReviewMessages as LocaleMessages)[name] as LocaleMessages;
+    for (const template of TEMPLATE_LIST_V2) {
+      const key = template.id.split(".").join("-");
+      expect(section("template")).toHaveProperty([key]);
+      expect(section("template")).toHaveProperty([`${key}-desc`]);
+      for (const rule of template.ruleList) {
+        const type = ruleTypeToString(rule.type);
+        const ruleMessages = section("rule")[getRuleLocalizationKey(type)];
+        expect(ruleMessages, type).toHaveProperty("title");
+        expect(ruleMessages, type).toHaveProperty("description");
+        for (const component of rule.componentList) {
+          expect(ruleMessages, type).toHaveProperty([
+            "component",
+            component.key,
+          ]);
+        }
+        expect(section("category"), type).toHaveProperty([
+          rule.category.toLowerCase(),
+        ]);
+        expect(section("level"), type).toHaveProperty([
+          SQLReviewRule_Level[rule.level].toLowerCase(),
+        ]);
+        expect(section("engine"), type).toHaveProperty([
+          Engine[rule.engine].toLowerCase(),
+        ]);
+      }
+    }
   });
 });

@@ -37,9 +37,9 @@ const COLOR_LIST = [
 ];
 
 /**
- * React port of `ER/TableNode.vue`. One table card with title bar, FK
- * focus button, optional edit pencil, and a column list with PK / index
- * glyphs and edit-on-click affordances when `editable` is on.
+ * One table card with title bar, FK focus button, optional edit pencil, and
+ * a column list with PK / index glyphs and edit-on-click affordances when
+ * `editable` is on.
  */
 export function TableNode({ schema, table }: TableNodeProps) {
   const ctx = useSchemaDiagramContext();

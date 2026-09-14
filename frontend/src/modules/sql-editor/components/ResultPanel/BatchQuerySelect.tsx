@@ -67,8 +67,6 @@ const isDatabaseQueryFailed = (item: BatchQueryItem) =>
   );
 
 /**
- * Replaces `frontend/src/views/sql-editor/EditorPanel/ResultPanel/BatchQuerySelect.vue`.
- *
  * Renders the batch-query tab strip above the result panel: one tab per
  * queried database, with environment-tinted backgrounds, an empty-results
  * toggle, a batch-export drawer, and a right-click context menu (close /
@@ -129,8 +127,7 @@ export function BatchQuerySelect({
     return items.filter((item) => !isEmptyQueryItem(item));
   }, [items, showEmpty, showEmptySwitch]);
 
-  // Auto-select a proper database when the items list changes (mirrors
-  // the Vue `watch(filteredItems, ..., { immediate: true })`).
+  // Auto-select a proper database when the items list changes.
   useEffect(() => {
     if (
       !selectedDatabase ||

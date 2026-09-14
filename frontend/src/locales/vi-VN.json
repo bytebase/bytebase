@@ -804,7 +804,6 @@
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
     "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
-    "unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "unique": "Duy nhất",
     "visible": "Hiển thị"
   },
@@ -1319,9 +1318,6 @@
       "host": {
         "none-snowflake": "ví dụ: host.docker.internal | IP máy chủ | local socket",
         "saas": "ví dụ: db.example.com | IP cơ sở dữ liệu"
-      },
-      "proxy": {
-        "snowflake": "Đối với máy chủ proxy, thêm @PROXY_HOST và chỉ định PROXY_PORT trong cổng"
       }
     },
     "show-how-to-create": "Hiển thị cách tạo",
@@ -2033,9 +2029,6 @@
         }
       },
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
-    },
-    "overview": {
-      "info-slot-content": "Bytebase định kỳ đồng bộ hóa lược đồ phiên bản. Các cơ sở dữ liệu mới được đồng bộ hóa trước tiên được đặt ở đây. Người dùng nên chuyển chúng đến dự án ứng dụng thích hợp."
     },
     "select": "Chọn dự án",
     "settings": {

@@ -567,7 +567,7 @@ function IssueDetailDatabaseChangeTargets({
       try {
         await fetchTargets(visibleTargets);
       } catch {
-        // Ignore target loading failures to match the current Vue behavior.
+        // Ignore target loading failures.
       } finally {
         if (!canceled) {
           setIsLoadingTargets(false);
@@ -595,7 +595,7 @@ function IssueDetailDatabaseChangeTargets({
       try {
         await fetchTargets(targets);
       } catch {
-        // Ignore target loading failures to match the current Vue behavior.
+        // Ignore target loading failures.
       } finally {
         if (!canceled) {
           setIsLoadingAllTargets(false);
@@ -877,7 +877,7 @@ const fetchTargets = async (targets: string[]) => {
           databaseTargets.add(database.name);
         }
       } catch {
-        // Ignore target loading failures to match the current Vue behavior.
+        // Ignore target loading failures.
       }
       continue;
     }

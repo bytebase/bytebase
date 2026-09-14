@@ -13,7 +13,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/DatabaseGroupTag.vue.
  * Closable tag representing a selected database group. Fetches the group
  * lazily on mount and hides itself until resolved.
  */

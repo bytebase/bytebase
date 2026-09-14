@@ -10,14 +10,11 @@ import { isSavedQueryWritableV1 } from "@/utils";
 const AUTO_SAVE_DEBOUNCE_MS = 2000;
 
 /**
- * React port of the auto-save block previously embedded in
- * `views/sql-editor/context.ts`'s `provideSQLEditorContext()`.
- *
  * Watches the active tab's `statement` and after a 2s debounce calls
- * `maybeUpdateSavedQuery` if the tab is dirty + writable. Mirrors the
- * Vue `watchDebounced` behavior: aborts any in-flight auto-save when a
- * newer one starts, reverts the tab to DIRTY on error (unless aborted),
- * and re-flags DIRTY when the statement keeps changing during the save.
+ * `maybeUpdateSavedQuery` if the tab is dirty + writable. Aborts any
+ * in-flight auto-save when a newer one starts, reverts the tab to DIRTY
+ * on error (unless aborted), and re-flags DIRTY when the statement keeps
+ * changing during the save.
  *
  * Mounted once at the SQL Editor layout level; safe to call from any
  * component but should only be active while the SQL Editor route is.
@@ -50,8 +47,8 @@ export function useSQLEditorAutoSave() {
       }
     };
     // We re-arm the debounce on every statement change. The save itself
-    // reads tab.statement from Pinia at fire time, so capturing only the
-    // change-trigger here is sufficient.
+    // reads tab.statement from the tab store at fire time, so capturing
+    // only the change-trigger here is sufficient.
   }, [statement]);
 
   const runAutoSave = async () => {

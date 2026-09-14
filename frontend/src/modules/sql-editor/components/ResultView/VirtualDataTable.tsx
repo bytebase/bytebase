@@ -66,11 +66,10 @@ export interface VirtualDataTableProps {
 }
 
 /**
- * Virtualized result-table grid. Replaces the Naive UI `NVirtualList` host
- * with `@tanstack/react-virtual`'s `useVirtualizer`. The header is a
- * separate sticky row outside the virtual scroller so it can stay fixed
- * during vertical scroll without fighting the virtualizer's internal
- * positioning.
+ * Virtualized result-table grid built on `@tanstack/react-virtual`'s
+ * `useVirtualizer`. The header is a separate sticky row outside the virtual
+ * scroller so it can stay fixed during vertical scroll without fighting the
+ * virtualizer's internal positioning.
  */
 export const VirtualDataTable = forwardRef<
   VirtualDataTableHandle,
@@ -503,9 +502,8 @@ export const VirtualDataTable = forwardRef<
                       className={cn(
                         "relative shrink-0 text-sm text-control leading-5 whitespace-nowrap break-all border-block-border border-b group-even:bg-control-bg/40",
                         !isLastCol && "border-r",
-                        // Match the Vue version: an active (search-matched) row
-                        // highlights every cell in that row, not just the index
-                        // column.
+                        // An active (search-matched) row highlights every
+                        // cell in that row, not just the index column.
                         // NOTE: opacity may need visual tuning on dark themes
                         isActive &&
                           (hasStrongActiveHighlight

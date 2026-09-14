@@ -8,9 +8,9 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/DummyNode.vue`. Renders an "<Empty>" / "<Error>"
- * placeholder span; if the underlying target carries an `error`, the
- * span exposes that message via Tooltip on hover.
+ * Renders an "<Empty>" / "<Error>" placeholder span; if the underlying
+ * target carries an `error`, the span exposes that message via Tooltip on
+ * hover.
  */
 export function DummyNode({ node }: Props) {
   const { t } = useTranslation();

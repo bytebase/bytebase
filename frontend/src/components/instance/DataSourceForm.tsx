@@ -2445,7 +2445,6 @@ export function DataSourceForm({
   );
 }
 
-// Matches Vue OracleSIDAndServiceNameInput.vue exactly
 function OracleSIDServiceNameInput({
   sid,
   serviceName,

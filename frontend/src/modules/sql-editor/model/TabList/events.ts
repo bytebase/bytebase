@@ -14,10 +14,8 @@ export type TabListEventMap = {
 };
 
 /**
- * Module-level tab list event bus. Imported by both the Vue
- * `provideTabListContext` (via `./context`) and React consumers that can't
- * participate in Vue's provide/inject. Single shared instance so emit/on
- * from either side reaches the other — same pattern used for the AI events
- * singleton (see `src/plugins/ai/logic/events.ts`).
+ * Module-level tab list event bus. Single shared instance so emit/on from
+ * any component reaches the others — same pattern used for the AI events
+ * singleton (see `src/modules/ai/logic/events.ts`).
  */
 export const tabListEvents: Emittery<TabListEventMap> = new Emittery();

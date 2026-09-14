@@ -7,7 +7,6 @@ import {
 import { ExecuteHint } from "./ExecuteHint";
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/ExecutingHintModal.vue.
  * Shows the ExecuteHint body inside a Dialog when the user attempts a DDL/DML
  * against a database that requires a change plan.
  */

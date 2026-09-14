@@ -7,11 +7,8 @@ import { defaultViewState } from "@/types";
 import type { EditorPanelViewState } from "@/types/sqlEditor/tabViewState";
 
 /**
- * React equivalent of Vue's `useCurrentTabViewStateContext` for the
- * read/write surface used by panels. Exposes the current tab's
- * `viewState` plus helpers to patch it. The bidirectional
- * connection.schema ↔ viewState.schema sync stays in `Panels.vue`
- * because that file remains the Vue host through Stage 16.
+ * Read/write surface used by panels. Exposes the current tab's
+ * `viewState` plus helpers to patch it.
  */
 export function useViewStateNav() {
   const viewState = useSQLEditorTabState(

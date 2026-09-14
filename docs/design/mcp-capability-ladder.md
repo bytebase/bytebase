@@ -315,7 +315,7 @@ All strings, so the change and the locale files have one source. Keys under
 - `MCPConsentCeiling.tsx`: replace the read, write and workflow lines with the row titles from the
   same table.
 - Locale: keys under `settings.mcp.ladder.*` in all five locale files;
-  `frontend/scripts/check-react-i18n.mjs` guards them. The retired mode-description keys are
+  `frontend/scripts/check-i18n.mjs` guards them. The retired mode-description keys are
   removed, not left empty.
 - Tests: the served set per mode; the disclosure collapsed by default, opens, persists, and follows
   the pick; the details toggle reveals sub-items on every row and persists with the open state; the

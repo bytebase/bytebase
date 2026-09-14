@@ -7,11 +7,8 @@ import { PolicyType } from "@/types/proto-es/v1/org_policy_service_pb";
 import { getInstanceResource } from "@/utils/v1/database";
 
 // Picks the data-source id for a query, honoring the workspace DATA_QUERY
-// policy's `allowAdminDataSource`. Reads the React app store directly (the
-// legacy `@/utils/sqlEditor` version used the Pinia `useQueryDataPolicy`
-// composable, whose store is not populated in the React shell — so admin data
-// sources were never selectable). `allowAdminDataSource` is a workspace-level
-// flag (the legacy policy getter took it from the workspace policy only).
+// policy's `allowAdminDataSource`. That flag is workspace-level, so only the
+// workspace policy is read.
 export const getValidDataSourceByPolicy = async (
   database: Database,
   type?: QueryDataSourceType
