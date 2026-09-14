@@ -71,7 +71,9 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 
 		switch n := omniAST.Node.(type) {
 		case *ast.VariableSetStmt:
-			if strings.EqualFold(n.Name, "search_path") && n.Args != nil {
+			if n.Kind == ast.VAR_RESET_ALL || (strings.EqualFold(n.Name, "search_path") && (n.Kind == ast.VAR_RESET || n.Kind == ast.VAR_SET_DEFAULT)) {
+				searchPath = initialSearchPath
+			} else if strings.EqualFold(n.Name, "search_path") && n.Args != nil {
 				var newSearchPath []string
 				for _, arg := range n.Args.Items {
 					if ac, ok := arg.(*ast.A_Const); ok {

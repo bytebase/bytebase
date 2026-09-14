@@ -73,7 +73,13 @@ func TestExtractChangedResourcesReplaysSearchPath(t *testing.T) {
 SET search_path TO app;
 UPDATE t SET c = 2;
 SET search_path TO public;
-UPDATE t SET c = 3;`
+UPDATE t SET c = 3;
+SET search_path TO app;
+RESET search_path;
+UPDATE t SET c = 4;
+SET search_path TO app;
+SET search_path TO DEFAULT;
+UPDATE t SET c = 5;`
 	stmts, err := base.ParseStatements(storepb.Engine_POSTGRES, statement)
 	require.NoError(t, err)
 	got, err := extractChangedResources("db", "", dbMetadata, base.ExtractASTs(stmts), statement)
@@ -82,6 +88,8 @@ UPDATE t SET c = 3;`
 		"UPDATE t SET c = 1;",
 		"SET LOCAL search_path TO \"app\";\nUPDATE t SET c = 2;",
 		"UPDATE t SET c = 3;",
+		"UPDATE t SET c = 4;",
+		"UPDATE t SET c = 5;",
 	}, got.DMLStatements)
 }
 

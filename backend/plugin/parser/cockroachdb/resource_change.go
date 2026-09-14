@@ -98,6 +98,19 @@ func extractChangedResources(database string, currentSchema string, dbMetadata *
 		case *tree.AlterTable:
 			name := n.Table.ToTableName()
 			addTable(&name, true)
+		case *tree.AlterTableLocality:
+			name := n.Name.ToTableName()
+			addTable(&name, true)
+		case *tree.AlterTableSetSchema:
+			if !n.IsView && !n.IsSequence {
+				name := n.Name.ToTableName()
+				addTable(&name, true)
+			}
+		case *tree.AlterTableOwner:
+			if !n.IsView && !n.IsSequence {
+				name := n.Name.ToTableName()
+				addTable(&name, true)
+			}
 		case *tree.DropTable:
 			for i := range n.Names {
 				addTable(&n.Names[i], true)

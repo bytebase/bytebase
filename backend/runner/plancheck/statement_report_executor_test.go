@@ -198,6 +198,7 @@ func TestShapeKey(t *testing.T) {
 			{"UPDATE `Orders` SET v = 1", "UPDATE `orders` SET v = 1"},
 			{"UPDATE Orders SET v = 1", "UPDATE orders SET v = 1"},
 			{"UPDATE [2024_orders] SET v = 1", "UPDATE [2025_orders] SET v = 1"},
+			{"UPDATE [1] SET v = 1", "UPDATE [2] SET v = 1"},
 			{"UPDATE 2024_orders SET v = 1", "UPDATE 2025_orders SET v = 1"},
 			{"DELETE FROM t WHERE id IN (1)", "DELETE FROM t WHERE id IN (1, 2)"},
 			// Comments keep their text, so no comment marker can hide the rest of a statement.
