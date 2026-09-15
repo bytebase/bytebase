@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ExternalUrlAlert } from "@/components/ExternalUrlAlert";
-import { Alert } from "@/components/ui/alert";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
@@ -98,13 +97,6 @@ export function MCPPage() {
       <ExternalUrlAlert actionAppearance="outline" />
 
       <MCPAccessPolicySection />
-
-      {/* Authentication Notice */}
-      <Alert
-        variant="info"
-        title={t("settings.mcp.auth.title")}
-        description={t("settings.mcp.auth.description")}
-      />
 
       {/* Connect a client */}
       <div className="flex flex-col gap-y-3">

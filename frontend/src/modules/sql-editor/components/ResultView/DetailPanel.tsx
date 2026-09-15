@@ -21,6 +21,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useLocalStorageBoolean } from "@/hooks/useLocalStorageBoolean";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -56,34 +57,6 @@ interface DetailPanelProps {
   statement?: string;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
   presentation?: "sheet" | "embedded";
-}
-
-function useLocalStorageBoolean(
-  key: string,
-  defaultValue: boolean
-): [boolean, (next: boolean) => void] {
-  const [value, setValue] = useState<boolean>(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      if (raw === "true") return true;
-      if (raw === "false") return false;
-    } catch {
-      // ignore
-    }
-    return defaultValue;
-  });
-  const update = useCallback(
-    (next: boolean) => {
-      setValue(next);
-      try {
-        localStorage.setItem(key, String(next));
-      } catch {
-        // ignore
-      }
-    },
-    [key]
-  );
-  return [value, update];
 }
 
 const isEditableTarget = (target: EventTarget | null) => {
