@@ -1,6 +1,9 @@
 # bytebase
 {{- $extraSecretMounts := .Values.bytebase.extraSecretMounts -}}
 {{- $extraVolumes := .Values.bytebase.extraVolumes }}
+# imagePullPolicy
+{{- $pullPolicy := .Values.bytebase.imagePullPolicy | default "Always" -}}
+{{- $busyboxPullPolicy := .Values.bytebase.busyboxPullPolicy | default "IfNotPresent" -}}
 # bytebase.option
 {{- $port := .Values.bytebase.option.port -}}
 {{- $data := .Values.bytebase.option.data -}}
@@ -59,7 +62,7 @@ spec:
       initContainers:
         - name: init-container
           image: {{ include "bytebase.busyboxImage" . }}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ $busyboxPullPolicy }}
           env:
           - name: PG_PASSWORD
             {{- if $externalPgExistingPgPasswordSecret }}
@@ -115,7 +118,7 @@ spec:
       containers:
         - name: bytebase
           image: {{ include "bytebase.image" . }}
-          imagePullPolicy: Always
+          imagePullPolicy: {{ $pullPolicy }}
           env:
           {{- if $externalPgExistingPgURLSecret }}
           # If user specifies an existing secret, we should read the external pg connection string in that secret.
