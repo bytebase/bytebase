@@ -192,7 +192,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	for _, singleSQL := range singleSQLs {
 		statement := util.TrimStatement(singleSQL.Text)
 		if queryCtx.Explain {
-			statement = fmt.Sprintf("EXPLAIN %s", statement)
+			statement, _ = db.ExplainStatement(storepb.Engine_HIVE, statement, queryCtx.Option.GetExplainFormat())
 		}
 
 		result, err := d.queryStatementWithLimit(ctx, statement, queryCtx.MaximumSQLResultSize)
