@@ -415,12 +415,6 @@
       "count": 1
     },
     {
-      "path": "src/components/instance/DataSourceForm.tsx",
-      "rule": "no-native-control",
-      "token": "textarea",
-      "count": 1
-    },
-    {
       "path": "src/components/instance/DataSourceSection.tsx",
       "rule": "no-native-control",
       "token": "button",

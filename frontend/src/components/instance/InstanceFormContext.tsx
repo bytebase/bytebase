@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { SecretInputProvider } from "@/components/SecretInput";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types";
@@ -303,6 +304,7 @@ export function InstanceFormProvider({
         omit(
           edit,
           "pendingCreate",
+          "updatedSecretFields",
           "updatedPassword",
           "useEmptyPassword",
           "updatedMasterPassword",
@@ -689,7 +691,9 @@ export function InstanceFormProvider({
 
   return (
     <InstanceFormCtx.Provider value={value}>
-      {children}
+      <SecretInputProvider resetKey={dataSourceResetEvent}>
+        {children}
+      </SecretInputProvider>
       <FeatureModal
         open={!!missingFeature}
         feature={missingFeature}

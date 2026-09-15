@@ -1,11 +1,6 @@
-import {
-  type DragEvent,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { SecretInput } from "@/components/SecretInput";
 import {
   FormField,
   FormLabel,
@@ -13,7 +8,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Textarea } from "@/components/ui/textarea";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 
 const SSH_TYPES = ["NONE", "TUNNEL+PK"] as const;
@@ -32,6 +26,8 @@ interface SshConnectionFormProps {
   value: SshValue;
   instance?: Instance;
   disabled?: boolean;
+  isCreating?: boolean;
+  secretValues?: { sshPassword?: string; sshPrivateKey?: string };
   onChange: (value: Partial<SshValue>) => void;
 }
 
@@ -51,7 +47,9 @@ function guessSshType(value: Partial<SshValue>): SshType {
 export function SshConnectionForm({
   value,
   title,
-  instance: _instance,
+  instance,
+  isCreating = instance === undefined,
+  secretValues,
   disabled = false,
   onChange,
 }: SshConnectionFormProps) {
@@ -85,26 +83,6 @@ export function SshConnectionForm({
     }
     return t("data-source.ssh-type.none");
   };
-
-  const handleDrop = useCallback(
-    (e: DragEvent<HTMLTextAreaElement>) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          onChange({ sshPrivateKey: reader.result });
-        }
-      };
-      reader.readAsText(file);
-    },
-    [onChange]
-  );
-
-  const handleDragOver = useCallback((e: DragEvent<HTMLTextAreaElement>) => {
-    e.preventDefault();
-  }, []);
 
   return (
     <div className="flex flex-col gap-4">
@@ -170,29 +148,37 @@ export function SshConnectionForm({
                   <FormLabel htmlFor="sshPassword">
                     {t("data-source.ssh.password")}
                   </FormLabel>
-                  <Input
+                  <SecretInput
                     id="sshPassword"
-                    placeholder={t("instance.password-write-only")}
-                    value={value.sshPassword}
+                    resetKey={instance?.name}
+                    aria-label={t("data-source.ssh.password")}
+                    value={
+                      isCreating ? value.sshPassword : secretValues?.sshPassword
+                    }
+                    isCreating={isCreating}
                     disabled={disabled}
-                    onChange={(e) => onChange({ sshPassword: e.target.value })}
+                    onValueChange={(password) =>
+                      onChange({ sshPassword: password })
+                    }
                   />
                 </FormField>
                 <FormField>
                   <FormLabel htmlFor="sshPrivateKey">
                     {t("data-source.ssh.ssh-key")} ({t("common.optional")})
                   </FormLabel>
-                  <Textarea
+                  <SecretInput
                     id="sshPrivateKey"
-                    className="w-full h-24 whitespace-pre-wrap resize-none"
-                    value={value.sshPrivateKey}
-                    disabled={disabled}
-                    placeholder={t("common.sensitive-placeholder")}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onChange={(e) =>
-                      onChange({ sshPrivateKey: e.target.value })
+                    resetKey={instance?.name}
+                    aria-label={t("data-source.ssh.ssh-key")}
+                    multiline
+                    value={
+                      isCreating
+                        ? value.sshPrivateKey
+                        : secretValues?.sshPrivateKey
                     }
+                    isCreating={isCreating}
+                    disabled={disabled}
+                    onValueChange={(key) => onChange({ sshPrivateKey: key })}
                   />
                 </FormField>
               </fieldset>

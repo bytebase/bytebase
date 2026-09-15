@@ -38,8 +38,26 @@ export type BasicInfo = Omit<
   "$typeName" | "dataSources" | "engineVersion" | "lastSyncTime"
 >;
 
+export type DataSourceSecretField =
+  | "password"
+  | "masterPassword"
+  | "sshPassword"
+  | "sshPrivateKey"
+  | "authenticationPrivateKey"
+  | "authenticationPrivateKeyPassphrase";
+
+const SECRET_MASK_PATHS: Record<DataSourceSecretField, string> = {
+  password: "password",
+  masterPassword: "master_password",
+  sshPassword: "ssh_password",
+  sshPrivateKey: "ssh_private_key",
+  authenticationPrivateKey: "authentication_private_key",
+  authenticationPrivateKeyPassphrase: "authentication_private_key_passphrase",
+};
+
 export type EditDataSource = DataSource & {
   pendingCreate: boolean;
+  updatedSecretFields?: DataSourceSecretField[];
   updatedPassword: string;
   updatedMasterPassword: string;
   updatedToken: string;
@@ -48,6 +66,47 @@ export type EditDataSource = DataSource & {
   updateSsl?: TlsUpdateState;
   extraConnectionParameters?: Record<string, string>;
 };
+
+export function getDataSourceSecretValue(
+  ds: EditDataSource,
+  field: DataSourceSecretField
+): string | undefined {
+  const value =
+    field === "password"
+      ? ds.updatedPassword
+      : field === "masterPassword"
+        ? ds.updatedMasterPassword
+        : field === "authenticationPrivateKey"
+          ? ds.updatedToken || ds.authenticationPrivateKey
+          : ds[field];
+  return ds.pendingCreate || ds.updatedSecretFields?.includes(field) || value
+    ? value
+    : undefined;
+}
+
+export function updateDataSourceSecret(
+  ds: EditDataSource,
+  field: DataSourceSecretField,
+  value: string
+): EditDataSource {
+  const next = {
+    ...ds,
+    [field]: value,
+    updatedSecretFields: [
+      ...new Set([...(ds.updatedSecretFields ?? []), field]),
+    ],
+  };
+  if (field === "password") {
+    next.updatedPassword = value;
+    next.useEmptyPassword = value === "";
+  } else if (field === "masterPassword") {
+    next.updatedMasterPassword = value;
+    next.useEmptyMasterPassword = value === "";
+  } else if (field === "authenticationPrivateKey") {
+    next.updatedToken = value;
+  }
+  return next;
+}
 
 export type DataSourceEditState = {
   dataSources: EditDataSource[];
@@ -182,6 +241,13 @@ export const calcDataSourceUpdateMask = (
     calcUpdateMask(editing, original, true /* toSnakeCase */)
   );
   const { useEmptyPassword, updateSsl } = editState;
+  for (const field of editState.updatedSecretFields ?? []) {
+    updateMask.add(SECRET_MASK_PATHS[field]);
+  }
+  if (editState.useEmptyMasterPassword) {
+    editing.masterPassword = "";
+    updateMask.add("master_password");
+  }
   if (useEmptyPassword) {
     editing.password = "";
     updateMask.add("password");
