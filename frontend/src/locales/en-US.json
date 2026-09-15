@@ -2955,6 +2955,7 @@
           "masking-type": "Masking Type"
         }
       },
+      "apply-masking": "Apply masking",
       "classification": {
         "empty-classification": "The \"classification\" field is empty",
         "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
@@ -2965,6 +2966,7 @@
         "missing-classification": "Missing \"classification\" field",
         "missing-levels": "Missing \"levels\" field"
       },
+      "columns-to-mask": "Columns to mask",
       "global-rules": {
         "condition-order": "Condition order",
         "delete-rule-tip": "Delete this rule?",
@@ -2977,14 +2979,17 @@
       },
       "grant-access": "Grant Access",
       "mark-sensitive-data": "Mark sensitive data",
+      "mark-sensitive-data-description": "Choose columns whose values should be hidden in query results.",
       "never-expires": "Never expires",
       "remove-sensitive-column-tips": "Expose this column?",
+      "semantic-type-description": "Semantic types group columns representing the same kind of data so Bytebase can apply consistent masking.",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "No changes to save",
           "title-required": "Title is required"
         },
         "label": "Columns having the same semantic type will use the same masking algorithms.",
+        "masking-effect": "Masking effect: {{effect}}",
         "select": "Select semantic type",
         "self": "Semantic Types",
         "table": {

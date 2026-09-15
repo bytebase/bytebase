@@ -2955,6 +2955,7 @@
           "masking-type": "Tipo De Enmascaramiento"
         }
       },
+      "apply-masking": "Aplicar enmascaramiento",
       "classification": {
         "empty-classification": "El campo \"classification\" está vacío",
         "guide-classification": "\"classification\" asigna cada categoría por ID. Las categorías hoja deben referenciar un número de nivel; las categorías padre omiten el nivel.",
@@ -2965,6 +2966,7 @@
         "missing-classification": "Falta el campo \"classification\"",
         "missing-levels": "Falta el campo \"levels\""
       },
+      "columns-to-mask": "Columnas que se enmascararán",
       "global-rules": {
         "condition-order": "Orden de condición",
         "delete-rule-tip": "¿Eliminar esta regla?",
@@ -2977,14 +2979,17 @@
       },
       "grant-access": "Conceder acceso",
       "mark-sensitive-data": "Marcar datos confidenciales",
+      "mark-sensitive-data-description": "Selecciona las columnas cuyos valores deben ocultarse en los resultados de las consultas.",
       "never-expires": "Nunca expira",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
+      "semantic-type-description": "Los tipos semánticos agrupan columnas que representan la misma clase de datos para que Bytebase aplique un enmascaramiento coherente.",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "No hay cambios para guardar",
           "title-required": "El título es obligatorio"
         },
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
+        "masking-effect": "Efecto de enmascaramiento: {{effect}}",
         "select": "Seleccionar tipo semántico",
         "self": "Tipos Semánticos",
         "table": {

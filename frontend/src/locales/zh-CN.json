@@ -2955,6 +2955,7 @@
           "masking-type": "算法类型"
         }
       },
+      "apply-masking": "应用脱敏",
       "classification": {
         "empty-classification": "\"classification\" 字段为空",
         "guide-classification": "\"classification\" 以 ID 为键映射各分类。叶子分类必须引用级别编号，父分类省略级别。",
@@ -2965,6 +2966,7 @@
         "missing-classification": "缺少 \"classification\" 字段",
         "missing-levels": "缺少 \"levels\" 字段"
       },
+      "columns-to-mask": "要脱敏的列",
       "global-rules": {
         "condition-order": "条件序列",
         "delete-rule-tip": "删除这条规则？",
@@ -2977,14 +2979,17 @@
       },
       "grant-access": "授予访问权限",
       "mark-sensitive-data": "标记敏感数据",
+      "mark-sensitive-data-description": "选择要在查询结果中隐藏其值的列。",
       "never-expires": "无过期时间",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
+      "semantic-type-description": "语义类型对含义相同的列进行分组，以便 Bytebase 应用一致的脱敏方式。",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "没有需要保存的更改",
           "title-required": "标题为必填项"
         },
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
+        "masking-effect": "脱敏效果：{{effect}}",
         "select": "选择语义类型",
         "self": "语义类型",
         "table": {
