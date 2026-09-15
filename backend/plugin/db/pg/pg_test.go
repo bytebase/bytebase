@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/json"
 	"encoding/pem"
 	"math/big"
 	"strings"
@@ -336,6 +337,79 @@ func TestQueryConnSearchPathEscapesSelectedSchemaName(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Equal(t, "quoted", firstStringValue(t, results))
+}
+
+// TestQueryConnExplainFormat pins both explain outputs at the driver boundary:
+// the default stays the human-readable text plan, and JSON returns the plan tree
+// as a single row. The JSON assertion is what a plan renderer depends on, and
+// running it through QueryConn also proves the editor's read-only validator
+// accepts the parenthesized EXPLAIN form.
+func TestQueryConnExplainFormat(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, rawDB := testcontainer.NewPgDatabase(t)
+	_, err := rawDB.ExecContext(ctx, `
+		CREATE TABLE plan_target (id int PRIMARY KEY, note text);
+		INSERT INTO plan_target SELECT g, 'n' || g FROM generate_series(1, 500) g;
+		ANALYZE plan_target;
+	`)
+	require.NoError(t, err)
+
+	driver, err := (&Driver{}).Open(ctx, storepb.Engine_POSTGRES, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     pgContainer.GetHost(),
+			Port:     pgContainer.GetPort(),
+			Username: "postgres",
+		},
+		Password:          "root-password",
+		ConnectionContext: db.ConnectionContext{DatabaseName: dbName},
+	})
+	require.NoError(t, err)
+	defer driver.Close(ctx)
+
+	conn, err := driver.GetDB().Conn(ctx)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	const statement = `SELECT note FROM plan_target WHERE id > 100;`
+
+	textResults, err := driver.QueryConn(ctx, conn, statement, db.QueryContext{
+		Explain:              true,
+		Limit:                5000,
+		MaximumSQLResultSize: 1 << 30,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, textResults)
+	require.Empty(t, textResults[0].GetError())
+	require.Contains(t, firstStringValue(t, textResults), "(cost=")
+
+	jsonResults, err := driver.QueryConn(ctx, conn, statement, db.QueryContext{
+		Explain:              true,
+		Limit:                5000,
+		MaximumSQLResultSize: 1 << 30,
+		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, jsonResults)
+	require.Empty(t, jsonResults[0].GetError())
+	require.Len(t, jsonResults[0].GetRows(), 1)
+
+	var plan []struct {
+		Plan struct {
+			NodeType     string  `json:"Node Type"`
+			RelationName string  `json:"Relation Name"`
+			TotalCost    float64 `json:"Total Cost"`
+			PlanRows     float64 `json:"Plan Rows"`
+		} `json:"Plan"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(firstStringValue(t, jsonResults)), &plan))
+	require.Len(t, plan, 1)
+	require.NotEmpty(t, plan[0].Plan.NodeType)
+	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
+	require.Positive(t, plan[0].Plan.TotalCost)
+	require.Positive(t, plan[0].Plan.PlanRows)
 }
 
 func firstStringValue(t *testing.T, results []*v1pb.QueryResult) string {

@@ -597,7 +597,7 @@ func (d *Driver) explainStatement(ctx context.Context, statement string) ([]*v1p
 	for _, stmt := range stmts {
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
-			plan, err := d.client.Single().AnalyzeQuery(ctx, spanner.NewStatement(stmt))
+			plan, err := d.analyzeStatement(ctx, stmt)
 			if err != nil {
 				return nil, err
 			}
@@ -632,6 +632,22 @@ func (d *Driver) explainStatement(ctx context.Context, statement string) ([]*v1p
 	}
 
 	return results, nil
+}
+
+// analyzeStatement returns the plan Spanner chooses for statement without
+// running it. Spanner rejects DML in a single-use transaction, so anything
+// QueryConn would not read in one is analyzed in a read-write transaction that
+// is rolled back.
+func (d *Driver) analyzeStatement(ctx context.Context, statement string) (*sppb.QueryPlan, error) {
+	if util.IsSelect(statement) {
+		return d.client.Single().AnalyzeQuery(ctx, spanner.NewStatement(statement))
+	}
+	txn, err := spanner.NewReadWriteStmtBasedTransaction(ctx, d.client)
+	if err != nil {
+		return nil, err
+	}
+	defer txn.Rollback(ctx)
+	return txn.AnalyzeQuery(ctx, spanner.NewStatement(statement))
 }
 
 // PlanNode represents a node in the Spanner query plan for JSON serialization.

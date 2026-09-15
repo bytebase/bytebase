@@ -444,6 +444,9 @@
     "search-for-more": "Tìm kiếm thêm",
     "search-no-result": "Không tìm thấy kết quả phù hợp",
     "search-results": "Tìm kiếm kết quả",
+    "secret-input": {
+      "unchanged": "Không thay đổi"
+    },
     "select": "Vui lòng chọn",
     "select-all": "Chọn tất cả",
     "selected": "đã chọn",
@@ -474,6 +477,8 @@
     "tips": "Mẹo",
     "title": "Tiêu đề",
     "to": "Đến",
+    "toggle-password-visibility": "Bật/tắt hiển thị mật khẩu",
+    "token": "Mã token",
     "total": "Tổng",
     "total-n-items": "Tổng {{n}} mục",
     "transfer": "Chuyển",
@@ -626,11 +631,8 @@
     },
     "no-read-only-data-source": "Không có nguồn dữ liệu chỉ đọc",
     "private-key-passphrase": "Mật khẩu khóa riêng",
-    "private-key-passphrase-placeholder": "Để trống nếu khóa riêng của bạn không được mã hóa",
     "private-key-passphrase-tip": "Mật khẩu tùy chọn cho khóa riêng được mã hóa",
     "read-only": "Chỉ đọc",
-    "read-replica-host": "Máy chủ bản sao đọc",
-    "read-replica-port": "Cổng bản sao đọc",
     "replica-set": "Bộ bản sao",
     "select-query-data-source": "Chọn nguồn dữ liệu truy vấn",
     "snowflake-keypair-tip": "Xác thực cặp khóa",
@@ -728,6 +730,7 @@
     "mixed-label-values": "giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "nullable": "Có thể null",
+    "open-sql-editor": "Mở trình soạn thảo SQL",
     "partition-tables": "Bảng phân vùng",
     "partitioned": "Đã phân vùng",
     "project-instance-transfer-disabled": "Không thể chuyển hoặc hủy gán cơ sở dữ liệu thuộc phiên bản gắn với dự án.",
@@ -846,6 +849,9 @@
     "project-instance-synced-create-change-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy tạo một thay đổi cơ sở dữ liệu được quản trị để tiếp tục.",
     "project-instance-synced-create-change-title": "Cơ sở dữ liệu đã sẵn sàng để thay đổi",
     "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng cách truy vấn dữ liệu trong SQL Editor, hoặc tạo thay đổi cơ sở dữ liệu được quản trị khi cần.",
+    "project-instance-synced-mark-sensitive-data-action": "Đánh dấu dữ liệu nhạy cảm",
+    "project-instance-synced-mark-sensitive-data-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Đánh dấu một cột nhạy cảm để áp dụng che dữ liệu.",
+    "project-instance-synced-mark-sensitive-data-title": "Sẵn sàng bảo vệ dữ liệu nhạy cảm",
     "project-instance-synced-query-data-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy mở SQL Editor để truy vấn.",
     "project-instance-synced-query-data-title": "Cơ sở dữ liệu đã sẵn sàng để truy vấn",
     "project-instance-synced-sql-editor-action": "Mở SQL Editor",
@@ -1202,6 +1208,7 @@
     },
     "instance-id": "ID phiên bản",
     "instance-name": "Tên phiên bản",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance, tùy chọn",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "Máy chủ KDC",
@@ -1220,7 +1227,6 @@
     "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
     "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
     "no-params-yet-add-above": "Chưa có thông số nào được cấu hình. \nThêm tham số bằng cách sử dụng biểu mẫu trên.",
-    "no-password": "Không có mật khẩu",
     "open-data-source": "Mở nguồn dữ liệu này để xem nó cần gì.",
     "parameter-name-placeholder": "Tên tham số",
     "parameter-value-placeholder": "Giá trị tham số",
@@ -1239,7 +1245,6 @@
       "google-iam": "Google Cloud SQL IAM",
       "password": "Mật khẩu"
     },
-    "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "port": "Cổng",
     "prepare-sample-instance-failed": "Không thể chuẩn bị Phiên bản dự án mẫu.",
     "preparing-sample-instance": "Đang chuẩn bị Phiên bản dự án mẫu…",
@@ -1348,7 +1353,6 @@
     "syncing": "Đang đồng bộ hóa ...",
     "test-connection": "Kiểm tra kết nối",
     "testing-connection": "Đang kiểm tra kết nối...",
-    "token-write-only": "YOUR_TOKEN - chỉ ghi",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "unable-to-connect": "Bytebase không thể kết nối với các cài đặt này. Hãy xem hướng dẫn ở trên hoặc tiếp tục và cập nhật kết nối sau.\n\nChi tiết kỹ thuật: {{0}}",
     "use-sample-instance": "Sử dụng phiên bản mẫu (Có sẵn trong 7 ngày)",
@@ -2920,6 +2924,7 @@
       "email": "Email",
       "enable-sample-databases": "Bật cơ sở dữ liệu mẫu",
       "enable-sample-databases-create-change": "Bật cơ sở dữ liệu mẫu làm đích thay đổi an toàn",
+      "enable-sample-databases-mark-sensitive-data": "Bật cơ sở dữ liệu mẫu để thử che dữ liệu ngay",
       "enable-sample-databases-query-data": "Bật cơ sở dữ liệu mẫu để bắt đầu truy vấn ngay",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
@@ -2935,6 +2940,10 @@
         "create-database-change": {
           "description": "Xác định thay đổi và tạo issue có thể theo dõi.",
           "title": "Tạo thay đổi cơ sở dữ liệu"
+        },
+        "mark-sensitive-data": {
+          "description": "Xác định các cột nhạy cảm và áp dụng che dữ liệu.",
+          "title": "Đánh dấu dữ liệu nhạy cảm"
         },
         "outcome-title": "Bạn muốn làm gì với Bytebase?",
         "query-data": {
@@ -3006,6 +3015,7 @@
           "masking-type": "Loại che"
         }
       },
+      "apply-masking": "Áp dụng che dữ liệu",
       "classification": {
         "empty-classification": "Trường \"classification\" đang trống",
         "guide-classification": "\"classification\" ánh xạ mỗi danh mục theo ID. Danh mục lá phải tham chiếu một số cấp độ; danh mục cha bỏ qua cấp độ.",
@@ -3016,6 +3026,7 @@
         "missing-classification": "Thiếu trường \"classification\"",
         "missing-levels": "Thiếu trường \"levels\""
       },
+      "columns-to-mask": "Các cột cần che",
       "global-rules": {
         "condition-order": "Thứ tự điều kiện",
         "delete-rule-tip": "Xóa quy tắc này?",
@@ -3028,14 +3039,17 @@
       },
       "grant-access": "Cấp Quyền truy cập",
       "mark-sensitive-data": "Đánh dấu dữ liệu nhạy cảm",
+      "mark-sensitive-data-description": "Chọn các cột có giá trị cần được ẩn trong kết quả truy vấn.",
       "never-expires": "Không bao giờ hết hạn",
       "remove-sensitive-column-tips": "Hiển thị cột này?",
+      "semantic-type-description": "Kiểu ngữ nghĩa nhóm các cột biểu thị cùng một loại dữ liệu để Bytebase áp dụng cách che nhất quán.",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "Không có thay đổi để lưu",
           "title-required": "Tiêu đề là bắt buộc"
         },
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
+        "masking-effect": "Hiệu ứng che: {{effect}}",
         "select": "Chọn loại ngữ nghĩa",
         "self": "Loại ngữ nghĩa",
         "table": {
@@ -3389,6 +3403,8 @@
     "view-issue": "Xem Issue",
     "view-schema-text": "Xem văn bản lược đồ",
     "visualize-explain": "Trực quan hóa Giải thích",
+    "visualize-explain-blocked": "Tab kế hoạch truy vấn đã bị chặn. Hãy cho phép cửa sổ bật lên cho trang này và thử lại.",
+    "visualize-explain-failed": "Không tải được kế hoạch truy vấn",
     "web-socket": {
       "connection-status": {
         "connected": "đã kết nối",
@@ -3700,21 +3716,20 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "Tạo thay đổi cơ sở dữ liệu",
       "query": "Đi tới SQL Editor"
     },
+    "all-steps-completed": "Đã hoàn thành tất cả các bước",
     "descriptions": {
       "add-teammate": "Mời một thành viên và cấp quyền truy cập không gian làm việc.",
       "create-database-change": "Xác định thay đổi cơ sở dữ liệu và tạo issue cho thay đổi đó.",
       "database": "Mở một cơ sở dữ liệu và khám phá schema cùng các bảng của cơ sở dữ liệu đó.",
       "instance": "Kết nối một instance để Bytebase có thể đồng bộ các cơ sở dữ liệu.",
+      "mark-sensitive-data": "Mở cơ sở dữ liệu đã chọn và gán kiểu ngữ nghĩa cho một cột nhạy cảm.",
       "project": "Tạo một dự án để tổ chức cơ sở dữ liệu và các thay đổi.",
       "query-data": "Mở cơ sở dữ liệu đã chọn trong SQL Editor và chạy bất kỳ câu lệnh nào."
     },
     "dismiss": "Đóng hướng dẫn",
     "generic": {
-      "completion-description": "Bạn đã khám phá cách dự án, instance và cơ sở dữ liệu kết nối với nhau.",
-      "completion-title": "Không gian làm việc cơ sở dữ liệu của bạn đã sẵn sàng",
       "title": "Thiết lập Bytebase"
     },
     "getting-started": "Bắt đầu",
@@ -3727,6 +3742,9 @@
       "grant-access-title": "Cấp quyền truy cập không gian làm việc",
       "instance-description": "Tạo instance để Bytebase có thể kết nối tới máy chủ cơ sở dữ liệu của bạn.",
       "instance-title": "Kết nối instance",
+      "mark-sensitive-data-description": "Chọn một cột và gán kiểu ngữ nghĩa để Bytebase có thể áp dụng che dữ liệu.",
+      "mark-sensitive-data-title": "Đánh dấu dữ liệu nhạy cảm",
+      "mark-sensitive-fields-description": "Mở bảng hoặc bộ sưu tập và gán kiểu ngữ nghĩa cho các trường nhạy cảm trong catalog.",
       "project-description": "Tạo một dự án trước. Cơ sở dữ liệu có thể được đồng bộ vào dự án đó sau khi instance được kết nối.",
       "project-title": "Tạo dự án",
       "transfer-description": "Chọn một hoặc nhiều cơ sở dữ liệu, sau đó chuyển chúng vào dự án.",
@@ -3737,13 +3755,12 @@
     "product-model": "Cách Bytebase hoạt động",
     "scenarios": {
       "create-database-change": {
-        "completion-description": "Thay đổi cơ sở dữ liệu của bạn hiện có một issue có thể theo dõi trong Bytebase.",
-        "completion-title": "Bạn đã tạo thay đổi cơ sở dữ liệu đầu tiên",
         "title": "Tạo thay đổi cơ sở dữ liệu"
       },
+      "mark-sensitive-data": {
+        "title": "Đánh dấu dữ liệu nhạy cảm"
+      },
       "query-data": {
-        "completion-description": "Bạn đã mở SQL Editor và chạy một câu lệnh trên cơ sở dữ liệu.",
-        "completion-title": "Bạn đã chạy câu lệnh đầu tiên",
         "title": "Truy vấn dữ liệu"
       }
     },
@@ -3753,6 +3770,7 @@
       "create-database-change": "Tạo thay đổi cơ sở dữ liệu",
       "database": "Khám phá cơ sở dữ liệu",
       "instance": "Kết nối instance",
+      "mark-sensitive-data": "Đánh dấu dữ liệu nhạy cảm",
       "project": "Tạo dự án",
       "query-data": "Truy vấn dữ liệu"
     },

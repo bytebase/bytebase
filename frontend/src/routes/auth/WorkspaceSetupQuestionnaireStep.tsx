@@ -35,6 +35,12 @@ const SCENARIO_OPTIONS: Array<{
     titleKey: "settings.profile.setup-scenario.query-data.title",
     descriptionKey: "settings.profile.setup-scenario.query-data.description",
   },
+  {
+    id: "mark-sensitive-data",
+    titleKey: "settings.profile.setup-scenario.mark-sensitive-data.title",
+    descriptionKey:
+      "settings.profile.setup-scenario.mark-sensitive-data.description",
+  },
 ];
 
 const WORKSPACE_USAGE_OPTIONS: Array<{

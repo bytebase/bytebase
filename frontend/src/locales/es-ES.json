@@ -444,6 +444,9 @@
     "search-for-more": "Buscar más",
     "search-no-result": "No se encontraron resultados coincidentes",
     "search-results": "Buscar resultados",
+    "secret-input": {
+      "unchanged": "Sin cambios"
+    },
     "select": "Seleccionar",
     "select-all": "Seleccionar todo",
     "selected": "seleccionado",
@@ -474,6 +477,8 @@
     "tips": "Consejos",
     "title": "Título",
     "to": "Hasta",
+    "toggle-password-visibility": "Alternar visibilidad de la contraseña",
+    "token": "Token",
     "total": "Total",
     "total-n-items": "Total {{n}} elementos",
     "transfer": "Transferir",
@@ -626,11 +631,8 @@
     },
     "no-read-only-data-source": "Sin fuente de datos de solo lectura",
     "private-key-passphrase": "Frase de contraseña de clave privada",
-    "private-key-passphrase-placeholder": "Deje vacío si su clave privada no está cifrada",
     "private-key-passphrase-tip": "Frase de contraseña opcional para claves privadas cifradas",
     "read-only": "Solo lectura",
-    "read-replica-host": "Anfitrión de réplica de lectura",
-    "read-replica-port": "Puerto de réplica de lectura",
     "replica-set": "Conjunto de réplicas",
     "select-query-data-source": "Seleccionar fuente de datos de consulta",
     "snowflake-keypair-tip": "Autenticación de par de claves",
@@ -728,6 +730,7 @@
     "mixed-label-values": "valores mixtos",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave. Solo edite estos pares clave-valor si tiene la intención de cambiarlos.",
     "nullable": "Anulable",
+    "open-sql-editor": "Abrir editor SQL",
     "partition-tables": "Tablas de particiones",
     "partitioned": "Particionado",
     "project-instance-transfer-disabled": "Las bases de datos de una instancia vinculada a un proyecto no se pueden transferir ni desasignar.",
@@ -846,6 +849,9 @@
     "project-instance-synced-create-change-description": "Tu base de datos está lista en este proyecto. Crea un cambio de base de datos gobernado para continuar.",
     "project-instance-synced-create-change-title": "Base de datos lista para cambios",
     "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza consultando datos en SQL Editor, o crea un cambio de base de datos gobernado cuando lo necesites.",
+    "project-instance-synced-mark-sensitive-data-action": "Marcar datos sensibles",
+    "project-instance-synced-mark-sensitive-data-description": "Tu base de datos está lista en este proyecto. Marca una columna sensible para aplicar enmascaramiento de datos.",
+    "project-instance-synced-mark-sensitive-data-title": "Lista para proteger datos sensibles",
     "project-instance-synced-query-data-description": "Tu base de datos está lista en este proyecto. Abre SQL Editor para consultarla.",
     "project-instance-synced-query-data-title": "Base de datos lista para consultar",
     "project-instance-synced-sql-editor-action": "Abrir SQL Editor",
@@ -1202,6 +1208,7 @@
     },
     "instance-id": "ID de la instancia",
     "instance-name": "Nombre de la instancia",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance, opcional",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "Host del KDC",
@@ -1220,7 +1227,6 @@
     "no-environment": "Esta instancia no ha sido ligada al entorno.",
     "no-extra-params-configured": "No hay parámetros de conexión adicionales configurados",
     "no-params-yet-add-above": "No hay parámetros configurados todavía. \nAgregue parámetros usando el formulario anterior.",
-    "no-password": "Sin contraseña",
     "open-data-source": "Abra esta fuente de datos para ver qué necesita.",
     "parameter-name-placeholder": "Nombre de parámetro",
     "parameter-value-placeholder": "Valor de parámetro",
@@ -1239,7 +1245,6 @@
       "google-iam": "Google Cloud SQL IAM",
       "password": "Contraseña"
     },
-    "password-write-only": "SU_DB_PWD - solo escritura",
     "port": "Puerto",
     "prepare-sample-instance-failed": "No se pudo preparar la instancia de proyecto de muestra.",
     "preparing-sample-instance": "Preparando la instancia de proyecto de muestra…",
@@ -1348,7 +1353,6 @@
     "syncing": "Sincronizando...",
     "test-connection": "Probar conexión",
     "testing-connection": "Probando conexión...",
-    "token-write-only": "TU_TOKEN - solo escritura",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "unable-to-connect": "Bytebase no pudo conectarse con esta configuración. Revisa las indicaciones anteriores o continúa y actualiza la conexión más tarde.\n\nDetalles técnicos: {{0}}",
     "use-sample-instance": "Usar instancia de ejemplo (Disponible durante 7 días)",
@@ -2920,6 +2924,7 @@
       "email": "Correo electrónico",
       "enable-sample-databases": "Habilitar bases de datos de ejemplo",
       "enable-sample-databases-create-change": "Habilitar bases de datos de ejemplo como destino seguro para el cambio",
+      "enable-sample-databases-mark-sensitive-data": "Habilitar bases de datos de ejemplo para probar el enmascaramiento de datos de inmediato",
       "enable-sample-databases-query-data": "Habilitar bases de datos de ejemplo para empezar a consultar de inmediato",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
@@ -2935,6 +2940,10 @@
         "create-database-change": {
           "description": "Defina un cambio y cree una incidencia rastreable.",
           "title": "Crear un cambio de base de datos"
+        },
+        "mark-sensitive-data": {
+          "description": "Identifica columnas sensibles y aplica enmascaramiento de datos.",
+          "title": "Marcar datos sensibles"
         },
         "outcome-title": "¿Qué le gustaría hacer con Bytebase?",
         "query-data": {
@@ -3006,6 +3015,7 @@
           "masking-type": "Tipo De Enmascaramiento"
         }
       },
+      "apply-masking": "Aplicar enmascaramiento",
       "classification": {
         "empty-classification": "El campo \"classification\" está vacío",
         "guide-classification": "\"classification\" asigna cada categoría por ID. Las categorías hoja deben referenciar un número de nivel; las categorías padre omiten el nivel.",
@@ -3016,6 +3026,7 @@
         "missing-classification": "Falta el campo \"classification\"",
         "missing-levels": "Falta el campo \"levels\""
       },
+      "columns-to-mask": "Columnas que se enmascararán",
       "global-rules": {
         "condition-order": "Orden de condición",
         "delete-rule-tip": "¿Eliminar esta regla?",
@@ -3028,14 +3039,17 @@
       },
       "grant-access": "Conceder acceso",
       "mark-sensitive-data": "Marcar datos confidenciales",
+      "mark-sensitive-data-description": "Selecciona las columnas cuyos valores deben ocultarse en los resultados de las consultas.",
       "never-expires": "Nunca expira",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
+      "semantic-type-description": "Los tipos semánticos agrupan columnas que representan la misma clase de datos para que Bytebase aplique un enmascaramiento coherente.",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "No hay cambios para guardar",
           "title-required": "El título es obligatorio"
         },
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
+        "masking-effect": "Efecto de enmascaramiento: {{effect}}",
         "select": "Seleccionar tipo semántico",
         "self": "Tipos Semánticos",
         "table": {
@@ -3389,6 +3403,8 @@
     "view-issue": "Ver issue",
     "view-schema-text": "Ver texto del esquema",
     "visualize-explain": "Visualizar explicación",
+    "visualize-explain-blocked": "Se bloqueó la pestaña del plan de consulta. Permite las ventanas emergentes de este sitio e inténtalo de nuevo.",
+    "visualize-explain-failed": "No se pudo cargar el plan de consulta",
     "web-socket": {
       "connection-status": {
         "connected": "conectado",
@@ -3700,21 +3716,20 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "Crear cambio de base de datos",
       "query": "Ir a SQL Editor"
     },
+    "all-steps-completed": "Todos los pasos completados",
     "descriptions": {
       "add-teammate": "Invite a un compañero y concédale acceso al espacio de trabajo.",
       "create-database-change": "Define un cambio de base de datos y crea su incidencia.",
       "database": "Abre una base de datos y explora sus esquemas y tablas.",
       "instance": "Conecta una instancia para que Bytebase pueda sincronizar sus bases de datos.",
+      "mark-sensitive-data": "Abre la base de datos seleccionada y asigna un tipo semántico a una columna sensible.",
       "project": "Crea un proyecto para organizar bases de datos y cambios.",
       "query-data": "Abre la base de datos seleccionada en SQL Editor y ejecuta cualquier sentencia."
     },
     "dismiss": "Cerrar guía",
     "generic": {
-      "completion-description": "Exploraste cómo se conectan tu proyecto, instancia y base de datos.",
-      "completion-title": "Tu espacio de trabajo de bases de datos está listo",
       "title": "Configurar Bytebase"
     },
     "getting-started": "Primeros pasos",
@@ -3727,6 +3742,9 @@
       "grant-access-title": "Conceder acceso al espacio de trabajo",
       "instance-description": "Crea una instancia para que Bytebase pueda conectarse a tu servidor de base de datos.",
       "instance-title": "Conectar la instancia",
+      "mark-sensitive-data-description": "Selecciona una columna y asigna un tipo semántico para que Bytebase pueda aplicar enmascaramiento de datos.",
+      "mark-sensitive-data-title": "Marcar datos sensibles",
+      "mark-sensitive-fields-description": "Abre una tabla o colección y asigna tipos semánticos a los campos sensibles de su catálogo.",
       "project-description": "Crea primero un proyecto. Las bases de datos se pueden sincronizar en él después de conectar la instancia.",
       "project-title": "Crear un proyecto",
       "transfer-description": "Selecciona una o más bases de datos y transfiérelas al proyecto.",
@@ -3737,13 +3755,12 @@
     "product-model": "Cómo funciona Bytebase",
     "scenarios": {
       "create-database-change": {
-        "completion-description": "Tu cambio de base de datos ya tiene una incidencia rastreable en Bytebase.",
-        "completion-title": "Creaste tu primer cambio de base de datos",
         "title": "Crear un cambio de base de datos"
       },
+      "mark-sensitive-data": {
+        "title": "Marcar datos sensibles"
+      },
       "query-data": {
-        "completion-description": "Abriste SQL Editor y ejecutaste una sentencia en tu base de datos.",
-        "completion-title": "Ejecutaste tu primera sentencia",
         "title": "Consultar datos"
       }
     },
@@ -3753,6 +3770,7 @@
       "create-database-change": "Crear cambio de base de datos",
       "database": "Explorar base de datos",
       "instance": "Conectar instancia",
+      "mark-sensitive-data": "Marcar datos sensibles",
       "project": "Crear proyecto",
       "query-data": "Consultar datos"
     },

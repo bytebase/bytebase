@@ -25,6 +25,10 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 		if hasOmniIntoClause(n) {
 			return base.DDL, false
 		}
+		// A data-modifying CTE writes, so the SELECT needs DML permission.
+		if containsWriteCTE(n) {
+			return base.DML, false
+		}
 		if allSystems {
 			return base.SelectInfoSchema, false
 		}
@@ -120,19 +124,47 @@ func omniIntoClause(n *ast.SelectStmt) *ast.IntoClause {
 	return omniIntoClause(n.Rarg)
 }
 
-// isExplainAnalyzeOmni checks if an ExplainStmt has the ANALYZE option.
+// isExplainAnalyzeOmni reports whether an ExplainStmt executes its query: its last ANALYZE option
+// is not FALSE, OFF, or 0, the values PostgreSQL reads as false.
 func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
 	if n.Options == nil {
 		return false
 	}
+	analyze := false
 	for _, item := range n.Options.Items {
-		if de, ok := item.(*ast.DefElem); ok {
-			if strings.EqualFold(de.Defname, "analyze") {
-				return true
-			}
+		de, ok := item.(*ast.DefElem)
+		if !ok || !strings.EqualFold(de.Defname, "analyze") {
+			continue
+		}
+		switch arg := de.Arg.(type) {
+		case *ast.String:
+			analyze = !strings.EqualFold(arg.Str, "false") && !strings.EqualFold(arg.Str, "off")
+		case *ast.Integer:
+			analyze = arg.Ival != 0
+		default:
+			analyze = true
 		}
 	}
-	return false
+	return analyze
+}
+
+// UnwrapExplainAnalyze returns the statement that an EXPLAIN ANALYZE executes and that statement's text
+// within text, the text of the EXPLAIN. It returns any other node and text unchanged.
+func UnwrapExplainAnalyze(node ast.Node, text string) (ast.Node, string) {
+	explain, ok := node.(*ast.ExplainStmt)
+	if !ok || !isExplainAnalyzeOmni(explain) {
+		return node, text
+	}
+	// The statement runs from its WITH clause, which the location of a SELECT leaves out, to the end
+	// of the EXPLAIN, which its location can also leave out, as for ORDER BY.
+	start := ast.NodeLoc(explain.Query).Start
+	if with := getWithClause(explain.Query); with != nil && with.Loc.Start >= 0 && with.Loc.Start < start {
+		start = with.Loc.Start
+	}
+	if start < 0 || start >= explain.Loc.End || explain.Loc.End > len(text) {
+		return explain.Query, text
+	}
+	return explain.Query, text[start:explain.Loc.End]
 }
 
 // classifyExplainedQuery returns the QueryType for the query inside EXPLAIN ANALYZE.
@@ -145,8 +177,11 @@ func classifyExplainedQuery(query ast.Node) base.QueryType {
 		if hasOmniIntoClause(n) {
 			return base.DDL
 		}
+		if containsWriteCTE(n) {
+			return base.DML
+		}
 		return base.Select
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt, *ast.MergeStmt:
 		return base.DML
 	case *ast.DeclareCursorStmt:
 		return base.Select

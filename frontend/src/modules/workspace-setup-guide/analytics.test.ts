@@ -5,9 +5,6 @@ import type { GuideJourney, ResolvedGuide } from "./types";
 const journey: GuideJourney = {
   id: "query-data",
   scenarioId: "query-data",
-  completionTitleKey: "",
-  completionDescriptionKey: "",
-  completionActions: [],
   steps: [
     { stepId: "create-project" },
     { stepId: "connect-instance", dependsOn: ["create-project"] },

@@ -20,8 +20,10 @@ import {
 } from "@/components/ui/sheet";
 import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
 import { updateColumnCatalog } from "@/lib/column-data-table/utils";
+import { getMaskingType } from "@/lib/sensitive-data/components-utils";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { SemanticTypeSetting_SemanticType } from "@/types/proto-es/v1/setting_service_pb";
+import { isBuiltinSemanticTypeId } from "@/types/semanticTypes";
 
 interface MarkSensitiveDataSheetProps {
   database: Database;
@@ -38,9 +40,9 @@ export function MarkSensitiveDataSheet({
 }: MarkSensitiveDataSheetProps) {
   const { t } = useTranslation();
   const metadata = useAppDatabaseMetadata(database.name, { autoFetch: open });
-  const [schemaIndex, setSchemaIndex] = useState("");
+  const [schemaIndex, setSchemaIndex] = useState("0");
   const [tableIndex, setTableIndex] = useState("");
-  const [columnName, setColumnName] = useState("");
+  const [columnNames, setColumnNames] = useState<string[]>([]);
   const [semanticTypeId, setSemanticTypeId] = useState("bb.default");
   const [saving, setSaving] = useState(false);
 
@@ -48,10 +50,13 @@ export function MarkSensitiveDataSheet({
     schemaIndex === "" ? undefined : metadata.schemas[Number(schemaIndex)];
   const selectedTable =
     tableIndex === "" ? undefined : selectedSchema?.tables[Number(tableIndex)];
+  const selectedSemanticType = semanticTypeList.find(
+    (semanticType) => semanticType.id === semanticTypeId
+  );
   const canSave =
     !!selectedSchema &&
     !!selectedTable &&
-    !!columnName &&
+    columnNames.length > 0 &&
     !!semanticTypeId &&
     !saving;
 
@@ -59,9 +64,9 @@ export function MarkSensitiveDataSheet({
     if (open) {
       return;
     }
-    setSchemaIndex("");
+    setSchemaIndex("0");
     setTableIndex("");
-    setColumnName("");
+    setColumnNames([]);
     setSemanticTypeId("bb.default");
     setSaving(false);
   }, [database.name, open]);
@@ -77,11 +82,11 @@ export function MarkSensitiveDataSheet({
         database: database.name,
         schema: selectedSchema.name,
         table: selectedTable.name,
-        column: columnName,
+        column: columnNames,
         columnCatalog: {
           semanticType: semanticTypeId,
         },
-        notification: "common.updated",
+        notification: t("common.updated"),
       });
       onOpenChange(false);
     } finally {
@@ -97,7 +102,7 @@ export function MarkSensitiveDataSheet({
             {t("settings.sensitive-data.mark-sensitive-data")}
           </SheetTitle>
           <SheetDescription>
-            {t("settings.sensitive-data.semantic-types.label")}
+            {t("settings.sensitive-data.mark-sensitive-data-description")}
           </SheetDescription>
         </SheetHeader>
         <SheetBody>
@@ -111,7 +116,7 @@ export function MarkSensitiveDataSheet({
                 onValueChange={(value) => {
                   setSchemaIndex(value ?? "");
                   setTableIndex("");
-                  setColumnName("");
+                  setColumnNames([]);
                 }}
               >
                 <SelectTrigger
@@ -146,7 +151,7 @@ export function MarkSensitiveDataSheet({
                 disabled={!selectedSchema}
                 onValueChange={(value) => {
                   setTableIndex(value ?? "");
-                  setColumnName("");
+                  setColumnNames([]);
                 }}
               >
                 <SelectTrigger
@@ -171,16 +176,21 @@ export function MarkSensitiveDataSheet({
             </FormField>
 
             <FormField>
-              <FormLabel htmlFor="mark-sensitive-data-column">
-                {t("common.column")}
+              <FormLabel
+                id="mark-sensitive-data-column-label"
+                htmlFor="mark-sensitive-data-column"
+              >
+                {t("settings.sensitive-data.columns-to-mask")}
               </FormLabel>
               <Select
-                value={columnName}
+                multiple
+                value={columnNames}
                 disabled={!selectedTable}
-                onValueChange={(value) => setColumnName(value ?? "")}
+                onValueChange={setColumnNames}
               >
                 <SelectTrigger
                   id="mark-sensitive-data-column"
+                  aria-labelledby="mark-sensitive-data-column-label"
                   className="w-full"
                 >
                   <SelectValue placeholder={t("common.select")} />
@@ -195,12 +205,18 @@ export function MarkSensitiveDataSheet({
               </Select>
             </FormField>
 
-            <FormField>
-              <FormLabel htmlFor="mark-sensitive-data-semantic-type">
-                {t(
-                  "settings.sensitive-data.semantic-types.table.semantic-type"
-                )}
-              </FormLabel>
+            <FormField
+              title={
+                <FormLabel htmlFor="mark-sensitive-data-semantic-type">
+                  {t(
+                    "settings.sensitive-data.semantic-types.table.semantic-type"
+                  )}
+                </FormLabel>
+              }
+              description={t(
+                "settings.sensitive-data.semantic-type-description"
+              )}
+            >
               <Select
                 value={semanticTypeId}
                 onValueChange={(value) => setSemanticTypeId(value ?? "")}
@@ -209,18 +225,43 @@ export function MarkSensitiveDataSheet({
                   id="mark-sensitive-data-semantic-type"
                   className="w-full"
                 >
-                  <SelectValue
-                    placeholder={t(
-                      "settings.sensitive-data.semantic-types.select"
-                    )}
-                  />
+                  <SelectValue>
+                    {selectedSemanticType?.title ||
+                      t("settings.sensitive-data.semantic-types.select")}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {semanticTypeList.map((semanticType) => (
-                    <SelectItem key={semanticType.id} value={semanticType.id}>
-                      {semanticType.title || semanticType.id}
-                    </SelectItem>
-                  ))}
+                  {semanticTypeList.map((semanticType) => {
+                    const maskingType = getMaskingType(semanticType.algorithm);
+                    const maskingEffect = isBuiltinSemanticTypeId(
+                      semanticType.id
+                    )
+                      ? t(
+                          `dynamic.settings.sensitive-data.semantic-types.template.${semanticType.id.split(".").join("-")}.algorithm.description`
+                        )
+                      : maskingType
+                        ? t(
+                            "settings.sensitive-data.semantic-types.masking-effect",
+                            {
+                              effect: t(
+                                `settings.sensitive-data.algorithms.${maskingType}.self`
+                              ),
+                            }
+                          )
+                        : undefined;
+                    return (
+                      <SelectItem key={semanticType.id} value={semanticType.id}>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate">{semanticType.title}</span>
+                          {maskingEffect && (
+                            <span className="max-w-prose whitespace-normal text-xs leading-5 text-control-light">
+                              {maskingEffect}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </FormField>
@@ -235,7 +276,7 @@ export function MarkSensitiveDataSheet({
             {t("common.cancel")}
           </Button>
           <Button type="button" disabled={!canSave} onClick={handleSave}>
-            {t("common.save")}
+            {t("settings.sensitive-data.apply-masking")}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -4,14 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
-	"errors"
 	"io"
 	"strings"
 	"testing"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/go-sql-driver/mysql"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -19,20 +21,24 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-var testMySQLAdvisorExplainRows [][]driver.Value
+var (
+	// testMySQLAdvisorExplainJSON is returned for `EXPLAIN FORMAT=JSON` queries.
+	testMySQLAdvisorExplainJSON string
 
-// testMySQLAdvisorExplainJSON is returned for `EXPLAIN FORMAT=JSON` queries; when
-// empty, the JSON query returns no rows and the advisor falls back to the tabular rows.
-var testMySQLAdvisorExplainJSON string
+	// testMySQLAdvisorExplainErr, when set, fails every query, standing in for a
+	// statement the server refuses to EXPLAIN.
+	testMySQLAdvisorExplainErr error
 
-// testMySQLAdvisorExplainErr, when set, fails every query, standing in for a
-// statement the server refuses to EXPLAIN.
-var testMySQLAdvisorExplainErr error
+	// testMySQLAdvisorSetErr, when set, fails every SET statement.
+	testMySQLAdvisorSetErr error
 
-// testMySQLAdvisorQueries records every statement the fake driver is asked to
-// run, so a rule that sent raw DML instead of EXPLAIN is caught rather than
-// silently succeeding.
-var testMySQLAdvisorQueries []string
+	// testMySQLAdvisorQueries records every statement the fake driver is asked to
+	// run, so a rule that sent raw DML instead of EXPLAIN is caught rather than
+	// silently succeeding. testMySQLAdvisorQueryConns records the connection that ran each.
+	testMySQLAdvisorQueries     []string
+	testMySQLAdvisorQueryConns  []int
+	testMySQLAdvisorConnections int
+)
 
 func init() {
 	sql.Register("test_mysql_advisor_explain", testMySQLAdvisorExplainDriver{})
@@ -41,39 +47,48 @@ func init() {
 type testMySQLAdvisorExplainDriver struct{}
 
 func (testMySQLAdvisorExplainDriver) Open(string) (driver.Conn, error) {
-	return testMySQLAdvisorExplainConn{}, nil
+	testMySQLAdvisorConnections++
+	return &testMySQLAdvisorExplainConn{id: testMySQLAdvisorConnections}, nil
 }
 
-type testMySQLAdvisorExplainConn struct{}
+type testMySQLAdvisorExplainConn struct {
+	id int
+}
 
-func (testMySQLAdvisorExplainConn) Prepare(string) (driver.Stmt, error) {
+func (*testMySQLAdvisorExplainConn) Prepare(string) (driver.Stmt, error) {
 	return nil, driver.ErrSkip
 }
 
-func (testMySQLAdvisorExplainConn) Close() error {
+func (*testMySQLAdvisorExplainConn) Close() error {
 	return nil
 }
 
-func (testMySQLAdvisorExplainConn) Begin() (driver.Tx, error) {
+func (*testMySQLAdvisorExplainConn) Begin() (driver.Tx, error) {
 	return testMySQLAdvisorExplainTx{}, nil
 }
 
-func (testMySQLAdvisorExplainConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+func (c *testMySQLAdvisorExplainConn) ExecContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Result, error) {
 	testMySQLAdvisorQueries = append(testMySQLAdvisorQueries, query)
+	testMySQLAdvisorQueryConns = append(testMySQLAdvisorQueryConns, c.id)
+	if !strings.HasPrefix(query, "SET ") {
+		return nil, errors.Errorf("unexpected exec %q", query)
+	}
+	if testMySQLAdvisorSetErr != nil {
+		return nil, testMySQLAdvisorSetErr
+	}
+	return driver.ResultNoRows, nil
+}
+
+func (c *testMySQLAdvisorExplainConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+	testMySQLAdvisorQueries = append(testMySQLAdvisorQueries, query)
+	testMySQLAdvisorQueryConns = append(testMySQLAdvisorQueryConns, c.id)
 	if testMySQLAdvisorExplainErr != nil {
 		return nil, testMySQLAdvisorExplainErr
 	}
-	if strings.HasPrefix(query, "EXPLAIN FORMAT=JSON") {
-		var rows [][]driver.Value
-		if testMySQLAdvisorExplainJSON != "" {
-			rows = [][]driver.Value{{testMySQLAdvisorExplainJSON}}
-		}
-		return &testMySQLAdvisorExplainResultRows{columns: []string{"EXPLAIN"}, rows: rows}, nil
+	if strings.HasPrefix(query, "EXPLAIN FORMAT=JSON ") {
+		return &testMySQLAdvisorExplainResultRows{columns: []string{"EXPLAIN"}, rows: [][]driver.Value{{testMySQLAdvisorExplainJSON}}}, nil
 	}
-	return &testMySQLAdvisorExplainResultRows{
-		columns: []string{"id", "select_type", "table", "type", "rows", "filtered"},
-		rows:    testMySQLAdvisorExplainRows,
-	}, nil
+	return &testMySQLAdvisorExplainResultRows{columns: []string{"id", "select_type", "table", "type", "rows", "filtered"}}, nil
 }
 
 type testMySQLAdvisorExplainTx struct{}
@@ -187,93 +202,233 @@ func TestMySQLRules(t *testing.T) {
 	}
 }
 
-func TestMySQLAffectedRowLimitAdvisorUsesJSONPlanTargetNode(t *testing.T) {
-	// The tabular EXPLAIN's first row is a 100232-row driving-table scan; the JSON
-	// plan flags the update target whose cumulative estimate is 1144 (BYT-9858).
-	testMySQLAdvisorExplainJSON = `{"query_block":{"select_id":1,"nested_loop":[
-		{"table":{"table_name":"t","access_type":"ALL","rows_examined_per_scan":100232,"rows_produced_per_join":3006,"filtered":"3.00"}},
-		{"table":{"update":true,"table_name":"o","access_type":"ref","rows_examined_per_scan":3,"rows_produced_per_join":1144,"filtered":"10.00"}}
-	]}}`
-	testMySQLAdvisorExplainRows = [][]driver.Value{
-		{int64(1), "SIMPLE", "t", "ALL", int64(100232), "3.00"},
-		{int64(1), "UPDATE", "o", "ref", int64(3), "10.00"},
-	}
-	defer func() { testMySQLAdvisorExplainJSON = "" }()
-
+// openTestMySQLAdvisorDB resets the fake server and opens a pool that keeps no idle
+// connections, so statements that do not share a pinned connection land on different ones.
+func openTestMySQLAdvisorDB(t *testing.T, plan string) *sql.DB {
+	t.Helper()
+	testMySQLAdvisorExplainJSON = plan
+	testMySQLAdvisorExplainErr = nil
+	testMySQLAdvisorSetErr = nil
+	testMySQLAdvisorQueries = nil
+	testMySQLAdvisorQueryConns = nil
 	db, err := sql.Open("test_mysql_advisor_explain", "")
 	require.NoError(t, err)
-	defer db.Close()
+	db.SetMaxIdleConns(0)
+	t.Cleanup(func() { _ = db.Close() })
+	return db
+}
 
-	sm := sheet.NewManager()
-	adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, "UPDATE o SET c = 1 WHERE c IS NULL AND EXISTS (SELECT 1 FROM t WHERE t.k = o.k);", []*storepb.SQLReviewRule{
+func checkTestRowLimitRule(t *testing.T, db *sql.DB, engine storepb.Engine, ruleType storepb.SQLReviewRule_Type, level storepb.SQLReviewRule_Level, statement string) []*storepb.Advice {
+	t.Helper()
+	adviceList, err := advisor.SQLReviewCheck(context.Background(), sheet.NewManager(), statement, []*storepb.SQLReviewRule{
 		{
-			Type:   storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
-			Level:  storepb.SQLReviewRule_WARNING,
-			Engine: storepb.Engine_MYSQL,
-			Payload: &storepb.SQLReviewRule_NumberPayload{
-				NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
-					Number: 2000,
-				},
-			},
+			Type:    ruleType,
+			Level:   level,
+			Engine:  engine,
+			Payload: &storepb.SQLReviewRule_NumberPayload{NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{Number: 5}},
 		},
 	}, advisor.Context{
-		DBType:          storepb.Engine_MYSQL,
+		DBType:          engine,
 		Driver:          db,
 		NoAppendBuiltin: true,
 	})
 	require.NoError(t, err)
-	// 1144 is below the 2000 limit; the legacy first-"rows" heuristic would have
-	// reported 100232 and produced advice.
-	require.Empty(t, adviceList)
+	return adviceList
 }
 
-func TestMySQLRowLimitAdvisorsCapExplainEstimateByLimit(t *testing.T) {
-	testMySQLAdvisorExplainJSON = ""
-	testMySQLAdvisorExplainRows = [][]driver.Value{
-		{int64(1), "SIMPLE", "td", "ALL", int64(1000), "100.00"},
-	}
-	db, err := sql.Open("test_mysql_advisor_explain", "")
-	require.NoError(t, err)
-	defer db.Close()
+const (
+	// The flagged UPDATE target is scanned first; the join filter on s comes after it.
+	testMySQLUpdateTargetFirstPlan = `{"query_block":{"select_id":1,"nested_loop":[
+		{"table":{"update":true,"table_name":"big","access_type":"ALL","rows_examined_per_scan":11330,"rows_produced_per_join":11330,"filtered":"100.00"}},
+		{"table":{"table_name":"s","access_type":"eq_ref","rows_examined_per_scan":1,"rows_produced_per_join":1133,"filtered":"10.00"}}
+	]}}`
+	// MariaDB does not flag a multi-table DELETE target.
+	testMariaDBDeleteJoinPlan = `{"query_block":{"select_id":1,"nested_loop":[
+		{"table":{"table_name":"s","access_type":"ALL","loops":1,"rows":100,"filtered":10}},
+		{"table":{"table_name":"big","access_type":"ref","loops":10,"rows":100,"filtered":100}}
+	]}}`
+	// The plan of the SELECT that a single-table UPDATE of td is explained as.
+	testMySQLSingleTableUpdatePlan = `{"query_block":{"select_id":1,"table":{"table_name":"td","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":1000,"filtered":"100.00"}}}`
+	testMySQLInsertSelectPlan      = `{"query_block":{"select_id":1,
+		"table":{"insert":true,"table_name":"t2","access_type":"ALL"},
+		"insert_from":{"table":{"table_name":"t","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":100,"filtered":"10.00"}}
+	}}`
+	testMySQLInsertTablePlan = `{"query_block":{"select_id":1,
+		"table":{"insert":true,"table_name":"t2","access_type":"ALL"},
+		"insert_from":{"table":{"table_name":"t","access_type":"ALL","rows_examined_per_scan":1000,"rows_produced_per_join":1000,"filtered":"100.00"}}
+	}}`
+)
 
-	sm := sheet.NewManager()
+func TestMySQLRowLimitAdvisorsEstimateFromJSONPlan(t *testing.T) {
 	for _, tc := range []struct {
 		name      string
-		statement string
+		engine    storepb.Engine
 		ruleType  storepb.SQLReviewRule_Type
+		plan      string
+		setErr    error
+		statement string
+		// explained is the statement the rule explains, when it is not the statement itself.
+		explained string
+		// wantContent is empty when the statement stays within the limit of 5.
+		wantContent string
+		wantCode    code.Code
+		// fallback is set when the JSON plan has no estimate to read, so the rule also runs the tabular EXPLAIN.
+		fallback bool
 	}{
 		{
-			name:      "affected row limit",
-			statement: "UPDATE td SET c = 1 WHERE c = 0 LIMIT 3;",
-			ruleType:  storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+			name:        "update bounded by the join after the target",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+			plan:        testMySQLUpdateTargetFirstPlan,
+			statement:   "UPDATE big STRAIGHT_JOIN s ON big.s_id = s.id SET big.v = big.v + 1 WHERE s.flag = 1;",
+			wantContent: `"UPDATE big STRAIGHT_JOIN s ON big.s_id = s.id SET big.v = big.v + 1 WHERE s.flag = 1;" affected 1133 rows (estimated). The count exceeds 5.`,
+			wantCode:    code.StatementAffectedRowExceedsLimit,
 		},
 		{
-			name:      "insert row limit",
-			statement: "INSERT INTO td SELECT * FROM source WHERE c = 0 LIMIT 3;",
+			name:        "MariaDB multi-table delete without explain_json_format_version",
+			engine:      storepb.Engine_MARIADB,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+			plan:        testMariaDBDeleteJoinPlan,
+			setErr:      &mysql.MySQLError{Number: 1193, Message: "Unknown system variable 'explain_json_format_version'"},
+			statement:   "DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1;",
+			wantContent: `"DELETE big FROM big JOIN s ON big.s_id = s.id WHERE s.flag = 1;" affected 1000 rows (estimated). The count exceeds 5.`,
+			wantCode:    code.StatementAffectedRowExceedsLimit,
+		},
+		{
+			name:      "update capped by LIMIT",
+			engine:    storepb.Engine_MYSQL,
+			ruleType:  storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+			plan:      testMySQLSingleTableUpdatePlan,
+			statement: "UPDATE td SET c = 1 WHERE c = 0 LIMIT 3;",
+			explained: "SELECT 1 FROM td WHERE c = 0 LIMIT 3",
+		},
+		{
+			name:        "target the plan does not name",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT,
+			plan:        `{"query_block":{"select_id":1,"table":{"table_name":"other","access_type":"ALL","rows_examined_per_scan":1000,"filtered":"100.00"}}}`,
+			statement:   "UPDATE td SET c = 1;",
+			explained:   "SELECT 1 FROM td",
+			wantContent: `"UPDATE td SET c = 1;" affected 1000 rows (estimated). The count exceeds 5.`,
+			wantCode:    code.StatementAffectedRowExceedsLimit,
+		},
+		{
+			name:        "plan without an estimate falls back to the tabular plan",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			plan:        `{"query_block":{"select_id":1,"table":{"insert":true,"select_id":1,"table_name":"t2","access_type":"ALL"}}}`,
+			statement:   "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;",
+			wantContent: `failed to get row count for "INSERT INTO t2 SELECT id, ROW_NUMBER() OVER () FROM t;": table "t2" in the plan has no row estimate`,
+			wantCode:    code.Internal,
+			fallback:    true,
+		},
+		{
+			name:        "insert select reads the source plan",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			plan:        testMySQLInsertSelectPlan,
+			statement:   "INSERT INTO t2 SELECT * FROM t WHERE d = 3;",
+			wantContent: `"INSERT INTO t2 SELECT * FROM t WHERE d = 3;" inserts 100 rows. The count exceeds 5.`,
+			wantCode:    code.InsertTooManyRows,
+		},
+		{
+			name:        "insert table",
+			engine:      storepb.Engine_MYSQL,
+			ruleType:    storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			plan:        testMySQLInsertTablePlan,
+			statement:   "INSERT INTO t2 TABLE t;",
+			wantContent: `"INSERT INTO t2 TABLE t;" inserts 1000 rows. The count exceeds 5.`,
+			wantCode:    code.InsertTooManyRows,
+		},
+		{
+			name:      "insert select capped by LIMIT",
+			engine:    storepb.Engine_MYSQL,
 			ruleType:  storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT,
+			plan:      testMySQLInsertSelectPlan,
+			statement: "INSERT INTO t2 SELECT * FROM t WHERE d = 3 LIMIT 3;",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, tc.statement, []*storepb.SQLReviewRule{
-				{
-					Type:   tc.ruleType,
-					Level:  storepb.SQLReviewRule_WARNING,
-					Engine: storepb.Engine_MYSQL,
-					Payload: &storepb.SQLReviewRule_NumberPayload{
-						NumberPayload: &storepb.SQLReviewRule_NumberRulePayload{
-							Number: 5,
-						},
-					},
-				},
-			}, advisor.Context{
-				DBType:          storepb.Engine_MYSQL,
-				Driver:          db,
-				NoAppendBuiltin: true,
-			})
-			require.NoError(t, err)
-			require.Empty(t, adviceList)
+			db := openTestMySQLAdvisorDB(t, tc.plan)
+			testMySQLAdvisorSetErr = tc.setErr
+
+			adviceList := checkTestRowLimitRule(t, db, tc.engine, tc.ruleType, storepb.SQLReviewRule_WARNING, tc.statement)
+			if tc.wantContent == "" {
+				require.Empty(t, adviceList)
+			} else {
+				require.Len(t, adviceList, 1)
+				require.Equal(t, tc.wantCode.Int32(), adviceList[0].Code)
+				require.Equal(t, tc.wantContent, adviceList[0].Content)
+			}
+
+			explained := tc.explained
+			if explained == "" {
+				explained = tc.statement
+			}
+			// The rule sets the JSON format version on the connection that runs the JSON EXPLAIN and
+			// resets it where the server has the variable.
+			wantQueries := []string{"SET SESSION explain_json_format_version = 1", "EXPLAIN FORMAT=JSON " + explained}
+			if tc.setErr == nil {
+				wantQueries = append(wantQueries, "SET SESSION explain_json_format_version = DEFAULT")
+			}
+			jsonQueries := len(wantQueries)
+			if tc.fallback {
+				wantQueries = append(wantQueries, "EXPLAIN FORMAT=TRADITIONAL "+explained)
+			}
+			require.Equal(t, wantQueries, testMySQLAdvisorQueries)
+			for _, conn := range testMySQLAdvisorQueryConns[:jsonQueries] {
+				require.Equal(t, testMySQLAdvisorQueryConns[0], conn)
+			}
 		})
 	}
+}
+
+func TestMySQLRowLimitAdvisorsWarnAboutStatementsBeyondExplainLimit(t *testing.T) {
+	t.Run("affected row limit", func(t *testing.T) {
+		db := openTestMySQLAdvisorDB(t, testMySQLSingleTableUpdatePlan)
+		statement := strings.Repeat("UPDATE td SET c = 1;\n", common.MaximumLintExplainSize+2)
+
+		adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT, storepb.SQLReviewRule_ERROR, statement)
+		require.Len(t, adviceList, common.MaximumLintExplainSize+1)
+		for _, advice := range adviceList[:common.MaximumLintExplainSize] {
+			require.Equal(t, storepb.Advice_ERROR, advice.Status)
+			require.Contains(t, advice.Content, "affected 1000 rows")
+		}
+		warning := adviceList[common.MaximumLintExplainSize]
+		require.Equal(t, storepb.Advice_WARNING, warning.Status)
+		require.Equal(t, code.StatementAffectedRowExceedsLimit.Int32(), warning.Code)
+		require.Equal(t, storepb.SQLReviewRule_STATEMENT_AFFECTED_ROW_LIMIT.String(), warning.Title)
+		require.Equal(t, "Only the first 10 statements were estimated; 2 more were not checked against the row limit.", warning.Content)
+		require.Equal(t, int32(common.MaximumLintExplainSize+1), warning.StartPosition.GetLine())
+		require.Equal(t, common.MaximumLintExplainSize, countTestExplainQueries())
+	})
+
+	t.Run("insert row limit keeps counting VALUES rows", func(t *testing.T) {
+		db := openTestMySQLAdvisorDB(t, testMySQLInsertSelectPlan)
+		statement := strings.Repeat("INSERT INTO t2 SELECT * FROM t WHERE d = 3;\n", common.MaximumLintExplainSize+1) +
+			"INSERT INTO t2 (id) VALUES (1), (2), (3), (4), (5), (6);"
+
+		adviceList := checkTestRowLimitRule(t, db, storepb.Engine_MYSQL, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT, storepb.SQLReviewRule_WARNING, statement)
+		require.Len(t, adviceList, common.MaximumLintExplainSize+2)
+		require.Equal(t, `"INSERT INTO t2 (id) VALUES (1), (2), (3), (4), (5), (6);" inserts 6 rows. The count exceeds 5.`, adviceList[common.MaximumLintExplainSize].Content)
+		warning := adviceList[common.MaximumLintExplainSize+1]
+		require.Equal(t, storepb.Advice_WARNING, warning.Status)
+		require.Equal(t, code.InsertTooManyRows.Int32(), warning.Code)
+		require.Equal(t, storepb.SQLReviewRule_STATEMENT_INSERT_ROW_LIMIT.String(), warning.Title)
+		require.Equal(t, "Only the first 10 statements were estimated; 1 more were not checked against the row limit.", warning.Content)
+		require.Equal(t, int32(common.MaximumLintExplainSize+1), warning.StartPosition.GetLine())
+		require.Equal(t, common.MaximumLintExplainSize, countTestExplainQueries())
+	})
+}
+
+func countTestExplainQueries() int {
+	count := 0
+	for _, query := range testMySQLAdvisorQueries {
+		if strings.HasPrefix(query, "EXPLAIN ") {
+			count++
+		}
+	}
+	return count
 }
 
 func TestMariaDBPriorBackupCheckAdvisor(t *testing.T) {

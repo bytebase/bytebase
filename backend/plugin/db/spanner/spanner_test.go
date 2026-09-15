@@ -1,10 +1,16 @@
 package spanner
 
 import (
+	"context"
+	"fmt"
 	"math"
+	"os"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/spanner"
+	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
+	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -13,6 +19,60 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
+
+// TestExplainDMLWithoutRunningIt needs a Spanner that plans queries, which CI
+// cannot provide and the emulator does not do. Spanner Omni works: the client
+// reaches it without TLS or credentials through SPANNER_EMULATOR_HOST, and
+// SPANNER_TEST_DATABASE names a database in it as
+// projects/default/instances/default/databases/d.
+func TestExplainDMLWithoutRunningIt(t *testing.T) {
+	database := os.Getenv("SPANNER_TEST_DATABASE")
+	if os.Getenv("SPANNER_EMULATOR_HOST") == "" || database == "" {
+		t.Skip("set SPANNER_EMULATOR_HOST and SPANNER_TEST_DATABASE to run against Spanner Omni")
+	}
+	a := require.New(t)
+	ctx := context.Background()
+
+	admin, err := spannerdb.NewDatabaseAdminClient(ctx)
+	a.NoError(err)
+	defer admin.Close()
+	table := fmt.Sprintf("ExplainDML%d", time.Now().UnixNano())
+	updateDDL := func(statement string) {
+		op, err := admin.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
+			Database:   database,
+			Statements: []string{statement},
+		})
+		a.NoError(err)
+		a.NoError(op.Wait(ctx))
+	}
+	updateDDL(fmt.Sprintf("CREATE TABLE %s (Id INT64 NOT NULL, Total INT64) PRIMARY KEY (Id)", table))
+	defer updateDDL(fmt.Sprintf("DROP TABLE %s", table))
+
+	client, err := spanner.NewClient(ctx, database)
+	a.NoError(err)
+	defer client.Close()
+	_, err = client.Apply(ctx, []*spanner.Mutation{
+		spanner.Insert(table, []string{"Id", "Total"}, []any{int64(1), int64(10)}),
+	})
+	a.NoError(err)
+
+	driver := &Driver{client: client}
+	results, err := driver.explainStatement(ctx, fmt.Sprintf(
+		"UPDATE %[1]s SET Total = Total + 1 WHERE Id = 1; SELECT Total FROM %[1]s", table,
+	))
+	a.NoError(err)
+	a.Len(results, 2)
+	for _, result := range results {
+		a.Empty(result.Error, result.Statement)
+		a.Contains(result.Rows[0].Values[0].GetStringValue(), `"planNodes"`)
+	}
+
+	row, err := client.Single().ReadRow(ctx, table, spanner.Key{int64(1)}, []string{"Total"})
+	a.NoError(err)
+	var total int64
+	a.NoError(row.Column(0, &total))
+	a.Equal(int64(10), total)
+}
 
 func TestGetDatabaseFromDSN(t *testing.T) {
 	tests := []struct {

@@ -1,46 +1,47 @@
-import { act } from "react";
+import { act, useContext, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { MonacoViewZone } from "./MonacoViewZone";
+import { fakeEditorLayout, lineTop } from "@/test-utils/monacoLayout";
+import { MonacoViewZone, MonacoViewZoneRevealContext } from "./MonacoViewZone";
 import type { IStandaloneCodeEditor } from "./types";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-function fakeEditor() {
-  const zones = new Map<
-    string,
-    {
-      afterLineNumber: number;
-      domNode: HTMLElement;
-      onDomNodeTop?: (top: number) => void;
-    }
-  >();
+type FakeZone = {
+  afterLineNumber: number;
+  domNode: HTMLElement;
+  heightInPx: number;
+  onDomNodeTop?: (top: number) => void;
+};
+
+function fakeEditor(layoutOptions: { scrollTop?: number } = {}) {
+  const zones = new Map<string, FakeZone>();
   let nextId = 0;
   const widgets = new Set<{ getDomNode: () => HTMLElement }>();
+  const layout = fakeEditorLayout(
+    () =>
+      Array.from(zones, ([id, zone]) => ({
+        id,
+        afterLineNumber: zone.afterLineNumber,
+        height: zone.heightInPx,
+      })),
+    layoutOptions
+  );
   const editor = {
+    ...layout,
     addOverlayWidget: (widget: { getDomNode: () => HTMLElement }) => {
       widgets.add(widget);
     },
     removeOverlayWidget: (widget: { getDomNode: () => HTMLElement }) => {
       widgets.delete(widget);
     },
-    getLayoutInfo: () => ({
-      contentLeft: 52,
-      width: 800,
-      verticalScrollbarWidth: 14,
-      minimap: { minimapWidth: 0 },
-    }),
     onDidLayoutChange: () => ({ dispose: vi.fn() }),
     getModel: () => ({}),
     changeViewZones: (
       callback: (accessor: {
-        addZone: (zone: {
-          afterLineNumber: number;
-          domNode: HTMLElement;
-          onDomNodeTop?: (top: number) => void;
-        }) => string;
+        addZone: (zone: FakeZone) => string;
         removeZone: (id: string) => void;
         layoutZone: (id: string) => void;
       }) => void
@@ -57,7 +58,20 @@ function fakeEditor() {
         layoutZone: vi.fn(),
       }),
   };
-  return { editor: editor as unknown as IStandaloneCodeEditor, widgets, zones };
+  // A sibling zone Monaco stacks before the component's, after the same line.
+  const addZoneBefore = (afterLineNumber: number, height: number) =>
+    zones.set(`sibling-${nextId++}`, {
+      afterLineNumber,
+      domNode: document.createElement("div"),
+      heightInPx: height,
+    });
+  return {
+    addZoneBefore,
+    editor: editor as unknown as IStandaloneCodeEditor,
+    scroll: layout.setScrollTop,
+    widgets,
+    zones,
+  };
 }
 
 describe("MonacoViewZone", () => {
@@ -104,44 +118,94 @@ describe("MonacoViewZone", () => {
   });
 });
 
+// Monaco parks the widget of a zone outside the rendered viewport far above
+// the page, so the reveal must not depend on where the widget is.
+const WIDGET_TOP = -1_000_000;
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => vi.restoreAllMocks());
+
+// Positions the widget off screen and the target `offset` px into it.
+function stubRects(target: HTMLElement, offset: number, height: number) {
+  vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
+    function (this: HTMLElement) {
+      return this === target
+        ? new DOMRect(0, WIDGET_TOP + offset, 700, height)
+        : new DOMRect(0, WIDGET_TOP, 800, 0);
+    }
+  );
+}
 
 test.each([
-  { name: "already visible", top: 150, height: 100, expected: undefined },
-  { name: "below the viewport", top: 480, height: 120, expected: 208 },
-  { name: "above the viewport", top: 50, height: 120, expected: 42 },
-  { name: "taller than the viewport", top: 450, height: 600, expected: 442 },
-])("reveals $name with minimal editor scrolling", ({top, height, expected}) => {
-  const frames = new Map<number, FrameRequestCallback>();
-  let nextFrame = 0;
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++nextFrame, callback); return nextFrame; });
-  vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
-  const runFrame = () => { const queued = [...frames.values()]; frames.clear(); act(() => queued.forEach(callback => callback(0))); };
-  const host = document.createElement("div");
-  host.getBoundingClientRect = () => new DOMRect(0, 100, 800, 400);
+  { name: "already visible", line: 4, height: 100, scrollTop: 50, expected: undefined },
+  // Minimal scrolling: the box lands against the nearer edge, 8px in.
+  { name: "below the viewport", line: 20, height: 120, scrollTop: 50, expected: lineTop(21) + 120 + 8 - 400 },
+  { name: "above the viewport", line: 4, height: 120, scrollTop: 300, expected: lineTop(5) - 8 },
+  { name: "taller than the viewport", line: 4, height: 600, scrollTop: 300, expected: lineTop(5) - 8 },
+])("reveals a zone $name with one editor scroll", ({line, height, scrollTop, expected}) => {
+  const {editor, scroll} = fakeEditor({scrollTop});
   const target = document.createElement("div");
-  target.getBoundingClientRect = () => new DOMRect(0, top, 700, height);
+  stubRects(target, 0, height);
   const revealTarget = {current: target};
-  const {editor} = fakeEditor();
-  const scroll = vi.fn();
-  Object.assign(editor, {getDomNode: () => host, getScrollTop: () => 100, setScrollTop: scroll});
   const root = createRoot(document.createElement("div"));
-  const render = (key: string, text = "comment") => act(() => root.render(<MonacoViewZone afterLineNumber={4} editor={editor} revealKey={key} revealTarget={revealTarget}>{text}</MonacoViewZone>));
+  const render = (key: string, text = "comment") => act(() => root.render(<MonacoViewZone afterLineNumber={line} editor={editor} revealKey={key} revealTarget={revealTarget}>{text}</MonacoViewZone>));
   render("first");
-  runFrame();
-  expect(scroll).not.toHaveBeenCalled();
-  runFrame();
   if (expected === undefined) expect(scroll).not.toHaveBeenCalled();
   else expect(scroll).toHaveBeenCalledExactlyOnceWith(expected);
   // Typing/rerendering the same comment must not pull the reader back.
   scroll.mockClear();
   render("first", "longer comment");
-  runFrame(); runFrame();
   expect(scroll).not.toHaveBeenCalled();
-  render("second");
-  runFrame();
   act(() => root.unmount());
-  runFrame();
   expect(scroll).not.toHaveBeenCalled();
+});
+
+test("reveals from the first line of the range the content is about", () => {
+  // Line 12's zone is in view; lines 9-11 above it are scrolled past.
+  const {editor, scroll} = fakeEditor({scrollTop: 250});
+  const target = document.createElement("div");
+  stubRects(target, 0, 100);
+  const root = createRoot(document.createElement("div"));
+  act(() => root.render(<MonacoViewZone afterLineNumber={12} editor={editor} revealKey="a" revealTarget={{current: target}}>comment</MonacoViewZone>));
+  expect(scroll).not.toHaveBeenCalled();
+  act(() => root.render(<MonacoViewZone afterLineNumber={12} editor={editor} revealFromLine={9} revealKey="b" revealTarget={{current: target}}>comment</MonacoViewZone>));
+  expect(scroll).toHaveBeenCalledExactlyOnceWith(lineTop(9) - 8);
+  act(() => root.unmount());
+});
+
+test("content revealing a part of itself scrolls to that part, not to the range", () => {
+  const {editor, scroll} = fakeEditor({scrollTop: 250});
+  const footer = document.createElement("div");
+  stubRects(footer, 320, 40);
+  function Footer() {
+    const reveal = useContext(MonacoViewZoneRevealContext);
+    useEffect(() => reveal?.(footer), [reveal]);
+    return null;
+  }
+  const root = createRoot(document.createElement("div"));
+  act(() => root.render(<MonacoViewZone afterLineNumber={12} editor={editor} revealFromLine={9}><Footer /></MonacoViewZone>));
+  // The footer (296 + 320 → 616..656) crosses the 250..650 viewport's bottom.
+  expect(scroll).toHaveBeenCalledExactlyOnceWith(lineTop(13) + 320 + 40 + 8 - 400);
+  act(() => root.unmount());
+});
+
+test("a range taller than the viewport keeps its last line and the top of the content in view", () => {
+  const {editor, scroll} = fakeEditor();
+  const target = document.createElement("div");
+  stubRects(target, 0, 100);
+  const root = createRoot(document.createElement("div"));
+  act(() => root.render(<MonacoViewZone afterLineNumber={40} editor={editor} revealFromLine={1} revealKey="a" revealTarget={{current: target}}>comment</MonacoViewZone>));
+  // The whole content (100px) peeks above the bottom inset.
+  expect(scroll).toHaveBeenCalledExactlyOnceWith(lineTop(41) + 100 + 8 - 400);
+  act(() => root.unmount());
+});
+
+test("accounts for sibling zones stacked before it and the target's offset in the content", () => {
+  const {addZoneBefore, editor, scroll} = fakeEditor({scrollTop: 600});
+  addZoneBefore(4, 50);
+  const target = document.createElement("div");
+  stubRects(target, 30, 100);
+  const root = createRoot(document.createElement("div"));
+  act(() => root.render(<MonacoViewZone afterLineNumber={4} editor={editor} revealKey="a" revealTarget={{current: target}}>comment</MonacoViewZone>));
+  expect(scroll).toHaveBeenCalledExactlyOnceWith(lineTop(5) + 50 + 30 - 8);
+  act(() => root.unmount());
 });

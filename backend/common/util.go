@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"math"
 	"math/big"
 	"net/url"
 	"reflect"
@@ -33,6 +34,23 @@ const (
 	MaximumAdvicePerStatus = 50
 	MaximumLintExplainSize = 10
 )
+
+// RoundRows rounds a planner's row estimate to int64, saturating at math.MaxInt64 instead of
+// overflowing to a negative count.
+func RoundRows(rows float64) int64 {
+	if rows >= math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(math.Round(rows))
+}
+
+// AddRows adds row counts, saturating at math.MaxInt64 instead of wrapping negative.
+func AddRows(a, b int64) int64 {
+	if b > 0 && a > math.MaxInt64-b {
+		return math.MaxInt64
+	}
+	return a + b
+}
 
 var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 

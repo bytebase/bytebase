@@ -34,8 +34,8 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 			continue
 		}
 
-		stmtType := classifyStatementType(omniAST.Node)
-		if stmtType == storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED {
+		stmtTypes := classifyStatementTypes(omniAST.Node)
+		if len(stmtTypes) == 0 {
 			continue
 		}
 
@@ -50,11 +50,13 @@ func GetStatementTypes(asts []base.AST) ([]StatementTypeWithPosition, error) {
 			endLine += strings.Count(omniAST.Text, "\n")
 		}
 
-		allResults = append(allResults, StatementTypeWithPosition{
-			Type: stmtType,
-			Line: endLine,
-			Text: omniAST.Text,
-		})
+		for _, stmtType := range stmtTypes {
+			allResults = append(allResults, StatementTypeWithPosition{
+				Type: stmtType,
+				Line: endLine,
+				Text: omniAST.Text,
+			})
+		}
 	}
 
 	return allResults, nil

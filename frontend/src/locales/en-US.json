@@ -444,6 +444,9 @@
     "search-for-more": "Search for more",
     "search-no-result": "No matching result found",
     "search-results": "Search results",
+    "secret-input": {
+      "unchanged": "Unchanged"
+    },
     "select": "Please Select",
     "select-all": "Select all",
     "selected": "selected",
@@ -474,6 +477,8 @@
     "tips": "Tips",
     "title": "Title",
     "to": "To",
+    "toggle-password-visibility": "Toggle password visibility",
+    "token": "Token",
     "total": "Total",
     "total-n-items": "Total {{n}} items",
     "transfer": "Transfer",
@@ -626,11 +631,8 @@
     },
     "no-read-only-data-source": "No read-only data source",
     "private-key-passphrase": "Private Key Passphrase",
-    "private-key-passphrase-placeholder": "Leave empty if your private key is not encrypted",
     "private-key-passphrase-tip": "Optional passphrase for encrypted private keys",
     "read-only": "RO",
-    "read-replica-host": "Read-replica Host",
-    "read-replica-port": "Read-replica Port",
     "replica-set": "Replica Set",
     "select-query-data-source": "Select query data source",
     "snowflake-keypair-tip": "Key-pair authentication",
@@ -728,6 +730,7 @@
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "nullable": "Nullable",
+    "open-sql-editor": "Open SQL Editor",
     "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
     "project-instance-transfer-disabled": "Databases from a project-bound instance cannot be transferred or unassigned.",
@@ -846,6 +849,9 @@
     "project-instance-synced-create-change-description": "Your database is ready in this project. Create a governed database change to continue.",
     "project-instance-synced-create-change-title": "Ready to create a database change",
     "project-instance-synced-description": "Your database is ready in this project. Start by querying data in SQL Editor, or create a governed database change when needed.",
+    "project-instance-synced-mark-sensitive-data-action": "Mark sensitive data",
+    "project-instance-synced-mark-sensitive-data-description": "Your database is ready in this project. Mark a sensitive column to apply data masking.",
+    "project-instance-synced-mark-sensitive-data-title": "Ready to protect sensitive data",
     "project-instance-synced-query-data-description": "Your database is ready in this project. Open SQL Editor to query it.",
     "project-instance-synced-query-data-title": "Database ready to query",
     "project-instance-synced-sql-editor-action": "Open SQL Editor",
@@ -1202,6 +1208,7 @@
     },
     "instance-id": "Instance ID",
     "instance-name": "Instance Name",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance, optional",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "KDC host",
@@ -1220,7 +1227,6 @@
     "no-environment": "This instance has not been bound to the environment",
     "no-extra-params-configured": "No extra connection parameters configured",
     "no-params-yet-add-above": "No parameters configured yet. Add parameters using the form above.",
-    "no-password": "No password",
     "open-data-source": "Open this data source to see what it needs.",
     "parameter-name-placeholder": "Parameter name",
     "parameter-value-placeholder": "Parameter value",
@@ -1239,7 +1245,6 @@
       "google-iam": "Google Cloud SQL IAM",
       "password": "Plain Password"
     },
-    "password-write-only": "YOUR_DB_PWD - write only",
     "port": "Port",
     "prepare-sample-instance-failed": "Failed to prepare Sample Project Instance.",
     "preparing-sample-instance": "Preparing Sample Project Instance…",
@@ -1348,7 +1353,6 @@
     "syncing": "Syncing ...",
     "test-connection": "Test Connection",
     "testing-connection": "Testing Connection...",
-    "token-write-only": "YOUR_TOKEN - write only",
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
     "unable-to-connect": "Bytebase couldn't connect with these settings. Review the guidance above, or continue and update the connection later.\n\nTechnical details: {{0}}",
     "use-sample-instance": "Use sample instance (Available for 7 days)",
@@ -2920,6 +2924,7 @@
       "email": "Email",
       "enable-sample-databases": "Enable sample databases",
       "enable-sample-databases-create-change": "Enable sample databases as a safe database change target",
+      "enable-sample-databases-mark-sensitive-data": "Enable sample databases to try data masking immediately",
       "enable-sample-databases-query-data": "Enable sample databases to start querying immediately",
       "password": "Password",
       "password-confirm": "Password Confirm",
@@ -2935,6 +2940,10 @@
         "create-database-change": {
           "description": "Define a change and create a traceable issue.",
           "title": "Create a database change"
+        },
+        "mark-sensitive-data": {
+          "description": "Identify sensitive columns and apply masking.",
+          "title": "Mark sensitive data"
         },
         "outcome-title": "What would you like to do with Bytebase?",
         "query-data": {
@@ -3006,6 +3015,7 @@
           "masking-type": "Masking Type"
         }
       },
+      "apply-masking": "Apply masking",
       "classification": {
         "empty-classification": "The \"classification\" field is empty",
         "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
@@ -3016,6 +3026,7 @@
         "missing-classification": "Missing \"classification\" field",
         "missing-levels": "Missing \"levels\" field"
       },
+      "columns-to-mask": "Columns to mask",
       "global-rules": {
         "condition-order": "Condition order",
         "delete-rule-tip": "Delete this rule?",
@@ -3028,14 +3039,17 @@
       },
       "grant-access": "Grant Access",
       "mark-sensitive-data": "Mark sensitive data",
+      "mark-sensitive-data-description": "Choose columns whose values should be hidden in query results.",
       "never-expires": "Never expires",
       "remove-sensitive-column-tips": "Expose this column?",
+      "semantic-type-description": "Semantic types group columns representing the same kind of data so Bytebase can apply consistent masking.",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "No changes to save",
           "title-required": "Title is required"
         },
         "label": "Columns having the same semantic type will use the same masking algorithms.",
+        "masking-effect": "Masking effect: {{effect}}",
         "select": "Select semantic type",
         "self": "Semantic Types",
         "table": {
@@ -3389,6 +3403,8 @@
     "view-issue": "View issue",
     "view-schema-text": "View schema text",
     "visualize-explain": "Visualize Explain",
+    "visualize-explain-blocked": "The query plan tab was blocked. Allow pop-ups for this site and try again.",
+    "visualize-explain-failed": "Failed to load the query plan",
     "web-socket": {
       "connection-status": {
         "connected": "connected",
@@ -3700,21 +3716,20 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "Create database change",
       "query": "Go to SQL Editor"
     },
+    "all-steps-completed": "All steps completed",
     "descriptions": {
       "add-teammate": "Invite a teammate and grant them workspace access.",
       "create-database-change": "Define a database change and create its issue.",
       "database": "Open a database and explore its schemas and tables.",
       "instance": "Connect an instance so Bytebase can sync its databases.",
+      "mark-sensitive-data": "Open the selected database and assign a semantic type to a sensitive column.",
       "project": "Create a project to organize databases and changes.",
       "query-data": "Open the selected database in SQL Editor and run any statement."
     },
     "dismiss": "Dismiss guide",
     "generic": {
-      "completion-description": "You explored how your project, instance, and database connect.",
-      "completion-title": "Your database workspace is ready",
       "title": "Set up Bytebase"
     },
     "getting-started": "Getting started",
@@ -3727,6 +3742,9 @@
       "grant-access-title": "Grant workspace access",
       "instance-description": "Create an instance so Bytebase can connect to your database server.",
       "instance-title": "Connect the instance",
+      "mark-sensitive-data-description": "Select a column and assign a semantic type so Bytebase can apply data masking.",
+      "mark-sensitive-data-title": "Mark sensitive data",
+      "mark-sensitive-fields-description": "Open a table or collection and assign semantic types to sensitive fields in its catalog.",
       "project-description": "Create a project first. Databases can be synced into it after the instance is connected.",
       "project-title": "Create a project",
       "transfer-description": "Select one or more databases, then transfer them to the project.",
@@ -3737,13 +3755,12 @@
     "product-model": "How Bytebase works",
     "scenarios": {
       "create-database-change": {
-        "completion-description": "Your database change now has a traceable issue in Bytebase.",
-        "completion-title": "You created your first database change",
         "title": "Create a database change"
       },
+      "mark-sensitive-data": {
+        "title": "Mark sensitive data"
+      },
       "query-data": {
-        "completion-description": "You opened SQL Editor and ran a statement against your database.",
-        "completion-title": "You ran your first statement",
         "title": "Query Data"
       }
     },
@@ -3753,6 +3770,7 @@
       "create-database-change": "Create database change",
       "database": "Explore database",
       "instance": "Connect instance",
+      "mark-sensitive-data": "Mark sensitive data",
       "project": "Create project",
       "query-data": "Query data"
     },

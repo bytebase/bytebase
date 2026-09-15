@@ -77,55 +77,67 @@ func (QueryOption_RedisRunCommandsOn) EnumDescriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{4, 0}
 }
 
-type QueryOption_MSSQLExplainFormat int32
+// Which explain output the caller wants, for an explain request.
+//
+// Leave it unspecified for the engine's own default, which is the only
+// output most engines have. Naming a format an engine cannot produce is
+// INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+// against an engine that has no explain at all.
+type QueryOption_ExplainFormat int32
 
 const (
-	// defaults to SHOWPLAN_ALL
-	QueryOption_MSSQL_EXPLAIN_FORMAT_UNSPECIFIED QueryOption_MSSQLExplainFormat = 0
-	// SHOWPLAN_ALL
-	QueryOption_MSSQL_EXPLAIN_FORMAT_ALL QueryOption_MSSQLExplainFormat = 1
-	// SHOWPLAN_XML
-	QueryOption_MSSQL_EXPLAIN_FORMAT_XML QueryOption_MSSQLExplainFormat = 2
+	// The engine's default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL.
+	QueryOption_EXPLAIN_FORMAT_UNSPECIFIED QueryOption_ExplainFormat = 0
+	// The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
+	// SHOWPLAN_ALL.
+	QueryOption_TEXT QueryOption_ExplainFormat = 1
+	// The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON).
+	QueryOption_JSON QueryOption_ExplainFormat = 2
+	// The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
+	// SHOWPLAN_XML.
+	QueryOption_XML QueryOption_ExplainFormat = 3
 )
 
-// Enum value maps for QueryOption_MSSQLExplainFormat.
+// Enum value maps for QueryOption_ExplainFormat.
 var (
-	QueryOption_MSSQLExplainFormat_name = map[int32]string{
-		0: "MSSQL_EXPLAIN_FORMAT_UNSPECIFIED",
-		1: "MSSQL_EXPLAIN_FORMAT_ALL",
-		2: "MSSQL_EXPLAIN_FORMAT_XML",
+	QueryOption_ExplainFormat_name = map[int32]string{
+		0: "EXPLAIN_FORMAT_UNSPECIFIED",
+		1: "TEXT",
+		2: "JSON",
+		3: "XML",
 	}
-	QueryOption_MSSQLExplainFormat_value = map[string]int32{
-		"MSSQL_EXPLAIN_FORMAT_UNSPECIFIED": 0,
-		"MSSQL_EXPLAIN_FORMAT_ALL":         1,
-		"MSSQL_EXPLAIN_FORMAT_XML":         2,
+	QueryOption_ExplainFormat_value = map[string]int32{
+		"EXPLAIN_FORMAT_UNSPECIFIED": 0,
+		"TEXT":                       1,
+		"JSON":                       2,
+		"XML":                        3,
 	}
 )
 
-func (x QueryOption_MSSQLExplainFormat) Enum() *QueryOption_MSSQLExplainFormat {
-	p := new(QueryOption_MSSQLExplainFormat)
+func (x QueryOption_ExplainFormat) Enum() *QueryOption_ExplainFormat {
+	p := new(QueryOption_ExplainFormat)
 	*p = x
 	return p
 }
 
-func (x QueryOption_MSSQLExplainFormat) String() string {
+func (x QueryOption_ExplainFormat) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (QueryOption_MSSQLExplainFormat) Descriptor() protoreflect.EnumDescriptor {
+func (QueryOption_ExplainFormat) Descriptor() protoreflect.EnumDescriptor {
 	return file_v1_sql_service_proto_enumTypes[1].Descriptor()
 }
 
-func (QueryOption_MSSQLExplainFormat) Type() protoreflect.EnumType {
+func (QueryOption_ExplainFormat) Type() protoreflect.EnumType {
 	return &file_v1_sql_service_proto_enumTypes[1]
 }
 
-func (x QueryOption_MSSQLExplainFormat) Number() protoreflect.EnumNumber {
+func (x QueryOption_ExplainFormat) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use QueryOption_MSSQLExplainFormat.Descriptor instead.
-func (QueryOption_MSSQLExplainFormat) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use QueryOption_ExplainFormat.Descriptor instead.
+func (QueryOption_ExplainFormat) EnumDescriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{4, 1}
 }
 
@@ -665,7 +677,7 @@ func (x *QueryResponse) GetAppliedAccessGrant() string {
 type QueryOption struct {
 	state              protoimpl.MessageState         `protogen:"open.v1"`
 	RedisRunCommandsOn QueryOption_RedisRunCommandsOn `protobuf:"varint,1,opt,name=redis_run_commands_on,json=redisRunCommandsOn,proto3,enum=bytebase.v1.QueryOption_RedisRunCommandsOn" json:"redis_run_commands_on,omitempty"`
-	MssqlExplainFormat QueryOption_MSSQLExplainFormat `protobuf:"varint,2,opt,name=mssql_explain_format,json=mssqlExplainFormat,proto3,enum=bytebase.v1.QueryOption_MSSQLExplainFormat" json:"mssql_explain_format,omitempty"`
+	ExplainFormat      QueryOption_ExplainFormat      `protobuf:"varint,3,opt,name=explain_format,json=explainFormat,proto3,enum=bytebase.v1.QueryOption_ExplainFormat" json:"explain_format,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -707,11 +719,11 @@ func (x *QueryOption) GetRedisRunCommandsOn() QueryOption_RedisRunCommandsOn {
 	return QueryOption_REDIS_RUN_COMMANDS_ON_UNSPECIFIED
 }
 
-func (x *QueryOption) GetMssqlExplainFormat() QueryOption_MSSQLExplainFormat {
+func (x *QueryOption) GetExplainFormat() QueryOption_ExplainFormat {
 	if x != nil {
-		return x.MssqlExplainFormat
+		return x.ExplainFormat
 	}
-	return QueryOption_MSSQL_EXPLAIN_FORMAT_UNSPECIFIED
+	return QueryOption_EXPLAIN_FORMAT_UNSPECIFIED
 }
 
 type QueryResult struct {
@@ -2079,18 +2091,19 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"_container\"u\n" +
 	"\rQueryResponse\x122\n" +
 	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\x120\n" +
-	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\xa1\x03\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\x83\x03\n" +
 	"\vQueryOption\x12^\n" +
-	"\x15redis_run_commands_on\x18\x01 \x01(\x0e2+.bytebase.v1.QueryOption.RedisRunCommandsOnR\x12redisRunCommandsOn\x12]\n" +
-	"\x14mssql_explain_format\x18\x02 \x01(\x0e2+.bytebase.v1.QueryOption.MSSQLExplainFormatR\x12mssqlExplainFormat\"[\n" +
+	"\x15redis_run_commands_on\x18\x01 \x01(\x0e2+.bytebase.v1.QueryOption.RedisRunCommandsOnR\x12redisRunCommandsOn\x12M\n" +
+	"\x0eexplain_format\x18\x03 \x01(\x0e2&.bytebase.v1.QueryOption.ExplainFormatR\rexplainFormat\"[\n" +
 	"\x12RedisRunCommandsOn\x12%\n" +
 	"!REDIS_RUN_COMMANDS_ON_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vSINGLE_NODE\x10\x01\x12\r\n" +
-	"\tALL_NODES\x10\x02\"v\n" +
-	"\x12MSSQLExplainFormat\x12$\n" +
-	" MSSQL_EXPLAIN_FORMAT_UNSPECIFIED\x10\x00\x12\x1c\n" +
-	"\x18MSSQL_EXPLAIN_FORMAT_ALL\x10\x01\x12\x1c\n" +
-	"\x18MSSQL_EXPLAIN_FORMAT_XML\x10\x02\"\x97\r\n" +
+	"\tALL_NODES\x10\x02\"L\n" +
+	"\rExplainFormat\x12\x1e\n" +
+	"\x1aEXPLAIN_FORMAT_UNSPECIFIED\x10\x00\x12\b\n" +
+	"\x04TEXT\x10\x01\x12\b\n" +
+	"\x04JSON\x10\x02\x12\a\n" +
+	"\x03XML\x10\x03J\x04\b\x02\x10\x03R\x14mssql_explain_format\"\x97\r\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
 	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12/\n" +
@@ -2254,7 +2267,7 @@ var file_v1_sql_service_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
 var file_v1_sql_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_v1_sql_service_proto_goTypes = []any{
 	(QueryOption_RedisRunCommandsOn)(0),  // 0: bytebase.v1.QueryOption.RedisRunCommandsOn
-	(QueryOption_MSSQLExplainFormat)(0),  // 1: bytebase.v1.QueryOption.MSSQLExplainFormat
+	(QueryOption_ExplainFormat)(0),       // 1: bytebase.v1.QueryOption.ExplainFormat
 	(QueryResult_CommandError_Type)(0),   // 2: bytebase.v1.QueryResult.CommandError.Type
 	(QueryResult_Message_Level)(0),       // 3: bytebase.v1.QueryResult.Message.Level
 	(Advice_Level)(0),                    // 4: bytebase.v1.Advice.Level
@@ -2296,7 +2309,7 @@ var file_v1_sql_service_proto_depIdxs = []int32{
 	10, // 1: bytebase.v1.QueryRequest.query_option:type_name -> bytebase.v1.QueryOption
 	11, // 2: bytebase.v1.QueryResponse.results:type_name -> bytebase.v1.QueryResult
 	0,  // 3: bytebase.v1.QueryOption.redis_run_commands_on:type_name -> bytebase.v1.QueryOption.RedisRunCommandsOn
-	1,  // 4: bytebase.v1.QueryOption.mssql_explain_format:type_name -> bytebase.v1.QueryOption.MSSQLExplainFormat
+	1,  // 4: bytebase.v1.QueryOption.explain_format:type_name -> bytebase.v1.QueryOption.ExplainFormat
 	13, // 5: bytebase.v1.QueryResult.rows:type_name -> bytebase.v1.QueryRow
 	24, // 6: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
 	18, // 7: bytebase.v1.QueryResult.postgres_error:type_name -> bytebase.v1.QueryResult.PostgresError

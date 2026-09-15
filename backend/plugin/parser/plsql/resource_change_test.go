@@ -84,7 +84,7 @@ DELETE FROM t2 WHERE c1 = 1;`
 	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T2"}, false)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS: []string{
+		DMLStatements: []string{
 			"INSERT INTO t1 SELECT * FROM t2;",
 			"UPDATE t1 SET c1 = 5 WHERE c2 = 1;",
 			"DELETE FROM t2 WHERE c1 = 1;",
@@ -153,7 +153,7 @@ END;`
 	changedResources.AddTable("DB", "", &storepb.ChangedResourceTable{Name: "T1"}, false)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS: []string{
+		DMLStatements: []string{
 			"UPDATE t1 SET c1 = 5;",
 		},
 		DMLCount: 1,

@@ -123,8 +123,8 @@ func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Re
 
 // StartTrial starts a free trial for an eligible SaaS workspace.
 func (s *SubscriptionService) StartTrial(ctx context.Context, _ *connect.Request[v1pb.StartTrialRequest]) (*connect.Response[v1pb.Subscription], error) {
-	if !s.profile.SaaS || s.profile.Mode != common.ReleaseModeDev {
-		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("trial is only available in SaaS development mode"))
+	if !s.profile.SaaS {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("trial is only available in SaaS mode"))
 	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)

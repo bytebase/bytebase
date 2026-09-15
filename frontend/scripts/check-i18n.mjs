@@ -63,6 +63,7 @@ const DYNAMIC_PREFIXES = [
   // definitions and translated through those definitions at render time.
   "settings.profile.enable-sample-databases",
   "settings.profile.setup-scenario.create-database-change.",
+  "settings.profile.setup-scenario.mark-sensitive-data.",
   "settings.profile.setup-scenario.query-data.",
   "settings.profile.setup-scenario.workspace-usage.",
   // Workspace setup guide step definitions store label and description keys;

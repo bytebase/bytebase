@@ -9,10 +9,17 @@ import { useIntroStateByKey } from "@/hooks/useAppState";
 import { planEvents } from "@/lib/plan/events";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
-import { State } from "@/types/proto-es/v1/common_pb";
+import { catalogResourceName } from "@/stores/app/databaseCatalog";
+import { Engine, State } from "@/types/proto-es/v1/common_pb";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
+import { getDatabaseEngine } from "@/utils/v1/database";
 import { convertMemberToFullname } from "@/utils/v1/iam";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import { GUIDE_PROGRESS_KEYS } from "./progress";
+import {
+  findGuideQueryTarget,
+  tableHasMarkedSensitiveData,
+} from "./queryTarget";
 import type {
   GuideContext,
   GuideRoute,
@@ -31,12 +38,21 @@ const INITIAL_FACTS: GuideFacts = {
   hasExploredDatabase: false,
   hasRunStatement: false,
   hasCreatedChangeIssue: false,
+  hasMarkedSensitiveData: false,
   hasOtherHumanUser: false,
   projectName: "",
   instanceName: "",
   databaseProjectName: "",
   databaseName: "",
+  queryTarget: undefined,
 };
+
+export const catalogHasMarkedSensitiveData = (
+  catalog: Pick<DatabaseCatalog, "schemas"> | undefined
+) =>
+  catalog?.schemas.some((schema) =>
+    schema.tables.some(tableHasMarkedSensitiveData)
+  ) ?? false;
 
 export const hasOtherHumanWorkspaceMember = (
   policy:
@@ -101,6 +117,19 @@ const isPopulatedProjectDatabaseRoute = (
   !!databaseName &&
   params.projectId === extractProjectResourceName(databaseProjectName);
 
+const databaseNameFromRoute = (route: GuideRoute) => {
+  const params = route.params ?? {};
+  if (
+    (route.name !== PROJECT_V1_ROUTE_DATABASE_DETAIL &&
+      route.name !== INSTANCE_ROUTE_DATABASE_DETAIL) ||
+    !hasRouteParams(params, ["instanceId", "databaseName"])
+  ) {
+    return undefined;
+  }
+  const parent = route.query?.parent;
+  return `${typeof parent === "string" ? parent : `instances/${params.instanceId}`}/databases/${params.databaseName}`;
+};
+
 export const useGuideContext = ({
   enabled,
   dismissed,
@@ -120,6 +149,9 @@ export const useGuideContext = ({
   const statementRun = useIntroStateByKey(GUIDE_PROGRESS_KEYS.statementRun);
   const changeIssueCreated = useIntroStateByKey(
     GUIDE_PROGRESS_KEYS.changeIssueCreated
+  );
+  const sensitiveDataMarked = useIntroStateByKey(
+    GUIDE_PROGRESS_KEYS.sensitiveDataMarked
   );
   const serverInfo = useAppStore((state) => state.serverInfo);
   const defaultProject = serverInfo?.defaultProject ?? "";
@@ -147,6 +179,42 @@ export const useGuideContext = ({
   );
   const [facts, setFacts] = useState<GuideFacts>(INITIAL_FACTS);
   const [contextReady, setContextReady] = useState(false);
+  const routeDatabaseName =
+    scenarioId === "mark-sensitive-data"
+      ? databaseNameFromRoute(route)
+      : undefined;
+  const routeDatabase = useAppStore((state) =>
+    routeDatabaseName ? state.databasesByName[routeDatabaseName] : undefined
+  );
+  const useRouteDatabase =
+    !!routeDatabase && getDatabaseEngine(routeDatabase) !== Engine.REDIS;
+  const databaseName = useRouteDatabase
+    ? routeDatabase.name
+    : facts.databaseName;
+  const databaseProjectName = useRouteDatabase
+    ? routeDatabase.project
+    : facts.databaseProjectName;
+  const targetCatalog = useAppStore((state) =>
+    databaseName
+      ? state.catalogsByName[catalogResourceName(databaseName)]
+      : undefined
+  );
+  const targetMetadata = useAppStore((state) =>
+    databaseName ? state.getCachedDatabaseMetadata(databaseName) : undefined
+  );
+  const liveQueryTarget =
+    scenarioId === "mark-sensitive-data"
+      ? targetCatalog
+        ? findGuideQueryTarget(targetMetadata, targetCatalog)
+        : undefined
+      : findGuideQueryTarget(targetMetadata);
+  const queryTarget =
+    liveQueryTarget ??
+    (databaseName === facts.databaseName ? facts.queryTarget : undefined);
+  const hasMarkedSensitiveData =
+    sensitiveDataMarked ||
+    facts.hasMarkedSensitiveData ||
+    catalogHasMarkedSensitiveData(targetCatalog);
   const eventTargetRef = useRef<
     { projectName: string; databaseName: string } | undefined
   >(undefined);
@@ -167,6 +235,18 @@ export const useGuideContext = ({
     }
     record(GUIDE_PROGRESS_KEYS.teammateAdded);
   }, [dismissed, enabled, hasOtherWorkspaceMember, workspaceUsage]);
+
+  useEffect(() => {
+    if (
+      !enabled ||
+      dismissed ||
+      scenarioId !== "mark-sensitive-data" ||
+      !hasMarkedSensitiveData
+    ) {
+      return;
+    }
+    record(GUIDE_PROGRESS_KEYS.sensitiveDataMarked);
+  }, [dismissed, enabled, hasMarkedSensitiveData, scenarioId]);
 
   useEffect(() => {
     if (!enabled || dismissed) return;
@@ -264,7 +344,12 @@ export const useGuideContext = ({
               ? store.fetchDatabases({
                   parent: workspaceResourceName,
                   pageSize: 1,
-                  filter: { project: project.name },
+                  filter: {
+                    project: project.name,
+                    ...(scenarioId === "mark-sensitive-data"
+                      ? { excludeEngines: [Engine.REDIS] }
+                      : {}),
+                  },
                   silent: true,
                 })
               : Promise.resolve(undefined),
@@ -282,6 +367,28 @@ export const useGuideContext = ({
         const database = databases?.databases.find(
           ({ name, project }) => !!name && !!project
         );
+        const shouldPrepareQuery =
+          scenarioId === "query-data" || scenarioId === "mark-sensitive-data";
+        const [metadata, catalog] = database
+          ? await Promise.all([
+              shouldPrepareQuery
+                ? store
+                    .getOrFetchDatabaseMetadata({
+                      database: database.name,
+                      silent: true,
+                    })
+                    .catch(() => undefined)
+                : undefined,
+              scenarioId === "mark-sensitive-data"
+                ? store
+                    .getOrFetchDatabaseCatalog({
+                      database: database.name,
+                      silent: true,
+                    })
+                    .catch(() => undefined)
+                : undefined,
+            ])
+          : [];
         const eventTarget = eventTargetRef.current;
 
         setFacts((state) => ({
@@ -292,6 +399,9 @@ export const useGuideContext = ({
           hasRunStatement: statementRun || state.hasRunStatement,
           hasCreatedChangeIssue:
             changeIssueCreated || state.hasCreatedChangeIssue,
+          hasMarkedSensitiveData:
+            catalogHasMarkedSensitiveData(catalog) ||
+            state.hasMarkedSensitiveData,
           hasOtherHumanUser: users.users.some(
             ({ name }) => !!name && name !== currentUserName
           ),
@@ -300,6 +410,10 @@ export const useGuideContext = ({
           databaseProjectName:
             eventTarget?.projectName ?? database?.project ?? "",
           databaseName: eventTarget?.databaseName ?? database?.name ?? "",
+          queryTarget: findGuideQueryTarget(
+            metadata,
+            scenarioId === "mark-sensitive-data" ? catalog : undefined
+          ),
         }));
       } catch {
         setFacts((state) => ({
@@ -322,6 +436,7 @@ export const useGuideContext = ({
     instanceCacheSize,
     isSaaS,
     projectCacheSize,
+    scenarioId,
     statementRun,
     currentUserName,
     userCacheSize,
@@ -330,8 +445,26 @@ export const useGuideContext = ({
   ]);
 
   const context = useMemo(
-    () => ({ ...facts, isSaaS, hasOtherWorkspaceMember, route }),
-    [facts, hasOtherWorkspaceMember, isSaaS, route]
+    () => ({
+      ...facts,
+      databaseName,
+      databaseProjectName,
+      queryTarget,
+      hasMarkedSensitiveData,
+      isSaaS,
+      hasOtherWorkspaceMember,
+      route,
+    }),
+    [
+      facts,
+      databaseName,
+      databaseProjectName,
+      queryTarget,
+      hasMarkedSensitiveData,
+      hasOtherWorkspaceMember,
+      isSaaS,
+      route,
+    ]
   );
   return { context, contextReady };
 };

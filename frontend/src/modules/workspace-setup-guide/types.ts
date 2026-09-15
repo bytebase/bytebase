@@ -6,15 +6,25 @@ export type GuideStepId =
   | "explore-database"
   | "query-data"
   | "create-database-change"
+  | "mark-sensitive-data"
   | "add-member";
 
-export type GuideScenarioId = "query-data" | "create-database-change";
+export type GuideScenarioId =
+  | "query-data"
+  | "create-database-change"
+  | "mark-sensitive-data";
 
 export type GuideWorkspaceUsage = "team" | "solo";
 
+export type GuideQueryTarget = {
+  schema: string;
+  table: string;
+};
+
 export type GuideJourneyId = "workspace-setup" | GuideScenarioId;
 
-export type GuideRoute = Pick<ReactRoute, "name" | "params">;
+export type GuideRoute = Pick<ReactRoute, "name" | "params"> &
+  Partial<Pick<ReactRoute, "query">>;
 
 export type GuideContext = {
   hasProject: boolean;
@@ -22,6 +32,7 @@ export type GuideContext = {
   hasExploredDatabase: boolean;
   hasRunStatement: boolean;
   hasCreatedChangeIssue: boolean;
+  hasMarkedSensitiveData: boolean;
   isSaaS: boolean;
   hasOtherHumanUser: boolean;
   hasOtherWorkspaceMember: boolean;
@@ -29,6 +40,7 @@ export type GuideContext = {
   instanceName: string;
   databaseProjectName: string;
   databaseName: string;
+  queryTarget?: GuideQueryTarget;
   route: GuideRoute;
 };
 
@@ -39,7 +51,11 @@ export type GuideDatabase = {
 
 export type GuideAction =
   | { type: "navigate"; target: RouteTarget }
-  | { type: "open-sql-editor"; database: GuideDatabase }
+  | {
+      type: "open-sql-editor";
+      database: GuideDatabase;
+      query?: Record<string, string>;
+    }
   | {
       type: "create-change";
       project: string;
@@ -67,14 +83,9 @@ export type GuideJourneyStep = {
   dependsOn?: readonly GuideStepId[];
 };
 
-export type GuideCompletionActionId = "open-sql-editor" | "create-change";
-
 export type GuideJourney = {
   id: GuideJourneyId;
   scenarioId?: GuideScenarioId;
-  completionTitleKey: string;
-  completionDescriptionKey: string;
-  completionActions: readonly GuideCompletionActionId[];
   steps: readonly GuideJourneyStep[];
 };
 

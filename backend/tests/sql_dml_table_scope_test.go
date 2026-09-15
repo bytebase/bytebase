@@ -987,4 +987,50 @@ func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
 		resp, qErr := runAs(token, fmt.Sprintf("INSERT INTO %s.public.t VALUES (1);", otherProjDB))
 		assertDeniedOn(t, resp, qErr, fmt.Sprintf("databases/%s", otherProjDB))
 	})
+
+	// 18. A data-modifying CTE makes a SELECT a write: a SELECT-only user is denied, and a
+	//     table-scoped DML grant authorizes it per CTE target.
+	t.Run("DataModifyingCTEAuthorizedAsDML", func(t *testing.T) {
+		ra := require.New(t)
+		email, token := newLimitedUser(t)
+		setProjectBindings(t, readBinding(email))
+
+		before := countRows(t, "public.t_src")
+		resp, qErr := runAs(token, "WITH d AS (DELETE FROM public.t_src RETURNING id) SELECT count(*) FROM d;")
+		assertDeniedOn(t, resp, qErr, "/tables/t_src")
+		ra.Equal(before, countRows(t, "public.t_src"), "the denied statement must not delete rows")
+
+		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_granted"))
+		before = countRows(t, "public.t_granted")
+		resp, qErr = runAs(token, "WITH i AS (INSERT INTO public.t_granted (id) VALUES (42) RETURNING id) SELECT id FROM i;")
+		assertAllowed(t, resp, qErr)
+		// The editor runs a write with Exec, so the rows the CTE returns never reach the response.
+		ra.Equal([]string{"Affected Rows"}, resp.Results[0].ColumnNames)
+		ra.Equal(before+1, countRows(t, "public.t_granted"))
+		resp, qErr = runAs(token, "WITH i AS (INSERT INTO public.t_other (id) VALUES (42) RETURNING id) SELECT count(*) FROM i;")
+		assertDeniedOn(t, resp, qErr, "/tables/t_other")
+	})
+
+	// 19. EXPLAIN ANALYZE executes the statement it explains, so explaining a write is authorized
+	//     like the write, per target table.
+	t.Run("ExplainAnalyzeOfWriteAuthorizedAsDML", func(t *testing.T) {
+		ra := require.New(t)
+		email, token := newLimitedUser(t)
+		setProjectBindings(t, readBinding(email), tableScopedDML(email, "t_granted"))
+
+		before := countRows(t, "public.t_dst")
+		for _, statement := range []string{
+			"EXPLAIN ANALYZE MERGE INTO public.t_dst d USING public.t_src s ON d.id = s.id WHEN NOT MATCHED THEN INSERT (id) VALUES (s.id);",
+			"EXPLAIN ANALYZE WITH i AS (INSERT INTO public.t_dst (id) VALUES (1) RETURNING id) SELECT count(*) FROM i;",
+		} {
+			resp, qErr := runAs(token, statement)
+			assertDeniedOn(t, resp, qErr, "/tables/t_dst")
+		}
+		ra.Equal(before, countRows(t, "public.t_dst"), "the denied statements must not write rows")
+
+		before = countRows(t, "public.t_granted")
+		resp, qErr := runAs(token, "EXPLAIN ANALYZE WITH i AS (INSERT INTO public.t_granted (id) VALUES (43) RETURNING id) SELECT count(*) FROM i;")
+		assertAllowed(t, resp, qErr)
+		ra.Equal(before+1, countRows(t, "public.t_granted"))
+	})
 }

@@ -85,8 +85,9 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   const { t } = useTranslation();
   const refreshSubscription = useAppStore((state) => state.refreshSubscription);
 
-  const { currentPlan, isFreePlan, isExpired, subscription } =
+  const { currentPlan, isFreePlan, isExpired, isTrialing, subscription } =
     useSubscriptionState();
+  const hasPaidSubscription = !isFreePlan && !isExpired && !isTrialing;
   const paymentInfo = useAppStore((s) => s.paymentInfo);
   const purchasePlans = useAppStore((s) => s.purchasePlans);
 
@@ -150,10 +151,10 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
 
   // Fetch payment info for active subscriptions.
   useEffect(() => {
-    if (!isFreePlan && !isExpired) {
+    if (hasPaidSubscription) {
       useAppStore.getState().fetchPaymentInfo();
     }
-  }, [isFreePlan, isExpired]);
+  }, [hasPaidSubscription]);
 
   const isCurrentPlan = useCallback(
     (plan: PlanType) => currentPlan === plan && !isExpired,
@@ -356,7 +357,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   return (
     <div className="w-full">
       {/* Active Subscription Management */}
-      {!isFreePlan && !isExpired && (
+      {hasPaidSubscription && (
         <>
           {paymentInfo && (
             <div className="flex flex-col gap-2">

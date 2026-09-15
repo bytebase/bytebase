@@ -476,10 +476,6 @@ export function CreateDataSourceExample({
     setShowExample((prev) => !prev);
   }, []);
 
-  if (!grantStatement) {
-    return null;
-  }
-
   const descriptionText = isEngineUsingSQL
     ? dataSourceType === DataSourceType.ADMIN
       ? t("instance.sentence.create-admin-user")
@@ -492,7 +488,7 @@ export function CreateDataSourceExample({
     <div className={`w-full flex flex-col justify-start ${className ?? ""}`}>
       <p className="w-full text-sm text-gray-500">
         {descriptionText}
-        {!createInstanceFlag && (
+        {!createInstanceFlag && grantStatement && (
           <span
             className="normal-link select-none ml-1 cursor-pointer"
             onClick={toggleExample}
@@ -501,7 +497,7 @@ export function CreateDataSourceExample({
           </span>
         )}
       </p>
-      {showExample && (
+      {showExample && grantStatement && (
         <div className="text-sm text-main">
           <EngineSpecificDescription
             engine={engine}

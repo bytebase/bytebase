@@ -29,6 +29,7 @@ const mocks = vi.hoisted(() => ({
   canCreateSavedQueryInProject: vi.fn(() => true),
   keyboardShortcutStr: vi.fn((s: string) => s),
   emit: vi.fn(),
+  useProductIntro: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -83,6 +84,11 @@ vi.mock("@/modules/sql-editor/model/events", () => ({
   sqlEditorEvents: { emit: mocks.emit },
 }));
 
+vi.mock("@/lib/productIntro", () => ({
+  RUN_QUERY_PRODUCT_INTRO: "run-query",
+  useProductIntro: mocks.useProductIntro,
+}));
+
 vi.mock("@/components/ui/button", () => ({
   Button: ({
     children,
@@ -90,17 +96,20 @@ vi.mock("@/components/ui/button", () => ({
     disabled,
     className,
     "aria-label": ariaLabel,
+    "data-product-intro-target": productIntroTarget,
   }: {
     children: React.ReactNode;
     onClick?: (e: React.MouseEvent) => void;
     disabled?: boolean;
     className?: string;
     "aria-label"?: string;
+    "data-product-intro-target"?: string;
   }) => (
     <button
       data-testid="button"
       aria-label={ariaLabel}
       className={className}
+      data-product-intro-target={productIntroTarget}
       disabled={disabled}
       onClick={onClick}
     >
@@ -298,6 +307,34 @@ describe("EditorAction", () => {
 
     unmount();
   });
+
+  test.each([
+    { isDisconnected: false, statement: "SELECT 1", disabled: false },
+    { isDisconnected: true, statement: "SELECT 1", disabled: true },
+    { isDisconnected: false, statement: "", disabled: true },
+  ])(
+    "highlights Run only when connection and statement are ready",
+    ({ isDisconnected, statement, disabled }) => {
+      setup({ isDisconnected, statement });
+
+      const { container, render, unmount } = renderIntoContainer(
+        <EditorAction onExecute={vi.fn()} />
+      );
+      render();
+
+      expect(mocks.useProductIntro).toHaveBeenCalledWith({
+        id: "run-query",
+        title: "workspace-setup-guide.steps.query-data",
+        description: "workspace-setup-guide.descriptions.query-data",
+        disabled,
+      });
+      expect(
+        container.querySelector('[data-product-intro-target="run-query"]')
+      ).not.toBeNull();
+
+      unmount();
+    }
+  );
 
   test("CosmosDB Run button renders an inline container selector when container is missing", () => {
     setup({ engine: Engine.COSMOSDB });
