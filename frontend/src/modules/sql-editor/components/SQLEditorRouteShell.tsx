@@ -303,12 +303,10 @@ export function SQLEditorRouteShell() {
       connection.table = table;
       connection.schema ??= "";
     }
+    const isGuidedQuery =
+      route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO;
     let statement: string | undefined;
-    if (
-      route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO &&
-      typeof table === "string" &&
-      table
-    ) {
+    if (isGuidedQuery && typeof table === "string" && table) {
       const metadata = await useAppStore
         .getState()
         .getOrFetchDatabaseMetadata({
@@ -336,6 +334,7 @@ export function SQLEditorRouteShell() {
     const tabsState = getSQLEditorTabsState();
     const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
     if (
+      !isGuidedQuery &&
       currentTab?.mode === "DATA_EXPLORER" &&
       currentTab.connection.instance === connection.instance &&
       currentTab.connection.database === connection.database &&
