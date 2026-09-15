@@ -17,6 +17,7 @@ export const DOMAIN_RESTRICTION_PRODUCT_INTRO = "domain-restriction";
 export const CREATE_USER_PRODUCT_INTRO = "create-user";
 export const GRANT_ACCESS_PRODUCT_INTRO = "grant-access";
 export const MARK_SENSITIVE_DATA_PRODUCT_INTRO = "mark-sensitive-data";
+export const RUN_QUERY_PRODUCT_INTRO = "run-query";
 
 export type ProductIntroOptions = {
   id: string;

@@ -1,9 +1,15 @@
+import { create } from "@bufbuild/protobuf";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { ReactRoute } from "@/app/router";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import type { SQLEditorTab } from "@/types";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import {
+  DatabaseMetadataSchema,
+  DatabaseSchema$,
+} from "@/types/proto-es/v1/database_service_pb";
 import { SQLEditorRouteShell } from "./SQLEditorRouteShell";
 
 (
@@ -55,6 +61,7 @@ const mocks = vi.hoisted(() => {
       name,
       project: "projects/proj1",
     })),
+    getOrFetchDatabaseMetadata: vi.fn(),
     fetchInstance: vi.fn<
       (name: string) => Promise<{ name: string } | undefined>
     >(async (name: string) => ({ name })),
@@ -145,6 +152,7 @@ vi.mock("@/stores/app", () => ({
   useAppStore: {
     getState: () => ({
       getOrFetchDatabaseByName: mocks.getOrFetchDatabaseByName,
+      getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
       fetchInstance: mocks.fetchInstance,
       getSavedQueryByName: mocks.getSavedQueryByName,
       getOrFetchSavedQueryByName: mocks.getOrFetchSavedQueryByName,
@@ -237,10 +245,26 @@ beforeEach(() => {
       return tab;
     }
   );
-  mocks.getOrFetchDatabaseByName.mockImplementation(async (name: string) => ({
-    name,
-    project: "projects/proj1",
-  }));
+  mocks.getOrFetchDatabaseByName.mockImplementation(async (name: string) =>
+    create(DatabaseSchema$, {
+      name,
+      project: "projects/proj1",
+      instanceResource: {
+        name: "instances/inst1",
+        engine: Engine.POSTGRES,
+      },
+    })
+  );
+  mocks.getOrFetchDatabaseMetadata.mockResolvedValue(
+    create(DatabaseMetadataSchema, {
+      schemas: [
+        {
+          name: "public",
+          tables: [{ name: "users" }],
+        },
+      ],
+    })
+  );
   mocks.fetchInstance.mockImplementation(async (name: string) => ({ name }));
   mocks.getSavedQueryByName.mockImplementation((name: string) => ({
     name,
@@ -487,6 +511,100 @@ describe("SQLEditorRouteShell", () => {
         table: "users",
         schema: "public",
       },
+    });
+
+    unmount();
+  });
+
+  test("generates a SELECT statement for a guided query target", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: {
+        schema: "public",
+        table: "users",
+        intro: "run-query",
+      },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getOrFetchDatabaseMetadata).toHaveBeenCalledWith({
+      database: "instances/inst1/databases/db1",
+      silent: true,
+    });
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+      statement: 'SELECT * FROM "public"."users" LIMIT 50;',
+    });
+
+    unmount();
+  });
+
+  test("does not generate a statement outside the guided query intro", async () => {
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.getOrFetchDatabaseMetadata).not.toHaveBeenCalled();
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+    });
+
+    unmount();
+  });
+
+  test("does not generate a guided statement for an unknown table", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: {
+        schema: "public",
+        table: "missing",
+        intro: "run-query",
+      },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "missing",
+      },
+      mode: "SAVED_QUERY",
     });
 
     unmount();

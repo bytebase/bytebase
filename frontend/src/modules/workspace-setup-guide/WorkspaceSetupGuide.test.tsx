@@ -95,11 +95,13 @@ vi.mock("@/components/HowBytebaseWorksSheet", () => ({
 vi.mock("@/components/SQLEditorButton", () => ({
   SQLEditorButton: ({
     label,
+    query,
     size,
     className,
     "data-testid": testId,
   }: {
     label?: ReactNode;
+    query?: Record<string, string>;
     size?: string;
     className?: string;
     "data-testid"?: string;
@@ -107,6 +109,7 @@ vi.mock("@/components/SQLEditorButton", () => ({
     <button
       className={className}
       data-testid={testId ?? "sql-editor-action"}
+      data-query={query ? JSON.stringify(query) : undefined}
       data-size={size}
     >
       {label}
@@ -216,6 +219,7 @@ describe("WorkspaceSetupGuide", () => {
       hasExploredDatabase: true,
       databaseProjectName: "projects/app",
       databaseName: "instances/sample/databases/employee",
+      queryTarget: { schema: "public", table: "employee" },
     });
 
     render(<WorkspaceSetupGuide />);
@@ -234,6 +238,14 @@ describe("WorkspaceSetupGuide", () => {
     expect(screen.getByTestId("active-action")).toHaveAttribute(
       "data-size",
       "sm"
+    );
+    expect(screen.getByTestId("active-action")).toHaveAttribute(
+      "data-query",
+      JSON.stringify({
+        schema: "public",
+        table: "employee",
+        intro: "run-query",
+      })
     );
     expect(screen.getByTestId("open-product-model")).toBeVisible();
   });

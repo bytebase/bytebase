@@ -40,6 +40,7 @@ const createContext = (
   instanceName: "",
   databaseProjectName: "",
   databaseName: "",
+  queryTarget: undefined,
   route: { name: "workspace.home", params: {} },
   ...overrides,
 });
@@ -181,6 +182,7 @@ describe("GUIDE_STEP_DEFINITIONS", () => {
             hasRunStatement,
             databaseName: "instances/sample/databases/employee",
             databaseProjectName: "projects/app",
+            queryTarget: { schema: "public", table: "employee" },
           })
         )
       ).toEqual({
@@ -193,6 +195,11 @@ describe("GUIDE_STEP_DEFINITIONS", () => {
               instance: "sample",
               database: "employee",
             },
+            query: {
+              schema: "public",
+              table: "employee",
+              intro: "run-query",
+            },
           },
         },
         primary: {
@@ -201,10 +208,45 @@ describe("GUIDE_STEP_DEFINITIONS", () => {
             name: "instances/sample/databases/employee",
             project: "projects/app",
           },
+          query: {
+            schema: "public",
+            table: "employee",
+            intro: "run-query",
+          },
         },
       });
     }
   );
+
+  test("opens the database without the run intro when no table is known", () => {
+    expect(
+      GUIDE_STEP_BY_ID["query-data"].resolveActions(
+        createContext({
+          databaseName: "instances/sample/databases/empty",
+          databaseProjectName: "projects/app",
+        })
+      )
+    ).toEqual({
+      select: {
+        type: "navigate",
+        target: {
+          name: "sql-editor.database",
+          params: {
+            project: "app",
+            instance: "sample",
+            database: "empty",
+          },
+        },
+      },
+      primary: {
+        type: "open-sql-editor",
+        database: {
+          name: "instances/sample/databases/empty",
+          project: "projects/app",
+        },
+      },
+    });
+  });
 
   test.each([false, true])(
     "always opens the discovered database catalog when sensitive data completion is %s",

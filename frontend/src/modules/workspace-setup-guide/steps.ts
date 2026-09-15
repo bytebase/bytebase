@@ -16,6 +16,7 @@ import {
   MARK_SENSITIVE_DATA_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+  RUN_QUERY_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { autoSQLEditorDatabaseRoute } from "@/utils/auto-route";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
@@ -108,22 +109,33 @@ export const GUIDE_STEP_DEFINITIONS: readonly GuideStepDefinition[] = [
     isComplete: (context) => context.hasRunStatement,
     matchesRoute: (route) =>
       isRouteInside(route.name, SQL_EDITOR_DATABASE_MODULE),
-    resolveActions: (context) => ({
-      select: {
-        type: "navigate",
-        target: autoSQLEditorDatabaseRoute({
-          name: context.databaseName,
-          project: context.databaseProjectName,
-        }),
-      },
-      primary: {
-        type: "open-sql-editor",
-        database: {
-          name: context.databaseName,
-          project: context.databaseProjectName,
+    resolveActions: (context) => {
+      const query = context.queryTarget
+        ? {
+            schema: context.queryTarget.schema,
+            table: context.queryTarget.table,
+            [PRODUCT_INTRO_QUERY_KEY]: RUN_QUERY_PRODUCT_INTRO,
+          }
+        : undefined;
+      const target = autoSQLEditorDatabaseRoute({
+        name: context.databaseName,
+        project: context.databaseProjectName,
+      });
+      return {
+        select: {
+          type: "navigate",
+          target: query ? { ...target, query } : target,
         },
-      },
-    }),
+        primary: {
+          type: "open-sql-editor",
+          database: {
+            name: context.databaseName,
+            project: context.databaseProjectName,
+          },
+          ...(query ? { query } : {}),
+        },
+      };
+    },
   },
   {
     id: "create-database-change",

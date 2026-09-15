@@ -9,6 +9,11 @@ import {
 import { planEvents } from "@/lib/plan/events";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { DatabaseCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
+  DatabaseMetadataSchema,
+  SchemaMetadataSchema,
+  TableMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { getGuideJourney } from "./scenarios";
 import { resolveGuide } from "./resolve";
@@ -25,11 +30,13 @@ const mocks = vi.hoisted(() => ({
   instancesByName: {} as Record<string, unknown>,
   databasesByName: {} as Record<string, unknown>,
   catalogsByName: {} as Record<string, unknown>,
+  metadataByDatabase: {} as Record<string, unknown>,
   usersByName: {} as Record<string, unknown>,
   fetchProjectList: vi.fn(),
   fetchInstanceList: vi.fn(),
   fetchDatabases: vi.fn(),
   getOrFetchDatabaseCatalog: vi.fn(),
+  getOrFetchDatabaseMetadata: vi.fn(),
   listUsers: vi.fn(),
   introState: {} as Record<string, boolean>,
   saveIntroStateByKey: vi.fn(),
@@ -68,6 +75,8 @@ vi.mock("@/stores/app", () => {
     currentUserName: mocks.currentUserName,
     workspacePolicy: mocks.workspacePolicy,
     isSaaSMode: () => mocks.isSaaS,
+    getCachedDatabaseMetadata: (database: string) =>
+      mocks.metadataByDatabase[database],
   });
   const useAppStore = Object.assign(
     (selector: (value: ReturnType<typeof state>) => unknown) =>
@@ -79,6 +88,7 @@ vi.mock("@/stores/app", () => {
         fetchInstanceList: mocks.fetchInstanceList,
         fetchDatabases: mocks.fetchDatabases,
         getOrFetchDatabaseCatalog: mocks.getOrFetchDatabaseCatalog,
+        getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
         listUsers: mocks.listUsers,
         getIntroStateByKey: (key: string) => mocks.introState[key] ?? false,
         saveIntroStateByKey: mocks.saveIntroStateByKey,
@@ -154,6 +164,7 @@ describe("useGuideContext", () => {
     mocks.instancesByName = {};
     mocks.databasesByName = {};
     mocks.catalogsByName = {};
+    mocks.metadataByDatabase = {};
     mocks.usersByName = {};
     mocks.fetchProjectList.mockResolvedValue({ projects: [], nextPageToken: "" });
     mocks.fetchInstanceList.mockResolvedValue({
@@ -162,6 +173,9 @@ describe("useGuideContext", () => {
     });
     mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
     mocks.getOrFetchDatabaseCatalog.mockResolvedValue({ schemas: [] });
+    mocks.getOrFetchDatabaseMetadata.mockImplementation(async ({ database }) => {
+      return mocks.metadataByDatabase[database];
+    });
     mocks.listUsers.mockResolvedValue({ users: [], nextPageToken: "" });
     mocks.currentUserName = "users/ed@example.com";
     mocks.isSaaS = false;
@@ -277,6 +291,85 @@ describe("useGuideContext", () => {
       silent: true,
     });
     expect(result.current.context.hasMarkedSensitiveData).toBe(true);
+  });
+
+  test("resolves the first table for the query-data action", async () => {
+    mockDiscoveredDatabase();
+    const database = "instances/sample/databases/employee";
+    mocks.metadataByDatabase[database] = create(DatabaseMetadataSchema, {
+      schemas: [
+        create(SchemaMetadataSchema, {
+          name: "public",
+          tables: [create(TableMetadataSchema, { name: "employee" })],
+        }),
+      ],
+    });
+
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "query-data",
+    });
+
+    await waitFor(() =>
+      expect(result.current.context.queryTarget).toEqual({
+        schema: "public",
+        table: "employee",
+      })
+    );
+    expect(mocks.getOrFetchDatabaseMetadata).toHaveBeenCalledWith({
+      database,
+      silent: true,
+    });
+  });
+
+  test("resolves the marked table for the masking verification action", async () => {
+    mockDiscoveredDatabase();
+    const database = "instances/sample/databases/employee";
+    mocks.metadataByDatabase[database] = create(DatabaseMetadataSchema, {
+      schemas: [
+        create(SchemaMetadataSchema, {
+          name: "public",
+          tables: [
+            create(TableMetadataSchema, { name: "employee" }),
+            create(TableMetadataSchema, { name: "salary" }),
+          ],
+        }),
+      ],
+    });
+    mocks.getOrFetchDatabaseCatalog.mockResolvedValue({
+      schemas: [
+        {
+          name: "public",
+          tables: [
+            {
+              name: "salary",
+              kind: {
+                case: "columns",
+                value: {
+                  columns: [{ name: "amount", semanticType: "bb.default" }],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "mark-sensitive-data",
+    });
+
+    await waitFor(() =>
+      expect(result.current.context.queryTarget).toEqual({
+        schema: "public",
+        table: "salary",
+      })
+    );
   });
 
   test.each([

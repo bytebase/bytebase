@@ -447,6 +447,7 @@ export function WorkspaceSetupGuide() {
               <SQLEditorButton
                 data-testid="active-action"
                 database={primaryAction.database}
+                query={primaryAction.query}
                 openInNewTab
                 size="sm"
                 className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"

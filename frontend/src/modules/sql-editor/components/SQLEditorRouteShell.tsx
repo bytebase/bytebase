@@ -17,6 +17,10 @@ import {
   usePermissionDataReady,
 } from "@/components/ComponentPermissionGuard";
 import { useAppProject } from "@/hooks/useAppProject";
+import {
+  PRODUCT_INTRO_QUERY_KEY,
+  RUN_QUERY_PRODUCT_INTRO,
+} from "@/lib/productIntro";
 import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
 import { useClampResultRowsLimitToPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { cleanupLegacyPouchDatabases } from "@/modules/sql-editor/legacy/migration";
@@ -46,6 +50,8 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   extractSavedQueryID,
+  generateSimpleSelectAllStatement,
+  getDatabaseEngine,
   getSheetStatement,
   isSavedQueryReadableV1,
   storageKeySqlEditorSidebarTab,
@@ -85,6 +91,8 @@ const ASIDE_PANEL_TABS: readonly AsidePanelTab[] = [
   "HISTORY",
   "ACCESS",
 ];
+
+const GUIDED_QUERY_ROW_LIMIT = 50;
 
 /**
  * Owns the SQL Editor route bootstrap chain:
@@ -295,6 +303,36 @@ export function SQLEditorRouteShell() {
       connection.table = table;
       connection.schema ??= "";
     }
+    let statement: string | undefined;
+    if (
+      route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO &&
+      typeof table === "string" &&
+      table
+    ) {
+      const metadata = await useAppStore
+        .getState()
+        .getOrFetchDatabaseMetadata({
+          database: database.name,
+          silent: true,
+        })
+        .catch(() => undefined);
+      const schemaName = typeof schema === "string" ? schema : "";
+      const targetExists = metadata?.schemas.some(
+        (schemaMetadata) =>
+          schemaMetadata.name === schemaName &&
+          schemaMetadata.tables.some(
+            (tableMetadata) => tableMetadata.name === table
+          )
+      );
+      if (targetExists) {
+        statement = generateSimpleSelectAllStatement(
+          getDatabaseEngine(database),
+          schemaName,
+          table,
+          GUIDED_QUERY_ROW_LIMIT
+        );
+      }
+    }
     const tabsState = getSQLEditorTabsState();
     const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
     if (
@@ -309,6 +347,7 @@ export function SQLEditorRouteShell() {
     tabsState.addTab({
       connection,
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+      ...(statement ? { statement } : {}),
     });
     return true;
   };
