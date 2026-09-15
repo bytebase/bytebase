@@ -19,7 +19,7 @@ Build the omni rule infrastructure and prove it works with one representative ru
 - [x] `SetStatement(baseLine int, stmtText string)` sets context for position calculations
 - [x] `AddAdvice()` adds advice with BaseLine offset adjustment
 - [x] `LocToLine(loc ast.Loc)` converts omni byte offset to 1-based line number
-- [x] `RunOmniRules()` dispatcher iterates statements, extracts omni node, dispatches to rules
+- [x] `RunRules()` dispatcher iterates statements, extracts omni node, dispatches to rules
 - [x] `FindLineByName(name string)` searches identifier in statement text, returns line
 
 ### 1.2 Utility Functions

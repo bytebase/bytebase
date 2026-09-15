@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -33,7 +34,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var filteredDatabases []*storepb.DatabaseSchemaMetadata
+	var filteredDatabases []*metadatapb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		// Skip all system databases
 		if _, ok := excludedDatabaseList[database.Name]; ok {
@@ -52,14 +53,14 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 }
 
 // SyncDBSchema syncs a single database schema.
-func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	// Query db info
 	databases, err := d.getDatabases(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get databases")
 	}
 
-	var databaseMetadata *storepb.DatabaseSchemaMetadata
+	var databaseMetadata *metadatapb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		if database.Name == d.databaseName {
 			databaseMetadata = database
@@ -80,8 +81,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", d.databaseName)
 	}
-	var tableMap map[string][]*storepb.TableMetadata
-	var viewMap map[string][]*storepb.ViewMetadata
+	var tableMap map[string][]*metadatapb.TableMetadata
+	var viewMap map[string][]*metadatapb.ViewMetadata
 	if d.datashare {
 		tableMap, err = d.getDatashareTables(txn)
 		if err != nil {
@@ -105,7 +106,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		return nil, err
 	}
 	for _, schemaName := range schemaList {
-		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
+		databaseMetadata.Schemas = append(databaseMetadata.Schemas, &metadatapb.SchemaMetadata{
 			Name:   schemaName,
 			Tables: tableMap[schemaName],
 			Views:  viewMap[schemaName],
@@ -115,7 +116,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	return databaseMetadata, err
 }
 
-func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
+func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*metadatapb.ForeignKeyMetadata, error) {
 	query := `
 	SELECT
 		n.nspname AS fk_schema,
@@ -139,7 +140,7 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 		AND c.contype = 'f'
 	ORDER BY fk_schema, fk_table, fk_name;
 	`
-	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	foreignKeysMap := make(map[db.TableKey][]*metadatapb.ForeignKeyMetadata)
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err
@@ -147,7 +148,7 @@ func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata,
 	defer rows.Close()
 
 	for rows.Next() {
-		var fkMetadata storepb.ForeignKeyMetadata
+		var fkMetadata metadatapb.ForeignKeyMetadata
 		var fkSchema, fkTable, fkDefinition string
 		if err := rows.Scan(
 			&fkSchema,
@@ -283,7 +284,7 @@ func (d *Driver) getSchemas(txn *sql.Tx) ([]string, error) {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
+func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata) (map[string][]*metadatapb.TableMetadata, error) {
 	indexMap, err := getIndexes(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
@@ -293,7 +294,7 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 		return nil, errors.Wrapf(err, "failed to get foreign keys")
 	}
 
-	tableMap := make(map[string][]*storepb.TableMetadata)
+	tableMap := make(map[string][]*metadatapb.TableMetadata)
 	query := `
 	SELECT
 		ptbl.schemaname,
@@ -313,7 +314,7 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 	defer rows.Close()
 
 	for rows.Next() {
-		table := &storepb.TableMetadata{}
+		table := &metadatapb.TableMetadata{}
 		var schemaName string
 		var comment sql.NullString
 		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
@@ -337,8 +338,8 @@ func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata)
 }
 
 // getTableColumns gets the columns of a table.
-func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
-	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*metadatapb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 
 	query := `
 	SELECT
@@ -366,7 +367,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 	}
 	defer rows.Close()
 	for rows.Next() {
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
 		var characterMaxLength, defaultStr, collation, udtSchema, udtName, comment sql.NullString
 		if err := rows.Scan(&schemaName, &tableName, &column.Name, &column.Type, &characterMaxLength, &column.Position, &defaultStr, &nullable, &collation, &udtSchema, &udtName, &comment); err != nil {
@@ -411,13 +412,13 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 }
 
 // getDatashareTables gets all tables of a datashare database.
-func (d *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
+func (d *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*metadatapb.TableMetadata, error) {
 	columnMap, err := d.getDatashareTableColumns(txn)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get table columns")
 	}
 
-	tableMap := make(map[string][]*storepb.TableMetadata)
+	tableMap := make(map[string][]*metadatapb.TableMetadata)
 
 	// table_type
 	query := `
@@ -433,7 +434,7 @@ func (d *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*storepb.TableMet
 	defer rows.Close()
 
 	for rows.Next() {
-		table := &storepb.TableMetadata{}
+		table := &metadatapb.TableMetadata{}
 		var schemaName string
 		if err := rows.Scan(&schemaName, &table.Name); err != nil {
 			return nil, err
@@ -451,8 +452,8 @@ func (d *Driver) getDatashareTables(txn *sql.Tx) (map[string][]*storepb.TableMet
 }
 
 // getDatashareTableColumns gets the columns of tables in datashare database.
-func (d *Driver) getDatashareTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
-	columnsMap := make(map[db.TableKey][]*storepb.ColumnMetadata)
+func (d *Driver) getDatashareTableColumns(txn *sql.Tx) (map[db.TableKey][]*metadatapb.ColumnMetadata, error) {
+	columnsMap := make(map[db.TableKey][]*metadatapb.ColumnMetadata)
 
 	query := `
 	SELECT
@@ -472,7 +473,7 @@ func (d *Driver) getDatashareTableColumns(txn *sql.Tx) (map[db.TableKey][]*store
 	}
 	defer rows.Close()
 	for rows.Next() {
-		column := &storepb.ColumnMetadata{}
+		column := &metadatapb.ColumnMetadata{}
 		var schemaName, tableName, nullable string
 		var defaultStr sql.NullString
 		var varcharMaxLength sql.NullInt32
@@ -503,8 +504,8 @@ func (d *Driver) getDatashareTableColumns(txn *sql.Tx) (map[db.TableKey][]*store
 }
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
-	viewMap := make(map[string][]*storepb.ViewMetadata)
+func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*metadatapb.ColumnMetadata) (map[string][]*metadatapb.ViewMetadata, error) {
+	viewMap := make(map[string][]*metadatapb.ViewMetadata)
 
 	query := `
 SELECT
@@ -523,7 +524,7 @@ ORDER BY pgv.schemaname, pgv.viewname;`
 	}
 	defer rows.Close()
 	for rows.Next() {
-		view := &storepb.ViewMetadata{}
+		view := &metadatapb.ViewMetadata{}
 		var schemaName string
 		var def, comment sql.NullString
 		if err := rows.Scan(&schemaName, &view.Name, &def, &comment); err != nil {
@@ -551,8 +552,8 @@ ORDER BY pgv.schemaname, pgv.viewname;`
 }
 
 // getIndexes gets all indices of a database.
-func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
-	indexMap := make(map[db.TableKey][]*storepb.IndexMetadata)
+func getIndexes(txn *sql.Tx) (map[db.TableKey][]*metadatapb.IndexMetadata, error) {
+	indexMap := make(map[db.TableKey][]*metadatapb.IndexMetadata)
 
 	// Use generate_series to mimic PostgreSQL's generate_subscripts for getting column expressions
 	// Combined with pg_get_indexdef to get accurate column expressions
@@ -594,7 +595,7 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		table  string
 		index  string
 	}
-	indexData := make(map[indexKey]*storepb.IndexMetadata)
+	indexData := make(map[indexKey]*metadatapb.IndexMetadata)
 	indexColumns := make(map[indexKey][]string)
 
 	for rows.Next() {
@@ -613,7 +614,7 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 
 		// Create index metadata on first encounter
 		if _, exists := indexData[key]; !exists {
-			indexData[key] = &storepb.IndexMetadata{
+			indexData[key] = &metadatapb.IndexMetadata{
 				Name:       indexName,
 				Definition: indexDef,
 				Type:       getIndexMethodType(indexDef),
@@ -721,7 +722,7 @@ func buildRedshiftVersionString(redshiftVersion, postgresVersion string) string 
 }
 
 // getDatabases gets all databases of an instance.
-func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
+func (d *Driver) getDatabases(ctx context.Context) ([]*metadatapb.DatabaseSchemaMetadata, error) {
 	consumerDatabases := make(map[string]bool)
 	dsRows, err := d.db.QueryContext(ctx, `
 		SELECT consumer_database FROM SVV_DATASHARES WHERE share_type = 'INBOUND';
@@ -742,7 +743,7 @@ func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMet
 		return nil, err
 	}
 
-	var databases []*storepb.DatabaseSchemaMetadata
+	var databases []*metadatapb.DatabaseSchemaMetadata
 	rows, err := d.db.QueryContext(ctx, `
 		SELECT datname,
 		pg_encoding_to_char(encoding)
@@ -754,7 +755,7 @@ func (d *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMet
 	defer rows.Close()
 
 	for rows.Next() {
-		database := storepb.DatabaseSchemaMetadata{}
+		database := metadatapb.DatabaseSchemaMetadata{}
 		if err := rows.Scan(&database.Name, &database.CharacterSet); err != nil {
 			return nil, err
 		}

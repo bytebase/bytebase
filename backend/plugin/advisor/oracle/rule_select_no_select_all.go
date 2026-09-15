@@ -33,7 +33,7 @@ func (*SelectNoSelectAllAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 
 	rule := NewSelectNoSelectAllRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // SelectNoSelectAllRule is the rule implementation for no select all.

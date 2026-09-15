@@ -177,7 +177,7 @@ export function ToolCallCard({ toolCall, result }: Props) {
           {t("agent.tool-response-submitted")}
         </span>
       ) : (
-        <span className="text-amber-600">{t("agent.tool-ask-user")}</span>
+        <span className="text-warning">{t("agent.tool-ask-user")}</span>
       );
     }
     if (isDone) {

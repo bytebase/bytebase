@@ -64,7 +64,7 @@ INTERVAL (NUMTODSINTERVAL(1,'DAY'))
 	}
 
 	for _, test := range tests {
-		list, err := ParsePLSQLOmni(test.statement)
+		list, err := ParsePLSQL(test.statement)
 		if test.errorMessage == "" {
 			require.NoError(t, err)
 			require.NotEmpty(t, list.Items)

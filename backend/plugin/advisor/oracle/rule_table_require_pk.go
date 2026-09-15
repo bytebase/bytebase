@@ -35,7 +35,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 
 	rule := NewTableRequirePKRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // TableRequirePKRule is the rule implementation for table requires PK.

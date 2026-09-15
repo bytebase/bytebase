@@ -342,7 +342,7 @@ function ApprovalUserText({ candidate }: { candidate: string }) {
   return (
     <span className="inline-flex items-center gap-1">
       <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium text-white"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white"
         style={{ backgroundColor: getAvatarColor(displayName) }}
       >
         {getInitials(displayName)}
@@ -419,14 +419,14 @@ function ApprovalCandidateRow({
   return (
     <div className="inline-flex items-center gap-1.5">
       <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-medium text-white"
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-medium text-white"
         style={{ backgroundColor: getAvatarColor(displayName) }}
       >
         {getInitials(displayName)}
       </span>
       <span className="text-xs text-control">{displayName}</span>
       {isCurrentUser && (
-        <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] text-success">
+        <span className="rounded-full bg-success/10 px-1.5 py-0.5 text-xs text-success">
           {t("common.you")}
         </span>
       )}

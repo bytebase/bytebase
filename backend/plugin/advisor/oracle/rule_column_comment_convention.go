@@ -34,7 +34,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 
 	rule := NewColumnCommentConventionRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, commentPayload)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnCommentConventionRule is the rule implementation for column comment convention.

@@ -29,6 +29,28 @@ export class PlanDetailPage {
   // The readiness footer's single action, in either weight (link or button).
   readonly bypassAndDeployAction: Locator;
 
+  // --- Inline comment threads (StatementThreadsLayer / CommentThreadCard) ---
+  // The read-only statement editor of the selected change.
+  readonly statementEditor: Locator;
+  // Thread markers in the statement editor's glyph margin.
+  readonly threadMarkers: Locator;
+  // The hover affordance that starts a thread on the hovered line.
+  readonly addThreadGlyph: Locator;
+  // The inline composer that opens below the selected lines.
+  readonly inlineComposer: Locator;
+  readonly inlineComposerEditor: Locator;
+  readonly inlineComposerPublishButton: Locator;
+  // The unresolved-thread walker pinned to the editor's top-right corner.
+  readonly threadWalker: Locator;
+  readonly threadWalkerNext: Locator;
+  readonly threadWalkerPrevious: Locator;
+  // The walker's polite live region ("Thread 2 of 3").
+  readonly threadWalkerAnnouncement: Locator;
+  // Per-change unresolved counts on the Changes tab strip.
+  readonly specUnresolvedCounts: Locator;
+  // The Review phase block, whose summary line carries the plan-wide count.
+  readonly reviewPhase: Locator;
+
   // --- Header lifecycle slot (PlanDetailHeader, BYT-9722) ---
   // The sticky title/action row. Scope every header-slot assertion to this so a
   // pill/stamp/label in a phase section can't be mistaken for the header slot.
@@ -70,6 +92,30 @@ export class PlanDetailPage {
     this.composerEditor = page.locator("textarea[placeholder='Add a comment...']");
     this.composerSubmitButton = page.getByRole("button", { name: "Comment", exact: true });
     this.bypassAndDeployAction = page.getByRole("button", { name: "Bypass and deploy" });
+
+    this.statementEditor = page.locator("#plan-phase-changes .monaco-editor").first();
+    this.threadMarkers = this.statementEditor.locator(".bb-thread-glyph");
+    this.addThreadGlyph = this.statementEditor.locator(".bb-thread-add-glyph");
+    this.inlineComposer = page.getByTestId("inline-thread-composer");
+    this.inlineComposerEditor = this.inlineComposer.locator(
+      "textarea[placeholder='Write a comment...']",
+    );
+    this.inlineComposerPublishButton = this.inlineComposer.getByRole("button", {
+      name: "Publish",
+      exact: true,
+    });
+    this.threadWalker = this.statementEditor.getByTestId("thread-walker");
+    this.threadWalkerNext = this.threadWalker.getByRole("button", {
+      name: "Next unresolved thread",
+    });
+    this.threadWalkerPrevious = this.threadWalker.getByRole("button", {
+      name: "Previous unresolved thread",
+    });
+    this.threadWalkerAnnouncement = this.threadWalker.locator("[aria-live]");
+    this.specUnresolvedCounts = page
+      .locator("#plan-phase-changes")
+      .getByTestId("spec-unresolved-threads");
+    this.reviewPhase = page.locator("#plan-phase-review");
 
     // The sticky header row, located structurally (no product-code testid): the
     // title <input> sits in the row's left group (beside the terminal stamp), so
@@ -267,5 +313,180 @@ export class PlanDetailPage {
   // and opens the results drawer on click. Distinct from "Run checks".
   checksSummary(): Locator {
     return this.page.getByRole("button", { name: "Checks", exact: true });
+  }
+
+  // A thread card by its root comment text, in either surface. Scope with
+  // `threadCardIn` when the same thread shows in the editor and the timeline.
+  threadCard(rootText: string): Locator {
+    return this.page.getByTestId("comment-thread").filter({ hasText: rootText });
+  }
+
+  threadCardIn(phase: "changes" | "review", rootText: string): Locator {
+    return this.page
+      .locator(`#plan-phase-${phase}`)
+      .getByTestId("comment-thread")
+      .filter({ hasText: rootText });
+  }
+
+  // The inline composer anchored to one line, by its heading.
+  inlineComposerOn(lineNumber: number): Locator {
+    return this.inlineComposer.filter({
+      hasText: `Add a comment on line ${lineNumber}`,
+    });
+  }
+
+  // Start a thread from the gutter of one line: hover it, click the add tile.
+  async openInlineComposerOn(lineNumber: number): Promise<Locator> {
+    await this.hoverStatementLine(lineNumber);
+    await this.clickAddThreadGlyph();
+    const composer = this.inlineComposerOn(lineNumber);
+    await expect(composer).toBeVisible();
+    return composer;
+  }
+
+  // The reply composer's thread-state checkbox inside a thread card. It names
+  // the action for the current state: "Resolve thread" on an open thread,
+  // "Reopen thread" (checked by default) on a resolved one.
+  threadStateCheckbox(card: Locator, label: "Resolve thread" | "Reopen thread"): Locator {
+    return card.getByRole("checkbox", { name: label });
+  }
+
+  // Collapse or expand a phase block by its anchor id, which is unambiguous
+  // where the section's label text is not (the header has a "Review" action).
+  async setPhaseExpanded(phase: "changes" | "review" | "deploy", expanded: boolean): Promise<void> {
+    const block = this.page.locator(`#plan-phase-${phase}`);
+    const toggle = block.getByText(expanded ? "Show details" : "Hide details", { exact: true });
+    if (!(await toggle.isVisible({ timeout: 1000 }).catch(() => false))) return;
+    await toggle.click();
+    await expect(
+      block.getByText(expanded ? "Hide details" : "Show details", { exact: true }),
+    ).toBeVisible({ timeout: 5_000 });
+  }
+
+  // Click the add-thread tile by its coordinates. Monaco re-creates the tile
+  // as the pointer moves and it animates in, so Playwright's actionability
+  // retries never settle on it; a plain pointer click does.
+  async clickAddThreadGlyph(): Promise<void> {
+    await expect(this.addThreadGlyph).toBeVisible({ timeout: 5_000 });
+    const box = await this.addThreadGlyph.boundingBox();
+    if (!box) throw new Error("add-thread tile has no box");
+    await this.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  }
+
+  // A line's number cell in the statement editor's gutter.
+  statementLineNumber(lineNumber: number): Locator {
+    return this.statementEditor
+      .locator(".margin-view-overlays .line-numbers", {
+        hasText: new RegExp(`^${lineNumber}$`),
+      })
+      .first();
+  }
+
+  // A collapsed thread row in the editor's open line stack, by root name.
+  collapsedThreadRow(rootName: string): Locator {
+    return this.page.locator(
+      `#plan-phase-changes [data-testid='thread-row'][data-thread-name='${rootName}']`,
+    );
+  }
+
+  // The offset of a line's number cell from the statement editor's top edge.
+  // Monaco renders only the lines in view, so an unrendered line counts as
+  // scrolled above.
+  async statementLineOffset(lineNumber: number): Promise<number> {
+    const cell = this.statementLineNumber(lineNumber);
+    if ((await cell.count()) === 0) return Number.NEGATIVE_INFINITY;
+    const [editorBox, lineBox] = await Promise.all([
+      this.statementEditor.boundingBox(),
+      cell.boundingBox(),
+    ]);
+    if (!editorBox || !lineBox) return Number.NEGATIVE_INFINITY;
+    return lineBox.y - editorBox.y;
+  }
+
+  // Wheel the statement editor down until the line is scrolled above its top.
+  async scrollStatementEditorPastLine(lineNumber: number): Promise<void> {
+    await this.statementEditor.hover({ position: { x: 300, y: 60 } });
+    await expect
+      .poll(async () => {
+        await this.page.mouse.wheel(0, 240);
+        return this.statementLineOffset(lineNumber);
+      })
+      .toBeLessThan(0);
+  }
+
+  // How many times the statement editor scrolled while `step` ran, counted
+  // once the editor has stayed still for ten frames. Monaco writes every
+  // scroll as the `top` of its lines layer.
+  async countStatementEditorScrolls(step: () => Promise<void>): Promise<number> {
+    type ScrollLog = { tops: string[]; observer: MutationObserver };
+    await this.statementEditor.evaluate((node) => {
+      const lines = node.querySelector<HTMLElement>(".lines-content");
+      if (!lines) throw new Error("statement editor has no lines layer");
+      const host = window as unknown as { __bbScrollLog?: ScrollLog };
+      host.__bbScrollLog?.observer.disconnect();
+      const tops = [lines.style.top];
+      const observer = new MutationObserver(() => {
+        if (lines.style.top !== tops[tops.length - 1]) tops.push(lines.style.top);
+      });
+      observer.observe(lines, { attributes: true, attributeFilter: ["style"] });
+      host.__bbScrollLog = { tops, observer };
+    });
+    await step();
+    return this.page.evaluate(
+      () =>
+        new Promise<number>((resolve) => {
+          const log = (window as unknown as { __bbScrollLog?: ScrollLog }).__bbScrollLog;
+          if (!log) throw new Error("no scroll log is recording");
+          let seen = log.tops.length;
+          let still = 0;
+          const tick = () => {
+            if (log.tops.length === seen) still += 1;
+            else [seen, still] = [log.tops.length, 0];
+            if (still < 10) return requestAnimationFrame(tick);
+            log.observer.disconnect();
+            resolve(log.tops.length - 1);
+          };
+          requestAnimationFrame(tick);
+        }),
+    );
+  }
+
+  // Scroll the editor clear of the sticky page header, which otherwise
+  // intercepts pointer actions on its top lines. The dashboard body, not the
+  // window, owns the page scroll, so walk up to the nearest scrolling
+  // ancestor.
+  private async scrollEditorClearOfHeader(): Promise<void> {
+    await this.statementEditor.evaluate((node) => {
+      const top = node.getBoundingClientRect().top;
+      if (top >= 96) return;
+      let owner: HTMLElement | null = node.parentElement;
+      while (owner) {
+        const overflowY = getComputedStyle(owner).overflowY;
+        if ((overflowY === "auto" || overflowY === "scroll") && owner.scrollHeight > owner.clientHeight) break;
+        owner = owner.parentElement;
+      }
+      (owner ?? window).scrollBy({ top: top - 96 });
+    });
+  }
+
+  // Hover a line's number in the statement editor so the add-thread glyph
+  // appears on that line.
+  async hoverStatementLine(lineNumber: number): Promise<void> {
+    await this.scrollEditorClearOfHeader();
+    await this.statementLineNumber(lineNumber).hover();
+  }
+
+  // Drag across line numbers to select a range; the add-thread glyph then
+  // sits on the last selected line.
+  async selectStatementLines(from: number, to: number): Promise<void> {
+    await this.scrollEditorClearOfHeader();
+    const start = await this.statementLineNumber(from).boundingBox();
+    const end = await this.statementLineNumber(to).boundingBox();
+    if (!start || !end) throw new Error(`line numbers ${from}-${to} not rendered`);
+    const mouse = this.page.mouse;
+    await mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+    await mouse.down();
+    await mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 4 });
+    await mouse.up();
   }
 }

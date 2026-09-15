@@ -32,12 +32,12 @@ import (
 	"regexp"
 	"strings"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	metadatapb "github.com/bytebase/omni/metadata"
 )
 
 // normalizeLegacyMetadata mutates meta in place to match the canonical
 // IndexMetadata.expressions contract. Idempotent and cheap on canonical input.
-func normalizeLegacyMetadata(meta *storepb.DatabaseSchemaMetadata) {
+func normalizeLegacyMetadata(meta *metadatapb.DatabaseSchemaMetadata) {
 	if meta == nil {
 		return
 	}
@@ -54,7 +54,7 @@ func normalizeLegacyMetadata(meta *storepb.DatabaseSchemaMetadata) {
 	}
 }
 
-func canonicalizePartitionIndexes(p *storepb.TablePartitionMetadata) {
+func canonicalizePartitionIndexes(p *metadatapb.TablePartitionMetadata) {
 	if p == nil {
 		return
 	}
@@ -64,7 +64,7 @@ func canonicalizePartitionIndexes(p *storepb.TablePartitionMetadata) {
 	}
 }
 
-func canonicalizeIndexExpressions(indexes []*storepb.IndexMetadata) {
+func canonicalizeIndexExpressions(indexes []*metadatapb.IndexMetadata) {
 	for _, idx := range indexes {
 		for i, expr := range idx.Expressions {
 			idx.Expressions[i] = canonicalizeIndexKeyExpression(expr)

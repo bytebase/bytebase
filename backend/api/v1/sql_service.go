@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -317,6 +318,11 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	// New query ACL experience.
 	if !request.Explain && !common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 		if err := validateQueryRequest(instance, statement); err != nil {
+			return nil, err
+		}
+	}
+	if request.Explain {
+		if err := validateExplainFormat(instance.Metadata.GetEngine(), request.GetQueryOption().GetExplainFormat()); err != nil {
 			return nil, err
 		}
 	}
@@ -741,10 +747,24 @@ func queryRetry(
 
 	syncDatabaseMap := make(map[string]bool)
 	for i, r := range results {
+		if i >= len(spans) {
+			continue
+		}
+		// Re-sync even for error results: MaskResults also refuses partial rows.
+		// Permanently empty tables re-sync on every query until BYT-10074 adds throttling.
+		if maskingEnabled && maskingBlockedByUnresolvedColumns(spans[i], instance) {
+			for _, dbName := range spans[i].UnresolvedColumnsError.Databases() {
+				slog.Debug("database metadata need to sync: unresolved columns",
+					slog.String("instance", instance.ResourceID),
+					slog.String("database", dbName),
+					slog.String("detail", spans[i].UnresolvedColumnsError.Error()))
+				syncDatabaseMap[dbName] = true
+			}
+		}
 		if r.Error != "" {
 			continue
 		}
-		if i < len(spans) && spans[i].NotFoundError != nil {
+		if spans[i].NotFoundError != nil {
 			for k := range spans[i].SourceColumns {
 				slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
 				syncDatabaseMap[k.Database] = true
@@ -760,11 +780,7 @@ func queryRetry(
 			return nil, nil, duration, err
 		}
 		if d == nil {
-			// The referenced database is not tracked by Bytebase (e.g. it was
-			// dropped, excluded by sync filters, or never discovered yet).
-			// Skip the sync attempt and leave the span's NotFoundError in place
-			// so the masking policy below can reject the query cleanly instead
-			// of panicking on a nil *DatabaseMessage.
+			// Leave the span error in place so masking can reject an untracked database.
 			slog.Debug("skip metadata sync: database not tracked",
 				slog.String("instance", instance.ResourceID),
 				slog.String("database", accessDatabaseName))
@@ -1946,6 +1962,58 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 
 	return user, instance, database, nil
+}
+
+// supportedExplainFormats lists the explain formats an engine's driver actually
+// produces. TEXT is the human-readable plan every engine returns by default,
+// which is why only the engines with a machine-readable plan, or without a
+// readable one, need a case here.
+func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFormat {
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML}
+	case storepb.Engine_MSSQL:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}
+	case storepb.Engine_SPANNER:
+		// Spanner returns its plan as JSON and has no text form.
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}
+	case storepb.Engine_MONGODB, storepb.Engine_REDIS, storepb.Engine_DYNAMODB,
+		storepb.Engine_CASSANDRA, storepb.Engine_COSMOSDB, storepb.Engine_DATABRICKS,
+		storepb.Engine_ELASTICSEARCH:
+		// No driver here implements explain: the first three refuse it, the rest
+		// ignore the flag and would run the statement itself. Saying TEXT would
+		// send a caller down a path that never produces a plan.
+		return nil
+	default:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
+	}
+}
+
+// validateExplainFormat refuses a format the engine cannot produce. This is the
+// one place the engine-to-format support is decided: drivers below map whatever
+// reaches them onto their own syntax, so a request that slipped through would
+// silently come back in a format the caller cannot parse.
+func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) error {
+	supported := supportedExplainFormats(engine)
+	// An engine with no explain at all is refused whatever the caller asked for,
+	// including nothing. Its driver would otherwise run the statement as an
+	// ordinary query — and an explain request skips the read-only validation
+	// above, on the understanding that the driver turns the statement into a
+	// plan.
+	if len(supported) == 0 {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support EXPLAIN", engine))
+	}
+	if format == v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
+		return nil
+	}
+	if slices.Contains(supported, format) {
+		return nil
+	}
+	names := make([]string, 0, len(supported))
+	for _, f := range supported {
+		names = append(names, f.String())
+	}
+	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain format %s, supported formats: %s", engine, format, strings.Join(names, ", ")))
 }
 
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {

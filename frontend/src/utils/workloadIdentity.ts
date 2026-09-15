@@ -1,28 +1,9 @@
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 
-// provider_type is optional in storage and identities written before it was
-// required may carry PROVIDER_TYPE_UNSPECIFIED. Every reader that needs a
-// provider for such an identity resolves it here, or two readers disagree
-// about the same record.
-export const resolveWorkloadIdentityProviderType = (config?: {
-  subjectPattern: string;
-  providerType: WorkloadIdentityConfig_ProviderType;
-}): WorkloadIdentityConfig_ProviderType | undefined => {
-  if (!config) return undefined;
-  if (
-    config.providerType !==
-    WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED
-  ) {
-    return config.providerType;
-  }
-  if (config.subjectPattern.startsWith("repo:")) {
-    return WorkloadIdentityConfig_ProviderType.GITHUB;
-  }
-  if (config.subjectPattern.startsWith("project_path:")) {
-    return WorkloadIdentityConfig_ProviderType.GITLAB;
-  }
-  return undefined;
-};
+// The audience the GitOps page's generated workflows request, and the one the
+// create form presets. An identity and the pipeline that authenticates to it
+// must name the same audience, so both read it here.
+export const GENERATED_WORKFLOW_AUDIENCE = "bytebase";
 
 // Parse subject pattern and extract owner/repo/branch/refType
 export const parseWorkloadIdentitySubjectPattern = (wi: {
@@ -40,10 +21,7 @@ export const parseWorkloadIdentitySubjectPattern = (wi: {
     return;
   }
 
-  const providerType = resolveWorkloadIdentityProviderType(
-    wi.workloadIdentityConfig
-  );
-  switch (providerType) {
+  switch (wi.workloadIdentityConfig.providerType) {
     case WorkloadIdentityConfig_ProviderType.GITHUB: {
       const match = /^repo:([^/]+)\/(.*)$/.exec(pattern);
       if (!match) return;

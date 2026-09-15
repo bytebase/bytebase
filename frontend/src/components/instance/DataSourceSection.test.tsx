@@ -33,6 +33,8 @@ vi.mock("./InstanceFormContext", () => ({
   useInstanceFormContext: () => mocks.context,
 }));
 
+vi.mock("./CreateDataSourceExample", () => ({ CreateDataSourceExample: () => null }));
+
 vi.mock("./DataSourceForm", () => ({
   DataSourceForm: ({ dataSource }: { dataSource: EditDataSource }) => (
     <div data-testid="data-source-form" data-id={dataSource.id} />

@@ -1,0 +1,29 @@
+distribution: local
+vectorized: true
+
+• root
+│
+├── • group (scalar)
+│   │ estimated row count: 1
+│   │
+│   └── • scan buffer
+│         estimated row count: 5,000
+│         label: buffer 1 (d)
+│
+└── • subquery
+    │ id: @S1
+    │ original sql: DELETE FROM big WHERE s_id <= 50 RETURNING id
+    │ exec mode: discard all rows
+    │
+    └── • buffer
+        │ label: buffer 1 (d)
+        │
+        └── • delete
+            │ estimated row count: 5,000
+            │ from: big
+            │
+            └── • scan
+                  estimated row count: 5,000 (50% of the table; stats collected 40 seconds ago)
+                  table: big@idx_s
+                  spans: [ - /50]
+                  locking strength: for update

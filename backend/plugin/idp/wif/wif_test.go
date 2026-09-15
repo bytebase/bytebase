@@ -14,9 +14,44 @@ func TestMatchSubjectPattern(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "empty pattern matches any subject",
+			name:     "empty pattern matches nothing",
 			subject:  "repo:owner/repo:ref:refs/heads/main",
 			pattern:  "",
+			expected: false,
+		},
+		{
+			name:     "bare wildcard matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "*",
+			expected: false,
+		},
+		{
+			// A trailing "*" is a prefix test, so "repo:*" is every repository
+			// on the issuer: the same hole as "*", refused the same way.
+			name:     "wildcard over every repository matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "repo:*",
+			expected: false,
+		},
+		{
+			name:     "wildcard over a partial owner matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "repo:own*",
+			expected: false,
+		},
+		{
+			// "r*" stops inside "repo:", so it addresses every repository the
+			// issuer signs whatever the row calls itself.
+			name:     "wildcard inside the marker matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "r*",
+			expected: false,
+		},
+		{
+			// Not a modelled vocabulary, so the owner rule does not apply.
+			name:     "custom issuer wildcard still matches by prefix",
+			subject:  "system:serviceaccount:prod:deployer",
+			pattern:  "system:serviceaccount:prod:*",
 			expected: true,
 		},
 		{

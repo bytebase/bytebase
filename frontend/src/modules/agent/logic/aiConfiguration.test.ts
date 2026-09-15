@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { Code, ConnectError } from "@connectrpc/connect";
 import { describe, expect, test } from "vitest";
 import { isAgentAIConfigurationError } from "./aiConfiguration";

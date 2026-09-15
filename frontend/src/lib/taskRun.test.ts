@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { MessageInitShape } from "@bufbuild/protobuf";
 import { create } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";

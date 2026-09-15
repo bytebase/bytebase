@@ -24,9 +24,7 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/Label.vue`. Renders the right per-type leaf
- * component for the given tree node. Mirrors the Vue dispatcher's order
- * exactly — the 18 branches map 1:1 to Vue's `<template v-if>` chain.
+ * Renders the right per-type leaf component for the given tree node.
  */
 export function Label({ node, keyword }: Props) {
   switch (node.meta.type) {

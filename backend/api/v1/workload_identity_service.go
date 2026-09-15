@@ -89,12 +89,12 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	}
 
 	// Convert API workload identity config to store workload identity config
-	var storeConfig *storepb.WorkloadIdentityConfig
-	if wi.WorkloadIdentityConfig != nil {
-		if err := validateWorkloadIdentityConfig(wi.WorkloadIdentityConfig); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
-		}
-		storeConfig = convertToStoreWorkloadIdentityConfig(wi.WorkloadIdentityConfig)
+	if wi.WorkloadIdentityConfig == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workload_identity_config is required"))
+	}
+	storeConfig := convertToStoreWorkloadIdentityConfig(wi.WorkloadIdentityConfig)
+	if err := validateWorkloadIdentityConfig(storeConfig); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
 	}
 
 	// Create the workload identity
@@ -235,14 +235,15 @@ func (s *WorkloadIdentityService) UpdateWorkloadIdentity(ctx context.Context, re
 		case "title":
 			patch.Name = &request.Msg.WorkloadIdentity.Title
 		case "workload_identity_config":
-			if request.Msg.WorkloadIdentity.WorkloadIdentityConfig != nil {
-				if err := validateWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
-				}
-				patch.Config = convertToStoreWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig)
-			} else {
-				patch.Config = &storepb.WorkloadIdentityConfig{}
+			// An empty config is an identity nothing can authenticate as.
+			if request.Msg.WorkloadIdentity.WorkloadIdentityConfig == nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workload_identity_config is required"))
 			}
+			storeConfig := convertToStoreWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig)
+			if err := validateWorkloadIdentityConfig(storeConfig); err != nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
+			}
+			patch.Config = storeConfig
 		default:
 			// Ignore unknown fields
 		}
@@ -315,45 +316,47 @@ func (s *WorkloadIdentityService) UndeleteWorkloadIdentity(ctx context.Context, 
 	return connect.NewResponse(convertToWorkloadIdentity(restoredWI)), nil
 }
 
-func validateWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) error {
+// validateWorkloadIdentityConfig judges the configuration as it will be
+// stored, so the caller converts first: every comparison at the exchange is
+// exact, and the stored form is the one it compares.
+func validateWorkloadIdentityConfig(config *storepb.WorkloadIdentityConfig) error {
 	if config == nil {
 		return nil
 	}
 
 	switch config.ProviderType {
-	case v1pb.WorkloadIdentityConfig_GITHUB, v1pb.WorkloadIdentityConfig_GITLAB:
-		return nil
-	case v1pb.WorkloadIdentityConfig_OIDC:
-		issuerURL := strings.TrimSpace(config.IssuerUrl)
-		if issuerURL == "" {
-			return errors.New("issuer_url is required for OIDC")
-		}
-		if err := wif.ValidateIssuerURL(issuerURL); err != nil {
-			return err
-		}
-		jwksURL := strings.TrimSpace(config.JwksUrl)
-		if jwksURL != "" {
-			if err := wif.ValidateJWKSURL(jwksURL); err != nil {
-				return err
-			}
-		}
-		if len(config.AllowedAudiences) == 0 {
-			return errors.New("allowed_audiences is required for OIDC")
-		}
-		for _, audience := range config.AllowedAudiences {
-			if strings.TrimSpace(audience) == "" {
-				return errors.New("allowed_audiences must not contain an empty value")
-			}
-		}
-		if strings.TrimSpace(config.SubjectPattern) == "" {
-			return errors.New("subject_pattern is required for OIDC")
-		}
-		return nil
-	case v1pb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED:
+	case storepb.WorkloadIdentityConfig_GITHUB,
+		storepb.WorkloadIdentityConfig_GITLAB,
+		storepb.WorkloadIdentityConfig_OIDC:
+	case storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED:
 		return errors.New("provider_type is required")
 	default:
 		return errors.New("provider_type is invalid")
 	}
+
+	// Every provider reaches the same token exchange, so every provider needs
+	// the same binding: an issuer whose keys can be fetched, an audience the
+	// token has to name, and a subject it has to match.
+	if config.IssuerUrl == "" {
+		return errors.New("issuer_url is required")
+	}
+	if err := wif.ValidateIssuerURL(config.IssuerUrl); err != nil {
+		return err
+	}
+	if config.JwksUrl != "" {
+		if err := wif.ValidateJWKSURL(config.JwksUrl); err != nil {
+			return err
+		}
+	}
+	if len(config.AllowedAudiences) == 0 {
+		return errors.New("allowed_audiences is required")
+	}
+	for _, audience := range config.AllowedAudiences {
+		if audience == "" {
+			return errors.New("allowed_audiences must not contain an empty value")
+		}
+	}
+	return wif.ValidateSubjectPattern(config.SubjectPattern)
 }
 
 // convertToWorkloadIdentity converts a store.WorkloadIdentityMessage to a v1pb.WorkloadIdentity.
@@ -379,19 +382,16 @@ func convertToStoreWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) *
 		return nil
 	}
 
-	issuerURL := config.IssuerUrl
-	jwksURL := config.JwksUrl
-	allowedAudiences := config.AllowedAudiences
-	subjectPattern := config.SubjectPattern
-	if config.ProviderType == v1pb.WorkloadIdentityConfig_OIDC {
-		issuerURL = strings.TrimSpace(issuerURL)
-		jwksURL = strings.TrimSpace(jwksURL)
-		allowedAudiences = make([]string, len(config.AllowedAudiences))
-		for i, audience := range config.AllowedAudiences {
-			allowedAudiences[i] = strings.TrimSpace(audience)
-		}
-		subjectPattern = strings.TrimSpace(subjectPattern)
+	// Normalized here for every provider, and validated in this form: every
+	// comparison at the exchange is exact, so a value that reaches the column
+	// untrimmed could never match a token.
+	allowedAudiences := make([]string, len(config.AllowedAudiences))
+	for i, audience := range config.AllowedAudiences {
+		allowedAudiences[i] = strings.TrimSpace(audience)
 	}
+	issuerURL := strings.TrimSpace(config.IssuerUrl)
+	jwksURL := strings.TrimSpace(config.JwksUrl)
+	subjectPattern := strings.TrimSpace(config.SubjectPattern)
 
 	return &storepb.WorkloadIdentityConfig{
 		ProviderType:     storepb.WorkloadIdentityConfig_ProviderType(config.ProviderType),

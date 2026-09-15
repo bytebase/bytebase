@@ -73,7 +73,7 @@ export function MaskingReasonPopover({
           nativeButton={false}
           render={
             <div
-              className="inline-flex items-center gap-0.5 cursor-pointer"
+              className="inline-flex items-center gap-1 cursor-pointer"
               onClick={stopResultTableEvent}
               onPointerDown={stopResultTableEvent}
             >

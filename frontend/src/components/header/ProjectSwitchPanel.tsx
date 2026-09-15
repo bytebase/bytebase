@@ -138,11 +138,10 @@ export function ProjectSwitchPanel({
     );
   }, [recentProjectList, searchText]);
 
-  // Mirrors Vue's `actualSelectedTab` — force the All view when a search
-  // keyword is active but yields no recent matches, regardless of which
-  // tab the user explicitly clicked. Keeping the trigger highlight in
-  // sync is the consumer's responsibility (we pass `actualSelectedTab`
-  // to `<Tabs value=…>` so both indicator and panel agree).
+  // Force the All view when a search keyword is active but yields no recent
+  // matches, regardless of which tab the user explicitly clicked. Keeping the
+  // trigger highlight in sync is the consumer's responsibility (we pass
+  // `actualSelectedTab` to `<Tabs value=…>` so both indicator and panel agree).
   const actualSelectedTab = useMemo<ProjectSwitchTab>(() => {
     if (
       searchText.trim().length > 0 &&
@@ -230,7 +229,7 @@ export function ProjectSwitchPanel({
         onValueChange={(value) => setSelectedTab(value as ProjectSwitchTab)}
       >
         <div className="mb-2 mx-3 flex items-center justify-between gap-x-3">
-          <TabsList className="gap-x-5">
+          <TabsList className="gap-x-4">
             <TabsTrigger className="pb-1.5" value="recent">
               {t("common.recent")}
             </TabsTrigger>

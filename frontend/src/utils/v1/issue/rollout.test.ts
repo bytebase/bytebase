@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { Plan_TaskStatusCountSchema } from "@/types/proto-es/v1/plan_service_pb";

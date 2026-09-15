@@ -3,8 +3,15 @@ package oracle
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
+	"os"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -12,7 +19,7 @@ import (
 func TestGetTableDefinition(t *testing.T) {
 	tests := []struct {
 		name  string
-		table *storepb.TableMetadata
+		table *metadatapb.TableMetadata
 		want  string
 	}{
 		{
@@ -20,13 +27,13 @@ func TestGetTableDefinition(t *testing.T) {
 			// table-level FOREIGN KEY with no other indexes or constraints.
 			// The FK must be separated from the column by a comma (ORA-02253).
 			name: "foreign key after default not null column without other constraints",
-			table: &storepb.TableMetadata{
+			table: &metadatapb.TableMetadata{
 				Name: "T1",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "C1", Type: "NUMBER", Nullable: false},
 					{Name: "C2", Type: "NUMBER(1)", Default: "0", Nullable: false},
 				},
-				ForeignKeys: []*storepb.ForeignKeyMetadata{
+				ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 					{
 						Name:              "T1_FK",
 						Columns:           []string{"C1"},
@@ -45,12 +52,12 @@ func TestGetTableDefinition(t *testing.T) {
 		},
 		{
 			name: "check constraint after column without other constraints",
-			table: &storepb.TableMetadata{
+			table: &metadatapb.TableMetadata{
 				Name: "T1",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "C1", Type: "NUMBER", Nullable: false},
 				},
-				CheckConstraints: []*storepb.CheckConstraintMetadata{
+				CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 					{Name: "T1_CK", Expression: `"C1" > 0`},
 				},
 			},
@@ -63,13 +70,13 @@ func TestGetTableDefinition(t *testing.T) {
 		},
 		{
 			name: "primary key, check, and foreign key",
-			table: &storepb.TableMetadata{
+			table: &metadatapb.TableMetadata{
 				Name: "T1",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "C1", Type: "NUMBER", Nullable: false},
 					{Name: "C2", Type: "NUMBER(1)", Default: "0", Nullable: false},
 				},
-				Indexes: []*storepb.IndexMetadata{
+				Indexes: []*metadatapb.IndexMetadata{
 					{
 						Name:         "T1_PK",
 						Expressions:  []string{"C1"},
@@ -78,10 +85,10 @@ func TestGetTableDefinition(t *testing.T) {
 						IsConstraint: true,
 					},
 				},
-				CheckConstraints: []*storepb.CheckConstraintMetadata{
+				CheckConstraints: []*metadatapb.CheckConstraintMetadata{
 					{Name: "T1_CK", Expression: `"C2" IN (0, 1)`},
 				},
-				ForeignKeys: []*storepb.ForeignKeyMetadata{
+				ForeignKeys: []*metadatapb.ForeignKeyMetadata{
 					{
 						Name:              "T1_FK",
 						Columns:           []string{"C1"},
@@ -124,7 +131,7 @@ func TestGetObjectDefinition(t *testing.T) {
 		{
 			name: "view",
 			get: func() (string, error) {
-				return GetViewDefinition("", &storepb.ViewMetadata{
+				return GetViewDefinition("", &metadatapb.ViewMetadata{
 					Name:       "DEPT_EMPLOYEE_COUNT",
 					Definition: "SELECT D.ID AS DEPT_ID, COUNT(E.ID) AS EMP_COUNT\nFROM DEPARTMENTS D",
 				})
@@ -137,7 +144,7 @@ FROM DEPARTMENTS D;
 		{
 			name: "materialized view",
 			get: func() (string, error) {
-				return GetMaterializedViewDefinition("", &storepb.MaterializedViewMetadata{
+				return GetMaterializedViewDefinition("", &metadatapb.MaterializedViewMetadata{
 					Name:       "PRODUCT_STATS",
 					Definition: "SELECT PRODUCT_ID, COUNT(*) AS ORDER_COUNT FROM ORDERS GROUP BY PRODUCT_ID",
 				})
@@ -151,7 +158,7 @@ FROM DEPARTMENTS D;
 			// CREATE OR REPLACE prefix has to be supplied here.
 			name: "function gains the CREATE OR REPLACE prefix",
 			get: func() (string, error) {
-				return GetFunctionDefinition("", &storepb.FunctionMetadata{
+				return GetFunctionDefinition("", &metadatapb.FunctionMetadata{
 					Name:       "CALCULATE_DISCOUNT",
 					Definition: "FUNCTION CALCULATE_DISCOUNT(AMOUNT NUMBER)\nRETURN NUMBER\nIS\nBEGIN\n    RETURN AMOUNT * 0.1;\nEND;",
 				})
@@ -168,7 +175,7 @@ END;
 		{
 			name: "procedure gains the CREATE OR REPLACE prefix",
 			get: func() (string, error) {
-				return GetProcedureDefinition("", &storepb.ProcedureMetadata{
+				return GetProcedureDefinition("", &metadatapb.ProcedureMetadata{
 					Name:       "LOG_AUDIT",
 					Definition: "PROCEDURE LOG_AUDIT(P_TABLE_NAME VARCHAR2)\nIS\nBEGIN\n    NULL;\nEND;",
 				})
@@ -188,10 +195,10 @@ END;
 			// prepends CREATE OR REPLACE TRIGGER to ALL_TRIGGERS.DESCRIPTION.
 			name: "view keeps its INSTEAD OF trigger",
 			get: func() (string, error) {
-				return GetViewDefinition("", &storepb.ViewMetadata{
+				return GetViewDefinition("", &metadatapb.ViewMetadata{
 					Name:       "EMPLOYEE_VIEW",
 					Definition: "SELECT EMP_ID, EMAIL FROM EMPLOYEES",
-					Triggers: []*storepb.TriggerMetadata{
+					Triggers: []*metadatapb.TriggerMetadata{
 						{
 							Name: "EMPLOYEE_VIEW_INSERT_TRG",
 							Body: "CREATE OR REPLACE TRIGGER EMPLOYEE_VIEW_INSERT_TRG\nINSTEAD OF INSERT ON EMPLOYEE_VIEW\nFOR EACH ROW\nBEGIN\n    NULL;\nEND;",
@@ -235,25 +242,25 @@ func TestObjectDefinitionsRegisteredForOracle(t *testing.T) {
 		{
 			name: "view",
 			get: func() (string, error) {
-				return schema.GetViewDefinition(storepb.Engine_ORACLE, "", &storepb.ViewMetadata{Name: "V", Definition: "SELECT 1 FROM DUAL"})
+				return schema.GetViewDefinition(storepb.Engine_ORACLE, "", &metadatapb.ViewMetadata{Name: "V", Definition: "SELECT 1 FROM DUAL"})
 			},
 		},
 		{
 			name: "materialized view",
 			get: func() (string, error) {
-				return schema.GetMaterializedViewDefinition(storepb.Engine_ORACLE, "", &storepb.MaterializedViewMetadata{Name: "MV", Definition: "SELECT 1 FROM DUAL"})
+				return schema.GetMaterializedViewDefinition(storepb.Engine_ORACLE, "", &metadatapb.MaterializedViewMetadata{Name: "MV", Definition: "SELECT 1 FROM DUAL"})
 			},
 		},
 		{
 			name: "function",
 			get: func() (string, error) {
-				return schema.GetFunctionDefinition(storepb.Engine_ORACLE, "", &storepb.FunctionMetadata{Name: "F", Definition: "FUNCTION F RETURN NUMBER IS BEGIN RETURN 1; END;"})
+				return schema.GetFunctionDefinition(storepb.Engine_ORACLE, "", &metadatapb.FunctionMetadata{Name: "F", Definition: "FUNCTION F RETURN NUMBER IS BEGIN RETURN 1; END;"})
 			},
 		},
 		{
 			name: "procedure",
 			get: func() (string, error) {
-				return schema.GetProcedureDefinition(storepb.Engine_ORACLE, "", &storepb.ProcedureMetadata{Name: "P", Definition: "PROCEDURE P IS BEGIN NULL; END;"})
+				return schema.GetProcedureDefinition(storepb.Engine_ORACLE, "", &metadatapb.ProcedureMetadata{Name: "P", Definition: "PROCEDURE P IS BEGIN NULL; END;"})
 			},
 		},
 	}
@@ -264,5 +271,53 @@ func TestObjectDefinitionsRegisteredForOracle(t *testing.T) {
 			require.NoError(t, err)
 			require.NotEmpty(t, got)
 		})
+	}
+}
+
+type getDatabaseDefinitionCase struct {
+	Description string `yaml:"description"`
+	Metadata    string `yaml:"metadata"`
+	Expected    string `yaml:"expected"`
+}
+
+// TestGetDatabaseDefinition pins the DDL generated for each metadata input, and
+// re-parses that DDL to prove it is valid Oracle syntax.
+//
+// The input is metadata rather than a schema text on purpose: deriving it by
+// parsing would cap this test's reach at whatever GetDatabaseMetadata happens to
+// extract, so any generator branch the parser cannot feed would go untested.
+func TestGetDatabaseDefinition(t *testing.T) {
+	const (
+		record   = false
+		filepath = "testdata/get_database_definition.yaml"
+	)
+
+	var tests []getDatabaseDefinitionCase
+	content, err := os.ReadFile(filepath)
+	require.NoError(t, err)
+	require.NoError(t, yaml.Unmarshal(content, &tests))
+
+	for i, tc := range tests {
+		t.Run(tc.Description, func(t *testing.T) {
+			var metadata metadatapb.DatabaseSchemaMetadata
+			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
+
+			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadata)
+			require.NoError(t, err)
+			require.NotEmpty(t, definition)
+
+			_, err = GetDatabaseMetadata(definition)
+			require.NoError(t, err, "generated definition should parse")
+
+			if record {
+				tests[i].Expected = definition
+				return
+			}
+			require.Equal(t, tc.Expected, definition)
+		})
+	}
+
+	if record {
+		yamltest.Record(t, filepath, tests)
 	}
 }

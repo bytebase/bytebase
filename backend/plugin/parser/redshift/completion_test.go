@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -577,57 +578,57 @@ func TestCompletionMySQLPGScaleCoverageMatrix(t *testing.T) {
 }
 
 func redshiftCompletionContextForTest() base.CompletionContext {
-	metadata := model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	metadata := model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "amount", Type: "numeric"},
 						},
 					},
 					{
 						Name: "Order Items",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "Item ID", Type: "bigint"},
 							{Name: "Order ID", Type: "integer"},
 						},
 					},
 				},
-				ExternalTables: []*storepb.ExternalTableMetadata{
+				ExternalTables: []*metadatapb.ExternalTableMetadata{
 					{
 						Name: "spectrum_orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "external_id", Type: "varchar"},
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name: "active_orders",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "amount", Type: "numeric"},
 						},
 					},
 				},
-				MaterializedViews: []*storepb.MaterializedViewMetadata{
+				MaterializedViews: []*metadatapb.MaterializedViewMetadata{
 					{Name: "orders_summary", Definition: "SELECT id, amount FROM orders"},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{Name: "order_seq"},
 				},
 			},
 			{
 				Name: "analytics",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "events",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "event_id", Type: "bigint"},
 						},
 					},

@@ -36,7 +36,7 @@ func (*StatementDisallowOnDelCascadeAdvisor) Check(_ context.Context, checkCtx a
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementDisallowOnDelCascadeRule struct {

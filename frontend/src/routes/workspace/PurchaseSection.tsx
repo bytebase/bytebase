@@ -21,7 +21,6 @@ interface PurchaseSectionProps {
   readonly onRequireEnterprise: () => void;
 }
 
-// Data model matching the Vue PlanCardData interface.
 interface PlanCardData {
   type: PlanType;
   title: string;
@@ -86,8 +85,9 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   const { t } = useTranslation();
   const refreshSubscription = useAppStore((state) => state.refreshSubscription);
 
-  const { currentPlan, isFreePlan, isExpired, subscription } =
+  const { currentPlan, isFreePlan, isExpired, isTrialing, subscription } =
     useSubscriptionState();
+  const hasPaidSubscription = !isFreePlan && !isExpired && !isTrialing;
   const paymentInfo = useAppStore((s) => s.paymentInfo);
   const purchasePlans = useAppStore((s) => s.purchasePlans);
 
@@ -151,17 +151,16 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
 
   // Fetch payment info for active subscriptions.
   useEffect(() => {
-    if (!isFreePlan && !isExpired) {
+    if (hasPaidSubscription) {
       useAppStore.getState().fetchPaymentInfo();
     }
-  }, [isFreePlan, isExpired]);
+  }, [hasPaidSubscription]);
 
   const isCurrentPlan = useCallback(
     (plan: PlanType) => currentPlan === plan && !isExpired,
     [currentPlan, isExpired]
   );
 
-  // Helpers matching Vue computed functions.
   const planTitle = (type: PlanType): string => {
     switch (type) {
       case PlanType.FREE:
@@ -196,7 +195,6 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
       bold: key === "everything",
     }));
 
-  // Build planCards matching the Vue computed.
   const planCards = useMemo((): PlanCardData[] => {
     if (purchasePlans.length === 0) return [];
 
@@ -359,14 +357,14 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   return (
     <div className="w-full">
       {/* Active Subscription Management */}
-      {!isFreePlan && !isExpired && (
+      {hasPaidSubscription && (
         <>
           {paymentInfo && (
             <div className="flex flex-col gap-2">
               <div className="text-lg font-medium">
                 {t("subscription.purchase.payment-info")}
               </div>
-              <div className="flex flex-wrap gap-x-12 gap-y-4 text-sm">
+              <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
                 <div>
                   <span className="text-control-placeholder">
                     {t("subscription.purchase.total-price")}
@@ -478,7 +476,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           type="button"
                           appearance="secondary"
                           size="sm"
-                          className="h-full rounded-l-sm rounded-r-none px-2"
+                          className="rounded-l-sm rounded-r-none px-2"
                           disabled={
                             seats <= (card.userAdditional.minimumCount || 1)
                           }
@@ -498,7 +496,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           type="button"
                           appearance="secondary"
                           size="sm"
-                          className="h-full rounded-l-none rounded-r-sm px-2"
+                          className="rounded-l-none rounded-r-sm px-2"
                           disabled={
                             card.userAdditional.maximumCount > 0 &&
                             seats >= card.userAdditional.maximumCount
@@ -536,7 +534,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           <span>
                             {t("subscription.purchase.accept-terms-prefix")}{" "}
                             <a
-                              href="https://www.bytebase.com/terms"
+                              href="https://www.bytebase.com/legal/terms"
                               target="_blank"
                               rel="noopener noreferrer"
                               className="underline hover:text-main"
@@ -603,7 +601,6 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
   );
 }
 
-// Plan card component matching Vue's PlanCard.vue.
 function PlanCard({
   title,
   description,

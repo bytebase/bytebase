@@ -188,7 +188,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     };
     window.addEventListener("beforeunload", beforeUnload);
 
-    // Guard in-app Vue router navigation
+    // Guard in-app router navigation
     const removeRouterGuard = router.beforeEach((_to, _from, next) => {
       const answer = window.confirm(t("common.leave-without-saving"));
       if (answer) {

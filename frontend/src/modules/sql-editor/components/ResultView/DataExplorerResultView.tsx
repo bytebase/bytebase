@@ -175,7 +175,7 @@ export function DataExplorerResultView({
                   <Button
                     size="sm"
                     appearance="secondary"
-                    className="size-7 p-0"
+                    className="w-7 p-0"
                     aria-label={t("common.close")}
                     onClick={search.clear}
                   >

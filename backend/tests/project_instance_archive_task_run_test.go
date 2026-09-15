@@ -17,13 +17,9 @@ func TestArchiveInstanceRejectsActiveTaskRuns(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pg := sharedPgTarget(t)
 	instance := createProjectInstanceTestInstance(
 		ctx,
 		t,
@@ -124,13 +120,9 @@ func TestForceArchiveInstanceRejectsActiveTaskRunsWithoutTransferringDatabases(t
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pg := sharedPgTarget(t)
 	instance := createProjectInstanceTestInstance(
 		ctx,
 		t,

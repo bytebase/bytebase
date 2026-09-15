@@ -392,10 +392,9 @@ export const useSQLEditorTabsStore: UseBoundStore<
     updateDatabaseQueryContext({ database, contextId, context }) {
       // Resolve the tab that OWNS this context by its globally-unique id
       // rather than assuming `currentTabId`. A query that completes after
-      // the user switches tabs must still update its own tab's context —
-      // the Vue original mutated the reactive context object directly,
-      // which had the same cross-tab effect; immer freezes store objects
-      // so React must route through this action, hence the lookup.
+      // the user switches tabs must still update its own tab's context;
+      // immer freezes store objects, so callers can't mutate the context
+      // directly and must route through this action, hence the lookup.
       const owner = locateDatabaseQueryContext(
         get().tabsById,
         database,
@@ -650,12 +649,10 @@ export function useSQLEditorTabState<T>(
   return useSQLEditorTabsStore(selector);
 }
 
-// Re-hydrate tabs whenever the active project changes. Mirrors the
-// historical `watch(() => project.value, initProject)` side effect of
-// the legacy Vue SQL editor tab store. Errors are intentionally swallowed —
-// explicit callers (e.g. SQLEditorRouteShell) own user-facing failure
-// reporting and may invoke `initProject` directly with full error
-// handling.
+// Re-hydrate tabs whenever the active project changes. Errors are
+// intentionally swallowed — explicit callers (e.g. SQLEditorRouteShell) own
+// user-facing failure reporting and may invoke `initProject` directly with
+// full error handling.
 let _lastInitializedProject: string | undefined;
 subscribeSQLEditorEditorState((state) => {
   if (state.project === _lastInitializedProject) return;

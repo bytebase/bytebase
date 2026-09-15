@@ -8,8 +8,7 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/DependencyColumnNode.vue`. Renders a view's
- * upstream column in `[schema.]table.column` form.
+ * Renders a view's upstream column in `[schema.]table.column` form.
  */
 export function DependencyColumnNode({ node, keyword }: Props) {
   const target = (node as TreeNode<"dependency-column">).meta.target;

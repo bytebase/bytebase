@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import {
   GUIDE_PROGRESS_KEYS,
@@ -10,6 +11,7 @@ describe("workspace setup guide progress keys", () => {
       databaseExplored: "workspace-setup-guide.database-explored",
       statementRun: "workspace-setup-guide.statement-run",
       changeIssueCreated: "workspace-setup-guide.change-issue-created",
+      sensitiveDataMarked: "workspace-setup-guide.sensitive-data-marked",
       teammateAdded: "workspace-setup-guide.teammate-added",
       dismissed: "workspace-setup-guide.dismissed",
     });

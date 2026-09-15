@@ -1,0 +1,28 @@
+distribution: local
+vectorized: true
+
+• root
+│
+├── • delete
+│   │ from: parent
+│   │
+│   └── • scan
+│         estimated row count: 10 (10% of the table; stats collected 39 seconds ago)
+│         table: parent@parent_pkey
+│         spans: [ - /10]
+│         locking strength: for update
+│
+└── • fk-cascade
+    │ fk: child_parent_id_fkey
+    │
+    └── • delete
+        │ from: child
+        │
+        └── • filter
+            │ estimated row count: 100
+            │ filter: parent_id <= 10
+            │
+            └── • scan
+                  estimated row count: 1,000 (100% of the table; stats collected 39 seconds ago)
+                  table: child@child_pkey
+                  spans: FULL SCAN

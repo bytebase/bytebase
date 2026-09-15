@@ -21,10 +21,7 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -48,7 +45,7 @@ func TestCollision_PlanSpecAuditEmission(t *testing.T) {
 	cdc := originalSpec.GetChangeDatabaseConfig()
 	a.NotNil(cdc, "fresh plan A spec is expected to be a ChangeDatabaseConfig")
 
-	_, err = ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+	_, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
 		Plan: &v1pb.Plan{
 			Name: planA2.Name,
 			Specs: []*v1pb.Plan_Spec{{
@@ -92,10 +89,7 @@ func TestCollision_PlanMetadataUpdate(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 	beforeB := snapshotProject(ctx, t, ctl, fixture.ProjectB)

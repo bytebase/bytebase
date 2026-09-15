@@ -24,7 +24,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/ExecuteHint.vue.
  * Body of the "DDL/DML requires a plan" confirmation surface.
  */
 export function ExecuteHint({ database, onClose }: Props) {

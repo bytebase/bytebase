@@ -25,7 +25,6 @@ import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import {
   BatchUpdateIssuesStatusRequestSchema,
   IssueSchema,
-  ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -298,12 +297,9 @@ export function PlanDetailHeader() {
       // issue comments so the review timeline reflects it (like issue detail).
       await Promise.all([
         page.refreshState(),
-        useAppStore.getState().listIssueComments(
-          create(ListIssueCommentsRequestSchema, {
-            parent: issue.name,
-            pageSize: 1000,
-          })
-        ),
+        useAppStore.getState().fetchIssueCommentThreads({
+          parent: issue.name,
+        }),
       ]);
       if (pageKeyRef.current !== actionPageKey) return;
       // Land on the review section so the close/reopen system comment and the

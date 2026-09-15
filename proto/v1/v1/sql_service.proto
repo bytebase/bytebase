@@ -188,15 +188,29 @@ message QueryOption {
   }
   RedisRunCommandsOn redis_run_commands_on = 1;
 
-  enum MSSQLExplainFormat {
-    // defaults to SHOWPLAN_ALL
-    MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0;
-    // SHOWPLAN_ALL
-    MSSQL_EXPLAIN_FORMAT_ALL = 1;
-    // SHOWPLAN_XML
-    MSSQL_EXPLAIN_FORMAT_XML = 2;
+  // 2 was mssql_explain_format, replaced by the engine-neutral explain_format.
+  reserved 2;
+  reserved "mssql_explain_format";
+
+  // Which explain output the caller wants, for an explain request.
+  //
+  // Leave it unspecified for the engine's own default, which is the only
+  // output most engines have. Naming a format an engine cannot produce is
+  // INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+  // against an engine that has no explain at all.
+  enum ExplainFormat {
+    // The engine's default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL.
+    EXPLAIN_FORMAT_UNSPECIFIED = 0;
+    // The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
+    // SHOWPLAN_ALL.
+    TEXT = 1;
+    // The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON).
+    JSON = 2;
+    // The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
+    // SHOWPLAN_XML.
+    XML = 3;
   }
-  MSSQLExplainFormat mssql_explain_format = 2;
+  ExplainFormat explain_format = 3;
 }
 
 message QueryResult {

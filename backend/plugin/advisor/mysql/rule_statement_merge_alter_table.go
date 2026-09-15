@@ -42,7 +42,7 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 		tableMap: make(map[string]tableStatement),
 	}
 
-	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 	rule.generateAdvice()
 	return rule.GetAdviceList(), nil
 }

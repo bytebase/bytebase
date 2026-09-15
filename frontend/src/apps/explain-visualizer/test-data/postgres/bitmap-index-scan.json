@@ -1,0 +1,30 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Bitmap Heap Scan",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Relation Name": "orders",
+      "Alias": "o",
+      "Startup Cost": 4.37,
+      "Total Cost": 39.18,
+      "Plan Rows": 10,
+      "Plan Width": 20,
+      "Recheck Cond": "(customer_id = 42)",
+      "Plans": [
+        {
+          "Node Type": "Bitmap Index Scan",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Index Name": "orders_customer_id_idx",
+          "Startup Cost": 0.0,
+          "Total Cost": 4.37,
+          "Plan Rows": 10,
+          "Plan Width": 0,
+          "Index Cond": "(customer_id = 42)"
+        }
+      ]
+    }
+  }
+]

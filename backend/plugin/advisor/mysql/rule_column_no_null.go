@@ -45,7 +45,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	}
 
 	// Walk all statements to collect columns.
-	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 
 	// Generate advice after walking all statements.
 	rule.generateAdvice()

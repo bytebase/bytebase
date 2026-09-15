@@ -13,7 +13,6 @@ const mocks = vi.hoisted(() => ({
     name: string;
     allowJustInTimeAccess: boolean;
   },
-  useSQLEditorVueState: vi.fn(),
   hasFeature: vi.fn(() => true),
 }));
 
@@ -33,10 +32,6 @@ vi.mock("@/stores/app", () => {
 
 vi.mock("@/hooks/useAppProject", () => ({
   useAppProject: () => mocks.projectData,
-}));
-
-vi.mock("@/modules/sql-editor/store/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
 }));
 
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
@@ -156,7 +151,6 @@ const setupDefaultMocks = (allowJIT = false) => {
     name: "projects/proj1",
     allowJustInTimeAccess: allowJIT,
   };
-  mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
   mocks.hasFeature.mockReturnValue(true);
 };
 

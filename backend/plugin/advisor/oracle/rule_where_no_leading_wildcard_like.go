@@ -34,7 +34,7 @@ func (*WhereNoLeadingWildcardLikeAdvisor) Check(_ context.Context, checkCtx advi
 
 	rule := NewWhereNoLeadingWildcardLikeRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // WhereNoLeadingWildcardLikeRule is the rule implementation for no leading wildcard LIKE.

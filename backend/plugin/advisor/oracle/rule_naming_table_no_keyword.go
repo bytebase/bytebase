@@ -35,7 +35,7 @@ func (*NamingTableNoKeywordAdvisor) Check(_ context.Context, checkCtx advisor.Co
 
 	rule := NewNamingTableNoKeywordRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // NamingTableNoKeywordRule is the rule implementation for table naming convention without keyword.

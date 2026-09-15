@@ -4,6 +4,7 @@
 package trino
 
 import (
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/trino/deparse"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -18,14 +19,14 @@ func init() {
 // schema. It converts the storepb metadata into the omni deparser's metadata
 // model and delegates to deparse.GetDatabaseDefinition, which emits one CREATE
 // TABLE statement per table in schema-then-table snapshot order.
-func GetDatabaseDefinition(_ schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(_ schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	return deparse.GetDatabaseDefinition(convertDatabaseMetadata(metadata))
 }
 
-// convertDatabaseMetadata maps storepb.DatabaseSchemaMetadata onto the omni
+// convertDatabaseMetadata maps metadatapb.DatabaseSchemaMetadata onto the omni
 // deparse metadata model one-to-one, copying only the fields the Trino SDL dump
 // consumes (schemas, tables, and column Name/Type/Nullable).
-func convertDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *deparse.DatabaseSchemaMetadata {
+func convertDatabaseMetadata(metadata *metadatapb.DatabaseSchemaMetadata) *deparse.DatabaseSchemaMetadata {
 	if metadata == nil {
 		return nil
 	}

@@ -22,7 +22,6 @@ interface FileContentPreviewModalProps {
 }
 
 /**
- * React port of `frontend/src/components/FileContentPreviewModal.vue`.
  * Decodes the file as bytes, exposes an encoding picker, renders the
  * decoded text in a read-only Monaco preview, and emits the chosen
  * statement back to the caller on confirm.

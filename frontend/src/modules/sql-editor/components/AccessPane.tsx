@@ -82,7 +82,7 @@ export function AccessPane() {
 
   const hasJITFeature = useSQLEditorFeature(PlanFeature.FEATURE_JIT);
 
-  // Build scope options for AdvancedSearch (React-compatible, no Vue renderers)
+  // Build scope options for AdvancedSearch
   const scopeOptions = useMemo((): ScopeOption[] => {
     return [
       {

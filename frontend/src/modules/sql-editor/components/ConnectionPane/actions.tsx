@@ -115,7 +115,6 @@ export function setConnection(options: {
 }
 
 /**
- * Replaces `useDropdown` from the Vue `actions.tsx`.
  * Returns the dynamic menu items for a right-clicked tree node. Consumers
  * render the resulting items in their own context menu UI.
  */

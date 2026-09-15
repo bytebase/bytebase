@@ -28,7 +28,7 @@ func (*DisallowCrossDBQueriesAdvisor) Check(_ context.Context, checkCtx advisor.
 		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 		curDB:        checkCtx.CurrentDatabase,
 	}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type disallowCrossDBQueriesRule struct {

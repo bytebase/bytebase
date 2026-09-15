@@ -223,7 +223,7 @@ func addLimitFor12cAndLater(statement string, limit int) string {
 // addFetchNextClause adds a FETCH NEXT clause to a SELECT statement using AST parsing.
 // This provides more precise placement of the limit clause compared to simple string wrapping.
 func addFetchNextClause(statement string, limitCount int) (string, error) {
-	list, err := plsqlparser.ParsePLSQLOmni(statement)
+	list, err := plsqlparser.ParsePLSQL(statement)
 	if err != nil {
 		return "", err
 	}
@@ -346,7 +346,7 @@ func trimOracleLocSpace(sql string, loc oracleast.Loc) oracleast.Loc {
 // For Oracle, we think the statement like "SELECT xxx FROM DUAL" does not need a limit clause.
 // More details, xxx can not be a subquery.
 func skipAddLimit(stmt string) (bool, error) {
-	list, err := plsqlparser.ParsePLSQLOmni(stmt)
+	list, err := plsqlparser.ParsePLSQL(stmt)
 	if err != nil {
 		return false, err
 	}

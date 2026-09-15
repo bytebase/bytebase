@@ -26,6 +26,7 @@ const guideContext = (
   hasExploredDatabase: false,
   hasRunStatement: false,
   hasCreatedChangeIssue: false,
+  hasMarkedSensitiveData: false,
   isSaaS: false,
   hasOtherHumanUser: false,
   hasOtherWorkspaceMember: false,
@@ -45,7 +46,7 @@ const mocks = vi.hoisted(() => ({
   guideUserCount: 1,
   introState: {} as Record<string, boolean>,
   isSaaS: false,
-  loading: false,
+  contextReady: true,
   preCreateIssue: vi.fn(),
   productModelContent: "guide content" as string | undefined,
   routerPush: vi.fn(),
@@ -94,11 +95,13 @@ vi.mock("@/components/HowBytebaseWorksSheet", () => ({
 vi.mock("@/components/SQLEditorButton", () => ({
   SQLEditorButton: ({
     label,
+    query,
     size,
     className,
     "data-testid": testId,
   }: {
     label?: ReactNode;
+    query?: Record<string, string>;
     size?: string;
     className?: string;
     "data-testid"?: string;
@@ -106,6 +109,7 @@ vi.mock("@/components/SQLEditorButton", () => ({
     <button
       className={className}
       data-testid={testId ?? "sql-editor-action"}
+      data-query={query ? JSON.stringify(query) : undefined}
       data-size={size}
     >
       {label}
@@ -148,7 +152,7 @@ vi.mock("./selection", () => ({
 vi.mock("./useGuideContext", () => ({
   useGuideContext: () => ({
     context: mocks.guideContext,
-    loading: mocks.loading,
+    contextReady: mocks.contextReady,
   }),
 }));
 
@@ -161,7 +165,7 @@ beforeEach(() => {
   mocks.guideUserCount = 1;
   mocks.introState = {};
   mocks.isSaaS = false;
-  mocks.loading = false;
+  mocks.contextReady = true;
   mocks.productModelContent = "guide content";
   mocks.scenarioId = undefined;
   mocks.workspaceUsage = undefined;
@@ -215,6 +219,7 @@ describe("WorkspaceSetupGuide", () => {
       hasExploredDatabase: true,
       databaseProjectName: "projects/app",
       databaseName: "instances/sample/databases/employee",
+      queryTarget: { schema: "public", table: "employee" },
     });
 
     render(<WorkspaceSetupGuide />);
@@ -234,7 +239,41 @@ describe("WorkspaceSetupGuide", () => {
       "data-size",
       "sm"
     );
+    expect(screen.getByTestId("active-action")).toHaveAttribute(
+      "data-query",
+      JSON.stringify({
+        schema: "public",
+        table: "employee",
+        intro: "run-query",
+        panel: "schema",
+      })
+    );
     expect(screen.getByTestId("open-product-model")).toBeVisible();
+  });
+
+  test("hides the SQL Editor action while the Query step is on its route", () => {
+    mocks.scenarioId = "query-data";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+      queryTarget: { schema: "public", table: "employee" },
+      route: {
+        name: "sql-editor.database",
+        params: {
+          project: "app",
+          instance: "sample",
+          database: "employee",
+        },
+      },
+    });
+
+    render(<WorkspaceSetupGuide />);
+
+    expect(screen.getByTestId("setup-step-query-data")).toBeVisible();
+    expect(screen.queryByTestId("active-action")).not.toBeInTheDocument();
   });
 
   test("shows the full Query Data chain when setup has no resources", () => {
@@ -269,9 +308,9 @@ describe("WorkspaceSetupGuide", () => {
       "setup-step-connect-instance",
       "setup-step-explore-database",
       "setup-step-query-data",
-      "setup-step-add-teammate",
+      "setup-step-add-member",
     ]);
-    expect(screen.getByTestId("setup-step-add-teammate")).toBeEnabled();
+    expect(screen.getByTestId("setup-step-add-member")).toBeEnabled();
   });
 
   test("acknowledges a completed multi-member team journey when closed", () => {
@@ -309,7 +348,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     render(<WorkspaceSetupGuide />);
 
-    fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
+    fireEvent.click(screen.getByTestId("setup-step-add-member"));
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.users",
@@ -329,7 +368,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     render(<WorkspaceSetupGuide />);
 
-    fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
+    fireEvent.click(screen.getByTestId("setup-step-add-member"));
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.members",
@@ -350,7 +389,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     render(<WorkspaceSetupGuide />);
 
-    fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
+    fireEvent.click(screen.getByTestId("setup-step-add-member"));
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
       name: "workspace.members",
@@ -543,22 +582,73 @@ describe("WorkspaceSetupGuide", () => {
     );
   });
 
-  test("routes generic actions without recording guide analytics", () => {
+  test("records a selected guide step action", () => {
     render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
     fireEvent.click(screen.getByTestId("setup-step-create-project"));
 
     expect(mocks.routerPush).toHaveBeenCalled();
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide step action selected",
+      properties: {
+        journey: "workspace-setup",
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        completed_steps: [],
+        completed_step_count: 0,
+        total_step_count: 3,
+        next_step: "create-project",
+        step: "create-project",
+        action_type: "navigate",
+      },
+    });
   });
 
-  test("dismisses the selected guide without recording analytics", () => {
+  test("records the active SQL Editor action", () => {
+    mocks.scenarioId = "query-data";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+    });
+    render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
+
+    fireEvent.click(screen.getByTestId("active-action"));
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide step action selected",
+      properties: {
+        journey: "query-data",
+        scenario: "query-data",
+        collaboration_type: "unselected",
+        completed_steps: [
+          "create-project",
+          "connect-instance",
+          "explore-database",
+        ],
+        completed_step_count: 3,
+        total_step_count: 4,
+        next_step: "query-data",
+        step: "query-data",
+        action_type: "open-sql-editor",
+      },
+    });
+  });
+
+  test("records final progress when selected guide dismissed", () => {
     mocks.scenarioId = "create-database-change";
     mocks.guideContext = guideContext({
       hasProject: true,
       hasInstance: true,
       hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
     });
     render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
 
     fireEvent.click(screen.getByTestId("dismiss-guide"));
 
@@ -566,10 +656,85 @@ describe("WorkspaceSetupGuide", () => {
       key: GUIDE_PROGRESS_KEYS.dismissed,
       newState: true,
     });
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide dismissed",
+      properties: {
+        journey: "create-database-change",
+        scenario: "create-database-change",
+        collaboration_type: "unselected",
+        completed_steps: [
+          "create-project",
+          "connect-instance",
+          "explore-database",
+        ],
+        completed_step_count: 3,
+        total_step_count: 4,
+        next_step: "create-database-change",
+      },
+    });
   });
 
-  test("shows generic completion with both next actions", () => {
+  test("records a step completion only when guide progress changes", () => {
+    const { rerender } = render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
+
+    mocks.guideContext = guideContext({ hasProject: true });
+    rerender(<WorkspaceSetupGuide />);
+    rerender(<WorkspaceSetupGuide />);
+
+    expect(mocks.captureMetric).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide step completed",
+      properties: {
+        journey: "workspace-setup",
+        scenario: "unselected",
+        collaboration_type: "unselected",
+        completed_steps: ["create-project"],
+        completed_step_count: 1,
+        total_step_count: 3,
+        next_step: "connect-instance",
+        step: "create-project",
+      },
+    });
+  });
+
+  test("records journey completion after visible guide becomes complete", () => {
+    mocks.scenarioId = "query-data";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+    });
+    const { rerender } = render(<WorkspaceSetupGuide />);
+    mocks.captureMetric.mockClear();
+
+    mocks.guideContext = guideContext({
+      ...mocks.guideContext,
+      hasRunStatement: true,
+    });
+    rerender(<WorkspaceSetupGuide />);
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide completed",
+      properties: {
+        journey: "query-data",
+        scenario: "query-data",
+        collaboration_type: "unselected",
+        completed_steps: [
+          "create-project",
+          "connect-instance",
+          "explore-database",
+          "query-data",
+        ],
+        completed_step_count: 4,
+        total_step_count: 4,
+      },
+    });
+  });
+
+  test("keeps completed steps visible and clickable without extra actions", () => {
     mocks.guideContext = guideContext({
       hasProject: true,
       hasInstance: true,
@@ -580,11 +745,24 @@ describe("WorkspaceSetupGuide", () => {
 
     render(<WorkspaceSetupGuide />);
 
+    const steps = screen.getAllByTestId(/^setup-step-/);
+    expect(steps).toHaveLength(3);
+    for (const step of steps) {
+      expect(step).toBeEnabled();
+      expect(step.querySelector("svg.text-success")).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId("completion-title")).not.toBeInTheDocument();
     expect(
-      screen.getByText("workspace-setup-guide.generic.completion-title")
-    ).toBeVisible();
-    expect(screen.getByText("workspace-setup-guide.actions.change")).toBeVisible();
-    expect(screen.getByText("workspace-setup-guide.actions.query")).toBeVisible();
+      screen.queryByText("workspace-setup-guide.actions.change")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("workspace-setup-guide.actions.query")
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("setup-step-create-project"));
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project",
+      query: { intro: "create-project" },
+    });
     expect(screen.queryByTestId("complete-guide")).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId("dismiss-guide"));
     expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
@@ -593,7 +771,7 @@ describe("WorkspaceSetupGuide", () => {
     });
   });
 
-  test("compacts completion actions only when the completion row overflows", () => {
+  test("shows completed progress in the compact step menu only when steps overflow", async () => {
     mocks.guideContext = guideContext({
       hasProject: true,
       hasInstance: true,
@@ -604,45 +782,41 @@ describe("WorkspaceSetupGuide", () => {
 
     render(<WorkspaceSetupGuide />);
 
-    const guideBar = screen.getByTestId("workspace-setup-guide");
-    const completionTitle = screen.getByTestId("completion-title");
-    Object.defineProperty(guideBar, "clientWidth", {
+    const viewport = screen.getByTestId("guide-step-viewport");
+    const measurement = screen.getByTestId("guide-step-measurement");
+    Object.defineProperty(viewport, "clientWidth", {
       configurable: true,
-      value: 800,
+      value: 500,
     });
-    Object.defineProperty(completionTitle, "clientWidth", {
-      configurable: true,
-      value: 160,
-    });
-    Object.defineProperty(completionTitle, "scrollWidth", {
-      configurable: true,
-      value: 260,
-    });
-
-    act(() => {
-      for (const callback of resizeObserverCallbacks) {
-        callback([], {} as ResizeObserver);
-      }
-    });
-
-    expect(
-      screen.queryByText("workspace-setup-guide.generic.completion-description")
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("workspace-setup-guide.actions.change")
-    ).not.toBeInTheDocument();
-    expect(screen.getByTestId("sql-editor-action")).toHaveAttribute(
-      "data-size",
-      "sm"
-    );
-
-    Object.defineProperty(guideBar, "clientWidth", {
+    Object.defineProperty(measurement, "scrollWidth", {
       configurable: true,
       value: 900,
     });
-    Object.defineProperty(completionTitle, "clientWidth", {
+
+    act(() => {
+      for (const callback of resizeObserverCallbacks) {
+        callback([], {} as ResizeObserver);
+      }
+    });
+
+    expect(screen.getByTestId("compact-step-navigator")).toBeVisible();
+    expect(
+      screen.getByText("workspace-setup-guide.all-steps-completed")
+    ).toBeVisible();
+    expect(screen.queryByTestId("compact-active-step")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("open-step-list"));
+    const items = await screen.findAllByRole("menuitem");
+    expect(items).toHaveLength(3);
+    for (const item of items) {
+      expect(item).not.toHaveAttribute("aria-disabled", "true");
+      expect(item.querySelector("svg.text-success")).toBeInTheDocument();
+    }
+    fireEvent.click(items[0]);
+    expect(mocks.routerPush).toHaveBeenCalled();
+
+    Object.defineProperty(measurement, "scrollWidth", {
       configurable: true,
-      value: 260,
+      value: 400,
     });
     act(() => {
       for (const callback of resizeObserverCallbacks) {
@@ -650,33 +824,58 @@ describe("WorkspaceSetupGuide", () => {
       }
     });
 
+    expect(screen.getByTestId("guide-step-list")).toBeVisible();
     expect(
-      screen.getByText("workspace-setup-guide.generic.completion-description")
-    ).toBeVisible();
-    expect(screen.getByText("workspace-setup-guide.actions.change")).toBeVisible();
-    expect(screen.getByTestId("sql-editor-action")).not.toHaveAttribute(
-      "data-size"
-    );
+      screen.queryByTestId("compact-step-navigator")
+    ).not.toBeInTheDocument();
   });
 
-  test("Query completion offers a database change", () => {
-    mocks.scenarioId = "query-data";
+  test.each([
+    "query-data",
+    "create-database-change",
+    "mark-sensitive-data",
+  ] as const)("keeps all steps after %s completes", (scenarioId) => {
+    mocks.scenarioId = scenarioId;
     mocks.guideContext = guideContext({
       hasProject: true,
       hasInstance: true,
       hasExploredDatabase: true,
       hasRunStatement: true,
+      hasCreatedChangeIssue: true,
+      hasMarkedSensitiveData: true,
       databaseProjectName: "projects/app",
       databaseName: "instances/sample/databases/employee",
     });
 
     render(<WorkspaceSetupGuide />);
 
-    expect(screen.getByText("workspace-setup-guide.actions.change")).toBeVisible();
-    expect(screen.queryByText("workspace-setup-guide.actions.query")).not.toBeInTheDocument();
+    const steps = screen.getAllByTestId(/^setup-step-/);
+    expect(steps).toHaveLength(scenarioId === "mark-sensitive-data" ? 5 : 4);
+    for (const step of steps) {
+      expect(step).toBeEnabled();
+      expect(step.querySelector("svg.text-success")).toBeInTheDocument();
+    }
+    expect(screen.queryByTestId("completion-title")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("workspace-setup-guide.actions.change")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("workspace-setup-guide.actions.query")
+    ).not.toBeInTheDocument();
+    if (scenarioId !== "create-database-change") {
+      fireEvent.click(screen.getByTestId("setup-step-query-data"));
+      expect(mocks.routerPush).toHaveBeenCalledWith({
+        name: "sql-editor.database",
+        params: {
+          project: "app",
+          instance: "sample",
+          database: "employee",
+        },
+      });
+    }
   });
 
-  test("change completion offers SQL Editor", () => {
+  test("records the initial guide progress once", () => {
     mocks.scenarioId = "create-database-change";
     mocks.guideContext = guideContext({
       hasProject: true,
@@ -689,24 +888,50 @@ describe("WorkspaceSetupGuide", () => {
 
     render(<WorkspaceSetupGuide />);
 
-    expect(screen.getByText("workspace-setup-guide.actions.query")).toBeVisible();
-    expect(screen.getByTestId("sql-editor-action")).not.toHaveAttribute(
-      "data-size"
-    );
-    expect(screen.queryByText("workspace-setup-guide.actions.change")).not.toBeInTheDocument();
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: "workspace-setup-guide.progress-observed.create-database-change.v1",
+      newState: true,
+    });
+    expect(mocks.captureMetric).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide progress observed",
+      properties: {
+        journey: "create-database-change",
+        scenario: "create-database-change",
+        collaboration_type: "unselected",
+        completed_steps: [
+          "create-project",
+          "connect-instance",
+          "explore-database",
+          "create-database-change",
+        ],
+        completed_step_count: 4,
+        total_step_count: 4,
+        observation: "initial",
+      },
+    });
   });
 
-  test("does not record scenario guide lifecycle analytics", () => {
+  test("does not record initial guide progress after it was observed", () => {
     mocks.scenarioId = "create-database-change";
-    mocks.guideContext = guideContext({
-      hasProject: true,
-      hasInstance: true,
-      hasExploredDatabase: true,
-      hasCreatedChangeIssue: true,
-    });
+    mocks.introState[
+      "workspace-setup-guide.progress-observed.create-database-change.v1"
+    ] = true;
 
     render(<WorkspaceSetupGuide />);
 
     expect(mocks.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test("records initial progress when its marker cannot be saved", () => {
+    mocks.saveIntroStateByKey.mockImplementation(() => {
+      throw new Error("localStorage unavailable");
+    });
+
+    expect(() => render(<WorkspaceSetupGuide />)).not.toThrow();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide progress observed",
+      properties: expect.objectContaining({ observation: "initial" }),
+    });
   });
 });

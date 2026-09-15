@@ -419,7 +419,7 @@ export function TableColumnEditor({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="size-7 p-0"
+                        className="w-7 p-0"
                         onClick={() => handleRestoreColumn(column)}
                       >
                         <RotateCcw className="size-3.5" />
@@ -428,7 +428,7 @@ export function TableColumnEditor({
                       <Button
                         appearance="secondary"
                         size="sm"
-                        className="size-7 p-0 text-control-light hover:bg-error/10 hover:text-error"
+                        className="w-7 p-0 text-control-light hover:bg-error/10 hover:text-error"
                         disabled={disableChangeTable}
                         onClick={() => handleDropColumn(column)}
                       >

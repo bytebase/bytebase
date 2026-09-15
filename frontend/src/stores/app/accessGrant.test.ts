@@ -1,9 +1,13 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import {
   buildAccessGrantFilter,
   isAccessGrantFilterWithinCELLimit,
   MAX_CEL_FILTER_CODE_POINTS,
 } from "./accessGrant";
+
+const QUOTED = 'SELECT * FROM "users"';
+const ESCAPED = 'SELECT * FROM \\"users\\"';
 
 describe("buildAccessGrantFilter", () => {
   test("empty filter returns empty string", () => {
@@ -88,6 +92,18 @@ describe("buildAccessGrantFilter", () => {
         statementExact: `SELECT 'foo "bar"' FROM t\nWHERE x = 1`,
       })
     ).toBe(`query == "SELECT 'foo \\"bar\\"' FROM t\\nWHERE x = 1"`);
+  });
+
+  test("escapes a quote in the free-text statement", () => {
+    const filter = buildAccessGrantFilter({ statement: QUOTED }).toLowerCase();
+    expect(filter).not.toContain(QUOTED.toLowerCase());
+    expect(filter).toContain(ESCAPED.toLowerCase());
+  });
+
+  test("keeps the escaped statement readable", () => {
+    expect(buildAccessGrantFilter({ statement: QUOTED })).toBe(
+      `query.contains("${ESCAPED}")`
+    );
   });
 
   test("statement and statementExact emit different predicates", () => {

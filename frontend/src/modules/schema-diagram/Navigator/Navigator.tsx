@@ -19,9 +19,8 @@ interface NavigatorProps {
 const FALLBACK_TREE_HEIGHT = 480;
 
 /**
- * React port of `Navigator/Navigator.vue`. Collapsible left sidebar
- * holding the schema selector (Postgres-style multi-schema only), a
- * search input, and the schema → table tree.
+ * Collapsible left sidebar holding the schema selector (Postgres-style
+ * multi-schema only), a search input, and the schema → table tree.
  */
 export function Navigator({ treeHeight }: NavigatorProps) {
   const ctx = useSchemaDiagramContext();

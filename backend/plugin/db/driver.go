@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -22,7 +23,7 @@ import (
 type InstanceMetadata struct {
 	Version string
 	// Simplified database metadata.
-	Databases []*storepb.DatabaseSchemaMetadata
+	Databases []*metadatapb.DatabaseSchemaMetadata
 	Metadata  *storepb.Instance
 }
 
@@ -35,7 +36,7 @@ type TableKey struct {
 type TableKeyWithColumns struct {
 	Schema  string
 	Table   string
-	Columns []*storepb.ColumnMetadata
+	Columns []*metadatapb.ColumnMetadata
 }
 
 // ColumnKey is the map key for table metadata.
@@ -154,10 +155,10 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error)
+	SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error)
 
 	// Dump dumps the schema of database.
-	Dump(ctx context.Context, out io.Writer, dbMetadata *storepb.DatabaseSchemaMetadata) error
+	Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error
 }
 
 // Register makes a database driver available by the provided type.

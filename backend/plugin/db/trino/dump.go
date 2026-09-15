@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -11,7 +12,7 @@ import (
 )
 
 // Dump dumps the database schema as SQL statements.
-func (*Driver) Dump(_ context.Context, out io.Writer, dbMetadata *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error {
 	text, err := schema.GetDatabaseDefinition(storepb.Engine_TRINO, schema.GetDefinitionContext{}, dbMetadata)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get database definition")

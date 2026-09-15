@@ -1,5 +1,6 @@
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_INSTANCES,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
@@ -12,14 +13,18 @@ import {
   CREATE_PROJECT_PRODUCT_INTRO,
   CREATE_USER_PRODUCT_INTRO,
   GRANT_ACCESS_PRODUCT_INTRO,
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+  RUN_QUERY_PRODUCT_INTRO,
 } from "@/lib/productIntro";
+import { autoSQLEditorDatabaseRoute } from "@/utils/auto-route";
+import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import type {
   GuideContext,
   GuideStepActions,
-  GuideStepRegistry,
+  GuideStepDefinition,
 } from "./types";
 
 const isRouteInside = (name: string | undefined, parent: string) =>
@@ -57,10 +62,9 @@ const databaseActions = (context: GuideContext): GuideStepActions => ({
   },
 });
 
-export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
-  "create-project": {
+export const GUIDE_STEP_DEFINITIONS: readonly GuideStepDefinition[] = [
+  {
     id: "create-project",
-    analyticsKey: "create-project",
     labelKey: "workspace-setup-guide.steps.project",
     descriptionKey: "workspace-setup-guide.descriptions.project",
     isComplete: (context) => context.hasProject,
@@ -77,9 +81,8 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       },
     }),
   },
-  "connect-instance": {
+  {
     id: "connect-instance",
-    analyticsKey: "connect-instance",
     labelKey: "workspace-setup-guide.steps.instance",
     descriptionKey: "workspace-setup-guide.descriptions.instance",
     isComplete: (context) => context.hasInstance,
@@ -87,9 +90,8 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       isRouteInside(route.name, PROJECT_V1_ROUTE_INSTANCES),
     resolveActions: connectInstanceActions,
   },
-  "explore-database": {
+  {
     id: "explore-database",
-    analyticsKey: "explore-database",
     labelKey: "workspace-setup-guide.steps.database",
     descriptionKey: "workspace-setup-guide.descriptions.database",
     isComplete: (context) =>
@@ -100,27 +102,44 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       isRouteInside(route.name, PROJECT_V1_ROUTE_DATABASES),
     resolveActions: databaseActions,
   },
-  "query-data": {
+  {
     id: "query-data",
-    analyticsKey: "query-data",
     labelKey: "workspace-setup-guide.steps.query-data",
     descriptionKey: "workspace-setup-guide.descriptions.query-data",
     isComplete: (context) => context.hasRunStatement,
     matchesRoute: (route) =>
       isRouteInside(route.name, SQL_EDITOR_DATABASE_MODULE),
-    resolveActions: (context) => ({
-      primary: {
-        type: "open-sql-editor",
-        database: {
-          name: context.databaseName,
-          project: context.databaseProjectName,
+    resolveActions: (context) => {
+      const query = context.queryTarget
+        ? {
+            schema: context.queryTarget.schema,
+            table: context.queryTarget.table,
+            [PRODUCT_INTRO_QUERY_KEY]: RUN_QUERY_PRODUCT_INTRO,
+            panel: "schema",
+          }
+        : undefined;
+      const target = autoSQLEditorDatabaseRoute({
+        name: context.databaseName,
+        project: context.databaseProjectName,
+      });
+      return {
+        select: {
+          type: "navigate",
+          target: query ? { ...target, query } : target,
         },
-      },
-    }),
+        primary: {
+          type: "open-sql-editor",
+          database: {
+            name: context.databaseName,
+            project: context.databaseProjectName,
+          },
+          ...(query ? { query } : {}),
+        },
+      };
+    },
   },
-  "create-database-change": {
+  {
     id: "create-database-change",
-    analyticsKey: "create-database-change",
     labelKey: "workspace-setup-guide.steps.create-database-change",
     descriptionKey: "workspace-setup-guide.descriptions.create-database-change",
     isComplete: (context) => context.hasCreatedChangeIssue,
@@ -134,9 +153,40 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       },
     }),
   },
-  "add-member": {
+  {
+    id: "mark-sensitive-data",
+    labelKey: "workspace-setup-guide.steps.mark-sensitive-data",
+    descriptionKey: "workspace-setup-guide.descriptions.mark-sensitive-data",
+    isComplete: (context) => context.hasMarkedSensitiveData,
+    matchesRoute: (route) =>
+      isRouteInside(route.name, PROJECT_V1_ROUTE_DATABASE_DETAIL),
+    resolveActions: (context) => {
+      const { instance, instanceName, databaseName } =
+        extractDatabaseResourceName(context.databaseName);
+      return {
+        select: {
+          type: "navigate",
+          target: {
+            name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+            params: {
+              projectId: extractProjectResourceName(
+                context.databaseProjectName
+              ),
+              instanceId: instanceName,
+              databaseName,
+            },
+            query: {
+              parent: instance,
+              [PRODUCT_INTRO_QUERY_KEY]: MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+            },
+            hash: "#catalog",
+          },
+        },
+      };
+    },
+  },
+  {
     id: "add-member",
-    analyticsKey: "add-teammate",
     labelKey: "workspace-setup-guide.steps.add-teammate",
     descriptionKey: "workspace-setup-guide.descriptions.add-teammate",
     isComplete: (context) => context.hasOtherWorkspaceMember,
@@ -165,4 +215,4 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       };
     },
   },
-};
+];

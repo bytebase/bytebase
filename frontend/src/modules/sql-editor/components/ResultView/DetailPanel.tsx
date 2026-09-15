@@ -244,8 +244,7 @@ export function DetailPanel({
     [matchCount]
   );
 
-  // Replicates Vue's onKeyStroke("ArrowUp"/"ArrowDown") row navigation while
-  // the panel is open.
+  // ArrowUp / ArrowDown row navigation while the panel is open.
   useEffect(() => {
     if (!detail) return;
     const handler = (e: KeyboardEvent) => {
@@ -407,7 +406,7 @@ export function DetailPanel({
                 <Button
                   size="sm"
                   appearance={format ? "solid" : "outline"}
-                  className="h-7 px-1.5"
+                  className="px-1.5"
                   onClick={() => setFormat(!format)}
                 >
                   <BracesIcon className="size-4" />
@@ -434,7 +433,7 @@ export function DetailPanel({
                 <Button
                   size="sm"
                   appearance="secondary"
-                  className="size-7 p-0"
+                  className="w-7 p-0"
                   onClick={handleCopy}
                 >
                   {copied ? (
@@ -482,9 +481,9 @@ export function DetailPanel({
             <div className="absolute right-2 top-2 flex justify-end items-center gap-1">
               <Tooltip content={t("common.text-wrap")}>
                 <Button
-                  size="sm"
+                  size="xs"
                   appearance={wrap ? "solid" : "outline"}
-                  className="h-6 px-1"
+                  className="px-1"
                   onClick={() => setWrap(!wrap)}
                 >
                   <WrapTextIcon className="size-3" />

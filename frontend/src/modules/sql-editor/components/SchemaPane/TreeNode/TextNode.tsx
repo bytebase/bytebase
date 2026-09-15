@@ -8,10 +8,9 @@ type Props = {
 };
 
 /**
- * Replaces `TreeNode/TextNode.vue`. Folder-style row used for "Tables /
- * Views / Indexes / …" headers. If the target sets a `render` ReactNode,
- * we pass it through CommonNode's `children` slot to override the
- * default text+icon layout entirely.
+ * Folder-style row used for "Tables / Views / Indexes / …" headers. If the
+ * target sets a `render` ReactNode, we pass it through CommonNode's
+ * `children` to override the default text+icon layout entirely.
  */
 export function TextNode({ node }: Props) {
   const target = (node as TreeNode<"expandable-text">).meta.target;

@@ -18,6 +18,7 @@ import { StepIndicator } from "@/components/ui/step-indicator";
 import {
   useCreateProject,
   useCurrentUser,
+  useIntroStateByKey,
   useWorkspace,
   useWorkspacePermission,
 } from "@/hooks/useAppState";
@@ -51,6 +52,9 @@ import {
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { WorkspaceSetupQuestionnaireStep } from "./WorkspaceSetupQuestionnaireStep";
 
+const WORKSPACE_SETUP_PAGE_ENTERED_KEY = "workspace-setup.page-entered.v1";
+const WORKSPACE_SETUP_VERSION = "v1";
+
 export function WorkspaceSetupPage() {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
@@ -71,6 +75,8 @@ export function WorkspaceSetupPage() {
   const workspacePolicy = useAppStore((state) => state.workspacePolicy);
   const canUpdateWorkspace = useWorkspacePermission("bb.workspaces.update");
   const canCreateProject = useWorkspacePermission("bb.projects.create");
+  const setupPageEntered = useIntroStateByKey(WORKSPACE_SETUP_PAGE_ENTERED_KEY);
+  const setupPageEnteredRef = useRef(false);
 
   // Show workspace name field only if the user is the sole member of the
   // workspace (i.e. they just created it), not when they were invited.
@@ -114,6 +120,31 @@ export function WorkspaceSetupPage() {
   const sampleRequested =
     shouldCreateProject && enableSampleDatabases && canPrepareSample;
   const canEnableSample = !!projectTitle.trim() && !!projectResourceId;
+
+  useEffect(() => {
+    if (
+      !currentUser.name ||
+      !workspace?.name ||
+      setupPageEntered ||
+      setupPageEnteredRef.current
+    ) {
+      return;
+    }
+    setupPageEnteredRef.current = true;
+    try {
+      useAppStore.getState().saveIntroStateByKey({
+        key: WORKSPACE_SETUP_PAGE_ENTERED_KEY,
+        newState: true,
+      });
+    } catch {
+      // Analytics markers must not interrupt workspace setup when storage fails.
+    }
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("workspace setup page entered", {
+        properties: { setup_version: WORKSPACE_SETUP_VERSION },
+      })
+    );
+  }, [currentUser.name, setupPageEntered, workspace?.name]);
 
   const validateProjectResourceId = useCallback(
     async (id: string): Promise<ValidatedMessage[]> => {
@@ -386,7 +417,9 @@ export function WorkspaceSetupPage() {
                         ? "settings.profile.enable-sample-databases-query-data"
                         : selectedScenarioId === "create-database-change"
                           ? "settings.profile.enable-sample-databases-create-change"
-                          : "settings.profile.enable-sample-databases"
+                          : selectedScenarioId === "mark-sensitive-data"
+                            ? "settings.profile.enable-sample-databases-mark-sensitive-data"
+                            : "settings.profile.enable-sample-databases"
                     )}
                   </label>
                 </div>

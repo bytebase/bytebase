@@ -13,8 +13,8 @@ import type { Permission } from "@/types";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 // ---------------------------------------------------------------------------
-// Stub EnvironmentSelect — the real component mounts Pinia-backed
-// environment state that's not worth wiring up for these tests.
+// Stub EnvironmentSelect — the real component loads the environment list
+// from the app store, which is not worth wiring up for these tests.
 // ---------------------------------------------------------------------------
 
 vi.mock("@/components/EnvironmentSelect", () => ({
@@ -195,7 +195,7 @@ vi.mock("@/types", () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Store / connect mocks — stable singletons for Pinia-adjacent bridges.
+// Store / connect mocks — stable singletons.
 // ---------------------------------------------------------------------------
 
 const mocks = vi.hoisted(() => ({
@@ -231,7 +231,6 @@ vi.mock("@/stores/app", () => ({
             ? ["bb.projects.get", "bb.databases.get"]
             : [],
       }),
-      // Migrated off the Pinia useSettingV1Store mock.
       getWorkspaceProfile: () => ({
         maximumRoleExpiration:
           mocks.maximumRoleExpirationSeconds === undefined

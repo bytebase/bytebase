@@ -36,7 +36,7 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 
 	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, namingCasePayload.Upper)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // NamingIdentifierCaseRule is the rule implementation for identifier case.

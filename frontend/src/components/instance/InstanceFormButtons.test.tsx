@@ -4,6 +4,8 @@ import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
+  DataSource_AuthenticationType,
+  DataSourceExternalSecret_SecretType,
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
@@ -21,9 +23,12 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   pushNotification: vi.fn(),
   createInstance: vi.fn(),
+  updateInstance: vi.fn(),
+  getInstanceByName: vi.fn(),
   fetchDatabases: vi.fn(),
   batchUpdateDatabases: vi.fn(),
   captureMetric: vi.fn(),
+  hasFeature: vi.fn(() => true),
   onCreated: vi.fn(),
   context: undefined as Record<string, unknown> | undefined,
 }));
@@ -61,9 +66,13 @@ vi.mock("@/app/analytics/provider", () => ({
 
 vi.mock("@/stores/app", () => {
   const appState = {
-    hasFeature: () => true,
+    hasFeature: mocks.hasFeature,
+    instanceLicenseCount: () => 100,
+    activatedInstanceCount: () => 1,
     isSaaSMode: () => false,
     createInstance: mocks.createInstance,
+    updateInstance: mocks.updateInstance,
+    getInstanceByName: mocks.getInstanceByName,
     fetchDatabases: mocks.fetchDatabases,
     batchUpdateDatabases: mocks.batchUpdateDatabases,
   };
@@ -79,6 +88,7 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  calcUpdateMask: () => [],
   convertKVListToLabels: (list: { key: string; value: string }[]) =>
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
   extractInstanceResourceName: (name: string) => name.split("/").at(-1) ?? "",
@@ -160,6 +170,7 @@ const flushPromises = async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.hasFeature.mockReturnValue(true);
   mocks.routerCurrentName = "workspace.instance.create";
   mocks.routerCurrentQuery = {};
 
@@ -195,6 +206,7 @@ beforeEach(() => {
     }),
     setBasicInfo: vi.fn(),
     labelKVList: [],
+    labelErrors: [],
     adminDataSource,
     editingDataSource: adminDataSource,
     readonlyDataSourceList: [],
@@ -214,6 +226,7 @@ beforeEach(() => {
     valueChanged: true,
     onDismiss: vi.fn(),
     emitShowConnectionOptions: vi.fn(),
+    emitDataSourceReset: vi.fn(),
   };
 
   mocks.createInstance.mockResolvedValue(
@@ -227,6 +240,151 @@ beforeEach(() => {
 });
 
 describe("InstanceFormButtons", () => {
+  test("does not require the external-secret feature for an inactive IAM draft", async () => {
+    mocks.hasFeature.mockReturnValue(false);
+    const dataSource = create(DataSourceSchema, {
+      id: "admin", type: DataSourceType.ADMIN,
+      authenticationType: DataSource_AuthenticationType.AZURE_IAM,
+      host: "db.example.com", password: "{{inactive-password}}",
+      externalSecret: { secretType: DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT },
+    });
+    const saved = create(InstanceSchema, {
+      name: "instances/prod", title: "Before", engine: Engine.POSTGRES,
+      dataSources: [dataSource],
+    });
+    mocks.getInstanceByName.mockReturnValue(saved);
+    mocks.updateInstance.mockResolvedValue(saved);
+    mocks.context = {
+      ...mocks.context, instance: saved, isCreating: false,
+      basicInfo: { ...saved, title: "After" },
+      adminDataSource: dataSource, editingDataSource: dataSource,
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    try {
+      await act(async () => { root.render(<InstanceFormButtons />); });
+      const update = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "common.update")!;
+      await act(async () => { update.click(); });
+      expect(mocks.context.setMissingFeature).not.toHaveBeenCalled();
+      expect(mocks.updateInstance).toHaveBeenCalledOnce();
+    } finally {
+      await act(async () => { root.unmount(); });
+    }
+  });
+
+  test.each([
+    { title: "Production", labelErrors: ["invalid label"] },
+    { title: "   ", labelErrors: [] },
+  ])("blocks Update but allows connection testing for invalid metadata: %j", async ({ title, labelErrors }) => {
+    mocks.context = {
+      ...mocks.context,
+      isCreating: false,
+      instance: create(InstanceSchema, { name: "instances/prod" }),
+      basicInfo: create(InstanceSchema, { title, engine: Engine.POSTGRES }),
+      labelErrors,
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    try {
+      await act(async () => { root.render(<InstanceFormButtons />); });
+      const buttons = Array.from(container.querySelectorAll("button"));
+      const update = buttons.find((button) => button.textContent === "common.update")!;
+      const testConnection = buttons.find((button) => button.textContent === "instance.test-connection")!;
+      expect(update.disabled).toBe(true);
+      expect(testConnection.disabled).toBe(false);
+      await act(async () => {
+        update.click();
+        testConnection.click();
+      });
+      expect(mocks.updateInstance).not.toHaveBeenCalled();
+      expect(mocks.context.testConnection).toHaveBeenCalledExactlyOnceWith(
+        mocks.context.editingDataSource, false
+      );
+    } finally {
+      await act(async () => { root.unmount(); });
+    }
+  });
+
+  test.each(["isRequesting", "isTestingConnection"])(
+    "blocks connection testing during %s on edit",
+    async (pendingState) => {
+      mocks.context = {
+        ...mocks.context,
+        isCreating: false,
+        instance: create(InstanceSchema, { name: "instances/prod" }),
+        state: { isRequesting: false, isTestingConnection: false, [pendingState]: true },
+      };
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      try {
+        await act(async () => { root.render(<InstanceFormButtons />); });
+        const testConnection = Array.from(container.querySelectorAll("button")).find(
+          (button) => ["instance.test-connection", "instance.testing-connection"].includes(button.textContent ?? "")
+        )!;
+        expect(testConnection.disabled).toBe(true);
+        await act(async () => { testConnection.click(); });
+        expect(mocks.context.testConnection).not.toHaveBeenCalled();
+      } finally {
+        await act(async () => { root.unmount(); });
+      }
+    }
+  );
+
+  test("invalidates provider drafts only after a successful server-backed save", async () => {
+    const saved = create(InstanceSchema, {
+      name: "instances/prod",
+      title: "Updated production",
+      engine: Engine.POSTGRES,
+      dataSources: [
+        create(DataSourceSchema, {
+          id: "admin",
+          type: DataSourceType.ADMIN,
+          host: "127.0.0.1",
+          port: "5432",
+        }),
+      ],
+    });
+    let finishSave!: () => void;
+    mocks.updateInstance.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSave = resolve;
+        })
+    );
+    mocks.getInstanceByName.mockReturnValue(saved);
+    const emitDataSourceReset = vi.fn();
+    mocks.context = {
+      ...mocks.context,
+      instance: create(InstanceSchema, { ...saved, title: "Old production" }),
+      basicInfo: saved,
+      isCreating: false,
+      emitDataSourceReset,
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<InstanceFormButtons />);
+    });
+    const update = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.update"
+    )!;
+    expect(update.disabled).toBe(false);
+    await act(async () => {
+      update.click();
+    });
+    expect(mocks.updateInstance).toHaveBeenCalledOnce();
+    expect(emitDataSourceReset).not.toHaveBeenCalled();
+    await act(async () => {
+      finishSave();
+    });
+    expect(mocks.getInstanceByName).toHaveBeenCalledWith(saved.name);
+    expect(emitDataSourceReset).toHaveBeenCalledOnce();
+    expect(mocks.context?.setDataSourceEditState).toHaveBeenCalledOnce();
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   test("uses project-aware create action text when creating from a project", async () => {
     mocks.context = { ...mocks.context, parent: "projects/demo" };
     const container = document.createElement("div");

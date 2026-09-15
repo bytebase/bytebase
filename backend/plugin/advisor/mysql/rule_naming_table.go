@@ -59,7 +59,7 @@ func (*NamingTableConventionAdvisor) Check(_ context.Context, checkCtx advisor.C
 		maxLength: maxLength,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingTableOmniRule struct {

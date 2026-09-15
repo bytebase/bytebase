@@ -12,11 +12,7 @@ import { hasSchemaProperty } from "@/utils";
 import { useViewStateNav } from "./useViewStateNav";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/common/SchemaSelectToolbar.vue`
- * (`simple` mode — the only mode `Panels.vue` actually uses).
- *
- * Renders nothing for engines without a schema concept (matching Vue's
- * `v-if="showSchemaSelect"`).
+ * Renders nothing for engines without a schema concept.
  */
 export function SchemaSelectToolbar() {
   const { t } = useTranslation();

@@ -30,7 +30,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/OpenAIButton/*.vue.
  * Shows an AI-assistant toggle when the editor is connected + in saved query
  * mode. Clicking the button toggles the AI panel. Statement-specific AI
  * actions live in the editor context menu.

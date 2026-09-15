@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 
@@ -86,7 +87,7 @@ const (
 )
 
 // Dump dumps the database.
-func (d *Driver) Dump(_ context.Context, out io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (d *Driver) Dump(_ context.Context, out io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	slog.Debug("begin to dump database", slog.String("database", d.databaseName))

@@ -3,6 +3,7 @@
 // card or a one-line system row is decided at render time by body presence,
 // so no weight/tier is stored here. Plan check results are never entries.
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { isThreadReply } from "@/stores/app/issueComment";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 
 export type TimelineSource =
@@ -52,6 +53,8 @@ export function buildTimelineEntries(input: {
     });
   }
   for (const comment of input.comments) {
+    // Replies render inside their thread's entry, never as their own row.
+    if (isThreadReply(comment)) continue;
     if (comment.event.case === "reviewSubmission") {
       if (comment === reviewSubmission) {
         entries.push({

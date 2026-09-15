@@ -679,7 +679,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.QueryOption.MSSQLExplainFormat"><span class="badge">E</span>QueryOption.MSSQLExplainFormat</a>
+                  <a href="#bytebase.v1.QueryOption.ExplainFormat"><span class="badge">E</span>QueryOption.ExplainFormat</a>
                 </li>
               
                 <li>
@@ -924,6 +924,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.StatementAnchor"><span class="badge">M</span>StatementAnchor</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateIssueCommentRequest"><span class="badge">M</span>UpdateIssueCommentRequest</a>
                 </li>
               
@@ -942,6 +946,10 @@
               
                 <li>
                   <a href="#bytebase.v1.IssueComment.Approval.Status"><span class="badge">E</span>IssueComment.Approval.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.ThreadState"><span class="badge">E</span>IssueComment.ThreadState</a>
                 </li>
               
                 <li>
@@ -3087,6 +3095,10 @@
               
                 <li>
                   <a href="#bytebase.v1.PurchaseResponse"><span class="badge">M</span>PurchaseResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.StartTrialRequest"><span class="badge">M</span>StartTrialRequest</a>
                 </li>
               
                 <li>
@@ -8044,8 +8056,8 @@ Empty when the user was authorized through normal ACL rather than a grant. </p><
                 </tr>
               
                 <tr>
-                  <td>mssql_explain_format</td>
-                  <td><a href="#bytebase.v1.QueryOption.MSSQLExplainFormat">QueryOption.MSSQLExplainFormat</a></td>
+                  <td>explain_format</td>
+                  <td><a href="#bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -8781,8 +8793,8 @@ These are custom, flexible checks powered by AI models.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.QueryOption.MSSQLExplainFormat">QueryOption.MSSQLExplainFormat</h3>
-        <p></p>
+        <h3 id="bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</h3>
+        <p>Which explain output the caller wants, for an explain request.</p><p>Leave it unspecified for the engine's own default, which is the only</p><p>output most engines have. Naming a format an engine cannot produce is</p><p>INVALID_ARGUMENT rather than a silent fallback, as is any explain request</p><p>against an engine that has no explain at all.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -8790,21 +8802,29 @@ These are custom, flexible checks powered by AI models.</p></td>
           <tbody>
             
               <tr>
-                <td>MSSQL_EXPLAIN_FORMAT_UNSPECIFIED</td>
+                <td>EXPLAIN_FORMAT_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>defaults to SHOWPLAN_ALL</p></td>
+                <td><p>The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL.</p></td>
               </tr>
             
               <tr>
-                <td>MSSQL_EXPLAIN_FORMAT_ALL</td>
+                <td>TEXT</td>
                 <td>1</td>
-                <td><p>SHOWPLAN_ALL</p></td>
+                <td><p>The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
+SHOWPLAN_ALL.</p></td>
               </tr>
             
               <tr>
-                <td>MSSQL_EXPLAIN_FORMAT_XML</td>
+                <td>JSON</td>
                 <td>2</td>
-                <td><p>SHOWPLAN_XML</p></td>
+                <td><p>The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON).</p></td>
+              </tr>
+            
+              <tr>
+                <td>XML</td>
+                <td>3</td>
+                <td><p>The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
+SHOWPLAN_XML.</p></td>
               </tr>
             
           </tbody>
@@ -10695,6 +10715,35 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
                 </tr>
               
                 <tr>
+                  <td>root</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The thread root&#39;s name, set only on replies. Immutable after creation.
+Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+Must name a thread root in the same issue, never a general comment or reply. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>thread_state</td>
+                  <td><a href="#bytebase.v1.IssueComment.ThreadState">IssueComment.ThreadState</a></td>
+                  <td>optional</td>
+                  <td><p>Present only on thread roots. Set OPEN on create to start a thread; an
+anchored root starts one without it. Omit root, thread_state, and
+statement_anchor to create a general comment.
+Update through the thread_state field mask to resolve or reopen.
+Adding a reply does not reopen a resolved thread. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement_anchor</td>
+                  <td><a href="#bytebase.v1.StatementAnchor">StatementAnchor</a></td>
+                  <td></td>
+                  <td><p>Optional source context on a root or reply. A reply&#39;s anchor must share
+the root&#39;s spec and sheet_sha256; it may narrow the range.
+Cannot be set on events. Immutable after creation. </p></td>
+                </tr>
+              
+                <tr>
                   <td>approval</td>
                   <td><a href="#bytebase.v1.IssueComment.Approval">IssueComment.Approval</a></td>
                   <td></td>
@@ -10900,6 +10949,16 @@ Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssueComments` must match
 the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>CEL filter over events, root comments, and replies.
+Supported: root == null, root == &#34;&lt;comment name&gt;&#34;, or root in [&#34;&lt;comment name&gt;&#34;, ...].
+Root names must belong to parent. Empty and root == null return the
+timeline (events and root comments); other filters return replies only. </p></td>
                 </tr>
               
             </tbody>
@@ -11400,6 +11459,53 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
+        <h3 id="bytebase.v1.StatementAnchor">StatementAnchor</h3>
+        <p>The saved statement revision and range referenced by a comment.</p><p>Source currency is derived by comparing the spec and hash with the current plan.</p><p>Historical SQL is available through SheetService.GetSheet with this hash.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>spec</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The Plan.Spec.id in the issue&#39;s plan; may no longer resolve after deletion. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>SHA256 of the saved sheet, as 64 lowercase hexadecimal characters. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>One-based lines and Unicode code-point columns. When both columns are zero,
+the range covers whole lines, including the end line. Otherwise both columns
+must be positive, start_position is inclusive, and end_position is exclusive. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdateIssueCommentRequest">UpdateIssueCommentRequest</h3>
         <p></p>
 
@@ -11591,6 +11697,35 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>REJECTED</td>
                 <td>3</td>
                 <td><p>Rejected.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.IssueComment.ThreadState">IssueComment.ThreadState</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>THREAD_STATE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OPEN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RESOLVED</td>
+                <td>2</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>
@@ -35059,6 +35194,13 @@ If empty, the update was applied directly using the existing payment method. </p
 
         
       
+        <h3 id="bytebase.v1.StartTrialRequest">StartTrialRequest</h3>
+        <p></p>
+
+        
+
+        
+      
         <h3 id="bytebase.v1.Subscription">Subscription</h3>
         <p></p>
 
@@ -35863,6 +36005,13 @@ If there is expired license, we will return a free plan subscription with the ex
               </tr>
             
               <tr>
+                <td>StartTrial</td>
+                <td><a href="#bytebase.v1.StartTrialRequest">StartTrialRequest</a></td>
+                <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
+                <td><p>StartTrial starts a free trial for an eligible SaaS workspace.</p></td>
+              </tr>
+            
+              <tr>
                 <td>CreatePurchase</td>
                 <td><a href="#bytebase.v1.CreatePurchaseRequest">CreatePurchaseRequest</a></td>
                 <td><a href="#bytebase.v1.PurchaseResponse">PurchaseResponse</a></td>
@@ -35950,6 +36099,16 @@ May return a Stripe Checkout URL if payment method change is needed.</p></td>
                 <td>UploadLicense</td>
                 <td>PATCH</td>
                 <td>/v1/subscription/license</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>StartTrial</td>
+                <td>POST</td>
+                <td>/v1/subscription:startTrial</td>
                 <td>*</td>
               </tr>
               
@@ -36365,21 +36524,28 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                   <td>issuer_url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>OIDC Issuer URL (auto-filled based on provider_type, can be overridden) </p></td>
+                  <td><p>HTTPS URL of the OIDC issuer. The exchange fetches
+{issuer_url}/.well-known/openid-configuration to verify a token, unless
+jwks_url names the key set directly. </p></td>
                 </tr>
               
                 <tr>
                   <td>allowed_audiences</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>Allowed audiences for token validation </p></td>
+                  <td><p>Audiences a token may be minted for. A token authenticates if its `aud`
+claim matches any entry. </p></td>
                 </tr>
               
                 <tr>
                   <td>subject_pattern</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) </p></td>
+                  <td><p>The subject a token must carry, e.g. &#34;repo:owner/repo:ref:refs/heads/main&#34;.
+A trailing &#34;*&#34; is a prefix match. For GitHub and GitLab subjects it must
+complete an owner or group segment, so &#34;repo:my-org/*&#34; is accepted and
+&#34;repo:*&#34; is not. Other issuers write other vocabularies, so a wildcard
+outside those two is accepted as given. </p></td>
                 </tr>
               
                 <tr>

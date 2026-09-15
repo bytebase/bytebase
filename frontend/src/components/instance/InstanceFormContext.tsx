@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { ConnectError } from "@connectrpc/connect";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import {
   createContext,
@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { SecretInputProvider } from "@/components/SecretInput";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types";
@@ -21,23 +22,15 @@ import type {
   Instance,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
-  DataSource_AuthenticationType,
-  DataSource_RedisType,
-  DataSourceExternalSecret_AuthType,
-  DataSourceExternalSecret_SecretType,
   DataSourceType,
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  convertKVListToLabels,
-  convertLabelsToKVList,
-  isValidBigQueryDataSource,
-  isValidSpannerDataSource,
-} from "@/utils";
+import { convertKVListToLabels, convertLabelsToKVList } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 import { FeatureModal } from "../ui/feature-modal";
+import { isIAMAuthentication } from "./authentication";
 import {
   type ConnectionFailureCategory,
   connectionFailureCategoryHeader,
@@ -53,7 +46,12 @@ import {
 } from "./common";
 import { effectivePortForEngine } from "./constants";
 import { hasInstancePermission } from "./permission";
-import { type InstanceSpecs, useInstanceSpecs } from "./specs";
+import {
+  hasConnectionDatabase,
+  type InstanceSpecs,
+  useInstanceSpecs,
+} from "./specs";
+import { type ValidationErrors, validateDataSource } from "./validation";
 
 export type LocalState = {
   editingDataSourceId: string | undefined;
@@ -116,6 +114,7 @@ export interface InstanceFormContextValue {
   setResourceIdValidated: React.Dispatch<React.SetStateAction<boolean>>;
   labelErrors: string[];
   setLabelErrors: React.Dispatch<React.SetStateAction<string[]>>;
+  getDataSourceErrors: (dataSource: EditDataSource) => ValidationErrors;
   checkDataSource: (dataSources: EditDataSource[]) => boolean;
   needsKeytabResupply: (dataSource: EditDataSource) => boolean;
   resetDataSource: () => void;
@@ -131,6 +130,8 @@ export interface InstanceFormContextValue {
   valueChanged: boolean;
   isEditing: boolean;
   onDismiss?: () => void;
+  dataSourceResetEvent: number;
+  emitDataSourceReset: () => void;
   showConnectionOptionsEvent: number;
   emitShowConnectionOptions: () => void;
 }
@@ -193,11 +194,19 @@ export function InstanceFormProvider({
   const [labelErrors, setLabelErrors] = useState<string[]>([]);
   const [showConnectionOptionsEvent, setShowConnectionOptionsEvent] =
     useState(0);
+  const [dataSourceResetEvent, setDataSourceResetEvent] = useState(0);
   const syncedInstanceRef = useRef({
     name: instance?.name,
     state: instance?.state,
   });
   const isCreating = instance === undefined;
+
+  useEffect(() => {
+    // Removing the final label unmounts the editor before it can clear errors.
+    if (labelKVList.length === 0) {
+      setLabelErrors((errors) => (errors.length > 0 ? [] : errors));
+    }
+  }, [labelKVList.length]);
 
   useEffect(() => {
     const previous = syncedInstanceRef.current;
@@ -299,6 +308,7 @@ export function InstanceFormProvider({
         omit(
           edit,
           "pendingCreate",
+          "updatedSecretFields",
           "updatedPassword",
           "useEmptyPassword",
           "updatedMasterPassword",
@@ -313,8 +323,13 @@ export function InstanceFormProvider({
         ds.masterPassword = edit.updatedMasterPassword;
       if (edit.useEmptyMasterPassword) ds.masterPassword = "";
       if (edit.updatedToken) ds.authenticationPrivateKey = edit.updatedToken;
+      // Preserve inactive drafts in the form, but send only the active source.
+      if (isIAMAuthentication(ds.authenticationType)) {
+        ds.password = "";
+        ds.externalSecret = undefined;
+      }
       ds.port = effectivePortForEngine(engine, ds.port, ds.srv);
-      if (!specs.showDatabase) ds.database = "";
+      if (!hasConnectionDatabase(engine, ds.type)) ds.database = "";
       if (engine !== Engine.ORACLE) {
         ds.sid = "";
         ds.serviceName = "";
@@ -355,132 +370,40 @@ export function InstanceFormProvider({
     [basicInfo.engine, extractDataSourceFromEdit, instance]
   );
 
-  const checkDataSource = useCallback(
-    (dataSources: EditDataSource[]) => {
-      return dataSources.every((ds) => {
-        if (
-          ds.authenticationType ===
-          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
-        ) {
-          return /.+:.+:.+/.test(ds.host);
-        }
-        if (
-          ds.authenticationType === DataSource_AuthenticationType.AWS_RDS_IAM
-        ) {
-          // DynamoDB can run on the deployment's default credential chain,
-          // where the region may also come from the environment. A specific
-          // credential must pin its region.
-          if (basicInfo.engine === Engine.DYNAMODB) {
-            return ds.iamExtension?.case !== "awsCredential" || !!ds.region;
-          }
-          return !!ds.region;
-        }
-        if (basicInfo.engine === Engine.ORACLE) {
-          if (!ds.sid && !ds.serviceName) return false;
-        } else if (basicInfo.engine === Engine.DATABRICKS) {
-          if (!ds.warehouseId) return false;
-          // Token is INPUT_ONLY: backend never returns it. Require it only on
-          // create; on edit, an empty updatedToken means "keep existing token".
-          if (ds.pendingCreate && !ds.updatedToken) return false;
-        }
-        const krbConfig = krbConfigOf(ds);
-        if (krbConfig) {
-          if (!krbConfig.primary || !krbConfig.realm || !krbConfig.kdcHost) {
-            return false;
-          }
-          // Keytab is INPUT_ONLY: the backend never returns it. Require it
-          // only on create; on edit, an empty keytab keeps the existing one.
-          if (ds.pendingCreate && krbConfig.keytab.length === 0) {
-            return false;
-          }
-          // Unless the edit moves where the data source connects, which the
-          // backend refuses to let the stored keytab follow.
-          if (needsKeytabResupply(ds)) {
-            return false;
-          }
-        }
-        if (!ds.externalSecret) return true;
-        switch (ds.externalSecret.secretType) {
-          case DataSourceExternalSecret_SecretType.VAULT_KV_V2:
-            if (
-              !ds.externalSecret.url ||
-              !ds.externalSecret.engineName ||
-              !ds.externalSecret.secretName ||
-              !ds.externalSecret.passwordKeyName
-            )
-              return false;
-            break;
-          case DataSourceExternalSecret_SecretType.AWS_SECRETS_MANAGER:
-            if (
-              !ds.externalSecret.secretName ||
-              !ds.externalSecret.passwordKeyName
-            )
-              return false;
-            break;
-          case DataSourceExternalSecret_SecretType.GCP_SECRET_MANAGER:
-            if (!ds.externalSecret.secretName) return false;
-            break;
-        }
-        switch (ds.externalSecret.authType) {
-          case DataSourceExternalSecret_AuthType.TOKEN:
-            return !!(
-              ds.externalSecret.authOption?.case === "token" &&
-              ds.externalSecret.authOption.value
-            );
-          case DataSourceExternalSecret_AuthType.VAULT_APP_ROLE:
-            return !!(
-              ds.externalSecret.authOption?.case === "appRole" &&
-              ds.externalSecret.authOption.value.roleId &&
-              ds.externalSecret.authOption.value.secretId
-            );
-        }
-        return true;
-      });
-    },
-    [basicInfo.engine, needsKeytabResupply]
+  const getDataSourceErrors = useCallback(
+    (ds: EditDataSource) =>
+      validateDataSource(ds, {
+        engine: basicInfo.engine,
+        isSaaSMode,
+        stored: instance?.dataSources.find((stored) => stored.id === ds.id),
+        keytabResupply: needsKeytabResupply(ds),
+      }),
+    [basicInfo.engine, isSaaSMode, instance, needsKeytabResupply]
   );
 
-  const allowCreate = useMemo(() => {
-    if (!hasPermission("bb.instances.create")) return false;
-    if (basicInfo.engine === Engine.SPANNER) {
-      return (
-        !!basicInfo.title.trim() && isValidSpannerDataSource(adminDataSource)
-      );
-    }
-    if (basicInfo.engine === Engine.BIGQUERY) {
-      return (
-        !!basicInfo.title.trim() && isValidBigQueryDataSource(adminDataSource)
-      );
-    }
-    if (basicInfo.engine !== Engine.DYNAMODB) {
-      if (adminDataSource.host === "") return false;
-    }
-    if (basicInfo.engine === Engine.REDIS) {
-      if (
-        adminDataSource.redisType === DataSource_RedisType.SENTINEL &&
-        adminDataSource.masterName === ""
-      )
-        return false;
-    }
-    const hasLabelErrs = labelErrors.length > 0;
-    return (
-      !!basicInfo.title.trim() &&
-      resourceIdValidated &&
-      checkDataSource([adminDataSource]) &&
-      !hasLabelErrs
-    );
-  }, [
-    basicInfo,
-    adminDataSource,
-    resourceIdValidated,
-    labelErrors,
-    checkDataSource,
-    hasPermission,
-  ]);
+  const checkDataSource = useCallback(
+    (dataSources: EditDataSource[]) =>
+      dataSources.every(
+        (ds) => Object.keys(getDataSourceErrors(ds)).length === 0
+      ),
+    [getDataSourceErrors]
+  );
+
+  const allowCreate =
+    hasPermission("bb.instances.create") &&
+    !!basicInfo.title.trim() &&
+    resourceIdValidated &&
+    labelErrors.length === 0 &&
+    checkDataSource([adminDataSource]);
+
+  const emitDataSourceReset = useCallback(() => {
+    setDataSourceResetEvent((event) => event + 1);
+  }, []);
 
   const resetDataSource = useCallback(() => {
     setDataSourceEditState(extractDataSourceEditState(instance));
-  }, [instance]);
+    emitDataSourceReset();
+  }, [instance, emitDataSourceReset]);
 
   // Debounced to avoid expensive cloneDeep + extraction on every keystroke.
   const [pendingCreateInstance, setPendingCreateInstance] = useState<Instance>(
@@ -536,11 +459,20 @@ export function InstanceFormProvider({
         return { success: true, message: "", failureCategory: "unknown" };
       };
       const fail = (host: string, err: unknown): TestConnectionResult => {
-        const failureCategory = normalizeConnectionFailureCategory(
+        let failureCategory = normalizeConnectionFailureCategory(
           err instanceof ConnectError
             ? err.metadata.get(connectionFailureCategoryHeader)
             : undefined
         );
+        // Gateways may return a bare HTTP error without Bytebase's category.
+        // Connect maps 504 to Unavailable, which also covers non-timeout errors.
+        if (
+          failureCategory === "unknown" &&
+          err instanceof ConnectError &&
+          (err.code === Code.DeadlineExceeded || err.rawMessage === "HTTP 504")
+        ) {
+          failureCategory = "timeout";
+        }
         let error =
           err instanceof ConnectError
             ? err.rawMessage
@@ -561,8 +493,18 @@ export function InstanceFormProvider({
           pushNotification({
             module: "bytebase",
             style: "CRITICAL",
-            title: t("instance.failed-to-connect-instance"),
-            description: error,
+            title:
+              failureCategory === "timeout"
+                ? t("instance.connection-recovery.timeout.test-title")
+                : t("instance.failed-to-connect-instance"),
+            description:
+              failureCategory === "timeout"
+                ? `${t(
+                    isSaaSMode
+                      ? "instance.connection-recovery.timeout.description-saas"
+                      : "instance.connection-recovery.timeout.description-self-hosted"
+                  )}\n\n${t("error-page.error-details")}: ${error}`
+                : error,
             manualHide: true,
           });
         }
@@ -697,6 +639,7 @@ export function InstanceFormProvider({
       labelErrors,
       setLabelErrors,
       checkDataSource,
+      getDataSourceErrors,
       needsKeytabResupply,
       resetDataSource,
       extractDataSourceFromEdit,
@@ -705,6 +648,8 @@ export function InstanceFormProvider({
       valueChanged,
       isEditing,
       onDismiss,
+      dataSourceResetEvent,
+      emitDataSourceReset,
       showConnectionOptionsEvent,
       emitShowConnectionOptions,
     }),
@@ -732,6 +677,7 @@ export function InstanceFormProvider({
       resourceIdValidated,
       labelErrors,
       checkDataSource,
+      getDataSourceErrors,
       needsKeytabResupply,
       resetDataSource,
       extractDataSourceFromEdit,
@@ -740,6 +686,8 @@ export function InstanceFormProvider({
       valueChanged,
       isEditing,
       onDismiss,
+      dataSourceResetEvent,
+      emitDataSourceReset,
       showConnectionOptionsEvent,
       emitShowConnectionOptions,
     ]
@@ -747,7 +695,9 @@ export function InstanceFormProvider({
 
   return (
     <InstanceFormCtx.Provider value={value}>
-      {children}
+      <SecretInputProvider resetKey={dataSourceResetEvent}>
+        {children}
+      </SecretInputProvider>
       <FeatureModal
         open={!!missingFeature}
         feature={missingFeature}

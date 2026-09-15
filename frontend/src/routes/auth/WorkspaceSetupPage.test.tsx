@@ -1,6 +1,3 @@
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { fireEvent } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { act } from "react";
@@ -13,8 +10,6 @@ import type { Workspace } from "@/types/proto-es/v1/workspace_service_pb";
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
-
-const componentDir = dirname(fileURLToPath(import.meta.url));
 
 const mocks = vi.hoisted(() => ({
   canUpdateWorkspace: true,
@@ -42,6 +37,8 @@ const mocks = vi.hoisted(() => ({
   setRecentProject: vi.fn(),
   routerReplace: vi.fn(),
   captureMetric: vi.fn(),
+  introState: {} as Record<string, boolean>,
+  saveIntroStateByKey: vi.fn(),
   clearGuideWorkspaceUsage: vi.fn(),
   clearSelectedGuideScenarioId: vi.fn(),
   saveGuideWorkspaceUsage: vi.fn(),
@@ -82,10 +79,12 @@ vi.mock("@/hooks/useAppState", () => ({
     createProject: mocks.createProject,
     setRecentProject: mocks.setRecentProject,
   }),
+  useIntroStateByKey: (key: string) => mocks.introState[key] ?? false,
 }));
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: (
+vi.mock("@/stores/app", () => {
+  const useAppStore = Object.assign(
+    (
     selector: (state: {
       workspacePolicy: IamPolicy;
       updateUser: typeof mocks.updateUser;
@@ -97,7 +96,7 @@ vi.mock("@/stores/app", () => ({
       isSaaSMode: () => boolean;
     }) => unknown
   ) =>
-    selector({
+      selector({
       workspacePolicy: mocks.workspacePolicy,
       updateUser: mocks.updateUser,
       updateWorkspace: mocks.updateWorkspace,
@@ -108,9 +107,16 @@ vi.mock("@/stores/app", () => ({
           instances: mocks.sampleInstances,
         },
       },
-      isSaaSMode: () => mocks.isSaaSMode,
-    }),
-}));
+        isSaaSMode: () => mocks.isSaaSMode,
+      }),
+    {
+      getState: () => ({
+        saveIntroStateByKey: mocks.saveIntroStateByKey,
+      }),
+    }
+  );
+  return { useAppStore };
+});
 
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
@@ -184,6 +190,10 @@ vi.mock("react-i18next", () => ({
             "Query data",
           "settings.profile.setup-scenario.query-data.description":
             "Open SQL Editor and run a statement.",
+          "settings.profile.setup-scenario.mark-sensitive-data.title":
+            "Mark sensitive data",
+          "settings.profile.setup-scenario.mark-sensitive-data.description":
+            "Identify sensitive columns and apply masking.",
           "settings.profile.setup-scenario.workspace-usage.title":
             "Who will use Bytebase with you?",
           "settings.profile.setup-scenario.workspace-usage.team.title":
@@ -205,6 +215,8 @@ vi.mock("react-i18next", () => ({
             "Enable sample databases to start querying immediately",
           "settings.profile.enable-sample-databases-create-change":
             "Enable sample databases as a safe change target",
+          "settings.profile.enable-sample-databases-mark-sensitive-data":
+            "Enable sample databases to try data masking immediately",
           "settings.profile.setup-submit": "Setup my workspace",
           "instance.prepare-sample-instance-failed":
             "Failed to prepare Sample Project Instance.",
@@ -253,6 +265,10 @@ beforeEach(async () => {
   mocks.sampleAvailable = true;
   mocks.sampleInstances = [];
   mocks.isSaaSMode = false;
+  mocks.introState = {};
+  mocks.saveIntroStateByKey.mockImplementation(({ key, newState }) => {
+    mocks.introState[key] = newState;
+  });
   mocks.workspacePolicy = {
     bindings: [
       {
@@ -272,6 +288,44 @@ beforeEach(async () => {
 });
 
 describe("WorkspaceSetupPage", () => {
+  test("records setup page entry only once per lifecycle", () => {
+    const first = renderIntoContainer(<WorkspaceSetupPage />);
+    first.render();
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: "workspace-setup.page-entered.v1",
+      newState: true,
+    });
+
+    first.render();
+    first.unmount();
+
+    const second = renderIntoContainer(<WorkspaceSetupPage />);
+    second.render();
+
+    expect(mocks.captureMetric).toHaveBeenCalledTimes(1);
+    second.unmount();
+  });
+
+  test("records setup page entry when its marker cannot be saved", () => {
+    mocks.saveIntroStateByKey.mockImplementation(() => {
+      throw new Error("localStorage unavailable");
+    });
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+
+    expect(() => page.render()).not.toThrow();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
+
+    page.unmount();
+  });
+
   test("uses the shared step indicator for both setup steps", async () => {
     const page = renderIntoContainer(<WorkspaceSetupPage />);
     page.render();
@@ -342,8 +396,9 @@ describe("WorkspaceSetupPage", () => {
     expect(page.container.textContent).toContain(
       "What would you like to do with Bytebase?"
     );
-    expect(page.container.querySelectorAll("[role='radio']")).toHaveLength(4);
+    expect(page.container.querySelectorAll("[role='radio']")).toHaveLength(5);
     expect(page.container.textContent).toContain("Create a database change");
+    expect(page.container.textContent).toContain("Mark sensitive data");
     expect(page.container.textContent).toContain("Who will use Bytebase with you?");
     expect(page.container.textContent).toContain("My team");
     expect(page.container.textContent).toContain("Just me");
@@ -378,7 +433,10 @@ describe("WorkspaceSetupPage", () => {
     expect(mocks.saveSelectedGuideScenarioId).toHaveBeenCalledWith(
       "create-database-change"
     );
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
     page.unmount();
   });
 
@@ -408,7 +466,10 @@ describe("WorkspaceSetupPage", () => {
       "query-data"
     );
     expect(mocks.saveGuideWorkspaceUsage).toHaveBeenCalledWith("team");
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup page entered",
+      properties: { setup_version: "v1" },
+    });
 
     const submit = [...page.container.querySelectorAll("button")].find(
       (button) => button.textContent?.includes("Setup my workspace")
@@ -511,7 +572,7 @@ describe("WorkspaceSetupPage", () => {
     expect(mocks.saveSelectedGuideScenarioId).toHaveBeenCalledWith(
       "create-database-change"
     );
-    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    expect(mocks.captureMetric).toHaveBeenCalled();
     page.unmount();
   });
 
@@ -581,7 +642,7 @@ describe("WorkspaceSetupPage", () => {
     expect(mocks.clearGuideWorkspaceUsage).toHaveBeenCalledOnce();
     expect(mocks.saveSelectedGuideScenarioId).not.toHaveBeenCalled();
     expect(mocks.saveGuideWorkspaceUsage).not.toHaveBeenCalled();
-    expect(mocks.captureMetric).toHaveBeenCalledTimes(2);
+    expect(mocks.captureMetric).toHaveBeenCalledTimes(3);
     expect(mocks.captureMetric).toHaveBeenCalledWith({
       event: "workspace setup submitted",
       properties: {
@@ -592,20 +653,6 @@ describe("WorkspaceSetupPage", () => {
       },
     });
     page.unmount();
-  });
-
-  test("uses the shared product intro query key after creating a project", () => {
-    const source = readFileSync(join(componentDir, "WorkspaceSetupPage.tsx"), {
-      encoding: "utf8",
-    });
-
-    expect(source).toContain(
-      "[PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO"
-    );
-    expect(source).toContain("PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO");
-    expect(source).toContain(
-      "query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO }"
-    );
   });
 
   test("shows workspace name when the sole member can update the workspace", () => {

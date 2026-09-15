@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { getApprovalEligibility } from "./approvalEligibility";

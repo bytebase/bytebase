@@ -53,7 +53,9 @@ import type {
 import type {
   Issue,
   IssueComment,
+  IssueComment_ThreadState,
   ListIssueCommentsRequest,
+  StatementAnchor,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Policy,
@@ -186,8 +188,7 @@ export type AuthSlice = {
   authenticationInfoRequest?: Promise<AuthenticationInfo | undefined>;
   currentUser?: User;
   currentUserRequest?: Promise<User | undefined>;
-  // Resource name `users/{email}` of the signed-in user. Mirrors the legacy
-  // Pinia auth store's `currentUserName`; drives `isLoggedIn`.
+  // Resource name `users/{email}` of the signed-in user; drives `isLoggedIn`.
   currentUserName?: string;
   unauthenticatedOccurred: boolean;
   authSessionKey: string;
@@ -229,16 +230,14 @@ export type WorkspaceSlice = {
   workspaceProfileRequest?: Promise<WorkspaceProfileSetting | undefined>;
   environmentList: Environment[];
   environmentRequest?: Promise<Environment[]>;
-  // General-purpose setting cache, mirrors the legacy Pinia
-  // `useSettingV1Store` API. Keyed by the setting's resource name
+  // General-purpose setting cache keyed by the setting's resource name
   // (`settings/{Setting_SettingName}`).
   settingsByName: Record<string, Setting>;
   settingRequests: Record<string, Promise<Setting | undefined>>;
   appFeatures: AppFeatures;
   subscription?: Subscription;
   subscriptionRequest?: Promise<Subscription | undefined>;
-  // Subscription purchase metadata (SaaS). Mirrors the legacy Pinia
-  // `useSubscriptionV1Store` `purchasePlans` / `paymentInfo` refs.
+  // Subscription purchase metadata (SaaS).
   purchasePlans: PurchasePlan[];
   paymentInfo?: PaymentInfo;
   loadServerInfo: () => Promise<ActuatorInfo | undefined>;
@@ -266,12 +265,10 @@ export type WorkspaceSlice = {
     name: Setting_SettingName,
     silent?: boolean
   ) => Promise<Setting | undefined>;
-  // Bridge: lets the legacy Pinia `useSettingV1Store.upsertSetting` push
-  // updates into the app store after a save, so still-app-store consumers
-  // (e.g. SQL editor's `OpenAIButton`) see fresh values without a refresh.
+  // Puts a saved setting into the cache so consumers see fresh values without
+  // a refresh.
   setSettingByName: (setting: Setting) => void;
-  // Writes a setting to the server and updates the cache. Mirrors the legacy
-  // Pinia `useSettingV1Store().upsertSetting`.
+  // Writes a setting to the server and updates the cache.
   upsertSetting: (params: {
     name: Setting_SettingName;
     value: SettingValue;
@@ -280,10 +277,12 @@ export type WorkspaceSlice = {
   }) => Promise<Setting>;
   loadSubscription: () => Promise<Subscription | undefined>;
   refreshSubscription: () => Promise<Subscription | undefined>;
+  startTrial: () => Promise<Subscription>;
   uploadLicense: (license: string) => Promise<Subscription | undefined>;
   currentPlan: () => PlanType;
   isFreePlan: () => boolean;
   isTrialing: () => boolean;
+  canStartTrial: () => boolean;
   isExpired: () => boolean;
   daysBeforeExpire: () => number;
   trialingDays: () => number;
@@ -315,8 +314,8 @@ export type WorkspaceSlice = {
   activeVcsUserCount: () => number;
   enableOnboarding: () => boolean;
   workspaceSetupGuideEnabled: (allowMultipleMembers?: boolean) => boolean;
-  // Always returns a profile (never undefined), mirroring the Pinia
-  // `workspaceProfile` getter so consumers read fields without null checks.
+  // Always returns a profile (never undefined) so consumers read fields
+  // without null checks.
   getWorkspaceProfile: () => WorkspaceProfileSetting;
   // Data-classification config from the DATA_CLASSIFICATION setting cache.
   classification: () => DataClassificationSetting_DataClassificationConfig[];
@@ -517,7 +516,7 @@ export type DatabaseListParams = {
   pageSize: number;
   pageToken?: string;
   // Either a pre-built CEL filter string or a structured `DatabaseFilter`
-  // (built via `buildDatabaseFilter`), matching the legacy Pinia store.
+  // (built via `buildDatabaseFilter`).
   filter?: string | DatabaseFilter;
   orderBy?: string;
   silent?: boolean;
@@ -632,9 +631,8 @@ export type SheetSlice = {
 export type SavedQueryView = "FULL" | "BASIC";
 
 export type SavedQuerySlice = {
-  // Keyed by `${uid}:${view}` (mirrors the legacy Pinia cache, which kept
-  // FULL and BASIC views separately — BASIC list entries omit the
-  // statement, FULL entries carry it).
+  // Keyed by `${uid}:${view}` so FULL and BASIC views are kept separately —
+  // BASIC list entries omit the statement, FULL entries carry it.
   savedQueriesByKey: Record<string, SavedQuery>;
   savedQueryRequests: Record<string, Promise<SavedQuery | undefined>>;
   getSavedQueryByName: (
@@ -684,7 +682,6 @@ export type SavedQuerySlice = {
    * names the rows it already holds.
    */
   patchSavedQueryFolderInCache: (names: string[], folder: string) => void;
-  savedQueryList: () => SavedQuery[];
   /**
    * The calling user's grant level per saved query, keyed by resource name.
    * Nothing caller-relative rides on the SavedQuery resource, so this is
@@ -962,10 +959,9 @@ export type PreferencesSlice = {
   saveIntroStateByKey: (params: { key: string; newState: boolean }) => void;
 };
 
-// Org policy slice (mirrors the SQL-editor-used subset of the Pinia
-// `usePolicyV1Store`): keyed by the policy resource name. Async fetchers
-// dedupe via `policyRequests`. `getQueryDataPolicyByParent` returns a stable
-// empty fallback when the policy isn't cached.
+// Org policy slice: keyed by the policy resource name. Async fetchers dedupe
+// via `policyRequests`. `getQueryDataPolicyByParent` returns a stable empty
+// fallback when the policy isn't cached.
 export type PolicySlice = {
   policyMapByName: Record<string, Policy>;
   policyRequests: Record<string, Promise<Policy | undefined>>;
@@ -991,10 +987,10 @@ export type PolicySlice = {
   deletePolicy: (name: string) => Promise<void>;
 };
 
-// Stateless issue service slice (mirrors the legacy Pinia `useIssueV1Store`):
-// thin wrapper around `issueServiceClientConnect.getIssue`. Returns the
-// fresh issue (no cache) and pre-fetches the owning project into the app
-// store so downstream code can read it synchronously.
+// Stateless issue service slice: thin wrapper around
+// `issueServiceClientConnect.getIssue`. Returns the fresh issue (no cache) and
+// pre-fetches the owning project into the app store so downstream code can
+// read it synchronously.
 export type ListIssueParams = {
   find: IssueFilter;
   pageSize?: number;
@@ -1008,9 +1004,9 @@ export type IssueSlice = {
   ) => Promise<{ nextPageToken: string; issues: Issue[] }>;
 };
 
-// Stateless SQL service slice (mirrors the legacy Pinia `useSQLStore`):
-// thin wrappers around `sqlServiceClientConnect.query` / `.export` with the
-// SQL editor's permission-denied / silent context conventions.
+// Stateless SQL service slice: thin wrappers around
+// `sqlServiceClientConnect.query` / `.export` with the SQL editor's
+// permission-denied / silent context conventions.
 export type SQLSlice = {
   query: (params: QueryRequest, signal: AbortSignal) => Promise<SQLResultSetV1>;
   exportData: (params: ExportRequest) => Promise<Uint8Array>;
@@ -1027,27 +1023,24 @@ export interface GetOrFetchDatabaseMetadataParams {
 }
 
 export type DBSchemaSlice = {
-  // Cache key: `${metadataResourceName}::${filter}::${limit}` — mirrors the
-  // Pinia store's `[name, filter, limit]` triple so filtered/sliced fetches
-  // don't collide with full-metadata fetches.
+  // Cache key: `${metadataResourceName}::${filter}::${limit}`, so
+  // filtered/sliced fetches don't collide with full-metadata fetches.
   metadataByName: Record<string, DatabaseMetadata>;
   metadataRequests: Record<string, Promise<DatabaseMetadata>>;
 
   getDatabaseMetadata: (database: string) => DatabaseMetadata;
   // Returns the cached metadata reference (or undefined when uncached)
-  // without the fresh-placeholder fallback `getDatabaseMetadata` adds.
-  // Mirrors the legacy Pinia `getDatabaseMetadataWithoutDefault` — used by
-  // consumers (e.g. SchemaPane) that need to distinguish "not loaded
-  // yet" from "loaded but empty".
+  // without the fresh-placeholder fallback `getDatabaseMetadata` adds. Used by
+  // consumers (e.g. SchemaPane) that need to distinguish "not loaded yet" from
+  // "loaded but empty".
   getCachedDatabaseMetadata: (database: string) => DatabaseMetadata | undefined;
   getSchemaList: (database: string) => SchemaMetadata[];
   getSchemaMetadata: (params: {
     database: string;
     schema: string;
   }) => SchemaMetadata | undefined;
-  // List getters mirror the legacy Pinia store API. Each composes from
-  // the cached `DatabaseMetadata` and falls back to an empty array if
-  // metadata isn't loaded yet (matching the legacy contract).
+  // List getters compose from the cached `DatabaseMetadata` and fall back to
+  // an empty array if metadata isn't loaded yet.
   getTableList: (params: {
     database: string;
     schema?: string;
@@ -1067,7 +1060,7 @@ export type DBSchemaSlice = {
   getExtensionList: (database: string) => ExtensionMetadata[];
   // Invalidates all cache entries (across filter/limit variants) for a
   // database. Used by list pages that want a fresh metadata fetch on
-  // next access (mirrors Pinia `removeCache`).
+  // next access.
   removeDatabaseMetadataCache: (database: string) => void;
   getTableMetadata: (params: {
     database: string;
@@ -1103,19 +1096,38 @@ export type DatabaseCatalogSlice = {
 };
 
 export type IssueCommentSlice = {
-  // Cache keyed by issue resource name → its comment list.
+  // Cache keyed by issue resource name → its comments. A timeline fetch stores
+  // events and root comments; a thread fetch also appends the replies.
   issueCommentsByIssue: Record<string, IssueComment[]>;
+  // Arbitrary CEL queries return results without changing the timeline cache.
   listIssueComments: (
     request: ListIssueCommentsRequest
   ) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
+  // Fetch an unfiltered timeline page and replace the cached page for this issue.
+  fetchIssueCommentTimeline: (request: {
+    parent: string;
+    pageSize?: number;
+    pageToken?: string;
+  }) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
+  // Fetch every comment of the issue: the whole timeline plus the replies of
+  // each thread root. Replaces the cache for this issue.
+  fetchIssueCommentThreads: (request: {
+    parent: string;
+  }) => Promise<IssueComment[]>;
+  // Omit `root` and `statementAnchor` for a general comment. An anchor starts
+  // a thread; `root` creates a reply in that thread.
   createIssueComment: (params: {
     issueName: string;
     comment: string;
-  }) => Promise<void>;
+    root?: string;
+    statementAnchor?: StatementAnchor;
+  }) => Promise<IssueComment>;
+  // Only the provided fields join the update mask.
   updateIssueComment: (params: {
     issueCommentName: string;
-    comment: string;
-  }) => Promise<void>;
+    comment?: string;
+    threadState?: IssueComment_ThreadState;
+  }) => Promise<IssueComment>;
   // Synchronous cache read; returns a stable empty array on miss.
   getIssueComments: (issueName: string) => IssueComment[];
 };

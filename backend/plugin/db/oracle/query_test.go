@@ -157,7 +157,7 @@ func TestAddLimitFor12cAndLaterRegressionClauseOrder(t *testing.T) {
 			require.Equal(t, tc.want, got)
 			assertSubstringsInOrder(t, got, tc.clausesInOrder)
 			if tc.validateParse {
-				_, err := plsqlparser.ParsePLSQLOmni(got)
+				_, err := plsqlparser.ParsePLSQL(got)
 				require.NoError(t, err, "rewritten SQL should remain parseable: %s", got)
 			}
 		})

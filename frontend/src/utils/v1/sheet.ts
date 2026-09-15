@@ -15,8 +15,16 @@ export const setSheetStatement = (
   sheet.contentSize = BigInt(new TextEncoder().encode(statement).length);
 };
 
+// Decoded once per content buffer: sheets are immutable and several
+// consumers read the same one, and a 2 MB decode is not free.
+const decodedStatements = new WeakMap<Uint8Array, string>();
 export const getSheetStatement = (sheet: Sheet | SavedQuery) => {
-  return new TextDecoder().decode(sheet.content);
+  let statement = decodedStatements.get(sheet.content);
+  if (statement === undefined) {
+    statement = new TextDecoder().decode(sheet.content);
+    decodedStatements.set(sheet.content, statement);
+  }
+  return statement;
 };
 
 // Whether the sheet carries its full content rather than a truncated preview

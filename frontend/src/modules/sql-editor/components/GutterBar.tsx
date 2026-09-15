@@ -9,8 +9,6 @@ import { TabItem } from "./TabItem";
  * Left gutter of the SQL Editor aside panel. Shows 4 tab buttons
  * (SAVED_QUERY, SCHEMA, HISTORY, and optionally ACCESS when the current
  * project allows JIT).
- *
- * Replaces frontend/src/views/sql-editor/AsidePanel/GutterBar/GutterBar.vue.
  */
 export function GutterBar() {
   const asidePanelTab = useSQLEditorStore((s) => s.asidePanelTab);

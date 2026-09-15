@@ -3,11 +3,9 @@ import { SchemaDiagram } from "@/modules/schema-diagram";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/DiagramPanel/DiagramPanel.vue`.
- *
  * Reads the current tab's database from the SQL Editor connection
  * store + its metadata from the app store, and forwards both
- * to `<SchemaDiagram>`. Mounted by `Panels.vue` via `ReactPageMount`.
+ * to `<SchemaDiagram>`. Mounted by `Panels`.
  */
 export function DiagramPanel() {
   const { database } = useConnectionOfCurrentSQLEditorTab();

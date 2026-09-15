@@ -9,13 +9,10 @@ export type DraggableOptions = {
 };
 
 /**
- * React port of `frontend/src/components/SchemaDiagram/common/useDraggable.ts`.
- *
  * Pointer-driven drag listener. Attaches `pointerdown` to the given
- * element and `pointermove` / `pointerup` to `window`, mirroring the
- * Vue `vueuse` setup so a drag continues even if the pointer leaves
- * the element. `screenX`/`screenY` are used (matching Vue) so the
- * delta is independent of the element's position when it's the one
+ * element and `pointermove` / `pointerup` to `window` so a drag continues
+ * even if the pointer leaves the element. `screenX`/`screenY` are used so
+ * the delta is independent of the element's position when it's the one
  * being dragged.
  *
  * Pass `null` while the element is unmounted; the hook re-attaches

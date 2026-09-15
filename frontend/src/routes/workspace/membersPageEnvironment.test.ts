@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test, vi } from "vitest";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";

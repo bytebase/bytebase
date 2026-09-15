@@ -134,7 +134,7 @@
   
     - [Advice.Level](#bytebase-v1-Advice-Level)
     - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
-    - [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat)
+    - [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
@@ -197,12 +197,14 @@
     - [RunReviewRequest](#bytebase-v1-RunReviewRequest)
     - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
     - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
+    - [StatementAnchor](#bytebase-v1-StatementAnchor)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
+    - [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState)
     - [ReviewRun.Status](#bytebase-v1-ReviewRun-Status)
     - [ReviewRun.Type](#bytebase-v1-ReviewRun-Type)
   
@@ -763,6 +765,7 @@
     - [PurchasePlan](#bytebase-v1-PurchasePlan)
     - [PurchasePlanAdditional](#bytebase-v1-PurchasePlanAdditional)
     - [PurchaseResponse](#bytebase-v1-PurchaseResponse)
+    - [StartTrialRequest](#bytebase-v1-StartTrialRequest)
     - [Subscription](#bytebase-v1-Subscription)
     - [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest)
     - [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest)
@@ -2558,7 +2561,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
-| mssql_explain_format | [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat) |  |  |
+| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
 
 
 
@@ -2814,16 +2817,22 @@ RuleType indicates the source of the linting rule.
 
 
 
-<a name="bytebase-v1-QueryOption-MSSQLExplainFormat"></a>
+<a name="bytebase-v1-QueryOption-ExplainFormat"></a>
 
-### QueryOption.MSSQLExplainFormat
+### QueryOption.ExplainFormat
+Which explain output the caller wants, for an explain request.
 
+Leave it unspecified for the engine&#39;s own default, which is the only
+output most engines have. Naming a format an engine cannot produce is
+INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+against an engine that has no explain at all.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| MSSQL_EXPLAIN_FORMAT_UNSPECIFIED | 0 | defaults to SHOWPLAN_ALL |
-| MSSQL_EXPLAIN_FORMAT_ALL | 1 | SHOWPLAN_ALL |
-| MSSQL_EXPLAIN_FORMAT_XML | 2 | SHOWPLAN_XML |
+| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. |
+| TEXT | 1 | The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server: SHOWPLAN_ALL. |
+| JSON | 2 | The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON). |
+| XML | 3 | The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server: SHOWPLAN_XML. |
 
 
 
@@ -3509,6 +3518,9 @@ A comment on an issue.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | creator | [string](#string) |  | Format: users/{email} |
+| root | [string](#string) | optional | The thread root&#39;s name, set only on replies. Immutable after creation. Format: projects/{project}/issues/{issue}/issueComments/{issueComment} Must name a thread root in the same issue, never a general comment or reply. |
+| thread_state | [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState) | optional | Present only on thread roots. Set OPEN on create to start a thread; an anchored root starts one without it. Omit root, thread_state, and statement_anchor to create a general comment. Update through the thread_state field mask to resolve or reopen. Adding a reply does not reopen a resolved thread. |
+| statement_anchor | [StatementAnchor](#bytebase-v1-StatementAnchor) |  | Optional source context on a root or reply. A reply&#39;s anchor must share the root&#39;s spec and sheet_sha256; it may narrow the range. Cannot be set on events. Immutable after creation. |
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
@@ -3596,6 +3608,7 @@ Review submission event information.
 | page_token | [string](#string) |  | A page token, received from a previous `ListIssueComments` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssueComments` must match the call that provided the page token. |
+| filter | [string](#string) |  | CEL filter over events, root comments, and replies. Supported: root == null, root == &#34;&lt;comment name&gt;&#34;, or root in [&#34;&lt;comment name&gt;&#34;, ...]. Root names must belong to parent. Empty and root == null return the timeline (events and root comments); other filters return replies only. |
 
 
 
@@ -3798,6 +3811,26 @@ When paginating, all other parameters provided to `SearchIssues` must match the 
 
 
 
+<a name="bytebase-v1-StatementAnchor"></a>
+
+### StatementAnchor
+The saved statement revision and range referenced by a comment.
+Source currency is derived by comparing the spec and hash with the current plan.
+Historical SQL is available through SheetService.GetSheet with this hash.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| spec | [string](#string) |  | The Plan.Spec.id in the issue&#39;s plan; may no longer resolve after deletion. |
+| sheet_sha256 | [string](#string) |  | SHA256 of the saved sheet, as 64 lowercase hexadecimal characters. |
+| start_position | [Position](#bytebase-v1-Position) |  | One-based lines and Unicode code-point columns. When both columns are zero, the range covers whole lines, including the end line. Otherwise both columns must be positive, start_position is inclusive, and end_position is exclusive. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateIssueCommentRequest"></a>
 
 ### UpdateIssueCommentRequest
@@ -3876,6 +3909,19 @@ Approval status values.
 | PENDING | 1 | Approval pending. |
 | APPROVED | 2 | Approved. |
 | REJECTED | 3 | Rejected. |
+
+
+
+<a name="bytebase-v1-IssueComment-ThreadState"></a>
+
+### IssueComment.ThreadState
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| THREAD_STATE_UNSPECIFIED | 0 |  |
+| OPEN | 1 |  |
+| RESOLVED | 2 |  |
 
 
 
@@ -12380,6 +12426,16 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 
 
+<a name="bytebase-v1-StartTrialRequest"></a>
+
+### StartTrialRequest
+
+
+
+
+
+
+
 <a name="bytebase-v1-Subscription"></a>
 
 ### Subscription
@@ -12617,6 +12673,7 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
 | ExportVCSProviderUsers | [ExportVCSProviderUsersRequest](#bytebase-v1-ExportVCSProviderUsersRequest) | [ExportVCSProviderUsersResponse](#bytebase-v1-ExportVCSProviderUsersResponse) | Exports active VCS users as CSV. |
 | UploadLicense | [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest) | [Subscription](#bytebase-v1-Subscription) | Uploads an enterprise license (self-hosted only). |
+| StartTrial | [StartTrialRequest](#bytebase-v1-StartTrialRequest) | [Subscription](#bytebase-v1-Subscription) | StartTrial starts a free trial for an eligible SaaS workspace. |
 | CreatePurchase | [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | CreatePurchase creates a new subscription purchase (SaaS only). Returns a Stripe Checkout URL for the user to complete payment. |
 | UpdatePurchase | [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | UpdatePurchase updates an existing subscription (SaaS only). May return a Stripe Checkout URL if payment method change is needed. |
 | CancelPurchase | [CancelPurchaseRequest](#bytebase-v1-CancelPurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | CancelPurchase cancels an active subscription (SaaS only). |
@@ -12785,9 +12842,9 @@ WorkloadIdentityConfig for API layer
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Provider configuration mode. |
-| issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
-| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
-| subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+| issuer_url | [string](#string) |  | HTTPS URL of the OIDC issuer. The exchange fetches {issuer_url}/.well-known/openid-configuration to verify a token, unless jwks_url names the key set directly. |
+| allowed_audiences | [string](#string) | repeated | Audiences a token may be minted for. A token authenticates if its `aud` claim matches any entry. |
+| subject_pattern | [string](#string) |  | The subject a token must carry, e.g. &#34;repo:owner/repo:ref:refs/heads/main&#34;. A trailing &#34;*&#34; is a prefix match. For GitHub and GitLab subjects it must complete an owner or group segment, so &#34;repo:my-org/*&#34; is accepted and &#34;repo:*&#34; is not. Other issuers write other vocabularies, so a wildcard outside those two is accepted as given. |
 | jwks_url | [string](#string) |  | Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. |
 
 

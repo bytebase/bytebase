@@ -393,9 +393,39 @@ func isAllDMLImpl(engine storepb.Engine, statement string) bool {
 
 type ChangeSummary struct {
 	ChangedResources *model.ChangedResources
-	SampleDMLS       []string
-	DMLCount         int
-	InsertCount      int
+	// DMLStatements holds the text of every DML statement whose rows can be estimated, in order.
+	// A statement that runs after the sheet changes the search path starts with WithSearchPath's
+	// prefix, which the driver splits off with SplitSearchPath and runs before the EXPLAIN.
+	DMLStatements []string
+	// DMLCount counts the DML statements, including those DMLStatements omits.
+	DMLCount int
+	// InsertCount counts the rows of INSERT ... VALUES statements.
+	InsertCount int
+}
+
+// searchPathPrefix starts the statement WithSearchPath puts before a DML statement.
+const searchPathPrefix = "SET LOCAL search_path TO "
+
+// WithSearchPath returns statement preceded by a SET LOCAL search_path statement for schemas.
+func WithSearchPath(statement string, schemas []string) string {
+	quoted := make([]string, len(schemas))
+	for i, schema := range schemas {
+		quoted[i] = `"` + strings.ReplaceAll(schema, `"`, `""`) + `"`
+	}
+	return searchPathPrefix + strings.Join(quoted, ", ") + ";\n" + statement
+}
+
+// SplitSearchPath returns the SET LOCAL search_path statement that WithSearchPath put before
+// statement, or "" when there is none, and the statement after it.
+func SplitSearchPath(statement string) (string, string) {
+	if !strings.HasPrefix(statement, searchPathPrefix) {
+		return "", statement
+	}
+	setup, rest, ok := strings.Cut(statement, ";\n")
+	if !ok {
+		return "", statement
+	}
+	return setup, rest
 }
 
 // REFACTOR(zp): Put it here to avoid circular import for now.

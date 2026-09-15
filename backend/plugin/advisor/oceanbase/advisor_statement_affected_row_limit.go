@@ -62,27 +62,26 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 				checker.handleStmt(stmt.Text, omniLine(stmt.BaseLine(), stmt.Text, n.Loc))
 			default:
 			}
-			if checker.explainCount >= common.MaximumLintExplainSize {
-				break
-			}
 		}
 	}
 
-	return checker.adviceList, nil
+	return checker.explains.AppendSkippedAdvice(checker.adviceList, checker.title, code.StatementAffectedRowExceedsLimit), nil
 }
 
 type statementAffectedRowLimitChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	maxRow     int
+	driver     *sql.DB
+	ctx        context.Context
+	explains   advisor.ExplainBudget
 }
 
 func (checker *statementAffectedRowLimitChecker) handleStmt(text string, lineNumber int) {
-	checker.explainCount++
+	if !checker.explains.Spend(common.ConvertANTLRLineToPosition(lineNumber)) {
+		return
+	}
 	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_OCEANBASE, fmt.Sprintf("EXPLAIN format=json %s", text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{

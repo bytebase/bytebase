@@ -19,12 +19,12 @@ import { useProjectByName } from "@/hooks/useProjectByName";
 import { collectPlanUpdateSpecs } from "@/lib/plan/diffPlanSpecs";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
+import { isThreadReply } from "@/stores/app/issueComment";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import {
   type IssueComment,
   IssueSchema,
-  ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { extractProjectResourceName } from "@/utils";
@@ -76,8 +76,14 @@ export function IssueDetailCommentList() {
   const issueName = page.issue?.name || page.plan?.issue || "";
   // `getIssueComments` returns a stable empty array on miss, so reading it
   // inside the selector won't loop.
-  const issueComments = useAppStore((state) =>
+  const cachedIssueComments = useAppStore((state) =>
     issueName ? state.getIssueComments(issueName) : EMPTY_ISSUE_COMMENTS
+  );
+  // Thread replies belong to the plan review surface; this list shows the
+  // timeline entries only.
+  const issueComments = useMemo(
+    () => cachedIssueComments.filter((comment) => !isThreadReply(comment)),
+    [cachedIssueComments]
   );
   const planUpdateSpecs = useMemo(
     () => collectPlanUpdateSpecs(issueComments),
@@ -127,12 +133,10 @@ export function IssueDetailCommentList() {
     const run = async () => {
       try {
         setIsRefreshing(true);
-        await useAppStore.getState().listIssueComments(
-          create(ListIssueCommentsRequestSchema, {
-            parent: issueName,
-            pageSize: 1000,
-          })
-        );
+        await useAppStore.getState().fetchIssueCommentTimeline({
+          parent: issueName,
+          pageSize: 1000,
+        });
       } finally {
         if (!canceled) {
           setIsRefreshing(false);
@@ -175,16 +179,14 @@ export function IssueDetailCommentList() {
     if (!issueName) {
       return;
     }
-    await useAppStore.getState().listIssueComments(
-      create(ListIssueCommentsRequestSchema, {
-        parent: issueName,
-        pageSize: 1000,
-      })
-    );
+    await useAppStore.getState().fetchIssueCommentTimeline({
+      parent: issueName,
+      pageSize: 1000,
+    });
   };
 
   const allowEditComment = (comment: IssueComment): boolean =>
-    canEditIssueComment(comment, currentUser.email, project);
+    canEditIssueComment(comment, project);
 
   const startEditComment = (comment: IssueComment) => {
     setActiveCommentName(comment.name);
@@ -403,7 +405,7 @@ function IssueDescriptionCommentRow({
           <div className="relative">
             <div className="bg-white pt-1.5" />
             <UserAvatar
-              className="h-7 w-7 text-[0.8rem] font-medium"
+              className="h-7 w-7 text-xs font-medium"
               size="sm"
               title={creator.title || creator.email}
             />

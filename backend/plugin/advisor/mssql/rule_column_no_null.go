@@ -34,7 +34,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 	rule := &columnNoNullOmniRule{
 		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 	}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnNoNullOmniRule struct {

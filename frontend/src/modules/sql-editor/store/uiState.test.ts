@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
 import { STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE } from "@/utils/storage-keys";
@@ -30,9 +31,9 @@ const localStorageMock = {
 
 // Inline stub for the queryHistory slice so this test stays decoupled
 // from the real `./queryHistory` module — that module pulls in
-// `@/api` and (transitively) the Pinia store layout, which can
-// create circular-import issues during test load and isn't relevant
-// to validating uiState behavior.
+// `@/api` and (transitively) `@/stores`, which can create
+// circular-import issues during test load and isn't relevant to
+// validating uiState behavior.
 const stubQueryHistorySlice = (): QueryHistorySlice => ({
   queryHistoryByKey: {},
   fetchQueryHistoryList: vi.fn().mockResolvedValue(undefined),

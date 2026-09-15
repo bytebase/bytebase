@@ -1,0 +1,176 @@
+/* Monaco decoration classes for comment threads in the statement editor.
+   Monaco applies these to its own DOM, so they live outside Tailwind. Colors
+   come from the semantic tokens in tailwind.css. */
+
+.monaco-editor .bb-thread-line--passive {
+  background: rgb(var(--color-control-bg) / 0.65);
+}
+
+.monaco-editor .bb-thread-line {
+  background: rgb(var(--color-accent) / 0.12);
+}
+
+.monaco-editor .bb-thread-line--selecting {
+  background: rgb(var(--color-info) / 0.16);
+}
+
+/* Monaco owns the 24px hit area. Every marker is an 18px tile centered in
+   it: the element paints its surface inside a transparent 3px border, the
+   icon fills the inner box, and the pseudo-element left over carries the
+   thread-count badge. Three weights tell the tiles apart: the creation
+   action is a solid accent tile, an open thread an accent tint, a resolved
+   thread grey. */
+.monaco-editor .bb-thread-glyph,
+.monaco-editor .bb-thread-add-glyph {
+  --bb-thread-background: transparent;
+  box-sizing: border-box;
+  border: 3px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--bb-thread-background);
+  background-clip: padding-box;
+  cursor: pointer;
+}
+
+.monaco-editor .bb-thread-glyph::before,
+.monaco-editor .bb-thread-add-glyph::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-color: currentColor;
+  mask: var(--bb-thread-icon) center / 14px 14px no-repeat;
+}
+
+.monaco-editor .bb-thread-glyph {
+  --bb-thread-icon: url("lucide-static/icons/message-square.svg");
+  --bb-thread-background: rgb(var(--color-accent) / 0.14);
+  color: rgb(var(--color-accent));
+}
+
+/* Two or more threads on a line: the bubble stays and a filled badge sits on
+   its top-right corner, so the number is attached to a shape and never reads
+   as a line number in the lane beside it. */
+.monaco-editor .bb-thread-glyph[class*="bb-thread-glyph--count-"]::after {
+  content: var(--bb-thread-count);
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 3px;
+  box-sizing: border-box;
+  border-radius: var(--radius-full);
+  background: rgb(var(--color-accent));
+  color: rgb(var(--color-accent-text));
+  font:
+    500 9px / 12px ui-sans-serif,
+    system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  pointer-events: none;
+}
+
+.monaco-editor .bb-thread-glyph--count-2 {
+  --bb-thread-count: "2";
+}
+
+.monaco-editor .bb-thread-glyph--count-3 {
+  --bb-thread-count: "3";
+}
+
+.monaco-editor .bb-thread-glyph--count-4 {
+  --bb-thread-count: "4";
+}
+
+.monaco-editor .bb-thread-glyph--count-5 {
+  --bb-thread-count: "5";
+}
+
+.monaco-editor .bb-thread-glyph--count-6 {
+  --bb-thread-count: "6";
+}
+
+.monaco-editor .bb-thread-glyph--count-7 {
+  --bb-thread-count: "7";
+}
+
+.monaco-editor .bb-thread-glyph--count-8 {
+  --bb-thread-count: "8";
+}
+
+.monaco-editor .bb-thread-glyph--count-9 {
+  --bb-thread-count: "9";
+}
+
+.monaco-editor .bb-thread-glyph--count-many {
+  --bb-thread-count: "9+";
+}
+
+.monaco-editor .bb-thread-glyph--resolved {
+  --bb-thread-icon: url("lucide-static/icons/message-square-check.svg");
+  --bb-thread-background: rgb(var(--color-control-bg));
+  color: rgb(var(--color-control-light));
+}
+
+.monaco-editor .bb-thread-glyph:hover,
+.monaco-editor .bb-thread-glyph--active {
+  --bb-thread-background: rgb(var(--color-accent) / 0.24);
+  color: rgb(var(--color-accent-hover));
+}
+
+.monaco-editor .bb-thread-glyph--resolved:hover,
+.monaco-editor .bb-thread-glyph--resolved.bb-thread-glyph--active {
+  --bb-thread-background: rgb(var(--color-control-bg-hover));
+  color: rgb(var(--color-control-hover));
+}
+
+/* The creation action is a solid accent tile with a bold plus, the same
+   pattern as GitHub's line-hover button: it pops in when its line is hovered
+   and darkens under the pointer. Hover changes color only: Monaco re-creates
+   the node as the pointer moves, so a size transition never settles. The
+   plus is inlined so its stroke can be heavier than the outline icon set. */
+@keyframes bb-thread-add-glyph-in {
+  from {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+}
+
+.monaco-editor .bb-thread-add-glyph {
+  --bb-thread-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M5 12h14M12 5v14'/%3E%3C/svg%3E");
+  --bb-thread-background: rgb(var(--color-accent));
+  color: rgb(var(--color-accent-text));
+  animation: bb-thread-add-glyph-in 120ms ease-out;
+}
+
+.monaco-editor .bb-thread-add-glyph:hover {
+  --bb-thread-background: rgb(var(--color-accent-hover));
+}
+
+/* The walker landed on this card (a React node inside a view zone). */
+@keyframes bb-thread-card-flash {
+  from {
+    box-shadow: 0 0 0 3px rgb(var(--color-accent) / 0.45);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgb(var(--color-accent) / 0);
+  }
+}
+
+.bb-thread-card--flash {
+  border-radius: var(--radius-sm);
+  animation: bb-thread-card-flash 1.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monaco-editor .bb-thread-add-glyph,
+  .bb-thread-card--flash {
+    animation: none;
+  }
+}
+
+/* The gutter is the creation affordance; make that discoverable. */
+.monaco-editor.bb-thread-creatable .margin-view-overlays .line-numbers {
+  cursor: pointer;
+}

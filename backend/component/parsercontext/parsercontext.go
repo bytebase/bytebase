@@ -13,6 +13,8 @@ import (
 	"context"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -78,7 +80,7 @@ func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine store
 		if err != nil {
 			return "", "", nil, err
 		}
-		var linkedMeta *storepb.LinkedDatabaseMetadata
+		var linkedMeta *metadatapb.LinkedDatabaseMetadata
 		for _, database := range databases {
 			meta, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
 				Workspace:    common.GetWorkspaceIDFromContext(ctx),

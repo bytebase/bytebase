@@ -1,56 +1,53 @@
 package mssql
 
 import (
-	"io"
 	"os"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/yamltest"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-type getDatabaseDefinitionTestCase struct {
-	Input  string `yaml:"input"`
-	Output string `yaml:"output"`
+type getDatabaseDefinitionCase struct {
+	Description string `yaml:"description"`
+	Metadata    string `yaml:"metadata"`
+	Expected    string `yaml:"expected"`
 }
 
+// TestGetDatabaseDefinition pins the DDL generated for each metadata input.
 func TestGetDatabaseDefinition(t *testing.T) {
-	tests := []getDatabaseDefinitionTestCase{}
 	const (
-		record = false
-	)
-	var (
-		filepath = "test-data/test_get_database_definition.yaml"
+		record   = false
+		filepath = "testdata/get_database_definition.yaml"
 	)
 
-	a := require.New(t)
-	yamlFile, err := os.Open(filepath)
-	a.NoError(err)
-	defer yamlFile.Close()
-
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(err)
-	a.NoError(yaml.Unmarshal(byteValue, &tests))
+	var tests []getDatabaseDefinitionCase
+	content, err := os.ReadFile(filepath)
+	require.NoError(t, err)
+	require.NoError(t, yaml.Unmarshal(content, &tests))
 
 	for i, tc := range tests {
-		var metadata storepb.DatabaseSchemaMetadata
-		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Input), &metadata)
-		a.NoError(err)
+		t.Run(tc.Description, func(t *testing.T) {
+			var metadata metadatapb.DatabaseSchemaMetadata
+			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), &metadata))
 
-		result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadata)
-		a.NoError(err)
+			definition, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, &metadata)
+			require.NoError(t, err)
 
-		if record {
-			tests[i].Output = result
-		} else {
-			a.Equal(tc.Output, result, "Test case %d", i)
-		}
+			if record {
+				tests[i].Expected = definition
+				return
+			}
+			require.Equal(t, tc.Expected, definition)
+		})
 	}
+
 	if record {
 		yamltest.Record(t, filepath, tests)
 	}

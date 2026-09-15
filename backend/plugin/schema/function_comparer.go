@@ -3,6 +3,8 @@ package schema
 import (
 	"sync"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -36,18 +38,18 @@ type FunctionComparisonResult struct {
 // FunctionComparer provides an interface for engine-specific function comparison logic.
 type FunctionComparer interface {
 	// Equal compares two functions and returns whether they are equal.
-	Equal(oldFunc, newFunc *storepb.FunctionMetadata) bool
+	Equal(oldFunc, newFunc *metadatapb.FunctionMetadata) bool
 
 	// CompareDetailed performs detailed comparison and returns migration strategy information.
 	// Returns nil if functions are equal.
-	CompareDetailed(oldFunc, newFunc *storepb.FunctionMetadata) (*FunctionComparisonResult, error)
+	CompareDetailed(oldFunc, newFunc *metadatapb.FunctionMetadata) (*FunctionComparisonResult, error)
 }
 
 // DefaultFunctionComparer provides default function comparison logic that can be used by most engines.
 type DefaultFunctionComparer struct{}
 
 // Equal compares two functions using simple definition comparison.
-func (*DefaultFunctionComparer) Equal(oldFunc, newFunc *storepb.FunctionMetadata) bool {
+func (*DefaultFunctionComparer) Equal(oldFunc, newFunc *metadatapb.FunctionMetadata) bool {
 	if oldFunc == nil || newFunc == nil {
 		return oldFunc == newFunc
 	}
@@ -57,7 +59,7 @@ func (*DefaultFunctionComparer) Equal(oldFunc, newFunc *storepb.FunctionMetadata
 }
 
 // CompareDetailed provides basic comparison for engines that don't have advanced comparison logic.
-func (*DefaultFunctionComparer) CompareDetailed(oldFunc, newFunc *storepb.FunctionMetadata) (*FunctionComparisonResult, error) {
+func (*DefaultFunctionComparer) CompareDetailed(oldFunc, newFunc *metadatapb.FunctionMetadata) (*FunctionComparisonResult, error) {
 	// For default implementation, if functions are equal, return nil
 	if functionsEqual(oldFunc, newFunc) {
 		return nil, nil

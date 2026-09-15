@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/proto"
@@ -352,7 +353,7 @@ loop:
 		originMetadata := model.NewDatabaseMetadata(dbMetadata.GetProto(), nil, nil, engine, store.IsObjectCaseSensitive(instance))
 
 		// Clone metadata for final to avoid modifying the original
-		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*storepb.DatabaseSchemaMetadata)
+		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*metadatapb.DatabaseSchemaMetadata)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
@@ -446,17 +447,25 @@ loop:
 
 				// Get SQL summary report for the statement and target database.
 				// Including affected rows.
-				summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
+				summaryReport, estimateWarning, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get SQL summary report"))
 				}
 				if summaryReport != nil {
 					checkResult.AffectedRows = summaryReport.AffectedRows
 					checkResult.RiskLevel = getRiskLevelFromStatementTypes(summaryReport.StatementTypes)
-					resp.AffectedRows += summaryReport.AffectedRows
+					resp.AffectedRows = common.AddRows(resp.AffectedRows, summaryReport.AffectedRows)
 					if checkResult.RiskLevel > resp.RiskLevel {
 						resp.RiskLevel = checkResult.RiskLevel
 					}
+				}
+				if estimateWarning != "" {
+					checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
+						Status:  v1pb.Advice_WARNING,
+						Code:    code.StatementExplainQueryFailed.Int32(),
+						Title:   plancheck.AffectedRowsEstimateIncompleteTitle,
+						Content: estimateWarning,
+					})
 				}
 				if common.EngineSupportSQLReview(engine) {
 					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, statement)
@@ -901,7 +910,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 // COMMENT statements to declare the desired schema. ALTER SEQUENCE is allowed for
 // setting ownership (OWNED BY). CREATE TRIGGER is deliberately shared: both SDL
 // pipelines fully manage triggers — the PostgreSQL dump emits CREATE TRIGGER and the pg
-// omni differ handles OpDropTrigger with a drop advice (pg/sdl_migration_omni.go), the
+// omni differ handles OpDropTrigger with a drop advice (pg/sdl_migration.go), the
 // same as MySQL — so a declared trigger is legal SDL on both engines.
 // STATEMENT_TYPE_UNSPECIFIED is (and must stay) absent from every allowlist so that a
 // parsed-but-unclassified statement fails CLOSED as disallowed.

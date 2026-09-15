@@ -191,7 +191,7 @@ describe("SslCertificateForm", () => {
     });
   });
 
-  test("keeps CA controls visible when verification is disabled", () => {
+  test("hides CA controls when verification is disabled", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -216,7 +216,9 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).toContain(
       "data-source.ssl.verification-disabled-description"
     );
-    expect(container.textContent).toContain("data-source.ssl.ca-source.self");
+    expect(container.textContent).not.toContain(
+      "data-source.ssl.ca-source.self"
+    );
     expect(container.textContent).not.toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
     );
@@ -224,6 +226,38 @@ describe("SslCertificateForm", () => {
     act(() => {
       root.unmount();
     });
+  });
+
+  test.each(["posture", "groups"])("keeps CA drafts editable after disabling verification in %s mode", (mode) => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const render = (verify: boolean) => act(() => {
+      root.render(<SslCertificateForm
+        posture={mode === "posture" ? "TLS" : undefined}
+        onPostureChange={() => {}}
+        caSource="FILE_PATH"
+        onCaSourceChange={() => {}}
+        clientCertSource="NONE"
+        onClientCertSourceChange={() => {}}
+        useSsl={true}
+        verify={verify}
+        onVerifyChange={() => {}}
+        caPath="relative.pem"
+        onCaPathChange={() => {}}
+        engineType={Engine.POSTGRES}
+      />);
+    });
+    try {
+      render(true);
+      expect(container.querySelector('input[value="relative.pem"]')).not.toBeNull();
+      render(false);
+      const input = container.querySelector<HTMLInputElement>('input[value="relative.pem"]');
+      expect(input).not.toBeNull();
+      expect(input?.disabled).toBe(false);
+    } finally {
+      act(() => root.unmount());
+    }
   });
 
   test("falls back to legacy UI when posture source props are incomplete", () => {
@@ -482,6 +516,7 @@ describe("SslCertificateForm", () => {
           hasCertPath={true}
           hasKeyPath={true}
           showKeyAndCert={true}
+          verify={true}
         />
       );
     });

@@ -139,7 +139,7 @@ export function WorkspaceSegment({
           {label && (
             <Badge
               variant={planVariant(currentPlan)}
-              className="text-[10px] px-1.5 py-0 hidden lg:block"
+              className="text-xs px-1.5 py-0 hidden lg:block"
             >
               {label}
             </Badge>
@@ -159,7 +159,7 @@ export function WorkspaceSegment({
           {label && (
             <Badge
               variant={planVariant(currentPlan)}
-              className="text-[10px] px-1.5 py-0 hidden lg:block"
+              className="text-xs px-1.5 py-0 hidden lg:block"
             >
               {label}
             </Badge>

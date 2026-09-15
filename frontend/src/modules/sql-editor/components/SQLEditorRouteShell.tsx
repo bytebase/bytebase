@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { debounce, head, omit } from "lodash-es";
+import { debounce, omit } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router, useCurrentRoute, useNavigate } from "@/app/router";
@@ -17,6 +17,10 @@ import {
   usePermissionDataReady,
 } from "@/components/ComponentPermissionGuard";
 import { useAppProject } from "@/hooks/useAppProject";
+import {
+  PRODUCT_INTRO_QUERY_KEY,
+  RUN_QUERY_PRODUCT_INTRO,
+} from "@/lib/productIntro";
 import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
 import { useClampResultRowsLimitToPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { cleanupLegacyPouchDatabases } from "@/modules/sql-editor/legacy/migration";
@@ -46,16 +50,17 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   extractSavedQueryID,
-  getDefaultPagination,
+  generateSimpleSelectAllStatement,
+  getDatabaseEngine,
   getSheetStatement,
   isSavedQueryReadableV1,
   storageKeySqlEditorSidebarTab,
 } from "@/utils";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 
-// Route-name set for the unsaved-changes leave guard. Vue Router's
-// `beforeEach` is global, so this set scopes the prompt to navigations
-// that actually leave the SQL Editor — internal SQL Editor route sync
+// Route-name set for the unsaved-changes leave guard. `router.beforeEach`
+// is global, so this set scopes the prompt to navigations that actually
+// leave the SQL Editor — internal SQL Editor route sync
 // (`navigate.replace(...)` between saved query/database/instance modules)
 // must not trigger it.
 const SQL_EDITOR_MODULES = new Set<string>([
@@ -87,36 +92,30 @@ const ASIDE_PANEL_TABS: readonly AsidePanelTab[] = [
   "ACCESS",
 ];
 
+const GUIDED_QUERY_ROW_LIMIT = 50;
+
 /**
- * React port of `frontend/src/components/ProvideSQLEditorContext.vue`.
- *
  * Owns the SQL Editor route bootstrap chain:
- *  - on mount, resolves the active project from URL params/query and
- *    `editorStore.storedLastViewedProject`, falling back to the first
- *    accessible project, then sets up the per-project tab list.
+ *  - on mount, resolves the active project from URL params/query or the
+ *    persisted last-viewed project, then sets up the per-project tab list.
  *  - hydrates the active tab from the URL: opens the saved query for
  *    `/projects/:project/savedQueries/:savedQuery`, or opens an instance/database
  *    connection for the `instances/:instance/databases/:database` form.
- *  - keeps the URL synced with the active tab's connection (Pinia →
- *    `router.replace`), so reload restores the right surface.
+ *  - keeps the URL synced with the active tab's connection (tab state →
+ *    `navigate.replace`), so reload restores the right surface.
  *  - restores the sidebar tab from localStorage (or the `?panel=`
  *    override) once `editorStore.projectContextReady` flips true.
- *  - mounts `<RoutePermissionGuardShell>` and portals the React
- *    `<SQLEditorHomePage>` into its target div once the user has
- *    permission for the matched route.
- *
- * The legacy Vue wrapper additionally rendered `<ProvideAIContext>`
- * around `<router-view>`. That outer provide is unused after Stage 21
- * — every consumer of `useAIContext()` lives inside the AI plugin tree,
- * which mounts via the React→Vue bridge with its own
- * `<AIChatToSQLBridgeHost>` re-establishing the provide locally. The
- * `aiContextEvents` emitter is a module-level singleton accessible
- * cross-framework.
+ *  - renders `<SQLEditorHomePage>` once the user has permission for the
+ *    matched route.
  */
 export function SQLEditorRouteShell() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const route = useCurrentRoute();
+  const guidedQueryRequested =
+    route.name === SQL_EDITOR_DATABASE_MODULE &&
+    route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO;
+  const previousGuidedQueryRequestedRef = useRef(guidedQueryRequested);
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
 
@@ -137,14 +136,9 @@ export function SQLEditorRouteShell() {
 
   const bootstrappedRef = useRef(false);
   // Gate the URL ⇄ connection sync until the bootstrap chain completes.
-  // The Vue version called `syncURLWithConnection()` *after* the chain;
-  // wiring it as a plain `useEffect` would otherwise fire on first
-  // render with empty Pinia values (no tab loaded yet), navigate the
-  // route to `SQL_EDITOR_HOME_MODULE`, and clobber the user's
-  // `/projects/.../databases/...` URL — which then remounts the whole
-  // React tree (route-shell `setTarget(null)` on `route.fullPath`
-  // change), blowing away the active tab and editor state. Result: Run
-  // button disabled because the current tab ends up empty/disconnected.
+  // Otherwise it fires on first render with empty store values (no tab
+  // loaded yet), navigates the route to `SQL_EDITOR_HOME_MODULE`, and
+  // clobbers the user's `/projects/.../databases/...` URL.
   const [bootstrapDone, setBootstrapDone] = useState(false);
   useEffect(() => {
     if (bootstrappedRef.current) return;
@@ -159,18 +153,6 @@ export function SQLEditorRouteShell() {
     })();
   }, []);
 
-  const fallbackToFirstProject = async () => {
-    const { projects } = await useAppStore.getState().searchProjects({
-      pageSize: getDefaultPagination(),
-      pageToken: "",
-    });
-    return (
-      head(projects)?.name ??
-      useAppStore.getState().serverInfo?.defaultProject ??
-      ""
-    );
-  };
-
   const initializeProject = async () => {
     const projectInQuery = route.query.project as string | undefined;
     const projectInParams = route.params.project as string | undefined;
@@ -181,15 +163,19 @@ export function SQLEditorRouteShell() {
     } else if (typeof projectInParams === "string" && projectInParams) {
       project = `projects/${projectInParams}`;
     } else {
-      // storedLastViewedProject is an alias for project.
+      // `project` is the persisted last-viewed project.
       project = getSQLEditorEditorState().project;
     }
 
-    let initializeSuccess = !!(await maybeSwitchProject(project));
-    if (!initializeSuccess) {
-      project = await fallbackToFirstProject();
-      initializeSuccess = !!(await maybeSwitchProject(project));
+    if (
+      !projectInQuery &&
+      !projectInParams &&
+      project === useAppStore.getState().serverInfo?.defaultProject
+    ) {
+      project = "";
     }
+
+    const initializeSuccess = !!(await maybeSwitchProject(project));
     if (!initializeSuccess) {
       getSQLEditorEditorState().setProject("");
     }
@@ -321,9 +307,38 @@ export function SQLEditorRouteShell() {
       connection.table = table;
       connection.schema ??= "";
     }
+    const isGuidedQuery =
+      route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO;
+    let statement: string | undefined;
+    if (isGuidedQuery && typeof table === "string" && table) {
+      const metadata = await useAppStore
+        .getState()
+        .getOrFetchDatabaseMetadata({
+          database: database.name,
+          silent: true,
+        })
+        .catch(() => undefined);
+      const schemaName = typeof schema === "string" ? schema : "";
+      const targetExists = metadata?.schemas.some(
+        (schemaMetadata) =>
+          schemaMetadata.name === schemaName &&
+          schemaMetadata.tables.some(
+            (tableMetadata) => tableMetadata.name === table
+          )
+      );
+      if (targetExists) {
+        statement = generateSimpleSelectAllStatement(
+          getDatabaseEngine(database),
+          schemaName,
+          table,
+          GUIDED_QUERY_ROW_LIMIT
+        );
+      }
+    }
     const tabsState = getSQLEditorTabsState();
     const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
     if (
+      !isGuidedQuery &&
       currentTab?.mode === "DATA_EXPLORER" &&
       currentTab.connection.instance === connection.instance &&
       currentTab.connection.database === connection.database &&
@@ -335,6 +350,7 @@ export function SQLEditorRouteShell() {
     tabsState.addTab({
       connection,
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+      ...(statement ? { statement } : {}),
     });
     return true;
   };
@@ -427,11 +443,18 @@ export function SQLEditorRouteShell() {
     if (await prepareConnectionParams()) return;
   };
 
+  useEffect(() => {
+    if (!bootstrapDone) return;
+    const previouslyRequested = previousGuidedQueryRequestedRef.current;
+    previousGuidedQueryRequestedRef.current = guidedQueryRequested;
+    if (!guidedQueryRequested || previouslyRequested) return;
+    void prepareConnectionParams();
+  }, [bootstrapDone, guidedQueryRequested]);
+
   // ---- URL ⇄ connection sync (reactive) --------------------------------
 
   // Subscribe to each Zustand field; the effect below fires whenever any
-  // changes (mirrors Vue's `watch([...], ..., { immediate: true })`).
-  // The dependency array does the multi-source coalescing.
+  // changes. The dependency array does the multi-source coalescing.
   const projName = useSQLEditorEditorState((s) => s.project);
   const sheetName = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.savedQuery
@@ -450,10 +473,7 @@ export function SQLEditorRouteShell() {
   );
 
   useEffect(() => {
-    // Skip until bootstrap is done — see `bootstrapDone` declaration
-    // for why firing this on first render with empty Pinia values
-    // breaks the editor (rounds the URL to HOME, remounts the React
-    // tree, ends up with `currentTab` empty + Run button disabled).
+    // Skip until bootstrap is done — see the `bootstrapDone` declaration.
     if (!bootstrapDone) return;
     void syncURL({
       projName: projName ?? "",
@@ -715,14 +735,12 @@ export function SQLEditorRouteShell() {
       return e.returnValue;
     };
     window.addEventListener("beforeunload", handler);
-    // `router.beforeEach` is a global hook — it fires on every Vue Router
-    // navigation while the SQL Editor shell is mounted, including the
-    // internal `navigate.replace(...)` calls used to sync the URL with
-    // the current connection. Without scoping, every internal route
-    // sync prompts the user when any tab is dirty, which is both an
-    // annoying loop and a regression vs. the prior component-level leave
-    // guard. Only prompt when the destination route is OUTSIDE the SQL
-    // Editor module.
+    // `router.beforeEach` is a global hook — it fires on every navigation
+    // while the SQL Editor shell is mounted, including the internal
+    // `navigate.replace(...)` calls used to sync the URL with the current
+    // connection. Without scoping, every internal route sync would prompt
+    // the user when any tab is dirty, an annoying loop. Only prompt when
+    // the destination route is OUTSIDE the SQL Editor module.
     const removeGuard = router.beforeEach((to, _from, next) => {
       const stayingInSqlEditor = SQL_EDITOR_MODULES.has(to.name as string);
       if (stayingInSqlEditor) {
@@ -769,7 +787,22 @@ export function SQLEditorRouteShell() {
       checkBasicWorkspacePermissions: true,
     });
 
-  if (!projectContextReady || !permissionReady) {
+  // The SQL Editor home route is where a project-scoped user chooses the
+  // project whose IAM policy grants access. Do not require workspace-level
+  // editor permissions before showing that selector.
+  if (!project && route.name === SQL_EDITOR_HOME_MODULE && bootstrapDone) {
+    return (
+      <div className="h-full min-h-0 flex flex-col">
+        <SQLEditorHomePage />
+      </div>
+    );
+  }
+
+  if (
+    (!project && route.name === SQL_EDITOR_HOME_MODULE && !bootstrapDone) ||
+    !projectContextReady ||
+    !permissionReady
+  ) {
     return (
       <div className="flex items-center justify-center h-screen">
         <span className="text-control-light">…</span>

@@ -221,7 +221,7 @@ function CopyJSONButton({
           size="sm"
           appearance="secondary"
           aria-label={label}
-          className="size-7 p-0"
+          className="w-7 p-0"
           onClick={handleCopy}
         >
           {copied ? (

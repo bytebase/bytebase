@@ -23,6 +23,9 @@ import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
+import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
+import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
+import { usePlacementSync } from "./hooks/usePlacementSync";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
@@ -105,6 +108,14 @@ function ProjectPlanDetailPageInner({
     specId,
     stageId,
     taskId,
+  });
+  useIssueCommentThreadsSync(page.issue);
+  const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
+  usePlacementSync({
+    issueName: page.issue?.name,
+    projectId,
+    ready: page.ready,
+    specs: page.plan.specs,
   });
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
@@ -309,7 +320,7 @@ function ProjectPlanDetailPageInner({
                   onSelect={() => selectPhase("review")}
                   status={phaseConfigs.review.status}
                   onToggle={() => page.togglePhase("review")}
-                  summary={buildReviewSummary(page.issue, t)}
+                  summary={buildReviewSummary(page.issue, t, unresolvedThreads)}
                   future={
                     <p className="mt-0.5 text-sm text-control-placeholder">
                       {t("plan.phase.review-description")}
@@ -474,7 +485,7 @@ function PhaseSection({
               <span className="textlabel uppercase">{label}</span>
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
-              <span className="shrink-0 text-[11px] text-control-placeholder">
+              <span className="shrink-0 text-xs text-control-placeholder">
                 {t("plan.phase.show-details")}
               </span>
             </div>
@@ -489,7 +500,7 @@ function PhaseSection({
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
               <span
-                className="shrink-0 cursor-pointer text-[11px] text-control-placeholder hover:text-control"
+                className="shrink-0 cursor-pointer text-xs text-control-placeholder hover:text-control"
                 onClick={onToggle}
               >
                 {t("plan.phase.hide-details")}

@@ -22,7 +22,7 @@ func (*FunctionDisallowCreateOrAlterAdvisor) Check(_ context.Context, checkCtx a
 		return nil, err
 	}
 	rule := &functionDisallowCreateOrAlterRule{OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()}}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type functionDisallowCreateOrAlterRule struct {

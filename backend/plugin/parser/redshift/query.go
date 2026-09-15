@@ -22,7 +22,7 @@ func init() {
 // - returnsData: whether all queries return data
 // - error: parsing error if the statement is invalid
 func ValidateSQLForEditor(statement string) (bool, bool, error) {
-	omniStmts, err := ParseRedshiftOmni(statement)
+	omniStmts, err := ParseRedshift(statement)
 	if err != nil {
 		return false, false, convertOmniError(err, base.Statement{
 			Text:  statement,

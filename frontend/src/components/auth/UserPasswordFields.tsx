@@ -100,7 +100,7 @@ export function UserPasswordFields(props: Props) {
               type="button"
               appearance="secondary"
               size="sm"
-              className="absolute right-1.5 size-7 p-0"
+              className="absolute right-1.5 w-7 p-0"
               onClick={() => setShowPassword((v) => !v)}
               aria-label="Toggle password visibility"
             >
@@ -134,7 +134,7 @@ export function UserPasswordFields(props: Props) {
               type="button"
               appearance="secondary"
               size="sm"
-              className="absolute right-1.5 size-7 p-0"
+              className="absolute right-1.5 w-7 p-0"
               onClick={() => setShowPassword((v) => !v)}
               aria-label="Toggle password visibility"
             >

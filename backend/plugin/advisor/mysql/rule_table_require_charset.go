@@ -38,7 +38,7 @@ func (*TableRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type tableRequireCharsetOmniRule struct {

@@ -190,7 +190,7 @@ function RequestRoleForm({
     DatabaseResource[]
   >(initialDatabaseResources);
   // CEL expression for EXPRESSION mode is held as a structured group so it
-  // can render in ExprEditor (matching the old Vue DatabaseResourceForm).
+  // can render in ExprEditor.
   const [exprGroup, setExprGroup] = useState<ConditionGroupExpr>(() =>
     wrapAsGroup(emptySimpleExpr())
   );
@@ -219,10 +219,9 @@ function RequestRoleForm({
   const selectedRoleMatchesRequiredPermissions =
     roleMatchesRequiredPermissions(selectedRole);
 
-  // Workspace-configured maximum role expiration, in days. Matches the old
-  // Vue ExpirationSelector: PROJECT_OWNER grants are exempted (project
-  // owners can request unbounded expirations), otherwise the workspace cap
-  // applies. Returns undefined when no cap is set.
+  // Workspace-configured maximum role expiration, in days. PROJECT_OWNER
+  // grants are exempted (project owners can request unbounded expirations),
+  // otherwise the workspace cap applies. Returns undefined when no cap is set.
   const workspaceProfile = useAppStore((state) => state.getWorkspaceProfile());
   const maximumRoleExpirationDays = useMemo(() => {
     if (role === PresetRoleType.PROJECT_OWNER) return undefined;
@@ -231,8 +230,7 @@ function RequestRoleForm({
     return Math.floor(Number(seconds) / (60 * 60 * 24));
   }, [workspaceProfile, role]);
 
-  // ExprEditor factor/option config — mirrors the old Vue
-  // DatabaseResourceForm config for role-grant requests.
+  // ExprEditor factor/option config for role-grant requests.
   const factorList = useMemo<Factor[]>(
     () => [
       CEL_ATTRIBUTE_RESOURCE_DATABASE,
@@ -276,8 +274,7 @@ function RequestRoleForm({
     dayjs(expirationTimestamp).unix() <= dayjs().unix();
 
   // Workspace policy may cap role expiration; block submit when the picked
-  // timestamp would exceed that cap (matches Vue ExpirationSelector which
-  // disables over-cap dates in its picker).
+  // timestamp would exceed that cap.
   const expirationExceedsMax =
     !!expirationTimestamp &&
     !!maximumRoleExpirationDays &&
@@ -288,9 +285,9 @@ function RequestRoleForm({
   const labelsMisconfigured =
     project.forceIssueLabels && project.issueLabels.length === 0;
 
-  // Match the old Vue AddProjectMemberForm behavior: reason is only required
-  // when the project enforces issue titles (where the reason becomes the
-  // title). Otherwise the title is auto-generated and the reason is optional.
+  // Reason is only required when the project enforces issue titles (where
+  // the reason becomes the title). Otherwise the title is auto-generated and
+  // the reason is optional.
   const reasonRequired = project.enforceIssueTitle;
 
   // SQL-permission roles need a database scope (and sometimes an environment
@@ -415,17 +412,17 @@ function RequestRoleForm({
       });
 
       // Collect the scoped database names so the auto-generated title shows
-      // `[db1]` / `[N databases]` instead of defaulting to `[All databases]`
-      // — matches the old Vue RoleGrantPanel behavior. EXPRESSION mode
-      // currently falls through to `[All databases]` since parsing CEL back
-      // into concrete database names would require an async round-trip.
+      // `[db1]` / `[N databases]` instead of defaulting to `[All databases]`.
+      // EXPRESSION mode currently falls through to `[All databases]` since
+      // parsing CEL back into concrete database names would require an async
+      // round-trip.
       const titleDatabaseNames =
         scopedDatabaseResources && scopedDatabaseResources.length > 0
           ? [...new Set(scopedDatabaseResources.map((r) => r.databaseFullName))]
           : undefined;
 
       // When the project enforces issue titles, the user-provided reason is
-      // treated as the title (matching the old Vue RoleGrantPanel behavior).
+      // treated as the title.
       const title = project.enforceIssueTitle
         ? `[${t("issue.title.request-role")}] ${trimmedReason}`
         : formatIssueTitle(

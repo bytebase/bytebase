@@ -12,6 +12,7 @@ import (
 	"slices"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -33,7 +34,7 @@ func RunQuerySpanCorpus(t *testing.T, engine storepb.Engine, getQuerySpan base.G
 		Statement          string `yaml:"statement,omitempty"`
 		DefaultDatabase    string `yaml:"defaultDatabase,omitempty"`
 		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
-		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata.
+		// Metadata is the protojson encoded metadatapb.DatabaseSchemaMetadata.
 		Metadata  string              `yaml:"metadata,omitempty"`
 		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
 	}
@@ -49,9 +50,9 @@ func RunQuerySpanCorpus(t *testing.T, engine storepb.Engine, getQuerySpan base.G
 	a.NoError(yaml.Unmarshal(byteValue, &testCases))
 
 	for i, tc := range testCases {
-		metadata := &storepb.DatabaseSchemaMetadata{}
+		metadata := &metadatapb.DatabaseSchemaMetadata{}
 		a.NoErrorf(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata), "cases %d", i+1)
-		getter, lister := BuildMockDatabaseMetadataGetter(engine, []*storepb.DatabaseSchemaMetadata{metadata})
+		getter, lister := BuildMockDatabaseMetadataGetter(engine, []*metadatapb.DatabaseSchemaMetadata{metadata})
 		result, err := getQuerySpan(context.TODO(), base.GetQuerySpanContext{
 			GetDatabaseMetadataFunc: getter,
 			ListDatabaseNamesFunc:   lister,
@@ -72,7 +73,7 @@ func RunQuerySpanCorpus(t *testing.T, engine storepb.Engine, getQuerySpan base.G
 
 // BuildMockDatabaseMetadataGetter builds the metadata getter/lister pair the
 // query-span tests use, keyed by database name.
-func BuildMockDatabaseMetadataGetter(engine storepb.Engine, databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+func BuildMockDatabaseMetadataGetter(engine storepb.Engine, databaseMetadata []*metadatapb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
 	return func(_ context.Context, _, databaseName string) (string, *model.DatabaseMetadata, error) {
 			m := make(map[string]*model.DatabaseMetadata)
 			for _, metadata := range databaseMetadata {
@@ -95,10 +96,10 @@ func BuildMockDatabaseMetadataGetter(engine storepb.Engine, databaseMetadata []*
 
 // GetSpan evaluates one statement's query span against the given metadata —
 // the leak-pin tests' entry point.
-func GetSpan(t *testing.T, engine storepb.Engine, getQuerySpan base.GetQuerySpanFunc, statement, defaultDatabase string, schemas []*storepb.SchemaMetadata) (*base.QuerySpan, error) {
+func GetSpan(t *testing.T, engine storepb.Engine, getQuerySpan base.GetQuerySpanFunc, statement, defaultDatabase string, schemas []*metadatapb.SchemaMetadata) (*base.QuerySpan, error) {
 	t.Helper()
-	meta := &storepb.DatabaseSchemaMetadata{Name: defaultDatabase, Schemas: schemas}
-	getter, lister := BuildMockDatabaseMetadataGetter(engine, []*storepb.DatabaseSchemaMetadata{meta})
+	meta := &metadatapb.DatabaseSchemaMetadata{Name: defaultDatabase, Schemas: schemas}
+	getter, lister := BuildMockDatabaseMetadataGetter(engine, []*metadatapb.DatabaseSchemaMetadata{meta})
 	return getQuerySpan(context.TODO(), base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -106,8 +107,8 @@ func GetSpan(t *testing.T, engine storepb.Engine, getQuerySpan base.GetQuerySpan
 }
 
 // DefaultSchemaTables wraps tables into a single default ("") schema.
-func DefaultSchemaTables(tables ...*storepb.TableMetadata) []*storepb.SchemaMetadata {
-	return []*storepb.SchemaMetadata{{Name: "", Tables: tables}}
+func DefaultSchemaTables(tables ...*metadatapb.TableMetadata) []*metadatapb.SchemaMetadata {
+	return []*metadatapb.SchemaMetadata{{Name: "", Tables: tables}}
 }
 
 // SourcesOf renders a result's source columns as sorted "[schema.]table.column"

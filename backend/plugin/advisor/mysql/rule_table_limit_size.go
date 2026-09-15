@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
@@ -45,7 +46,7 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		dbMetadata: checkCtx.DBSchema,
 	}
 
-	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 
 	// Generate advice based on collected table information.
 	rule.generateAdvice()
@@ -57,7 +58,7 @@ type tableLimitSizeOmniRule struct {
 	OmniBaseRule
 	affectedTabNames []string
 	maxRows          int
-	dbMetadata       *storepb.DatabaseSchemaMetadata
+	dbMetadata       *metadatapb.DatabaseSchemaMetadata
 }
 
 func (*tableLimitSizeOmniRule) Name() string {
@@ -116,7 +117,7 @@ func (r *tableLimitSizeOmniRule) generateAdvice() {
 	}
 }
 
-func getTabRowsByName(targetTabName string, tables []*storepb.TableMetadata) int64 {
+func getTabRowsByName(targetTabName string, tables []*metadatapb.TableMetadata) int64 {
 	for _, table := range tables {
 		if table.Name == targetTabName {
 			return table.RowCount

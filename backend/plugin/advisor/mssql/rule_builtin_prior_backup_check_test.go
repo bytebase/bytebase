@@ -13,7 +13,7 @@ import (
 func TestPrepareTransformationUsesOmniAST(t *testing.T) {
 	sql := `UPDATE p SET c1 = 1 FROM dbo.pokes AS p WHERE p.c1 = 1;
 DELETE p FROM dbo.pokes AS p WHERE p.c1 = 1;`
-	omniStmts, err := tsqlparser.ParseTSQLOmni(sql)
+	omniStmts, err := tsqlparser.ParseTSQL(sql)
 	require.NoError(t, err)
 
 	var parsedStatements []base.ParsedStatement

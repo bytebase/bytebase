@@ -23,8 +23,6 @@ type Props = {
 };
 
 /**
- * React port of `frontend/src/components/TableSchemaViewer.vue`.
- *
  * Fetches the SDL-style schema text for a database / schema / table /
  * view via `databaseServiceClientConnect.getSchemaString` and displays
  * it read-only. Header shows a `schema.object` (or `object` for

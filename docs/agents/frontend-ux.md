@@ -161,6 +161,10 @@ Use semantic utilities backed by CSS custom properties:
 Do not choose a dialog merely because the implementation is smaller. Choose the
 surface from task complexity, user context, and expected navigation.
 
+### Dialog Defaults
+
+- **Dialog sizing contract** — `DialogContent` and `AlertDialogContent` are padded (`p-6`) by default; don't add inner padding wrappers, and override with `p-*` on the content element when needed. `DialogContent` defaults to a wide content size (`max-w-[max(48rem,55vw)]`); pass `max-w-*` (and `w-*` if needed) for smaller dialogs. Keep component defaults free of responsive variants like `2xl:max-w-*` — tailwind-merge can't replace them with a caller's unprefixed utility, so they silently win on wide screens.
+
 ## Form Workflows
 
 ### Shared Form Anatomy
@@ -189,6 +193,37 @@ behavior:
   toast or a disabled button to explain invalid input.
 - Required fields, disabled state, pending state, and server errors MUST remain
   understandable without color alone.
+
+### Dense Horizontal Forms
+
+Multi-option connection forms MAY use horizontal fields through shared form
+primitives. Keep section headings above their fields rather than adding a
+third column for section titles.
+
+- Use a consistent label column and a flexible control column. Keep ordinary
+  controls at `md`; recover space through layout and progressive disclosure.
+- Stack labels based on available form width, independently of the navigation
+  sidebar breakpoint. Compound controls MAY wrap within the control column
+  before the field itself stacks.
+- Keep descriptions and validation beside the control they explain. Associate
+  labels and radio groups with accessible names in both layouts.
+- Put choices that determine subsequent fields first. Use one `Select` dropdown
+  combining authentication methods and password sources. Do not add a separate
+  password-source selector. Keep synchronization choices visible in a
+  `SegmentedControl`.
+- Reveal the selected authentication method's fields below the selector.
+  External sources reveal their configuration there. Preserve separate drafts
+  while switching sources, and submit only the active source. Reveal dependent
+  TLS, SSH, IAM, and external-source configuration below its controlling
+  choice, using nested flow rather than a framed surface inside another frame.
+- Keep security modes visible; reveal their dependent fields when selected.
+  Switches and segmented controls align to the start of their control column.
+  Keep ordinary connection rows on the 16px rhythm. Use explicit choices for
+  modes such as syncing all or selected databases.
+- Empty optional collections MAY start as an add action. Existing entries and
+  validation errors MUST remain discoverable.
+- A connection-creation footer MAY place Test Connection beside Create, with
+  Cancel on the left. Test feedback MUST remain visible and reachable.
 
 ### Page Forms
 
@@ -250,9 +285,49 @@ The required structure is:
 - Create is enabled when required fields are valid. Update additionally
   requires dirty state.
 - An always-mounted edit sheet MUST use the stable-entity ref, keyed inner form,
-  and full-entity loading pattern in `frontend/AGENTS.md`.
+  and full-entity loading pattern below.
 - Nested selects, menus, and popovers MUST use their portal option or another
   shared overlay primitive; do not raise them with an ad hoc z-index.
+
+#### Edit Sheet Lifecycle
+
+- **Edit sheets must populate from props reliably** — when a Sheet is always-mounted via `<Sheet open={open}>` (the standard pattern), `useState` initializers only run on first mount, which means switching the entity being edited (e.g. clicking Edit on a different row) won't repopulate fields. Use the **outer wrapper + inner form + stable-entity ref + key** pattern. The ref freezes the last-open entity so the inner form stays visually stable through the Sheet's close animation (which is ~200ms), while the `key` forces a fresh mount when a new entity is opened. Example from `CreateUserSheet`:
+  ```tsx
+  function CreateUserSheet(props: Props) {
+    const { open, user, onClose } = props;
+    // Freeze the entity while open=false so the inner form stays visually
+    // stable during the Sheet's close animation. Base UI's Dialog.Portal
+    // unmounts after the animation, at which point the form unmounts with it.
+    const openEntityRef = useRef(user);
+    if (open) {
+      openEntityRef.current = user;
+    }
+    const stableUser = openEntityRef.current;
+    return (
+      <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+        <SheetContent width="standard">
+          <UserForm
+            key={stableUser?.name ?? "new"}
+            user={stableUser}
+            onClose={props.onClose}
+            onCreated={props.onCreated}
+            onUpdated={props.onUpdated}
+          />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+  function UserForm({ user, ... }: InnerProps) {
+    // useState initializers read directly from `user` — always fresh
+    // because the inner component mounts fresh on every open.
+    const [title, setTitle] = useState(user?.title ?? "");
+    // ...
+  }
+  ```
+  Do **not** guard the inner form with `{open && ...}` — that would unmount it at the start of the close animation, leaving a blank sheet sliding off-screen for ~200ms. Base UI's Dialog.Portal already handles the mount/unmount lifecycle around the animation.
+- **Edit sheets must disable Update until dirty** — capture initial values at mount (inside the inner form component, so they reflect the just-mounted entity prop) and compute `isDirty` via `useMemo` comparing current state to captured initials. Gate the Update button on `isFormValid && isDirty`. Create mode is always "dirty" so Create is enabled as soon as required fields are valid.
+- **Fetch the full entity before opening an edit sheet** — list APIs often return partial objects. Synchronous cache lookups like `store.getX(id)` can return a stub with only name/email/title fields, leaving nested fields (e.g. `workloadIdentityConfig.subjectPattern`) undefined. Use the async `getOrFetchX` form in row-click handlers so the Sheet receives a fully-hydrated entity — otherwise parsed/derived fields will be empty on first edit.
+
 
 #### Sheet Widths
 
@@ -415,7 +490,7 @@ Before considering a UI workflow complete, verify:
 Run the full frontend check after UI changes:
 
 ```bash
-pnpm --dir frontend check
+pnpm --dir frontend test
 ```
 
 The UX ratchet can be run directly:

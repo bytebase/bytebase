@@ -24,7 +24,6 @@ import { convertMemberToFullname, hasWorkspacePermissionV2 } from "@/utils";
 // Lives under `@/lib/` (not `@/utils/`) so the app-store reads don't
 // drag `@/stores/app` into the `@/utils` import graph — that would
 // recreate the static ESM cycle the SQL editor connection move fixed.
-// Members surfaces are React-only, so a React-side location is natural.
 
 export const getMemberBinding = (
   member: string,

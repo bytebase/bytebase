@@ -5,6 +5,8 @@ import (
 	"io"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -17,7 +19,7 @@ func init() {
 
 // GetTableDefinition renders one table exactly as the whole-database output
 // renders it, minus the section banner.
-func GetTableDefinition(schemaName string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(schemaName string, table *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
 	var sb strings.Builder
 	if err := writeTable(&sb, convertToTableState(0, schemaName, table)); err != nil {
 		return "", err
@@ -25,7 +27,7 @@ func GetTableDefinition(schemaName string, table *storepb.TableMetadata, _ []*st
 	return sb.String(), nil
 }
 
-func GetViewDefinition(schemaName string, view *storepb.ViewMetadata) (string, error) {
+func GetViewDefinition(schemaName string, view *metadatapb.ViewMetadata) (string, error) {
 	var sb strings.Builder
 	if err := writeView(&sb, convertToViewState(0, schemaName, view)); err != nil {
 		return "", err
@@ -33,7 +35,7 @@ func GetViewDefinition(schemaName string, view *storepb.ViewMetadata) (string, e
 	return sb.String(), nil
 }
 
-func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	toState := convertToDatabaseState(to)
 
 	var sb strings.Builder
@@ -51,7 +53,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	return s, nil
 }
 
-func writeTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
+func writeTables(w io.StringWriter, to *metadatapb.DatabaseSchemaMetadata, state *databaseState) error {
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
 		schemaState, ok := state.schemas[schema.Name]
@@ -77,7 +79,7 @@ func writeTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *d
 	return nil
 }
 
-func writeViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
+func writeViews(w io.StringWriter, to *metadatapb.DatabaseSchemaMetadata, state *databaseState) error {
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
 		schemaState, ok := state.schemas[schema.Name]

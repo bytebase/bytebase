@@ -102,7 +102,7 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 		return "", errors.New("empty statement")
 	}
 
-	list, err := mysqlparser.ParseMySQLOmni(statement)
+	list, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		if stmt, procedureErr := rewriteMySQLSelectProcedureLimit(statement, limitCount); procedureErr == nil {
 			return stmt, nil

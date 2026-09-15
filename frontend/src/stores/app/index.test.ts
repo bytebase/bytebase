@@ -115,6 +115,7 @@ const mocks = vi.hoisted(() => ({
   updateRole: vi.fn(),
   deleteRole: vi.fn(),
   getSubscription: vi.fn(),
+  startTrial: vi.fn(),
   uploadLicense: vi.fn(),
   getSetting: vi.fn(),
   getProject: vi.fn(),
@@ -302,6 +303,7 @@ vi.mock("@/api", () => ({
   },
   subscriptionServiceClientConnect: {
     getSubscription: mocks.getSubscription,
+    startTrial: mocks.startTrial,
     uploadLicense: mocks.uploadLicense,
   },
   userServiceClientConnect: {
@@ -645,10 +647,10 @@ describe("useAppStore", () => {
     expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
   });
 
-  test("self-host first login uses the unified workspace setup route", async () => {
+  test("self-host first login with an IdP display name uses the unified workspace setup route", async () => {
     const firstLoginUser = createProto(UserSchema, {
       ...user,
-      title: user.email,
+      title: "Alice Doe",
     });
     mocks.login.mockResolvedValue({
       requireResetPassword: false,
@@ -661,6 +663,16 @@ describe("useAppStore", () => {
       saas: false,
     });
     mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {}),
+          },
+        }),
+      })
+    );
     mocks.getIamPolicy.mockResolvedValue(
       workspacePolicyForUser("roles/workspaceAdmin")
     );
@@ -675,7 +687,91 @@ describe("useAppStore", () => {
     });
   });
 
-  test("invited SaaS first login skips workspace setup and opens the workspace landing page", async () => {
+  test("Cloud first login with an IdP display name uses the unified workspace setup route", async () => {
+    const firstLoginUser = createProto(UserSchema, {
+      ...user,
+      title: "Alice Doe",
+    });
+    mocks.login.mockResolvedValue({
+      requireResetPassword: false,
+      user: firstLoginUser,
+    });
+    mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 1,
+      saas: true,
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {}),
+          },
+        }),
+      })
+    );
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceAdmin")
+    );
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
+      query: { redirect: "/" },
+    });
+  });
+
+  test("invited self-host user leaves root navigation to the router on first login", async () => {
+    const firstLoginUser = createProto(UserSchema, {
+      ...user,
+      title: "Bob Invited",
+    });
+    mocks.login.mockResolvedValue({
+      requireResetPassword: false,
+      user: firstLoginUser,
+    });
+    mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 2,
+      saas: false,
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getSetting.mockResolvedValue(
+      createProto(SettingSchema, {
+        value: createProto(SettingValueSchema, {
+          value: {
+            case: "workspaceProfile",
+            value: createProto(WorkspaceProfileSettingSchema, {
+              databaseChangeMode: DatabaseChangeMode.EDITOR,
+            }),
+          },
+        }),
+      })
+    );
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceMember")
+    );
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
+    expect(mocks.navigateByName).not.toHaveBeenCalledWith(
+      "auth.setup",
+      expect.anything()
+    );
+  });
+
+  test("invited SaaS first login skips workspace setup and lets the router choose the destination", async () => {
     vi.stubGlobal("location", {
       search: "?workspace=default&email=alice%40example.com",
     });
@@ -703,7 +799,7 @@ describe("useAppStore", () => {
       request: { email: user.email, password: "secret" } as never,
     });
 
-    expect(mocks.navigateByName).toHaveBeenCalledWith("workspace.landing", {
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", {
       replace: true,
     });
     expect(mocks.navigateByName).not.toHaveBeenCalledWith(
@@ -2596,6 +2692,58 @@ describe("useAppStore", () => {
     expect(store.getState().userCountLimit()).toBe(12);
   });
 
+  test("starts a trial and applies the returned subscription", async () => {
+    const trial = createProto(SubscriptionSchema, {
+      plan: PlanType.ENTERPRISE,
+      trialing: true,
+    });
+    mocks.startTrial.mockResolvedValue(trial);
+    const store = createAppStore();
+
+    const subscription = await store.getState().startTrial();
+
+    expect(mocks.startTrial).toHaveBeenCalledOnce();
+    expect(subscription).toBe(trial);
+    expect(store.getState().subscription).toBe(trial);
+  });
+
+  test("offers trial activation only to free SaaS workspaces in any mode", () => {
+    vi.stubEnv("MODE", "release-aws");
+    const store = createAppStore();
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
+      subscription: undefined,
+    });
+    expect(store.getState().canStartTrial()).toBe(false);
+
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
+      subscription: createProto(SubscriptionSchema, { plan: PlanType.FREE }),
+    });
+
+    expect(store.getState().canStartTrial()).toBe(true);
+
+    store.setState({
+      subscription: createProto(SubscriptionSchema, {
+        plan: PlanType.ENTERPRISE,
+        trialing: true,
+      }),
+    });
+    expect(store.getState().canStartTrial()).toBe(false);
+
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: false }),
+      subscription: createProto(SubscriptionSchema, { plan: PlanType.FREE }),
+    });
+    expect(store.getState().canStartTrial()).toBe(false);
+
+    vi.stubEnv("MODE", "development");
+    store.setState({
+      serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
+    });
+    expect(store.getState().canStartTrial()).toBe(true);
+  });
+
   test("loads environment settings into React state", async () => {
     mocks.getSetting.mockResolvedValue(
       createProto(SettingSchema, {
@@ -3142,8 +3290,7 @@ describe("useAppStore", () => {
         table: "users",
       }).name
     ).toBe("users");
-    // Unknown table falls back to an empty TableMetadata placeholder
-    // (mirrors the legacy Pinia store's behavior).
+    // Unknown table falls back to an empty TableMetadata placeholder.
     expect(
       store.getState().getTableMetadata({
         database: "instances/i1/databases/db1",

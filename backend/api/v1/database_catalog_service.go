@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -120,7 +121,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 
 	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get semantic types setting"))
 	}
@@ -236,7 +237,7 @@ func convertDatabaseCatalog(catalog *v1pb.DatabaseCatalog) *storepb.DatabaseConf
 // validateCatalogSchemaNames rejects empty schema names for engines that use
 // named schemas. Engines like Cassandra/MySQL where metadata has empty schema
 // names are allowed through.
-func validateCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *storepb.DatabaseSchemaMetadata) error {
+func validateCatalogSchemaNames(config *storepb.DatabaseConfig, metadata *metadatapb.DatabaseSchemaMetadata) error {
 	if !hasEmptySchemaName(config.Schemas) {
 		return nil
 	}

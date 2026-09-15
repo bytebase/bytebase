@@ -2,13 +2,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { preCreateIssue } from "@/lib/plan/issue";
+import { Engine } from "@/types/proto-es/v1/common_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  visibleDatabases: [] as { name: string; project?: string }[],
+  visibleDatabases: [] as { name: string; project?: string; instanceResource?: { engine: number } }[],
   databasesByName: {} as Record<string, { name: string }>,
   instancesByName: {} as Record<string, { name: string; title: string }>,
   routerCurrentName: "workspace.project.database",
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   scenarioId: undefined as
     | "query-data"
     | "create-database-change"
+    | "mark-sensitive-data"
     | undefined,
   removeDatabaseMetadataCache: vi.fn(),
   fetchInstance: vi.fn(),
@@ -222,6 +224,7 @@ vi.mock("@/lib/plan/issue", () => ({
 
 vi.mock("@/lib/productIntro", () => ({
   CONNECT_DATABASE_PRODUCT_INTRO: "connect-database",
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO: "mark-sensitive-data",
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO: "project-instance-synced",
   PRODUCT_INTRO_QUERY_KEY: "intro",
   useProductIntro: mocks.useProductIntro,
@@ -387,7 +390,7 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
-  test("opens the add database sheet when the project is empty but the workspace has instances", async () => {
+  test("opens the create database sheet when the project is empty but the workspace has instances", async () => {
     mocks.fetchInstanceList.mockResolvedValueOnce({
       instances: [{ name: "instances/prod", title: "Prod" }],
     });
@@ -402,7 +405,7 @@ describe("ProjectDatabasesPage", () => {
     const button = container.querySelector(
       "button:not([data-product-intro-target])"
     ) as HTMLButtonElement;
-    expect(button.textContent?.trim()).toContain("project.add-database");
+    expect(button.textContent?.trim()).toContain("database.create-database");
     expect(container.textContent).toContain(
       "project.add-database-empty-placeholder"
     );
@@ -441,7 +444,7 @@ describe("ProjectDatabasesPage", () => {
 
     expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
     expect(mocks.fetchInstanceList).toHaveBeenCalledWith({ pageSize: 2 });
-    expect(container.textContent).toContain("project.add-database");
+    expect(container.textContent).toContain("database.create-database");
     expect(container.textContent).not.toContain("project.connect-instance");
 
     act(() => {
@@ -486,7 +489,7 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
-  test("opens the add database sheet when the project has a project instance", async () => {
+  test("opens the create database sheet when the project has a project instance", async () => {
     mocks.fetchInstanceList.mockImplementation(async (params) => ({
       instances:
         params?.parent === "projects/demo"
@@ -506,7 +509,7 @@ describe("ProjectDatabasesPage", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain("project.add-database");
+    expect(container.textContent).toContain("database.create-database");
     expect(container.textContent).not.toContain("project.connect-database");
     expect(mocks.fetchInstanceList).toHaveBeenCalledWith({
       parent: "projects/demo",
@@ -650,7 +653,7 @@ describe("ProjectDatabasesPage", () => {
       "db.project-instance-syncing-title"
     );
     const button = container.querySelector("button") as HTMLButtonElement;
-    expect(button.textContent?.trim()).toContain("project.add-database");
+    expect(button.textContent?.trim()).toContain("database.create-database");
 
     await act(async () => {
       button.click();
@@ -851,6 +854,99 @@ describe("ProjectDatabasesPage", () => {
     act(() => {
       root.unmount();
     });
+  });
+
+  test("only offers marking sensitive data for its scenario", async () => {
+    mocks.scenarioId = "mark-sensitive-data";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-title"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-description"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-mark-sensitive-data-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-sql-editor-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-action"
+    );
+
+    const markButton = Array.from(container.querySelectorAll("button")).find(
+      (button) =>
+        button.textContent?.includes(
+          "db.project-instance-synced-mark-sensitive-data-action"
+        )
+    ) as HTMLButtonElement;
+    await act(async () => {
+      markButton.click();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.database.detail",
+      params: {
+        projectId: "demo",
+        instanceId: "prod",
+        databaseName: "app",
+      },
+      query: {
+        parent: "projects/demo/instances/prod",
+        intro: "mark-sensitive-data",
+      },
+      hash: "#catalog",
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test.each([false, true])("excludes Redis from the masking action (supported target: %s)", async (hasSupportedTarget) => {
+    mocks.scenarioId = "mark-sensitive-data";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [{
+      name: "projects/demo/instances/redis/databases/0",
+      project: "projects/demo",
+      instanceResource: { engine: Engine.REDIS },
+    }];
+    if (hasSupportedTarget) mocks.visibleDatabases.push({
+      name: "projects/demo/instances/prod/databases/app",
+      project: "projects/demo",
+      instanceResource: { engine: Engine.POSTGRES },
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => root.render(<ProjectDatabasesPage projectId="demo" />));
+    const button = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("db.project-instance-synced-mark-sensitive-data-action")
+    );
+    expect(button).toBeDefined();
+    expect(button?.disabled).toBe(!hasSupportedTarget);
+    await act(async () => button?.click());
+    if (hasSupportedTarget) {
+      expect(mocks.routerPush).toHaveBeenCalledWith(expect.objectContaining({
+        params: { projectId: "demo", instanceId: "prod", databaseName: "app" },
+      }));
+    } else {
+      expect(mocks.routerPush).not.toHaveBeenCalled();
+    }
+    act(() => root.unmount());
   });
 
   test("shows database next actions when requested by the setup guide", async () => {

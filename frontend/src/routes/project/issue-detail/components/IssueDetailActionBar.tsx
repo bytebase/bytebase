@@ -58,7 +58,6 @@ import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   ApproveIssueRequestSchema,
   BatchUpdateIssuesStatusRequestSchema,
-  ListIssueCommentsRequestSchema,
   RejectIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -219,12 +218,10 @@ export function IssueDetailActionBar() {
     if (!page.issue?.name) {
       return;
     }
-    await useAppStore.getState().listIssueComments(
-      create(ListIssueCommentsRequestSchema, {
-        parent: page.issue.name,
-        pageSize: 1000,
-      })
-    );
+    await useAppStore.getState().fetchIssueCommentTimeline({
+      parent: page.issue.name,
+      pageSize: 1000,
+    });
   }, [page.issue?.name]);
 
   const handleRefreshIssueDetailState = useCallback(async () => {
@@ -747,7 +744,7 @@ function IssueDetailReviewPopover({
       />
 
       <RadioGroup
-        className="flex-col items-stretch gap-y-2.5"
+        className="flex-col items-stretch gap-y-2"
         value={selectedAction}
         onValueChange={(value) => setSelectedAction(value as IssueReviewAction)}
       >
@@ -809,10 +806,7 @@ function IssueDetailReviewPopover({
   if (mobile) {
     return (
       <Sheet onOpenChange={onOpenChange} open={open}>
-        <SheetContent
-          className="w-[calc(100vw-2rem)] max-w-[32rem]"
-          width="standard"
-        >
+        <SheetContent width="panel">
           <SheetHeader>
             <SheetTitle>{t("issue.review.self")}</SheetTitle>
           </SheetHeader>

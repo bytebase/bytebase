@@ -221,7 +221,7 @@ export function PlanDetailRollbackSheet({
             </Badge>
           </div>
           {step === 1 ? (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-y-3">
               <div className="text-sm text-control-light">
                 {t("task.select-task")}
               </div>
@@ -248,7 +248,7 @@ export function PlanDetailRollbackSheet({
                           });
                         }}
                       />
-                      <div className="min-w-0 space-y-1">
+                      <div className="flex min-w-0 flex-col gap-y-1">
                         <div className="min-w-0 text-sm font-medium text-main">
                           <PlanTargetDisplay
                             showEnvironment
@@ -265,7 +265,7 @@ export function PlanDetailRollbackSheet({
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-y-4">
               <Alert
                 variant="info"
                 description={t(
@@ -284,7 +284,10 @@ export function PlanDetailRollbackSheet({
                 </div>
               ) : (
                 previews.map((preview) => (
-                  <div key={preview.taskRun.name} className="space-y-2">
+                  <div
+                    key={preview.taskRun.name}
+                    className="flex flex-col gap-y-2"
+                  >
                     <div className="text-sm font-medium text-main">
                       <PlanTargetDisplay
                         showEnvironment

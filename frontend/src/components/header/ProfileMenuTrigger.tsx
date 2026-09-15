@@ -1,6 +1,8 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import {
   ACCOUNT_ROUTE,
   isSqlEditorRouteName,
@@ -21,6 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { BlockTooltip } from "@/components/ui/tooltip";
 import {
   useIntroStateByKey,
   useOptionalCurrentUser,
@@ -146,22 +149,31 @@ export function ProfileMenuTrigger({
           />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="w-56 max-h-none overflow-visible p-0">
-          <DropdownMenuItem
-            className="block w-full px-4 py-3"
-            onClick={handleProfileNavigate}
+        <DropdownMenuContent className="w-56 max-w-[calc(100vw-1rem)] max-h-none overflow-visible p-0">
+          <BlockTooltip
+            content={
+              <>
+                <div>{currentUser?.title}</div>
+                <div>{currentUser?.email}</div>
+              </>
+            }
+            popupClassName="whitespace-normal [overflow-wrap:anywhere]"
+            render={
+              <DropdownMenuItem
+                className="w-full px-4 py-3"
+                onClick={handleProfileNavigate}
+              />
+            }
           >
-            <div className="text-left">
-              <p className="flex justify-between gap-x-2 text-sm">
-                <span className="truncate font-medium text-main">
-                  {currentUser?.title}
-                </span>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-sm font-medium text-main">
+                {currentUser?.title}
               </p>
               <p className="truncate text-sm text-control">
                 {currentUser?.email}
               </p>
             </div>
-          </DropdownMenuItem>
+          </BlockTooltip>
 
           <DropdownMenuSeparator className="mx-0" />
 
@@ -239,6 +251,15 @@ export function ProfileMenuTrigger({
           {workspaceSetupGuideEnabled ? (
             <DropdownMenuItem
               onClick={() => {
+                behaviorAnalytics.captureMetric(
+                  createBehaviorMetric("workspace setup guide opened", {
+                    properties: {
+                      journey: journey.id,
+                      scenario: scenarioId ?? "unselected",
+                      collaboration_type: workspaceUsage ?? "unselected",
+                    },
+                  })
+                );
                 resumeWorkspaceSetupGuide();
                 setOpen(false);
               }}
@@ -274,8 +295,8 @@ export function ProfileMenuTrigger({
           <DropdownMenuItem
             onClick={() => {
               setOpen(false);
-              // logout() computes the signin redirect itself (mirrors the
-              // legacy Pinia auth store) and hard-redirects to clear state.
+              // logout() computes the signin redirect itself and
+              // hard-redirects to clear state.
               void useAppStore.getState().logout();
             }}
           >

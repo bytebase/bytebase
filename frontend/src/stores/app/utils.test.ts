@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import {
@@ -5,13 +6,51 @@ import {
   IamPolicySchema,
 } from "@/types/proto-es/v1/iam_policy_pb";
 import { UserSchema } from "@/types/proto-es/v1/user_service_pb";
-import { buildDatabaseFilter, projectWideBindings } from "./utils";
+import {
+  buildDatabaseFilter,
+  buildProjectFilter,
+  getLabelFilter,
+  projectWideBindings,
+} from "./utils";
+
+const QUOTED = 'SELECT * FROM "users"';
+const ESCAPED = 'SELECT * FROM \\"users\\"';
 
 describe("buildDatabaseFilter", () => {
   test("escapes the database name query as a CEL string literal", () => {
     expect(buildDatabaseFilter({ query: 'Payroll "Q3"\\West\nArchive' })).toBe(
       'name.contains("payroll \\"q3\\"\\\\west\\narchive")'
     );
+  });
+
+  test("escapes a quote in the table filter", () => {
+    expect(buildDatabaseFilter({ table: 't"1' })).toBe(
+      'table.contains("t\\"1")'
+    );
+  });
+});
+
+describe("buildProjectFilter", () => {
+  test("escapes a quote in the free-text query", () => {
+    const filter = buildProjectFilter(QUOTED).toLowerCase();
+    expect(filter).not.toContain(QUOTED.toLowerCase());
+    expect(filter).toContain(ESCAPED.toLowerCase());
+  });
+});
+
+describe("getLabelFilter", () => {
+  // Label keys allow dashes. `labels.cost-center` parses as subtraction, so
+  // the backend never saw the key and rejected the whole filter.
+  test("uses index syntax so a dashed key survives CEL parsing", () => {
+    expect(getLabelFilter(["cost-center:eng"])).toEqual([
+      'labels["cost-center"] == "eng"',
+    ]);
+  });
+
+  test("uses index syntax for multi-value keys", () => {
+    expect(getLabelFilter(["cost-center:eng,ops"])).toEqual([
+      'labels["cost-center"] in ["eng", "ops"]',
+    ]);
   });
 });
 

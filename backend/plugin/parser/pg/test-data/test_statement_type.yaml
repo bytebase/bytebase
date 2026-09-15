@@ -129,3 +129,42 @@
 - statement: DROP MATERIALIZED VIEW mv1;
   want:
     - DROP_TABLE
+- statement: MERGE INTO t1 USING t2 ON t1.id = t2.id WHEN MATCHED THEN DELETE;
+  want:
+    - MERGE
+- statement: WITH d AS (DELETE FROM t1 RETURNING id) SELECT count(*) FROM d;
+  want:
+    - DELETE
+- statement: WITH d AS (DELETE FROM t1 RETURNING *), u AS (UPDATE t3 SET c = 1 RETURNING id) INSERT INTO t2 SELECT * FROM d;
+  want:
+    - INSERT
+    - DELETE
+    - UPDATE
+- statement: EXPLAIN ANALYZE MERGE INTO t1 USING t2 ON t1.id = t2.id WHEN MATCHED THEN DELETE;
+  want:
+    - MERGE
+- statement: EXPLAIN (ANALYZE, BUFFERS) WITH d AS (DELETE FROM t1 RETURNING id) UPDATE t2 SET c = 1 FROM d;
+  want:
+    - UPDATE
+    - DELETE
+- statement: EXPLAIN WITH d AS (DELETE FROM t1 RETURNING id) SELECT count(*) FROM d;
+  want: []
+- statement: EXPLAIN (ANALYZE FALSE) DELETE FROM t1;
+  want: []
+- statement: EXPLAIN (ANALYZE 1) DELETE FROM t1;
+  want:
+    - DELETE
+- statement: CREATE TABLE archive AS WITH d AS (DELETE FROM t1 RETURNING *) SELECT * FROM d;
+  want:
+    - CREATE_TABLE
+    - DELETE
+- statement: WITH d AS (DELETE FROM t1 RETURNING *) SELECT * INTO archive FROM d;
+  want:
+    - CREATE_TABLE
+    - DELETE
+- statement: CREATE MATERIALIZED VIEW mv AS SELECT * FROM t1;
+  want:
+    - CREATE_VIEW
+- statement: CREATE FUNCTION purge() RETURNS bigint LANGUAGE sql BEGIN ATOMIC WITH d AS (DELETE FROM t1 RETURNING 1) SELECT count(*) FROM d; END;
+  want:
+    - CREATE_FUNCTION

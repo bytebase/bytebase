@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -39,7 +40,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		return errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, maskerWorkspaceID)
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find semantic types setting")
 	}
@@ -61,6 +62,13 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error == "" && spans[i].NotFoundError != nil {
 			return errors.Errorf("masking error: %v", spans[i].NotFoundError)
 		}
+		// Reject before error handling or masking: results may contain both partial
+		// rows and an error, and unresolved lineage cannot safely mask those rows.
+		if maskingBlockedByUnresolvedColumns(spans[i], instance) {
+			return errors.Errorf(
+				"masking cannot be applied: %v, so the query was not returned",
+				spans[i].UnresolvedColumnsError)
+		}
 		// Skip masking for error result, but redact the error message if the
 		// statement touches masked columns — database errors can contain
 		// actual column values (e.g. "invalid input syntax for type integer: '<value>'").
@@ -70,6 +78,8 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
 			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
 				results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
+				// Structured error fields can contain sensitive values and SQL too.
+				results[i].DetailedError = nil
 			}
 			continue
 		}
@@ -81,6 +91,15 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	}
 
 	return nil
+}
+
+// maskingBlockedByUnresolvedColumns keeps the re-sync trigger and masking
+// refusal on the same condition, so stale metadata gets a chance to recover.
+func maskingBlockedByUnresolvedColumns(span *parserbase.QuerySpan, instance *store.InstanceMessage) bool {
+	if span == nil || span.UnresolvedColumnsError == nil || instance == nil {
+		return false
+	}
+	return common.EngineSupportMasking(instance.Metadata.GetEngine())
 }
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in
@@ -149,22 +168,23 @@ func getAlgorithmName(m masker.Masker) string {
 }
 
 func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
-	semanticTypeToMasker := map[string]masker.Masker{
-		"bb.default":         masker.NewDefaultFullMasker(),
-		"bb.default-partial": masker.NewDefaultRangeMasker(),
-	}
-	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
+	semanticTypeToMasker := make(map[string]masker.Masker)
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		if semanticType.GetId() == "bb.default" || semanticType.GetId() == "bb.default-partial" {
-			// Skip the built-in default semantic types.
-			continue
-		}
-		m, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
-		if err != nil {
-			return nil, err
+		var m masker.Masker
+		switch semanticType.GetId() {
+		case defaultSemanticTypeID:
+			m = masker.NewDefaultFullMasker()
+		case defaultPartialSemanticTypeID:
+			m = masker.NewDefaultRangeMasker()
+		default:
+			m, err = getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+			if err != nil {
+				return nil, err
+			}
 		}
 		// Only add semantic types that have actual masking configured (not NoneMasker)
 		if _, isNoneMasker := m.(*masker.NoneMasker); !isNoneMasker {
@@ -298,7 +318,7 @@ func (p *maskingDataProvider) getProject(projectID string) *store.ProjectMessage
 	return p.projects[projectID]
 }
 
-func (p *maskingDataProvider) getColumn(col *parserbase.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog) {
+func (p *maskingDataProvider) getColumn(col *parserbase.ColumnResource) (*metadatapb.ColumnMetadata, *storepb.ColumnCatalog) {
 	schema := p.schemas[col.Database]
 	if schema == nil {
 		return nil, nil

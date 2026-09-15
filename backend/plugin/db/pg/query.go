@@ -212,6 +212,21 @@ func padZeroes(rawStr string, acc int) string {
 	return rawStr
 }
 
+// explainStatement wraps statement in EXPLAIN. JSON and XML return the plan tree
+// in a single row, so a caller that renders the plan never has to parse the text
+// output. PostgreSQL produces every format this API offers, so there is nothing
+// to reject.
+func explainStatement(statement string, format v1pb.QueryOption_ExplainFormat) string {
+	switch format {
+	case v1pb.QueryOption_JSON:
+		return fmt.Sprintf("EXPLAIN (FORMAT JSON) %s", statement)
+	case v1pb.QueryOption_XML:
+		return fmt.Sprintf("EXPLAIN (FORMAT XML) %s", statement)
+	default:
+		return fmt.Sprintf("EXPLAIN %s", statement)
+	}
+}
+
 // getStatementWithResultLimit returns the statement with LIMIT clause if not exists.
 func getStatementWithResultLimit(statement string, limit int) string {
 	stmt, err := getStatementWithResultLimitInline(statement, limit)

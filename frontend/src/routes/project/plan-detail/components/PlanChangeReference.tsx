@@ -211,7 +211,7 @@ export function PlanChangeReferenceTooltip({
       </div>
       {reference.countLabel && reference.countLabel !== reference.fullLabel && (
         <div
-          className="wrap-break-word border-main-text/15 border-t pt-1.5 text-[11px] leading-4 text-main-text/70"
+          className="wrap-break-word border-main-text/15 border-t pt-1.5 text-xs leading-4 text-main-text/70"
           dir="auto"
         >
           {reference.countLabel}

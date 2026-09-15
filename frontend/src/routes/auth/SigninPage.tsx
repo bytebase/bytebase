@@ -255,13 +255,15 @@ export function SigninPage(props: SigninPageProps) {
 
         {separatedIdps.length > 0 && methods.length > 0 && (
           <AuthDivider className="my-4">
-            <span className="px-2 bg-white text-control">{t("common.or")}</span>
+            <span className="px-2 bg-background text-control">
+              {t("common.or")}
+            </span>
           </AuthDivider>
         )}
 
         {methods.length === 1 && methods[0].panel}
         {methods.length > 1 && (
-          <div className="rounded-sm border border-control-border bg-white p-4">
+          <div className="rounded-sm border border-control-border bg-background p-4">
             <Tabs defaultValue={defaultTab}>
               <TabsList>
                 {methods.map((method) => (
@@ -292,7 +294,7 @@ export function SigninPage(props: SigninPageProps) {
                 // with the localized text inside <terms>/<privacy> tags.
                 terms: (
                   <a
-                    href="https://www.bytebase.com/terms"
+                    href="https://www.bytebase.com/legal/terms"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:text-control"

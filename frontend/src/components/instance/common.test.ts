@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -7,7 +8,14 @@ import {
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { movesKeytabToNewDestination } from "./common";
+import {
+  calcDataSourceUpdateMask,
+  type DataSourceSecretField,
+  getDataSourceSecretValue,
+  movesKeytabToNewDestination,
+  updateDataSourceSecret,
+  wrapEditDataSource,
+} from "./common";
 import {
   applyLocalTlsCaSource,
   applyLocalTlsClientCertSource,
@@ -418,5 +426,59 @@ describe("Kerberos keytab resupply field classification", () => {
     expect(
       SASLConfigSchema.oneofs[0].fields.map((field) => field.name)
     ).toEqual(["krb_config"]);
+  });
+});
+
+describe("secret edit intent", () => {
+  test.each([
+    ["password", "password"],
+    ["masterPassword", "master_password"],
+    ["sshPassword", "ssh_password"],
+    ["sshPrivateKey", "ssh_private_key"],
+    ["authenticationPrivateKey", "authentication_private_key"],
+    [
+      "authenticationPrivateKeyPassphrase",
+      "authentication_private_key_passphrase",
+    ],
+  ] as [DataSourceSecretField, string][])(
+    "explicitly clears %s even when the read value is redacted",
+    (field, path) => {
+      const original = create(DataSourceSchema, { id: "admin" });
+      const untouched = wrapEditDataSource(original);
+      expect(getDataSourceSecretValue(untouched, field)).toBeUndefined();
+      expect(
+        calcDataSourceUpdateMask(original, original, untouched)
+      ).not.toContain(path);
+      const changed = updateDataSourceSecret(untouched, field, "");
+      expect(getDataSourceSecretValue(changed, field)).toBe("");
+      expect(
+        calcDataSourceUpdateMask(
+          create(DataSourceSchema, { ...original, [field]: "" }),
+          original,
+          changed
+        )
+      ).toContain(path);
+    }
+  );
+
+  test("preserves whitespace and keeps an unrelated hidden secret out of the mask", () => {
+    const original = create(DataSourceSchema, { id: "admin" });
+    const changed = updateDataSourceSecret(
+      wrapEditDataSource(original),
+      "sshPassword",
+      "  secret  "
+    );
+    expect(changed.sshPassword).toBe("  secret  ");
+    expect(getDataSourceSecretValue(changed, "sshPrivateKey")).toBeUndefined();
+    expect(
+      calcDataSourceUpdateMask(
+        create(DataSourceSchema, {
+          ...original,
+          sshPassword: changed.sshPassword,
+        }),
+        original,
+        changed
+      )
+    ).toEqual(["ssh_password"]);
   });
 });

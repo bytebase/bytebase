@@ -7,7 +7,13 @@ This file provides additional guidance to AI coding assistants working under `./
 
 ## React
 
-- All product UI code is React. Write new UI following the stack and component patterns in the root `../AGENTS.md` and the shadcn guidance below. The `pev2` adapter under `src/apps/explain-visualizer/` is the only Vue runtime exception.
+- All product UI code is React. Use React, Base UI, Tailwind CSS v4, and the shadcn-style component patterns below. There is no Vue runtime.
+
+## Localization
+
+- All user-facing UI text belongs in `src/locales/` and is consumed through `useTranslation()` from `react-i18next`.
+- Locale files must not contain empty JSON objects; remove them when encountered.
+- `src/apps/explain-visualizer/` is exempt and writes its text inline: the entry never initializes i18n, and doing so would pull every locale bundle into a standalone page that today ships 208 KB. Number formatting there is pinned to `en-US` for the same reason. Text in the main app that merely refers to the visualizer, such as the SQL editor's failure toasts, still belongs in `src/locales/`.
 
 ## UX contract
 
@@ -15,7 +21,7 @@ This file provides additional guidance to AI coding assistants working under `./
 - New shared UI and every UI element directly modified by a change MUST follow the guideline. Do not copy an adjacent legacy pattern merely because it is already present.
 - Existing feature violations in `scripts/ui-guideline-legacy-debt.json` are temporary incremental exceptions, not permission for new debt. A change may leave unrelated fingerprints in place, but MUST NOT add, mutate, or increase them.
 - Repeated measurements belong in `src/components/ui/styles.stylex.ts`; semantic colors belong in `src/assets/css/tailwind.css`; variants belong in the shared primitive's CVA definition.
-- Run `pnpm --dir frontend check` or `node frontend/scripts/check-ui-guideline.mjs` after UI work. When a change removes legacy debt, run `node frontend/scripts/check-ui-guideline.mjs --write-baseline`; the updater accepts reductions only.
+- Run `node frontend/scripts/check-ui-guideline.mjs` after UI work. When a change removes legacy debt, run `node frontend/scripts/check-ui-guideline.mjs --write-baseline`; the updater accepts reductions only.
 
 ## Source ownership
 
@@ -36,19 +42,26 @@ Use route ownership as the primary organization axis. Do not add a generic `feat
 | `src/hooks/` and `src/lib/` | Cross-cutting hooks and framework-neutral helpers only |
 | `src/types/` and `src/utils/` | Existing cross-module contracts and compatibility utilities; prefer owner-local code for new work |
 | `src/types/proto-es/` | Generated protobuf output; do not edit manually |
-| `src/apps/explain-visualizer/` | Isolated secondary entrypoint; the only source subtree allowed to use Vue through `pev2` |
+| `src/apps/explain-visualizer/` | Isolated secondary entrypoint for the query-plan viewer opened in its own tab |
 
 ### Placement and dependency rules
 
 - Start from the route in `src/app/router/routes/`, then open the matching subtree under `src/routes/`.
 - Keep route-only code beside its route. Promote code to `components`, `hooks`, or `lib` only after it has multiple independent consumers.
 - Colocate new types and helpers with their route or module. Do not grow the broad `types` and `utils` barrels without a cross-module need.
-- Put a large reusable workflow in `src/modules/<name>/`; do not spread one subsystem across `components`, `stores`, and a migration-era `views` directory.
+- Put a large reusable workflow in `src/modules/<name>/`; do not spread one subsystem across `components` and `stores`.
 - Shared code and modules must not import from `src/routes/`. Move the shared implementation to its actual owner instead.
 - Prefer direct owner imports such as `@/modules/sql-editor/store` over broad barrels when the owner is known.
+- `src/apps/explain-visualizer/` must not use primitives backed by `styles.stylex.ts`. The build appends StyleX's rules to the main app's CSS asset only (`cssInjectionTarget` in `vite.config.ts`), so a StyleX-sized control renders unstyled in that entry.
 - Historical migration plans under `docs/` describe old paths and are not current architecture guidance.
 - `CLAUDE.md` files only import their adjacent `AGENTS.md`; update `AGENTS.md` as the source of truth.
-- `pnpm --dir frontend check` runs the structure guard. Do not bypass failures by recreating retired framework, view, or singular-store namespaces.
+
+## Tests and checks
+
+- Name a test after the file it tests and keep it beside that file: `Foo.tsx` → `Foo.test.tsx`. One test file per source file — no topic suffixes such as `Foo.i18n.test.ts` or `FooLayout.test.ts`, and no `__tests__/` directories.
+- Tests import and exercise code. Never read source files as text in a test.
+- Rules about code are checks, not tests. Prefer Biome: `noRestrictedImports` in `biome.json` for import boundaries, a GritQL plugin in `biome-plugins/` for code patterns. A check Biome cannot express goes in a `scripts/check-<name>.mjs`, which `pnpm test` runs automatically; locale rules live in `scripts/check-i18n.mjs`.
+- Browser flows belong in `tests/e2e/`.
 
 ## shadcn Skill
 
@@ -61,12 +74,8 @@ React UI components live in `src/components/ui/` and follow shadcn-style pattern
 ### Rules
 
 - **Use existing UI components first** — check `src/components/ui/` before writing custom markup. Use `Badge` not styled spans, `Alert` not custom callout divs, `Separator` not `<hr>` or `border-t` divs
-- **Use semantic color tokens** — `bg-accent`, `text-control`, `border-control-border`, `bg-error`, `text-warning`, etc. Never use raw color values like `bg-blue-500`, `text-gray-600`, or `bg-red-500`. Semantic tokens are defined as CSS custom properties in `src/assets/css/tailwind.css`
-- **Use `gap-*` not `space-x-*` / `space-y-*`** — always use `flex gap-*` or `grid gap-*` for spacing between children
-- **Use `size-*` for equal dimensions** — `size-4` not `w-4 h-4`
 - **Use `truncate` shorthand** — not `overflow-hidden text-ellipsis whitespace-nowrap`
 - **Use `cn()` for conditional classes** — import from `@/lib/utils`, don't write manual template literal ternaries
-- **No manual `dark:` overrides** — use semantic tokens that handle theming
 - **Overlay layering policy** — React overlays use three semantic families: `overlay`, `agent`, and `critical`.
   - Standard app overlays mount into `overlay`.
   - The shared primitives in `src/components/ui/` are the `overlay` entry points; they are not for agent-owned or critical surfaces.
@@ -82,50 +91,8 @@ React UI components live in `src/components/ui/` and follow shadcn-style pattern
   - Menus, popovers, dropdowns, and custom floating panels should use shared `DropdownMenu`, `Popover`, `Combobox`, `Select`, `Dialog`, or `Sheet` primitives rather than ad hoc `absolute top-full z-*` markup.
   - Do not portal feature UI directly to `document.body` or a `document.body` alias. Use the shared overlay primitives, or explicitly mount into the correct semantic root with `getLayerRoot(<family>)`.
   - Do not hide raw global overlay classes in constants, imported helpers, `cn()` inputs, or interpolated template literals. A value like `fixed inset-0 z-50` is still forbidden even when it is not written directly in `className`.
-  - When adding or changing React overlays, run `pnpm --dir frontend check` or `node frontend/scripts/check-react-layering.mjs` before handing off. The scanner is intended to catch raw high-z overlays, forbidden body portals, and policy drift in feature code.
+  - When adding or changing React overlays, run `node frontend/scripts/check-layering.mjs` before handing off. The scanner is intended to catch raw high-z overlays, forbidden body portals, and policy drift in feature code.
   - The scanner is a guardrail, not proof of policy compliance. It intentionally avoids full static analysis, so imported, dynamic, shadowed, or complex expressions may be unresolved; passing the check does not permit raw global z-index overlays or body portals.
-- **Dialog vs Sheet** — use `<Sheet>` (right-side drawer, in `src/components/ui/sheet.tsx`) for **creating or editing a resource**. Use `<Dialog>` for **confirmations, single-field prompts, critical interrupts, and read-only result displays**. The dividing line is whether the user is filling out a form with multiple fields — drawers keep the parent list/table visible behind a scrim and scale to multi-section forms, while dialogs are for short blocking interactions. `AlertDialog` is the right pick for destructive confirms that need an explicit acknowledgment.
-- **Dialog sizing contract** — `DialogContent` and `AlertDialogContent` are padded (`p-6`) by default; don't add inner padding wrappers, and override with `p-*` on the content element when needed. `DialogContent` defaults to a wide content size (`max-w-[max(48rem,55vw)]`); pass `max-w-*` (and `w-*` if needed) for smaller dialogs. Keep component defaults free of responsive variants like `2xl:max-w-*` — tailwind-merge can't replace them with a caller's unprefixed utility, so they silently win on wide screens.
-- **Sheet width tiers** — `<SheetContent>` accepts a `width` variant. Pick the tier that matches the form complexity; don't inline ad-hoc widths. Add a new tier to `sheet.tsx` only if a genuinely new size is needed.
-  - `narrow` (384px) — single-field pickers, short 2–3 field forms, environment/project selection, read-only display sheets
-  - `standard` (704px, default) — 3–6 field forms, permission transfer lists, typical create/edit resources (role, user, group, service account, workload identity, request role)
-  - `wide` (832px) — forms with CEL expression builders, nested tables, multi-tab layouts, multi-step wizards (custom approval rule, data export wizard)
-- **Edit sheets must populate from props reliably** — when a Sheet is always-mounted via `<Sheet open={open}>` (the standard pattern), `useState` initializers only run on first mount, which means switching the entity being edited (e.g. clicking Edit on a different row) won't repopulate fields. Use the **outer wrapper + inner form + stable-entity ref + key** pattern. The ref freezes the last-open entity so the inner form stays visually stable through the Sheet's close animation (which is ~200ms), while the `key` forces a fresh mount when a new entity is opened. Example from `CreateUserSheet`:
-  ```tsx
-  function CreateUserSheet(props: Props) {
-    const { open, user, onClose } = props;
-    // Freeze the entity while open=false so the inner form stays visually
-    // stable during the Sheet's close animation. Base UI's Dialog.Portal
-    // unmounts after the animation, at which point the form unmounts with it.
-    const openEntityRef = useRef(user);
-    if (open) {
-      openEntityRef.current = user;
-    }
-    const stableUser = openEntityRef.current;
-    return (
-      <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-        <SheetContent width="standard">
-          <UserForm
-            key={stableUser?.name ?? "new"}
-            user={stableUser}
-            onClose={props.onClose}
-            onCreated={props.onCreated}
-            onUpdated={props.onUpdated}
-          />
-        </SheetContent>
-      </Sheet>
-    );
-  }
-  function UserForm({ user, ... }: InnerProps) {
-    // useState initializers read directly from `user` — always fresh
-    // because the inner component mounts fresh on every open.
-    const [title, setTitle] = useState(user?.title ?? "");
-    // ...
-  }
-  ```
-  Do **not** guard the inner form with `{open && ...}` — that would unmount it at the start of the close animation, leaving a blank sheet sliding off-screen for ~200ms. Base UI's Dialog.Portal already handles the mount/unmount lifecycle around the animation.
-- **Edit sheets must disable Update until dirty** — capture initial values at mount (inside the inner form component, so they reflect the just-mounted entity prop) and compute `isDirty` via `useMemo` comparing current state to captured initials. Gate the Update button on `isFormValid && isDirty`. Create mode is always "dirty" so Create is enabled as soon as required fields are valid.
-- **Fetch the full entity before opening an edit sheet** — list APIs often return partial objects. Synchronous cache lookups like `store.getX(id)` can return a stub with only name/email/title fields, leaving nested fields (e.g. `workloadIdentityConfig.subjectPattern`) undefined. Use the async `getOrFetchX` form in row-click handlers so the Sheet receives a fully-hydrated entity — otherwise parsed/derived fields will be empty on first edit.
 
 ### Component Patterns
 

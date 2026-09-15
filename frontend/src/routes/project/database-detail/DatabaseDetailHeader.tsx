@@ -19,7 +19,6 @@ import {
   hexToRgb,
 } from "@/utils";
 import { extractReleaseUID } from "@/utils/v1/release";
-import { DatabaseSQLEditorButton } from "./DatabaseSQLEditorButton";
 
 const extractDatabaseParts = (resource: string) => {
   const matches = resource.match(
@@ -155,7 +154,6 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
             <span>{extractReleaseUID(database.release)}</span>
           </div>
         )}
-        <DatabaseSQLEditorButton database={database} />
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/oracle/ast"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -48,7 +49,7 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 		checkCtx.IsObjectCaseSensitive,
 	)
 	rule.currentDatabase = checkCtx.CurrentDatabase
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ---- Types ---------------------------------------------------------------
@@ -105,7 +106,7 @@ func NewWhereDisallowFunctionsAndCalculationsRule(
 	level storepb.Advice_Status,
 	title string,
 	currentSchema string,
-	dbSchema *storepb.DatabaseSchemaMetadata,
+	dbSchema *metadatapb.DatabaseSchemaMetadata,
 	isObjectCaseSensitive bool,
 ) *WhereDisallowFunctionsAndCalculationsRule {
 	r := &WhereDisallowFunctionsAndCalculationsRule{

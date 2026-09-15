@@ -118,7 +118,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
             type="button"
             variant="default"
             size="sm"
-            className="h-7 gap-1 px-1.5"
+            className="gap-1 px-1.5"
           >
             <Play className="size-4 fill-current" />
             <span>{t("common.run")}</span>
@@ -127,7 +127,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
             type="button"
             appearance="outline"
             size="sm"
-            className="h-7 px-1.5"
+            className="px-1.5"
             aria-label={t("common.save")}
           >
             <Save className="size-4" />
@@ -136,7 +136,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
             type="button"
             appearance="outline"
             size="sm"
-            className="h-7 px-1.5"
+            className="px-1.5"
             aria-label={t("common.share")}
           >
             <Share2 className="size-4" />
@@ -203,7 +203,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
               type="button"
               appearance="outline"
               size="sm"
-              className="h-7 shrink-0 gap-1 px-2"
+              className="shrink-0 gap-1 px-2"
             >
               <Copy className="size-4" />
               <span>{t("common.copy-all")}</span>

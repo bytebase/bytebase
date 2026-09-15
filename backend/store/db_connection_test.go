@@ -1,6 +1,8 @@
 package store
 
 import (
+	"context"
+	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -71,4 +73,20 @@ func TestIsFilePath(t *testing.T) {
 			require.Equal(t, tt.want, isFilePath(tt.in))
 		})
 	}
+}
+
+// TestDBConnectionManagerGetDBAfterClose pins what a runner that outlives the
+// server sees: a nil handle here panicked the process instead of erroring.
+func TestDBConnectionManagerGetDBAfterClose(t *testing.T) {
+	t.Parallel()
+	// Nothing connects: sql.Open is lazy, and the test never queries.
+	db, err := sql.Open("pgx", "postgresql://user:password@127.0.0.1:1/db")
+	require.NoError(t, err)
+	m := &DBConnectionManager{db: db, stopWatcher: make(chan struct{})}
+
+	require.NoError(t, m.Close())
+
+	require.Same(t, db, m.GetDB())
+	require.ErrorContains(t, m.GetDB().PingContext(context.Background()), "database is closed")
+	require.NoError(t, m.Close(), "Close is idempotent")
 }

@@ -433,7 +433,7 @@ export function IssueDetailTaskRolloutActionPanel({
           </div>
 
           {(loading || permissionLoading) && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white/50">
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50">
               <Loader2 className="h-6 w-6 animate-spin text-control" />
             </div>
           )}

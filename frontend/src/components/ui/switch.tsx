@@ -39,6 +39,7 @@ interface SwitchProps {
    */
   "aria-label"?: string;
   "aria-labelledby"?: string;
+  "aria-describedby"?: string;
   id?: string;
 }
 
@@ -51,6 +52,7 @@ function Switch({
   id,
   "aria-label": ariaLabel,
   "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
 }: SwitchProps) {
   const sizeClasses = SWITCH_SIZES[size];
 
@@ -62,6 +64,7 @@ function Switch({
       id={id}
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
       className={cn(
         "relative inline-flex cursor-pointer items-center rounded-full transition-colors",
         sizeClasses.root,

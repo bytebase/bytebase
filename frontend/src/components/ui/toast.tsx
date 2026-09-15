@@ -15,11 +15,16 @@ const toastRoot = [
   "absolute right-0 bottom-0",
   "w-(--toast-width) max-w-[calc(100vw-2rem)]",
   "rounded-sm border bg-background text-main shadow-md",
-  "px-4 py-3 pr-10",
+  "px-4 py-3 pr-10 overflow-hidden origin-top",
+  // Index 0 is newest. Keep paint order independent of DOM insertion order.
+  "[z-index:calc(100_-_var(--toast-index))]",
+  // Collapsed cards share the front card's height so every sheet edge shows.
+  "h-(--toast-frontmost-height) [&[data-expanded]]:h-(--toast-height)",
   // Base UI emits these CSS vars; we use them for the stack/expand transforms.
-  "transform [transition:transform_250ms,opacity_250ms]",
-  "[transform:translateY(calc(var(--toast-swipe-movement-y,0px)+var(--toast-index)*-12px))_scale(calc(1-var(--toast-index)*0.05))]",
-  "[&[data-expanded]]:[transform:translateY(calc(var(--toast-offset-y,0px)*-1-var(--toast-index)*16px))]",
+  "[transition:transform_250ms,opacity_250ms,height_250ms]",
+  "[transform:translateY(calc(var(--toast-index)_*_-12px))_scale(calc(1_-_var(--toast-index)_*_0.05))]",
+  "[&[data-expanded]]:[transform:translateY(calc(var(--toast-offset-y,0px)_*_-1_-_var(--toast-index)_*_16px))]",
+  "[&[data-limited]]:opacity-0 [&[data-limited]]:pointer-events-none",
   "[&[data-starting-style]]:opacity-0",
   "[&[data-ending-style]]:opacity-0",
 ].join(" ");
@@ -63,10 +68,10 @@ function ToastRoot({
   const Icon = iconMap[variant];
   return (
     <BaseToast.Root {...props} className={cn(toastRoot, className)}>
-      <div className="flex items-start gap-x-3">
+      <BaseToast.Content className="flex items-start gap-x-3 [&[data-behind]:not([data-expanded])]:opacity-0">
         {showIcon ? <Icon className={iconVariants({ variant })} /> : null}
         <div className="flex min-w-0 flex-1 flex-col gap-y-1">{children}</div>
-      </div>
+      </BaseToast.Content>
     </BaseToast.Root>
   );
 }

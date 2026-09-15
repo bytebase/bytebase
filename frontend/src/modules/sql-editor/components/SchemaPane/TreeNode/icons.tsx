@@ -14,15 +14,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-/**
- * React equivalents of `frontend/src/components/Icon/*Icon.vue`. Kept
- * local to the SchemaPane port for now; will lift to a shared
- * `src/components/Icon/` directory if Stage 16+ surfaces need them.
- *
- * Each icon mirrors its Vue counterpart's tint / stroke choices so the
- * tree visually matches the Vue version 1:1.
- */
-
 type IconProps = {
   readonly className?: string;
 };
@@ -67,19 +58,18 @@ export function FunctionIcon({ className }: IconProps) {
 }
 
 /**
- * Vue's SequenceIcon is a custom 3.5×3-rem framed "123" — there is no
- * lucide equivalent, so we replicate the markup verbatim.
+ * A custom framed "123" — there is no lucide equivalent.
  */
 export function SequenceIcon({ className }: IconProps) {
   return (
     <div
       className={cn(
-        "relative w-4 h-4 inline-flex items-center justify-center text-control-light",
+        "relative h-4 w-5 inline-flex items-center justify-center text-control-light",
         className
       )}
     >
-      <div className="border-y border-current w-3.5 h-3 inline-flex items-center justify-center text-[7px] overflow-visible whitespace-nowrap font-semibold">
-        <span className="leading-3">123</span>
+      <div className="inline-flex h-4 w-5 items-center justify-center border-y border-current overflow-visible whitespace-nowrap text-xs font-semibold leading-4">
+        <span>123</span>
       </div>
     </div>
   );
@@ -108,9 +98,6 @@ export function TablePartitionIcon({ className }: IconProps) {
   );
 }
 
-/**
- * Vue's PrimaryKeyIcon is heroicons/key in `text-amber-500`.
- */
 export function PrimaryKeyIcon({ className }: IconProps) {
   return (
     <div className={cn("relative overflow-hidden", baseSize, className)}>
@@ -119,17 +106,10 @@ export function PrimaryKeyIcon({ className }: IconProps) {
   );
 }
 
-/**
- * Vue's IndexIcon is tabler/diamonds (a 3-diamond cluster) — lucide's
- * Diamond is a single diamond which is close enough at 12-14px.
- */
 export function IndexIcon({ className }: IconProps) {
   return <Diamond className={cn("w-3 h-3", className)} />;
 }
 
-/**
- * Vue's CheckIcon is tabler/check at 12px in `text-control-light`.
- */
 export function CheckConstraintIcon({ className }: IconProps) {
   return <Check className={cn("size-3.5 text-control-light", className)} />;
 }

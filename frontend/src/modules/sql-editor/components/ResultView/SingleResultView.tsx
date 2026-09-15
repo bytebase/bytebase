@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
+import { useAppStore } from "@/stores/app";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -43,11 +44,16 @@ import type {
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
-  QueryOption_MSSQLExplainFormat,
+  QueryOption_ExplainFormat,
   QueryOptionSchema,
   type QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { createExplainToken } from "@/utils/pev2";
+import {
+  createExplainToken,
+  isVisualizerEngine,
+  VISUALIZER_EXPLAIN_FORMATS,
+  type VisualizerEngine,
+} from "@/utils/explainToken";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
@@ -88,6 +94,9 @@ export interface SingleResultViewProps {
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
+  // Which statement of a multi-statement run this view shows. Visualize re-runs
+  // the whole statement and has to pick the same one back out.
+  resultIndex?: number;
   showExport: boolean;
   // Optional tooltip shown on the export button — used to explain when the
   // export is enabled by a JIT access grant despite the policy disabling it.
@@ -272,6 +281,7 @@ function SingleResultViewInner({
   params,
   database,
   result,
+  resultIndex = 0,
   showExport,
   exportTooltip,
   maximumExportCount,
@@ -387,24 +397,49 @@ function SingleResultViewInner({
     [flattenedTableView, result.masked]
   );
 
-  const showVisualizeButton =
-    (engine === Engine.POSTGRES ||
-      engine === Engine.MSSQL ||
-      engine === Engine.SPANNER) &&
-    !!params.explain;
+  const showVisualizeButton = isVisualizerEngine(engine) && !!params.explain;
 
   const visualizeExplain = async () => {
-    let token: string | undefined;
+    if (!isVisualizerEngine(engine)) return;
     try {
-      if (engine === Engine.POSTGRES || engine === Engine.SPANNER) {
-        token = getExplainTokenFromResult(result, engine);
-      } else if (engine === Engine.MSSQL) {
-        token = await getExplainTokenForMSSQL(database, params, runQuery);
+      // Spanner explains only as JSON, so the result on screen already is the
+      // plan the visualizer reads; the other engines show a readable plan.
+      const token =
+        engine === Engine.SPANNER
+          ? getExplainTokenFromResult(result, engine)
+          : await getExplainToken(
+              database,
+              params,
+              runQuery,
+              engine,
+              resultIndex
+            );
+      if (!token) {
+        // The plan is fetched by a second query, so a failure here is invisible
+        // unless we say so — the button would otherwise do nothing.
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("sql-editor.visualize-explain-failed"),
+        });
+        return;
       }
-      if (!token) return;
-      window.open(`/explain-visualizer.html?token=${token}`, "_blank");
+      // A blocked popup returns null rather than throwing, and the wait for the
+      // plan can outlast the click's user activation, so say so instead of
+      // leaving the button looking dead.
+      if (!window.open(`/explain-visualizer.html?token=${token}`, "_blank")) {
+        useAppStore.getState().notify({
+          module: "bytebase",
+          style: "CRITICAL",
+          title: t("sql-editor.visualize-explain-blocked"),
+        });
+      }
     } catch {
-      // ignore
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("sql-editor.visualize-explain-failed"),
+      });
     }
   };
 
@@ -427,8 +462,7 @@ function SingleResultViewInner({
     // `result.statement`. The backend may rewrite the result statement
     // with an auto-appended LIMIT for non-admin reads — re-running that
     // rewritten SQL on the export path silently caps the exported rows
-    // even when the user asks for more. This matches the Vue
-    // multi-result export, which already used `executeParams.statement`.
+    // even when the user asks for more.
     onExport?.({ ...req, statement: params.statement });
   };
 
@@ -549,7 +583,7 @@ function SingleResultViewInner({
                   onValueChange={setDocumentViewMode}
                   ariaLabel={t("sql-editor.result-view-mode")}
                   appearance="soft"
-                  className="h-7 flex-nowrap"
+                  className="flex-nowrap"
                   size="xs"
                 />
               ) : supportsTableViewToggle ? (
@@ -575,7 +609,7 @@ function SingleResultViewInner({
                 <Button
                   size="sm"
                   appearance="outline"
-                  className="h-7 px-2 text-control border-control-border hover:bg-control-bg-hover"
+                  className="px-2 text-control border-control-border hover:bg-control-bg-hover"
                   onClick={handleCopyJSON}
                 >
                   <CopyIcon className="size-4" />
@@ -677,7 +711,7 @@ function SingleResultViewInner({
                     <Button
                       size="sm"
                       appearance="secondary"
-                      className="size-7 p-0"
+                      className="w-7 p-0"
                       onClick={clearSearchCandidate}
                     >
                       <XIcon className="size-4" />
@@ -689,9 +723,9 @@ function SingleResultViewInner({
                   <Tooltip content={t("sql-editor.scroll-to-top")}>
                     <div className="rounded-full shadow bg-background">
                       <Button
-                        size="sm"
+                        size="md"
                         appearance="secondary"
-                        className="size-9 p-0 rounded-full"
+                        className="w-9 p-0 rounded-full"
                         onClick={() => scrollToRow(0)}
                       >
                         <ArrowUpIcon className="size-4" />
@@ -701,9 +735,9 @@ function SingleResultViewInner({
                   <Tooltip content={t("sql-editor.scroll-to-bottom")}>
                     <div className="rounded-full shadow bg-background">
                       <Button
-                        size="sm"
+                        size="md"
                         appearance="secondary"
-                        className="size-9 p-0 rounded-full"
+                        className="w-9 p-0 rounded-full"
                         onClick={() => scrollToRow(rows.length - 1)}
                       >
                         <ArrowDownIcon className="size-4" />
@@ -796,24 +830,30 @@ function getExplainTokenFromResult(
   return createExplainToken({ statement, explain, engine });
 }
 
-async function getExplainTokenForMSSQL(
+// getExplainToken re-runs the explain in the format the visualizer reads for
+// the engine, whatever format the grid is showing, so the plan is only fetched
+// when the user asks for it.
+async function getExplainToken(
   database: Database,
   params: SQLEditorQueryParams,
-  runQuery: ReturnType<typeof useExecuteSQL>["runQuery"]
+  runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
+  engine: VisualizerEngine,
+  resultIndex: number
 ): Promise<string | undefined> {
+  const explainFormat =
+    QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
       ...params,
-      queryOption: create(QueryOptionSchema, {
-        mssqlExplainFormat:
-          QueryOption_MSSQLExplainFormat.MSSQL_EXPLAIN_FORMAT_XML,
-      }),
+      queryOption: create(QueryOptionSchema, { explainFormat }),
     },
     status: "PENDING",
   };
   await runQuery(database, context);
-  const result = context.resultSet?.results[0];
+  // The re-run replays every statement the user submitted, so take the one this
+  // view is showing rather than the first.
+  const result = context.resultSet?.results[resultIndex];
   if (!result) return undefined;
-  return getExplainTokenFromResult(result, Engine.MSSQL);
+  return getExplainTokenFromResult(result, engine);
 }

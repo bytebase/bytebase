@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/assert"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -374,15 +375,15 @@ func TestGetResourcesTiDB(t *testing.T) {
 
 	getDatabaseMetadataFunc := func(_ context.Context, _ string, _ string) (string, *model.DatabaseMetadata, error) {
 		dbMeta := model.NewDatabaseMetadata(
-			&storepb.DatabaseSchemaMetadata{
+			&metadatapb.DatabaseSchemaMetadata{
 				Name: "",
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "cbt_plans",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{Name: "id", Type: "bigint"},
 								},
 							},

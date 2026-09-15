@@ -101,10 +101,7 @@ export type SQLReviewState = {
   ) => Promise<SQLReviewPolicy | undefined>;
 };
 
-// Standalone Zustand port of the legacy Pinia `useSQLReviewStore`. Tag-policy
-// reads/writes go through the app store's policy slice (no Pinia dependency).
-// The Vue composables (useSQLReviewPolicyList etc.) had no consumers and are
-// dropped.
+// Tag-policy reads/writes go through the app store's policy slice.
 export const useSQLReviewStore = create<SQLReviewState>()((set, get) => ({
   reviewPolicyList: [],
 

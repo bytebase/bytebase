@@ -23,13 +23,13 @@ import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useUserByIdentifier } from "@/hooks/useAppState";
 import {
   diffEntryKey,
   diffPlanSpecsForEvent,
   type SpecDiffEntry,
 } from "@/lib/plan/diffPlanSpecs";
 import { cn } from "@/lib/utils";
-import { extractUserEmail } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
   getIssueCommentType,
@@ -95,11 +95,10 @@ function isDoneRolloutComment(
 }
 
 // Whether the current user may edit a comment: only user comments and approval
-// decisions that carry a note are editable, and only by their author or someone
-// with the update permission. Shared so both activity surfaces gate edits alike.
+// decisions that carry a note are editable, and only with the update
+// permission. Shared so every activity surface gates edits alike.
 export function canEditIssueComment(
   comment: IssueComment,
-  currentUserEmail: string,
   project: Parameters<typeof hasProjectPermissionV2>[0] | undefined
 ): boolean {
   if (!project) {
@@ -112,16 +111,46 @@ export function canEditIssueComment(
   if (!editable) {
     return false;
   }
-  if (currentUserEmail === extractUserEmail(comment.creator)) {
-    return true;
-  }
+  // Edits go through UpdateIssueComment, which the server gates on the update
+  // permission alone; authorship grants nothing there.
   return hasProjectPermissionV2(project, "bb.issueComments.update");
 }
 
-// The timeline row shell shared by every activity item: the connector line, the
-// left icon gutter, and a body that is a bordered card when present or a
-// borderless inline header when absent. This is the single source of the
-// activity-item layout for both the issue-detail list and the review timeline.
+// The timeline row frame shared by every activity item: the connector line
+// and the left icon gutter around an arbitrary body.
+export function ActivityRowFrame({
+  children,
+  icon,
+  id,
+  isLast,
+}: {
+  children: ReactNode;
+  icon: ReactNode;
+  id?: string;
+  isLast: boolean;
+}) {
+  return (
+    <li>
+      <div className="relative pb-3" id={id}>
+        {!isLast && (
+          <span
+            aria-hidden="true"
+            className="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
+          />
+        )}
+        <div className="relative flex items-start">
+          <div className="pt-1.5">{icon}</div>
+          <div className="min-w-0 flex-1">{children}</div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+// The timeline row shell shared by every activity item: the frame plus a
+// body that is a bordered card when present or a borderless inline header
+// when absent. This is the single source of the activity-item layout for
+// both the issue-detail list and the review timeline.
 export function ActivityRowShell({
   body,
   header,
@@ -138,43 +167,33 @@ export function ActivityRowShell({
   subjectSuffix?: ReactNode;
 }) {
   return (
-    <li>
-      <div className="relative pb-3" id={id}>
-        {!isLast && (
-          <span
-            aria-hidden="true"
-            className="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
-          />
+    <ActivityRowFrame icon={icon} id={id} isLast={isLast}>
+      <div
+        className={cn(
+          "overflow-hidden rounded-sm border",
+          body
+            ? "ml-3 border-block-border bg-background"
+            : "ml-1 border-transparent"
         )}
-        <div className="relative flex items-start">
-          <div className="pt-1.5">{icon}</div>
-          <div className="min-w-0 flex-1">
-            <div
-              className={cn(
-                "overflow-hidden rounded-sm border",
-                body
-                  ? "ml-3 border-block-border bg-background"
-                  : "ml-1 border-transparent"
-              )}
-            >
-              <div className={cn("px-3 py-2", body && "bg-control-bg/50")}>
-                <div className="flex items-center justify-between">
-                  <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm">
-                    {header}
-                  </div>
-                  {subjectSuffix}
-                </div>
-              </div>
-              {body && (
-                <div className="wrap-break-word border-block-border border-t px-3 py-2 text-control text-sm [&_.markdown-body>div>:first-child]:mt-0 [&_.markdown-body>div>:last-child]:mb-0">
-                  {body}
-                </div>
-              )}
+      >
+        <div className={cn("px-3 py-2", body && "flex flex-col gap-y-2")}>
+          <div
+            className={cn(
+              "flex items-center justify-between gap-x-2",
+              body && "min-h-6"
+            )}
+          >
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm">
+              {header}
             </div>
+            {subjectSuffix}
           </div>
+          {body && (
+            <div className="wrap-break-word text-control text-sm">{body}</div>
+          )}
         </div>
       </div>
-    </li>
+    </ActivityRowFrame>
   );
 }
 
@@ -197,10 +216,8 @@ function IssueCommentHeader({
   similarCount,
 }: ActivityProps & { similarCount?: number }) {
   const { t } = useTranslation();
-  const creatorUser = useAppStore((state) =>
-    state.getUserByIdentifier(comment.creator)
-  );
-  const creator = creatorUser ?? unknownUser(comment.creator);
+  const creator =
+    useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
   const createdTs = getTimeForPbTimestampProtoEs(comment.createTime, 0);
   const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime, 0);
   const isEdited =
@@ -223,7 +240,10 @@ function IssueCommentHeader({
         </Badge>
       )}
       {comment.createTime && (
-        <HumanizeTs className="text-control-light" ts={createdTs / 1000} />
+        <HumanizeTs
+          className="text-xs text-control-light"
+          ts={createdTs / 1000}
+        />
       )}
       {isEdited && (
         <span className="text-control-light text-xs">
@@ -276,10 +296,6 @@ export function IssueCommentRow({
 }
 
 function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
-  const creatorUser = useAppStore((state) =>
-    state.getUserByIdentifier(comment.creator)
-  );
-  const user = creatorUser ?? unknownUser(comment.creator);
   const commentType = getIssueCommentType(comment);
 
   if (
@@ -345,10 +361,17 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
     return <ActivityBadge spec={PLAN_CHANGE_ICON.edited} />;
   }
 
+  return <ActivityUserIcon principal={comment.creator} />;
+}
+
+// The avatar badge of a user-authored activity row.
+export function ActivityUserIcon({ principal }: { principal: string }) {
+  const user = useUserByIdentifier(principal) ?? unknownUser(principal);
   return (
     <div className="relative pl-0.5">
       <div className="flex size-7 items-center justify-center rounded-full bg-background ring-4 ring-background">
         <UserAvatar
+          colorSeed={user.email}
           className="font-medium"
           size="sm"
           title={user.title || user.email}
@@ -588,7 +611,7 @@ function IssueCommentActionSentence({
     );
   }
 
-  return <span className="wrap-break-word min-w-0 text-control" />;
+  return null;
 }
 
 function SpecDiffRow({
@@ -824,7 +847,7 @@ function SpecChangeRow({
       {children}{" "}
       {specRoute != null ? (
         <RouterLink
-          className="inline-flex min-w-0 items-center gap-1 text-main transition-colors hover:text-accent hover:underline focus-visible:text-accent focus-visible:underline focus-visible:outline-hidden"
+          className="inline-flex min-w-0 items-center gap-1 text-main no-underline transition-colors hover:text-accent hover:no-underline focus-visible:text-accent"
           to={specRoute}
         >
           {chip}

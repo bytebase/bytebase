@@ -537,7 +537,7 @@
   margin-top: 0 !important;
 }
 
-.markdown-body > p:last-of-type {
+.markdown-body > :last-child {
   margin-bottom: 0 !important;
 }
 

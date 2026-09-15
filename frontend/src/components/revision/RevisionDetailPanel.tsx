@@ -121,7 +121,7 @@ export function RevisionDetailPanel({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-2 text-sm text-gray-400">
+      <div className="flex items-center justify-center py-2 text-sm text-control-placeholder">
         <LoaderCircle className="h-4 w-4 animate-spin" />
       </div>
     );
@@ -177,7 +177,7 @@ export function RevisionDetailPanel({
             {withheld && !statement ? (
               <Alert variant="info" description={withheldMessage} />
             ) : (
-              <div className="overflow-hidden rounded-sm border border-control-border bg-white">
+              <div className="overflow-hidden rounded-sm border border-control-border bg-background">
                 <ReadonlyMonaco
                   content={statement}
                   className="relative h-auto max-h-[600px] min-h-[120px]"

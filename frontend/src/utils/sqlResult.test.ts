@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create as createProto } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import {

@@ -34,7 +34,7 @@ func (*TableCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor.
 
 	rule := NewTableCommentConventionRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, commentPayload)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // TableCommentConventionRule is the rule implementation for table comment convention.

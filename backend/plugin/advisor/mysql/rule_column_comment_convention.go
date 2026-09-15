@@ -41,7 +41,7 @@ func (*ColumnCommentConventionAdvisor) Check(_ context.Context, checkCtx advisor
 		payload: commentPayload,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnCommentConventionOmniRule struct {

@@ -28,17 +28,15 @@ function SQLEditorThemeRoot({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 /**
- * React port of `frontend/src/layouts/SQLEditorLayout.vue`.
- *
  * Top-level shell of the SQL Editor route. Wires up:
- *  - the legacy `#sql-editor-debug` teleport target (kept hidden by
- *    default, used by debug `<li>` strings the inner shells emit).
+ *  - the `#sql-editor-debug` portal target (kept hidden by default, used
+ *    by the debug `<li>` strings `SQLEditorHomePage` emits).
  *  - the React `<BannersWrapper>` at the top.
  *  - workspace-scope common data via `useEnsureWorkspaceCommonData()` —
  *    the same hook DashboardFrameShell uses. Idempotent loaders make it
  *    safe to call from every top-level shell.
  *  - `useSQLEditorAutoSave()` — the 2-second debounced saved query
- *    auto-save extracted from the legacy `provideSQLEditorContext()`.
+ *    auto-save.
  *  - the `<SQLEditorRouteShell>` once `ready` flips true.
  */
 export function SQLEditorLayout() {
@@ -67,12 +65,11 @@ export function SQLEditorLayout() {
 
   return (
     <div className="relative h-screen overflow-hidden flex flex-col">
-      {/* Hidden teleport target inherited from the Vue layout. The debug
-          probes (Pinia connection, current tab, etc.) write `<li>`
-          children into this list when manually unhidden via dev tools.
-          The fixed positioning is enough to stack above the editor body
-          on its own — the legacy `z-999999` was a layering escape hatch
-          that the React layering policy now forbids. */}
+      {/* Hidden debug target. The debug probes (disconnected state, current
+          tab id and connection) write `<li>` children into this list;
+          unhide it via dev tools to inspect them. The fixed positioning is
+          enough to stack above the editor body on its own — the React
+          layering policy forbids a raw global `z-index` here. */}
       <ul
         id="sql-editor-debug"
         className="hidden text-xs font-mono max-h-[33vh] max-w-[40vw] overflow-auto fixed bottom-0 right-0 p-2 bg-background/50 border border-control-border"

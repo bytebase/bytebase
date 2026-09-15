@@ -1,0 +1,59 @@
+[
+  {
+    "Plan": {
+      "Node Type": "ModifyTable",
+      "Operation": "Insert",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Relation Name": "big_archive",
+      "Alias": "big_archive",
+      "Startup Cost": 180.00,
+      "Total Cost": 280.00,
+      "Plan Rows": 0,
+      "Plan Width": 0,
+      "Plans": [
+        {
+          "Node Type": "ModifyTable",
+          "Operation": "Delete",
+          "Parent Relationship": "InitPlan",
+          "Subplan Name": "CTE moved",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Relation Name": "big",
+          "Alias": "big",
+          "Startup Cost": 0.00,
+          "Total Cost": 180.00,
+          "Plan Rows": 5000,
+          "Plan Width": 6,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "big",
+              "Alias": "big",
+              "Startup Cost": 0.00,
+              "Total Cost": 180.00,
+              "Plan Rows": 5000,
+              "Plan Width": 6,
+              "Filter": "(s_id <= 50)"
+            }
+          ]
+        },
+        {
+          "Node Type": "CTE Scan",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "CTE Name": "moved",
+          "Alias": "moved",
+          "Startup Cost": 0.00,
+          "Total Cost": 100.00,
+          "Plan Rows": 5000,
+          "Plan Width": 12
+        }
+      ]
+    }
+  }
+]

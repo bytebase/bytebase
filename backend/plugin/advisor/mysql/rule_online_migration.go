@@ -73,7 +73,7 @@ func (*OnlineMigrationAdvisor) Check(ctx context.Context, checkCtx advisor.Conte
 		changedResources: make(map[string]base.SchemaResource),
 	}
 
-	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 
 	adviceList := rule.GetAdviceList()
 

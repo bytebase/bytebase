@@ -56,8 +56,7 @@ type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
  * Top-level wrapper for one database's query result. Routes to a single
  * `SingleResultView`, a multi-tab list of them, an empty placeholder, or
  * a result-set-level error view (with optional access-request /
- * sync-database affordances). Phase 7's caller swap mounts this via
- * `<ReactPageMount page="ResultView" ...>`.
+ * sync-database affordances).
  */
 export function ResultView({
   executeParams,
@@ -81,8 +80,8 @@ export function ResultView({
   const getOrFetchPolicyByParentAndType = useAppStore(
     (s) => s.getOrFetchPolicyByParentAndType
   );
-  // Settings pages populate the env policy in Pinia, but the SQL editor
-  // route doesn't fetch it on its own — self-fetch so the read above
+  // Settings pages populate the env policy in the app store, but the SQL
+  // editor route doesn't fetch it on its own — self-fetch so the read above
   // resolves to a real policy (not the empty fallback) and copy-disable
   // gates fire even on a fresh editor visit.
   useEffect(() => {
@@ -334,6 +333,7 @@ export function ResultView({
                       params={executeParams}
                       database={database}
                       result={result}
+                      resultIndex={resultSet.results.indexOf(result)}
                       showExport={false}
                       maximumExportCount={queryDataPolicy?.maximumResultRows}
                       onExport={handleExport}
@@ -381,8 +381,8 @@ export function ResultView({
 }
 
 // ---------------------------------------------------------------------------
-// Inline SyncDatabaseButton — replaces frontend/src/components/DatabaseDetail/SyncDatabaseButton.vue.
-// Only used by the result-set-level "resource not found" branch above.
+// Inline SyncDatabaseButton — only used by the result-set-level
+// "resource not found" branch above.
 // ---------------------------------------------------------------------------
 
 function SyncDatabaseButton({ database }: { database: Database }) {

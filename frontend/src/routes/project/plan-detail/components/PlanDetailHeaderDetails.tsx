@@ -140,7 +140,7 @@ export function PlanDetailHeaderDetails() {
   };
 
   return (
-    <div className="shrink-0 border-b bg-white px-2 pb-2 sm:px-4">
+    <div className="shrink-0 border-b bg-background px-2 pb-2 sm:px-4">
       <div className="min-w-0">
         {editingDescription ? (
           <div className="py-2">

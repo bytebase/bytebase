@@ -15,13 +15,9 @@ func TestDataSource(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := provisionPgInstance(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
@@ -164,13 +160,9 @@ func TestDataSourceValidateOnly(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := provisionPgInstance(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
@@ -225,7 +217,7 @@ func TestDataSourceValidateOnly(t *testing.T) {
 	a.NoError(err)
 
 	// Create the role so the validate-only connection test with the updated username succeeds.
-	_, err = pgContainer.db.Exec(`CREATE ROLE "updated-user" LOGIN PASSWORD 'root-password'`)
+	_, err = pgContainer.GetDB().Exec(`CREATE ROLE "updated-user" LOGIN PASSWORD 'root-password'`)
 	a.NoError(err)
 
 	updateResp, err = ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{

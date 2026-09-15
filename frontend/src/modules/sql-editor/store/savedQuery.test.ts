@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
 import { getSQLEditorEditorState } from "./editor";
@@ -12,9 +13,7 @@ import type {
 } from "./types";
 
 // Stub all the other slices so the composed store satisfies
-// `SQLEditorStoreState` without dragging in real implementations
-// (the saved query slice itself dynamic-imports the Pinia stores it
-// needs, so we only have to mock those via vi.mock below).
+// `SQLEditorStoreState` without dragging in real implementations.
 const stubUIStateSlice = (): UIStateSlice => ({
   asidePanelTab: "SAVED_QUERY",
   showConnectionPanel: false,
@@ -61,21 +60,7 @@ const stubWebTerminalSlice = (): WebTerminalSlice => ({
   updateWebTerminalQueryItem: vi.fn(),
 });
 
-const piniaMocks = vi.hoisted(() => ({
-  editorStore: {
-    project: "projects/default",
-    projectContextReady: true,
-    setProject: vi.fn(),
-  },
-  projectStore: {
-    getOrFetchProjectByName: vi.fn(),
-  },
-  projectIamPolicyStore: {
-    getOrFetchProjectIamPolicy: vi.fn(),
-  },
-  tabStore: {
-    updateTab: vi.fn(),
-  },
+const mocks = vi.hoisted(() => ({
   savedQueryStore: {
     getSavedQueryByName: vi.fn(),
     patchSavedQuery: vi.fn(),
@@ -85,24 +70,10 @@ const piniaMocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/stores", () => ({
-  useProjectV1Store: () => piniaMocks.projectStore,
-}));
+vi.mock("@/stores", () => ({}));
 
 vi.mock("@/stores/app", () => ({
-  useAppStore: { getState: () => piniaMocks.savedQueryStore },
-}));
-
-vi.mock("@/modules/sql-editor/store/tab-vue-state", () => ({
-  useSQLEditorTabStore: () => piniaMocks.tabStore,
-}));
-
-vi.mock("./editor-vue-state", () => ({
-  useSQLEditorVueState: () => piniaMocks.editorStore,
-}));
-
-vi.mock("@/stores/modules/v1/projectIamPolicy", () => ({
-  useProjectIamPolicyStore: () => piniaMocks.projectIamPolicyStore,
+  useAppStore: { getState: () => mocks.savedQueryStore },
 }));
 
 vi.mock("@/modules/sql-editor/model/events", () => ({
@@ -132,15 +103,13 @@ const makeStore = (): StoreApi<SQLEditorStoreState> =>
   }));
 
 beforeEach(() => {
-  Object.values(piniaMocks).forEach((store) => {
+  Object.values(mocks).forEach((store) => {
     Object.values(store).forEach((v) => {
       if (typeof v === "function" && "mockReset" in v) {
         (v as { mockReset: () => void }).mockReset();
       }
     });
   });
-  piniaMocks.editorStore.project = "projects/default";
-  piniaMocks.editorStore.projectContextReady = true;
   getSQLEditorEditorState().setProject("");
   getSQLEditorTabsState().reset();
 });
@@ -188,12 +157,12 @@ describe("saved query save slice — maybeUpdateSavedQuery", () => {
       statement: "select * from SUPPORDERS_VIS.items",
       status: "DIRTY",
     });
-    piniaMocks.savedQueryStore.getSavedQueryByName.mockReturnValue({
+    mocks.savedQueryStore.getSavedQueryByName.mockReturnValue({
       name: tab.savedQuery,
       title: "Cosmos saved query",
       database: tab.connection.database,
     });
-    piniaMocks.savedQueryStore.patchSavedQuery.mockResolvedValue({
+    mocks.savedQueryStore.patchSavedQuery.mockResolvedValue({
       name: tab.savedQuery,
     });
 
@@ -217,14 +186,14 @@ describe("saved query save slice — maybeSwitchProject", () => {
     const store = makeStore();
     const result = await store.getState().maybeSwitchProject("not-a-project");
     expect(result).toBeUndefined();
-    expect(piniaMocks.editorStore.setProject).not.toHaveBeenCalled();
+    expect(getSQLEditorEditorState().project).toBe("");
   });
 
   test("switches project even when project IAM policy preload fails", async () => {
-    piniaMocks.savedQueryStore.fetchProject.mockResolvedValue({
+    mocks.savedQueryStore.fetchProject.mockResolvedValue({
       name: "projects/aaa",
     });
-    piniaMocks.savedQueryStore.loadProjectIamPolicy.mockRejectedValue(
+    mocks.savedQueryStore.loadProjectIamPolicy.mockRejectedValue(
       new Error("permission denied")
     );
 

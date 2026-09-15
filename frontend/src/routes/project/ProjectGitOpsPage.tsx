@@ -22,10 +22,10 @@ import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
+  GENERATED_WORKFLOW_AUDIENCE,
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
   parseWorkloadIdentitySubjectPattern,
-  resolveWorkloadIdentityProviderType,
 } from "@/utils";
 import { WorkloadIdentitySelect } from "./WorkloadIdentitySelect";
 
@@ -88,12 +88,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   }, [selectedIdentityName, fetchWorkloadIdentity]);
 
   const selectedConfig = selectedIdentity?.workloadIdentityConfig;
-  // Resolved, not read raw: the subject parser below resolves an unspecified
-  // provider from the subject prefix, so a page reading the stored enum would
-  // render this identity's repository under a "provider does not match" alert
-  // naming no provider.
   const selectedProviderType =
-    resolveWorkloadIdentityProviderType(selectedConfig) ??
+    selectedConfig?.providerType ??
     WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED;
 
   // Sync active tab with selected identity provider
@@ -565,8 +561,7 @@ function FileHintLabel({
   repository?: string;
 }) {
   const { t } = useTranslation();
-  // Split the translated template around placeholders to render bold spans,
-  // matching the Vue <i18n-t> slot behavior.
+  // Split the translated template around placeholders to render bold spans.
   const raw = t("gitops.workflow.file-hint", {
     filePath: "\x00FP\x00",
     repository: "\x00RP\x00",
@@ -686,7 +681,7 @@ const exchangeTokenStep = (indent: string) =>
 ${indent}  id: bytebase-auth
 ${indent}  run: |
 ${indent}    OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
-${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=bytebase" | jq -r '.value')
+${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${GENERATED_WORKFLOW_AUDIENCE}" | jq -r '.value')
 ${indent}    ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
 ${indent}      -H "Content-Type: application/json" \\
 ${indent}      -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
@@ -837,7 +832,7 @@ sql-review:
   image: bytebase/bytebase-action
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: bytebase
+      aud: ${GENERATED_WORKFLOW_AUDIENCE}
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
@@ -849,7 +844,7 @@ create-rollout:
   image: bytebase/bytebase-action
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: bytebase
+      aud: ${GENERATED_WORKFLOW_AUDIENCE}
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   script:
@@ -864,7 +859,7 @@ deploy-to-test:
   needs: [create-rollout]
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: bytebase
+      aud: ${GENERATED_WORKFLOW_AUDIENCE}
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   environment: test
@@ -879,7 +874,7 @@ deploy-to-prod:
   needs: [deploy-to-test]
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: bytebase
+      aud: ${GENERATED_WORKFLOW_AUDIENCE}
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   environment: prod

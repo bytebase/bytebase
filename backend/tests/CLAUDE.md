@@ -1,1 +1,1 @@
-@../store/AGENTS.md
+@AGENTS.md

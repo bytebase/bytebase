@@ -34,7 +34,7 @@ func (*ColumnAddNotNullColumnRequireDefaultAdvisor) Check(_ context.Context, che
 
 	rule := NewColumnAddNotNullColumnRequireDefaultRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ColumnAddNotNullColumnRequireDefaultRule is the rule implementation for adding not null column requires default.

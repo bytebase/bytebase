@@ -40,7 +40,7 @@ interface AddMessageOptions extends Message {
 
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
 
-// --- Pure helper functions (copied verbatim from Pinia store) ---
+// --- Pure helper functions ---
 
 const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
   const now = Date.now();

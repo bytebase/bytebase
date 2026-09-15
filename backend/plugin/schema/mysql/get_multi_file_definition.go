@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -32,7 +34,7 @@ func init() {
 // multi-file always agree. Objects are emitted sorted by name for deterministic output,
 // and each declarative rollout re-concatenates the files (action/command/file.go) into
 // the identical statement set the single-file dump carries.
-func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *storepb.DatabaseSchemaMetadata) (*schema.MultiFileSchemaResult, error) {
+func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *metadatapb.DatabaseSchemaMetadata) (*schema.MultiFileSchemaResult, error) {
 	if len(metadata.Schemas) == 0 {
 		return &schema.MultiFileSchemaResult{Files: []schema.File{}}, nil
 	}
@@ -47,14 +49,14 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *sto
 
 	// Tables (sorted by name). Each file is the writeTableSDL output — CREATE TABLE with
 	// inline indexes / foreign keys / checks / generated columns / partitions / options.
-	tables := make([]*storepb.TableMetadata, 0, len(sm.Tables))
+	tables := make([]*metadatapb.TableMetadata, 0, len(sm.Tables))
 	for _, table := range sm.Tables {
 		if table.SkipDump {
 			continue
 		}
 		tables = append(tables, table)
 	}
-	slices.SortFunc(tables, func(a, b *storepb.TableMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(tables, func(a, b *metadatapb.TableMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, table := range tables {
 		var buf strings.Builder
 		if err := writeTableSDL(&buf, table); err != nil {
@@ -67,14 +69,14 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *sto
 	}
 
 	// Functions (sorted by name). writeRoutineSDL emits the canonical CREATE FUNCTION.
-	functions := make([]*storepb.FunctionMetadata, 0, len(sm.Functions))
+	functions := make([]*metadatapb.FunctionMetadata, 0, len(sm.Functions))
 	for _, function := range sm.Functions {
 		if function.SkipDump {
 			continue
 		}
 		functions = append(functions, function)
 	}
-	slices.SortFunc(functions, func(a, b *storepb.FunctionMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(functions, func(a, b *metadatapb.FunctionMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, function := range functions {
 		var buf strings.Builder
 		if err := writeRoutineSDL(&buf, function.Definition); err != nil {
@@ -92,14 +94,14 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *sto
 	}
 
 	// Procedures (sorted by name). writeRoutineSDL emits the canonical CREATE PROCEDURE.
-	procedures := make([]*storepb.ProcedureMetadata, 0, len(sm.Procedures))
+	procedures := make([]*metadatapb.ProcedureMetadata, 0, len(sm.Procedures))
 	for _, procedure := range sm.Procedures {
 		if procedure.SkipDump {
 			continue
 		}
 		procedures = append(procedures, procedure)
 	}
-	slices.SortFunc(procedures, func(a, b *storepb.ProcedureMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(procedures, func(a, b *metadatapb.ProcedureMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, procedure := range procedures {
 		var buf strings.Builder
 		if err := writeRoutineSDL(&buf, procedure.Definition); err != nil {
@@ -116,14 +118,14 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *sto
 
 	// Views (sorted by name). writeViewSDL strips the dumped database's own qualifier from
 	// the body, matching the single-file form.
-	views := make([]*storepb.ViewMetadata, 0, len(sm.Views))
+	views := make([]*metadatapb.ViewMetadata, 0, len(sm.Views))
 	for _, view := range sm.Views {
 		if view.SkipDump {
 			continue
 		}
 		views = append(views, view)
 	}
-	slices.SortFunc(views, func(a, b *storepb.ViewMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(views, func(a, b *metadatapb.ViewMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, view := range views {
 		var buf strings.Builder
 		if err := writeViewSDL(&buf, metadata.Name, view); err != nil {
@@ -139,14 +141,14 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *sto
 	// (table, trigger) order — the same traversal getSDLFormat uses. Each file carries a
 	// single CREATE TRIGGER.
 	for _, table := range tables {
-		triggers := make([]*storepb.TriggerMetadata, 0, len(table.Triggers))
+		triggers := make([]*metadatapb.TriggerMetadata, 0, len(table.Triggers))
 		for _, trigger := range table.Triggers {
 			if trigger.SkipDump {
 				continue
 			}
 			triggers = append(triggers, trigger)
 		}
-		slices.SortFunc(triggers, func(a, b *storepb.TriggerMetadata) int { return cmp.Compare(a.Name, b.Name) })
+		slices.SortFunc(triggers, func(a, b *metadatapb.TriggerMetadata) int { return cmp.Compare(a.Name, b.Name) })
 		for _, trigger := range triggers {
 			var buf strings.Builder
 			if err := writeTriggerSDL(&buf, table.Name, trigger); err != nil {
@@ -161,9 +163,9 @@ func GetMultiFileDatabaseDefinition(_ schema.GetDefinitionContext, metadata *sto
 
 	// Events (sorted by name). writeEventSDL strips the DEFINER and emits the canonical
 	// CREATE EVENT.
-	events := make([]*storepb.EventMetadata, 0, len(sm.Events))
+	events := make([]*metadatapb.EventMetadata, 0, len(sm.Events))
 	events = append(events, sm.Events...)
-	slices.SortFunc(events, func(a, b *storepb.EventMetadata) int { return cmp.Compare(a.Name, b.Name) })
+	slices.SortFunc(events, func(a, b *metadatapb.EventMetadata) int { return cmp.Compare(a.Name, b.Name) })
 	for _, event := range events {
 		var buf strings.Builder
 		if err := writeEventSDL(&buf, event); err != nil {
