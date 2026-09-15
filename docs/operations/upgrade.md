@@ -2,6 +2,10 @@
 
 This runbook focuses on upgrade-time checks for environments that may run Bytebase with more than one active replica.
 
+For the WIF audience backport in 3.22.1, follow the
+[WIF rollout and 3.22.1 upgrade](./wif-3.22.1-upgrade.md) guidance before
+rolling out replicas.
+
 ## Scope
 
 - Covers operator checks before, during, and after an upgrade.
