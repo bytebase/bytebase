@@ -633,8 +633,6 @@
     "private-key-passphrase": "秘密鍵のパスフレーズ",
     "private-key-passphrase-tip": "暗号化された秘密鍵のオプションパスフレーズ",
     "read-only": "読み取り専用",
-    "read-replica-host": "リードレプリカホスト",
-    "read-replica-port": "リードレプリカポート",
     "replica-set": "レプリカセット",
     "select-query-data-source": "クエリデータソースの選択",
     "snowflake-keypair-tip": "キーペア認証",

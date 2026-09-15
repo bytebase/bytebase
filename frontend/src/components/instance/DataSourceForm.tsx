@@ -30,16 +30,11 @@ import {
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_TokenType,
   DataSourceExternalSecretSchema,
-  DataSourceType,
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  PlanFeature,
-  PlanType,
-} from "@/types/proto-es/v1/subscription_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { onlyAllowNumber } from "@/utils";
-import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import { CredentialSourceForm } from "./CredentialSourceForm";
 import {
   type EditDataSource,
@@ -189,9 +184,6 @@ export function DataSourceForm({
     isCreating,
     allowEdit,
     basicInfo,
-    adminDataSource,
-    hasReadonlyReplicaFeature,
-    setMissingFeature,
     hideAdvancedFeatures,
     needsKeytabResupply,
     dataSourceResetEvent,
@@ -203,8 +195,6 @@ export function DataSourceForm({
     showSSH,
     allowUsingEmptyPassword,
     showAuthenticationDatabase,
-    hasReadonlyReplicaHost,
-    hasReadonlyReplicaPort,
     hasExtraParameters,
   } = specs;
 
@@ -512,38 +502,6 @@ export function DataSourceForm({
     onDataSourceChange(ds);
   };
 
-  const handleHostInput = (value: string) => {
-    if (dataSource.type === DataSourceType.READ_ONLY) {
-      if (!hasReadonlyReplicaFeature) {
-        if (dataSource.host || dataSource.port) {
-          update({
-            host: adminDataSource.host,
-            port: adminDataSource.port,
-          });
-          setMissingFeature(PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION);
-          return;
-        }
-      }
-    }
-    update({ host: value.trim() });
-  };
-
-  const handlePortInput = (value: string) => {
-    if (dataSource.type === DataSourceType.READ_ONLY) {
-      if (!hasReadonlyReplicaFeature) {
-        if (dataSource.host || dataSource.port) {
-          update({
-            host: adminDataSource.host,
-            port: adminDataSource.port,
-          });
-          setMissingFeature(PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION);
-          return;
-        }
-      }
-    }
-    update({ port: value.trim() });
-  };
-
   const handleSSHChange = (
     value: Partial<{
       sshHost: string;
@@ -847,17 +805,6 @@ export function DataSourceForm({
               {showMainFields && (
                 <>
                   {!hideAuthentication && authenticationTypeControl}
-
-                  {/* Create data source example (edit mode only) */}
-                  {!isCreating && (
-                    <CreateDataSourceExample
-                      className="sm:col-span-3 border-none"
-                      createInstanceFlag={false}
-                      engine={basicInfo.engine}
-                      dataSourceType={dataSource.type}
-                      authenticationType={dataSource.authenticationType}
-                    />
-                  )}
 
                   {/* Hive authentication */}
                   {basicInfo.engine === Engine.HIVE && (
@@ -2088,49 +2035,6 @@ export function DataSourceForm({
                   />
                 </FormField>
               )}
-
-              {/* Read-only replica host/port */}
-              {dataSource.type === DataSourceType.READ_ONLY &&
-                (hasReadonlyReplicaHost || hasReadonlyReplicaPort) && (
-                  <>
-                    {hasReadonlyReplicaHost && (
-                      <FormField
-                        validationField="host"
-                        className="sm:col-span-3 sm:col-start-1"
-                        title={<>{t("data-source.read-replica-host")}</>}
-                      >
-                        <Input
-                          className="w-full"
-                          autoComplete="off"
-                          value={dataSource.host}
-                          disabled={!allowEdit}
-                          onChange={(e) => handleHostInput(e.target.value)}
-                        />
-                      </FormField>
-                    )}
-                    {hasReadonlyReplicaPort && (
-                      <FormField
-                        className="sm:col-span-3 sm:col-start-1"
-                        title={<>{t("data-source.read-replica-port")}</>}
-                      >
-                        <Input
-                          className="w-full"
-                          autoComplete="off"
-                          value={dataSource.port}
-                          disabled={!allowEdit}
-                          onChange={(e) => {
-                            if (
-                              e.target.value &&
-                              !onlyAllowNumber(e.target.value)
-                            )
-                              return;
-                            handlePortInput(e.target.value);
-                          }}
-                        />
-                      </FormField>
-                    )}
-                  </>
-                )}
 
               {/* Database field */}
               {showDatabase && (
