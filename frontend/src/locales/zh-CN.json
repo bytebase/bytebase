@@ -633,8 +633,6 @@
     "private-key-passphrase": "私钥密码",
     "private-key-passphrase-tip": "加密私钥的可选密码",
     "read-only": "只读",
-    "read-replica-host": "只读副本 Host",
-    "read-replica-port": "只读副本端口",
     "replica-set": "副本集",
     "select-query-data-source": "选择查询数据源",
     "snowflake-keypair-tip": "密钥对认证",

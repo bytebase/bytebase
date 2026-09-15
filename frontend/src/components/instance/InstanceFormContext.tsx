@@ -46,7 +46,11 @@ import {
 } from "./common";
 import { effectivePortForEngine } from "./constants";
 import { hasInstancePermission } from "./permission";
-import { type InstanceSpecs, useInstanceSpecs } from "./specs";
+import {
+  hasConnectionDatabase,
+  type InstanceSpecs,
+  useInstanceSpecs,
+} from "./specs";
 import { type ValidationErrors, validateDataSource } from "./validation";
 
 export type LocalState = {
@@ -325,7 +329,7 @@ export function InstanceFormProvider({
         ds.externalSecret = undefined;
       }
       ds.port = effectivePortForEngine(engine, ds.port, ds.srv);
-      if (!specs.showDatabase) ds.database = "";
+      if (!hasConnectionDatabase(engine, ds.type)) ds.database = "";
       if (engine !== Engine.ORACLE) {
         ds.sid = "";
         ds.serviceName = "";

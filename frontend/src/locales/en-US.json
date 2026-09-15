@@ -633,8 +633,6 @@
     "private-key-passphrase": "Private Key Passphrase",
     "private-key-passphrase-tip": "Optional passphrase for encrypted private keys",
     "read-only": "RO",
-    "read-replica-host": "Read-replica Host",
-    "read-replica-port": "Read-replica Port",
     "replica-set": "Replica Set",
     "select-query-data-source": "Select query data source",
     "snowflake-keypair-tip": "Key-pair authentication",
