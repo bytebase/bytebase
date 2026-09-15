@@ -207,12 +207,12 @@ third column for section titles.
   before the field itself stacks.
 - Keep descriptions and validation beside the control they explain. Associate
   labels and radio groups with accessible names in both layouts.
-- Put choices that determine subsequent fields first. Keep authentication,
-  password-source, and synchronization choices visible in a
-  `SegmentedControl`. Longer provider labels MAY wrap within the control when
-  every segment remains distinct and usable.
-- A password source selector MAY share a row with direct password entry.
-  External sources reveal their configuration below. Preserve separate drafts
+- Put choices that determine subsequent fields first. Use one `Select` dropdown
+  combining authentication methods and password sources. Do not add a separate
+  password-source selector. Keep synchronization choices visible in a
+  `SegmentedControl`.
+- Reveal the selected authentication method's fields below the selector.
+  External sources reveal their configuration there. Preserve separate drafts
   while switching sources, and submit only the active source. Reveal dependent
   TLS, SSH, IAM, and external-source configuration below its controlling
   choice, using nested flow rather than a framed surface inside another frame.

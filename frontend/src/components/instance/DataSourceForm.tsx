@@ -11,7 +11,6 @@ import {
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -42,7 +41,10 @@ import {
   type TlsUpdateState,
   updateDataSourceSecret,
 } from "./common";
-import { invalidateSourceDrafts } from "./data-source-drafts";
+import {
+  deactivateExternalSecret,
+  invalidateSourceDrafts,
+} from "./data-source-drafts";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
 import { SshConnectionForm } from "./SshConnectionForm";
@@ -300,23 +302,6 @@ export function DataSourceForm({
       ? "KERBEROS"
       : "PASSWORD";
 
-  const onHiveAuthenticationChange = (val: "KERBEROS" | "PASSWORD") => {
-    if (val === "KERBEROS") {
-      update({
-        saslConfig: create(SASLConfigSchema, {
-          mechanism: {
-            case: "krbConfig",
-            value: create(KerberosConfigSchema, {
-              kdcTransportProtocol: "tcp",
-            }),
-          },
-        }),
-      });
-    } else {
-      update({ saslConfig: undefined });
-    }
-  };
-
   const supportedAuthenticationTypes = useMemo(() => {
     switch (basicInfo.engine) {
       case Engine.COSMOSDB:
@@ -356,7 +341,8 @@ export function DataSourceForm({
             label: t("instance.password-type.google-iam"),
           },
         ];
-      default:
+      case Engine.MYSQL:
+      case Engine.POSTGRES:
         return [
           {
             value: DataSource_AuthenticationType.PASSWORD,
@@ -369,6 +355,13 @@ export function DataSourceForm({
           {
             value: DataSource_AuthenticationType.AWS_RDS_IAM,
             label: t("instance.password-type.aws-iam"),
+          },
+        ];
+      default:
+        return [
+          {
+            value: DataSource_AuthenticationType.PASSWORD,
+            label: t("instance.password-type.password"),
           },
         ];
     }
@@ -409,6 +402,7 @@ export function DataSourceForm({
     const ds = {
       ...dataSource,
       authenticationType: DataSource_AuthenticationType.PASSWORD,
+      ...(basicInfo.engine === Engine.HIVE ? { saslConfig: undefined } : {}),
     };
     const drafts =
       sourceDraftsRef.current.get(dataSource.id) ??
@@ -593,13 +587,6 @@ export function DataSourceForm({
     basicInfo.engine !== Engine.DYNAMODB &&
     basicInfo.engine !== Engine.DATABRICKS;
 
-  const showAuthTypeRadio =
-    basicInfo.engine === Engine.MYSQL ||
-    basicInfo.engine === Engine.POSTGRES ||
-    basicInfo.engine === Engine.COSMOSDB ||
-    basicInfo.engine === Engine.MSSQL ||
-    basicInfo.engine === Engine.ELASTICSEARCH;
-
   const isPasswordAuth =
     dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD;
   const isAzureIAM =
@@ -721,21 +708,6 @@ export function DataSourceForm({
     ),
   }));
 
-  const passwordSourceControl = !showAuthTypeRadio && !hideAdvancedFeatures && (
-    <SegmentedControl
-      ariaLabel={t("instance.password-source.self")}
-      value={`secret:${passwordType}`}
-      onValueChange={(value) =>
-        changeSecretType(
-          Number(value.split(":")[1]) as DataSourceExternalSecret_SecretType
-        )
-      }
-      options={secretOptions}
-      disabled={!allowEdit}
-      size="sm"
-    />
-  );
-
   const authenticationOptions = supportedAuthenticationTypes.flatMap((item) =>
     item.value === DataSource_AuthenticationType.PASSWORD
       ? hideAdvancedFeatures
@@ -743,11 +715,20 @@ export function DataSourceForm({
         : secretOptions
       : [{ value: `auth:${item.value}`, label: <>{item.label}</> }]
   );
-  const authenticationValue = isPasswordAuth
-    ? `secret:${passwordType}`
-    : `auth:${dataSource.authenticationType}`;
+  if (basicInfo.engine === Engine.HIVE) {
+    authenticationOptions.push({
+      value: "sasl:kerberos",
+      label: <>{t("instance.kerberos")}</>,
+    });
+  }
+  const authenticationValue =
+    basicInfo.engine === Engine.HIVE && hiveAuthentication === "KERBEROS"
+      ? "sasl:kerberos"
+      : isPasswordAuth
+        ? `secret:${passwordType}`
+        : `auth:${dataSource.authenticationType}`;
 
-  const authenticationTypeControl = showAuthTypeRadio && (
+  const authenticationTypeControl = showMainFields && (
     <FormField
       title={t("instance.authentication")}
       className="sm:col-span-3 sm:col-start-1"
@@ -761,6 +742,18 @@ export function DataSourceForm({
             changeSecretType(
               Number(type) as DataSourceExternalSecret_SecretType
             );
+          } else if (kind === "sasl") {
+            onDataSourceChange({
+              ...deactivateExternalSecret(dataSource, sourceDraftsRef.current),
+              saslConfig: create(SASLConfigSchema, {
+                mechanism: {
+                  case: "krbConfig",
+                  value: create(KerberosConfigSchema, {
+                    kdcTransportProtocol: "tcp",
+                  }),
+                },
+              }),
+            });
           } else {
             update({
               authenticationType: Number(type) as DataSource_AuthenticationType,
@@ -805,28 +798,6 @@ export function DataSourceForm({
               {showMainFields && (
                 <>
                   {!hideAuthentication && authenticationTypeControl}
-
-                  {/* Hive authentication */}
-                  {basicInfo.engine === Engine.HIVE && (
-                    <div className="sm:col-span-3 sm:col-start-1">
-                      <RadioGroup
-                        className="textlabel gap-x-4"
-                        value={hiveAuthentication}
-                        onValueChange={(value) =>
-                          onHiveAuthenticationChange(
-                            value as typeof hiveAuthentication
-                          )
-                        }
-                      >
-                        <RadioGroupItem value="PASSWORD" disabled={!allowEdit}>
-                          Plain Password
-                        </RadioGroupItem>
-                        <RadioGroupItem value="KERBEROS" disabled={!allowEdit}>
-                          Kerberos
-                        </RadioGroupItem>
-                      </RadioGroup>
-                    </div>
-                  )}
 
                   {/* Kerberos config */}
                   {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
@@ -1175,7 +1146,6 @@ export function DataSourceForm({
                             }
                           >
                             <div className="flex flex-col gap-2">
-                              {passwordSourceControl}
                               <SecretInput
                                 resetKey={dataSource.id}
                                 aria-label={t("common.password")}
@@ -1220,7 +1190,6 @@ export function DataSourceForm({
                                   />
                                 }
                               >
-                                {passwordSourceControl}
                                 <ResponsiveFormLayout className="mt-2">
                                   <fieldset
                                     className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"

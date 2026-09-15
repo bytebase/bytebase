@@ -1208,6 +1208,7 @@
     },
     "instance-id": "实例 ID",
     "instance-name": "实例名称",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance，可选",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "KDC 主机",

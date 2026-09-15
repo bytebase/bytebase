@@ -1208,6 +1208,7 @@
     },
     "instance-id": "ID de la instancia",
     "instance-name": "Nombre de la instancia",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance, opcional",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "Host del KDC",
