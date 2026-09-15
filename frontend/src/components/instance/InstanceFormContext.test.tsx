@@ -41,11 +41,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/components/EngineIcon", () => ({ EngineIcon: () => null }));
 vi.mock("@/components/EnvironmentSelect", () => ({
-  EnvironmentSelect: () => null,
+  EnvironmentSelect: ({ className }: { className?: string }) => (
+    <div data-testid="environment-select" className={className} />
+  ),
 }));
 vi.mock("@/components/FeatureBadge", () => ({ FeatureBadge: () => null }));
 vi.mock("@/components/LabelListEditor", () => ({
-  LabelListEditor: () => null,
+  LabelListEditor: () => <div data-testid="label-list-editor" />,
 }));
 vi.mock("@/components/LearnMoreLink", () => ({ LearnMoreLink: () => null }));
 vi.mock("@/components/ResourceIdField", () => ({
@@ -83,7 +85,9 @@ vi.mock(
 
 vi.mock("@/types", () => ({
   DATASOURCE_ADMIN_USER_NAME: "bytebase",
+  UNKNOWN_ID: "-",
   UNKNOWN_INSTANCE_NAME: "instances/-",
+  isValidEnvironmentName: () => true,
   unknownDataSource: () => ({
     id: "admin",
     type: 1,
@@ -109,6 +113,7 @@ vi.mock("@/stores/app", () => {
     createInstance: mocks.createInstance,
     listInstanceDatabases: mocks.listInstanceDatabases,
     updateDataSource: vi.fn(),
+    hasUnifiedInstanceLicense: () => false,
     getEnvironmentByName: (name: string) => ({ name }),
     hasInstanceFeature: () => false,
     instanceLicenseCount: () => 1,
@@ -132,6 +137,8 @@ vi.mock("@/utils", () => ({
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
   convertLabelsToKVList: (labels: Record<string, string>) =>
     Object.entries(labels).map(([key, value]) => ({ key, value })),
+  engineNameV1: () => "PostgreSQL",
+  extractInstanceResourceName: () => "instance",
   hasWorkspacePermissionV2: () => true,
   instanceV1HasExtraParameters: () => mocks.hasExtraParameters,
   instanceV1HasSSH: () => false,
@@ -140,6 +147,11 @@ vi.mock("@/utils", () => ({
     ds.projectId !== "" && ds.instanceId !== "",
   isValidBigQueryDataSource: (ds: { projectId: string }) =>
     ds.projectId !== "",
+  onlyAllowNumber: (value: string) => value,
+  RE_GCP_INSTANCE_ID: /^[a-z]+$/,
+  RE_GCP_PROJECT_ID: /^[a-z]+$/,
+  supportedEngineV1List: () => [],
+  urlfy: (value: string) => value,
 }));
 
 vi.mock("@/utils/connect", () => ({
@@ -350,6 +362,209 @@ describe("InstanceFormProvider", () => {
       }
     }
   );
+
+  test("updates the sync database selection after the instance loads", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    const instance = create(InstanceSchema, {
+      name: "instances/production",
+      engine: Engine.POSTGRES,
+    });
+    const selectedDatabases = create(SyncDatabasesSchema, {
+      databases: ["app"],
+    });
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider instance={instance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={undefined}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+
+      await harness.render(
+        <InstanceFormProvider instance={instance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={selectedDatabases}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+
+      expect(
+        harness.container.querySelector('input[type="radio"][value="selected"]')
+      ).toBeChecked();
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("lists selected databases before unselected databases", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    mocks.listInstanceDatabases.mockResolvedValue({
+      databases: ["analytics", "app", "warehouse"],
+    });
+    const instance = create(InstanceSchema, {
+      name: "instances/production",
+      engine: Engine.POSTGRES,
+      syncDatabases: { databases: ["app"] },
+    });
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider instance={instance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={instance.syncDatabases}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(
+        Array.from(harness.container.querySelectorAll('[role="checkbox"]')).map(
+          (checkbox) => checkbox.parentElement?.textContent
+        )
+      ).toEqual(["app", "analytics", "warehouse"]);
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("finishes loading after an equivalent instance refresh", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    let resolveDatabases: (value: { databases: string[] }) => void;
+    mocks.listInstanceDatabases.mockImplementation(
+      () =>
+        new Promise<{ databases: string[] }>((resolve) => {
+          resolveDatabases = resolve;
+        })
+    );
+    const instance = create(InstanceSchema, {
+      name: "instances/production",
+      engine: Engine.POSTGRES,
+      syncDatabases: { databases: ["app"] },
+    });
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider instance={instance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={instance.syncDatabases}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+      expect(harness.container.textContent).toContain("common.loading");
+
+      const refreshedInstance = create(InstanceSchema, {
+        name: instance.name,
+        engine: instance.engine,
+        syncDatabases: instance.syncDatabases,
+      });
+      expect(refreshedInstance).not.toBe(instance);
+      await harness.render(
+        <InstanceFormProvider instance={refreshedInstance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={refreshedInstance.syncDatabases}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        resolveDatabases!({ databases: ["app"] });
+      });
+
+      expect(harness.container.textContent).not.toContain("common.loading");
+    } finally {
+      harness.unmount();
+      mocks.listInstanceDatabases.mockResolvedValue({
+        databases: ["app", "analytics"],
+      });
+    }
+  });
+
+  test("does not reload the database preview when selection changes during creation", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    const CreateSelector = () => {
+      const { basicInfo, setBasicInfo } = useInstanceFormContext();
+      return (
+        <SyncDatabases
+          isCreating
+          showLabel={false}
+          allowEdit
+          syncDatabases={basicInfo.syncDatabases}
+          onSyncDatabasesChange={(databases, syncAll) => {
+            setBasicInfo((prev) => ({
+              ...prev,
+              syncDatabases: syncAll
+                ? undefined
+                : create(SyncDatabasesSchema, { databases }),
+            }));
+          }}
+        />
+      );
+    };
+    vi.useFakeTimers();
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <CreateSelector />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        harness.container
+          .querySelector<HTMLElement>('[role="radio"][value="selected"]')
+          ?.click();
+        await vi.advanceTimersByTimeAsync(600);
+      });
+
+      const checkbox = harness.container.querySelector<HTMLElement>(
+        '[role="checkbox"]'
+      );
+      expect(checkbox).toBeDefined();
+      mocks.listInstanceDatabases.mockClear();
+      mocks.listInstanceDatabases.mockImplementation(
+        () => new Promise(() => {})
+      );
+
+      await act(async () => {
+        checkbox?.click();
+        await vi.advanceTimersByTimeAsync(300);
+      });
+
+      expect(mocks.listInstanceDatabases).not.toHaveBeenCalled();
+      expect(harness.container.textContent).not.toContain("common.loading");
+    } finally {
+      harness.unmount();
+      vi.useRealTimers();
+      mocks.listInstanceDatabases.mockResolvedValue({
+        databases: ["app", "analytics"],
+      });
+    }
+  });
 
   test("refreshes database previews when the create connection changes", async () => {
     const { SyncDatabases } = await import("./InstanceFormBody");
@@ -993,6 +1208,136 @@ describe("InstanceFormProvider", () => {
       expect(addParameter?.className).toContain("self-start");
     } finally {
       harness.unmount();
+    }
+  });
+
+  test("keeps labels in their own form field", async () => {
+    const { InstanceFormBody } = await import("./InstanceFormBody");
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <InstanceFormBody />
+        </InstanceFormProvider>
+      );
+
+      const environmentField = Array.from(
+        harness.container.querySelectorAll('[data-slot="form-field"]')
+      ).find((field) =>
+        field
+          .querySelector('[data-slot="form-field-title"]')
+          ?.textContent?.includes("common.environment")
+      );
+      const labelsField = Array.from(
+        harness.container.querySelectorAll('[data-slot="form-field"]')
+      ).find((field) =>
+        field
+          .querySelector('[data-slot="form-field-title"]')
+          ?.textContent?.includes("common.labels")
+      );
+
+      expect(environmentField?.textContent).not.toContain("instance.add-labels");
+      expect(labelsField).toContainElement(
+        harness.container.querySelector('[data-testid="label-list-editor"]')
+      );
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("uses the shared form width for basic info controls", async () => {
+    const { InstanceFormBody } = await import("./InstanceFormBody");
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <InstanceFormBody />
+        </InstanceFormProvider>
+      );
+
+      expect(harness.container.querySelector("#name")).toHaveClass("w-full");
+      expect(harness.container.querySelector("#name")).not.toHaveClass(
+        "max-w-[40rem]"
+      );
+      expect(
+        harness.container.querySelector('[data-testid="environment-select"]')
+      ).toHaveClass("w-full");
+      expect(
+        harness.container.querySelector('[data-testid="environment-select"]')
+      ).not.toHaveClass("max-w-[40rem]");
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("shows the external link description from its title info button", async () => {
+    const { InstanceFormBody } = await import("./InstanceFormBody");
+    const harness = renderIntoContainer();
+    vi.useFakeTimers();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider
+          instance={create(InstanceSchema, {
+            name: "instances/production",
+            engine: Engine.POSTGRES,
+          })}
+        >
+          <InstanceFormBody />
+        </InstanceFormProvider>
+      );
+
+      const externalLinkInput = harness.container.querySelector(
+        "#external-link"
+      );
+      const field = externalLinkInput?.closest('[data-slot="form-field"]');
+      const infoButton = field?.querySelector<HTMLButtonElement>(
+        'button[aria-label="instance.external-link"]'
+      );
+
+      expect(
+        field?.querySelector('[data-slot="form-field-description"]')
+      ).toBeNull();
+      expect(infoButton).toBeDefined();
+
+      fireEvent.focus(infoButton!);
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(
+        document.getElementById("bb-react-layer-overlay")?.textContent
+      ).toContain("instance.sentence.console.snowflake");
+
+      const scanIntervalField = Array.from(
+        harness.container.querySelectorAll('[data-slot="form-field"]')
+      ).find((candidate) =>
+        candidate
+          .querySelector('[data-slot="form-field-title"]')
+          ?.textContent?.includes("instance.scan-interval.self")
+      );
+      const scanIntervalInfoButton =
+        scanIntervalField?.querySelector<HTMLButtonElement>(
+          'button[aria-label="instance.scan-interval.self"]'
+        );
+
+      expect(
+        scanIntervalField?.querySelector('[data-slot="form-field-description"]')
+      ).toBeNull();
+      expect(scanIntervalInfoButton).toBeDefined();
+
+      fireEvent.focus(scanIntervalInfoButton!);
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(
+        document.getElementById("bb-react-layer-overlay")?.textContent
+      ).toContain("instance.scan-interval.description");
+    } finally {
+      harness.unmount();
+      vi.useRealTimers();
     }
   });
 
