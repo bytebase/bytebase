@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useSavedQueryAndTab } from "@/hooks/useSavedQueryAndTab";
+import { RUN_QUERY_PRODUCT_INTRO, useProductIntro } from "@/lib/productIntro";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -87,6 +88,13 @@ export function EditorAction({ onExecute }: Props) {
     if (isCosmosDBWithoutContainer) return false;
     return true;
   })();
+
+  useProductIntro({
+    id: RUN_QUERY_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.steps.query-data"),
+    description: t("workspace-setup-guide.descriptions.query-data"),
+    disabled: isAdminMode || !allowQuery,
+  });
 
   const canWriteSheet = (() => {
     if (!tabSavedQuery) return false;
@@ -174,6 +182,7 @@ export function EditorAction({ onExecute }: Props) {
           ) : (
             <RunQueryButton
               disabled={!allowQuery}
+              productIntroTarget={RUN_QUERY_PRODUCT_INTRO}
               settingsDisabled={!showQueryContextSettingPopover}
               onClick={handleRunQuery}
             />

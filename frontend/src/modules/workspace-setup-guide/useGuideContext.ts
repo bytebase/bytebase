@@ -11,14 +11,15 @@ import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
 import { catalogResourceName } from "@/stores/app/databaseCatalog";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
-import type {
-  DatabaseCatalog,
-  ObjectSchema,
-} from "@/types/proto-es/v1/database_catalog_service_pb";
+import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
 import { getDatabaseEngine } from "@/utils/v1/database";
 import { convertMemberToFullname } from "@/utils/v1/iam";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import { GUIDE_PROGRESS_KEYS } from "./progress";
+import {
+  findGuideQueryTarget,
+  tableHasMarkedSensitiveData,
+} from "./queryTarget";
 import type {
   GuideContext,
   GuideRoute,
@@ -43,35 +44,14 @@ const INITIAL_FACTS: GuideFacts = {
   instanceName: "",
   databaseProjectName: "",
   databaseName: "",
-};
-
-const objectSchemaHasSemanticType = (
-  schema: ObjectSchema | undefined
-): boolean => {
-  if (!schema) return false;
-  if (schema.semanticType) return true;
-  if (schema.kind.case === "structKind") {
-    return Object.values(schema.kind.value.properties).some(
-      objectSchemaHasSemanticType
-    );
-  }
-  if (schema.kind.case === "arrayKind") {
-    return objectSchemaHasSemanticType(schema.kind.value.kind);
-  }
-  return false;
+  queryTarget: undefined,
 };
 
 export const catalogHasMarkedSensitiveData = (
   catalog: Pick<DatabaseCatalog, "schemas"> | undefined
 ) =>
   catalog?.schemas.some((schema) =>
-    schema.tables.some(
-      (table) =>
-        (table.kind?.case === "columns" &&
-          table.kind.value.columns.some((column) => !!column.semanticType)) ||
-        (table.kind?.case === "objectSchema" &&
-          objectSchemaHasSemanticType(table.kind.value))
-    )
+    schema.tables.some(tableHasMarkedSensitiveData)
   ) ?? false;
 
 export const hasOtherHumanWorkspaceMember = (
@@ -219,6 +199,18 @@ export const useGuideContext = ({
       ? state.catalogsByName[catalogResourceName(databaseName)]
       : undefined
   );
+  const targetMetadata = useAppStore((state) =>
+    databaseName ? state.getCachedDatabaseMetadata(databaseName) : undefined
+  );
+  const liveQueryTarget =
+    scenarioId === "mark-sensitive-data"
+      ? targetCatalog
+        ? findGuideQueryTarget(targetMetadata, targetCatalog)
+        : undefined
+      : findGuideQueryTarget(targetMetadata);
+  const queryTarget =
+    liveQueryTarget ??
+    (databaseName === facts.databaseName ? facts.queryTarget : undefined);
   const hasMarkedSensitiveData =
     sensitiveDataMarked ||
     facts.hasMarkedSensitiveData ||
@@ -375,15 +367,28 @@ export const useGuideContext = ({
         const database = databases?.databases.find(
           ({ name, project }) => !!name && !!project
         );
-        const catalog =
-          scenarioId === "mark-sensitive-data" && database
-            ? await store
-                .getOrFetchDatabaseCatalog({
-                  database: database.name,
-                  silent: true,
-                })
-                .catch(() => undefined)
-            : undefined;
+        const shouldPrepareQuery =
+          scenarioId === "query-data" || scenarioId === "mark-sensitive-data";
+        const [metadata, catalog] = database
+          ? await Promise.all([
+              shouldPrepareQuery
+                ? store
+                    .getOrFetchDatabaseMetadata({
+                      database: database.name,
+                      silent: true,
+                    })
+                    .catch(() => undefined)
+                : undefined,
+              scenarioId === "mark-sensitive-data"
+                ? store
+                    .getOrFetchDatabaseCatalog({
+                      database: database.name,
+                      silent: true,
+                    })
+                    .catch(() => undefined)
+                : undefined,
+            ])
+          : [];
         const eventTarget = eventTargetRef.current;
 
         setFacts((state) => ({
@@ -405,6 +410,10 @@ export const useGuideContext = ({
           databaseProjectName:
             eventTarget?.projectName ?? database?.project ?? "",
           databaseName: eventTarget?.databaseName ?? database?.name ?? "",
+          queryTarget: findGuideQueryTarget(
+            metadata,
+            scenarioId === "mark-sensitive-data" ? catalog : undefined
+          ),
         }));
       } catch {
         setFacts((state) => ({
@@ -440,6 +449,7 @@ export const useGuideContext = ({
       ...facts,
       databaseName,
       databaseProjectName,
+      queryTarget,
       hasMarkedSensitiveData,
       isSaaS,
       hasOtherWorkspaceMember,
@@ -449,6 +459,7 @@ export const useGuideContext = ({
       facts,
       databaseName,
       databaseProjectName,
+      queryTarget,
       hasMarkedSensitiveData,
       hasOtherWorkspaceMember,
       isSaaS,

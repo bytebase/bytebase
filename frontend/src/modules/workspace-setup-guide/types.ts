@@ -16,6 +16,11 @@ export type GuideScenarioId =
 
 export type GuideWorkspaceUsage = "team" | "solo";
 
+export type GuideQueryTarget = {
+  schema: string;
+  table: string;
+};
+
 export type GuideJourneyId = "workspace-setup" | GuideScenarioId;
 
 export type GuideRoute = Pick<ReactRoute, "name" | "params"> &
@@ -35,6 +40,7 @@ export type GuideContext = {
   instanceName: string;
   databaseProjectName: string;
   databaseName: string;
+  queryTarget?: GuideQueryTarget;
   route: GuideRoute;
 };
 
@@ -45,7 +51,11 @@ export type GuideDatabase = {
 
 export type GuideAction =
   | { type: "navigate"; target: RouteTarget }
-  | { type: "open-sql-editor"; database: GuideDatabase }
+  | {
+      type: "open-sql-editor";
+      database: GuideDatabase;
+      query?: Record<string, string>;
+    }
   | {
       type: "create-change";
       project: string;

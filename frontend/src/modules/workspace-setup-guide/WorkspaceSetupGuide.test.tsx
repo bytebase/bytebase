@@ -95,11 +95,13 @@ vi.mock("@/components/HowBytebaseWorksSheet", () => ({
 vi.mock("@/components/SQLEditorButton", () => ({
   SQLEditorButton: ({
     label,
+    query,
     size,
     className,
     "data-testid": testId,
   }: {
     label?: ReactNode;
+    query?: Record<string, string>;
     size?: string;
     className?: string;
     "data-testid"?: string;
@@ -107,6 +109,7 @@ vi.mock("@/components/SQLEditorButton", () => ({
     <button
       className={className}
       data-testid={testId ?? "sql-editor-action"}
+      data-query={query ? JSON.stringify(query) : undefined}
       data-size={size}
     >
       {label}
@@ -216,6 +219,7 @@ describe("WorkspaceSetupGuide", () => {
       hasExploredDatabase: true,
       databaseProjectName: "projects/app",
       databaseName: "instances/sample/databases/employee",
+      queryTarget: { schema: "public", table: "employee" },
     });
 
     render(<WorkspaceSetupGuide />);
@@ -235,7 +239,41 @@ describe("WorkspaceSetupGuide", () => {
       "data-size",
       "sm"
     );
+    expect(screen.getByTestId("active-action")).toHaveAttribute(
+      "data-query",
+      JSON.stringify({
+        schema: "public",
+        table: "employee",
+        intro: "run-query",
+        panel: "schema",
+      })
+    );
     expect(screen.getByTestId("open-product-model")).toBeVisible();
+  });
+
+  test("hides the SQL Editor action while the Query step is on its route", () => {
+    mocks.scenarioId = "query-data";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+      queryTarget: { schema: "public", table: "employee" },
+      route: {
+        name: "sql-editor.database",
+        params: {
+          project: "app",
+          instance: "sample",
+          database: "employee",
+        },
+      },
+    });
+
+    render(<WorkspaceSetupGuide />);
+
+    expect(screen.getByTestId("setup-step-query-data")).toBeVisible();
+    expect(screen.queryByTestId("active-action")).not.toBeInTheDocument();
   });
 
   test("shows the full Query Data chain when setup has no resources", () => {
