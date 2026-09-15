@@ -1,33 +1,27 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <title>Bytebase API Reference</title>
-    <link rel="icon" href="favicon.png" type="image/x-icon">
+    <link rel="icon" href="favicon.png" type="image/png">
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
   <body>
-    <script
-      id="api-reference"
-      data-url="https://raw.githubusercontent.com/bytebase/bytebase/main/proto/gen/grpc-doc/openapi.yaml"></script>
+    <div id="app"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
     <script>
-      var configuration = {
+      Scalar.createApiReference('#app', {
+        url: './openapi.yaml',
         theme: 'moon',
         metaData: {
-            title: 'Bytebase API Reference',
-            description: 'Bytebase API Reference',
-            ogDescription: 'Bytebase API Reference',
-            ogTitle: 'Bytebase API Reference',
-            ogImage: 'https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/banner.jpg',
-            twitterCard: 'summary_large_image',
-        }
-      }
-
-      var apiReference = document.getElementById('api-reference')
-      apiReference.dataset.configuration = JSON.stringify(configuration)
+          title: 'Bytebase API Reference',
+          description: 'Bytebase API Reference',
+          ogDescription: 'Bytebase API Reference',
+          ogTitle: 'Bytebase API Reference',
+          ogImage: 'https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/banner.jpg',
+          twitterCard: 'summary_large_image',
+        },
+      })
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
   </body>
 </html>
