@@ -185,17 +185,9 @@ func (s *Store) ListAllInstances(ctx context.Context, showDeleted bool) ([]*Inst
 		return nil, err
 	}
 
-	// Deobfuscate per-workspace (group by workspace to avoid redundant secret lookups).
-	byWorkspace := make(map[string][]*InstanceMessage)
-	for _, inst := range instances {
-		byWorkspace[inst.Workspace] = append(byWorkspace[inst.Workspace], inst)
+	if err := s.deobfuscateInstances(ctx, instances); err != nil {
+		return nil, err
 	}
-	for _, wsInstances := range byWorkspace {
-		if err := s.deobfuscateInstances(ctx, wsInstances); err != nil {
-			return nil, err
-		}
-	}
-
 	for _, instance := range instances {
 		s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
 	}

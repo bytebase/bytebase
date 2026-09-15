@@ -26,10 +26,17 @@ func (s *Store) GetServerConfig(ctx context.Context) (*storepb.ServerConfigPaylo
 }
 
 // GetAuthSecret returns the global auth secret used for JWT signing.
+// Only migrations write server_config, so the first successful read is kept for
+// the life of the Store, even when the cache is disabled.
 func (s *Store) GetAuthSecret(ctx context.Context) (string, error) {
+	if cached := s.authSecret.Load(); cached != nil {
+		return *cached, nil
+	}
 	config, err := s.GetServerConfig(ctx)
 	if err != nil {
 		return "", err
 	}
-	return config.AuthSecret, nil
+	secret := config.AuthSecret
+	s.authSecret.Store(&secret)
+	return secret, nil
 }

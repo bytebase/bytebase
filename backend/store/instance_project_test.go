@@ -124,6 +124,30 @@ func TestCreateAndListProjectInstance(t *testing.T) {
 	require.Equal(t, &projectID, allInstances[0].ProjectID)
 }
 
+func TestListAllInstancesDeobfuscatesAcrossWorkspaces(t *testing.T) {
+	t.Parallel()
+	ctx, db, s := newInstanceProjectFixture(t)
+	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('other')`)
+	require.NoError(t, err)
+	for _, workspace := range []string{"default", "other"} {
+		metadata := testInstanceMetadata()
+		metadata.DataSources[0].Password = workspace + "-password"
+		_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+			ResourceID: workspace + "-instance",
+			Workspace:  workspace,
+			Metadata:   metadata,
+		})
+		require.NoError(t, err)
+	}
+
+	instances, err := s.ListAllInstances(ctx, false)
+	require.NoError(t, err)
+	require.Len(t, instances, 2)
+	for _, instance := range instances {
+		require.Equal(t, instance.Workspace+"-password", instance.Metadata.GetDataSources()[0].GetPassword())
+	}
+}
+
 func TestUpdateInstanceWithoutWorkspace(t *testing.T) {
 	t.Parallel()
 	ctx, _, s := newInstanceProjectFixture(t)
