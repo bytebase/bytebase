@@ -167,7 +167,13 @@ func UnwrapExplainAnalyze(node ast.Node, text string) (ast.Node, string) {
 	return explain.Query, text[start:explain.Loc.End]
 }
 
-// classifyExplainedQuery returns the QueryType for the query inside EXPLAIN ANALYZE.
+// classifyExplainedQuery returns the QueryType for the query inside EXPLAIN
+// ANALYZE, which actually runs it — so unlike classifyQueryType's own default,
+// an unrecognized node type here must fail closed rather than pass as Select.
+// The cases below are exhaustive over what PostgreSQL actually accepts as an
+// EXPLAIN target (CALL, TRUNCATE, COPY, DDL like DROP/ALTER do not parse
+// there), matching classifyQueryType's DML/DDL classification for the same
+// node types; the default exists only for a future grammar addition.
 func classifyExplainedQuery(query ast.Node) base.QueryType {
 	if query == nil {
 		return base.Select
@@ -192,6 +198,6 @@ func classifyExplainedQuery(query ast.Node) base.QueryType {
 	case *ast.ExecuteStmt:
 		return base.Select
 	default:
-		return base.Select
+		return base.QueryTypeUnknown
 	}
 }
