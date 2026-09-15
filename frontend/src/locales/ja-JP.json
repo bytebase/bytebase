@@ -2955,6 +2955,7 @@
           "masking-type": "アルゴリズムの種類"
         }
       },
+      "apply-masking": "マスキングを適用",
       "classification": {
         "empty-classification": "「classification」フィールドが空です",
         "guide-classification": "「classification」は各カテゴリを ID でマッピングします。リーフカテゴリはレベル番号を参照する必要があり、親カテゴリはレベルを省略します。",
@@ -2965,6 +2966,7 @@
         "missing-classification": "「classification」フィールドがありません",
         "missing-levels": "「levels」フィールドがありません"
       },
+      "columns-to-mask": "マスキングするカラム",
       "global-rules": {
         "condition-order": "条件付きシーケンス",
         "delete-rule-tip": "このルールを削除しますか?",
@@ -2977,14 +2979,17 @@
       },
       "grant-access": "アクセスを許可する",
       "mark-sensitive-data": "機密データをマークする",
+      "mark-sensitive-data-description": "クエリ結果で値を非表示にするカラムを選択します。",
       "never-expires": "有効期限なし",
       "remove-sensitive-column-tips": "このデータ列を表示しますか？",
+      "semantic-type-description": "セマンティックタイプは同じ種類のデータを表すカラムをグループ化し、Bytebase が一貫したマスキングを適用できるようにします。",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "保存する変更はありません",
           "title-required": "タイトルは必須です"
         },
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
+        "masking-effect": "マスキング効果: {{effect}}",
         "select": "セマンティックタイプの選択",
         "self": "セマンティックタイプ",
         "table": {

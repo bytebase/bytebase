@@ -883,7 +883,12 @@ describe("DatabaseCatalogPanel", () => {
     ).toEqual(expect.arrayContaining(["bb.default", "bb.default-partial"]));
     await changeSelect(selects[3] as HTMLSelectElement, "bb.default");
 
-    click(getButton(sheet as HTMLElement, "common.save") as HTMLElement);
+    click(
+      getButton(
+        sheet as HTMLElement,
+        "settings.sensitive-data.apply-masking"
+      ) as HTMLElement
+    );
     await flush();
 
     expect(mocks.updateColumnCatalog).toHaveBeenCalledWith({

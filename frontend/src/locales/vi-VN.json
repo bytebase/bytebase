@@ -2955,6 +2955,7 @@
           "masking-type": "Loại che"
         }
       },
+      "apply-masking": "Áp dụng che dữ liệu",
       "classification": {
         "empty-classification": "Trường \"classification\" đang trống",
         "guide-classification": "\"classification\" ánh xạ mỗi danh mục theo ID. Danh mục lá phải tham chiếu một số cấp độ; danh mục cha bỏ qua cấp độ.",
@@ -2965,6 +2966,7 @@
         "missing-classification": "Thiếu trường \"classification\"",
         "missing-levels": "Thiếu trường \"levels\""
       },
+      "columns-to-mask": "Các cột cần che",
       "global-rules": {
         "condition-order": "Thứ tự điều kiện",
         "delete-rule-tip": "Xóa quy tắc này?",
@@ -2977,14 +2979,17 @@
       },
       "grant-access": "Cấp Quyền truy cập",
       "mark-sensitive-data": "Đánh dấu dữ liệu nhạy cảm",
+      "mark-sensitive-data-description": "Chọn các cột có giá trị cần được ẩn trong kết quả truy vấn.",
       "never-expires": "Không bao giờ hết hạn",
       "remove-sensitive-column-tips": "Hiển thị cột này?",
+      "semantic-type-description": "Kiểu ngữ nghĩa nhóm các cột biểu thị cùng một loại dữ liệu để Bytebase áp dụng cách che nhất quán.",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "Không có thay đổi để lưu",
           "title-required": "Tiêu đề là bắt buộc"
         },
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
+        "masking-effect": "Hiệu ứng che: {{effect}}",
         "select": "Chọn loại ngữ nghĩa",
         "self": "Loại ngữ nghĩa",
         "table": {
