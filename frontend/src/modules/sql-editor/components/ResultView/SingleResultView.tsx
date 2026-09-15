@@ -402,13 +402,18 @@ function SingleResultViewInner({
   const visualizeExplain = async () => {
     if (!isVisualizerEngine(engine)) return;
     try {
-      const token = await getExplainToken(
-        database,
-        params,
-        runQuery,
-        engine,
-        resultIndex
-      );
+      // Spanner explains only as JSON, so the result on screen already is the
+      // plan the visualizer reads; the other engines show a readable plan.
+      const token =
+        engine === Engine.SPANNER
+          ? getExplainTokenFromResult(result, engine)
+          : await getExplainToken(
+              database,
+              params,
+              runQuery,
+              engine,
+              resultIndex
+            );
       if (!token) {
         // The plan is fetched by a second query, so a failure here is invisible
         // unless we say so — the button would otherwise do nothing.

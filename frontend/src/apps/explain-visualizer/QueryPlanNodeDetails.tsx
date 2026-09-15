@@ -58,9 +58,11 @@ export function QueryPlanNodeDetails({ node }: Props) {
       {/* The diagram flags these with a hover-only icon, which a touch reader
           never reaches. The pane is where the selected node is explained, so
           it carries the warnings too. */}
-      {node.warnings.map((warning) => (
+      {node.warnings.map((warning, index) => (
         <Alert
-          key={`${warning.title}\n${warning.detail}`}
+          // An engine can report the same warning twice, so its text is not a
+          // key; a node's warnings never reorder.
+          key={index}
           variant="warning"
           data-testid="plan-details-warning"
           title={warning.title}

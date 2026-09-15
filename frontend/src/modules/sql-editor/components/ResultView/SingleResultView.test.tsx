@@ -788,11 +788,7 @@ describe("SingleResultView explain visualizer", () => {
     openSpy.mockRestore();
   });
 
-  test.each([
-    [Engine.MSSQL, QueryOption_ExplainFormat.XML, "<ShowPlanXML/>"],
-    // Spanner's grid already holds JSON, and it takes the same path anyway.
-    [Engine.SPANNER, QueryOption_ExplainFormat.JSON, '{"planNodes":[]}'],
-  ])(
+  test.each([[Engine.MSSQL, QueryOption_ExplainFormat.XML, "<ShowPlanXML/>"]])(
     "asks engine %s for the plan in the format its visualizer reads",
     async (engine, explainFormat, plan) => {
       const openSpy = vi
@@ -859,6 +855,45 @@ describe("SingleResultView explain visualizer", () => {
       openSpy.mockRestore();
     }
   );
+
+  test("Spanner hands over the plan already in the result", async () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
+    const plan = '{"planNodes":[]}';
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.SPANNER, explain: true }}
+        database={databaseForEngine(Engine.SPANNER)}
+        result={create(QueryResultSchema, {
+          columnNames: ["QUERY PLAN"],
+          columnTypeNames: ["JSON"],
+          statement: "SELECT 1",
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: plan },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    fireEvent.click(screen.getByText("visualize-explain"));
+
+    await waitFor(() => expect(openSpy).toHaveBeenCalled());
+    expect(runQuery).not.toHaveBeenCalled();
+    expect(createExplainToken).toHaveBeenCalledWith({
+      statement: "SELECT 1",
+      explain: plan,
+      engine: Engine.SPANNER,
+    });
+    openSpy.mockRestore();
+  });
 
   test("offers no visualizer for an engine it cannot draw", () => {
     render(

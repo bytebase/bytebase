@@ -399,9 +399,7 @@ export function QueryPlanDiagram({
         const warnings = node.warnings.map((warning) => warning.title);
         const collapsed = collapsedIds.has(node.id);
         const subtreeCount = planDescendantCount(node);
-        // "Outer" is the default relationship and carries no information.
-        const relationship =
-          node.relationship === "Outer" ? undefined : node.relationship;
+        const { relationship } = node;
         return (
           <div
             key={node.id}

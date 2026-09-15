@@ -1,14 +1,15 @@
 import {
   addPlanProperty,
-  buildPlanTree,
+  checkPlanDepth,
+  isJsonRecord,
+  type JsonRecord,
   PLAN_FULL_INDEX_SCAN,
   PLAN_FULL_TABLE_SCAN,
-  PLAN_MAX_DEPTH,
-  PLAN_TOO_DEEP_MESSAGE,
   type PlanNode,
   type PlanParseResult,
   type PlanProperty,
   type PlanWarning,
+  parseWithDepthLimit,
 } from "./plan-model";
 
 /**
@@ -31,9 +32,8 @@ export const SPANNER_PLAN_INVALID_JSON_MESSAGE =
   "The query plan is not valid JSON. A Spanner query plan is expected.";
 export const SPANNER_PLAN_NO_PLAN_MESSAGE =
   'The query plan JSON does not contain a "planNodes" list with an operator at its root.';
-
-/** Raised by `toPlanNode` and caught by `parseSpannerPlan` alone. */
-const PLAN_TOO_DEEP = new Error(PLAN_TOO_DEEP_MESSAGE);
+export const SPANNER_PLAN_EMULATOR_MESSAGE =
+  "Spanner returned no query plan for this statement. The Spanner emulator returns none for any statement, so explain it on a Spanner instance to see one.";
 
 /** The link type that attaches a subquery to the expression using it. */
 const SUBQUERY_LINK = "Scalar";
@@ -50,12 +50,6 @@ const FOLDED_METADATA = new Set([
   "subquery_cluster_node",
 ]);
 
-type JsonRecord = Record<string, unknown>;
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function stringField(record: JsonRecord | undefined, key: string): string {
   const value = record?.[key];
   if (typeof value === "string") return value;
@@ -66,7 +60,7 @@ function stringField(record: JsonRecord | undefined, key: string): string {
 }
 
 function metadataOf(raw: JsonRecord): JsonRecord | undefined {
-  return isRecord(raw.metadata) ? raw.metadata : undefined;
+  return isJsonRecord(raw.metadata) ? raw.metadata : undefined;
 }
 
 /**
@@ -92,28 +86,33 @@ function toWarnings(raw: JsonRecord): PlanWarning[] {
     : [PLAN_FULL_TABLE_SCAN];
 }
 
+/**
+ * @param path - The positions of this node's ancestors. It is shared across the
+ * walk: a node adds itself while its children are built and removes itself
+ * after.
+ */
 function toPlanNode(
   planNodes: readonly unknown[],
   index: number,
   id: string,
   relationship: string | undefined,
-  path: ReadonlySet<number>,
+  path: Set<number>,
   depth: number
 ): PlanNode {
-  if (depth > PLAN_MAX_DEPTH) throw PLAN_TOO_DEEP;
+  checkPlanDepth(depth);
   const raw = planNodes[index] as JsonRecord;
-  const onPath = new Set(path).add(index);
+  path.add(index);
   const children: PlanNode[] = [];
   const properties: PlanProperty[] = [];
 
   const links = Array.isArray(raw.childLinks) ? raw.childLinks : [];
-  for (const link of links.filter(isRecord)) {
+  for (const link of links.filter(isJsonRecord)) {
     const childIndex = link.childIndex;
     if (typeof childIndex !== "number") continue;
     const child = planNodes[childIndex];
     // A link back up the path would never end; a plan that has one is
     // malformed, and the rest of it is still worth drawing.
-    if (!isRecord(child) || onPath.has(childIndex)) continue;
+    if (!isJsonRecord(child) || path.has(childIndex)) continue;
     const type = stringField(link, "type") || undefined;
     if (child.kind === "RELATIONAL" || type === SUBQUERY_LINK) {
       children.push(
@@ -123,7 +122,7 @@ function toPlanNode(
           `${id}.${children.length}`,
           // A subquery's node type already says how it is used.
           type === SUBQUERY_LINK ? undefined : type,
-          onPath,
+          path,
           depth + 1
         )
       );
@@ -131,7 +130,9 @@ function toPlanNode(
       // An expression the operator names by its role, such as "Seek
       // Condition". Unnamed ones are the columns it reads or returns.
       const description = stringField(
-        isRecord(child.shortRepresentation) ? child.shortRepresentation : {},
+        isJsonRecord(child.shortRepresentation)
+          ? child.shortRepresentation
+          : {},
         "description"
       );
       const variable = stringField(link, "variable");
@@ -145,7 +146,8 @@ function toPlanNode(
 
   const metadata = metadataOf(raw);
   for (const key of Object.keys(metadata ?? {})) {
-    if (FOLDED_METADATA.has(key)) continue;
+    // Keys starting with `_` are Spanner's internal ones.
+    if (FOLDED_METADATA.has(key) || key.startsWith("_")) continue;
     addPlanProperty(properties, key, stringField(metadata, key));
   }
 
@@ -157,10 +159,11 @@ function toPlanNode(
     raw.kind === "RELATIONAL"
       ? ""
       : stringField(
-          isRecord(raw.shortRepresentation) ? raw.shortRepresentation : {},
+          isJsonRecord(raw.shortRepresentation) ? raw.shortRepresentation : {},
           "description"
         );
 
+  path.delete(index);
   return {
     id,
     nodeType: toNodeType(raw),
@@ -186,22 +189,26 @@ export function parseSpannerPlan(source: string): PlanParseResult {
   }
 
   const planNodes =
-    isRecord(parsed) && Array.isArray(parsed.planNodes) ? parsed.planNodes : [];
+    isJsonRecord(parsed) && Array.isArray(parsed.planNodes)
+      ? parsed.planNodes
+      : [];
   // Nodes link to each other by position, and the root is the first.
   const root = planNodes[0];
-  if (!isRecord(root) || root.kind !== "RELATIONAL") {
-    return { ok: false, message: SPANNER_PLAN_NO_PLAN_MESSAGE };
+  if (!isJsonRecord(root) || root.kind !== "RELATIONAL") {
+    // The emulator answers every explain with this one placeholder node.
+    const emulator =
+      planNodes.length === 1 &&
+      isJsonRecord(root) &&
+      root.displayName === "No query plan";
+    return {
+      ok: false,
+      message: emulator
+        ? SPANNER_PLAN_EMULATOR_MESSAGE
+        : SPANNER_PLAN_NO_PLAN_MESSAGE,
+    };
   }
 
-  try {
-    return {
-      ok: true,
-      tree: buildPlanTree(
-        toPlanNode(planNodes, 0, "0", undefined, new Set(), 0)
-      ),
-    };
-  } catch (error) {
-    if (error !== PLAN_TOO_DEEP) throw error;
-    return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
-  }
+  return parseWithDepthLimit(() =>
+    toPlanNode(planNodes, 0, "0", undefined, new Set(), 0)
+  );
 }

@@ -9,6 +9,7 @@ import {
 import {
   parseSpannerPlan,
   SPANNER_PLAN_EMPTY_MESSAGE,
+  SPANNER_PLAN_EMULATOR_MESSAGE,
   SPANNER_PLAN_INVALID_JSON_MESSAGE,
   SPANNER_PLAN_NO_PLAN_MESSAGE,
 } from "./spanner-plan";
@@ -116,6 +117,30 @@ describe("parseSpannerPlan", () => {
       expect(labels).not.toContain(folded);
     }
     expect(labels).toContain("scalar_aggregate");
+  });
+
+  test("leaves Spanner's internal metadata out of the properties", () => {
+    const result = parseSpannerPlan(
+      JSON.stringify({
+        planNodes: [
+          {
+            index: 0,
+            kind: "RELATIONAL",
+            displayName: "Scan",
+            metadata: {
+              scan_type: "TableScan",
+              scan_target: "Singers",
+              "Full scan": "true",
+              _internal_id: "7",
+            },
+          },
+        ],
+      })
+    );
+
+    expect(result.ok && result.tree.root.properties).toEqual([
+      { label: "Full scan", value: "true" },
+    ]);
   });
 
   test("names what a scan reads and what a filter keeps", () => {
@@ -253,10 +278,10 @@ describe("parseSpannerPlan", () => {
     ["Distributed Union", SPANNER_PLAN_INVALID_JSON_MESSAGE],
     ["{}", SPANNER_PLAN_NO_PLAN_MESSAGE],
     ['{"planNodes": []}', SPANNER_PLAN_NO_PLAN_MESSAGE],
-    // What the Spanner emulator returns, since it does not plan queries.
+    // What Bytebase returns for the Spanner emulator, which does not plan queries.
     [
-      '{"planNodes": [{"displayName": "No query plan"}]}',
-      SPANNER_PLAN_NO_PLAN_MESSAGE,
+      '{"planNodes":[{"index":0,"kind":"KIND_UNSPECIFIED","displayName":"No query plan"}]}',
+      SPANNER_PLAN_EMULATOR_MESSAGE,
     ],
   ])("rejects %j with a specific message", (source, message) => {
     expect(parseSpannerPlan(source)).toEqual({ ok: false, message });

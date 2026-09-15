@@ -79,10 +79,18 @@ describe("parsePostgresPlan", () => {
       id: "0.0",
       nodeType: "Bitmap Index Scan",
       subject: "orders_customer_id_idx",
-      relationship: "Outer",
       selfCost: 4.37,
     });
     expect(propertyValue(indexScan, "Index Cond")).toBe("(customer_id = 42)");
+  });
+
+  test("leaves out the Outer relationship every child has unless it says otherwise", () => {
+    const { nodes } = parseFixture(hashJoinAggregateSort);
+    const byId = new Map(nodes.map((node) => [node.id, node]));
+
+    // The join's probe side is PostgreSQL's default "Outer"; its hash is "Inner".
+    expect(byId.get("0.0.0.0")?.relationship).toBeUndefined();
+    expect(byId.get("0.0.0.1")?.relationship).toBe("Inner");
   });
 
   test("walks a hash join plan depth-first and joins list-valued properties", () => {

@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { PLAN_FULL_TABLE_SCAN, type PlanNode } from "./plan-model";
 import { QueryPlanNodeDetails } from "./QueryPlanNodeDetails";
 
@@ -95,6 +95,20 @@ describe("QueryPlanNodeDetails", () => {
     expect(warnings[0]).toHaveTextContent(/an index on the filtered columns/);
     expect(warnings[1]).toHaveTextContent("No join predicate");
     expect(screen.getAllByRole("alert")).toEqual(warnings);
+  });
+
+  test("shows a warning the engine repeats as often as it reports it", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <QueryPlanNodeDetails
+        node={node({ warnings: [PLAN_FULL_TABLE_SCAN, PLAN_FULL_TABLE_SCAN] })}
+      />
+    );
+
+    expect(screen.getAllByTestId("plan-details-warning")).toHaveLength(2);
+    // React reports colliding keys through console.error.
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
   test("says nothing when the node has no warnings", () => {

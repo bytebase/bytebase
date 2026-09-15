@@ -2,16 +2,20 @@ import { describe, expect, test } from "vitest";
 import {
   addPlanProperty,
   buildPlanTree,
+  checkPlanDepth,
   findPlanNode,
   flattenPlan,
   formatPlanCost,
   formatPlanCount,
   formatPlanShare,
+  isJsonRecord,
   PLAN_EDGE_MAX_WIDTH,
   PLAN_EDGE_MIN_WIDTH,
+  PLAN_TOO_DEEP_MESSAGE,
   type PlanNode,
   type PlanProperty,
   type PlanTree,
+  parseWithDepthLimit,
   planCollapsedAncestor,
   planCostByOperation,
   planCostliestNodes,
@@ -135,6 +139,44 @@ describe("buildPlanTree", () => {
   });
 });
 
+describe("parseWithDepthLimit", () => {
+  test("builds the tree a parser returns", () => {
+    const result = parseWithDepthLimit(() => bareNode("0", [bareNode("0.0")]));
+    expect(result.ok && result.tree.nodes.map((entry) => entry.id)).toEqual([
+      "0",
+      "0.0",
+    ]);
+  });
+
+  test("turns a build that went too deep into the depth message", () => {
+    const chain = (depth: number): PlanNode => {
+      checkPlanDepth(depth);
+      return bareNode(String(depth), [chain(depth + 1)]);
+    };
+    expect(parseWithDepthLimit(() => chain(0))).toEqual({
+      ok: false,
+      message: PLAN_TOO_DEEP_MESSAGE,
+    });
+  });
+
+  test("lets any other error through", () => {
+    expect(() =>
+      parseWithDepthLimit(() => {
+        throw new Error("boom");
+      })
+    ).toThrow("boom");
+  });
+});
+
+describe("isJsonRecord", () => {
+  test("is true only for a plain object", () => {
+    expect(isJsonRecord({ Plan: {} })).toBe(true);
+    expect(isJsonRecord([])).toBe(false);
+    expect(isJsonRecord(null)).toBe(false);
+    expect(isJsonRecord("Plan")).toBe(false);
+  });
+});
+
 describe("addPlanProperty", () => {
   test("appends a new label and folds a repeated one onto its own line", () => {
     const properties: PlanProperty[] = [];
@@ -238,6 +280,11 @@ describe("number formatting", () => {
     expect(formatPlanCost(0)).toBe("0");
     expect(formatPlanCost(1465.93)).toBe("1,465.93");
     expect(formatPlanCount(50000)).toBe("50,000");
+  });
+
+  test("keeps a fractional row estimate from rounding to a whole row", () => {
+    expect(formatPlanCount(1.56767)).toBe("1.57");
+    expect(formatPlanCount(16660.5)).toBe("16,660.5");
   });
 
   test("keeps a fractional cost's leading digits rather than rounding it away", () => {

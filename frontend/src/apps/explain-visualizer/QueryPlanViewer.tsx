@@ -267,6 +267,19 @@ const MONOSPACE_BLOCK_CLASS =
   "font-mono text-xs leading-4 break-words whitespace-pre-wrap text-main";
 
 /**
+ * The raw plan tab's content. The tab mounts it only while open, so a large
+ * plan is formatted when someone reads it rather than on every page load.
+ */
+function RawPlan({ source }: { source: string }) {
+  const formatted = useMemo(() => formatPlanSource(source), [source]);
+  return (
+    <CopyablePanel content={formatted} label="Copy plan">
+      <pre className={MONOSPACE_BLOCK_CLASS}>{formatted}</pre>
+    </CopyablePanel>
+  );
+}
+
+/**
  * The node a fragment names, ignoring one that names a node this plan does not
  * have: a stale or hand-edited link should open the plan, not break it.
  */
@@ -292,7 +305,6 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
   );
 
   const selectedNode = findPlanNode(tree, selectedId);
-  const formattedPlan = useMemo(() => formatPlanSource(rawPlan), [rawPlan]);
   const stacked = useMediaQuery(STACK_QUERY);
   const highlightOptions = HIGHLIGHT_OPTIONS.filter((option) =>
     option.available(tree.estimates)
@@ -454,9 +466,7 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
         value="raw"
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <CopyablePanel content={formattedPlan} label="Copy plan">
-          <pre className={MONOSPACE_BLOCK_CLASS}>{formattedPlan}</pre>
-        </CopyablePanel>
+        <RawPlan source={rawPlan} />
       </TabsPanel>
 
       <TabsPanel

@@ -1,15 +1,14 @@
 import {
   addPlanProperty,
-  buildPlanTree,
+  checkPlanDepth,
   formatPlanCost,
   formatPlanShare,
   PLAN_FULL_TABLE_SCAN,
-  PLAN_MAX_DEPTH,
-  PLAN_TOO_DEEP_MESSAGE,
   type PlanNode,
   type PlanParseResult,
   type PlanProperty,
   type PlanWarning,
+  parseWithDepthLimit,
   planSelfCost,
 } from "./plan-model";
 
@@ -32,9 +31,6 @@ export const MSSQL_PLAN_INVALID_XML_MESSAGE =
   "The query plan is not valid XML. SHOWPLAN_XML output is expected.";
 export const MSSQL_PLAN_NO_PLAN_MESSAGE =
   "The query plan XML is not a SQL Server showplan with at least one statement.";
-
-/** Raised by the node builders and caught by `parseMssqlPlan` alone. */
-const PLAN_TOO_DEEP = new Error(PLAN_TOO_DEEP_MESSAGE);
 
 const STATEMENT_ELEMENTS = new Set([
   "StmtSimple",
@@ -87,6 +83,9 @@ const FULL_TABLE_SCAN_OPERATORS = new Set([
  */
 const FULL_SCAN_ROWS_THRESHOLD = 5000;
 
+/** Longest name SQL Server accepts for an index, as for any identifier. */
+const MAX_IDENTIFIER_LENGTH = 128;
+
 const SEEK_OPERATORS: Record<string, string> = {
   EQ: "=",
   NE: "<>",
@@ -133,6 +132,10 @@ function unbracket(identifier: string): string {
   return match ? match[1].replaceAll("]]", "]") : identifier;
 }
 
+function bracket(identifier: string): string {
+  return `[${identifier.replaceAll("]", "]]")}]`;
+}
+
 /** `o.customer_id`: the alias or table a column comes from, and the column. */
 function columnName(reference: Element): string {
   const column = unbracket(reference.getAttribute("Column") ?? "");
@@ -151,6 +154,96 @@ function scalarStrings(element: Element | undefined): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Attributes the showplan schema types as booleans, among those on the
+ * elements read here. SQL Server writes most of them as 1 or 0.
+ */
+const BOOLEAN_ATTRIBUTES = new Set([
+  "BatchModeOnRowStoreUsed",
+  "BitmapCreator",
+  "ComputeSequence",
+  "ContainsInlineScalarTsqlUdfs",
+  "ContainsInterleavedExecutionCandidates",
+  "ContainsLedgerTables",
+  "DMLRequestSort",
+  "Distinct",
+  "DynamicSeek",
+  "ExclusiveProfileTimeActive",
+  "ForceScan",
+  "ForceSeek",
+  "ForcedIndex",
+  "ForwardOnly",
+  "GroupExecuted",
+  "InRow",
+  "IsAdaptive",
+  "IsDistributed",
+  "IsExternal",
+  "IsExternallyComputed",
+  "IsFull",
+  "IsGraphDBTransitiveClosure",
+  "IsHashDistributed",
+  "IsNoOp",
+  "IsPercent",
+  "IsReplicated",
+  "IsRoundRobin",
+  "IsScalar",
+  "LocalParallelism",
+  "Lookup",
+  "ManyToMany",
+  "NoExpandHint",
+  "Optimized",
+  "Ordered",
+  "Parallel",
+  "Partitioned",
+  "RemoteDataAccess",
+  "Remoting",
+  "RowCount",
+  "SecurityPolicyApplied",
+  "Stack",
+  "StartupExpression",
+  "UsePlan",
+  "WithOrderedPrefetch",
+  "WithTies",
+  "WithUnorderedPrefetch",
+]);
+
+/** Units of the attributes that measure memory or time, per the showplan schema. */
+const ATTRIBUTE_UNITS: Record<string, string> = {
+  CachedPlanSize: "KB",
+  CompileTime: "ms",
+  CompileCPU: "ms",
+  CompileMemory: "KB",
+  MemoryGrant: "KB",
+  SerialRequiredMemory: "KB",
+  SerialDesiredMemory: "KB",
+  RequiredMemory: "KB",
+  DesiredMemory: "KB",
+  RequestedMemory: "KB",
+  GrantWaitTime: "s",
+  GrantedMemory: "KB",
+  MaxUsedMemory: "KB",
+  MaxQueryMemory: "KB",
+  LastRequestedMemory: "KB",
+};
+
+/** SQL Server writes numbers far from one in exponent form, as in `1.157e-06`. */
+const EXPONENT_NUMBER = /^[-+]?\d+(\.\d+)?e[-+]?\d+$/i;
+const plainNumberFormat = new Intl.NumberFormat("en-US", {
+  maximumSignificantDigits: 15,
+  useGrouping: false,
+});
+
+function formatAttribute(name: string, value: string): string {
+  if (BOOLEAN_ATTRIBUTES.has(name) || value === "true" || value === "false") {
+    return isTrue(value) ? "True" : "False";
+  }
+  const number = EXPONENT_NUMBER.test(value)
+    ? plainNumberFormat.format(Number(value))
+    : value;
+  const unit = ATTRIBUTE_UNITS[name];
+  return unit ? `${number} ${unit}` : number;
+}
+
 function addAttributes(
   properties: PlanProperty[],
   element: Element | undefined,
@@ -158,7 +251,11 @@ function addAttributes(
 ) {
   for (const attribute of Array.from(element?.attributes ?? [])) {
     if (skip.has(attribute.name)) continue;
-    addPlanProperty(properties, humanize(attribute.name), attribute.value);
+    addPlanProperty(
+      properties,
+      humanize(attribute.name),
+      formatAttribute(attribute.name, attribute.value)
+    );
   }
 }
 
@@ -172,24 +269,39 @@ function objectFullName(object: Element): string {
   return alias ? `${name} ${alias}` : name;
 }
 
-function formatSeekPredicates(seekPredicates: Element): string {
-  const ranges = Array.from(seekPredicates.getElementsByTagName("*")).filter(
-    (element) =>
-      element.localName === "Prefix" ||
-      element.localName === "StartRange" ||
-      element.localName === "EndRange"
+function descendantsNamed(
+  element: Element,
+  names: ReadonlySet<string>
+): Element[] {
+  return Array.from(element.getElementsByTagName("*")).filter((descendant) =>
+    names.has(descendant.localName)
   );
-  return ranges
-    .flatMap((range) => {
-      const scanType = range.getAttribute("ScanType") ?? "";
-      const operator = SEEK_OPERATORS[scanType] ?? scanType;
-      const columns = columnList(firstChild(range, "RangeColumns"));
-      const values = scalarStrings(firstChild(range, "RangeExpressions"));
-      return columns.map((column, index) =>
-        [column, operator, values[index]].filter(Boolean).join(" ")
-      );
-    })
-    .join(" AND ");
+}
+
+const SEEK_ELEMENTS = new Set(["SeekPredicate", "SeekPredicateNew"]);
+const SEEK_RANGE_ELEMENTS = new Set(["Prefix", "StartRange", "EndRange"]);
+
+/**
+ * The ranges within one seek all hold, but each seek is a range of its own —
+ * one per value of an IN list — so separate seeks are alternatives.
+ */
+function formatSeekPredicates(seekPredicates: Element): string {
+  return descendantsNamed(seekPredicates, SEEK_ELEMENTS)
+    .map((seek) =>
+      descendantsNamed(seek, SEEK_RANGE_ELEMENTS)
+        .flatMap((range) => {
+          const scanType = range.getAttribute("ScanType") ?? "";
+          const operator = SEEK_OPERATORS[scanType] ?? scanType;
+          const columns = columnList(firstChild(range, "RangeColumns"));
+          const values = scalarStrings(firstChild(range, "RangeExpressions"));
+          return columns.map((column, index) =>
+            [column, operator, values[index]].filter(Boolean).join(" ")
+          );
+        })
+        .join(" AND ")
+    )
+    .filter(Boolean)
+    .join(" OR ");
 }
 
 function formatDefinedValues(definedValues: Element): string {
@@ -239,22 +351,44 @@ function pairColumns(left: string[], right: string[]): string {
     .join(", ");
 }
 
-function toServerWarnings(warnings: Element | undefined): PlanWarning[] {
+/** Warnings SQL Server raises as a flag on `<Warnings>`, by attribute name. */
+const FLAG_WARNINGS: Record<string, PlanWarning> = {
+  NoJoinPredicate: {
+    title: "No join predicate",
+    detail:
+      "The join has no condition, so every row of one input is paired with every row of the other.",
+  },
+  UnmatchedIndexes: {
+    title: "Unmatched indexes",
+    detail:
+      "A filtered index could not be used because the statement is parameterized.",
+  },
+};
+
+/**
+ * `unmatchedIndexes` names the filtered indexes the flag is about, which SQL
+ * Server lists beside `<Warnings>` in the query plan rather than inside it.
+ */
+function toServerWarnings(
+  warnings: Element | undefined,
+  unmatchedIndexes: readonly string[] = []
+): PlanWarning[] {
   if (!warnings) return [];
   const result: PlanWarning[] = [];
   for (const attribute of Array.from(warnings.attributes)) {
     if (!isTrue(attribute.value)) continue;
+    if (attribute.name === "UnmatchedIndexes" && unmatchedIndexes.length > 0) {
+      result.push({
+        title: FLAG_WARNINGS.UnmatchedIndexes.title,
+        detail: `The statement is parameterized, so SQL Server could not use the filtered ${unmatchedIndexes.length === 1 ? "index" : "indexes"} ${unmatchedIndexes.join(", ")}.`,
+      });
+      continue;
+    }
     result.push(
-      attribute.name === "NoJoinPredicate"
-        ? {
-            title: "No join predicate",
-            detail:
-              "The join has no condition, so every row of one input is paired with every row of the other.",
-          }
-        : {
-            title: humanize(attribute.name),
-            detail: "SQL Server flagged this while planning the operator.",
-          }
+      FLAG_WARNINGS[attribute.name] ?? {
+        title: humanize(attribute.name),
+        detail: "SQL Server flagged this while compiling the plan.",
+      }
     );
   }
   for (const child of childElements(warnings)) {
@@ -271,15 +405,22 @@ function toServerWarnings(warnings: Element | undefined): PlanWarning[] {
           detail: `Estimates over ${columnList(child).join(", ")} were made without statistics, so they may be far off.`,
         });
         break;
-      default:
+      default: {
+        const details = [
+          ...Array.from(child.attributes).map(
+            (attribute) =>
+              `${humanize(attribute.name)}: ${formatAttribute(attribute.name, attribute.value)}`
+          ),
+          ...columnList(child),
+        ];
         result.push({
           title: humanize(child.localName),
-          detail: Array.from(child.attributes)
-            .map(
-              (attribute) => `${humanize(attribute.name)}: ${attribute.value}`
-            )
-            .join(", "),
+          detail:
+            details.length > 0
+              ? details.join(", ")
+              : "SQL Server flagged this while compiling the plan.",
         });
+      }
     }
   }
   return result;
@@ -307,13 +448,15 @@ function toMissingIndexWarnings(queryPlan: Element): PlanWarning[] {
       const keys = columns(["EQUALITY", "INEQUALITY"]);
       const includes = columns(["INCLUDE"]);
       const table = index.getAttribute("Table") ?? "";
-      const name = ["idx", unbracket(table), ...keys.map(unbracket)].join("_");
+      const name = ["idx", unbracket(table), ...keys.map(unbracket)]
+        .join("_")
+        .slice(0, MAX_IDENTIFIER_LENGTH);
       const target = [index.getAttribute("Schema"), table]
         .filter(Boolean)
         .join(".");
       const include =
         includes.length > 0 ? ` INCLUDE (${includes.join(", ")})` : "";
-      const statement = `CREATE NONCLUSTERED INDEX [${name}] ON ${target} (${keys.join(", ")})${include};`;
+      const statement = `CREATE NONCLUSTERED INDEX ${bracket(name)} ON ${target} (${keys.join(", ")})${include};`;
       const impact = numberAttribute(group, "Impact");
       return {
         title: "Missing index",
@@ -332,6 +475,26 @@ interface PlanChild {
 }
 
 /**
+ * The label an IF's branch, a cursor's operation or a called function puts on
+ * the plans under it. A function goes by the name a query calls it with,
+ * `dbo.order_count` for `[plandb].[dbo].[order_count]`.
+ */
+function branchLabel(element: Element): string | undefined {
+  if (BRANCH_ELEMENTS.has(element.localName)) return element.localName;
+  if (element.localName === "Operation") {
+    return humanize(element.getAttribute("OperationType") ?? "") || undefined;
+  }
+  if (element.localName === "UDF") {
+    const name = element.getAttribute("ProcName") ?? "";
+    const parts = Array.from(name.matchAll(/\[((?:[^\]]|\]\])*)\]/g), (match) =>
+      match[1].replaceAll("]]", "]")
+    );
+    return (parts.length > 0 ? parts.slice(-2).join(".") : name) || undefined;
+  }
+  return undefined;
+}
+
+/**
  * The statements and operators directly below `element`: the nearest ones at
  * any depth, since SQL Server nests them inside elements that are neither.
  */
@@ -345,10 +508,7 @@ function planChildren(element: Element): PlanChild[] {
       ) {
         found.push({ element: child, relationship });
       } else {
-        visit(
-          child,
-          BRANCH_ELEMENTS.has(child.localName) ? child.localName : relationship
-        );
+        visit(child, branchLabel(child) ?? relationship);
       }
     }
   };
@@ -363,17 +523,23 @@ function toChildren(element: Element, id: string, depth: number): PlanNode[] {
 }
 
 function toNode(child: PlanChild, id: string, depth: number): PlanNode {
-  if (depth > PLAN_MAX_DEPTH) throw PLAN_TOO_DEEP;
+  checkPlanDepth(depth);
   return child.element.localName === "RelOp"
     ? toOperatorNode(child, id, depth)
     : toStatementNode(child, id, depth);
 }
 
-/** The query plans a statement owns, as opposed to ones nested statements do. */
+/**
+ * The query plans a statement owns, as opposed to ones nested statements do:
+ * its own, an IF's condition, and each operation of a cursor.
+ */
 function ownQueryPlans(statement: Element): Element[] {
   return [
     ...childElements(statement, "QueryPlan"),
     ...childElements(firstChild(statement, "Condition"), "QueryPlan"),
+    ...childElements(firstChild(statement, "CursorPlan"), "Operation").flatMap(
+      (operation) => childElements(operation, "QueryPlan")
+    ),
   ];
 }
 
@@ -385,9 +551,10 @@ function toStatementNode(
   const children = toChildren(element, id, depth);
   const queryPlans = ownQueryPlans(element);
 
-  // The operators below a statement account for its cost, and a statement
-  // holding others costs what they do; only a statement with neither keeps
-  // the cost SQL Server gave it.
+  // A statement costs what the operators and statements under it do, a
+  // called function's body included once, though SQL Server leaves that out
+  // of its own estimate; only a statement with neither keeps the cost SQL
+  // Server gave it.
   const totalCost = children.some((child) => child.totalCost !== undefined)
     ? children.reduce((sum, child) => sum + (child.totalCost ?? 0), 0)
     : numberAttribute(element, "StatementSubTreeCost");
@@ -395,7 +562,13 @@ function toStatementNode(
   const text = element.getAttribute("StatementText") ?? "";
   const properties: PlanProperty[] = [];
   addPlanProperty(properties, "Statement", text.trim());
+  addPlanProperty(
+    properties,
+    "Procedure Name",
+    firstChild(element, "StoredProc")?.getAttribute("ProcName") ?? ""
+  );
   addAttributes(properties, element, PROMOTED_STATEMENT_ATTRIBUTES);
+  addAttributes(properties, firstChild(element, "CursorPlan"));
   for (const queryPlan of queryPlans) {
     addAttributes(properties, queryPlan);
     addAttributes(properties, firstChild(queryPlan, "MemoryGrantInfo"));
@@ -423,7 +596,16 @@ function toStatementNode(
     rows: numberAttribute(element, "StatementEstRows"),
     properties,
     warnings: queryPlans.flatMap((queryPlan) => [
-      ...toServerWarnings(firstChild(queryPlan, "Warnings")),
+      ...toServerWarnings(
+        firstChild(queryPlan, "Warnings"),
+        childElements(
+          firstChild(
+            firstChild(queryPlan, "UnmatchedIndexes"),
+            "Parameterization"
+          ),
+          "Object"
+        ).map(objectFullName)
+      ),
       ...toMissingIndexWarnings(queryPlan),
     ]),
     children,
@@ -507,6 +689,13 @@ function toOperatorProperties(
       humanize(child.localName),
       formatOperatorElement(child)
     );
+    if (child.localName === "Object") {
+      addPlanProperty(
+        properties,
+        "Index Kind",
+        child.getAttribute("IndexKind") ?? ""
+      );
+    }
   }
   addPlanProperty(
     properties,
@@ -613,23 +802,21 @@ export function parseMssqlPlan(source: string): PlanParseResult {
   }
 
   const root = document.documentElement;
+  // A batch can split its statements across several `<Statements>`, one
+  // each, as SQL Server 2016 writes them.
   const statements =
     root.localName === "ShowPlanXML"
-      ? childElements(firstChild(root, "BatchSequence"), "Batch").flatMap(
-          (batch) =>
-            childElements(firstChild(batch, "Statements")).filter((element) =>
+      ? childElements(firstChild(root, "BatchSequence"), "Batch")
+          .flatMap((batch) => childElements(batch, "Statements"))
+          .flatMap((block) =>
+            childElements(block).filter((element) =>
               STATEMENT_ELEMENTS.has(element.localName)
             )
-        )
+          )
       : [];
   if (statements.length === 0) {
     return { ok: false, message: MSSQL_PLAN_NO_PLAN_MESSAGE };
   }
 
-  try {
-    return { ok: true, tree: buildPlanTree(toRoot(statements)) };
-  } catch (error) {
-    if (error !== PLAN_TOO_DEEP) throw error;
-    return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
-  }
+  return parseWithDepthLimit(() => toRoot(statements));
 }

@@ -89,9 +89,33 @@ export type PlanParseResult =
  * showing the parse error. The cap is an order of magnitude below the depth
  * any of those walks fails at, and far above any plan an optimizer produces.
  */
-export const PLAN_MAX_DEPTH = 500;
+const PLAN_MAX_DEPTH = 500;
 
 export const PLAN_TOO_DEEP_MESSAGE = `The query plan nests more than ${PLAN_MAX_DEPTH} levels deep, which is deeper than this visualizer can draw.`;
+
+/** Raised by `checkPlanDepth` and caught by `parseWithDepthLimit` alone. */
+const PLAN_TOO_DEEP = new Error(PLAN_TOO_DEEP_MESSAGE);
+
+/** Called by a parser for each level it builds; past the cap it stops the build. */
+export function checkPlanDepth(depth: number) {
+  if (depth > PLAN_MAX_DEPTH) throw PLAN_TOO_DEEP;
+}
+
+/** A parser's tree from `build`, or the depth message when it went too deep. */
+export function parseWithDepthLimit(build: () => PlanNode): PlanParseResult {
+  try {
+    return { ok: true, tree: buildPlanTree(build()) };
+  } catch (error) {
+    if (error !== PLAN_TOO_DEEP) throw error;
+    return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
+  }
+}
+
+export type JsonRecord = Record<string, unknown>;
+
+export function isJsonRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 /**
  * Appends a property, folding a value under a label already present into that
@@ -329,8 +353,9 @@ const costFormat = new Intl.NumberFormat("en-US", {
 const fractionalCostFormat = new Intl.NumberFormat("en-US", {
   maximumSignificantDigits: 3,
 });
+// SQL Server estimates rows as fractions, and 1.57 rows is not 2.
 const countFormat = new Intl.NumberFormat("en-US", {
-  maximumFractionDigits: 0,
+  maximumFractionDigits: 2,
 });
 
 /** What a surface prints for an estimate the engine did not report. */

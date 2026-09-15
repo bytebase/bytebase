@@ -32,6 +32,12 @@ psql -At -c "EXPLAIN (FORMAT JSON) <query>" > postgres/<shape>.json
 with `orders_customer_id_idx` on `orders(customer_id)`. Each file is one
 statement run with `SET SHOWPLAN_XML ON`, which is how the driver runs them.
 
+The exception is `split-statements-batch.xml`, a SQL Server 2016 plan kept as
+published: `Cursors/cursor2.sqlplan` from
+[html-query-plan's test plans](https://github.com/JustinPealing/html-query-plan/tree/master/test_plans)
+(MIT License). SQL Server 2016 gives each statement of a batch its own
+`<Statements>` block, which SQL Server 2022 no longer does.
+
 | File | Shape it covers |
 | --- | --- |
 | `index-seek-key-lookup.xml` | Nested loops over an index seek and a key lookup |
@@ -42,6 +48,10 @@ statement run with `SET SHOWPLAN_XML ON`, which is how the driver runs them.
 | `if-else.xml` | An `IF` with its condition, `THEN` and `ELSE` |
 | `procedure-two-statements.xml` | A procedure call holding two statements |
 | `two-statement-batch.xml` | Two statements in one plan, under a batch |
+| `static-cursor.xml` | A cursor's population and fetch queries |
+| `scalar-udf.xml` | A call to a scalar function SQL Server doesn't inline, with the function's own statements |
+| `unmatched-filtered-index.xml` | A procedure whose parameter keeps SQL Server from using a filtered index |
+| `split-statements-batch.xml` | A batch of cursor statements, each in its own `<Statements>` block |
 
 To add one, run the statement in `sqlcmd` and keep the `<ShowPlanXML>` document
 from its output:

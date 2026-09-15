@@ -1,12 +1,13 @@
 import {
-  buildPlanTree,
+  checkPlanDepth,
+  isJsonRecord,
+  type JsonRecord,
   PLAN_FULL_TABLE_SCAN,
-  PLAN_MAX_DEPTH,
-  PLAN_TOO_DEEP_MESSAGE,
   type PlanNode,
   type PlanParseResult,
   type PlanProperty,
   type PlanWarning,
+  parseWithDepthLimit,
   planSelfCost,
 } from "./plan-model";
 
@@ -44,9 +45,6 @@ export const POSTGRES_PLAN_INVALID_JSON_MESSAGE =
 export const POSTGRES_PLAN_NO_PLAN_MESSAGE =
   'The query plan JSON does not contain a "Plan" object.';
 
-/** Raised by `toPlanNode` and caught by `parsePostgresPlan` alone. */
-const PLAN_TOO_DEEP = new Error(PLAN_TOO_DEEP_MESSAGE);
-
 /** Node types that read a whole table, spelled as `toNodeType` names them. */
 const FULL_TABLE_SCAN_TYPES = new Set(["Seq Scan", "Parallel Seq Scan"]);
 
@@ -66,12 +64,6 @@ function toWarnings(nodeType: string, totalCost: number): PlanWarning[] {
     totalCost >= FULL_SCAN_COST_THRESHOLD
     ? [PLAN_FULL_TABLE_SCAN]
     : [];
-}
-
-type JsonRecord = Record<string, unknown>;
-
-function isRecord(value: unknown): value is JsonRecord {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function toNumber(value: unknown): number {
@@ -194,7 +186,8 @@ function toRelationship(raw: JsonRecord): string | undefined {
   const subplan = raw["Subplan Name"];
   if (typeof subplan === "string" && subplan) return subplan;
   const parent = raw["Parent Relationship"];
-  if (typeof parent === "string" && parent) return parent;
+  // "Outer" is the default relationship and carries no information.
+  if (typeof parent === "string" && parent && parent !== "Outer") return parent;
   return undefined;
 }
 
@@ -202,12 +195,12 @@ function toChildren(raw: JsonRecord, id: string, depth: number): PlanNode[] {
   const rawChildren = raw[CHILDREN_KEY];
   if (!Array.isArray(rawChildren)) return [];
   return rawChildren
-    .filter(isRecord)
+    .filter(isJsonRecord)
     .map((child, index) => toPlanNode(child, `${id}.${index}`, depth + 1));
 }
 
 function toPlanNode(raw: JsonRecord, id: string, depth: number): PlanNode {
-  if (depth > PLAN_MAX_DEPTH) throw PLAN_TOO_DEEP;
+  checkPlanDepth(depth);
   const children = toChildren(raw, id, depth);
   const nodeType = toNodeType(raw);
   const totalCost = toNumber(raw["Total Cost"]);
@@ -265,14 +258,10 @@ export function parsePostgresPlan(source: string): PlanParseResult {
   }
 
   const entry = Array.isArray(parsed) ? parsed[0] : parsed;
-  if (!isRecord(entry) || !isRecord(entry["Plan"])) {
+  const plan = isJsonRecord(entry) ? entry["Plan"] : undefined;
+  if (!isJsonRecord(plan)) {
     return { ok: false, message: POSTGRES_PLAN_NO_PLAN_MESSAGE };
   }
 
-  try {
-    return { ok: true, tree: buildPlanTree(toPlanNode(entry["Plan"], "0", 0)) };
-  } catch (error) {
-    if (error !== PLAN_TOO_DEEP) throw error;
-    return { ok: false, message: PLAN_TOO_DEEP_MESSAGE };
-  }
+  return parseWithDepthLimit(() => toPlanNode(plan, "0", 0));
 }

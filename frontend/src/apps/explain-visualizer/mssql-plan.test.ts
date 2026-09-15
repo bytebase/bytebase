@@ -18,7 +18,11 @@ import indexSeekKeyLookup from "./test-data/mssql/index-seek-key-lookup.xml?raw"
 import missingIndex from "./test-data/mssql/missing-index.xml?raw";
 import noJoinPredicate from "./test-data/mssql/no-join-predicate.xml?raw";
 import procedureTwoStatements from "./test-data/mssql/procedure-two-statements.xml?raw";
+import scalarUdf from "./test-data/mssql/scalar-udf.xml?raw";
+import splitStatementsBatch from "./test-data/mssql/split-statements-batch.xml?raw";
+import staticCursor from "./test-data/mssql/static-cursor.xml?raw";
 import twoStatementBatch from "./test-data/mssql/two-statement-batch.xml?raw";
+import unmatchedFilteredIndex from "./test-data/mssql/unmatched-filtered-index.xml?raw";
 
 const SHOWPLAN_NS = "http://schemas.microsoft.com/sqlserver/2004/07/showplan";
 
@@ -143,11 +147,12 @@ describe("parseMssqlPlan", () => {
     const seek = byType(tree, "Index Seek");
     const lookup = byType(tree, "Key Lookup");
 
-    expect(seek.properties.slice(0, 2)).toEqual([
+    expect(seek.properties.slice(0, 3)).toEqual([
       {
         label: "Object",
         value: "[plandb].[dbo].[orders].[orders_customer_id_idx]",
       },
+      { label: "Index Kind", value: "NonClustered" },
       { label: "Seek Predicates", value: "orders.customer_id = (42)" },
     ]);
     expect(propertyValue(seek, "Output List")).toBe(
@@ -160,6 +165,21 @@ describe("parseMssqlPlan", () => {
     expect(propertyValue(lookup, "Estimated Executions")).toBe("10");
     expect(propertyValue(tree.root, "Parameter List")).toBe("@1 = (42)");
     expect(propertyValue(tree.root, "Statement Optm Level")).toBe("FULL");
+  });
+
+  test("writes flags, sizes, times and tiny numbers out the way SSMS shows them", () => {
+    const tree = parseFixture(indexSeekKeyLookup);
+    const seek = byType(tree, "Index Seek");
+
+    expect(propertyValue(seek, "Ordered")).toBe("True");
+    expect(propertyValue(seek, "Forced Index")).toBe("False");
+    expect(propertyValue(byType(tree, "Key Lookup"), "Lookup")).toBe("True");
+    expect(propertyValue(tree.root, "Retrieved From Cache")).toBe("False");
+    expect(propertyValue(tree.root, "Cached Plan Size")).toBe("32 KB");
+    expect(propertyValue(tree.root, "Compile Time")).toBe("1 ms");
+    expect(
+      propertyValue(byType(tree, "Nested Loops (Inner Join)"), "Estimate CPU")
+    ).toBe("0.0000418");
   });
 
   test("keeps fields the model already has out of the property list", () => {
@@ -203,11 +223,27 @@ describe("parseMssqlPlan", () => {
     const { root } = parseFixture(procedureTwoStatements);
 
     expect(root.nodeType).toBe("EXECUTE PROC");
+    expect(propertyValue(root, "Procedure Name")).toBe("dbo.region_report");
     expect(root.children.map((child) => child.nodeType)).toEqual([
       "SELECT",
       "SELECT",
     ]);
     expect(root.totalCost).toBeCloseTo(0.0343858 + 1.60801, 9);
+  });
+
+  test("labels a called function's statements with the function's name", () => {
+    const { root } = parseFixture(scalarUdf);
+
+    expect(
+      root.children.map((child) => [child.relationship, child.nodeType])
+    ).toEqual([
+      [undefined, "Compute Scalar"],
+      ["dbo.order_count", "SELECT"],
+      ["dbo.order_count", "RETURN"],
+    ]);
+    // SQL Server's own estimate for the statement, 0.00345998, leaves the
+    // function out.
+    expect(root.totalCost).toBeCloseTo(0.00345998 + 0.0032842, 9);
   });
 
   test("roots a batch of statements in one tree", () => {
@@ -219,6 +255,23 @@ describe("parseMssqlPlan", () => {
       "; SELECT COUNT(*) FROM orders",
     ]);
     expect(root.totalCost).toBeCloseTo(0.0354862 + 0.151986, 9);
+  });
+
+  test("reads every statement of a batch that gives each its own block", () => {
+    const { root } = parseFixture(splitStatementsBatch);
+
+    expect(root.children.map((child) => child.nodeType)).toEqual([
+      "CREATE TABLE",
+      "ASSIGN",
+      "EXECUTE STRING",
+      "DECLARE CURSOR",
+      "OPEN CURSOR",
+      "FETCH CURSOR",
+      "COND",
+      "CLOSE CURSOR",
+      "DEALLOCATE CURSOR",
+      "DROP OBJECT",
+    ]);
   });
 
   test("turns an operator warning SQL Server reports into a node warning", () => {
@@ -270,6 +323,136 @@ describe("parseMssqlPlan", () => {
     expect(
       byType(parseFixture(hashJoinAggregateSort), "Index Scan").warnings
     ).toEqual([]);
+  });
+
+  test("reads separate seeks as alternatives and one seek's ranges as all holding", () => {
+    const range = (
+      element: string,
+      scanType: string,
+      column: string,
+      value: string
+    ) =>
+      `<${element} ScanType="${scanType}"><RangeColumns><ColumnReference Table="[orders]" Column="${column}"/></RangeColumns><RangeExpressions><ScalarOperator ScalarString="${value}"/></RangeExpressions></${element}>`;
+    const seek = (...ranges: string[]) =>
+      `<SeekPredicateNew><SeekKeys>${ranges.join("")}</SeekKeys></SeekPredicateNew>`;
+    const tree = parseFixture(
+      showplan(
+        `<StmtSimple StatementType="SELECT"><QueryPlan><RelOp NodeId="0" PhysicalOp="Index Seek" LogicalOp="Index Seek"><IndexScan><Object Table="[orders]" Index="[orders_customer_id_idx]"/><SeekPredicates>${seek(range("Prefix", "EQ", "customer_id", "(1)"))}${seek(range("Prefix", "EQ", "customer_id", "(2)"))}${seek(range("StartRange", "GT", "total", "(10)"), range("EndRange", "LT", "total", "(20)"))}</SeekPredicates></IndexScan></RelOp></QueryPlan></StmtSimple>`
+      )
+    );
+
+    // An IN list seeks once per value; a range seek bounds both ends at once.
+    expect(propertyValue(byType(tree, "Index Seek"), "Seek Predicates")).toBe(
+      "orders.customer_id = (1) OR orders.customer_id = (2) OR orders.total > (10) AND orders.total < (20)"
+    );
+  });
+
+  test("explains a flag SQL Server raises on a statement without naming an operator", () => {
+    const { root } = parseFixture(
+      showplan(
+        '<StmtSimple StatementType="SELECT"><QueryPlan><Warnings UnmatchedIndexes="true" SpatialGuess="1"/></QueryPlan></StmtSimple>'
+      )
+    );
+
+    expect(root.warnings).toEqual([
+      {
+        title: "Unmatched indexes",
+        detail:
+          "A filtered index could not be used because the statement is parameterized.",
+      },
+      {
+        title: "Spatial Guess",
+        detail: "SQL Server flagged this while compiling the plan.",
+      },
+    ]);
+  });
+
+  test("names the filtered indexes a parameterized statement could not use", () => {
+    const statement = byType(parseFixture(unmatchedFilteredIndex), "SELECT");
+
+    expect(statement.warnings).toContainEqual({
+      title: "Unmatched indexes",
+      detail:
+        "The statement is parameterized, so SQL Server could not use the filtered index [plandb].[dbo].[orders].[orders_big_total_idx].",
+    });
+  });
+
+  test("says what an unfamiliar warning names, and still says something when it names nothing", () => {
+    const { root } = parseFixture(
+      showplan(
+        '<StmtSimple StatementType="SELECT"><QueryPlan><Warnings><ColumnsWithStaleStatistics><ColumnReference Table="[customers]" Column="region"/></ColumnsWithStaleStatistics><SpillOccurred/></Warnings></QueryPlan></StmtSimple>'
+      )
+    );
+
+    expect(root.warnings).toEqual([
+      { title: "Columns With Stale Statistics", detail: "customers.region" },
+      {
+        title: "Spill Occurred",
+        detail: "SQL Server flagged this while compiling the plan.",
+      },
+    ]);
+  });
+
+  test("keeps a suggested index's name within SQL Server's identifier limit", () => {
+    const columns = [1, 2, 3, 4]
+      .map(
+        (n) =>
+          `<Column Name="[a_column_name_long_enough_to_matter_here_${n}]"/>`
+      )
+      .join("");
+    const { root } = parseFixture(
+      showplan(
+        `<StmtSimple StatementType="SELECT"><QueryPlan><MissingIndexes><MissingIndexGroup Impact="50"><MissingIndex Schema="[dbo]" Table="[customer_order_history]"><ColumnGroup Usage="EQUALITY">${columns}</ColumnGroup></MissingIndex></MissingIndexGroup></MissingIndexes></QueryPlan></StmtSimple>`
+      )
+    );
+    const name = /INDEX \[([^\]]+)\]/.exec(root.warnings[0].detail)?.[1] ?? "";
+
+    expect(name).toHaveLength(128);
+    expect(name.startsWith("idx_customer_order_history_")).toBe(true);
+  });
+
+  test("escapes a closing bracket in a suggested index's name", () => {
+    const { root } = parseFixture(
+      showplan(
+        '<StmtSimple StatementType="SELECT"><QueryPlan><MissingIndexes><MissingIndexGroup><MissingIndex Schema="[dbo]" Table="[sales]]2026]"><ColumnGroup Usage="EQUALITY"><Column Name="[total]"/></ColumnGroup></MissingIndex></MissingIndexGroup></MissingIndexes></QueryPlan></StmtSimple>'
+      )
+    );
+
+    expect(root.warnings[0].detail).toBe(
+      "SQL Server suggests this index: CREATE NONCLUSTERED INDEX [idx_sales]]2026_total] ON [dbo].[sales]]2026] ([total]);"
+    );
+  });
+
+  test("reads a cursor's query plans as the cursor statement's own", () => {
+    const { root } = parseFixture(
+      showplan(
+        '<StmtCursor StatementType="DECLARE CURSOR" StatementText="DECLARE c CURSOR FOR SELECT id FROM orders WHERE total = 500.99"><CursorPlan CursorName="c"><Operation OperationType="FetchQuery"><QueryPlan CachedPlanSize="16"><MissingIndexes><MissingIndexGroup Impact="90"><MissingIndex Schema="[dbo]" Table="[orders]"><ColumnGroup Usage="EQUALITY"><Column Name="[total]"/></ColumnGroup></MissingIndex></MissingIndexGroup></MissingIndexes><RelOp NodeId="0" PhysicalOp="Clustered Index Scan" LogicalOp="Clustered Index Scan"><IndexScan/></RelOp></QueryPlan></Operation></CursorPlan></StmtCursor>'
+      )
+    );
+
+    expect(root.nodeType).toBe("DECLARE CURSOR");
+    expect(root.children.map((child) => child.nodeType)).toEqual([
+      "Clustered Index Scan",
+    ]);
+    expect(root.warnings.map((warning) => warning.title)).toEqual([
+      "Missing index",
+    ]);
+    expect(propertyValue(root, "Cached Plan Size")).toBe("16 KB");
+  });
+
+  test("labels a cursor's population and fetch queries and says what kind of cursor it is", () => {
+    const { root } = parseFixture(staticCursor);
+
+    expect(root.nodeType).toBe("DECLARE CURSOR");
+    expect(
+      root.children.map((child) => [child.relationship, child.nodeType])
+    ).toEqual([
+      ["Populate Query", "Clustered Index Insert"],
+      ["Fetch Query", "Clustered Index Seek"],
+    ]);
+    expect(propertyValue(root, "Cursor Actual Type")).toBe("SnapShot");
+    expect(propertyValue(root, "Cursor Concurrency")).toBe("Read Only");
+    expect(propertyValue(root, "Forward Only")).toBe("False");
   });
 
   test("reads a plan nested deeper than anything the optimizer produces", () => {
