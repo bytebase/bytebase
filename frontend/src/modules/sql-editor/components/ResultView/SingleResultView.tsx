@@ -48,7 +48,12 @@ import {
   QueryOptionSchema,
   type QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { createExplainToken } from "@/utils/explainToken";
+import {
+  createExplainToken,
+  isVisualizerEngine,
+  VISUALIZER_EXPLAIN_FORMATS,
+  type VisualizerEngine,
+} from "@/utils/explainToken";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
@@ -392,32 +397,23 @@ function SingleResultViewInner({
     [flattenedTableView, result.masked]
   );
 
-  const showVisualizeButton =
-    (engine === Engine.POSTGRES ||
-      engine === Engine.MSSQL ||
-      engine === Engine.SPANNER) &&
-    !!params.explain;
+  const showVisualizeButton = isVisualizerEngine(engine) && !!params.explain;
 
   const visualizeExplain = async () => {
-    let token: string | undefined;
+    if (!isVisualizerEngine(engine)) return;
     try {
-      // Spanner explains as JSON already. PostgreSQL and SQL Server return the
-      // readable plan in the grid, so the visualizer re-runs the explain asking
-      // for the format it can render.
-      if (engine === Engine.SPANNER) {
-        token = getExplainTokenFromResult(result, engine);
-      } else {
-        token = await getExplainTokenForFormat(
-          database,
-          params,
-          runQuery,
-          engine,
-          engine === Engine.POSTGRES
-            ? QueryOption_ExplainFormat.JSON
-            : QueryOption_ExplainFormat.XML,
-          resultIndex
-        );
-      }
+      // Spanner explains only as JSON, so the result on screen already is the
+      // plan the visualizer reads; the other engines show a readable plan.
+      const token =
+        engine === Engine.SPANNER
+          ? getExplainTokenFromResult(result, engine)
+          : await getExplainToken(
+              database,
+              params,
+              runQuery,
+              engine,
+              resultIndex
+            );
       if (!token) {
         // The plan is fetched by a second query, so a failure here is invisible
         // unless we say so — the button would otherwise do nothing.
@@ -834,17 +830,18 @@ function getExplainTokenFromResult(
   return createExplainToken({ statement, explain, engine });
 }
 
-// getExplainTokenForFormat re-runs the explain in a format the visualizer can
-// render. The grid keeps the readable plan the user already sees, so the
-// renderable one is only fetched when they ask for it.
-async function getExplainTokenForFormat(
+// getExplainToken re-runs the explain in the format the visualizer reads for
+// the engine, whatever format the grid is showing, so the plan is only fetched
+// when the user asks for it.
+async function getExplainToken(
   database: Database,
   params: SQLEditorQueryParams,
   runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
-  engine: Engine,
-  explainFormat: QueryOption_ExplainFormat,
+  engine: VisualizerEngine,
   resultIndex: number
 ): Promise<string | undefined> {
+  const explainFormat =
+    QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {

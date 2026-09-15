@@ -1,17 +1,22 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import cteNestedLoopInitplan from "./test-data/cte-nested-loop-initplan.json";
-import hashJoinAggregateSort from "./test-data/hash-join-aggregate-sort.json";
-import seqScanFilter from "./test-data/seq-scan-filter.json";
-import type { PlanTree } from "./plan-model";
+import mssqlHashJoinAggregateSort from "./test-data/mssql/hash-join-aggregate-sort.xml?raw";
+import twoStatementBatch from "./test-data/mssql/two-statement-batch.xml?raw";
+import cteNestedLoopInitplan from "./test-data/postgres/cte-nested-loop-initplan.json";
+import hashJoinAggregateSort from "./test-data/postgres/hash-join-aggregate-sort.json";
+import seqScanFilter from "./test-data/postgres/seq-scan-filter.json";
+import { parseMssqlPlan } from "./mssql-plan";
+import type { PlanParseResult, PlanTree } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import { QueryPlanSummary } from "./QueryPlanSummary";
 
-const treeFrom = (plan: unknown): PlanTree => {
-  const result = parsePostgresPlan(JSON.stringify(plan));
+const treeOf = (result: PlanParseResult): PlanTree => {
   if (!result.ok) throw new Error(result.message);
   return result.tree;
 };
+
+const treeFrom = (plan: unknown): PlanTree =>
+  treeOf(parsePostgresPlan(JSON.stringify(plan)));
 
 /** A plan the planner costs at nothing, as a `VALUES`-only statement is. */
 const zeroCostPlan = [
@@ -64,7 +69,7 @@ describe("QueryPlanSummary", () => {
     expect(
       screen.getByText("Estimated rows returned").nextSibling
     ).toHaveTextContent("3");
-    expect(screen.getByText(/planner estimate rather than a measurement/))
+    expect(screen.getByText(/optimizer estimate rather than a measurement/))
       .toBeVisible();
     expect(
       screen.getByText(/comparable only within this plan/)
@@ -261,6 +266,30 @@ describe("QueryPlanSummary", () => {
         .getAllByTestId("plan-operation-row")
         .map((row) => row.textContent)
     ).toEqual(["Limit100%", "Result100%"]);
+  });
+
+  test("leaves the cost ranges out of a plan without startup costs", () => {
+    renderSummary({ tree: treeOf(parseMssqlPlan(mssqlHashJoinAggregateSort)) });
+
+    expect(screen.queryByText("Cost ranges")).toBeNull();
+    expect(screen.queryByTestId("plan-timeline")).toBeNull();
+    // The rest of the summary reads SQL Server's costs like any other.
+    expect(
+      screen.getByText("Total estimated cost").nextSibling
+    ).toHaveTextContent("0.277");
+    expect(screen.getAllByTestId("plan-costliest-row")[0]).toHaveTextContent(
+      "Index Scan"
+    );
+    expect(screen.getAllByTestId("plan-operation-row").length).toBeGreaterThan(
+      0
+    );
+  });
+
+  test("leaves out the rows returned when the root estimates none", () => {
+    renderSummary({ tree: treeOf(parseMssqlPlan(twoStatementBatch)) });
+
+    expect(screen.getByText("Nodes").nextSibling).toHaveTextContent("9");
+    expect(screen.queryByText("Estimated rows returned")).toBeNull();
   });
 
   test("renders a subject containing markup as text, not as markup", () => {

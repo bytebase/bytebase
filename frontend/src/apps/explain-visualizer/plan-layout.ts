@@ -66,6 +66,7 @@ export interface PlanLayoutEdge {
 }
 
 export interface PlanLayout {
+  /** Every card on the canvas, root first. */
   readonly nodes: readonly PlanLayoutNode[];
   readonly edges: readonly PlanLayoutEdge[];
   readonly width: number;
@@ -149,6 +150,70 @@ export interface PlanViewportSize {
   readonly height: number;
 }
 
+export const PLAN_IDENTITY_VIEWPORT: PlanViewport = { scale: 1, x: 0, y: 0 };
+
+/** The furthest out and in the diagram zooms. */
+export const PLAN_MIN_SCALE = 0.2;
+export const PLAN_MAX_SCALE = 2;
+
+/**
+ * Smallest scale the diagram opens a plan at, where a card's 12px secondary
+ * text still renders at about ten pixels. Further out, the diagram shows the
+ * plan's shape with nothing in it to read.
+ */
+export const PLAN_READABLE_SCALE = 0.8;
+
+/**
+ * The whole plan, centered, at the largest scale that shows all of it. A plan
+ * is never enlarged past its own size nor shrunk past the diagram's furthest
+ * zoom, and an unmeasured viewport — jsdom's, or one not laid out yet — gets
+ * the identity, since there is nothing to fit to.
+ */
+export function planFitViewport(
+  layout: PlanLayout,
+  size: PlanViewportSize
+): PlanViewport {
+  if (size.width <= 0 || size.height <= 0) return PLAN_IDENTITY_VIEWPORT;
+  const scale = minmax(
+    Math.min(size.width / layout.width, size.height / layout.height),
+    PLAN_MIN_SCALE,
+    1
+  );
+  return {
+    scale,
+    x: (size.width - layout.width * scale) / 2,
+    y: (size.height - layout.height * scale) / 2,
+  };
+}
+
+/**
+ * The view the diagram opens on: the whole plan when its cards are readable at
+ * the scale that shows all of it, and otherwise the readable scale from the
+ * root down, centered on the root as far as the plan's edges allow. The
+ * mini-map then offers the rest.
+ */
+export function planOpeningViewport(
+  layout: PlanLayout,
+  size: PlanViewportSize
+): PlanViewport {
+  const fit = planFitViewport(layout, size);
+  if (size.width <= 0 || size.height <= 0) return fit;
+  if (fit.scale >= PLAN_READABLE_SCALE) return fit;
+  const scale = PLAN_READABLE_SCALE;
+  const width = layout.width * scale;
+  const height = layout.height * scale;
+  const [root] = layout.nodes;
+  const rootX = root ? planNodeCenter(root).x * scale : width / 2;
+  return {
+    scale,
+    x:
+      width <= size.width
+        ? (size.width - width) / 2
+        : minmax(size.width / 2 - rootX, size.width - width, 0),
+    y: height <= size.height ? (size.height - height) / 2 : 0,
+  };
+}
+
 export interface PlanRect {
   readonly x: number;
   readonly y: number;
@@ -201,6 +266,30 @@ export function planFitsViewport(
   return (
     layout.width * view.scale <= size.width + slack &&
     layout.height * view.scale <= size.height + slack
+  );
+}
+
+/**
+ * How many times the mini-map's box the viewport has to be, across and down,
+ * before the diagram offers it. In anything smaller — a phone's stacked pane —
+ * the overview would cover the plan it is an overview of.
+ */
+const MINI_MAP_ROOM = 3;
+
+/**
+ * Whether the diagram offers a mini-map: only while part of the plan is off
+ * screen, and only in a viewport with room for one.
+ */
+export function planShowsMiniMap(
+  layout: PlanLayout,
+  size: PlanViewportSize,
+  view: PlanViewport,
+  box: PlanViewportSize
+): boolean {
+  return (
+    !planFitsViewport(layout, size, view) &&
+    size.width >= box.width * MINI_MAP_ROOM &&
+    size.height >= box.height * MINI_MAP_ROOM
   );
 }
 

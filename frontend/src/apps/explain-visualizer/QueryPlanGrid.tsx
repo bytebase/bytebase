@@ -169,27 +169,34 @@ const PlanGridRow = memo(function PlanGridRow({
         </div>
       </TableCell>
 
-      <TableCell className="py-2 pr-4 pl-2">
-        <div className="flex items-center justify-end gap-2">
-          <PlanCostShareBar
-            share={planSelfCostShare(node, tree)}
-            className="w-10 shrink-0 sm:w-16"
-          />
-          <span className="text-xs leading-4 text-main tabular-nums">
-            {formatPlanCost(node.selfCost)}
-          </span>
-        </div>
-      </TableCell>
-
-      <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
-        {formatPlanCost(node.totalCost)}
-      </TableCell>
-      <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
-        {formatPlanCount(node.rows)}
-      </TableCell>
-      <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
-        {formatPlanCount(node.width)}
-      </TableCell>
+      {tree.estimates.cost ? (
+        <>
+          <TableCell className="py-2 pr-4 pl-2">
+            <div className="flex items-center justify-end gap-2">
+              <PlanCostShareBar
+                share={planSelfCostShare(node, tree)}
+                className="w-10 shrink-0 sm:w-16"
+              />
+              <span className="text-xs leading-4 text-main tabular-nums">
+                {formatPlanCost(node.selfCost)}
+              </span>
+            </div>
+          </TableCell>
+          <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+            {formatPlanCost(node.totalCost)}
+          </TableCell>
+        </>
+      ) : null}
+      {tree.estimates.rows ? (
+        <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+          {formatPlanCount(node.rows)}
+        </TableCell>
+      ) : null}
+      {tree.estimates.width ? (
+        <TableCell className={cn(NUMERIC_CELL_CLASS, SECONDARY_COLUMN_CLASS)}>
+          {formatPlanCount(node.width)}
+        </TableCell>
+      ) : null}
     </TableRow>
   );
 });
@@ -257,41 +264,49 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
               #
             </TableHead>
             <TableHead className={HEAD_CLASS}>Node</TableHead>
-            <TableHead
-              className={cn(HEAD_CLASS, "w-32 pl-2 text-right sm:w-48")}
-              title="Cost this node adds on top of its children; a node that rescans an input carries the repeats. The bar is that cost as a share of the plan."
-            >
-              Added cost
-            </TableHead>
-            <TableHead
-              className={cn(
-                HEAD_CLASS,
-                SECONDARY_COLUMN_CLASS,
-                "text-right sm:w-28"
-              )}
-            >
-              Total cost
-            </TableHead>
-            <TableHead
-              className={cn(
-                HEAD_CLASS,
-                SECONDARY_COLUMN_CLASS,
-                "text-right sm:w-24"
-              )}
-              title="Estimated rows"
-            >
-              Rows
-            </TableHead>
-            <TableHead
-              className={cn(
-                HEAD_CLASS,
-                SECONDARY_COLUMN_CLASS,
-                "text-right sm:w-24"
-              )}
-              title="Estimated row width in bytes"
-            >
-              Width
-            </TableHead>
+            {tree.estimates.cost ? (
+              <>
+                <TableHead
+                  className={cn(HEAD_CLASS, "w-32 pl-2 text-right sm:w-48")}
+                  title="Cost this node adds on top of its children; some engines also count an input's repeats here, as under a nested loop. The bar is that cost as a share of the plan."
+                >
+                  Added cost
+                </TableHead>
+                <TableHead
+                  className={cn(
+                    HEAD_CLASS,
+                    SECONDARY_COLUMN_CLASS,
+                    "text-right sm:w-28"
+                  )}
+                >
+                  Total cost
+                </TableHead>
+              </>
+            ) : null}
+            {tree.estimates.rows ? (
+              <TableHead
+                className={cn(
+                  HEAD_CLASS,
+                  SECONDARY_COLUMN_CLASS,
+                  "text-right sm:w-24"
+                )}
+                title="Estimated rows"
+              >
+                Rows
+              </TableHead>
+            ) : null}
+            {tree.estimates.width ? (
+              <TableHead
+                className={cn(
+                  HEAD_CLASS,
+                  SECONDARY_COLUMN_CLASS,
+                  "text-right sm:w-24"
+                )}
+                title="Estimated row width in bytes"
+              >
+                Width
+              </TableHead>
+            ) : null}
           </TableRow>
         </TableHeader>
 

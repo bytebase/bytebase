@@ -97,17 +97,19 @@ function PlanTotals({ tree }: { tree: PlanTree }) {
           label="Total estimated cost"
           value={formatPlanCost(tree.root.totalCost)}
         />
-        <PlanMetric
-          label="Estimated rows returned"
-          value={formatPlanCount(tree.root.rows)}
-        />
+        {tree.root.rows === undefined ? null : (
+          <PlanMetric
+            label="Estimated rows returned"
+            value={formatPlanCount(tree.root.rows)}
+          />
+        )}
       </dl>
       <p className="flex items-start gap-2 text-xs leading-4 text-control-light">
         <Info aria-hidden="true" className="mt-px size-3.5 shrink-0" />
         <span>
-          EXPLAIN ran without ANALYZE, so every figure here is a planner
-          estimate rather than a measurement. Cost units are arbitrary and
-          comparable only within this plan.
+          The statement was planned but not run, so every figure here is an
+          optimizer estimate rather than a measurement. Cost units are arbitrary
+          and comparable only within this plan.
         </span>
       </p>
     </div>
@@ -362,8 +364,8 @@ function CostByOperation({ tree }: { tree: PlanTree }) {
 }
 
 /**
- * Where the plan's estimated cost goes, read three ways: when each node's work
- * happens, which nodes own the most of it, and which kinds of operation do.
+ * Where the plan's estimated cost goes, read three ways: how much of it each
+ * node spans, which nodes own the most of it, and which kinds of operation do.
  */
 export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
   return (
@@ -374,20 +376,23 @@ export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
       <div className="flex flex-col gap-6 p-4">
         <PlanTotals tree={tree} />
 
-        <Section
-          title="Cost ranges"
-          description="Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other."
-        >
-          <CostTimeline
-            tree={tree}
-            selectedId={selectedId}
-            onSelect={onSelect}
-          />
-        </Section>
+        {/* A span starts at a startup cost, which not every engine reports. */}
+        {tree.estimates.startupCost ? (
+          <Section
+            title="Cost ranges"
+            description="Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other."
+          >
+            <CostTimeline
+              tree={tree}
+              selectedId={selectedId}
+              onSelect={onSelect}
+            />
+          </Section>
+        ) : null}
 
         <Section
           title="Costliest operators"
-          description="Ranked by the cost a node adds on top of its children. A node that rescans an input, such as a nested loop, carries the repeats of that input rather than the input itself."
+          description="Ranked by the cost a node adds on top of its children. Where an input runs repeatedly, as under a nested loop, some engines count the repeats in the node that reruns it rather than in the input itself."
         >
           <CostliestOperators
             tree={tree}

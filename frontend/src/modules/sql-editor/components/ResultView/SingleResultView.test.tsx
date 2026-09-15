@@ -208,7 +208,8 @@ vi.mock("@/stores/app", () => ({
   },
 }));
 
-vi.mock("@/utils/explainToken", () => ({
+vi.mock("@/utils/explainToken", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/explainToken")>()),
   createExplainToken,
 }));
 
@@ -787,8 +788,77 @@ describe("SingleResultView explain visualizer", () => {
     openSpy.mockRestore();
   });
 
-  test("Spanner reuses the plan already in the result", async () => {
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+  test.each([[Engine.MSSQL, QueryOption_ExplainFormat.XML, "<ShowPlanXML/>"]])(
+    "asks engine %s for the plan in the format its visualizer reads",
+    async (engine, explainFormat, plan) => {
+      const openSpy = vi
+        .spyOn(window, "open")
+        .mockReturnValue({} as Window);
+      runQuery.mockImplementation(
+        async (
+          _database: unknown,
+          context: { resultSet?: { results: unknown[] } }
+        ) => {
+          context.resultSet = {
+            results: [
+              create(QueryResultSchema, {
+                statement: "SELECT 1",
+                rows: [
+                  create(QueryRowSchema, {
+                    values: [
+                      create(RowValueSchema, {
+                        kind: { case: "stringValue", value: plan },
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+            ],
+          };
+        }
+      );
+
+      render(
+        <SingleResultView
+          disallowCopyingData={false}
+          params={{ ...params, engine, explain: true }}
+          database={databaseForEngine(engine)}
+          result={create(QueryResultSchema, {
+            columnNames: ["QUERY PLAN"],
+            statement: "SELECT 1",
+            rows: [
+              create(QueryRowSchema, {
+                values: [
+                  create(RowValueSchema, {
+                    kind: { case: "stringValue", value: "a readable plan" },
+                  }),
+                ],
+              }),
+            ],
+          })}
+          showExport={false}
+        />
+      );
+
+      fireEvent.click(screen.getByText("visualize-explain"));
+
+      await waitFor(() => expect(openSpy).toHaveBeenCalled());
+      expect(
+        runQuery.mock.calls[0][1].params.queryOption?.explainFormat
+      ).toBe(explainFormat);
+      expect(createExplainToken).toHaveBeenCalledWith({
+        statement: "SELECT 1",
+        explain: plan,
+        engine,
+      });
+      expect(notify).not.toHaveBeenCalled();
+      openSpy.mockRestore();
+    }
+  );
+
+  test("Spanner hands over the plan already in the result", async () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
+    const plan = '{"planNodes":[]}';
 
     render(
       <SingleResultView
@@ -803,7 +873,7 @@ describe("SingleResultView explain visualizer", () => {
             create(QueryRowSchema, {
               values: [
                 create(RowValueSchema, {
-                  kind: { case: "stringValue", value: '{"planNodes":[]}' },
+                  kind: { case: "stringValue", value: plan },
                 }),
               ],
             }),
@@ -817,6 +887,37 @@ describe("SingleResultView explain visualizer", () => {
 
     await waitFor(() => expect(openSpy).toHaveBeenCalled());
     expect(runQuery).not.toHaveBeenCalled();
+    expect(createExplainToken).toHaveBeenCalledWith({
+      statement: "SELECT 1",
+      explain: plan,
+      engine: Engine.SPANNER,
+    });
     openSpy.mockRestore();
+  });
+
+  test("offers no visualizer for an engine it cannot draw", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.MYSQL, explain: true }}
+        database={databaseForEngine(Engine.MYSQL)}
+        result={create(QueryResultSchema, {
+          columnNames: ["EXPLAIN"],
+          statement: "SELECT 1",
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "-> Table scan on t" },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(screen.queryByText("visualize-explain")).toBeNull();
   });
 });

@@ -15,6 +15,7 @@ import {
   findPlanNode,
   formatPlanCost,
   formatPlanCount,
+  type PlanEstimates,
   type PlanHighlightMode,
   type PlanNode,
   type PlanTree,
@@ -30,27 +31,42 @@ import { QueryPlanSummary } from "./QueryPlanSummary";
 
 interface Props {
   readonly tree: PlanTree;
-  /** The engine's plan output, shown verbatim on the raw tab. */
+  /** The engine's plan output, shown on the raw tab. */
   readonly rawPlan: string;
   readonly query?: string;
 }
 
 type TabValue = "diagram" | "grid" | "summary" | "raw" | "query";
 
-const HIGHLIGHT_OPTIONS: {
-  value: PlanHighlightMode;
-  label: string;
-  hint: string;
-}[] = [
-  { value: "off", label: "Off", hint: "Leave every node card unshaded" },
+interface HighlightOption {
+  readonly value: PlanHighlightMode;
+  readonly label: string;
+  readonly hint: string;
+  /** Whether a plan carries the estimate the option shades by. */
+  readonly available: (estimates: PlanEstimates) => boolean;
+}
+
+const HIGHLIGHT_OPTIONS: readonly HighlightOption[] = [
+  {
+    value: "off",
+    label: "Off",
+    hint: "Leave every node card unshaded",
+    available: () => true,
+  },
   {
     value: "cost",
     label: "Cost",
     // Total cost is cumulative, so shading by it would always make the root
     // darkest. Self cost is what the node adds on top of its children.
     hint: "Shade by the cost a node adds on top of its children",
+    available: (estimates) => estimates.cost,
   },
-  { value: "rows", label: "Rows", hint: "Shade by the estimated row count" },
+  {
+    value: "rows",
+    label: "Rows",
+    hint: "Shade by the estimated row count",
+    available: (estimates) => estimates.rows,
+  },
 ];
 
 const RESIZE_HANDLE_BASE_CLASS =
@@ -65,9 +81,11 @@ const STACK_QUERY = "(max-width: 767px)";
  * StyleX-sized control would render unstyled here.
  */
 function HighlightControl({
+  options,
   value,
   onChange,
 }: {
+  options: readonly HighlightOption[];
   value: PlanHighlightMode;
   onChange: (next: PlanHighlightMode) => void;
 }) {
@@ -77,7 +95,7 @@ function HighlightControl({
       aria-label="Highlight nodes by"
       className="inline-flex items-center gap-px overflow-hidden rounded-xs border border-control-border bg-control-border"
     >
-      {HIGHLIGHT_OPTIONS.map((option) => {
+      {options.map((option) => {
         const selected = option.value === value;
         return (
           <Tooltip key={option.value} content={option.hint}>
@@ -100,9 +118,31 @@ function HighlightControl({
 function PlanTotalsLine({ tree }: { tree: PlanTree }) {
   return (
     <p className="text-xs leading-4 text-control-light">
-      {`${formatPlanCount(tree.nodes.length)} nodes · estimated cost ${formatPlanCost(tree.root.totalCost)}`}
+      {[
+        `${formatPlanCount(tree.nodes.length)} nodes`,
+        tree.estimates.cost
+          ? `estimated cost ${formatPlanCost(tree.root.totalCost)}`
+          : undefined,
+      ]
+        .filter(Boolean)
+        .join(" · ")}
     </p>
   );
+}
+
+/** What the diagram's bars and edge widths encode, for the estimates it has. */
+function diagramLegend(estimates: PlanEstimates): string | undefined {
+  const parts = [
+    estimates.cost
+      ? "each card's bar is that node's share of the plan's estimated cost"
+      : undefined,
+    estimates.rows
+      ? "an edge thickens with the rows its child is estimated to return"
+      : undefined,
+  ].filter(Boolean);
+  if (parts.length === 0) return undefined;
+  const sentence = `${parts.join("; ")}.`;
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }
 
 /**
@@ -140,7 +180,62 @@ function PlanWithDetails({
   );
 }
 
-function prettyPrintJson(source: string): string {
+const XML_INDENT = "  ";
+
+function escapeXmlText(value: string): string {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+}
+
+function escapeXmlAttribute(value: string): string {
+  // A literal line break inside a value is read back as a space, so breaks
+  // stay escaped and a copied plan keeps the engine's values.
+  return escapeXmlText(value)
+    .replaceAll('"', "&quot;")
+    .replaceAll("\n", "&#10;")
+    .replaceAll("\r", "&#13;")
+    .replaceAll("\t", "&#9;");
+}
+
+/**
+ * An XML document with one element per line, or undefined when it does not
+ * parse. Plans are elements and attributes only, so text is kept solely in
+ * elements that have no children.
+ */
+function indentXml(source: string): string | undefined {
+  const document = new DOMParser().parseFromString(source, "application/xml");
+  if (document.getElementsByTagName("parsererror").length > 0) return undefined;
+  const lines: string[] = [];
+  const visit = (element: Element, depth: number) => {
+    const indent = XML_INDENT.repeat(depth);
+    const attributes = Array.from(element.attributes)
+      .map(
+        (attribute) =>
+          ` ${attribute.name}="${escapeXmlAttribute(attribute.value)}"`
+      )
+      .join("");
+    const tag = element.tagName;
+    if (element.children.length === 0) {
+      const text = element.textContent ?? "";
+      lines.push(
+        text
+          ? `${indent}<${tag}${attributes}>${escapeXmlText(text)}</${tag}>`
+          : `${indent}<${tag}${attributes}/>`
+      );
+      return;
+    }
+    lines.push(`${indent}<${tag}${attributes}>`);
+    for (const child of Array.from(element.children)) visit(child, depth + 1);
+    lines.push(`${indent}</${tag}>`);
+  };
+  visit(document.documentElement, 0);
+  return lines.join("\n");
+}
+
+/** The plan indented for reading when it is JSON or XML, else as it came. */
+function formatPlanSource(source: string): string {
+  if (source.trimStart().startsWith("<")) {
+    return indentXml(source.trim()) ?? source;
+  }
   try {
     return JSON.stringify(JSON.parse(source), null, 2);
   } catch {
@@ -172,6 +267,19 @@ const MONOSPACE_BLOCK_CLASS =
   "font-mono text-xs leading-4 break-words whitespace-pre-wrap text-main";
 
 /**
+ * The raw plan tab's content. The tab mounts it only while open, so a large
+ * plan is formatted when someone reads it rather than on every page load.
+ */
+function RawPlan({ source }: { source: string }) {
+  const formatted = useMemo(() => formatPlanSource(source), [source]);
+  return (
+    <CopyablePanel content={formatted} label="Copy plan">
+      <pre className={MONOSPACE_BLOCK_CLASS}>{formatted}</pre>
+    </CopyablePanel>
+  );
+}
+
+/**
  * The node a fragment names, ignoring one that names a node this plan does not
  * have: a stale or hand-edited link should open the plan, not break it.
  */
@@ -197,8 +305,11 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
   );
 
   const selectedNode = findPlanNode(tree, selectedId);
-  const formattedPlan = useMemo(() => prettyPrintJson(rawPlan), [rawPlan]);
   const stacked = useMediaQuery(STACK_QUERY);
+  const highlightOptions = HIGHLIGHT_OPTIONS.filter((option) =>
+    option.available(tree.estimates)
+  );
+  const legend = diagramLegend(tree.estimates);
 
   const selectNode = useCallback(
     (id: string) => {
@@ -265,7 +376,11 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
       <TabsList className="shrink-0 flex-wrap px-4 pt-3">
         <TabsTrigger value="diagram">Diagram</TabsTrigger>
         <TabsTrigger value="grid">Grid</TabsTrigger>
-        <TabsTrigger value="summary">Summary</TabsTrigger>
+        {/* The summary is where the plan's cost goes, which a plan without
+            cost estimates cannot say. */}
+        {tree.estimates.cost ? (
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+        ) : null}
         <TabsTrigger value="raw">Raw plan</TabsTrigger>
         <TabsTrigger value="query">Query</TabsTrigger>
       </TabsList>
@@ -278,19 +393,31 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         <PlanWithDetails stacked={stacked} node={selectedNode}>
-          <div className="flex shrink-0 flex-wrap items-center justify-between gap-4 px-4 py-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs leading-4 text-control-light">
-                Highlight
-              </span>
-              <HighlightControl value={highlight} onChange={setHighlight} />
-            </div>
+          <div
+            className={cn(
+              "flex shrink-0 flex-wrap items-center gap-4 px-4 py-2",
+              highlightOptions.length > 1 ? "justify-between" : "justify-end"
+            )}
+          >
+            {highlightOptions.length > 1 ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs leading-4 text-control-light">
+                  Highlight
+                </span>
+                <HighlightControl
+                  options={highlightOptions}
+                  value={highlight}
+                  onChange={setHighlight}
+                />
+              </div>
+            ) : null}
             <PlanTotalsLine tree={tree} />
           </div>
-          <p className="shrink-0 px-4 pb-2 text-xs leading-4 text-control-light">
-            Each card's bar is that node's share of the plan's estimated cost;
-            an edge thickens with the rows its child is estimated to return.
-          </p>
+          {legend ? (
+            <p className="shrink-0 px-4 pb-2 text-xs leading-4 text-control-light">
+              {legend}
+            </p>
+          ) : null}
           <QueryPlanDiagram
             tree={tree}
             selectedId={selectedId}
@@ -320,26 +447,26 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
         </PlanWithDetails>
       </TabsPanel>
 
-      <TabsPanel
-        value="summary"
-        className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
-      >
-        <PlanWithDetails stacked={stacked} node={selectedNode}>
-          <QueryPlanSummary
-            tree={tree}
-            selectedId={selectedId}
-            onSelect={selectNode}
-          />
-        </PlanWithDetails>
-      </TabsPanel>
+      {tree.estimates.cost ? (
+        <TabsPanel
+          value="summary"
+          className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
+        >
+          <PlanWithDetails stacked={stacked} node={selectedNode}>
+            <QueryPlanSummary
+              tree={tree}
+              selectedId={selectedId}
+              onSelect={selectNode}
+            />
+          </PlanWithDetails>
+        </TabsPanel>
+      ) : null}
 
       <TabsPanel
         value="raw"
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <CopyablePanel content={formattedPlan} label="Copy plan">
-          <pre className={MONOSPACE_BLOCK_CLASS}>{formattedPlan}</pre>
-        </CopyablePanel>
+        <RawPlan source={rawPlan} />
       </TabsPanel>
 
       <TabsPanel

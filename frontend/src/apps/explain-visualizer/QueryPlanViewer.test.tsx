@@ -1,10 +1,14 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import bitmapIndexScan from "./test-data/bitmap-index-scan.json";
+import procedureTwoStatements from "./test-data/mssql/procedure-two-statements.xml?raw";
+import bitmapIndexScan from "./test-data/postgres/bitmap-index-scan.json";
+import spannerHashJoin from "./test-data/spanner/hash-join.json";
+import { parseMssqlPlan } from "./mssql-plan";
 import type { PlanTree } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import { QueryPlanViewer } from "./QueryPlanViewer";
+import { parseSpannerPlan } from "./spanner-plan";
 
 vi.mock("react-resizable-panels", () => ({
   Group: ({
@@ -48,8 +52,21 @@ const tree = (): PlanTree => {
 const renderViewer = (query?: string) =>
   render(<QueryPlanViewer tree={tree()} rawPlan={rawPlan} query={query} />);
 
+/** Renders a plan the way the entry does: parsed, beside its source. */
+const renderParsed = (
+  parse: (source: string) => ReturnType<typeof parsePostgresPlan>,
+  source: string
+) => {
+  const result = parse(source);
+  if (!result.ok) throw new Error(result.message);
+  return render(<QueryPlanViewer tree={result.tree} rawPlan={source} />);
+};
+
 const openTab = (name: string) =>
   fireEvent.click(screen.getByRole("tab", { name }));
+
+const tabNames = () =>
+  screen.getAllByRole("tab").map((entry) => entry.textContent);
 
 /** Loads the page at a fragment, the way following a shared link would. */
 const startAtFragment = (fragment: string) =>
@@ -234,6 +251,59 @@ describe("QueryPlanViewer", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Cost" }));
     expect(screen.getAllByTestId("plan-node-tint").length).toBeGreaterThan(0);
+  });
+
+  test("offers every tab and highlight for a plan with cost and row estimates", () => {
+    renderParsed(parseMssqlPlan, procedureTwoStatements);
+
+    expect(tabNames()).toEqual([
+      "Diagram",
+      "Grid",
+      "Summary",
+      "Raw plan",
+      "Query",
+    ]);
+    expect(
+      within(screen.getByRole("group", { name: "Highlight nodes by" }))
+        .getAllByRole("button")
+        .map((option) => option.textContent)
+    ).toEqual(["Off", "Cost", "Rows"]);
+    expect(screen.getByText("10 nodes · estimated cost 1.64")).toBeVisible();
+  });
+
+  test("keeps to what a plan without estimates can show", () => {
+    renderParsed(parseSpannerPlan, JSON.stringify(spannerHashJoin));
+
+    // The summary is where the cost goes, and nothing can be shaded.
+    expect(tabNames()).toEqual(["Diagram", "Grid", "Raw plan", "Query"]);
+    expect(screen.queryByRole("group", { name: "Highlight nodes by" })).toBeNull();
+    expect(screen.getByText("7 nodes")).toBeVisible();
+    expect(screen.queryByText(/card's bar/)).toBeNull();
+    expect(screen.getAllByTestId("plan-node-card")).toHaveLength(7);
+  });
+
+  test("indents an XML plan one element per line on the raw tab", () => {
+    renderParsed(parseMssqlPlan, procedureTwoStatements);
+
+    openTab("Raw plan");
+    const raw = within(screen.getByRole("tabpanel")).getByText(
+      /^<ShowPlanXML/
+    ).textContent;
+    const lines = raw?.split("\n") ?? [];
+
+    expect(lines[0]).toBe(
+      '<ShowPlanXML xmlns="http://schemas.microsoft.com/sqlserver/2004/07/showplan" Version="1.564" Build="16.0.4275.2">'
+    );
+    expect(lines[1]).toBe("  <BatchSequence>");
+    expect(lines.at(-1)).toBe("</ShowPlanXML>");
+    // A line break inside an attribute stays escaped, so a copy keeps it.
+    expect(raw).toContain(
+      'StatementText="&#10;CREATE   PROCEDURE dbo.region_report @region VARCHAR(16) AS&#10;BEGIN&#10;'
+    );
+    // The indented plan is still the same plan.
+    const reparsed = parseMssqlPlan(raw ?? "");
+    const original = parseMssqlPlan(procedureTwoStatements);
+    expect(reparsed.ok && reparsed.tree).toEqual(original.ok && original.tree);
   });
 
   test("splits side by side on a wide screen", () => {

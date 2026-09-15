@@ -7,12 +7,8 @@ import type { PlanNode } from "./plan-model";
 const node = (id: string): PlanNode => ({
   id,
   nodeType: "Seq Scan",
-  startupCost: 0,
-  totalCost: 0,
-  selfCost: 0,
-  rows: 0,
-  width: 0,
   properties: [],
+  warnings: [],
   children: [],
 });
 

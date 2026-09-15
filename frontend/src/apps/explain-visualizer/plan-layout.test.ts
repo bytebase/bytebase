@@ -1,20 +1,26 @@
 import { describe, expect, test } from "vitest";
 import {
   layoutPlan,
+  PLAN_IDENTITY_VIEWPORT,
+  PLAN_MIN_SCALE,
   PLAN_NODE_HEIGHT,
   PLAN_NODE_WIDTH,
+  PLAN_READABLE_SCALE,
   planFitsViewport,
+  planFitViewport,
   planGuideLevels,
   planIndentPixels,
   planMiniMap,
   planNodeCenter,
   planNodeOnScreen,
+  planOpeningViewport,
+  planShowsMiniMap,
   planViewportCenteredOn,
 } from "./plan-layout";
 import type { PlanNode, PlanTree } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
-import hashJoinAggregateSort from "./test-data/hash-join-aggregate-sort.json";
-import seqScanFilter from "./test-data/seq-scan-filter.json";
+import hashJoinAggregateSort from "./test-data/postgres/hash-join-aggregate-sort.json";
+import seqScanFilter from "./test-data/postgres/seq-scan-filter.json";
 
 const parseFixture = (fixture: unknown): PlanTree => {
   const result = parsePostgresPlan(JSON.stringify(fixture));
@@ -251,6 +257,141 @@ describe("planFitsViewport", () => {
   test("treats an unmeasured viewport as having nothing to navigate", () => {
     const layout = layoutPlan(parseFixture(hashJoinAggregateSort).root);
     expect(planFitsViewport(layout, { width: 0, height: 0 }, VIEW)).toBe(true);
+  });
+});
+
+/** A node with nothing but its place in the tree, which is all a layout reads. */
+const bare = (id: string, children: PlanNode[] = []): PlanNode => ({
+  id,
+  nodeType: "Scan",
+  properties: [],
+  warnings: [],
+  children,
+});
+
+const leaves = (parent: string, count: number) =>
+  Array.from({ length: count }, (_, index) => bare(`${parent}.${index}`));
+
+describe("planFitViewport", () => {
+  test("centers the whole plan at the largest scale that shows it", () => {
+    const layout = layoutPlan(parseFixture(hashJoinAggregateSort).root);
+    const size = { width: layout.width, height: layout.height / 2 };
+    const view = planFitViewport(layout, size);
+
+    expect(view.scale).toBeCloseTo(0.5, 6);
+    expect(view.x).toBeCloseTo(layout.width / 4, 6);
+    expect(view.y).toBeCloseTo(0, 6);
+    expect(planFitsViewport(layout, size, view)).toBe(true);
+  });
+
+  test("never blows a small plan up past its own size", () => {
+    const layout = layoutPlan(parseFixture(seqScanFilter).root);
+    expect(planFitViewport(layout, { width: 4000, height: 4000 }).scale).toBe(
+      1
+    );
+  });
+
+  test("stops shrinking at the diagram's furthest zoom", () => {
+    const layout = layoutPlan(parseFixture(hashJoinAggregateSort).root);
+    expect(planFitViewport(layout, { width: 10, height: 10 }).scale).toBe(
+      PLAN_MIN_SCALE
+    );
+  });
+
+  test("leaves an unmeasured viewport alone", () => {
+    const layout = layoutPlan(parseFixture(hashJoinAggregateSort).root);
+    expect(planFitViewport(layout, { width: 0, height: 0 })).toBe(
+      PLAN_IDENTITY_VIEWPORT
+    );
+  });
+});
+
+describe("planOpeningViewport", () => {
+  test("shows a plan whole when its cards are readable that way", () => {
+    const layout = layoutPlan(parseFixture(hashJoinAggregateSort).root);
+    const size = { width: layout.width * 0.9, height: layout.height * 0.9 };
+
+    expect(planOpeningViewport(layout, size)).toEqual(
+      planFitViewport(layout, size)
+    );
+  });
+
+  test("opens a plan too deep to read whole at a readable scale, from the root down", () => {
+    const layout = layoutPlan(parseFixture(hashJoinAggregateSort).root);
+    const size = { width: 800, height: 300 };
+    const view = planOpeningViewport(layout, size);
+
+    expect(planFitViewport(layout, size).scale).toBeLessThan(
+      PLAN_READABLE_SCALE
+    );
+    expect(view.scale).toBe(PLAN_READABLE_SCALE);
+    // The top of the plan at the top of the screen, and the plan, narrow
+    // enough at this scale, centered across it.
+    expect(view.y).toBe(0);
+    expect(view.x).toBeCloseTo(
+      (size.width - layout.width * PLAN_READABLE_SCALE) / 2,
+      6
+    );
+    expect(planFitsViewport(layout, size, view)).toBe(false);
+  });
+
+  test("centers the root across a plan wider than the screen", () => {
+    const layout = layoutPlan(bare("0", leaves("0", 12)));
+    const size = { width: 600, height: 400 };
+    const view = planOpeningViewport(layout, size);
+    const [root] = layout.nodes;
+
+    expect(view.scale).toBe(PLAN_READABLE_SCALE);
+    expect(view.x + planNodeCenter(root).x * view.scale).toBeCloseTo(300, 6);
+  });
+
+  test("keeps the plan's edge at the screen's edge rather than centering past it", () => {
+    // The wide first child pulls the root right of the plan's middle.
+    const layout = layoutPlan(
+      bare("0", [bare("0.0", leaves("0.0", 10)), bare("0.1")])
+    );
+    const [root] = layout.nodes;
+    const width = layout.width * PLAN_READABLE_SCALE;
+    const size = { width: width - 100, height: 400 };
+    const view = planOpeningViewport(layout, size);
+
+    expect(planNodeCenter(root).x).toBeGreaterThan(layout.width / 2);
+    expect(view.scale).toBe(PLAN_READABLE_SCALE);
+    expect(view.x + width).toBeCloseTo(size.width, 6);
+  });
+
+  test("leaves an unmeasured viewport alone", () => {
+    const layout = layoutPlan(parseFixture(hashJoinAggregateSort).root);
+    expect(planOpeningViewport(layout, { width: 0, height: 0 })).toBe(
+      PLAN_IDENTITY_VIEWPORT
+    );
+  });
+});
+
+describe("planShowsMiniMap", () => {
+  const BOX = { width: 160, height: 112 };
+  const layout = () => layoutPlan(parseFixture(hashJoinAggregateSort).root);
+
+  test("offers one only while part of the plan is off screen", () => {
+    const plan = layout();
+    const roomy = { width: 1200, height: 900 };
+
+    expect(planShowsMiniMap(plan, roomy, VIEW, BOX)).toBe(false);
+    expect(planShowsMiniMap(plan, roomy, { ...VIEW, scale: 2 }, BOX)).toBe(
+      true
+    );
+  });
+
+  test("leaves it out of a viewport it would cover too much of", () => {
+    const plan = layout();
+    const zoomed = { ...VIEW, scale: 2 };
+
+    expect(
+      planShowsMiniMap(plan, { width: 400, height: 900 }, zoomed, BOX)
+    ).toBe(false);
+    expect(
+      planShowsMiniMap(plan, { width: 1200, height: 300 }, zoomed, BOX)
+    ).toBe(false);
   });
 });
 

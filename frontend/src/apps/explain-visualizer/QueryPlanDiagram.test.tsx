@@ -1,20 +1,28 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import hashJoinAggregateSort from "./test-data/hash-join-aggregate-sort.json";
-import seqScanFilter from "./test-data/seq-scan-filter.json";
+import noJoinPredicate from "./test-data/mssql/no-join-predicate.xml?raw";
+import hashJoinAggregateSort from "./test-data/postgres/hash-join-aggregate-sort.json";
+import seqScanFilter from "./test-data/postgres/seq-scan-filter.json";
+import spannerHashJoin from "./test-data/spanner/hash-join.json";
+import { parseMssqlPlan } from "./mssql-plan";
+import { PLAN_READABLE_SCALE } from "./plan-layout";
 import {
   PLAN_EDGE_MAX_WIDTH,
   PLAN_EDGE_MIN_WIDTH,
+  type PlanParseResult,
   type PlanTree,
 } from "./plan-model";
 import { parsePostgresPlan } from "./postgres-plan";
 import { QueryPlanDiagram } from "./QueryPlanDiagram";
+import { parseSpannerPlan } from "./spanner-plan";
 
-const treeFrom = (fixture: unknown): PlanTree => {
-  const result = parsePostgresPlan(JSON.stringify(fixture));
+const treeOf = (result: PlanParseResult): PlanTree => {
   if (!result.ok) throw new Error(result.message);
   return result.tree;
 };
+
+const treeFrom = (fixture: unknown): PlanTree =>
+  treeOf(parsePostgresPlan(JSON.stringify(fixture)));
 
 const tree = (): PlanTree => treeFrom(hashJoinAggregateSort);
 
@@ -42,6 +50,9 @@ const toggleFor = (label: string) => {
 
 const canvasTransform = () =>
   screen.getByTestId("plan-diagram-canvas").style.transform;
+
+const scaleNow = () =>
+  Number(/scale\(([\d.]+)\)/.exec(canvasTransform())?.[1] ?? "0");
 
 const renderDiagram = (
   overrides: Partial<Parameters<typeof QueryPlanDiagram>[0]> = {}
@@ -157,33 +168,72 @@ describe("QueryPlanDiagram", () => {
     expect(barOf("^Hash, Inner")?.style.width).toBe("0%");
   });
 
-  test("warns on a sequential scan of a relation worth flagging", () => {
+  test("marks a node the parser warns about", () => {
     renderDiagram();
 
-    expect(screen.getAllByTestId("plan-node-full-scan")).toHaveLength(1);
+    expect(screen.getAllByTestId("plan-node-warning")).toHaveLength(1);
     expect(
       cardFor("^Seq Scan, orders").querySelector(
-        "[data-testid='plan-node-full-scan']"
+        "[data-testid='plan-node-warning']"
       )
     ).not.toBeNull();
     expect(cardFor("^Seq Scan, orders")).toHaveAccessibleName(
-      /full table scan/
+      /Full table scan/
     );
     // `customers` is small enough that reading all of it costs nothing worth
     // acting on.
     expect(
       cardFor("^Seq Scan, customers").querySelector(
-        "[data-testid='plan-node-full-scan']"
+        "[data-testid='plan-node-warning']"
       )
     ).toBeNull();
+  });
+
+  test("names each of a node's warnings on its icon and its label", () => {
+    renderDiagram({ tree: treeOf(parseMssqlPlan(noJoinPredicate)) });
+    const join = cardFor("^Nested Loops \\(Inner Join\\)");
+
+    expect(join).toHaveAccessibleName(/No join predicate/);
+    expect(
+      join.querySelector("[data-testid='plan-node-warning'] title")
+    ).toHaveTextContent("No join predicate");
   });
 
   test("gives a lone node the whole plan and no warning", () => {
     renderDiagram({ tree: treeFrom(seqScanFilter) });
 
     expect(cardFor("^Seq Scan, customers")).toHaveTextContent("100%");
-    expect(screen.queryAllByTestId("plan-node-full-scan")).toHaveLength(0);
+    expect(screen.queryAllByTestId("plan-node-warning")).toHaveLength(0);
     expect(screen.queryAllByTestId("plan-diagram-edge")).toHaveLength(0);
+  });
+
+  test("draws a plan without estimates as its operators alone", () => {
+    renderDiagram({ tree: treeOf(parseSpannerPlan(JSON.stringify(spannerHashJoin))) });
+
+    expect(screen.getAllByTestId("plan-node-card")).toHaveLength(7);
+    // No cost or row line, no cost bar, and no share in the label.
+    expect(cardFor("^Hash Join")).not.toHaveTextContent(/cost|rows/);
+    expect(cardFor("^Hash Join")).not.toHaveAccessibleName(/of plan cost/);
+    expect(screen.queryAllByTestId("plan-cost-share-bar")).toHaveLength(0);
+    // Without row estimates every edge is the same hairline, with no count.
+    for (const edge of screen.getAllByTestId("plan-diagram-edge")) {
+      expect(Number(edge.getAttribute("stroke-width"))).toBe(
+        PLAN_EDGE_MIN_WIDTH
+      );
+      expect(edge.querySelector("title")).toBeNull();
+    }
+    expect(cardFor("^Table Scan")).toHaveAccessibleName(/Full table scan/);
+    expect(cardFor("^Index Scan")).toHaveAccessibleName(/Full index scan/);
+  });
+
+  test("gives the subject the lines a plan without estimates leaves free", () => {
+    renderDiagram({ tree: treeOf(parseSpannerPlan(JSON.stringify(spannerHashJoin))) });
+
+    expect(
+      screen.getByText("(($SingerId = $SingerId_1) AND ($AlbumId = $AlbumId_1))")
+    ).toHaveClass("line-clamp-3");
+    renderDiagram();
+    expect(screen.getByText("(o.customer_id = c.id)")).toHaveClass("truncate");
   });
 
   test("marks the selected card and reports clicks on the others", () => {
@@ -236,8 +286,7 @@ describe("QueryPlanDiagram", () => {
     sizeViewport(600, 400);
     renderDiagram();
     const viewport = screen.getByTestId("plan-diagram-viewport");
-    const scaleNow = () =>
-      Number(/scale\(([\d.]+)\)/.exec(canvasTransform())?.[1] ?? "0");
+    fireEvent.click(screen.getByRole("button", { name: "Fit to view" }));
     const fitted = scaleNow();
 
     // Chrome sends one notch as pixels; Firefox sends the same notch as lines.
@@ -273,11 +322,11 @@ describe("QueryPlanDiagram", () => {
     expect(canvasTransform()).toBe(placed);
   });
 
-  test("still fits a plan the reader has not moved when it re-lays out", () => {
+  test("places the view again for a plan the reader has not moved when it re-lays out", () => {
     sizeViewport(600, 400);
     const plan = tree();
     const { rerender } = renderDiagram({ tree: plan });
-    const fitted = canvasTransform();
+    const opened = canvasTransform();
 
     rerender(
       <QueryPlanDiagram
@@ -290,9 +339,50 @@ describe("QueryPlanDiagram", () => {
       />
     );
 
-    // A narrower plan fits at a larger scale, so the fit has to be redone.
-    expect(canvasTransform()).not.toBe(fitted);
+    // What is left is small enough to read whole, so the view changes to show it.
+    expect(canvasTransform()).not.toBe(opened);
+    expect(scaleNow()).toBeGreaterThan(PLAN_READABLE_SCALE);
     expect(screen.getAllByTestId("plan-node-card")).toHaveLength(3);
+  });
+
+  test("opens a plan too deep to read whole at a readable scale, from its root down", () => {
+    sizeViewport(600, 400);
+    renderDiagram();
+
+    // Shown whole, this plan would open at about half size.
+    expect(scaleNow()).toBe(PLAN_READABLE_SCALE);
+    expect(canvasTransform()).toMatch(/translate\([\d.]+px, 0px\)/);
+    expect(screen.getByTestId("plan-mini-map")).toBeInTheDocument();
+  });
+
+  test("opens a plan small enough to read whole by showing all of it", () => {
+    sizeViewport(1200, 900);
+    renderDiagram();
+
+    expect(scaleNow()).toBe(1);
+    expect(screen.queryByTestId("plan-mini-map")).toBeNull();
+  });
+
+  test("keeps showing the whole plan after Fit to view when it re-lays out", () => {
+    sizeViewport(600, 400);
+    const plan = tree();
+    const { rerender } = renderDiagram({ tree: plan });
+    fireEvent.click(screen.getByRole("button", { name: "Fit to view" }));
+
+    // Folding the hash's scan away leaves a plan still too deep to read whole.
+    rerender(
+      <QueryPlanDiagram
+        tree={plan}
+        selectedId="0"
+        onSelect={() => undefined}
+        highlight="off"
+        collapsedIds={new Set(["0.0.0.1"])}
+        onToggleCollapse={() => undefined}
+      />
+    );
+
+    expect(scaleNow()).toBeLessThan(PLAN_READABLE_SCALE);
+    expect(screen.queryByTestId("plan-mini-map")).toBeNull();
   });
 
   test("tints cards only while a highlight mode is on", () => {
@@ -433,9 +523,10 @@ describe("QueryPlanDiagram", () => {
     expect(onRevealed).toHaveBeenCalled();
   });
 
-  test("shows a mini-map only while the plan is too big to fit", () => {
-    sizeViewport(400, 300);
+  test("shows a mini-map only while part of the plan is off screen", () => {
+    sizeViewport(600, 400);
     renderDiagram();
+    fireEvent.click(screen.getByRole("button", { name: "Fit to view" }));
     expect(screen.queryByTestId("plan-mini-map")).toBeNull();
 
     // Zooming in pushes the plan past the edges of the viewport.
@@ -448,7 +539,7 @@ describe("QueryPlanDiagram", () => {
   });
 
   test("moves the view when the mini-map is clicked", () => {
-    sizeViewport(400, 300);
+    sizeViewport(600, 400);
     renderDiagram();
     fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
     fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
@@ -465,6 +556,16 @@ describe("QueryPlanDiagram", () => {
 
   test("leaves the mini-map out of an unmeasured viewport", () => {
     renderDiagram();
+    expect(screen.queryByTestId("plan-mini-map")).toBeNull();
+  });
+
+  test("leaves the mini-map out of a viewport too small to spare room for it", () => {
+    sizeViewport(400, 300);
+    renderDiagram();
+
+    // The plan opens partly off screen, which in a roomier viewport would
+    // bring the mini-map up over it.
+    expect(scaleNow()).toBe(PLAN_READABLE_SCALE);
     expect(screen.queryByTestId("plan-mini-map")).toBeNull();
   });
 
