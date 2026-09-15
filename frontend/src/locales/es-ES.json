@@ -445,7 +445,7 @@
     "search-no-result": "No se encontraron resultados coincidentes",
     "search-results": "Buscar resultados",
     "secret-input": {
-      "stored": "Valor almacenado de forma segura"
+      "unchanged": "Sin cambios"
     },
     "select": "Seleccionar",
     "select-all": "Seleccionar todo",

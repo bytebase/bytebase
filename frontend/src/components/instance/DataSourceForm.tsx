@@ -1953,6 +1953,7 @@ export function DataSourceForm({
               {basicInfo.engine === Engine.SNOWFLAKE && (
                 <>
                   <FormField
+                    validationField="authenticationPrivateKey"
                     className="sm:col-span-3 sm:col-start-1"
                     title={<>{t("data-source.ssh.private-key")}</>}
                   >

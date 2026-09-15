@@ -445,7 +445,7 @@
     "search-no-result": "一致する結果が見つかりません",
     "search-results": "結果を検索",
     "secret-input": {
-      "stored": "値は安全に保存されています"
+      "unchanged": "変更なし"
     },
     "select": "選択してください",
     "select-all": "すべて選択",

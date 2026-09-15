@@ -445,7 +445,7 @@
     "search-no-result": "Không tìm thấy kết quả phù hợp",
     "search-results": "Tìm kiếm kết quả",
     "secret-input": {
-      "stored": "Giá trị được lưu trữ an toàn"
+      "unchanged": "Không thay đổi"
     },
     "select": "Vui lòng chọn",
     "select-all": "Chọn tất cả",

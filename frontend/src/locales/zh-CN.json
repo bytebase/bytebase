@@ -445,7 +445,7 @@
     "search-no-result": "未找到匹配的结果",
     "search-results": "搜索结果",
     "secret-input": {
-      "stored": "值已安全保存"
+      "unchanged": "未更改"
     },
     "select": "请选择",
     "select-all": "全选",

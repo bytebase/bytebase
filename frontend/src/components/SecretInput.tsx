@@ -143,7 +143,7 @@ function SecretInputControl({
     id,
     disabled,
     value: value ?? "",
-    placeholder: unchanged ? t("common.secret-input.stored") : placeholder,
+    placeholder: unchanged ? t("common.secret-input.unchanged") : placeholder,
     ref: (element: HTMLInputElement | HTMLTextAreaElement | null) => {
       inputRef.current = element;
     },

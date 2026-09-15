@@ -18,7 +18,7 @@ describe("SecretInput", () => {
   test("focus preserves the secret; typing replaces it without copying the mask", () => {
     render(<Harness />);
     expect(input().value).toBe("");
-    expect(input().placeholder).toBe("common.secret-input.stored");
+    expect(input().placeholder).toBe("common.secret-input.unchanged");
     fireEvent.focus(input());
     expect(screen.getByTestId("value").textContent).toBe("unchanged");
     type("  replacement  ");
@@ -68,7 +68,7 @@ describe("SecretInput", () => {
     fireEvent.click(screen.getByRole("button", { name: "common.toggle-password-visibility" }));
     view.rerender(field(undefined, 1));
     expect(input().value).toBe("");
-    expect(input().placeholder).toBe("common.secret-input.stored");
+    expect(input().placeholder).toBe("common.secret-input.unchanged");
     expect(input().type).toBe("password");
   });
   test("multiline replacements retain line breaks", () => {

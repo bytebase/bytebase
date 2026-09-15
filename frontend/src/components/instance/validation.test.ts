@@ -8,7 +8,7 @@ import {
   DataSourceSchema,
   DataSourceExternalSecret_SecretType as SecretType,
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { EditDataSource } from "./common";
+import { type EditDataSource, updateDataSourceSecret } from "./common";
 import { validateDataSource } from "./validation";
 
 const draft = (patch: Partial<EditDataSource> = {}): EditDataSource => ({
@@ -23,6 +23,51 @@ const validate = (ds: EditDataSource, engine = Engine.MYSQL) =>
   validateDataSource(ds, { engine, isSaaSMode: true });
 
 describe("instance validation", () => {
+  test.each([
+    [Engine.SNOWFLAKE, "authenticationPrivateKey"],
+    [Engine.DATABRICKS, "updatedToken"],
+  ] as const)(
+    "validates required secret drafts independently of mounted inputs for %s",
+    (engine, field) => {
+      const stored = draft({ pendingCreate: false, warehouseId: "warehouse" });
+      expect(validate(stored, engine)).toEqual({});
+      const replacement = updateDataSourceSecret(
+        stored,
+        "authenticationPrivateKey",
+        "replacement"
+      );
+      expect(validate(replacement, engine)).toEqual({});
+      const cleared = updateDataSourceSecret(
+        replacement,
+        "authenticationPrivateKey",
+        ""
+      );
+      expect(validate(cleared, engine)[field]).toBe("required");
+      expect(
+        validate(
+          updateDataSourceSecret(
+            cleared,
+            "authenticationPrivateKey",
+            "new value"
+          ),
+          engine
+        )
+      ).toEqual({});
+      expect(validate({ ...stored, pendingCreate: true }, engine)[field]).toBe(
+        "required"
+      );
+    }
+  );
+  test("allows optional secrets to be explicitly cleared", () => {
+    const ds = draft({ pendingCreate: false });
+    expect(validate(updateDataSourceSecret(ds, "password", ""))).toEqual({});
+    expect(
+      validate(
+        updateDataSourceSecret(ds, "authenticationPrivateKeyPassphrase", ""),
+        Engine.SNOWFLAKE
+      )
+    ).toEqual({});
+  });
   test.each(["sslCaPath", "sslCertPath", "sslKeyPath"] as const)(
     "rejects relative %s",
     (field) => {

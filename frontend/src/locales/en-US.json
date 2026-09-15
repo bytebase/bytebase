@@ -445,7 +445,7 @@
     "search-no-result": "No matching result found",
     "search-results": "Search results",
     "secret-input": {
-      "stored": "Value securely stored"
+      "unchanged": "Unchanged"
     },
     "select": "Please Select",
     "select-all": "Select all",
