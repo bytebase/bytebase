@@ -1219,9 +1219,13 @@ export function DataSourceForm({
                           DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED && (
                           <FormField
                             title={<>{t("common.password")}</>}
-                            description={t(
-                              "instance.password-source.stored-in-bytebase"
-                            )}
+                            description={
+                              !hideAdvancedFeatures
+                                ? t(
+                                    "instance.password-source.stored-in-bytebase"
+                                  )
+                                : undefined
+                            }
                           >
                             <div className="flex flex-col gap-2">
                               {passwordSourceControl}

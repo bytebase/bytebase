@@ -1,32 +1,30 @@
+import { Eye, EyeOff, X } from "lucide-react";
 import {
   type AriaAttributes,
   type ChangeEvent,
   createContext,
   type DragEvent,
-  type KeyboardEvent,
   type ReactNode,
   useCallback,
   useContext,
   useEffect,
-  useId,
   useMemo,
   useRef,
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { FormControlRow } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 const SecretEditingContext = createContext<{
   register?: () => () => void;
-  pending: boolean;
+  invalid: boolean;
   resetKey?: string | number;
-}>({ pending: false });
+}>({ invalid: false });
 
-/** Coordinates unfinished secret edits with the enclosing form's submit actions. */
+/** Coordinates invalid secret replacements with the enclosing form. */
 export function SecretInputProvider({
   children,
   resetKey,
@@ -46,7 +44,7 @@ export function SecretInputProvider({
       });
   }, []);
   const value = useMemo(
-    () => ({ register, pending: editors.size > 0, resetKey }),
+    () => ({ register, invalid: editors.size > 0, resetKey }),
     [register, editors.size, resetKey]
   );
   return (
@@ -56,8 +54,8 @@ export function SecretInputProvider({
   );
 }
 
-export const useHasPendingSecretEdits = () =>
-  useContext(SecretEditingContext).pending;
+export const useHasInvalidSecretInputs = () =>
+  useContext(SecretEditingContext).invalid;
 
 export interface SecretInputProps extends AriaAttributes {
   id?: string;
@@ -99,51 +97,37 @@ function SecretInputControl({
 }: SecretInputProps) {
   const { t } = useTranslation();
   const { register } = useContext(SecretEditingContext);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
-  const editButtonRef = useRef<HTMLButtonElement>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const fileReadRef = useRef(0);
-  const wasEditingRef = useRef(false);
-  const hintId = useId();
-  const active = isCreating || editing;
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const unchanged = !isCreating && value === undefined;
+  const showReveal = !unchanged && !multiline;
+  const showClear = allowEmpty && (unchanged || !!value);
+  const inputPadding =
+    showReveal && showClear
+      ? "pr-20"
+      : showReveal || showClear
+        ? "pr-10"
+        : undefined;
 
   useEffect(() => {
-    if (editing && !disabled) return register?.();
-  }, [editing, disabled, register]);
+    if (!disabled && !allowEmpty && value === "") return register?.();
+  }, [disabled, allowEmpty, value, register]);
   useEffect(() => {
-    if (editing) inputRef.current?.focus();
-    else if (wasEditingRef.current) editButtonRef.current?.focus();
-    wasEditingRef.current = editing;
+    setShowPassword(false);
     return () => {
       fileReadRef.current++;
     };
-  }, [editing, disabled]);
+  }, [disabled, unchanged]);
 
-  const finish = (commit: boolean) => {
-    if (disabled || (commit && !allowEmpty && draft.length === 0)) return;
-    if (commit) onValueChange(draft);
-    fileReadRef.current++;
-    setDraft("");
-    setEditing(false);
-  };
   const change = (next: string) => {
-    if (isCreating) onValueChange(next);
-    else setDraft(next);
-  };
-  const onKeyDown = (
-    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    if (!editing || event.nativeEvent.isComposing) return;
-    if (event.key === "Escape" || (!multiline && event.key === "Enter")) {
-      event.preventDefault();
-      event.stopPropagation();
-      finish(event.key === "Enter");
-    }
+    if (disabled) return;
+    fileReadRef.current++;
+    onValueChange(next);
   };
   const onDrop = (event: DragEvent<HTMLTextAreaElement>) => {
     event.preventDefault();
-    if (disabled || !active) return;
+    if (disabled) return;
     const file = event.dataTransfer.files[0];
     if (!file) return;
     const request = ++fileReadRef.current;
@@ -157,87 +141,68 @@ function SecretInputControl({
   const inputProps = {
     ...aria,
     id,
-    disabled: disabled || !active,
-    value: active ? (isCreating ? (value ?? "") : draft) : "",
-    placeholder: active
-      ? placeholder
-      : value === undefined
-        ? t("common.secret-input.hidden")
-        : value === ""
-          ? t("common.secret-input.empty")
-          : t("common.secret-input.updated"),
-    "aria-describedby":
-      [aria["aria-describedby"], editing ? hintId : undefined]
-        .filter(Boolean)
-        .join(" ") || undefined,
-    autoComplete: "new-password",
-    spellCheck: false,
-    onKeyDown,
-    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      change(event.target.value),
+    disabled,
+    value: value ?? "",
+    placeholder: unchanged ? t("common.secret-input.stored") : placeholder,
     ref: (element: HTMLInputElement | HTMLTextAreaElement | null) => {
       inputRef.current = element;
     },
+    required: !allowEmpty && !unchanged,
+    autoComplete: "new-password",
+    spellCheck: false,
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      change(event.target.value),
   };
 
   return (
-    <div className={cn("flex min-w-0 flex-col gap-2", className)}>
-      <FormControlRow className="flex-wrap items-start gap-y-2">
-        <div className="min-w-0 flex-1">
-          {multiline && active ? (
-            <Textarea
-              {...inputProps}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={onDrop}
-            />
-          ) : (
-            <Input {...inputProps} type={active ? "password" : "text"} />
+    <div className={cn("relative min-w-0", className)}>
+      {multiline ? (
+        <Textarea
+          {...inputProps}
+          className={inputPadding}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={onDrop}
+        />
+      ) : (
+        <Input
+          {...inputProps}
+          className={inputPadding}
+          type={!unchanged && showPassword ? "text" : "password"}
+        />
+      )}
+      {(showReveal || showClear) && (
+        <div className="absolute right-1 top-1 flex">
+          {showReveal && (
+            <Button
+              type="button"
+              appearance="secondary"
+              size="sm"
+              disabled={disabled}
+              aria-label={t("common.toggle-password-visibility")}
+              aria-pressed={showPassword}
+              onClick={() => setShowPassword((visible) => !visible)}
+            >
+              {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+            </Button>
+          )}
+          {showClear && (
+            <Button
+              type="button"
+              appearance="secondary"
+              size="sm"
+              disabled={disabled}
+              aria-label={t("common.clear")}
+              title={t("common.clear")}
+              onClick={() => {
+                change("");
+                setShowPassword(false);
+                inputRef.current?.focus();
+              }}
+            >
+              <X size={16} />
+            </Button>
           )}
         </div>
-        {!isCreating && (
-          <div className="flex shrink-0 gap-2">
-            {editing ? (
-              <>
-                <Button
-                  type="button"
-                  appearance="outline"
-                  disabled={disabled}
-                  onClick={() => finish(false)}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  type="button"
-                  appearance="secondary"
-                  disabled={disabled || (!allowEmpty && draft.length === 0)}
-                  onClick={() => finish(true)}
-                >
-                  {t("common.done")}
-                </Button>
-              </>
-            ) : (
-              <Button
-                ref={editButtonRef}
-                type="button"
-                appearance="outline"
-                disabled={disabled}
-                onClick={() => {
-                  setDraft(value ?? "");
-                  setEditing(true);
-                }}
-              >
-                {t("common.edit")}
-              </Button>
-            )}
-          </div>
-        )}
-      </FormControlRow>
-      {editing && (
-        <p id={hintId} className="text-xs text-control-light">
-          {allowEmpty
-            ? t("common.secret-input.edit-hint")
-            : t("common.secret-input.required-hint")}
-        </p>
       )}
     </div>
   );

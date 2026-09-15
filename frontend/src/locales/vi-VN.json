@@ -445,11 +445,7 @@
     "search-no-result": "Không tìm thấy kết quả phù hợp",
     "search-results": "Tìm kiếm kết quả",
     "secret-input": {
-      "edit-hint": "Chọn Xong khi để trống sẽ xóa giá trị khi lưu. Hủy giữ nguyên giá trị trước đó.",
-      "empty": "Giá trị trống (chờ lưu)",
-      "hidden": "Giá trị đã lưu được ẩn",
-      "required-hint": "Nhập giá trị thay thế rồi chọn Xong. Hủy giữ nguyên giá trị trước đó.",
-      "updated": "Giá trị mới (chờ lưu)"
+      "stored": "Giá trị được lưu trữ an toàn"
     },
     "select": "Vui lòng chọn",
     "select-all": "Chọn tất cả",
@@ -481,6 +477,7 @@
     "tips": "Mẹo",
     "title": "Tiêu đề",
     "to": "Đến",
+    "toggle-password-visibility": "Bật/tắt hiển thị mật khẩu",
     "token": "Mã token",
     "total": "Tổng",
     "total-n-items": "Tổng {{n}} mục",

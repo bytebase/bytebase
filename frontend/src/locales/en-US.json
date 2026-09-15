@@ -445,11 +445,7 @@
     "search-no-result": "No matching result found",
     "search-results": "Search results",
     "secret-input": {
-      "edit-hint": "Done with an empty field clears the value when you save. Cancel keeps the previous value.",
-      "empty": "Empty value (pending save)",
-      "hidden": "Saved value hidden",
-      "required-hint": "Enter a replacement, then choose Done. Cancel keeps the previous value.",
-      "updated": "New value (pending save)"
+      "stored": "Value securely stored"
     },
     "select": "Please Select",
     "select-all": "Select all",
@@ -481,6 +477,7 @@
     "tips": "Tips",
     "title": "Title",
     "to": "To",
+    "toggle-password-visibility": "Toggle password visibility",
     "token": "Token",
     "total": "Total",
     "total-n-items": "Total {{n}} items",

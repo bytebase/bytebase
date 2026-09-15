@@ -445,11 +445,7 @@
     "search-no-result": "一致する結果が見つかりません",
     "search-results": "結果を検索",
     "secret-input": {
-      "edit-hint": "空欄のまま完了を選ぶと、保存時に値が消去されます。キャンセルすると元の値が保持されます。",
-      "empty": "空の値（未保存）",
-      "hidden": "保存済みの値は非表示です",
-      "required-hint": "新しい値を入力して完了を選んでください。キャンセルすると元の値が保持されます。",
-      "updated": "新しい値（未保存）"
+      "stored": "値は安全に保存されています"
     },
     "select": "選択してください",
     "select-all": "すべて選択",
@@ -481,6 +477,7 @@
     "tips": "プロンプトメッセージ",
     "title": "タイトル",
     "to": "終了",
+    "toggle-password-visibility": "パスワードの表示を切り替え",
     "token": "トークン",
     "total": "合計",
     "total-n-items": "合計 {{n}} 件",

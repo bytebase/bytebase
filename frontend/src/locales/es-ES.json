@@ -445,11 +445,7 @@
     "search-no-result": "No se encontraron resultados coincidentes",
     "search-results": "Buscar resultados",
     "secret-input": {
-      "edit-hint": "Pulsa Listo con el campo vacío para borrar el valor al guardar. Cancelar conserva el valor anterior.",
-      "empty": "Valor vacío (pendiente de guardar)",
-      "hidden": "Valor guardado oculto",
-      "required-hint": "Introduce un valor y pulsa Listo. Cancelar conserva el valor anterior.",
-      "updated": "Valor nuevo (pendiente de guardar)"
+      "stored": "Valor almacenado de forma segura"
     },
     "select": "Seleccionar",
     "select-all": "Seleccionar todo",
@@ -481,6 +477,7 @@
     "tips": "Consejos",
     "title": "Título",
     "to": "Hasta",
+    "toggle-password-visibility": "Alternar visibilidad de la contraseña",
     "token": "Token",
     "total": "Total",
     "total-n-items": "Total {{n}} elementos",

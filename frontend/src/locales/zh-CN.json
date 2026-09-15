@@ -445,11 +445,7 @@
     "search-no-result": "未找到匹配的结果",
     "search-results": "搜索结果",
     "secret-input": {
-      "edit-hint": "留空并点击完成将在保存时清空此值。取消将保留原值。",
-      "empty": "空值（待保存）",
-      "hidden": "已保存的值不可查看",
-      "required-hint": "输入替换值后点击完成。取消将保留原值。",
-      "updated": "新值（待保存）"
+      "stored": "值已安全保存"
     },
     "select": "请选择",
     "select-all": "全选",
@@ -481,6 +477,7 @@
     "tips": "提示信息",
     "title": "标题",
     "to": "到",
+    "toggle-password-visibility": "切换密码可见性",
     "token": "令牌",
     "total": "总计",
     "total-n-items": "共 {{n}} 项",
