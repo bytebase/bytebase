@@ -758,7 +758,7 @@ function AdditionalAddressesFields({
     <FormField title={t("data-source.additional-node-addresses")}>
       <FormControlGroup className="mt-1">
         {addresses.map((addr, index) => (
-          <FormControlRow key={index} className="items-end">
+          <FormControlRow key={index} style={{ alignItems: "flex-end" }}>
             <FormField className="min-w-0 flex-1">
               <FormLabel
                 htmlFor={`${id}-${index}-host`}
@@ -796,6 +796,7 @@ function AdditionalAddressesFields({
               variant="destructive"
               appearance="secondary"
               size="sm"
+              className="mb-1"
               aria-label={t("common.delete")}
               disabled={!allowEdit}
               onClick={() => onRemove(index)}
