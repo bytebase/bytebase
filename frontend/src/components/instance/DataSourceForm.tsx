@@ -41,7 +41,10 @@ import {
   type TlsUpdateState,
   updateDataSourceSecret,
 } from "./common";
-import { invalidateSourceDrafts } from "./data-source-drafts";
+import {
+  deactivateExternalSecret,
+  invalidateSourceDrafts,
+} from "./data-source-drafts";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
 import { SshConnectionForm } from "./SshConnectionForm";
@@ -740,7 +743,8 @@ export function DataSourceForm({
               Number(type) as DataSourceExternalSecret_SecretType
             );
           } else if (kind === "sasl") {
-            update({
+            onDataSourceChange({
+              ...deactivateExternalSecret(dataSource, sourceDraftsRef.current),
               saslConfig: create(SASLConfigSchema, {
                 mechanism: {
                   case: "krbConfig",
