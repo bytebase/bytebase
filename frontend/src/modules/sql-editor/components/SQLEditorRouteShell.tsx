@@ -112,6 +112,10 @@ export function SQLEditorRouteShell() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const route = useCurrentRoute();
+  const guidedQueryRequested =
+    route.name === SQL_EDITOR_DATABASE_MODULE &&
+    route.query[PRODUCT_INTRO_QUERY_KEY] === RUN_QUERY_PRODUCT_INTRO;
+  const previousGuidedQueryRequestedRef = useRef(guidedQueryRequested);
   const setAsidePanelTab = useSQLEditorStore((s) => s.setAsidePanelTab);
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
 
@@ -438,6 +442,14 @@ export function SQLEditorRouteShell() {
     if (await prepareSheet()) return;
     if (await prepareConnectionParams()) return;
   };
+
+  useEffect(() => {
+    if (!bootstrapDone) return;
+    const previouslyRequested = previousGuidedQueryRequestedRef.current;
+    previousGuidedQueryRequestedRef.current = guidedQueryRequested;
+    if (!guidedQueryRequested || previouslyRequested) return;
+    void prepareConnectionParams();
+  }, [bootstrapDone, guidedQueryRequested]);
 
   // ---- URL ⇄ connection sync (reactive) --------------------------------
 

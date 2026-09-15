@@ -215,6 +215,10 @@ const renderShell = () => {
   });
   return {
     container,
+    rerender: () =>
+      act(() => {
+        root.render(<SQLEditorRouteShell />);
+      }),
     unmount: () =>
       act(() => {
         root.unmount();
@@ -594,6 +598,48 @@ describe("SQLEditorRouteShell", () => {
       database: "instances/inst1/databases/db1",
       silent: true,
     });
+    expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
+      connection: {
+        instance: "instances/inst1",
+        database: "instances/inst1/databases/db1",
+        schema: "public",
+        table: "users",
+      },
+      mode: "SAVED_QUERY",
+      statement: 'SELECT * FROM "public"."users" LIMIT 50;',
+    });
+
+    unmount();
+  });
+
+  test("generates a SELECT statement when a mounted editor receives a guided query route", async () => {
+    const { rerender, unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    mocks.tabsState.addTab.mockClear();
+
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      query: {
+        schema: "public",
+        table: "users",
+        intro: "run-query",
+      },
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    rerender();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
     expect(mocks.tabsState.addTab).toHaveBeenCalledWith({
       connection: {
         instance: "instances/inst1",
