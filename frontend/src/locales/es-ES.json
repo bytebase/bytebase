@@ -2699,7 +2699,7 @@
             "title": "Gestionar el mantenimiento de bases de datos"
           },
           "propose": {
-            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones y revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
+            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
             "title": "Proponer cambios"
           },
           "read-data": {

@@ -2699,7 +2699,7 @@
             "title": "Manage database housekeeping"
           },
           "propose": {
-            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must",
+            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must",
             "title": "Propose changes"
           },
           "read-data": {

@@ -2699,7 +2699,7 @@
             "title": "Quản lý vận hành cơ sở dữ liệu"
           },
           "propose": {
-            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành và bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
+            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
             "title": "Đề xuất thay đổi"
           },
           "read-data": {
