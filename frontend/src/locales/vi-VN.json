@@ -1208,6 +1208,7 @@
     },
     "instance-id": "ID phiên bản",
     "instance-name": "Tên phiên bản",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance, tùy chọn",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "Máy chủ KDC",
