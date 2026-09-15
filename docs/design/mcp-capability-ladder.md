@@ -514,8 +514,11 @@ under
 - Locale: keys under `settings.mcp.ladder.*` in all five locale files. The retired mode-description
   keys are removed, not left empty. `frontend/scripts/check-i18n.mjs` enforces cross-locale
   parity over all of them; the four template-keyed families (`ladder.row.`, `.stops.`, `.summary.`,
-  `.tier.`) are registered in its `DYNAMIC_PREFIXES`, which exempts them from the unused-key check
-  as well, so their coverage comes from `mcpCapabilityRows.i18n.test.ts` instead.
+  `.tier.`) are registered in its `DYNAMIC_PREFIXES`, which exempts them from both the missing-key
+  and unused-key checks, as it does for every other template-keyed family in the product. A row id
+  with no copy renders its raw key on the page, and the e2e spec, which reads every row's title from
+  `en-US.json`, fails to load; an orphaned line after a rename is dead weight in the locale files. Both need a row renamed, which is rare, so neither
+  earns a check of its own.
 - Tests: the served set per mode; the disclosure collapsed by default, opens, follows the pick, and
   starts over on the next visit; the details toggle reveals sub-items on every row; the
   "Best for" line follows the selection; Disabled renders the static line in edit and the sentence in

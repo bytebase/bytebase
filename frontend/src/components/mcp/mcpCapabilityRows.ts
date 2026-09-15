@@ -85,10 +85,9 @@ export const servedRows = (mode: MCPMode): readonly MCPCapabilityRow[] =>
   MCP_CAPABILITY_ROWS.filter((row) => isRowServed(mode, row));
 
 /**
- * The locale keys the ladder's copy is stored under, stated beside the ids they
- * are built from so the product and the copy test cannot disagree about their
- * shape. Every template-keyed family has one; a family without one is a family
- * where a rename leaves the test passing against the old shape.
+ * The locale keys the ladder's copy is stored under, built in one place beside
+ * the ids they are built from. These families are template-keyed, so
+ * `check-i18n.mjs` exempts them by prefix and cannot report a missing line.
  */
 export const mcpTierKey = (
   tier: MCPCapabilityTier,

@@ -77,10 +77,7 @@ export const isServingMode = (
   capability === MCPSetting_Capability.READ_ONLY ||
   capability === MCPSetting_Capability.READ_WRITE;
 
-/**
- * The locale keys a mode's strings are stored under, assembled in one place so
- * the product and the copy test cannot disagree about their shape.
- */
+/** The locale keys a mode's strings are stored under, built in one place. */
 export const mcpSummaryKey = (mode: MCPServingMode): string =>
   `settings.mcp.ladder.summary.${MCP_MODE_PRESENTATION[mode].key}`;
 
