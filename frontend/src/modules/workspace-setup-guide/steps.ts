@@ -115,6 +115,7 @@ export const GUIDE_STEP_DEFINITIONS: readonly GuideStepDefinition[] = [
             schema: context.queryTarget.schema,
             table: context.queryTarget.table,
             [PRODUCT_INTRO_QUERY_KEY]: RUN_QUERY_PRODUCT_INTRO,
+            panel: "schema",
           }
         : undefined;
       const target = autoSQLEditorDatabaseRoute({

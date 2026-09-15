@@ -245,9 +245,35 @@ describe("WorkspaceSetupGuide", () => {
         schema: "public",
         table: "employee",
         intro: "run-query",
+        panel: "schema",
       })
     );
     expect(screen.getByTestId("open-product-model")).toBeVisible();
+  });
+
+  test("hides the SQL Editor action while the Query step is on its route", () => {
+    mocks.scenarioId = "query-data";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+      queryTarget: { schema: "public", table: "employee" },
+      route: {
+        name: "sql-editor.database",
+        params: {
+          project: "app",
+          instance: "sample",
+          database: "employee",
+        },
+      },
+    });
+
+    render(<WorkspaceSetupGuide />);
+
+    expect(screen.getByTestId("setup-step-query-data")).toBeVisible();
+    expect(screen.queryByTestId("active-action")).not.toBeInTheDocument();
   });
 
   test("shows the full Query Data chain when setup has no resources", () => {

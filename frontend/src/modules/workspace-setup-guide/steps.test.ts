@@ -199,6 +199,7 @@ describe("GUIDE_STEP_DEFINITIONS", () => {
               schema: "public",
               table: "employee",
               intro: "run-query",
+              panel: "schema",
             },
           },
         },
@@ -212,6 +213,7 @@ describe("GUIDE_STEP_DEFINITIONS", () => {
             schema: "public",
             table: "employee",
             intro: "run-query",
+            panel: "schema",
           },
         },
       });

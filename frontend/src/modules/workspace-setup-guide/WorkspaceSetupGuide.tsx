@@ -95,6 +95,8 @@ export function WorkspaceSetupGuide() {
     [context, journey, selectedStepId]
   );
   const primaryAction = guide.actionStep?.actions.primary;
+  const isActionStepRouteActive =
+    guide.actionStep?.definition.matchesRoute(context.route) ?? false;
   const guideAnalyticsProperties = useMemo(
     () =>
       getGuideAnalyticsProperties({
@@ -436,25 +438,27 @@ export function WorkspaceSetupGuide() {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-x-2">
-          {!guide.complete && primaryAction?.type === "open-sql-editor" && (
-            <span
-              onClickCapture={() => {
-                if (guide.actionStep) {
-                  captureStepAction(guide.actionStep, primaryAction);
-                }
-              }}
-            >
-              <SQLEditorButton
-                data-testid="active-action"
-                database={primaryAction.database}
-                query={primaryAction.query}
-                openInNewTab
-                size="sm"
-                className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
-                label={t("workspace-setup-guide.actions.query")}
-              />
-            </span>
-          )}
+          {!guide.complete &&
+            !isActionStepRouteActive &&
+            primaryAction?.type === "open-sql-editor" && (
+              <span
+                onClickCapture={() => {
+                  if (guide.actionStep) {
+                    captureStepAction(guide.actionStep, primaryAction);
+                  }
+                }}
+              >
+                <SQLEditorButton
+                  data-testid="active-action"
+                  database={primaryAction.database}
+                  query={primaryAction.query}
+                  openInNewTab
+                  size="sm"
+                  className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
+                  label={t("workspace-setup-guide.actions.query")}
+                />
+              </span>
+            )}
           <Button
             type="button"
             data-testid="dismiss-guide"
