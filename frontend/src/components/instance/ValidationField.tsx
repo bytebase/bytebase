@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { SecretInput, type SecretInputProps } from "@/components/SecretInput";
 import { FormError, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -125,6 +126,22 @@ export function ValidationTextarea(props: ComponentProps<typeof Textarea>) {
   const field = useContext(FieldContext);
   return (
     <Textarea
+      {...props}
+      aria-label={props["aria-label"] ?? field.label}
+      aria-invalid={field.invalid || props["aria-invalid"]}
+      aria-describedby={
+        [props["aria-describedby"], field.description]
+          .filter(Boolean)
+          .join(" ") || undefined
+      }
+    />
+  );
+}
+
+export function ValidationSecretInput(props: SecretInputProps) {
+  const field = useContext(FieldContext);
+  return (
+    <SecretInput
       {...props}
       aria-label={props["aria-label"] ?? field.label}
       aria-invalid={field.invalid || props["aria-invalid"]}

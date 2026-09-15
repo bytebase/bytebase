@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControlGroup,
   FormControlRow,
@@ -42,7 +41,12 @@ import {
 import { onlyAllowNumber } from "@/utils";
 import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import { CredentialSourceForm } from "./CredentialSourceForm";
-import type { EditDataSource, TlsUpdateState } from "./common";
+import {
+  type EditDataSource,
+  getDataSourceSecretValue,
+  type TlsUpdateState,
+  updateDataSourceSecret,
+} from "./common";
 import { invalidateSourceDrafts } from "./data-source-drafts";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
@@ -66,6 +70,7 @@ import {
 import {
   ValidationField as FormField,
   ValidationInput as Input,
+  ValidationSecretInput as SecretInput,
   ValidationProvider,
 } from "./ValidationField";
 
@@ -146,44 +151,19 @@ export function RedisSentinelFields({
         />
       </FormField>
       <FormField title={t("instance.master-password")}>
-        <div>
-          {!isCreating && allowUsingEmptyPassword && (
-            <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
-              <Checkbox
-                checked={dataSource.useEmptyMasterPassword ?? false}
-                disabled={!allowEdit}
-                onCheckedChange={(checked) => {
-                  update({
-                    useEmptyMasterPassword: checked,
-                    updatedMasterPassword: checked
-                      ? ""
-                      : dataSource.updatedMasterPassword,
-                  });
-                }}
-              />
-              {t("instance.no-password")}
-            </label>
-          )}
-          <Input
-            type="password"
-            className="w-full"
-            autoComplete="off"
-            placeholder={
-              dataSource.useEmptyMasterPassword
-                ? t("instance.no-password")
-                : t("instance.password-write-only")
-            }
-            disabled={!allowEdit || !!dataSource.useEmptyMasterPassword}
-            value={
-              dataSource.useEmptyMasterPassword
-                ? ""
-                : dataSource.updatedMasterPassword
-            }
-            onChange={(e) =>
-              update({ updatedMasterPassword: e.target.value.trim() })
-            }
-          />
-        </div>
+        <SecretInput
+          resetKey={dataSource.id}
+          aria-label={t("instance.master-password")}
+          value={getDataSourceSecretValue(dataSource, "masterPassword")}
+          isCreating={isCreating || dataSource.pendingCreate}
+          disabled={!allowEdit}
+          allowEmpty={allowUsingEmptyPassword}
+          onValueChange={(value) =>
+            onDataSourceChange(
+              updateDataSourceSecret(dataSource, "masterPassword", value)
+            )
+          }
+        />
       </FormField>
     </>
   );
@@ -532,13 +512,6 @@ export function DataSourceForm({
     onDataSourceChange(ds);
   };
 
-  const toggleUseEmptyPassword = (on: boolean) => {
-    update({
-      useEmptyPassword: on,
-      updatedPassword: on ? "" : dataSource.updatedPassword,
-    });
-  };
-
   const handleHostInput = (value: string) => {
     if (dataSource.type === DataSourceType.READ_ONLY) {
       if (!hasReadonlyReplicaFeature) {
@@ -580,7 +553,12 @@ export function DataSourceForm({
       sshPrivateKey: string;
     }>
   ) => {
-    update(value);
+    let next = { ...dataSource, ...value };
+    for (const field of ["sshPassword", "sshPrivateKey"] as const) {
+      if (value[field] !== undefined)
+        next = updateDataSourceSecret(next, field, value[field]);
+    }
+    onDataSourceChange(next);
   };
 
   const addNewParameter = () => {
@@ -1245,47 +1223,30 @@ export function DataSourceForm({
                               "instance.password-source.stored-in-bytebase"
                             )}
                           >
-                            <div>
-                              {!isCreating && allowUsingEmptyPassword && (
-                                <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
-                                  <Checkbox
-                                    checked={
-                                      dataSource.useEmptyPassword ?? false
-                                    }
-                                    disabled={!allowEdit}
-                                    onCheckedChange={(checked) =>
-                                      toggleUseEmptyPassword(checked)
-                                    }
-                                  />
-                                  {t("instance.no-password")}
-                                </label>
-                              )}
-                              <div className="flex flex-col gap-2">
-                                {passwordSourceControl}
-                                <Input
-                                  type="password"
-                                  className="min-w-40 flex-1"
-                                  autoComplete="off"
-                                  placeholder={
-                                    dataSource.useEmptyPassword
-                                      ? t("instance.no-password")
-                                      : t("instance.password-write-only")
-                                  }
-                                  disabled={
-                                    !allowEdit || !!dataSource.useEmptyPassword
-                                  }
-                                  value={
-                                    dataSource.useEmptyPassword
-                                      ? ""
-                                      : dataSource.updatedPassword
-                                  }
-                                  onChange={(e) =>
-                                    update({
-                                      updatedPassword: e.target.value.trim(),
-                                    })
-                                  }
-                                />
-                              </div>
+                            <div className="flex flex-col gap-2">
+                              {passwordSourceControl}
+                              <SecretInput
+                                resetKey={dataSource.id}
+                                aria-label={t("common.password")}
+                                value={getDataSourceSecretValue(
+                                  dataSource,
+                                  "password"
+                                )}
+                                isCreating={
+                                  isCreating || dataSource.pendingCreate
+                                }
+                                disabled={!allowEdit}
+                                allowEmpty={allowUsingEmptyPassword}
+                                onValueChange={(value) =>
+                                  onDataSourceChange(
+                                    updateDataSourceSecret(
+                                      dataSource,
+                                      "password",
+                                      value
+                                    )
+                                  )
+                                }
+                              />
                             </div>
                           </FormField>
                         )}
@@ -2000,13 +1961,25 @@ export function DataSourceForm({
                         className="text-sm text-accent"
                       />
                     </div>
-                    <textarea
-                      value={dataSource.authenticationPrivateKey ?? ""}
+                    <SecretInput
+                      resetKey={dataSource.id}
+                      aria-label={t("data-source.ssh.private-key")}
+                      value={getDataSourceSecretValue(
+                        dataSource,
+                        "authenticationPrivateKey"
+                      )}
+                      isCreating={isCreating || dataSource.pendingCreate}
                       disabled={!allowEdit}
-                      className="w-full h-32 whitespace-pre-wrap rounded-sm border border-control-border p-2 text-sm font-mono"
-                      placeholder={`-----BEGIN PRIVATE KEY-----\nMIIEvQ...\n-----END PRIVATE KEY-----`}
-                      onChange={(e) =>
-                        update({ authenticationPrivateKey: e.target.value })
+                      multiline
+                      allowEmpty={false}
+                      onValueChange={(value) =>
+                        onDataSourceChange(
+                          updateDataSourceSecret(
+                            dataSource,
+                            "authenticationPrivateKey",
+                            value
+                          )
+                        )
                       }
                     />
                   </FormField>
@@ -2017,20 +1990,23 @@ export function DataSourceForm({
                       <>{t("data-source.private-key-passphrase-tip")}</>
                     }
                   >
-                    <Input
-                      value={
-                        dataSource.authenticationPrivateKeyPassphrase ?? ""
-                      }
-                      type="password"
-                      className="w-full"
-                      disabled={!allowEdit}
-                      placeholder={t(
-                        "data-source.private-key-passphrase-placeholder"
+                    <SecretInput
+                      resetKey={dataSource.id}
+                      aria-label={t("data-source.private-key-passphrase")}
+                      value={getDataSourceSecretValue(
+                        dataSource,
+                        "authenticationPrivateKeyPassphrase"
                       )}
-                      onChange={(e) =>
-                        update({
-                          authenticationPrivateKeyPassphrase: e.target.value,
-                        })
+                      isCreating={isCreating || dataSource.pendingCreate}
+                      disabled={!allowEdit}
+                      onValueChange={(value) =>
+                        onDataSourceChange(
+                          updateDataSourceSecret(
+                            dataSource,
+                            "authenticationPrivateKeyPassphrase",
+                            value
+                          )
+                        )
                       }
                     />
                   </FormField>
@@ -2058,23 +2034,29 @@ export function DataSourceForm({
                     validationField="updatedToken"
                     title={
                       <>
-                        Token <span className="text-error">*</span>
+                        {t("common.token")}{" "}
+                        <span className="text-error">*</span>
                       </>
                     }
                   >
-                    <Input
-                      type="password"
-                      value={dataSource.updatedToken}
-                      className="w-full"
-                      autoComplete="off"
+                    <SecretInput
+                      resetKey={dataSource.id}
+                      aria-label={t("common.token")}
+                      value={getDataSourceSecretValue(
+                        dataSource,
+                        "authenticationPrivateKey"
+                      )}
+                      isCreating={isCreating || dataSource.pendingCreate}
                       disabled={!allowEdit}
-                      placeholder={
-                        isCreating
-                          ? "personal access token"
-                          : t("instance.token-write-only")
-                      }
-                      onChange={(e) =>
-                        update({ updatedToken: e.target.value.trim() })
+                      allowEmpty={false}
+                      onValueChange={(value) =>
+                        onDataSourceChange(
+                          updateDataSourceSecret(
+                            dataSource,
+                            "authenticationPrivateKey",
+                            value
+                          )
+                        )
                       }
                     />
                   </FormField>
@@ -2299,6 +2281,7 @@ export function DataSourceForm({
           {!hideAdvancedFeatures && showSSH && isPasswordAuth && (
             <div className="sm:col-span-3 sm:col-start-1">
               <SshConnectionForm
+                key={dataSource.id}
                 title={
                   <span className="flex flex-row items-center gap-x-1">
                     {t("data-source.ssh-connection")}
@@ -2317,6 +2300,17 @@ export function DataSourceForm({
                   </span>
                 }
                 value={dataSource}
+                isCreating={isCreating || dataSource.pendingCreate}
+                secretValues={{
+                  sshPassword: getDataSourceSecretValue(
+                    dataSource,
+                    "sshPassword"
+                  ),
+                  sshPrivateKey: getDataSourceSecretValue(
+                    dataSource,
+                    "sshPrivateKey"
+                  ),
+                }}
                 instance={instance}
                 disabled={!allowEdit}
                 onChange={handleSSHChange}
