@@ -119,7 +119,7 @@ export function IssueDetailDatabaseChangeView({
                   className={cn(
                     "relative -mb-px flex cursor-pointer items-center gap-1 rounded-t-sm border px-3 py-1.5 text-sm transition-colors",
                     isSelected
-                      ? "border-control-border border-b-white bg-white font-medium text-main"
+                      ? "border-control-border border-b-background bg-background font-medium text-main"
                       : "border-transparent bg-transparent text-control-light hover:text-control"
                   )}
                   onClick={() => onSelectedSpecIdChange(spec.id)}
@@ -147,7 +147,7 @@ export function IssueDetailDatabaseChangeView({
           )}
         </div>
 
-        <div className="rounded-b-sm border-x border-b border-control-border bg-white px-3 py-2">
+        <div className="rounded-b-sm border-x border-b border-control-border bg-background px-3 py-2">
           {selectedSpec && (
             <div className="flex flex-col gap-2">
               <IssueDetailDatabaseChangeTargets
@@ -627,7 +627,7 @@ function IssueDetailDatabaseChangeTargets({
         </div>
 
         {!isLoadingTargets && nonEnvDatabaseNames.length > 0 && (
-          <div className="rounded-sm border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-900">
+          <div className="rounded-sm border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning">
             <div>{nonEnvWarning}</div>
             <div className="mt-1 flex flex-col gap-1 text-sm">
               {nonEnvDatabaseNames.map((name) => (
@@ -813,7 +813,7 @@ function IssueDetailDatabaseGroupTarget({
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
           {t("common.database-group")}
         </span>
-        <span className="min-w-0 truncate text-sm text-gray-800">
+        <span className="min-w-0 truncate text-sm text-main">
           {extractDatabaseGroupName(databaseGroup.name || target)}
         </span>
         {isValidDatabaseGroupName(databaseGroup.name) && (
@@ -832,7 +832,7 @@ function IssueDetailDatabaseGroupTarget({
           {databases.slice(0, MAX_INLINE_DATABASES).map((database) => (
             <div
               key={database}
-              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border bg-gray-50 px-2 py-1 transition-all"
+              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border bg-control-bg/50 px-2 py-1 transition-all"
             >
               <IssueDetailDatabaseTarget showEnvironment target={database} />
             </div>

@@ -559,7 +559,7 @@ export function PlanDetailChangesBranch({
 
   if (!selectedSpec) {
     return (
-      <div className="rounded-sm border bg-white px-4 py-3 text-sm text-control-light">
+      <div className="rounded-sm border bg-background px-4 py-3 text-sm text-control-light">
         {t("common.no-data")}
       </div>
     );
@@ -2086,7 +2086,7 @@ export function DatabaseGroupTarget({
           {inlineDatabases.map((database) => (
             <div
               key={database.name}
-              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border bg-gray-50 px-2 py-1 transition-all"
+              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border bg-control-bg/50 px-2 py-1 transition-all"
             >
               <PlanTargetDisplay showEnvironment target={database.name} />
             </div>

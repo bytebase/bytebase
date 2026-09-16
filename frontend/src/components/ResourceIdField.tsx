@@ -196,7 +196,7 @@ export const ResourceIdField = forwardRef<
           <div className="flex items-center gap-x-1">
             {t("resource-id.self", { resource: resourceName })}:
             {value ? (
-              <span className="text-gray-600 font-medium mr-1 inline-flex items-center gap-x-1">
+              <span className="text-control font-medium mr-1 inline-flex items-center gap-x-1">
                 {value}
                 {readonly && <CopyButton content={value} />}
               </span>
@@ -242,7 +242,7 @@ export const ResourceIdField = forwardRef<
             <li
               key={msg.message}
               className={`break-words w-full text-xs ${
-                msg.type === "warning" ? "text-yellow-600" : "text-red-600"
+                msg.type === "warning" ? "text-warning" : "text-error"
               }`}
             >
               {msg.message}

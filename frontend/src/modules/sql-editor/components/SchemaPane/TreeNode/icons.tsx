@@ -33,8 +33,7 @@ export function ViewIcon({ className }: IconProps) {
     <div className={cn("relative", baseSize, className)}>
       <Table className={cn(baseSize, "text-control-placeholder")} />
       <Glasses
-        className="absolute bottom-0 right-0 w-3/4 h-3/4 fill-white"
-        stroke="rgb(var(--color-accent))"
+        className="absolute bottom-0 right-0 w-3/4 h-3/4 fill-background stroke-accent"
         strokeWidth={3.5}
       />
     </div>
@@ -76,7 +75,7 @@ export function SequenceIcon({ className }: IconProps) {
 }
 
 export function TriggerIcon({ className }: IconProps) {
-  return <Zap className={cn(baseSize, "text-amber-500", className)} />;
+  return <Zap className={cn(baseSize, "text-warning", className)} />;
 }
 
 export function PackageIcon({ className }: IconProps) {
@@ -101,7 +100,7 @@ export function TablePartitionIcon({ className }: IconProps) {
 export function PrimaryKeyIcon({ className }: IconProps) {
   return (
     <div className={cn("relative overflow-hidden", baseSize, className)}>
-      <Key className="w-full h-full mx-auto text-amber-500" />
+      <Key className="w-full h-full mx-auto text-warning" />
     </div>
   );
 }

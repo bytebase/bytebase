@@ -102,22 +102,22 @@ export function IssueDetailTaskRunTable({
         <Table className="table-fixed">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="sticky top-0 z-10 w-9 bg-gray-50 px-2" />
+              <TableHead className="sticky top-0 z-10 w-9 bg-control-bg/50 px-2" />
               {showDatabaseColumn && (
-                <TableHead className="sticky top-0 z-10 w-64 bg-gray-50">
+                <TableHead className="sticky top-0 z-10 w-64 bg-control-bg/50">
                   {t("common.database")}
                 </TableHead>
               )}
-              <TableHead className="sticky top-0 z-10 bg-gray-50">
+              <TableHead className="sticky top-0 z-10 bg-control-bg/50">
                 {t("common.detail")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-36 bg-gray-50">
+              <TableHead className="sticky top-0 z-10 w-36 bg-control-bg/50">
                 {t("task.created")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-36 bg-gray-50">
+              <TableHead className="sticky top-0 z-10 w-36 bg-control-bg/50">
                 {t("task.started")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-28 bg-gray-50 pr-6 whitespace-nowrap text-sm">
+              <TableHead className="sticky top-0 z-10 w-28 bg-control-bg/50 pr-6 whitespace-nowrap text-sm">
                 {t("task.execution-time")}
               </TableHead>
             </TableRow>

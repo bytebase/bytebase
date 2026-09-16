@@ -30,7 +30,7 @@ export function DeployTaskFilter({
               "inline-flex items-center gap-1 rounded-full border px-2 py-1",
               checked
                 ? "border-accent bg-accent/10"
-                : "border-control-border bg-white",
+                : "border-control-border bg-background",
             ].join(" ")}
             onClick={() => {
               onChange(

@@ -117,12 +117,12 @@ function ToggleSwitch({
       aria-checked={checked}
       disabled={disabled}
       className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-        checked ? "bg-accent" : "bg-gray-200"
+        checked ? "bg-accent" : "bg-control-bg-hover"
       }`}
       onClick={() => onChange(!checked)}
     >
       <span
-        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm transition-transform ${
           checked ? "translate-x-4" : "translate-x-0"
         }`}
       />
@@ -251,13 +251,13 @@ function RolloutPolicyConfig({
             {rolloutPolicy.roles.map((role) => (
               <span
                 key={role}
-                className="inline-flex items-center gap-x-1 rounded-xs bg-gray-100 px-2 py-1 text-sm"
+                className="inline-flex items-center gap-x-1 rounded-xs bg-control-bg px-2 py-1 text-sm"
               >
                 {displayPolicyRoleTitle(role)}
                 {canUpdatePolicy && (
                   <button
                     type="button"
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-control-placeholder hover:text-control-light-hover"
                     onClick={() => removeRole(role)}
                   >
                     <X className="w-3.5 h-3.5" />
@@ -451,7 +451,7 @@ function SQLReviewSectionInner(
               {canUpdatePolicy && (
                 <button
                   type="button"
-                  className="p-0.5 text-gray-400 hover:text-gray-600"
+                  className="p-0.5 text-control-placeholder hover:text-control-light-hover"
                   onClick={() => {
                     setPendingPolicy(undefined);
                     setEnforce(false);
@@ -881,13 +881,13 @@ function EnvironmentDetail({
                     onCheckedChange={(checked) => setConfirmDelete(checked)}
                     className="mt-0.5"
                   />
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-control">
                     {t("environment.delete-description")}
                   </span>
                 </label>
               )}
               {!existRelatedResource && (
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-control">
                   {t("common.cannot-undo-this-action")}
                 </span>
               )}

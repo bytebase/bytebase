@@ -221,7 +221,7 @@ function PlanCheckFilterPills({
             className={cn(
               "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 transition-colors",
               textClass,
-              isSelected ? "bg-gray-100" : "hover:bg-gray-100"
+              isSelected ? "bg-control-bg" : "hover:bg-control-bg"
             )}
             key={status}
             onClick={() => onSelect(isSelected ? undefined : status)}
@@ -440,7 +440,7 @@ export function PlanCheckResultCard({
         )}
         {affectedRows !== undefined && (
           <div className="mt-1 flex items-center gap-1 text-sm">
-            <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-xs text-control">
+            <span className="inline-flex items-center rounded-full bg-background px-2 py-0.5 text-xs text-control">
               {t("task.check-type.affected-rows.self")}
             </span>
             <span>{String(affectedRows)}</span>

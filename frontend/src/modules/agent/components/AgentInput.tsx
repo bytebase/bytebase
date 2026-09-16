@@ -679,7 +679,7 @@ export function AgentInput() {
     <div className="border-t p-3">
       {/* Pending ask banner */}
       {currentPendingAsk && (
-        <div className="mb-3 rounded-xs bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <div className="mb-3 rounded-xs bg-warning/10 px-3 py-2 text-xs text-warning">
           <div className="font-medium">{currentPendingAsk.prompt}</div>
           <div className="mt-1">
             {currentPendingAsk.kind === "confirm"
@@ -693,7 +693,7 @@ export function AgentInput() {
 
       {/* Interrupted banner */}
       {isInterrupted && (
-        <div className="mb-3 rounded-xs bg-red-50 px-3 py-2 text-xs text-red-700">
+        <div className="mb-3 rounded-xs bg-error/10 px-3 py-2 text-xs text-error">
           <div className="font-medium">{t("agent.interrupted")}</div>
           <div className="mt-1">{t("agent.interrupted-retry-hint")}</div>
           <div className="mt-2 flex flex-wrap gap-x-2 gap-y-2">

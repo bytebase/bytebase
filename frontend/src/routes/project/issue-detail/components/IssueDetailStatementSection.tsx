@@ -389,7 +389,7 @@ export function IssueDetailStatementSection({
         <div
           className={cn(
             "flex items-center gap-x-1 text-base font-medium",
-            isEmpty && "text-red-600"
+            isEmpty && "text-error"
           )}
         >
           <span>{statementTitle}</span>
@@ -473,7 +473,7 @@ export function IssueDetailStatementSection({
         />
       )}
       {isLoading ? (
-        <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-background px-4 py-3 text-sm text-control-light">
           {t("common.loading")}
         </div>
       ) : statement || isEditing ? (
@@ -495,7 +495,7 @@ export function IssueDetailStatementSection({
           )}
         </div>
       ) : (
-        <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-background px-4 py-3 text-sm text-control-light">
           {t("common.no-data")}
         </div>
       )}

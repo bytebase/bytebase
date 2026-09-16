@@ -11,8 +11,8 @@ export function PlanDetailTabStrip({
   children: ReactNode;
 }) {
   return (
-    <div className="relative bg-white pt-3">
-      <div className="absolute bottom-0 w-full border-b border-b-gray-200 leading-0" />
+    <div className="relative bg-background pt-3">
+      <div className="absolute bottom-0 w-full border-b border-b-block-border leading-0" />
       <div className="flex items-center justify-between gap-x-4">
         <div
           className={cn(
@@ -26,7 +26,7 @@ export function PlanDetailTabStrip({
         >
           {children}
           {trailing && (
-            <div className="sticky right-0 ml-1 flex shrink-0 items-center self-stretch border-b border-b-gray-200 bg-white pr-4 pl-2">
+            <div className="sticky right-0 ml-1 flex shrink-0 items-center self-stretch border-b border-b-block-border bg-background pr-4 pl-2">
               {trailing}
             </div>
           )}
@@ -60,8 +60,8 @@ export function PlanDetailTabItem({
         "relative flex shrink-0 items-center rounded-t-sm border",
         boundedWidth && "min-w-40 max-w-64",
         selected
-          ? "border-gray-200 border-b-transparent bg-white"
-          : "border-b-gray-200 border-transparent hover:opacity-80"
+          ? "border-block-border border-b-transparent bg-background"
+          : "border-b-block-border border-transparent hover:opacity-80"
       )}
     >
       <button

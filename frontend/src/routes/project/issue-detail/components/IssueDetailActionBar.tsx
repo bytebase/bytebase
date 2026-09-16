@@ -550,7 +550,7 @@ function IssueDetailActionButton({
     <Button
       className={cn(
         action.buttonType === "success" &&
-          "bg-success text-white hover:bg-success/90",
+          "bg-success text-accent-text hover:bg-success/90",
         action.id === "ISSUE_REVIEW" && "gap-x-1.5"
       )}
       disabled={disabled}
@@ -819,7 +819,7 @@ function IssueDetailReviewPopover({
   return (
     <div
       className={cn(
-        "absolute right-0 top-full mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-white px-4 py-4 shadow-lg",
+        "absolute right-0 top-full mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-background px-4 py-4 shadow-lg",
         LAYER_SURFACE_CLASS
       )}
       ref={popoverRef}

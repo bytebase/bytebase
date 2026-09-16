@@ -142,16 +142,16 @@ export function DeployPendingTasksSection({
             <div className="flex flex-col gap-y-4">
               {groups.map((group) => (
                 <div key={group.environment} className="rounded-sm border">
-                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2">
+                  <div className="flex items-center gap-2 bg-control-bg/50 px-3 py-2">
                     <button
                       className="flex flex-1 items-center gap-2 text-left"
                       onClick={() => toggleEnv(group.environment)}
                       type="button"
                     >
                       {expandedEnvs.has(group.environment) ? (
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                        <ChevronDown className="h-4 w-4 text-control-light" />
                       ) : (
-                        <ChevronRight className="h-4 w-4 text-gray-500" />
+                        <ChevronRight className="h-4 w-4 text-control-light" />
                       )}
                       <span className="font-medium">
                         {extractEnvironmentResourceName(group.environment)}

@@ -152,7 +152,7 @@ function PermissionTransfer({
           {sourceItems.map((p) => (
             <div
               key={p}
-              className={`group flex items-center justify-between px-3 py-1.5 text-sm hover:bg-gray-50 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              className={`group flex items-center justify-between px-3 py-1.5 text-sm hover:bg-control-bg/50 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
               onClick={() => selectItem(p)}
             >
               <span className="truncate">{p}</span>
@@ -183,7 +183,7 @@ function PermissionTransfer({
           {[...value].sort().map((p) => (
             <div
               key={p}
-              className={`group flex items-center justify-between px-3 py-1.5 text-sm hover:bg-gray-50 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              className={`group flex items-center justify-between px-3 py-1.5 text-sm hover:bg-control-bg/50 ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
               onClick={() => removeItem(p)}
             >
               <span className="truncate">{p}</span>
@@ -797,7 +797,7 @@ export function RolesPage() {
             <FeatureBadge
               feature={PlanFeature.FEATURE_CUSTOM_ROLES}
               clickable={false}
-              className="mr-1 text-white inline-flex"
+              className="mr-1 inline-flex text-accent-text"
               fallback={<Plus className="h-4 w-4 mr-1" />}
             />
             {t("common.create")}

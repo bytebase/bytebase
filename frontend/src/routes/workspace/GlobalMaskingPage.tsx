@@ -326,7 +326,7 @@ function MaskingRuleConfig({
                 {mode === "CREATE" ? t("common.create") : t("common.update")}
               </Button>
               {errorMessages.length > 0 && (
-                <div className="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
+                <div className="absolute bottom-full mb-1 right-0 bg-main text-main-text text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
                   <ul className="list-disc pl-4">
                     {errorMessages.map((msg, i) => (
                       <li key={i}>{msg}</li>
@@ -647,7 +647,7 @@ export function GlobalMaskingPage() {
                     {index > 0 && (
                       <button
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-control-bg"
                         onClick={() => onReorder(item, -1)}
                       >
                         <ChevronUp className="w-4 h-4" />
@@ -656,7 +656,7 @@ export function GlobalMaskingPage() {
                     {index !== items.length - 1 && (
                       <button
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-control-bg"
                         onClick={() => onReorder(item, 1)}
                       >
                         <ChevronDown className="w-4 h-4" />
@@ -667,7 +667,7 @@ export function GlobalMaskingPage() {
                   <div className="pt-2">
                     <button
                       type="button"
-                      className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                      className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-control-bg"
                       onClick={() => onEdit(index)}
                     >
                       <Pencil className="w-4 h-4" />

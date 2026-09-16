@@ -41,7 +41,7 @@ export function SessionExpiredSurface({
             {t("auth.token-expired-title")}
           </BaseDialog.Title>
           <div
-            className="bg-white shadow-lg rounded-sm py-3 flex pointer-events-auto flex-col gap-3"
+            className="bg-background shadow-lg rounded-sm py-3 flex pointer-events-auto flex-col gap-3"
             style={{
               maxWidth: "calc(100vw - 80px)",
               maxHeight: "calc(100vh - 80px)",

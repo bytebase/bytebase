@@ -12,6 +12,7 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/components/AdvancedSearch";
+import { classificationLevelBackgroundClasses } from "@/components/classification-level";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { FeatureBadge } from "@/components/FeatureBadge";
 import { RouterLink } from "@/components/RouterLink";
@@ -405,7 +406,7 @@ export function ProjectMaskingExemptionPage({
             <FeatureBadge
               feature={PlanFeature.FEATURE_DATA_MASKING}
               clickable={false}
-              className="text-white"
+              className="text-accent-text"
               fallback={<ShieldCheck className="size-4" />}
             />
             {t("project.masking-exemption.grant-exemption")}
@@ -1127,7 +1128,7 @@ function ExemptionGrantSection({
             </>
           ) : grant.expirationTimestamp ? (
             <>
-              <span className="text-xs font-medium text-blue-600">
+              <span className="text-xs font-medium text-info">
                 {expiryLabel}
               </span>
               <span className="text-xs text-control-light">
@@ -1135,7 +1136,7 @@ function ExemptionGrantSection({
               </span>
             </>
           ) : (
-            <span className="text-xs font-medium text-amber-600">
+            <span className="text-xs font-medium text-warning">
               {t("settings.sensitive-data.never-expires")}
             </span>
           )}
@@ -1298,7 +1299,7 @@ function ExemptionLevelCard({
         <span className="textinfolabel font-medium uppercase text-xs">
           {t("common.scope")}
         </span>
-        <span className="px-2 py-0.5 rounded-xs text-xs bg-green-100 text-green-700 border border-green-200">
+        <span className="rounded-xs border border-success/20 bg-success/10 px-2 py-0.5 text-xs text-success">
           {t("database.all")}
         </span>
       </div>
@@ -1319,14 +1320,6 @@ function ExemptionLevelCard({
 // ============================================================
 // LevelBadge
 // ============================================================
-
-const bgColorList = [
-  "bg-green-200",
-  "bg-yellow-200",
-  "bg-orange-300",
-  "bg-amber-500",
-  "bg-red-500",
-];
 
 function LevelBadge({
   level,
@@ -1359,9 +1352,14 @@ function LevelBadge({
     if (noLimit || level === undefined) {
       return "bg-control-bg-hover text-control-light";
     }
-    const idx = Math.min(level - 1, bgColorList.length - 1);
-    const bg = bgColorList[Math.max(0, idx)] ?? "bg-control-bg-hover";
-    return level >= 4 ? `${bg} text-white` : bg;
+    const idx = Math.min(
+      level - 1,
+      classificationLevelBackgroundClasses.length - 1
+    );
+    const bg =
+      classificationLevelBackgroundClasses[Math.max(0, idx)] ??
+      "bg-control-bg-hover";
+    return level >= 4 ? `${bg} text-accent-text` : bg;
   }, [noLimit, level]);
 
   return (

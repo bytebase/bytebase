@@ -75,11 +75,11 @@ export function TaskStatusIcon({
         className={cn(
           "relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full select-none",
           BOX_CLASSES[size],
-          (isNeutral || status === Task_Status.RUNNING) && "bg-white",
+          (isNeutral || status === Task_Status.RUNNING) && "bg-background",
           isNeutral && "border-[1.5px] border-control-light text-control-light",
           status === Task_Status.STATUS_UNSPECIFIED && "border-dashed",
-          status === Task_Status.DONE && "bg-success text-white",
-          status === Task_Status.FAILED && "bg-error text-white"
+          status === Task_Status.DONE && "bg-success text-accent-text",
+          status === Task_Status.FAILED && "bg-error text-accent-text"
         )}
       >
         {status === Task_Status.NOT_STARTED && (

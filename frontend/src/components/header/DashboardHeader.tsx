@@ -69,7 +69,7 @@ export function DashboardHeader({
           type="button"
           aria-label={t("common.open-mobile-sidebar")}
           title={t("common.open-mobile-sidebar")}
-          className="p-1 text-gray-500 hover:text-gray-900 md:hidden"
+          className="p-1 text-control-light hover:text-main md:hidden"
           onClick={onOpenMobileSidebar}
         >
           <Menu className="h-4 w-4" />

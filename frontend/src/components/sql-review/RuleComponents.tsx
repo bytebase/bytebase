@@ -79,9 +79,9 @@ export function RuleLevelSwitch({
 
   const activeClass = (opt: SQLReviewRule_Level) => {
     if (opt === SQLReviewRule_Level.ERROR) {
-      return "relative z-10 border-red-800 bg-red-100 text-red-800 hover:bg-red-100";
+      return "relative z-10 border-error bg-error/10 text-error hover:bg-error/10";
     }
-    return "relative z-10 border-yellow-800 bg-yellow-100 text-yellow-800 hover:bg-yellow-100";
+    return "relative z-10 border-warning bg-warning/10 text-warning hover:bg-warning/10";
   };
 
   const filtered = editable
