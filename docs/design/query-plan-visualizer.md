@@ -125,7 +125,8 @@ rather than to an error.
 | Typed `EXPLAIN (FORMAT JSON)` | picture, drawn from what came back | 1 — nothing extra |
 | Typed `EXPLAIN (FORMAT XML)` | text for now — see below | 1 |
 | Typed `EXPLAIN` | text, plus a **Visualize** button | 1, +1 only on Visualize |
-| Typed `EXPLAIN ANALYZE` | text; Visualize is disabled, because re-running would execute the query again | 1 — and it stays 1 |
+| Typed `EXPLAIN (ANALYZE, FORMAT JSON)` | picture — it already ran once and came back structured | 1 — nothing extra |
+| Typed `EXPLAIN ANALYZE`, no format | text; Visualize is disabled, because re-running would execute the query again | 1 — and it stays 1 |
 | Typed `EXPLAIN (FORMAT YAML)` | text — YAML arrives looking identical to plain text, and no viewer reads it | 1 |
 
 **Cost rule: a picture never costs more than one extra `Query()` call, and never
@@ -163,8 +164,11 @@ identical to JSON — the same `ExplainProperty` calls with a different serializ
 asks for XML, which suggests it is worth doing. It is not in this design's scope,
 and until it lands the doc promises text.
 
-**A typed `EXPLAIN ANALYZE` gets no Visualize button**, because the only way to
-draw it would be to run the query a second time. The user who wants a picture of
+**An *unformatted* typed `EXPLAIN ANALYZE` gets no Visualize button**, because the
+only way to draw it would be to run the query a second time. One that names a
+format we can read is drawn like any other structured plan — it has already run,
+exactly once, and came back machine-readable, so the drawing rule applies
+unchanged. The user who wants a picture of
 a measured plan uses **Explain analyze** (§3.1), which asks for the structured
 plan on its single run. That keeps the cost rule intact without this design
 rewriting anyone's statement.
@@ -343,10 +347,16 @@ it. For them the Plan tab is **disabled with the reason shown**, not hidden:
 hiding it leaves them unable to tell the capability exists or what to ask an
 admin for.
 
-One gap to close: a typed `EXPLAIN ANALYZE` is classified as its *inner*
-statement (`pg/query_type.go:47`), so today it passes on `bb.sql.select` alone
-and still returns a plan. It must require **both** — the permission to execute
-the statement, and `bb.sql.explain` to receive the plan.
+**Anything that both executes and returns a plan needs both permissions**, and
+today neither route does. A typed `EXPLAIN ANALYZE` is classified as its *inner*
+statement (`pg/query_type.go:47`), so it passes on `bb.sql.select` alone and
+still returns a plan. The **Explain analyze** action comes the other way: an
+explain request has no query spans, so the check falls to
+`bb.sql.explain` alone (`sql_service.go:1450-1458`) — safe today only because
+`validateExplainStatements` refuses anything that is not read-only, which is
+exactly the refusal this action has to relax. Both routes must require the
+underlying statement's normal ACL, write-target checks included, **and**
+`bb.sql.explain`.
 
 **Plans are never masked, and that is a privilege, not a safe default.** Explain
 skips masking (`sql_service.go:726`, `:735`). A plan is not row data, but it is
