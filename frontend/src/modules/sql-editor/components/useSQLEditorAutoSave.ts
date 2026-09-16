@@ -13,9 +13,9 @@ const AUTO_SAVE_DEBOUNCE_MS = 2000;
 /**
  * Watches the active tab's `statement` and after a 2s debounce persists a
  * dirty, writable tab. Local drafts become saved queries after their first
- * non-whitespace SQL; saved queries are updated in place. Aborts any in-flight
- * auto-save when a newer one starts, reverts the tab to DIRTY on error (unless
- * aborted), and re-flags DIRTY when the statement keeps changing during save.
+ * non-whitespace SQL; saved queries are updated in place. A newer edit waits
+ * for any active save to finish, then saves the latest statement. Errors revert
+ * the tab to DIRTY, and an aborted save leaves it unchanged.
  *
  * Mounted once at the SQL Editor layout level; safe to call from any
  * component but should only be active while the SQL Editor route is.
@@ -33,6 +33,9 @@ export function useSQLEditorAutoSave() {
   const statement = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.statement
   );
+  const status = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.status
+  );
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -48,10 +51,9 @@ export function useSQLEditorAutoSave() {
         debounceTimerRef.current = null;
       }
     };
-    // We re-arm the debounce on every statement change. The save itself
-    // reads tab.statement from the tab store at fire time, so capturing
-    // only the change-trigger here is sufficient.
-  }, [statement]);
+    // A completed save may reveal newer SQL, so status changes also re-arm the
+    // debounce. The save reads tab.statement from the store at fire time.
+  }, [statement, status]);
 
   const runAutoSave = async () => {
     const tabsState = getSQLEditorTabsState();
@@ -59,6 +61,7 @@ export function useSQLEditorAutoSave() {
     if (
       !tab ||
       tab.status === "CLEAN" ||
+      tab.status === "SAVING" ||
       (!tab.savedQuery && !tab.statement.trim())
     ) {
       return;

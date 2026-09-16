@@ -186,6 +186,34 @@ describe("saved query save slice — maybeUpdateSavedQuery", () => {
 });
 
 describe("saved query save slice — createSavedQuery", () => {
+  test("preserves the selected Cosmos DB container when first saving a local draft", async () => {
+    const store = makeStore();
+    const tab = getSQLEditorTabsState().addTab({
+      connection: {
+        instance: "instances/cosmos",
+        database: "instances/cosmos/databases/grs",
+        table: "SUPPORDERS_VIS.items",
+      },
+      statement: "select * from SUPPORDERS_VIS.items",
+      status: "SAVING",
+    });
+    mocks.savedQueryStore.createSavedQuery.mockResolvedValue({
+      name: "projects/default/savedQueries/cosmos-sheet",
+    });
+
+    await store.getState().createSavedQuery({
+      tabId: tab.id,
+      database: tab.connection.database,
+      statement: tab.statement,
+    });
+
+    expect(getSQLEditorTabsState().tabsById.get(tab.id)?.connection).toEqual({
+      instance: "instances/cosmos",
+      database: "instances/cosmos/databases/grs",
+      table: "SUPPORDERS_VIS.items",
+    });
+  });
+
   test("keeps newer local SQL when an earlier create response arrives", async () => {
     const store = makeStore();
     const tab = getSQLEditorTabsState().addTab({

@@ -139,4 +139,15 @@ describe("useSQLEditorAutoSave", () => {
       })
     );
   });
+
+  test("does not start a second create while the first one is saving", async () => {
+    mocks.tab.status = "SAVING";
+    renderHook(() => useSQLEditorAutoSave());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+  });
 });

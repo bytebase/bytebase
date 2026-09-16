@@ -80,6 +80,11 @@ export function setConnection(options: {
 
   const createOrUpdate = () => {
     if (!shouldCreateNewTab && currentTab) {
+      if (!currentTab.savedQuery) {
+        return Promise.resolve(
+          tabsState.updateTab(currentTab.id, { connection })
+        );
+      }
       return maybeUpdateSavedQuery({
         tabId: currentTab.id,
         savedQuery: currentTab.savedQuery,
