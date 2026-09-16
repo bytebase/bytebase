@@ -89,6 +89,13 @@ rather than running an expensive query behind a control whose whole purpose is
 to avoid running it. **Explain analyze** executes by definition, and asks for a
 machine-readable plan on that single run, so nothing needs re-running afterwards.
 
+The mirror case: given a statement that already says plain `EXPLAIN`, **Explain
+analyze** adds `ANALYZE` and the format to the options already there, keeping the
+rest. Replaying it unchanged would return an estimate and never execute, which is
+not what the action promises, and prefixing a second `EXPLAIN` is invalid — so
+it is the same option substitution §3.2 uses for Visualize. Each action does what
+its name says: one refuses to execute, the other insists on it.
+
 **Explain analyze wraps the statement Run would execute, limit included.** The
 drivers apply the result limit only when the request is not an explain
 (`pg.go:801-804`, `mysql.go:530-533`), so reusing that path would analyze the
