@@ -7,11 +7,6 @@ import utc from "dayjs/plugin/utc";
 import DOMPurify from "dompurify";
 import { escape as escapeHtml, escapeRegExp, round } from "lodash-es";
 import semver from "semver";
-import {
-  formatAbsoluteDate,
-  formatRelativeTime,
-  RELATIVE_THRESHOLD_MS,
-} from "./datetime";
 
 dayjs.extend(dayOfYear);
 dayjs.extend(duration);
@@ -24,15 +19,6 @@ export function isDev(): boolean {
 
 export function isRelease(): boolean {
   return import.meta.env.PROD;
-}
-
-export function humanizeTs(ts: number): string {
-  const timestampMs = ts * 1000;
-  const diff = Math.abs(Date.now() - timestampMs);
-  if (diff > RELATIVE_THRESHOLD_MS) {
-    return formatAbsoluteDate(timestampMs);
-  }
-  return formatRelativeTime(timestampMs);
 }
 
 export const humanizeDurationV1 = (duration: Duration | undefined) => {
