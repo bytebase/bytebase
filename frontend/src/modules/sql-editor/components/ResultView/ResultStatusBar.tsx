@@ -17,6 +17,20 @@ export const formatQueryTime = (latency: QueryResult["latency"]): string => {
   return `${totalSeconds.toFixed(2)} s`;
 };
 
+const columnGapWidth = (element: HTMLElement) =>
+  parseFloat(getComputedStyle(element).columnGap) || 0;
+
+// Width taken by whatever trails the statement text, today the copy control and
+// the gap before it. The text span is sized to its content and never stretches,
+// so the trailing controls sit directly after it at every row width.
+const trailingWidth = (row: HTMLElement, text: Element | null) => {
+  const last = row.lastElementChild;
+  if (!text || !last || last === text) return 0;
+  return (
+    last.getBoundingClientRect().right - text.getBoundingClientRect().right
+  );
+};
+
 type ResultStatusBarProps = Readonly<{
   database: Database;
   statement: string;
@@ -37,7 +51,7 @@ export function ResultStatusBar({
   const statusLeftRef = useRef<HTMLDivElement>(null);
   const databaseRef = useRef<HTMLDivElement>(null);
   const statementRef = useRef<HTMLDivElement>(null);
-  const databaseWidthRef = useRef(0);
+  const databaseFootprintRef = useRef(0);
   const [hideDatabase, setHideDatabase] = useState(false);
 
   useLayoutEffect(() => {
@@ -51,7 +65,10 @@ export function ResultStatusBar({
         databaseLabel.getBoundingClientRect().width ||
         databaseLabel.clientWidth;
       if (databaseWidth > 0) {
-        databaseWidthRef.current = databaseWidth;
+        // What showing the label costs the statement: its own width plus the
+        // gap it puts between itself and the statement.
+        databaseFootprintRef.current =
+          databaseWidth + columnGapWidth(statusLeft);
       }
 
       // Measure the truncating text span, not its row wrapper. The span is
@@ -59,11 +76,13 @@ export function ResultStatusBar({
       // whether or not the database label is in layout; the wrapper stretches
       // to fill the row, so measuring it would keep a hidden label hidden at
       // every width.
+      const statementText = statementLabel.querySelector("span");
       const statementWidth =
-        statementLabel.querySelector("span")?.scrollWidth ?? 0;
+        (statementText?.scrollWidth ?? 0) +
+        trailingWidth(statementLabel, statementText);
       setHideDatabase(
-        databaseWidthRef.current > 0 &&
-          statementWidth + databaseWidthRef.current > statusLeft.clientWidth
+        databaseFootprintRef.current > 0 &&
+          statementWidth + databaseFootprintRef.current > statusLeft.clientWidth
       );
     };
 

@@ -78,6 +78,15 @@ const statementTextOf = (statement: HTMLElement) => {
   return text;
 };
 
+// jsdom reports every rect as zero, so the bar measures no trailing controls
+// unless a test places them. Only `right` is read.
+const setRightEdge = (element: Element, right: number) => {
+  Object.defineProperty(element, "getBoundingClientRect", {
+    configurable: true,
+    value: () => ({ right, left: 0, width: right }) as DOMRect,
+  });
+};
+
 const flushResize = () => {
   act(() => {
     for (const callback of resizeCallbacks) {
@@ -221,6 +230,55 @@ describe("ResultStatusBar", () => {
       scrollWidth: 250,
     });
 
+    flushResize();
+
+    expect(databaseLabel.classList.contains("hidden")).toBe(false);
+  });
+
+  test("counts the copy control and the row gaps against the space left", () => {
+    const { rerender } = render(
+      <ResultStatusBar
+        database={database}
+        statement="SELECT * FROM employee WHERE id = 1"
+        queryTime="5 ms"
+      />
+    );
+
+    const statusLeft = screen.getByTestId("result-status-left");
+    const databaseLabel = screen.getByTestId("result-status-database");
+    const statement = screen.getByTestId("result-status-statement");
+    const statementText = statementTextOf(statement);
+    const copyButton = screen.getByRole("button", { name: "common.copy" });
+
+    // 250px of text, then a 4px gap and a 24px copy control; the label is 230px
+    // and sits 8px from the statement. The row needs 516px in all.
+    statusLeft.style.columnGap = "8px";
+    setElementWidth(databaseLabel, { clientWidth: 230, scrollWidth: 230 });
+    setElementWidth(statementText, { clientWidth: 250, scrollWidth: 250 });
+    setRightEdge(statementText, 250);
+    setRightEdge(copyButton, 278);
+
+    setElementWidth(statusLeft, { clientWidth: 500, scrollWidth: 500 });
+    flushResize();
+
+    // The text alone would fit beside the label in 500px; the copy control and
+    // the gaps are what push the row over, so the label has to yield.
+    expect(databaseLabel.classList.contains("hidden")).toBe(true);
+
+    setElementWidth(statusLeft, { clientWidth: 520, scrollWidth: 520 });
+    flushResize();
+
+    expect(databaseLabel.classList.contains("hidden")).toBe(false);
+
+    // An empty statement drops the copy control, so nothing trails the text.
+    rerender(
+      <ResultStatusBar database={database} statement="" queryTime="5 ms" />
+    );
+    setElementWidth(statementTextOf(statement), {
+      clientWidth: 0,
+      scrollWidth: 0,
+    });
+    setElementWidth(statusLeft, { clientWidth: 240, scrollWidth: 240 });
     flushResize();
 
     expect(databaseLabel.classList.contains("hidden")).toBe(false);
