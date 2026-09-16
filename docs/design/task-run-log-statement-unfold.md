@@ -139,6 +139,15 @@ therefore be the last failure in a section of its own, and all of them would ope
 the context instead, a run that recovered has successful commands after its failure and opens
 nothing, while a run that really failed ends at the failure and opens exactly that row. Per
 context, not per run, so a failure on one replica is never silenced by another replica's success.
+A live log is a prefix of the finished one, so the test also treats a failure followed by a
+`RETRY_INFO` entry as not terminal. The driver writes that marker before it re-runs
+(`backend/plugin/db/driver.go:357-367`, called at `pg.go:470`), so the marker is the standing
+signal that another attempt is coming; without it, the five-second poll
+(`useTaskRunLogData.ts:101`) landing between a failed attempt and its retry would open a failure
+that is about to be superseded. What remains is the ~200ms between the failure and the marker, and
+D14 closes that: a row opened by a mark folds again when the mark moves, unless the reader has
+touched it.
+
 The test reads only the entries, which matters because `taskRunStatus` is an optional prop that the
 changelog and revision pages do not pass. Everything else starts folded, and every row toggles
 either way.
@@ -229,6 +238,25 @@ entries it hides; pressing it renders the rest and the marked row keeps its plac
 Rendering the whole section would keep the promise too, but a section has no bound — a release file
 can carry thousands of statements — and not having to render all of them is what the cap is for.
 
+The window has to carry each item's own index with it. `SectionContent` numbers rows by their
+position in the rendered array (`index + 1` over `visibleItems`, `SectionContent.tsx:40-50`), so a
+sparse window would label statement 300 as row 51 and then renumber it to 300 once *Load more* was
+pressed — pointing the reader at the wrong statement, which is worse than not surfacing it. The
+number shown is the item's index in the section, and the D13 regression test asserts that number,
+not merely that the row rendered.
+
+**D14 · The open set follows the mark while the log is live.** The viewer polls a running task every
+five seconds (`useTaskRunLogData.ts:101`), and `section.items` changes without `datasetKey`
+changing. Applying D4's mark only when the component mounts would therefore miss the case the
+feature exists for — a deploy watched from the plan page, succeeding command by command, that then
+fails — because the failure arrives on a later poll into an already-mounted section, and nothing
+would open it. So the open set is derived rather than initialised: a row is open when it is marked
+or the reader opened it, and folded when the reader folded it. An explicit toggle outranks the mark
+for as long as the dataset lasts, so a failure the reader folded stays folded through the next
+poll, and a mark that moves off a row — a transient failure that turns out to have been retried —
+takes its auto-open with it. `datasetKey` still clears the reader's toggles, exactly as it already
+clears `showAllItems`.
+
 ## States
 
 Mockups A–E are in the PR description. Product typography, spacing and semantic colors are taken
@@ -268,10 +296,14 @@ behavior of this function:
   replica is not silenced by another replica's success.
 - `SectionContent`: a foldable row toggles and reports `aria-expanded`; a row marked to open starts
   unfolded and can be folded; a section of 60 entries whose marked failure is the last one renders
-  that row without pressing *Load more*, and still reports the hidden count correctly (D13); copy
-  receives the verbatim statement, never the line and never the error; a failed row carries no copy
-  button on its error line and one inside its block; a row with no recoverable statement carries
-  none at all; the open set resets when `datasetKey` changes, as `showAllItems` already does.
+  that row without pressing *Load more*, still reports the hidden count, and **numbers it 60, not
+  51** (D13); copy receives the verbatim statement, never the line and never the error; a failed row
+  carries no copy button on its error line and one inside its block; a row with no recoverable
+  statement carries none at all.
+- `SectionContent` under live updates (D14), all on an unchanged `datasetKey`: a section rerendered
+  with a newly marked failure opens it without remounting; a row the reader folded stays folded
+  when the next poll arrives; a row whose mark moves away folds again if the reader never touched
+  it; and `datasetKey` changing clears those toggles, as it already clears `showAllItems`.
 
 ## Not in this PR
 
