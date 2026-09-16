@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   state: { resultPanelMaximized: false },
   collapse: vi.fn(),
   expand: vi.fn(),
+  separatorDisabled: undefined as boolean | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -34,7 +35,10 @@ vi.mock("react-resizable-panels", () => ({
     }
     return <div>{children}</div>;
   },
-  Separator: () => <div />,
+  Separator: ({ disabled }: { disabled?: boolean }) => {
+    mocks.separatorDisabled = disabled;
+    return <div />;
+  },
 }));
 
 vi.mock("@/app/router", () => ({
@@ -155,6 +159,7 @@ beforeEach(() => {
   mocks.state.resultPanelMaximized = false;
   mocks.collapse.mockClear();
   mocks.expand.mockClear();
+  mocks.separatorDisabled = undefined;
 });
 
 afterEach(() => {
@@ -198,6 +203,21 @@ describe("SQLEditorHomePage sidebar", () => {
     render();
 
     expect(sidebarToggles()).toHaveLength(1);
+  });
+
+  // Dragging a collapsed sidebar open would leave the result pane short of the
+  // width its control still claims.
+  test("locks the sidebar separator while the pane is maximized", () => {
+    mocks.state.resultPanelMaximized = true;
+    render();
+
+    expect(mocks.separatorDisabled).toBe(true);
+  });
+
+  test("leaves the sidebar separator draggable while the pane is docked", () => {
+    render();
+
+    expect(mocks.separatorDisabled).toBe(false);
   });
 
   test("collapses the sidebar a maximized narrow window grows into", () => {

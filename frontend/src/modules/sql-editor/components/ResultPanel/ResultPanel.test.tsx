@@ -133,15 +133,15 @@ afterEach(() => {
 });
 
 describe("ResultPanel maximized handoff", () => {
-  // A tab switch remounts this panel, and the database selection lands an
-  // effect later. Reading the tab strip instead of the results would treat
-  // that gap as "nothing to show" and drop the maximized pane every time.
-  test("keeps a maximized pane while the database selection is pending", () => {
+  // Hiding every batch result behind the empty-results filter clears the
+  // selection while the stored contexts stay put — the strip and its control
+  // go, so counting contexts would leave a collapsed pane with no way out.
+  test("restores the editor when no result is selectable", () => {
     mocks.state.resultPanelMaximized = true;
     mocks.state.databaseQueryContexts = new Map([["db-1", [aContext()]]]);
     render();
 
-    expect(mocks.setResultPanelMaximized).not.toHaveBeenCalled();
+    expect(mocks.setResultPanelMaximized).toHaveBeenCalledWith(false);
   });
 
   test("restores the editor once the tab holds no results", () => {

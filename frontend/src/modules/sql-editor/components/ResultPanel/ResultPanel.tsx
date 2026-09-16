@@ -77,24 +77,20 @@ export function ResultPanel() {
 
   const showTabStrip =
     selectedDatabase !== undefined && (queryContexts?.length ?? 0) > 0;
-  // Results anywhere in this tab, taken from the store rather than from the
-  // local selection: `BatchQuerySelect` picks the database an effect later, so
-  // on a remount `selectedDatabase` is briefly undefined and reading the strip
-  // instead would drop a maximized pane on every tab switch. Closing contexts
-  // can leave an empty array behind, so a key alone does not mean results.
-  const hasAnyResults = Array.from(databaseQueryContexts?.values() ?? []).some(
-    (contexts) => contexts.length > 0
-  );
   const resultPanelMaximized = useSQLEditorStore((s) => s.resultPanelMaximized);
   const setResultPanelMaximized = useSQLEditorStore(
     (s) => s.setResultPanelMaximized
   );
-  // The maximize control lives in the tab strip, so closing the last result
-  // takes it away. Hand the editor back rather than leaving it collapsed
-  // behind an empty pane with nothing to restore it.
+  // The maximize control lives in the tab strip, so whatever takes the strip
+  // away takes the only way back with it: closing the last result, or hiding
+  // every batch result behind the empty-results filter, which leaves stored
+  // contexts but nothing selectable. Hand the editor back instead of leaving
+  // it collapsed behind a pane with no control on it. The strip is also
+  // briefly absent while the selector picks a database, which costs nothing:
+  // maximizing does not survive a remount anyway.
   useEffect(() => {
-    if (!hasAnyResults && resultPanelMaximized) setResultPanelMaximized(false);
-  }, [hasAnyResults, resultPanelMaximized, setResultPanelMaximized]);
+    if (!showTabStrip && resultPanelMaximized) setResultPanelMaximized(false);
+  }, [showTabStrip, resultPanelMaximized, setResultPanelMaximized]);
 
   // When the head of the contexts list changes, switch the active tab to
   // it (newest run becomes selected).

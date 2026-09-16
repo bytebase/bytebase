@@ -248,7 +248,10 @@ export function SQLEditorHomePage() {
                 <AsidePanel />
               </div>
             </Panel>
+            {/* Dragging a collapsed sidebar back open would leave the result
+                pane short of the width its control still claims. */}
             <PanelResizeHandle
+              disabled={collapseSidebar}
               className={resizeHandleClass("vertical", "w-0.5")}
             />
           </>

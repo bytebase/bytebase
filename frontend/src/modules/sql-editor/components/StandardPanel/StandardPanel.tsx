@@ -1,4 +1,5 @@
 import { Loader2 } from "lucide-react";
+import type { ReactNode } from "react";
 import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Panel,
@@ -62,39 +63,14 @@ export function StandardPanel() {
   const isDisconnected = useIsDisconnected();
   const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
   const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
-  // Read once: the store keeps taking the dragged height for the next mount,
-  // but feeding it back as `defaultSize` mid-drag would re-lay out the group
-  // under the pointer.
-  const [initialResultPanelSize] = useState(
-    () => useSQLEditorStore.getState().resultPanelSize
-  );
-  const resultPanelMaximized = useSQLEditorStore((s) => s.resultPanelMaximized);
   const setResultPanelMaximized = useSQLEditorStore(
     (s) => s.setResultPanelMaximized
   );
-  const handleResultPanelResize = useSQLEditorStore(
-    (s) => s.handleResultPanelResize
-  );
   const instanceHasReadonly = instanceV1HasReadonlyMode(instance);
-  // Derived above the early return below so both effects stay unconditional.
+  // Derived above the early return below so the effect stays unconditional.
   const isSavedQueryTab = !tab || tab.mode === "SAVED_QUERY";
   const showResultPanel =
     isSavedQueryTab && !isDisconnected && instanceHasReadonly;
-  // The editor pane is collapsed rather than unmounted, so Monaco keeps its
-  // cursor, scroll and undo history while the result pane is maximized.
-  const editorPanelRef = useRef<PanelImperativeHandle | null>(null);
-
-  // Before paint: a mount that should start collapsed (a tab switch while
-  // maximized remounts this component) must not show the editor for a frame.
-  useLayoutEffect(() => {
-    const panel = editorPanelRef.current;
-    if (!panel) return;
-    if (resultPanelMaximized) {
-      panel.collapse();
-    } else {
-      panel.expand();
-    }
-  }, [resultPanelMaximized]);
 
   // Maximizing is a momentary view of one result, not a remembered preference:
   // it lasts as long as the pane it belongs to. Switching tabs remounts this
@@ -165,6 +141,42 @@ export function StandardPanel() {
     return <div className="h-full">{editorWithAi}</div>;
   }
 
+  return <EditorResultSplit>{editorWithAi}</EditorResultSplit>;
+}
+
+/**
+ * The editor / result split.
+ *
+ * Owns the remembered height, read once when this group mounts rather than
+ * when `StandardPanel` does: the group alone comes and goes with the
+ * connection, and a height dragged before it went away is the one to come
+ * back to. Reading it live instead would feed `defaultSize` a new value on
+ * every frame of a drag.
+ */
+function EditorResultSplit({ children }: { children: ReactNode }) {
+  const [initialResultPanelSize] = useState(
+    () => useSQLEditorStore.getState().resultPanelSize
+  );
+  const resultPanelMaximized = useSQLEditorStore((s) => s.resultPanelMaximized);
+  const handleResultPanelResize = useSQLEditorStore(
+    (s) => s.handleResultPanelResize
+  );
+  // The editor pane is collapsed rather than unmounted, so Monaco keeps its
+  // cursor, scroll and undo history while the result pane is maximized.
+  const editorPanelRef = useRef<PanelImperativeHandle | null>(null);
+
+  // Before paint, so a group that mounts maximized never shows the editor for
+  // a frame first.
+  useLayoutEffect(() => {
+    const panel = editorPanelRef.current;
+    if (!panel) return;
+    if (resultPanelMaximized) {
+      panel.collapse();
+    } else {
+      panel.expand();
+    }
+  }, [resultPanelMaximized]);
+
   return (
     <PanelGroup orientation="vertical" className="h-full">
       <Panel
@@ -184,7 +196,7 @@ export function StandardPanel() {
           handleResultPanelResize(1 - editorShare);
         }}
       >
-        {editorWithAi}
+        {children}
       </Panel>
       {/* A maximized pane owns the whole area; dragging it back to a
           half-state would leave the editor visible under a sidebar that is
