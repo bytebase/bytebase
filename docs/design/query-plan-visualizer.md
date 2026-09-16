@@ -14,7 +14,7 @@ Snowflake and Databricks.
 | # | Journey | Trigger | Done when |
 |---|---|---|---|
 | 1 | **Fix a slow query** | A run takes seconds or hits the timeout. | They find the expensive step without leaving the editor. |
-| 2 | **Confirm a fix** | An index was added, or the query rewritten. | They compare the costly step across two runs. |
+| 2 | **Confirm a fix** | An index was added, or the query rewritten. | They compare the costly step against a plan captured before the change. |
 | 3 | **Check before running** | A heavy report or data fix on production. | They know what it scans, without running it. |
 
 Journey 3 is the rarest — most people press Run without checking — so the design
@@ -99,7 +99,10 @@ Otherwise show the plan as text.**
 The server already knows: it builds explain statements through
 `db.ExplainStatement` with an explicit `QueryOption.ExplainFormat`, and it
 already parses a typed `EXPLAIN` to classify it (§2). Carrying that answer on
-`QueryResult` is the whole mechanism.
+`QueryResult` is the whole mechanism. The driver reports the format it actually
+received, and **unknown is a valid answer** — from MySQL 8.0.32 an omitted format
+follows the session's `explain_format`, so the statement alone does not settle
+it. Unknown means text.
 
 The alternative — reading it off column metadata, as pgAdmin does with
 `QUERY PLAN` plus a `json` type — is not available to us on the same terms.
@@ -111,7 +114,7 @@ rather than to an error.
 
 | Statement Bytebase ran | Result tab shows | `Query()` calls |
 |---|---|---|
-| **Explain** / **Explain analyze** — we build it, so we ask for JSON | picture | 1 |
+| **Explain** / **Explain analyze** — we build it, so we ask for the engine's machine-readable format | picture where the engine has one (§3.4) | 1 |
 | Typed `EXPLAIN (FORMAT JSON)` | picture, drawn from what came back | 1 — nothing extra |
 | Typed `EXPLAIN (FORMAT XML)` | text for now — see below | 1 |
 | Typed `EXPLAIN` | text, plus a **Visualize** button | 1, +1 only on Visualize |
@@ -180,13 +183,20 @@ named Plan, containing the plan.
 2. **Graph** — opens zoomed on the costliest operator, not the root; long
    single-child chains fold into one box with a count. Nodes show their share of
    cost, the top one badged (Spanner); colour follows cost or rows (BigQuery).
+   Zooming in can hide the join that gave that operator its work, so the
+   alternative — fit the whole graph, highlight the bottleneck, offer *Jump to
+   operator* — goes into the §1 usability test rather than being settled here.
 3. **Table** — the same operators as sortable rows, like BigQuery.
 4. **Warnings** — already computed in `plan-model.ts` and already rendered, on
-   the node in `QueryPlanDiagram` and in `QueryPlanNodeDetails`. Two changes:
-   **show a warning only when the node is also expensive** — a full scan of a
-   10-row lookup table is the correct plan, and warning on every scan teaches
-   readers to ignore the colour — and surface the surviving warnings in the
-   summary panel, so the answer is visible without hunting node to node.
+   the node in `QueryPlanDiagram` and in `QueryPlanNodeDetails`. The change is
+   relevance, and it applies **only to Bytebase's own scan heuristics**: a full
+   scan of a 10-row lookup table is the correct plan, and warning on every scan
+   teaches readers to ignore the colour. Diagnostics the engine itself reports —
+   SQL Server's "Columns with no statistics", "Type conversion affects the plan",
+   `NoJoinPredicate` — always stay in node details whatever the cost. Missing
+   statistics make a node look cheap, so a cost threshold would hide the warning
+   exactly where it is the explanation. Relevance decides what reaches the
+   summary panel; it never removes a diagnostic.
 5. **Planned vs actual rows**, wherever the plan is measured — PostgreSQL under
    `ANALYZE`, SQL Server's actual plan, where `EstimateRows` and `ActualRows` sit
    on one node. Expecting 1,000 rows and getting 1,000,000 explains bad plans
@@ -216,11 +226,17 @@ statement.
 Plan or Text is remembered per editor tab, like the result pane's height, so
 comparing two runs does not mean re-selecting Plan each time (CUJ 2).
 
+CUJ 2 only works on a plan captured **before** the change. A result tab holds the
+plan it already fetched, so an earlier run keeps its baseline; opening Plan on
+both tabs *after* adding an index gives two current plans and no comparison. Say
+which is which rather than implying a before and after.
+
 **Several statements.** Every product gives one plan per statement, never one for
 the script. We already do, one result tab each, and we keep them in the editor —
 only Spanner Studio also does. What is missing is a signal for which statement
 matters: SSMS labels each plan with its share of the script's cost. Add that to
-the tab label, marked as an estimate.
+the tab label, marked as an estimate, and only when every statement's cost is
+known — a share of an incomplete total is worse than no share.
 
 **Several databases.** Batch mode runs one statement across many databases, which
 no reference product has to solve — they are all single-connection. We plan only
@@ -243,14 +259,25 @@ regression.
 
 ### 3.4 Engine differences
 
-| Engine | Opening the Plan tab on a result | Picture | Measured or estimated |
+| Engine | Plan tab on a result | Picture | Explain analyze |
 |---|---|---|---|
-| **PostgreSQL, SQL Server, Spanner** | one `Query()`, on demand, cached | graph | estimated |
-| **MySQL, Oracle** | one `Query()`, on demand, cached | text | estimated |
-| **7 others** | one `Query()`, on demand, cached | text | estimated |
+| **PostgreSQL** | one `Query()`, on demand, cached | graph | yes — `EXPLAIN (ANALYZE, FORMAT JSON)` |
+| **SQL Server** | one `Query()`, on demand, cached | graph | yes — `SET STATISTICS XML` |
+| **Spanner** | one `Query()`, on demand, cached | graph | yes — profile mode |
+| **MySQL** | one `Query()`, on demand, cached | text | text only — 8.0's `EXPLAIN ANALYZE` is TREE, and rejects JSON |
+| **Oracle, 7 others** | one `Query()`, on demand, cached | text | no |
 
 A plan opened from a result is always an estimate, on every engine. Measured
 plans come from **Explain analyze** (§3.1), which is a deliberate action.
+
+**It explains the statement that ran, limits included.** The driver wraps an
+ordinary query with the result limit but skips that wrapper on the explain path
+(`pg.go:801-804`), so explaining the original text would plan an unbounded query
+when the user ran a bounded one — and PostgreSQL plans for `LIMIT`, so the two
+differ, not just in cost but in shape. The plan request and its cache carry the
+executed statement and its connection context, and View SQL shows that statement,
+limit and all. The estimate badge is about statistics moving; it must not quietly
+cover a different query.
 
 **Say which one it is, in words.** Measured and estimated carry a badge, and an
 estimated plan says *"A new plan, made just now. It may differ from the plan that
