@@ -118,11 +118,11 @@ export const extractDataSourceEditState = (
 ): DataSourceEditState => {
   const dataSources: EditDataSource[] = [];
   instance?.dataSources.forEach((ds) => {
-    dataSources.push(wrapEditDataSource(ds));
+    dataSources.push(wrapEditDataSource(ds, instance?.engine));
   });
   const adminDS = dataSources.find((ds) => ds.type === DataSourceType.ADMIN);
   if (!adminDS) {
-    dataSources.unshift(wrapEditDataSource(undefined));
+    dataSources.unshift(wrapEditDataSource(undefined, instance?.engine));
   }
   const editingDataSourceId =
     dataSources.find((ds) => ds.type === DataSourceType.ADMIN)?.id ??
@@ -160,9 +160,17 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   };
 };
 
-export const wrapEditDataSource = (ds: DataSource | undefined) => {
+export const wrapEditDataSource = (
+  ds: DataSource | undefined,
+  engine?: Engine
+) => {
+  const draft = cloneDeep(ds ?? unknownDataSource());
+  if (engine === Engine.SPANNER || engine === Engine.BIGQUERY) {
+    draft.authenticationType =
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
+  }
   return {
-    ...cloneDeep(ds ?? unknownDataSource()),
+    ...draft,
     pendingCreate: ds === undefined,
     updatedPassword: "",
     updatedMasterPassword: "",

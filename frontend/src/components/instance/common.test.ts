@@ -4,13 +4,17 @@ import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  DataSource_AuthenticationType,
   DataSourceSchema,
+  DataSourceType,
+  InstanceSchema,
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
   calcDataSourceUpdateMask,
   type DataSourceSecretField,
+  extractDataSourceEditState,
   getDataSourceSecretValue,
   movesKeytabToNewDestination,
   updateDataSourceSecret,
@@ -482,3 +486,35 @@ describe("secret edit intent", () => {
     ).toEqual(["ssh_password"]);
   });
 });
+
+test.each([Engine.SPANNER, Engine.BIGQUERY])(
+  "normalizes stored GCP connection drafts without mutating the instance for engine %s",
+  (engine) => {
+    const instance = create(InstanceSchema, {
+      engine,
+      dataSources: [DataSourceType.ADMIN, DataSourceType.READ_ONLY].map(
+        (type) =>
+          create(DataSourceSchema, {
+            id: String(type),
+            type,
+            authenticationType: DataSource_AuthenticationType.PASSWORD,
+            projectId: "valid-project",
+            instanceId: "valid-instance",
+          })
+      ),
+    });
+    const drafts = extractDataSourceEditState(instance).dataSources;
+    expect(drafts).toHaveLength(2);
+    for (const draft of drafts) {
+      expect(draft.authenticationType).toBe(
+        DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+      );
+      expect(draft.pendingCreate).toBe(false);
+    }
+    expect(
+      instance.dataSources.every(
+        (ds) => ds.authenticationType === DataSource_AuthenticationType.PASSWORD
+      )
+    ).toBe(true);
+  }
+);

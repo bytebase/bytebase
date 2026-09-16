@@ -60,7 +60,7 @@ export function DataSourceSection({
   const handleCreateRODataSource = useCallback(() => {
     if (isCreating) return;
     const ds = {
-      ...wrapEditDataSource(undefined),
+      ...wrapEditDataSource(undefined, basicInfo.engine),
       type: DataSourceType.READ_ONLY,
       host: adminDataSource.host,
       port: adminDataSource.port,
