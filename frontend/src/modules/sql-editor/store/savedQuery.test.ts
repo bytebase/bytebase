@@ -186,6 +186,35 @@ describe("saved query save slice — maybeUpdateSavedQuery", () => {
 });
 
 describe("saved query save slice — createSavedQuery", () => {
+  test("keeps a newer database selection after a first save response", async () => {
+    const store = makeStore();
+    const tab = getSQLEditorTabsState().addTab({
+      connection: {
+        instance: "instances/inst2",
+        database: "instances/inst2/databases/db2",
+      },
+      statement: "SELECT 1",
+      status: "SAVING",
+    });
+    mocks.savedQueryStore.createSavedQuery.mockResolvedValue({
+      name: "projects/default/savedQueries/query1",
+    });
+
+    await store.getState().createSavedQuery({
+      tabId: tab.id,
+      database: "instances/inst1/databases/db1",
+      statement: tab.statement,
+    });
+
+    expect(getSQLEditorTabsState().tabsById.get(tab.id)).toMatchObject({
+      connection: {
+        instance: "instances/inst2",
+        database: "instances/inst2/databases/db2",
+      },
+      status: "DIRTY",
+    });
+  });
+
   test("preserves the selected Cosmos DB container when first saving a local draft", async () => {
     const store = makeStore();
     const tab = getSQLEditorTabsState().addTab({

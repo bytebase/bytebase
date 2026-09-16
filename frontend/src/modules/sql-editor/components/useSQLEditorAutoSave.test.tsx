@@ -24,20 +24,23 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/modules/sql-editor/store", () => ({
-  useSQLEditorStore: (
-    selector: (state: {
-      abortAutoSave: typeof mocks.abortAutoSave;
-      setAutoSaveController: typeof mocks.setAutoSaveController;
-      maybeUpdateSavedQuery: typeof mocks.maybeUpdateSavedQuery;
-      createSavedQuery: typeof mocks.createSavedQuery;
-    }) => unknown
-  ) =>
-    selector({
-      abortAutoSave: mocks.abortAutoSave,
-      setAutoSaveController: mocks.setAutoSaveController,
-      maybeUpdateSavedQuery: mocks.maybeUpdateSavedQuery,
-      createSavedQuery: mocks.createSavedQuery,
-    }),
+  useSQLEditorStore: Object.assign(
+    (
+      selector: (state: {
+        abortAutoSave: typeof mocks.abortAutoSave;
+        setAutoSaveController: typeof mocks.setAutoSaveController;
+        maybeUpdateSavedQuery: typeof mocks.maybeUpdateSavedQuery;
+        createSavedQuery: typeof mocks.createSavedQuery;
+      }) => unknown
+    ) =>
+      selector({
+        abortAutoSave: mocks.abortAutoSave,
+        setAutoSaveController: mocks.setAutoSaveController,
+        maybeUpdateSavedQuery: mocks.maybeUpdateSavedQuery,
+        createSavedQuery: mocks.createSavedQuery,
+      }),
+    { getState: () => ({ autoSaveController: null }) }
+  ),
 }));
 
 vi.mock("@/modules/sql-editor/store/editor", () => ({
@@ -86,6 +89,7 @@ describe("useSQLEditorAutoSave", () => {
     mocks.tab.status = "DIRTY";
     mocks.tab.statement = "SELECT 1";
     mocks.createSavedQuery.mockResolvedValue(undefined);
+    mocks.updateTab.mockReset();
   });
 
   afterEach(() => {
@@ -103,6 +107,7 @@ describe("useSQLEditorAutoSave", () => {
       tabId: "tab-1",
       database: "instances/inst1/databases/db1",
       statement: "SELECT 1",
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -149,5 +154,96 @@ describe("useSQLEditorAutoSave", () => {
     });
 
     expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+  });
+
+  test("saves a newer database selection after the first create completes", async () => {
+    let resolveCreate: () => void;
+    mocks.createSavedQuery.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveCreate = resolve;
+        })
+    );
+    mocks.updateTab.mockImplementation((_id, payload) => {
+      Object.assign(mocks.tab, payload);
+    });
+    const { rerender } = renderHook(() => useSQLEditorAutoSave());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    mocks.tab.connection = {
+      instance: "instances/inst2",
+      database: "instances/inst2/databases/db2",
+    };
+    rerender();
+    mocks.tab.savedQuery = "projects/proj1/savedQueries/query1";
+    mocks.tab.status = "DIRTY";
+    mocks.getSavedQueryByName.mockReturnValue({ name: mocks.tab.savedQuery });
+
+    await act(async () => {
+      resolveCreate();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(mocks.maybeUpdateSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        database: "instances/inst2/databases/db2",
+      })
+    );
+  });
+
+  test("does not retry a failed save until the tab changes again", async () => {
+    let rejectCreate: (reason?: unknown) => void;
+    mocks.createSavedQuery.mockImplementation(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          rejectCreate = reject;
+        })
+    );
+    mocks.updateTab.mockImplementation((_id, payload) => {
+      Object.assign(mocks.tab, payload);
+    });
+    const { rerender } = renderHook(() => useSQLEditorAutoSave());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    rerender();
+
+    await act(async () => {
+      rejectCreate(new Error("network failed"));
+      await Promise.resolve();
+    });
+    rerender();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(mocks.createSavedQuery).toHaveBeenCalledTimes(1);
+  });
+
+  test("returns an aborted tab to dirty", async () => {
+    mocks.createSavedQuery.mockRejectedValue(
+      new DOMException("Aborted", "AbortError")
+    );
+    mocks.updateTab.mockImplementation((_id, payload) => {
+      Object.assign(mocks.tab, payload);
+    });
+    renderHook(() => useSQLEditorAutoSave());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(mocks.updateTab).toHaveBeenLastCalledWith("tab-1", {
+      status: "DIRTY",
+    });
   });
 });

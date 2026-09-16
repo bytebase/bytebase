@@ -139,6 +139,7 @@ export interface SavedQuerySaveSlice {
     statement?: string;
     folders?: string[];
     database?: string;
+    signal?: AbortSignal;
   }) => Promise<SQLEditorTab | undefined>;
 }
 

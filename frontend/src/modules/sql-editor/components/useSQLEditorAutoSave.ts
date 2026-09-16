@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { getSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import {
@@ -14,8 +14,8 @@ const AUTO_SAVE_DEBOUNCE_MS = 2000;
  * Watches the active tab's `statement` and after a 2s debounce persists a
  * dirty, writable tab. Local drafts become saved queries after their first
  * non-whitespace SQL; saved queries are updated in place. A newer edit waits
- * for any active save to finish, then saves the latest statement. Errors revert
- * the tab to DIRTY, and an aborted save leaves it unchanged.
+ * for any active save to finish, then saves the latest statement. Errors and
+ * aborted saves return the tab to DIRTY without retrying unchanged content.
  *
  * Mounted once at the SQL Editor layout level; safe to call from any
  * component but should only be active while the SQL Editor route is.
@@ -33,9 +33,10 @@ export function useSQLEditorAutoSave() {
   const statement = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.statement
   );
-  const status = useSQLEditorTabState(
-    (s) => s.tabsById.get(s.currentTabId)?.status
+  const database = useSQLEditorTabState(
+    (s) => s.tabsById.get(s.currentTabId)?.connection.database
   );
+  const [saveVersion, setSaveVersion] = useState(0);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -51,9 +52,9 @@ export function useSQLEditorAutoSave() {
         debounceTimerRef.current = null;
       }
     };
-    // A completed save may reveal newer SQL, so status changes also re-arm the
-    // debounce. The save reads tab.statement from the store at fire time.
-  }, [statement, status]);
+    // A completed save may reveal newer SQL or a newer database selection.
+    // The save reads the live tab state when this timer fires.
+  }, [statement, database, saveVersion]);
 
   const runAutoSave = async () => {
     const tabsState = getSQLEditorTabsState();
@@ -81,6 +82,7 @@ export function useSQLEditorAutoSave() {
     abortAutoSave();
 
     const statementToSave = tab.statement;
+    const databaseToSave = tab.connection.database;
     const tabId = tab.id;
 
     const controller = new AbortController();
@@ -93,20 +95,29 @@ export function useSQLEditorAutoSave() {
         await maybeUpdateSavedQuery({
           tabId,
           savedQuery: tab.savedQuery,
-          database: tab.connection.database,
+          database: databaseToSave,
           statement: statementToSave,
           signal: controller.signal,
         });
       } else {
         await createSavedQuery({
           tabId,
-          database: tab.connection.database,
+          database: databaseToSave,
           statement: statementToSave,
+          signal: controller.signal,
         });
       }
     } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "name" in error &&
+        error.name === "AbortError"
+      ) {
         wasAborted = true;
+        if (getSQLEditorTabsState().tabsById.get(tabId)?.status === "SAVING") {
+          getSQLEditorTabsState().updateTab(tabId, { status: "DIRTY" });
+        }
         return;
       }
       if (getSQLEditorTabsState().tabsById.get(tabId)?.status === "SAVING") {
@@ -119,12 +130,17 @@ export function useSQLEditorAutoSave() {
         description: error instanceof Error ? error.message : "Unknown error",
       });
     } finally {
-      setAutoSaveController(null);
+      if (useSQLEditorStore.getState().autoSaveController === controller) {
+        setAutoSaveController(null);
+      }
       if (!wasAborted) {
-        const currentStatement =
-          getSQLEditorTabsState().tabsById.get(tabId)?.statement;
-        if (currentStatement !== statementToSave) {
+        const currentTab = getSQLEditorTabsState().tabsById.get(tabId);
+        if (
+          currentTab?.statement !== statementToSave ||
+          currentTab?.connection.database !== databaseToSave
+        ) {
           getSQLEditorTabsState().updateTab(tabId, { status: "DIRTY" });
+          setSaveVersion((version) => version + 1);
         }
       }
     }
