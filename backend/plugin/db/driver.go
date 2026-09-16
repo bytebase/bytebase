@@ -131,6 +131,9 @@ type QueryContext struct {
 	Option        *v1pb.QueryOption
 	// SkipMasking skips data masking when the query is authorized by an access grant with unmask=true.
 	SkipMasking bool
+	// DataSourceType records which data source runs the query; Oracle database links resolve
+	// only under the admin one, whose ALL_DB_LINKS the sync recorded.
+	DataSourceType storepb.DataSourceType
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
 	Timeout              *durationpb.Duration

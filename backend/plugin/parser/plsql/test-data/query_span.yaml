@@ -395,7 +395,13 @@
           isplainfield: false
           sourcefieldpaths: []
           selectasterisk: false
-    sourcecolumns: []
+    sourcecolumns:
+        - instance: INSTANCE_ID_B
+          server: REMOTE
+          database: SCHEMA1
+          schema: ""
+          table: LV1
+          column: ""
     predicatecolumns: []
 - description: Test For Database Link
   statement: SELECT * FROM SCHEMA1.LT1@REMOTE;
@@ -438,7 +444,645 @@
           isplainfield: true
           sourcefieldpaths: []
           selectasterisk: false
-    sourcecolumns: []
+    sourcecolumns:
+        - instance: INSTANCE_ID_B
+          server: REMOTE
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link Mixed With Local Table
+  statement: SELECT * FROM T, SCHEMA1.LT1@REMOTE;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: ""
+              table: T
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: LC1
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: ""
+              table: LT1
+              column: LC1
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T
+          column: ""
+        - instance: INSTANCE_ID_B
+          server: REMOTE
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link Unqualified
+  statement: SELECT * FROM LT1@REMOTE;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: LC1
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: ""
+              table: LT1
+              column: LC1
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - instance: INSTANCE_ID_B
+          server: REMOTE
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link In Scalar Subquery
+  statement: SELECT (SELECT MAX(LC1) FROM SCHEMA1.LT1@REMOTE) AS M FROM T;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: M
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: ""
+              table: LT1
+              column: LC1
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T
+          column: ""
+        - instance: INSTANCE_ID_B
+          server: REMOTE
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link Unresolvable
+  statement: SELECT * FROM T, SCHEMA1.LT1@NOLINK;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: NOLINK
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link With Local Namesake
+  statement: SELECT * FROM SCHEMA1.LT1@REMOTE;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  crossDatabaseMetadata: |-
+    {
+      "name":  "SCHEMA1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "LT1",
+              "columns":  [
+                {
+                  "name":  "LOCAL_ONLY"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: LC1
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: ""
+              table: LT1
+              column: LC1
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - instance: INSTANCE_ID_B
+          server: REMOTE
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link To The Connected Instance
+  statement: SELECT * FROM SCHEMA1.LT1@LOOPBACK;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "LOOPBACK",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  crossDatabaseMetadata: |-
+    {
+      "name":  "SCHEMA1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "LT1",
+              "columns":  [
+                {
+                  "name":  "LOCAL_LC1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: LOCAL_LC1
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: ""
+              table: LT1
+              column: LOCAL_LC1
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - instance: INSTANCE_ID_A
+          server: LOOPBACK
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link To The Connected Instance Unqualified
+  statement: SELECT * FROM T, LT1@LOOPBACK;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "LOOPBACK",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  crossDatabaseMetadata: |-
+    {
+      "name":  "SCHEMA1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "LT1",
+              "columns":  [
+                {
+                  "name":  "LOCAL_LC1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: ""
+              table: T
+              column: A
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: LOCAL_LC1
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: ""
+              table: LT1
+              column: LOCAL_LC1
+          isplainfield: true
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - instance: INSTANCE_ID_A
+          server: LOOPBACK
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link Into A System Schema
+  statement: SELECT * FROM SYS.DBA_USERS@REMOTE;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: REMOTE
+          database: SYS
+          schema: ""
+          table: DBA_USERS
+          column: ""
+    predicatecolumns: []
+- description: Test For Database Link Into A System Schema Mixed With Local Table
+  statement: SELECT * FROM T, SYS.DBA_USERS@REMOTE;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T
+          column: ""
+        - server: REMOTE
+          database: SYS
+          schema: ""
+          table: DBA_USERS
+          column: ""
+    predicatecolumns: []
+- description: Test For Local Table With SYS.DUAL And A Link
+  statement: SELECT T.A, (SELECT 1 FROM SYS.DUAL) AS ONE FROM T, SCHEMA1.LT1@REMOTE;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: ""
+              table: T
+              column: A
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+        - name: ONE
+          sourcecolumns: []
+          isplainfield: false
+          sourcefieldpaths: []
+          selectasterisk: false
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T
+          column: ""
+        - instance: INSTANCE_ID_B
+          server: REMOTE
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+    predicatecolumns: []
+- description: Test For A Real Table Named DUAL
+  statement: SELECT * FROM APP.DUAL, SCHEMA1.DUAL@REMOTE, SYS.DUAL;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  crossDatabaseMetadata: |-
+    {
+      "name":  "APP",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "DUAL",
+              "columns":  [
+                {
+                  "name":  "SECRET"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: APP
+          schema: ""
+          table: DUAL
+          column: ""
+        - instance: INSTANCE_ID_B
+          server: REMOTE
+          database: SCHEMA1
+          schema: ""
+          table: DUAL
+          column: ""
     predicatecolumns: []
 - description: Test For Explain statements
   statement: EXPLAIN PLAN for SELECT 1 FROM DUAL;
