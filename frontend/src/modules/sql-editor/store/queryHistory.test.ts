@@ -37,6 +37,9 @@ const stubUIStateSlice = (): UIStateSlice => ({
   highlightAccessGrantName: undefined,
   isShowingCode: false,
   aiPanelSize: 0.3,
+  resultPanelSize: 0.4,
+  resultPanelMaximized: false,
+  resultPanelMounted: false,
   linkedQueryHistory: undefined,
   linkedQueryHistoryTabId: undefined,
   linkedQueryHistoryBaseline: undefined,
@@ -48,6 +51,9 @@ const stubUIStateSlice = (): UIStateSlice => ({
   setHighlightAccessGrantName: vi.fn(),
   setIsShowingCode: vi.fn(),
   handleEditorPanelResize: vi.fn(),
+  setResultPanelMaximized: vi.fn(),
+  setResultPanelMounted: vi.fn(),
+  handleResultPanelResize: vi.fn(),
 });
 
 const stubTreeSlice = (): TreeSlice => ({

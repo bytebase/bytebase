@@ -27,6 +27,17 @@ export interface UIStateSlice {
   // Persisted fraction of the editor width given to the AI side pane when it
   // is shown. Stored in localStorage and re-read on store creation.
   aiPanelSize: number;
+  // Persisted fraction of the editor height given to the result pane, so a
+  // reader who drags it taller keeps that height on the next query.
+  resultPanelSize: number;
+  // True while the result pane fills the editor: the editor pane is collapsed
+  // and the sidebar is hidden, giving rows and plans the whole area.
+  resultPanelMaximized: boolean;
+  // Whether a result pane carrying the maximize control is on screen. The
+  // sidebar only yields its width while one is, so leaving the editor view
+  // (a metadata surface, a disconnected tab) cannot strand a hidden tree
+  // with no control to bring it back.
+  resultPanelMounted: boolean;
   // The query history opened from a deep link this session. Surfaced as the
   // "Opened from link" section atop the history pane until dismissed or until
   // its draft tab is edited.
@@ -48,6 +59,9 @@ export interface UIStateSlice {
   setHighlightAccessGrantName: (value: string | undefined) => void;
   setIsShowingCode: (value: boolean) => void;
   handleEditorPanelResize: (size: number) => void;
+  setResultPanelMaximized: (value: boolean) => void;
+  setResultPanelMounted: (value: boolean) => void;
+  handleResultPanelResize: (size: number) => void;
 }
 
 export interface QueryHistoryFilter {

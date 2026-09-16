@@ -31,6 +31,8 @@ export const STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT = "bb.sql-editor.result-limit";
 export const STORAGE_KEY_SQL_EDITOR_REDIS_NODE = "bb.sql-editor.redis-node";
 export const STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE =
   "bb.sql-editor.ai-panel-size";
+export const STORAGE_KEY_SQL_EDITOR_RESULT_PANEL_SIZE =
+  "bb.sql-editor.result-panel-size";
 export const STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB =
   "bb.sql-editor.sidebar.last-visited-tab";
 export const storageKeySqlEditorSidebarTab = (project: string) =>

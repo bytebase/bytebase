@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   setPendingInsertAtCaret: vi.fn(),
+  state: { resultPanelMaximized: false, resultPanelMounted: false },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -93,7 +94,11 @@ vi.mock("@/modules/sql-editor/model/events", () => ({
 
 vi.mock("@/modules/sql-editor/store", () => ({
   useSQLEditorStore: (selector: (state: unknown) => unknown) =>
-    selector({ setPendingInsertAtCaret: mocks.setPendingInsertAtCaret }),
+    selector({
+      setPendingInsertAtCaret: mocks.setPendingInsertAtCaret,
+      resultPanelMaximized: mocks.state.resultPanelMaximized,
+      resultPanelMounted: mocks.state.resultPanelMounted,
+    }),
 }));
 
 vi.mock("@/modules/sql-editor/store/editor", () => ({
@@ -125,10 +130,20 @@ import { SQLEditorHomePage } from "./SQLEditorHomePage";
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 
+const setWindowWidth = (width: number) => {
+  Object.defineProperty(window, "innerWidth", {
+    value: width,
+    configurable: true,
+  });
+};
+
 beforeEach(() => {
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
+  setWindowWidth(1440);
+  mocks.state.resultPanelMaximized = false;
+  mocks.state.resultPanelMounted = false;
 });
 
 afterEach(() => {
@@ -145,5 +160,33 @@ describe("SQLEditorHomePage guide", () => {
     render();
 
     expect(container.textContent).toContain("unified-guide");
+  });
+});
+
+// The sidebar goes away for two unrelated reasons, and only a narrow window
+// wants the phone treatment: a floating toggle over a drawer. A maximized
+// result pane must not drag that onto a desktop window.
+describe("SQLEditorHomePage sidebar", () => {
+  const sidebarToggles = () =>
+    document.querySelectorAll(
+      'button[aria-label="Expand sidebar"], button[aria-label="Collapse sidebar"]'
+    );
+  const sidebarDrawers = () =>
+    document.querySelectorAll('[role="dialog"][aria-label="Sidebar"]');
+
+  test("leaves the phone drawer out of a maximized desktop window", () => {
+    mocks.state.resultPanelMaximized = true;
+    mocks.state.resultPanelMounted = true;
+    render();
+
+    expect(sidebarToggles()).toHaveLength(0);
+    expect(sidebarDrawers()).toHaveLength(0);
+  });
+
+  test("keeps the phone toggle in a narrow window", () => {
+    setWindowWidth(600);
+    render();
+
+    expect(sidebarToggles()).toHaveLength(1);
   });
 });

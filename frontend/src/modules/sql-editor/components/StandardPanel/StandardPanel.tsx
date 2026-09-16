@@ -1,8 +1,9 @@
 import { Loader2 } from "lucide-react";
-import { Suspense } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Panel,
   Group as PanelGroup,
+  type PanelImperativeHandle,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { useShallow } from "zustand/react/shallow";
@@ -11,6 +12,8 @@ import { resizeHandleClass } from "@/modules/schema-editor/resize";
 import { ResultPanel } from "@/modules/sql-editor/components/ResultPanel/ResultPanel";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import {
+  MAXIMUM_RESULT_PANEL_SIZE,
+  MINIMUM_RESULT_PANEL_SIZE,
   selectEditorPanelSize,
   useSQLEditorStore,
 } from "@/modules/sql-editor/store";
@@ -20,6 +23,9 @@ import {
 } from "@/modules/sql-editor/store/tab";
 import { instanceV1HasReadonlyMode } from "@/utils";
 import { EditorMain } from "./EditorMain";
+
+/** Panel sizes are CSS percentages; round so 1 - 0.8 reads as "20%". */
+const percent = (fraction: number) => `${Math.round(fraction * 1000) / 10}%`;
 
 const AIPaneFallback = () => (
   <div className="w-full h-full grow flex flex-col items-center justify-center">
@@ -56,13 +62,51 @@ export function StandardPanel() {
   const isDisconnected = useIsDisconnected();
   const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
   const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
+  // Read once: the store keeps taking the dragged height for the next mount,
+  // but feeding it back as `defaultSize` mid-drag would re-lay out the group
+  // under the pointer.
+  const [initialResultPanelSize] = useState(
+    () => useSQLEditorStore.getState().resultPanelSize
+  );
+  const resultPanelMaximized = useSQLEditorStore((s) => s.resultPanelMaximized);
+  const setResultPanelMounted = useSQLEditorStore(
+    (s) => s.setResultPanelMounted
+  );
+  const handleResultPanelResize = useSQLEditorStore(
+    (s) => s.handleResultPanelResize
+  );
   const instanceHasReadonly = instanceV1HasReadonlyMode(instance);
+  // Derived above the early return below so both effects stay unconditional.
+  const isSavedQueryTab = !tab || tab.mode === "SAVED_QUERY";
+  const showResultPanel =
+    isSavedQueryTab && !isDisconnected && instanceHasReadonly;
+  // The editor pane is collapsed rather than unmounted, so Monaco keeps its
+  // cursor, scroll and undo history while the result pane is maximized.
+  const editorPanelRef = useRef<PanelImperativeHandle | null>(null);
 
-  if (tab && tab.mode !== "SAVED_QUERY") {
+  // Before paint: a mount that should start collapsed (a tab switch while
+  // maximized remounts this component) must not show the editor for a frame.
+  useLayoutEffect(() => {
+    const panel = editorPanelRef.current;
+    if (!panel) return;
+    if (resultPanelMaximized) {
+      panel.collapse();
+    } else {
+      panel.expand();
+    }
+  }, [resultPanelMaximized]);
+
+  // Tells the shell whether a maximized pane still has its restore control on
+  // screen. Leaving the editor view or losing the connection takes the result
+  // pane with it, and the sidebar has to come back when that happens.
+  useEffect(() => {
+    setResultPanelMounted(showResultPanel);
+    return () => setResultPanelMounted(false);
+  }, [showResultPanel, setResultPanelMounted]);
+
+  if (!isSavedQueryTab) {
     return null;
   }
-
-  const showResultPanel = !isDisconnected && instanceHasReadonly;
 
   const handleAiPanelResize = (sizePct: number) => {
     // react-resizable-panels reports a `PanelSize` struct
@@ -121,11 +165,30 @@ export function StandardPanel() {
 
   return (
     <PanelGroup orientation="vertical" className="h-full">
-      <Panel defaultSize="60%" minSize="20%" maxSize="80%">
+      <Panel
+        panelRef={editorPanelRef}
+        collapsible
+        collapsedSize="0%"
+        defaultSize={percent(1 - initialResultPanelSize)}
+        minSize={percent(1 - MAXIMUM_RESULT_PANEL_SIZE)}
+        maxSize={percent(1 - MINIMUM_RESULT_PANEL_SIZE)}
+        onResize={(size) => {
+          const editorShare = size.asPercentage / 100;
+          if (!Number.isFinite(editorShare)) return;
+          // Height only. Whether the pane is maximized is the reader's
+          // decision, taken through the toggle: deriving it from the layout
+          // would let the group's first report — the default size, sent
+          // before the effect above can collapse — cancel it on every mount.
+          handleResultPanelResize(1 - editorShare);
+        }}
+      >
         {editorWithAi}
       </Panel>
       <PanelResizeHandle className={resizeHandleClass("horizontal", "h-0.5")} />
-      <Panel defaultSize="40%" minSize="20%">
+      <Panel
+        defaultSize={percent(initialResultPanelSize)}
+        minSize={percent(MINIMUM_RESULT_PANEL_SIZE)}
+      >
         <div className="relative h-full">
           <ResultPanel />
         </div>

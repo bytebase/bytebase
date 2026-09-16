@@ -1,10 +1,11 @@
 import { ChevronLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   Panel,
   Group as PanelGroup,
+  type PanelImperativeHandle,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { useNavigate } from "@/app/router";
@@ -86,7 +87,26 @@ export function SQLEditorHomePage() {
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
-  const hideSidebar = windowWidth < 800;
+  // Two separate reasons to give up the sidebar, and only one of them wants
+  // the phone treatment. A narrow window moves the tree into a drawer behind a
+  // floating toggle; a maximized result pane collapses it in place, so the
+  // tree keeps its scroll position and its dragged width for the trip back.
+  const isNarrowWindow = windowWidth < 800;
+  const resultPanelMaximized = useSQLEditorStore((s) => s.resultPanelMaximized);
+  // The width is only lent while the pane that can give it back is on screen.
+  const resultPanelMounted = useSQLEditorStore((s) => s.resultPanelMounted);
+  const collapseSidebar = resultPanelMaximized && resultPanelMounted;
+
+  const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
+  useLayoutEffect(() => {
+    const panel = sidebarPanelRef.current;
+    if (!panel) return;
+    if (collapseSidebar) {
+      panel.collapse();
+    } else {
+      panel.expand();
+    }
+  }, [collapseSidebar]);
 
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
@@ -156,7 +176,7 @@ export function SQLEditorHomePage() {
     };
   }, [setPendingInsertAtCaret]);
 
-  const mobileToggle = hideSidebar
+  const mobileToggle = isNarrowWindow
     ? createPortal(
         <SQLEditorThemeScope theme={theme} asContents>
           <button
@@ -189,7 +209,7 @@ export function SQLEditorHomePage() {
     <div className="sqleditor--wrapper w-full flex-1 overflow-hidden flex flex-col bg-background text-main">
       <SQLEditorHeader />
       {mobileToggle}
-      {hideSidebar &&
+      {isNarrowWindow &&
         sidebarExpanded &&
         createPortal(
           <SQLEditorThemeScope theme={theme} asContents>
@@ -214,9 +234,16 @@ export function SQLEditorHomePage() {
           getLayerRoot("overlay")
         )}
       <PanelGroup orientation="horizontal" className="h-full">
-        {!hideSidebar && (
+        {!isNarrowWindow && (
           <>
-            <Panel defaultSize="25%" minSize="10%" maxSize="40%">
+            <Panel
+              panelRef={sidebarPanelRef}
+              collapsible
+              collapsedSize="0%"
+              defaultSize="25%"
+              minSize="10%"
+              maxSize="40%"
+            >
               <div className="h-full">
                 <AsidePanel />
               </div>
