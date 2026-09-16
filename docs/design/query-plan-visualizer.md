@@ -95,17 +95,25 @@ data not available for statement."
 **Rule: draw a picture whenever the engine gave us a machine-readable plan.
 Otherwise show the plan as text.**
 
-We can tell from the result, so the frontend never classifies SQL. PostgreSQL
-always names the column `QUERY PLAN`; it is the column's *type* that changes —
-`json` for `FORMAT JSON`, `xml` for `FORMAT XML`, `text` for TEXT and YAML alike.
-So the check is name plus type plus a plan that parses, which is exactly
-pgAdmin's gate. Execution decisions stay with the backend classification that
-already exists (§2); we do not add a second classifier in the browser.
+**The backend states the format on the result; the frontend never infers it.**
+The server already knows: it builds explain statements through
+`db.ExplainStatement` with an explicit `QueryOption.ExplainFormat`, and it
+already parses a typed `EXPLAIN` to classify it (§2). Carrying that answer on
+`QueryResult` is the whole mechanism.
+
+The alternative — reading it off column metadata, as pgAdmin does with
+`QUERY PLAN` plus a `json` type — is not available to us on the same terms.
+PostgreSQL names the column `QUERY PLAN` and varies only its *type*, and whether
+that type survives our driver layer is a question we would have to answer per
+engine. The server knows without asking. The frontend still validates that the
+payload parses before drawing, so a wrong or unparseable plan degrades to text
+rather than to an error.
 
 | Statement Bytebase ran | Result tab shows | `Query()` calls |
 |---|---|---|
 | **Explain** / **Explain analyze** — we build it, so we ask for JSON | picture | 1 |
-| Typed `EXPLAIN (FORMAT JSON \| XML)` | picture, drawn from what came back | 1 — nothing extra |
+| Typed `EXPLAIN (FORMAT JSON)` | picture, drawn from what came back | 1 — nothing extra |
+| Typed `EXPLAIN (FORMAT XML)` | text for now — see below | 1 |
 | Typed `EXPLAIN` | text, plus a **Visualize** button | 1, +1 only on Visualize |
 | Typed `EXPLAIN ANALYZE` | text; Visualize is disabled, because re-running would execute the query again | 1 — and it stays 1 |
 | Typed `EXPLAIN (FORMAT YAML)` | text — YAML arrives looking identical to plain text, and no viewer reads it | 1 |
@@ -129,6 +137,14 @@ explain gets none — an empty tab is worse than no tab. The opposite case is th
 one that matters most: a query killed by the workspace query timeout **keeps**
 its Plan tab. No measured plan exists, by definition, but an estimated one is
 usually the answer to why it died.
+
+**PostgreSQL XML is text until someone writes the parser.** `parsePostgresPlan`
+reads JSON only, and `VISUALIZER_EXPLAIN_FORMATS` maps PostgreSQL to JSON, so a
+typed `EXPLAIN (FORMAT XML)` has nothing to draw it today. The field set is
+identical to JSON — the same `ExplainProperty` calls with a different serializer
+— so a reader is a contained piece of work, and DBeaver's own PostgreSQL button
+asks for XML, which suggests it is worth doing. It is not in this design's scope,
+and until it lands the doc promises text.
 
 **A typed `EXPLAIN ANALYZE` gets no Visualize button**, because the only way to
 draw it would be to run the query a second time. The user who wants a picture of
