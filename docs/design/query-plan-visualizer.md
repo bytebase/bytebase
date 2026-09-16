@@ -89,6 +89,15 @@ rather than running an expensive query behind a control whose whole purpose is
 to avoid running it. **Explain analyze** executes by definition, and asks for a
 machine-readable plan on that single run, so nothing needs re-running afterwards.
 
+**Explain analyze wraps the statement Run would execute, limit included.** The
+drivers apply the result limit only when the request is not an explain
+(`pg.go:801-804`, `mysql.go:530-533`), so reusing that path would analyze the
+unbounded query while Run stops at the limit. The two actions are supposed to run
+the same statement, and here the gap also executes: an unbounded `EXPLAIN
+ANALYZE` against a large table turns a diagnostic into the workload it was meant
+to diagnose. The limited statement has to be carried or reconstructed before
+wrapping.
+
 **Explain analyze returns a plan, not rows.** On PostgreSQL that is automatic —
 `EXPLAIN ANALYZE` replaces the result set. Spanner's profile mode and SQL
 Server's `SET STATISTICS XML` instead hand back the rows *and* the plan, and the
@@ -308,7 +317,7 @@ regression.
 | **PostgreSQL** | one `Query()`, on demand, cached | graph | yes — `EXPLAIN (ANALYZE, FORMAT JSON)` |
 | **SQL Server** | one `Query()`, on demand, cached | graph | yes — `SET STATISTICS XML` |
 | **Spanner** | one `Query()`, on demand, cached | graph | yes — profile mode |
-| **MySQL** | one `Query()`, on demand, cached | text | text only — 8.0's `EXPLAIN ANALYZE` is TREE, and rejects JSON |
+| **MySQL** | one `Query()`, on demand, cached | text | 8.0.18+ only, and text — `EXPLAIN ANALYZE` is TREE and rejects JSON. Below that it is not valid syntax, so the action is disabled with the version as the reason |
 | **Oracle, 7 others** | one `Query()`, on demand, cached | text | no |
 
 A plan opened from a result is always an estimate, on every engine. Measured
@@ -404,7 +413,12 @@ Two ways that boundary leaks today, both in `checkDatabaseAccess`
   to, so `EXPLAIN SELECT * FROM db_b.secret` on `db_a` yields `db_b`'s plan to
   someone with explain on `db_a` only. Explain has to be required on every
   database the statement references — typed and generated alike — which means
-  extracting them from the inner statement.
+  extracting them from the inner statement, and evaluating each against **its
+  own** project's policy. One instance can hold databases owned by different
+  projects, while the policy is loaded once from the connected database
+  (`sql_service.go:1393-1407`), so reusing it would judge `db_b` by `db_a`'s
+  bindings: exposure for a project-A member, and a wrong denial for a legitimate
+  project-B one.
 - **A data access grant exempts it.** The check returns early for a granted
   target before the permission is ever evaluated, so a temporary select or
   unmask grant carries explain along with it. Access grants convey data access;
