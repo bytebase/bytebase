@@ -121,10 +121,20 @@ so the control never means two things. One meaning, one place: copy is the SQL, 
 
 **D4 · What unfolds by default says what the row is for.** A successful statement identifies
 *which* command ran; the reader scanning for the failure does not want it open, so it starts
-folded. A failed command is the thing the log was opened for, and execution stops at the first one,
-so at most one row per run is affected: it starts **unfolded**, with the error as its line and the
-statement that failed in the block beneath. Either can be toggled, and the control means the same
-thing in both directions.
+folded. A failed command is what the log was opened for, so it starts **unfolded**, with the error
+as its line and the statement that failed in the block beneath — but only the one that explains the
+outcome, which is not the same as every failed row. A run can hold several: on a lock timeout the
+Postgres driver retries the whole command list up to `MaximumRetries`
+(`backend/plugin/db/pg/pg.go:463-485`), re-logging every command on each attempt, so the same
+statement can fail three times and the run still succeed. Opening all of them would expand the same
+DDL three times over.
+
+So the rule is: **open the last failed command row in a section, and only when no command row after
+it succeeded.** Execution stops at the failure within an attempt, so a run that recovered on retry
+ends in successes and opens nothing — its transient failures no longer explain anything — while a
+run that really failed ends at its failure and opens exactly that row. The rule reads only the
+entries, which matters because `taskRunStatus` is an optional prop that the changelog and revision
+pages do not pass. Everything else starts folded, and every row toggles either way.
 
 **D5 · A row is foldable when it ran a statement.** Nothing more. An earlier draft measured
 `scrollWidth > clientWidth` from a shared `ResizeObserver` so the chevron could be hidden on rows
@@ -158,9 +168,17 @@ collapsed height. A run that failed therefore opens taller than one that did not
 which is the right way round. The box still scrolls — a statement with a few hundred columns is
 taller than any cap worth setting — but it scrolls over most of a screen instead of over ten lines.
 
-**D9 · One scroll context.** The unfolded block never gets its own `overflow` — it grows to its
-natural height and the section scrolls. A scrollbar inside a scrollbar inside a page is not a
-thing the reader can operate at this size.
+**D9 · The viewer owns one scroll context.** The unfolded block never gets its own `overflow` — it
+grows to its natural height and the section scrolls, so nothing the viewer renders stacks a
+scrollbar inside a scrollbar. It cannot claim the same for the page it sits on:
+`DeployTaskRunHistorySheet` renders the viewer inside `SheetBody`, which is `overflow-y-auto`
+(`components/ui/sheet.tsx:161-167`), so on that one surface the section's box has always sat inside
+an outer scroller, and D8's raised cap makes the inner region bigger. The nesting predates this
+change and the sheet's `overscroll-contain` keeps it from chaining. Handing the scroll to the host
+— no cap when the viewer is inside a sheet, `SheetBody` scrolling the expanded statement — would
+remove it, at the price of a second layout mode for the viewer to carry, test, and keep consistent
+with `MAX_RENDERED_ITEMS`. Recorded as the option and not taken: the nesting is pre-existing and
+mild, the mode would be permanent.
 
 **D10 · The unfolded block takes the line's place, or sits under it.** Same cell, same left edge;
 `whitespace-pre-wrap break-words` on the verbatim statement, in the row's mono face, on
@@ -225,11 +243,12 @@ behavior of this function:
   statement past 80 characters is not truncated (regression); a failed command yields the error as
   `detail` *and* the failed statement in `statement`, including when it has to come from `range`;
   an entry with no statement yields `"-"` and no `statement`.
-- `SectionContent`: a foldable row toggles and reports `aria-expanded`; a failed row starts
-  unfolded and can be folded; copy receives the verbatim statement, never the line and never the
-  error; a failed row carries no copy button on its error line and one inside its block; a row with
-  no recoverable statement carries none at all; the open set resets when `datasetKey` changes, as
-  `showAllItems` already does.
+- `SectionContent`: a foldable row toggles and reports `aria-expanded`; the last failed row starts
+  unfolded and can be folded; a section whose failures are followed by a successful command row —
+  the lock-timeout retry shape — opens nothing; copy receives the verbatim statement, never the
+  line and never the error; a failed row carries no copy button on its error line and one inside
+  its block; a row with no recoverable statement carries none at all; the open set resets when
+  `datasetKey` changes, as `showAllItems` already does.
 
 ## Not in this PR
 
@@ -237,6 +256,9 @@ The implementation, which follows separately. Also deliberately out:
 
 - **A smaller shared control size.** The 8px the row gains is the cost of the shared size contract
   (D11). A 20px tier is a design-system change, not a log-viewer one.
+- **Giving the deploy sheet's body the scroll.** It would remove the one nested scroll region the
+  viewer sits in (D9), but it buys a second layout mode on a surface whose nesting is already the
+  status quo. Worth revisiting if the sheet is where people actually read long statements.
 - **Syntax highlighting in the unfolded block.** A Monaco instance per log row is far past what
   this surface can afford. The statement is mono, preformatted and copyable; the editor is one
   click away on the pages that embed the viewer.
