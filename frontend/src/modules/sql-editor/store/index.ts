@@ -17,7 +17,11 @@ export {
   selectQueryHistoryEntry,
 } from "./queryHistory";
 export { idForSQLEditorTreeNodeTarget, selectAllTreeNodeKeys } from "./tree";
-export { selectEditorPanelSize } from "./uiState";
+export {
+  MAXIMUM_RESULT_PANEL_SIZE,
+  MINIMUM_RESULT_PANEL_SIZE,
+  selectEditorPanelSize,
+} from "./uiState";
 export { createWebTerminalQueryItemV1 } from "./webTerminal";
 
 export const useSQLEditorStore = create<SQLEditorStoreState>()((...args) => ({
