@@ -84,6 +84,13 @@ rather than running an expensive query behind a control whose whole purpose is
 to avoid running it. **Explain analyze** executes by definition, and asks for a
 machine-readable plan on that single run, so nothing needs re-running afterwards.
 
+**Explain analyze returns a plan, not rows.** On PostgreSQL that is automatic —
+`EXPLAIN ANALYZE` replaces the result set. Spanner's profile mode and SQL
+Server's `SET STATISTICS XML` instead hand back the rows *and* the plan, and the
+explain path skips masking (§3.5), so passing those rows on would show unmasked
+values to a user who is subject to masking. The backend discards them. Same
+action, same output, on every engine.
+
 Run stays literal: a typed `EXPLAIN ANALYZE` executes, because that is what the
 user typed. What we never do is wrap a statement that already starts with
 `EXPLAIN` in a second one — pgAdmin, DBeaver, DataGrip, Workbench and pgcli all
@@ -237,6 +244,15 @@ only Spanner Studio also does. What is missing is a signal for which statement
 matters: SSMS labels each plan with its share of the script's cost. Add that to
 the tab label, marked as an estimate, and only when every statement's cost is
 known — a share of an incomplete total is worse than no share.
+
+**A plan assumes its statement stands alone.** In `SET search_path = tenant;
+SELECT * FROM orders`, the second statement's plan depends on the first, and we
+explain statements one at a time on a connection that never saw the `SET`. The
+driver would also prefix a split script blindly, producing an invalid
+`EXPLAIN SET …`. Temporary tables and SQL Server's `USE` break the same way. So
+when a script establishes session state, the statements after it get no Plan tab.
+Reproducing session context is a larger feature than this design, and a plan for
+the wrong table is worse than no plan.
 
 **Several databases.** Batch mode runs one statement across many databases, which
 no reference product has to solve — they are all single-connection. We plan only
