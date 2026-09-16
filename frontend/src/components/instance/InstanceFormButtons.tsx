@@ -6,6 +6,7 @@ import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/app/router/handles";
+import { useHasInvalidSecretInputs } from "@/components/SecretInput";
 import {
   PREPARE_DATABASE_PRODUCT_INTRO,
   PREPARE_DATABASE_TRANSFER_TIP,
@@ -68,6 +69,7 @@ export function InstanceFormButtons({
 }: InstanceFormButtonsProps) {
   const { t } = useTranslation();
 
+  const hasInvalidSecretInputs = useHasInvalidSecretInputs();
   const context = useInstanceFormContext();
   const {
     state,
@@ -139,13 +141,17 @@ export function InstanceFormButtons({
   };
 
   const allowUpdate =
+    !hasInvalidSecretInputs &&
     valueChanged &&
     !!basicInfo.title.trim() &&
     context.labelErrors.length === 0 &&
     checkDataSource([adminDataSource, ...readonlyDataSourceList]);
 
   const allowTestConnection =
-    allowEdit && !!editingDataSource && checkDataSource([editingDataSource]);
+    !hasInvalidSecretInputs &&
+    allowEdit &&
+    !!editingDataSource &&
+    checkDataSource([editingDataSource]);
 
   const hasConfiguredConnectionOptions = (ds: EditDataSource): boolean => {
     const hasExtraParameters =
@@ -218,7 +224,7 @@ export function InstanceFormButtons({
   };
 
   const doCreate = async () => {
-    if (!isCreating || !allowCreate) return;
+    if (!isCreating || !allowCreate || hasInvalidSecretInputs) return;
 
     const payload = buildCreateInstance();
     if (!checkExternalSecretFeature(payload.dataSources)) {
@@ -268,7 +274,7 @@ export function InstanceFormButtons({
   };
 
   const tryCreate = async () => {
-    if (!allowCreate) return;
+    if (!allowCreate || hasInvalidSecretInputs) return;
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("instance create clicked", {
         routeId: router.currentRoute.value.name?.toString(),
@@ -599,6 +605,7 @@ export function InstanceFormButtons({
               <Button
                 disabled={
                   !allowCreate ||
+                  hasInvalidSecretInputs ||
                   state.isRequesting ||
                   state.isTestingConnection
                 }
@@ -620,7 +627,7 @@ export function InstanceFormButtons({
   }
 
   if (!instance) return null;
-  if (!valueChanged || !allowEdit) return null;
+  if ((!valueChanged && !hasInvalidSecretInputs) || !allowEdit) return null;
 
   return (
     <>

@@ -622,7 +622,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL
 		if queryContext.Explain {
-			statement = fmt.Sprintf("EXPLAIN %s", statement)
+			statement, _ = db.ExplainStatement(storepb.Engine_COCKROACHDB, statement, queryContext.Option.GetExplainFormat())
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}

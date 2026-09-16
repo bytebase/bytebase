@@ -1,5 +1,5 @@
 import { Plus } from "lucide-react";
-import { useCallback } from "react";
+import { type ReactNode, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { useAppStore } from "@/stores/app";
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
+import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import type { EditDataSource } from "./common";
 import { wrapEditDataSource } from "./common";
 import { DataSourceForm } from "./DataSourceForm";
@@ -14,14 +15,16 @@ import { useInstanceFormContext } from "./InstanceFormContext";
 import type { InfoSection } from "./info-content";
 
 interface DataSourceSectionProps {
+  children?: ReactNode;
   hideOptions?: boolean;
-  hideAdminAuthentication?: boolean;
+  hideAuthentication?: boolean;
   onOpenInfoPanel?: (section: InfoSection) => void;
 }
 
 export function DataSourceSection({
+  children,
   hideOptions = false,
-  hideAdminAuthentication = false,
+  hideAuthentication = false,
   onOpenInfoPanel,
 }: DataSourceSectionProps) {
   const { t } = useTranslation();
@@ -121,17 +124,84 @@ export function DataSourceSection({
   );
 
   // DynamoDB normally has a single admin data source, so the read-only
-  // tabs/tips are hidden — unless a read-only data source already exists
+  // tabs are hidden unless a read-only data source already exists
   // (creatable via the API), which must stay reachable.
   const showDataSourceTabs =
     !isCreating &&
     (basicInfo.engine !== Engine.DYNAMODB || hasReadOnlyDataSource);
 
-  // Show RO tips when not creating and no RO data source
   const showROTips = showDataSourceTabs && !hasReadOnlyDataSource;
 
   return (
-    <>
+    <div>
+      {/* Data source tabs */}
+      {showDataSourceTabs && (
+        <div className="mb-4 flex items-center gap-x-2 border-b border-block-border">
+          <button
+            type="button"
+            className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+              dataSourceEditState.editingDataSourceId === adminDataSource.id
+                ? "border-accent text-accent"
+                : "border-transparent text-control-light hover:text-main"
+            }`}
+            onClick={() => handleTabChange(adminDataSource.id)}
+          >
+            {t("common.admin")}
+            {incompleteMarker(adminDataSource)}
+          </button>
+          {readonlyDataSourceList.map((ds) => (
+            <div key={ds.id} className="flex items-center">
+              <button
+                type="button"
+                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                  dataSourceEditState.editingDataSourceId === ds.id
+                    ? "border-accent text-accent"
+                    : "border-transparent text-control-light hover:text-main"
+                }`}
+                onClick={() => handleTabChange(ds.id)}
+              >
+                {t("common.read-only")}
+                {incompleteMarker(ds)}
+              </button>
+              {hasReadOnlyDataSource && (
+                <button
+                  type="button"
+                  className="ml-1 text-red-500 hover:text-red-700 text-xs pb-2"
+                  disabled={!allowUpdate}
+                  onClick={() => {
+                    if (
+                      ds.pendingCreate ||
+                      window.confirm(
+                        `${t("data-source.delete-read-only-data-source")}?`
+                      )
+                    ) {
+                      handleDeleteDataSource(ds);
+                    }
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          {!hasReadOnlyDataSource && (
+            <span className="pb-2 px-1 text-sm text-control-light">
+              {t("common.read-only")}
+            </span>
+          )}
+          {allowEdit && (
+            <button
+              type="button"
+              className="pb-2 px-1 text-control-light hover:text-main disabled:opacity-50"
+              disabled={!allowUpdate}
+              onClick={handleCreateRODataSource}
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
+
       {showROTips && (
         <Alert
           variant="warning"
@@ -151,88 +221,30 @@ export function DataSourceSection({
         />
       )}
 
-      <div className="mt-4 gap-y-2 gap-x-4 border-none">
-        {/* Data source tabs */}
-        {showDataSourceTabs && (
-          <div className="mb-4 flex items-center gap-x-2 border-b border-block-border">
-            <button
-              type="button"
-              className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
-                dataSourceEditState.editingDataSourceId === adminDataSource.id
-                  ? "border-accent text-accent"
-                  : "border-transparent text-control-light hover:text-main"
-              }`}
-              onClick={() => handleTabChange(adminDataSource.id)}
-            >
-              {t("common.admin")}
-              {incompleteMarker(adminDataSource)}
-            </button>
-            {readonlyDataSourceList.map((ds) => (
-              <div key={ds.id} className="flex items-center">
-                <button
-                  type="button"
-                  className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
-                    dataSourceEditState.editingDataSourceId === ds.id
-                      ? "border-accent text-accent"
-                      : "border-transparent text-control-light hover:text-main"
-                  }`}
-                  onClick={() => handleTabChange(ds.id)}
-                >
-                  {t("common.read-only")}
-                  {incompleteMarker(ds)}
-                </button>
-                {hasReadOnlyDataSource && (
-                  <button
-                    type="button"
-                    className="ml-1 text-red-500 hover:text-red-700 text-xs pb-2"
-                    disabled={!allowUpdate}
-                    onClick={() => {
-                      if (
-                        ds.pendingCreate ||
-                        window.confirm(
-                          `${t("data-source.delete-read-only-data-source")}?`
-                        )
-                      ) {
-                        handleDeleteDataSource(ds);
-                      }
-                    }}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-            {!hasReadOnlyDataSource && (
-              <span className="pb-2 px-1 text-sm text-control-light">
-                {t("common.read-only")}
-              </span>
-            )}
-            {allowEdit && (
-              <button
-                type="button"
-                className="pb-2 px-1 text-control-light hover:text-main disabled:opacity-50"
-                disabled={!allowUpdate}
-                onClick={handleCreateRODataSource}
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        )}
+      {!isCreating && editingDataSource && (
+        <CreateDataSourceExample
+          key={editingDataSource.id}
+          className="mb-4"
+          engine={basicInfo.engine}
+          dataSourceType={editingDataSource.type}
+          authenticationType={editingDataSource.authenticationType}
+          createInstanceFlag={false}
+        />
+      )}
 
-        {editingDataSource && (
+      {children}
+
+      {editingDataSource && (
+        <div className="mt-4">
           <DataSourceForm
             dataSource={editingDataSource}
             hideOptions={hideOptions}
-            hideAuthentication={
-              hideAdminAuthentication &&
-              editingDataSource.id === adminDataSource.id
-            }
+            hideAuthentication={hideAuthentication}
             onDataSourceChange={handleDataSourceChange}
             onOpenInfoPanel={onOpenInfoPanel}
           />
-        )}
-      </div>
-    </>
+        </div>
+      )}
+    </div>
   );
 }

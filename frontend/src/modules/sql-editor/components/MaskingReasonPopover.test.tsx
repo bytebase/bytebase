@@ -237,6 +237,20 @@ describe("MaskingReasonPopover", () => {
     unmount();
   });
 
+  test("wraps a long masking context within the popover", () => {
+    const context = "Column-level semantic type: sample-" + "x".repeat(500);
+    const { container, render, unmount } = renderIntoContainer(
+      <MaskingReasonPopover reason={makeReason({ context })} />
+    );
+    render();
+
+    const contextValue = Array.from(container.querySelectorAll("span")).find(
+      (element) => element.textContent === context
+    );
+    expect(contextValue?.className).toContain("wrap-anywhere");
+    unmount();
+  });
+
   test("does not show the request-unmask button when JIT not available", () => {
     setupDefaultMocks(false);
     const { container, render, unmount } = renderIntoContainer(

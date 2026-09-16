@@ -3,6 +3,7 @@ package store
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"context"
 	"database/sql"
@@ -22,7 +23,7 @@ type Store struct {
 	enableCache   bool
 
 	// Cache.
-	Secret         string
+	authSecret     atomic.Pointer[string]
 	userEmailCache *lru.Cache[string, *UserMessage]
 	instanceCache  *lru.Cache[string, *InstanceMessage]
 	databaseCache  *lru.Cache[string, *DatabaseMessage]

@@ -1,16 +1,27 @@
 import { Alert } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import {
-  formatPlanCost,
-  formatPlanCount,
-  isFlaggedFullScan,
-  PLAN_FULL_SCAN_HINT,
-  type PlanNode,
-} from "./plan-model";
+import { formatPlanCost, formatPlanCount, type PlanNode } from "./plan-model";
 import { PlanMetric } from "./plan-shared";
 
 interface Props {
   readonly node: PlanNode | undefined;
+}
+
+/** The node's estimates as labelled values, leaving out any it does not have. */
+function nodeMetrics(node: PlanNode): { label: string; value: string }[] {
+  return [
+    { label: "Startup cost", value: node.startupCost, format: formatPlanCost },
+    { label: "Total cost", value: node.totalCost, format: formatPlanCost },
+    { label: "Added cost", value: node.selfCost, format: formatPlanCost },
+    { label: "Estimated rows", value: node.rows, format: formatPlanCount },
+    {
+      label: "Row width",
+      value: node.width,
+      format: (width: number) => `${formatPlanCount(width)} bytes`,
+    },
+  ].flatMap(({ label, value, format }) =>
+    value === undefined ? [] : [{ label, value: format(value) }]
+  );
 }
 
 export function QueryPlanNodeDetails({ node }: Props) {
@@ -18,11 +29,13 @@ export function QueryPlanNodeDetails({ node }: Props) {
     return (
       <div className="flex h-full items-center justify-center p-4">
         <p className="text-sm leading-5 text-control-light">
-          Select a node to see its estimates.
+          Select a node to see its details.
         </p>
       </div>
     );
   }
+
+  const metrics = nodeMetrics(node);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-auto p-4 gap-4">
@@ -42,33 +55,35 @@ export function QueryPlanNodeDetails({ node }: Props) {
         ) : null}
       </div>
 
-      {/* The diagram flags this with a hover-only icon, which a touch reader
+      {/* The diagram flags these with a hover-only icon, which a touch reader
           never reaches. The pane is where the selected node is explained, so
-          it carries the warning too. */}
-      {isFlaggedFullScan(node) ? (
+          it carries the warnings too. */}
+      {node.warnings.map((warning, index) => (
         <Alert
+          // An engine can report the same warning twice, so its text is not a
+          // key; a node's warnings never reorder.
+          key={index}
           variant="warning"
-          data-testid="plan-details-full-scan"
-          title="Full table scan"
-          description={PLAN_FULL_SCAN_HINT}
+          data-testid="plan-details-warning"
+          title={warning.title}
+          description={warning.detail}
         />
+      ))}
+
+      {metrics.length > 0 ? (
+        <>
+          <Separator />
+          <dl className="flex flex-wrap gap-4">
+            {metrics.map((metric) => (
+              <PlanMetric
+                key={metric.label}
+                label={metric.label}
+                value={metric.value}
+              />
+            ))}
+          </dl>
+        </>
       ) : null}
-
-      <Separator />
-
-      <dl className="flex flex-wrap gap-4">
-        <PlanMetric
-          label="Startup cost"
-          value={formatPlanCost(node.startupCost)}
-        />
-        <PlanMetric label="Total cost" value={formatPlanCost(node.totalCost)} />
-        <PlanMetric label="Added cost" value={formatPlanCost(node.selfCost)} />
-        <PlanMetric label="Estimated rows" value={formatPlanCount(node.rows)} />
-        <PlanMetric
-          label="Row width"
-          value={`${formatPlanCount(node.width)} bytes`}
-        />
-      </dl>
 
       {node.properties.length > 0 ? (
         <>

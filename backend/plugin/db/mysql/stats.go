@@ -3,221 +3,165 @@ package mysql
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
-	"fmt"
+	"log/slog"
+	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/bytebase/omni/mysql/ast"
+	"github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
+// erUnknownSystemVariable is the MySQL error number for setting a variable the server lacks.
+const erUnknownSystemVariable = 1193
+
+// CountAffectedRows returns the planner's estimate of the rows the INSERT, UPDATE, or DELETE
+// statement modifies.
 func (d *Driver) CountAffectedRows(ctx context.Context, statement string) (int64, error) {
 	if d.dbType == storepb.Engine_OCEANBASE {
-		return countAffectedRowsForOceanBase(ctx, d.db, statement)
-	}
-
-	// Prefer the JSON query plan: the tabular EXPLAIN's first "rows" value may be the
-	// scan estimate of a driving table unrelated to the DML target (BYT-9858). Fall
-	// back to the tabular heuristic when no flagged target node is found (e.g. INSERT
-	// plans, or servers that don't mark the target).
-	if count, ok := d.countAffectedRowsFromJSONPlan(ctx, statement); ok {
-		return capAffectedRowsByLimit(count, statement), nil
-	}
-
-	explainSQL := fmt.Sprintf("EXPLAIN %s", statement)
-	rows, err := d.db.QueryContext(ctx, explainSQL)
-	if err != nil {
-		return 0, err
-	}
-	defer rows.Close()
-
-	// mysql> explain delete from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	//
-	// mysql> explain insert into td select * from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
-	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	columns, err := rows.Columns()
-	if err != nil {
-		return 0, err
-	}
-	rowsIndex, ok := util.GetColumnIndex(columns, "rows")
-	if !ok {
-		return 0, nil
-	}
-	for rows.Next() {
-		scanArgs := make([]any, len(columns))
-		for i := range scanArgs {
-			var unused any
-			scanArgs[i] = &unused
-		}
-		var rowsColumn sql.NullInt64
-		scanArgs[rowsIndex] = &rowsColumn
-		if err := rows.Scan(scanArgs...); err != nil {
+		rows, err := d.db.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
+		if err != nil {
 			return 0, err
 		}
-
-		if rowsColumn.Valid {
-			return capAffectedRowsByLimit(rowsColumn.Int64, statement), nil
+		defer rows.Close()
+		plan, err := readExplainJSON(rows)
+		if err != nil {
+			return 0, err
 		}
+		return mysqlparser.EstimateAffectedRowsFromOceanBaseExplainJSON(plan)
 	}
-	if err := rows.Err(); err != nil {
-		return 0, err
-	}
-	return 0, nil
-}
 
-func (d *Driver) countAffectedRowsFromJSONPlan(ctx context.Context, statement string) (int64, bool) {
-	rows, err := d.db.QueryContext(ctx, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", statement))
-	if err != nil {
-		return 0, false
-	}
-	defer rows.Close()
-
-	var plan strings.Builder
-	for rows.Next() {
-		var planColumn sql.NullString
-		if err := rows.Scan(&planColumn); err != nil {
-			return 0, false
-		}
-		if planColumn.Valid {
-			plan.WriteString(planColumn.String)
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return 0, false
-	}
-	return mysqlparser.GetEstimatedAffectedRowsFromExplainJSON(plan.String())
-}
-
-func capAffectedRowsByLimit(count int64, statement string) int64 {
-	limit, ok := affectedRowsLimit(statement)
-	if !ok || limit >= count {
-		return count
-	}
-	return limit
-}
-
-func affectedRowsLimit(statement string) (int64, bool) {
 	list, err := mysqlparser.ParseMySQL(statement)
-	if err != nil || list == nil || len(list.Items) != 1 {
-		return 0, false
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to parse statement")
 	}
-
-	var limit *ast.Limit
-	switch stmt := list.Items[0].(type) {
-	case *ast.UpdateStmt:
-		limit = stmt.Limit
-	case *ast.DeleteStmt:
-		limit = stmt.Limit
-	case *ast.InsertStmt:
-		if stmt.Select != nil {
-			limit = stmt.Select.Limit
-		}
-	default:
-		return 0, false
+	if list == nil || len(list.Items) != 1 {
+		return 0, errors.New("expected exactly one statement")
 	}
-	if limit == nil || limit.Count == nil {
-		return 0, false
-	}
-	lit, ok := limit.Count.(*ast.IntLit)
-	if !ok || lit.Value < 0 {
-		return 0, false
-	}
-	return lit.Value, true
-}
-
-func countAffectedRowsForOceanBase(ctx context.Context, sqlDB *sql.DB, dml string) (int64, error) {
-	explainSQL := fmt.Sprintf("EXPLAIN FORMAT=JSON %s", dml)
-	rows, err := sqlDB.QueryContext(ctx, explainSQL)
+	query := mysqlparser.AffectedRowsQuery(list.Items[0], statement)
+	plan, err := ExplainJSON(ctx, d.db, query)
 	if err != nil {
 		return 0, err
 	}
-	defer rows.Close()
-	var planString strings.Builder
-	for rows.Next() {
-		var planColumn sql.NullString
-		if err := rows.Scan(&planColumn); err != nil {
-			return 0, err
-		}
-		if !planColumn.Valid {
-			continue
-		}
-		planString.WriteString(planColumn.String)
-	}
-	if err := rows.Err(); err != nil {
-		return 0, err
-	}
-	if planString.Len() == 0 {
-		return 0, nil
-	}
-	return getAffectedRowsFromOceanBaseQueryPlan(planString.String())
+	return EstimateAffectedRows(ctx, d.db, list.Items[0], query, plan)
 }
 
-func getAffectedRowsFromOceanBaseQueryPlan(planString string) (int64, error) {
-	var planValue map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(planString), &planValue); err != nil {
-		return 0, errors.Wrapf(err, "failed to parse query plan from string: %+v", planString)
-	}
-	if len(planValue) == 0 {
-		return 0, nil
-	}
-	queryPlan := oceanBaseQueryPlan{}
-	if err := queryPlan.Unmarshal(planValue); err != nil {
-		return 0, errors.Wrapf(err, "failed to parse query plan from map: %+v", planValue)
-	}
-	if queryPlan.Operator != "" {
-		return queryPlan.EstRows, nil
-	}
-	count := int64(-1)
-	for k, v := range planValue {
-		if !strings.HasPrefix(k, "CHILD_") {
-			continue
-		}
-		child := oceanBaseQueryPlan{}
-		if err := child.Unmarshal(v); err != nil {
-			return 0, errors.Wrapf(err, "failed to parse field '%s', value: %+v", k, v)
-		}
-		if child.Operator != "" && child.EstRows > count {
-			count = child.EstRows
-		}
-	}
-	if count >= 0 {
+// EstimateAffectedRows returns the rows stmt modifies according to plan, the ExplainJSON output for
+// query, which is the statement's AffectedRowsQuery. When plan has no estimate to read, as MySQL 8.0
+// prints no source plan for an INSERT ... SELECT that computes window functions, the estimate of the
+// tabular EXPLAIN stands in for it.
+func EstimateAffectedRows(ctx context.Context, db *sql.DB, stmt ast.Node, query string, plan string) (int64, error) {
+	count, err := mysqlparser.EstimateAffectedRowsFromExplainJSON(stmt, plan)
+	if err == nil {
 		return count, nil
 	}
-	return 0, nil
+	rows, tables, ok := explainTabularEstimate(ctx, db, query)
+	if !ok {
+		return 0, err
+	}
+	// A multi-table UPDATE or DELETE can change a row of each target for every row its join produces.
+	return mysqlparser.CapAffectedRowsByLimit(stmt, rows*float64(mysqlparser.DMLTargetCount(stmt, tables))), nil
 }
 
-// oceanBaseQueryPlan represents the query plan of OceanBase.
-type oceanBaseQueryPlan struct {
-	ID       int    `json:"ID"`
-	Operator string `json:"OPERATOR"`
-	Name     string `json:"NAME"`
-	EstRows  int64  `json:"EST.ROWS"`
-	Cost     int    `json:"COST"`
-	OutPut   any    `json:"output"`
-}
-
-// Unmarshal parses data and stores the result to current oceanBaseQueryPlan.
-func (plan *oceanBaseQueryPlan) Unmarshal(data any) error {
-	b, err := json.Marshal(data)
+// explainTabularEstimate returns the rows that the first query block of the tabular EXPLAIN of query
+// produces, and how many tables it joins: the product, over those tables, of the rows each reads
+// scaled by its filtered percentage where the server prints one.
+func explainTabularEstimate(ctx context.Context, db *sql.DB, query string) (float64, int, bool) {
+	// MySQL 9 prints a plain EXPLAIN in the TREE format.
+	rows, err := db.QueryContext(ctx, "EXPLAIN FORMAT=TRADITIONAL "+query)
 	if err != nil {
-		return err
+		return 0, 0, false
 	}
-	if b != nil {
-		return json.Unmarshal(b, &plan)
+	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		return 0, 0, false
 	}
-	return nil
+	column := func(name string) int {
+		return slices.IndexFunc(columns, func(column string) bool { return strings.EqualFold(column, name) })
+	}
+	idIndex, rowsIndex, filteredIndex := column("id"), column("rows"), column("filtered")
+	if idIndex < 0 || rowsIndex < 0 {
+		return 0, 0, false
+	}
+	values := make([]sql.NullString, len(columns))
+	dest := make([]any, len(columns))
+	for i := range values {
+		dest[i] = &values[i]
+	}
+	var blockID string
+	estimate, tables := 1.0, 0
+	for rows.Next() {
+		if err := rows.Scan(dest...); err != nil {
+			return 0, 0, false
+		}
+		tableRows, err := strconv.ParseFloat(values[rowsIndex].String, 64)
+		if !values[rowsIndex].Valid || err != nil || (tables > 0 && values[idIndex].String != blockID) {
+			continue
+		}
+		blockID = values[idIndex].String
+		tables++
+		estimate *= tableRows
+		if filteredIndex >= 0 && values[filteredIndex].Valid {
+			if filtered, err := strconv.ParseFloat(values[filteredIndex].String, 64); err == nil {
+				estimate *= filtered / 100
+			}
+		}
+	}
+	return estimate, tables, tables > 0 && rows.Err() == nil
+}
+
+// ExplainJSON returns the `EXPLAIN FORMAT=JSON` output for the statement in the JSON format
+// version that mysqlparser.EstimateAffectedRowsFromExplainJSON reads.
+func ExplainJSON(ctx context.Context, db *sql.DB, statement string) (string, error) {
+	// The session variable must be set on the connection that runs the EXPLAIN.
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer conn.Close()
+
+	// MySQL 9.5 defaults explain_json_format_version to 2. MySQL before 8.3 and MariaDB lack the
+	// variable and only produce version 1.
+	if _, err := conn.ExecContext(ctx, "SET SESSION explain_json_format_version = 1"); err != nil {
+		var mysqlErr *mysql.MySQLError
+		if !errors.As(err, &mysqlErr) || mysqlErr.Number != erUnknownSystemVariable {
+			return "", errors.Wrap(err, "failed to set explain_json_format_version")
+		}
+	} else {
+		// The connection returns to the pool, so later statements on it get the server's version back.
+		defer func() {
+			if _, err := conn.ExecContext(ctx, "SET SESSION explain_json_format_version = DEFAULT"); err != nil {
+				slog.Warn("failed to reset explain_json_format_version", log.BBError(err))
+			}
+		}()
+	}
+
+	rows, err := conn.QueryContext(ctx, "EXPLAIN FORMAT=JSON "+statement)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	return readExplainJSON(rows)
+}
+
+// readExplainJSON concatenates the plan rows; OceanBase splits its JSON plan across rows.
+func readExplainJSON(rows *sql.Rows) (string, error) {
+	var plan strings.Builder
+	for rows.Next() {
+		var line sql.NullString
+		if err := rows.Scan(&line); err != nil {
+			return "", err
+		}
+		plan.WriteString(line.String)
+	}
+	if err := rows.Err(); err != nil {
+		return "", err
+	}
+	return plan.String(), nil
 }

@@ -46,7 +46,6 @@
     "events": "^3.3.0",
     "file-saver": "^2.0.5",
     "highlight.js": "11.11.1",
-    "html-query-plan": "^2.6.1",
     "html-to-image": "^1.11.13",
     "i18next": "^26.0.10",
     "immer": "^11.1.8",

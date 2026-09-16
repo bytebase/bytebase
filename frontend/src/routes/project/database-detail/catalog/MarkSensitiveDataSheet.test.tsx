@@ -5,6 +5,11 @@ import {
   DatabaseMetadataSchema,
   DatabaseSchema$,
 } from "@/types/proto-es/v1/database_service_pb";
+import {
+  AlgorithmSchema,
+  SemanticTypeSetting_SemanticTypeSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
+import { getSemanticTemplateList } from "@/types/semanticTypes";
 import { MarkSensitiveDataSheet } from "./MarkSensitiveDataSheet";
 
 const mocks = vi.hoisted(() => ({
@@ -13,7 +18,11 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  initReactI18next: { type: "3rdParty", init: () => {} },
+  useTranslation: () => ({
+    t: (key: string, options?: { effect?: string }) =>
+      options?.effect ? `${key}: ${options.effect}` : key,
+  }),
 }));
 
 vi.mock("@/hooks/useAppDatabaseMetadata", () => ({
@@ -65,7 +74,7 @@ test("applies the semantic type to multiple selected columns in one save", async
   });
   render(<MarkSensitiveDataSheet {...props} />);
   await selectOption("common.table", "customers");
-  await selectOption("common.column", "email");
+  await selectOption("settings.sensitive-data.columns-to-mask", "email");
   const phone = await screen.findByRole("option", { name: "phone" });
   fireEvent.pointerDown(phone, { pointerType: "mouse" });
   fireEvent.click(phone);
@@ -75,7 +84,11 @@ test("applies the semantic type to multiple selected columns in one save", async
   );
   expect(phone).toHaveAttribute("aria-selected", "true");
   fireEvent.keyDown(phone, { key: "Escape" });
-  fireEvent.click(screen.getByRole("button", { name: "common.save" }));
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: "settings.sensitive-data.apply-masking",
+    })
+  );
   expect(mocks.updateColumnCatalog).toHaveBeenCalledExactlyOnceWith({
     database: props.database.name,
     schema: "public",
@@ -100,13 +113,21 @@ test("clears selected columns when switching tables", async () => {
   });
   render(<MarkSensitiveDataSheet {...props} />);
   await selectOption("common.table", "customers");
-  await selectOption("common.column", "email");
-  fireEvent.keyDown(screen.getByLabelText("common.column"), { key: "Escape" });
-  await selectOption("common.table", "orders");
-  expect(screen.getByLabelText("common.column").textContent).toBe(
-    "common.select"
+  await selectOption("settings.sensitive-data.columns-to-mask", "email");
+  fireEvent.keyDown(
+    screen.getByLabelText("settings.sensitive-data.columns-to-mask"),
+    { key: "Escape" }
   );
-  expect(screen.getByRole("button", { name: "common.save" })).toBeDisabled();
+  await selectOption("common.table", "orders");
+  expect(
+    screen.getByLabelText("settings.sensitive-data.columns-to-mask")
+      .textContent
+  ).toBe("common.select");
+  expect(
+    screen.getByRole("button", {
+      name: "settings.sensitive-data.apply-masking",
+    })
+  ).toBeDisabled();
 });
 
 test("defaults to the first schema without selecting a table or column", () => {
@@ -117,9 +138,99 @@ test("defaults to the first schema without selecting a table or column", () => {
     false
   );
   expect(screen.getByLabelText("common.table").textContent).toBe("common.select");
-  expect(screen.getByLabelText("common.column")).toHaveAttribute(
-    "aria-disabled", "true"
+  expect(
+    screen.getByLabelText("settings.sensitive-data.columns-to-mask")
+  ).toHaveAttribute("aria-disabled", "true");
+});
+
+test("describes the masking task with outcome-specific labels", () => {
+  render(<MarkSensitiveDataSheet {...props} />);
+
+  expect(
+    screen.getByText("settings.sensitive-data.mark-sensitive-data-description")
+  ).toBeTruthy();
+  expect(
+    screen.getByLabelText("settings.sensitive-data.columns-to-mask")
+  ).toBeTruthy();
+  expect(
+    screen.getByText("settings.sensitive-data.semantic-type-description")
+  ).toBeTruthy();
+  expect(
+    screen.getByRole("button", {
+      name: "settings.sensitive-data.apply-masking",
+    })
+  ).toBeTruthy();
+});
+
+test("renders the semantic type title and explains a custom masking effect", async () => {
+  const semanticType = create(SemanticTypeSetting_SemanticTypeSchema, {
+    id: "email",
+    title: "Email",
+    algorithm: create(AlgorithmSchema, {
+      mask: {
+        case: "fullMask",
+        value: { substitution: "*" },
+      },
+    }),
+  });
+  render(
+    <MarkSensitiveDataSheet
+      {...props}
+      semanticTypeList={[
+        ...getSemanticTemplateList(((key: string) => key) as never),
+        semanticType,
+      ]}
+    />
   );
+
+  const select = screen.getByLabelText(
+    "settings.sensitive-data.semantic-types.table.semantic-type"
+  );
+  expect(select.textContent).toContain(
+    "dynamic.settings.sensitive-data.semantic-types.template.bb-default.title"
+  );
+  expect(select.textContent).not.toContain("bb.default");
+
+  fireEvent.click(select);
+  const option = await screen.findByRole("option", { name: /Email/ });
+  expect(option.textContent).toContain(
+    "settings.sensitive-data.semantic-types.masking-effect"
+  );
+  expect(option.textContent).toContain(
+    "settings.sensitive-data.algorithms.full-mask.self"
+  );
+});
+
+test("explains the masking effect for built-in semantic types", async () => {
+  const semanticTypeList = getSemanticTemplateList(
+    ((key: string) => key) as never
+  );
+  render(
+    <MarkSensitiveDataSheet
+      {...props}
+      semanticTypeList={semanticTypeList}
+    />
+  );
+
+  const select = screen.getByLabelText(
+    "settings.sensitive-data.semantic-types.table.semantic-type"
+  );
+  fireEvent.click(select);
+
+  const defaultOption = await screen.findByRole("option", {
+    name: /dynamic\.settings\.sensitive-data\.semantic-types\.template\.bb-default\.title/,
+  });
+  expect(defaultOption.textContent).toContain(
+    "dynamic.settings.sensitive-data.semantic-types.template.bb-default.algorithm.description"
+  );
+  const partialOption = await screen.findByRole("option", {
+    name: /dynamic\.settings\.sensitive-data\.semantic-types\.template\.bb-default-partial\.title/,
+  });
+  const partialDescription = screen.getByText(
+    "dynamic.settings.sensitive-data.semantic-types.template.bb-default-partial.algorithm.description"
+  );
+  expect(partialDescription).toHaveClass("max-w-prose", "whitespace-normal");
+  expect(partialOption).toContainElement(partialDescription);
 });
 
 test("defaults when metadata arrives and preserves a manual selection until reopened", async () => {

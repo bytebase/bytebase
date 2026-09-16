@@ -375,3 +375,64 @@ func TestValidateExplainFormat(t *testing.T) {
 		})
 	}
 }
+
+// TestExplainGateRejectsSmuggledWrite locks the smuggle defense. An explain
+// request carries the bare statement and the driver prefixes EXPLAIN, so
+// "ANALYZE DELETE FROM t" — not valid SQL on its own — would become
+// EXPLAIN ANALYZE DELETE and execute the DELETE. validateExplainStatements wraps
+// each statement the way the driver does and refuses it unless read-only. Every
+// prefix engine must classify the wrapped smuggle as non-read-only (by verdict or
+// syntax error) so it never reaches the driver.
+//
+// The engine parsers are registered for the whole v1 test binary by blank imports
+// elsewhere in the package, so each ValidateSQLForEditor call returns that engine's
+// real verdict rather than the no-validator default.
+func TestExplainGateRejectsSmuggledWrite(t *testing.T) {
+	t.Parallel()
+	engines := []storepb.Engine{
+		storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE, storepb.Engine_TIDB, storepb.Engine_REDSHIFT,
+		storepb.Engine_COCKROACHDB, storepb.Engine_SNOWFLAKE, storepb.Engine_CLICKHOUSE,
+		storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_HIVE,
+		storepb.Engine_TRINO,
+	}
+	for _, engine := range engines {
+		t.Run(engine.String(), func(t *testing.T) {
+			t.Parallel()
+			instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
+			require.Error(t, validateExplainStatements(instance, "ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED),
+				"EXPLAIN ANALYZE DELETE must not pass the read-only gate")
+		})
+	}
+}
+
+// TestExplainGateAllowsPlans confirms the gate does not over-reject legitimate
+// plans. A plain EXPLAIN plans without executing, so a read or a write is allowed;
+// and because the driver splits a multi-statement request and prefixes EXPLAIN to
+// each statement (pg.go and siblings), the gate does the same with the same
+// per-engine splitter — a batch of plain writes is planned one at a time. A write
+// smuggled into a batch as EXPLAIN ANALYZE is still refused wherever it sits;
+// TestExplainGateRejectsSmuggledWrite is the single-statement sweep over every
+// engine.
+func TestExplainGateAllowsPlans(t *testing.T) {
+	t.Parallel()
+	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
+	// Plain single-statement plans, read or write, are allowed.
+	for _, stmt := range []string{"SELECT 1", "DELETE FROM t"} {
+		require.NoError(t, validateExplainStatements(pg, stmt, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), stmt)
+	}
+	// Engines that split on ';' plan each statement in its own non-executing EXPLAIN,
+	// so a batch of plain writes is allowed rather than over-rejected.
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_MYSQL} {
+		instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
+		require.NoErrorf(t, validateExplainStatements(instance, "DELETE FROM hello; DELETE FROM hello", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: batch of plain writes", engine)
+	}
+	// A write smuggled into a batch is refused wherever it sits — on engines that
+	// split it (pg, mysql) and on one whose splitter keeps it whole and validates
+	// the unwrapped tail (clickhouse).
+	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_CLICKHOUSE} {
+		instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
+		require.Errorf(t, validateExplainStatements(instance, "SELECT 1; ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle after a read", engine)
+		require.Errorf(t, validateExplainStatements(instance, "ANALYZE DELETE FROM t; SELECT 1", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle before a read", engine)
+	}
+}

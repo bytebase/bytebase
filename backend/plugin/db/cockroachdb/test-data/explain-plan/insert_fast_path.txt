@@ -1,0 +1,7 @@
+distribution: local
+vectorized: true
+
+• insert fast path
+  into: t2(id, c, d, grp, v)
+  auto commit
+  size: 5 columns, 2 rows

@@ -1,0 +1,48 @@
+name: Deploy API docs to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'proto/gen/grpc-doc/openapi.yaml'
+      - 'docs/api/**'
+      - '.github/workflows/deploy-api-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The buf plugin emits a placeholder info block; give the published spec a real title.
+      - name: Assemble site
+        run: |
+          mkdir -p out
+          cp docs/api/index.html docs/api/favicon.png out/
+          sed -e '1,5s/^  title: API$/  title: Bytebase API Reference/' \
+              -e '1,5s/^  description: API documentation for API$/  description: API reference for Bytebase. Every endpoint is served by your own Bytebase instance./' \
+              proto/gen/grpc-doc/openapi.yaml > out/openapi.yaml
+          head -5 out/openapi.yaml
+
+      # Create the Pages project on first run; a no-op once it exists.
+      - name: Ensure Cloudflare Pages project exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@3 pages project create bytebase-api --production-branch=main || true
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ./out --project-name=bytebase-api

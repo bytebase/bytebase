@@ -8,7 +8,7 @@ import {
   DataSourceExternalSecret_SecretType as SecretType,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { isIAMAuthentication } from "./authentication";
-import type { EditDataSource } from "./common";
+import { type EditDataSource, getDataSourceSecretValue } from "./common";
 
 export type ValidationErrors = Record<string, string>;
 
@@ -77,7 +77,14 @@ export function validateDataSource(
     errors.serviceName = "oracle-service";
   if (engine === Engine.DATABRICKS) {
     require("warehouseId", ds.warehouseId);
-    if (ds.pendingCreate) require("updatedToken", ds.updatedToken);
+  }
+  if (engine === Engine.DATABRICKS || engine === Engine.SNOWFLAKE) {
+    const key = getDataSourceSecretValue(ds, "authenticationPrivateKey");
+    if (key !== undefined) {
+      require(engine === Engine.DATABRICKS
+        ? "updatedToken"
+        : "authenticationPrivateKey", key);
+    }
   }
   if (engine === Engine.REDIS && ds.redisType === DataSource_RedisType.SENTINEL)
     require("masterName", ds.masterName);

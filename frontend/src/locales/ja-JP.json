@@ -444,6 +444,9 @@
     "search-for-more": "さらに検索",
     "search-no-result": "一致する結果が見つかりません",
     "search-results": "結果を検索",
+    "secret-input": {
+      "unchanged": "変更なし"
+    },
     "select": "選択してください",
     "select-all": "すべて選択",
     "selected": "選択済み",
@@ -474,6 +477,8 @@
     "tips": "プロンプトメッセージ",
     "title": "タイトル",
     "to": "終了",
+    "toggle-password-visibility": "パスワードの表示を切り替え",
+    "token": "トークン",
     "total": "合計",
     "total-n-items": "合計 {{n}} 件",
     "transfer": "移行",
@@ -626,11 +631,8 @@
     },
     "no-read-only-data-source": "読み取り専用データソースがありません",
     "private-key-passphrase": "秘密鍵のパスフレーズ",
-    "private-key-passphrase-placeholder": "秘密鍵が暗号化されていない場合は空のままにしてください",
     "private-key-passphrase-tip": "暗号化された秘密鍵のオプションパスフレーズ",
     "read-only": "読み取り専用",
-    "read-replica-host": "リードレプリカホスト",
-    "read-replica-port": "リードレプリカポート",
     "replica-set": "レプリカセット",
     "select-query-data-source": "クエリデータソースの選択",
     "snowflake-keypair-tip": "キーペア認証",
@@ -1205,6 +1207,7 @@
     },
     "instance-id": "インスタンスID",
     "instance-name": "@:common.instance@:instance.name",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance（任意）",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "KDC ホスト",
@@ -1223,7 +1226,6 @@
     "no-environment": "このインスタンスは環境にバインドされていません",
     "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
     "no-params-yet-add-above": "まだ構成されていません。\n上記のフォームを使用してパラメーターを追加します。",
-    "no-password": "パスワードがありません",
     "open-data-source": "このデータソースを開いて、何が必要か確認してください。",
     "parameter-name-placeholder": "パラメーター名",
     "parameter-value-placeholder": "パラメーター値",
@@ -1242,7 +1244,6 @@
       "google-iam": "Google Cloud SQL IAM",
       "password": "パスワード"
     },
-    "password-write-only": "YOUR_DB_PWD - 書き込み専用",
     "port": "ポート",
     "prepare-sample-instance-failed": "サンプルプロジェクトインスタンスの準備に失敗しました。",
     "preparing-sample-instance": "サンプルプロジェクトインスタンスを準備しています…",
@@ -1351,7 +1352,6 @@
     "syncing": "同期中 ...",
     "test-connection": "テスト接続",
     "testing-connection": "接続テスト中...",
-    "token-write-only": "YOUR_TOKEN - 書き込み専用",
     "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
     "unable-to-connect": "この設定では Bytebase から接続できませんでした。上のガイダンスを確認するか、そのまま続行して後で接続を更新してください。\n\n技術的な詳細: {{0}}",
     "use-sample-instance": "サンプルインスタンスを使用する（7日間利用可能）",
@@ -2954,6 +2954,7 @@
           "masking-type": "アルゴリズムの種類"
         }
       },
+      "apply-masking": "マスキングを適用",
       "classification": {
         "empty-classification": "「classification」フィールドが空です",
         "guide-classification": "「classification」は各カテゴリを ID でマッピングします。リーフカテゴリはレベル番号を参照する必要があり、親カテゴリはレベルを省略します。",
@@ -2964,6 +2965,7 @@
         "missing-classification": "「classification」フィールドがありません",
         "missing-levels": "「levels」フィールドがありません"
       },
+      "columns-to-mask": "マスキングするカラム",
       "global-rules": {
         "condition-order": "条件付きシーケンス",
         "delete-rule-tip": "このルールを削除しますか?",
@@ -2976,14 +2978,17 @@
       },
       "grant-access": "アクセスを許可する",
       "mark-sensitive-data": "機密データをマークする",
+      "mark-sensitive-data-description": "クエリ結果で値を非表示にするカラムを選択します。",
       "never-expires": "有効期限なし",
       "remove-sensitive-column-tips": "このデータ列を表示しますか？",
+      "semantic-type-description": "セマンティックタイプは同じ種類のデータを表すカラムをグループ化し、Bytebase が一貫したマスキングを適用できるようにします。",
       "semantic-types": {
         "error": {
           "no-changes-to-save": "保存する変更はありません",
           "title-required": "タイトルは必須です"
         },
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
+        "masking-effect": "マスキング効果: {{effect}}",
         "select": "セマンティックタイプの選択",
         "self": "セマンティックタイプ",
         "table": {

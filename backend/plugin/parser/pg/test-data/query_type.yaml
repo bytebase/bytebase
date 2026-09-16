@@ -590,3 +590,114 @@
     results: []
     sourcecolumns: []
     predicatecolumns: []
+- description: SELECT with a data-modifying CTE is DML
+  statement: WITH d AS (DELETE FROM t1 WHERE a = '1' RETURNING a) SELECT count(*) FROM d;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: EXPLAIN ANALYZE executes MERGE
+  statement: EXPLAIN ANALYZE MERGE INTO t1 USING t2 ON t1.a = t2.a WHEN NOT MATCHED THEN INSERT (a) VALUES (t2.a);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []
+- description: EXPLAIN ANALYZE executes a data-modifying CTE
+  statement: EXPLAIN ANALYZE WITH i AS (INSERT INTO t1 (a) VALUES ('1') RETURNING a) SELECT count(*) FROM i;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type": "text"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "type": "text"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+    predicatecolumns: []

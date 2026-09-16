@@ -98,6 +98,12 @@ func TestGitOpsCheck(t *testing.T) {
 				Version:   "002",
 				Statement: []byte(`CREATE INDEX idx_users_email ON users(email);`),
 			},
+			{
+				// Each file is checked against the database as it is, where users does not exist yet.
+				Path:      "migrations/003__normalize_emails.sql",
+				Version:   "003",
+				Statement: []byte(`UPDATE users SET email = lower(email);`),
+			},
 		},
 	}
 
@@ -112,17 +118,32 @@ func TestGitOpsCheck(t *testing.T) {
 	a.NoError(err)
 	a.NotNil(checkResp)
 	// The response contains results for each file-target combination
-	a.Len(checkResp.Msg.Results, 2) // 2 files x 1 target = 2 results
+	a.Len(checkResp.Msg.Results, 3) // 3 files x 1 target = 3 results
 
 	// Verify check results.
 	targetCount := make(map[string]int)
+	updateChecked := false
 	for _, result := range checkResp.Msg.Results {
 		targetCount[result.Target]++
-		// The check should complete successfully.
-		a.NotNil(result)
+		var estimateWarnings []*v1pb.Advice
+		for _, advice := range result.Advices {
+			if advice.Title == "Affected rows estimate is incomplete" {
+				estimateWarnings = append(estimateWarnings, advice)
+			}
+		}
+		if result.File != "migrations/003__normalize_emails.sql" {
+			a.Empty(estimateWarnings, result.File)
+			continue
+		}
+		// The UPDATE cannot be explained before users exists, which the check reports instead of failing.
+		updateChecked = true
+		a.Len(estimateWarnings, 1)
+		a.Equal(v1pb.Advice_WARNING, estimateWarnings[0].Status)
+		a.Contains(estimateWarnings[0].Content, "Affected rows could not be estimated for 1 of 1 DML statements")
 	}
-	// Should have 2 results for the single target (one for each file)
-	a.Equal(2, targetCount[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
+	a.True(updateChecked)
+	// Should have 3 results for the single target (one for each file)
+	a.Equal(3, targetCount[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
 
 	// Test 2: Check release against multiple targets (test and prod).
 	checkRespMulti, err := ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
@@ -135,17 +156,17 @@ func TestGitOpsCheck(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.NotNil(checkRespMulti)
-	// 2 files x 2 targets = 4 results
-	a.Len(checkRespMulti.Msg.Results, 4)
+	// 3 files x 2 targets = 6 results
+	a.Len(checkRespMulti.Msg.Results, 6)
 
 	// Verify both targets were checked.
 	checkedTargets := make(map[string]int)
 	for _, result := range checkRespMulti.Msg.Results {
 		checkedTargets[result.Target]++
 	}
-	// Each target should have 2 results (one for each file)
-	a.Equal(2, checkedTargets[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
-	a.Equal(2, checkedTargets[fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName)])
+	// Each target should have 3 results (one for each file)
+	a.Equal(3, checkedTargets[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
+	a.Equal(3, checkedTargets[fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName)])
 }
 
 func TestGitOpsCheckReleaseRiskLevel(t *testing.T) {

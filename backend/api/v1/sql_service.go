@@ -315,9 +315,18 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 
 	// Validate the request.
-	// New query ACL experience.
+	// Engines without the per-statement ACL rely on this read-only gate to refuse
+	// writes (they do not classify DML/DDL in the access check). New-ACL engines
+	// classify per statement instead.
 	if !request.Explain && !common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 		if err := validateQueryRequest(instance, statement); err != nil {
+			return nil, err
+		}
+	}
+	// EXPLAIN ANALYZE of a write executes it, so refuse an explain whose wrapped
+	// form is not read-only. See validateExplainStatements.
+	if request.Explain {
+		if err := validateExplainStatements(instance, statement, request.GetQueryOption().GetExplainFormat()); err != nil {
 			return nil, err
 		}
 	}
@@ -703,21 +712,24 @@ func queryRetry(
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
-		if optionalAccessCheck != nil {
-			// Check query access
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema, multiStatement); err != nil {
-				return nil, nil, time.Duration(0), err
-			}
-			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+	}
+	if optionalAccessCheck != nil {
+		// An EXPLAIN request leaves spans nil (GetQuerySpan runs only above), so
+		// accessCheckWithGrantedTargets takes its database-level branch and requires
+		// bb.sql.explain. A smuggled write (EXPLAIN ANALYZE of a write) is refused
+		// earlier, in the Query handler, before it reaches execution.
+		if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema, multiStatement); err != nil {
+			return nil, nil, time.Duration(0), err
 		}
-		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
-			if err != nil {
-				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
-			}
-			slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+		slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+	}
+	if !queryContext.Explain && !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		masker := NewQueryResultMasker(stores)
+		sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
+		if err != nil {
+			return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 		}
+		slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 	}
 
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
@@ -1435,8 +1447,9 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		return nil
 	}
 
-	// When spans is empty, it's an EXPLAIN query where GetQuerySpan is skipped (queryContext.Explain is true).
-	// Check at database level with EXPLAIN permission.
+	// No spans: either a read with no source columns (e.g. SELECT 1) or an EXPLAIN
+	// request (GetQuerySpan runs only for non-EXPLAIN). Check at the database
+	// level, with EXPLAIN permission for the latter.
 	if len(spans) == 0 {
 		perm := permission.SQLSelect
 		if isExplain {
@@ -2014,6 +2027,38 @@ func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_Explai
 		names = append(names, f.String())
 	}
 	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain format %s, supported formats: %s", engine, format, strings.Join(names, ", ")))
+}
+
+// validateExplainStatements refuses an explain request whose EXPLAIN-wrapped form
+// would execute a write. The driver splits a multi-statement request and prefixes
+// EXPLAIN to each statement (see pg.go and its siblings), so this validates the
+// same per-statement wrapped form: a smuggled "ANALYZE DELETE FROM t" becomes
+// EXPLAIN ANALYZE DELETE and is rejected before it runs. Engines whose EXPLAIN is
+// not a statement prefix (Oracle EXPLAIN PLAN, SQL Server SHOWPLAN, Spanner/BigQuery
+// plan APIs) report ok=false from db.ExplainStatement and run their own plan API,
+// which does not execute the statement.
+func validateExplainStatements(instance *store.InstanceMessage, statement string, format v1pb.QueryOption_ExplainFormat) error {
+	engine := instance.Metadata.GetEngine()
+	statements, err := parserbase.SplitMultiSQL(engine, statement)
+	if err != nil {
+		// No splitter for this engine: validate the whole statement wrapped once.
+		// Execution goes through the same splitter, so a request that fails to split
+		// here fails there too rather than executing.
+		statements = []parserbase.Statement{{Text: statement}}
+	}
+	for _, stmt := range statements {
+		if stmt.Empty {
+			continue
+		}
+		wrapped, ok := db.ExplainStatement(engine, stmt.Text, format)
+		if !ok {
+			return nil
+		}
+		if err := validateQueryRequest(instance, wrapped); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {

@@ -22,6 +22,8 @@ const stubUIStateSlice = (): UIStateSlice => ({
   highlightAccessGrantName: undefined,
   isShowingCode: false,
   aiPanelSize: 0.3,
+  resultPanelSize: 0.4,
+  resultPanelMaximized: false,
   linkedQueryHistory: undefined,
   linkedQueryHistoryTabId: undefined,
   linkedQueryHistoryBaseline: undefined,
@@ -33,6 +35,8 @@ const stubUIStateSlice = (): UIStateSlice => ({
   setHighlightAccessGrantName: vi.fn(),
   setIsShowingCode: vi.fn(),
   handleEditorPanelResize: vi.fn(),
+  setResultPanelMaximized: vi.fn(),
+  handleResultPanelResize: vi.fn(),
 });
 
 const stubQueryHistorySlice = (): QueryHistorySlice => ({
@@ -177,6 +181,88 @@ describe("saved query save slice — maybeUpdateSavedQuery", () => {
       instance: "instances/cosmos",
       database: "instances/cosmos/databases/grs",
       table: "SUPPORDERS_VIS.items",
+    });
+  });
+});
+
+describe("saved query save slice — createSavedQuery", () => {
+  test("keeps a newer database selection after a first save response", async () => {
+    const store = makeStore();
+    const tab = getSQLEditorTabsState().addTab({
+      connection: {
+        instance: "instances/inst2",
+        database: "instances/inst2/databases/db2",
+      },
+      statement: "SELECT 1",
+      status: "SAVING",
+    });
+    mocks.savedQueryStore.createSavedQuery.mockResolvedValue({
+      name: "projects/default/savedQueries/query1",
+    });
+
+    await store.getState().createSavedQuery({
+      tabId: tab.id,
+      database: "instances/inst1/databases/db1",
+      statement: tab.statement,
+    });
+
+    expect(getSQLEditorTabsState().tabsById.get(tab.id)).toMatchObject({
+      connection: {
+        instance: "instances/inst2",
+        database: "instances/inst2/databases/db2",
+      },
+      status: "DIRTY",
+    });
+  });
+
+  test("preserves the selected Cosmos DB container when first saving a local draft", async () => {
+    const store = makeStore();
+    const tab = getSQLEditorTabsState().addTab({
+      connection: {
+        instance: "instances/cosmos",
+        database: "instances/cosmos/databases/grs",
+        table: "SUPPORDERS_VIS.items",
+      },
+      statement: "select * from SUPPORDERS_VIS.items",
+      status: "SAVING",
+    });
+    mocks.savedQueryStore.createSavedQuery.mockResolvedValue({
+      name: "projects/default/savedQueries/cosmos-sheet",
+    });
+
+    await store.getState().createSavedQuery({
+      tabId: tab.id,
+      database: tab.connection.database,
+      statement: tab.statement,
+    });
+
+    expect(getSQLEditorTabsState().tabsById.get(tab.id)?.connection).toEqual({
+      instance: "instances/cosmos",
+      database: "instances/cosmos/databases/grs",
+      table: "SUPPORDERS_VIS.items",
+    });
+  });
+
+  test("keeps newer local SQL when an earlier create response arrives", async () => {
+    const store = makeStore();
+    const tab = getSQLEditorTabsState().addTab({
+      statement: "SELECT newer",
+      status: "SAVING",
+    });
+    mocks.savedQueryStore.createSavedQuery.mockResolvedValue({
+      name: "projects/default/savedQueries/query1",
+    });
+
+    await store.getState().createSavedQuery({
+      tabId: tab.id,
+      database: "instances/inst1/databases/db1",
+      statement: "SELECT earlier",
+    });
+
+    expect(getSQLEditorTabsState().tabsById.get(tab.id)).toMatchObject({
+      statement: "SELECT newer",
+      status: "DIRTY",
+      savedQuery: "projects/default/savedQueries/query1",
     });
   });
 });

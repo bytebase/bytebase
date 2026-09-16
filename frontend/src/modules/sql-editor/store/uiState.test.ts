@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { create, type StoreApi } from "zustand";
-import { STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE } from "@/utils/storage-keys";
+import {
+  STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE,
+  STORAGE_KEY_SQL_EDITOR_RESULT_PANEL_SIZE,
+} from "@/utils/storage-keys";
 import type {
   QueryHistorySlice,
   SavedQuerySaveSlice,
@@ -115,6 +118,77 @@ describe("sqlEditor uiState slice", () => {
     expect(s.highlightAccessGrantName).toBeUndefined();
     expect(s.isShowingCode).toBe(false);
     expect(s.aiPanelSize).toBe(0.3);
+    expect(s.resultPanelSize).toBe(0.4);
+    expect(s.resultPanelMaximized).toBe(false);
+  });
+
+  test("resultPanelSize reads the persisted height", async () => {
+    localStorage.setItem(
+      STORAGE_KEY_SQL_EDITOR_RESULT_PANEL_SIZE,
+      JSON.stringify(0.65)
+    );
+    const useStore = await makeStore();
+    expect(useStore.getState().resultPanelSize).toBe(0.65);
+  });
+
+  test("resultPanelSize clamps a persisted height to the drag range", async () => {
+    localStorage.setItem(
+      STORAGE_KEY_SQL_EDITOR_RESULT_PANEL_SIZE,
+      JSON.stringify(0.95)
+    );
+    const useStore = await makeStore();
+    expect(useStore.getState().resultPanelSize).toBe(0.8);
+  });
+
+  test("handleResultPanelResize persists the height a drag settles on", async () => {
+    const useStore = await makeStore();
+    vi.useFakeTimers();
+    try {
+      // A drag reports every frame; only the last size reaches storage.
+      for (const size of [0.5, 0.52, 0.55]) {
+        useStore.getState().handleResultPanelResize(size);
+      }
+      expect(useStore.getState().resultPanelSize).toBe(0.55);
+      expect(
+        localStorage.getItem(STORAGE_KEY_SQL_EDITOR_RESULT_PANEL_SIZE)
+      ).toBeNull();
+
+      vi.runAllTimers();
+      expect(
+        localStorage.getItem(STORAGE_KEY_SQL_EDITOR_RESULT_PANEL_SIZE)
+      ).toBe(JSON.stringify(0.55));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("handleResultPanelResize ignores a maximized or collapsed pane", async () => {
+    const useStore = await makeStore();
+    vi.useFakeTimers();
+    try {
+      useStore.getState().handleResultPanelResize(0.55);
+      for (const size of [1, 0, Number.NaN]) {
+        useStore.getState().handleResultPanelResize(size);
+        expect(useStore.getState().resultPanelSize).toBe(0.55);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("setResultPanelMaximized toggles without touching the remembered height", async () => {
+    const useStore = await makeStore();
+    vi.useFakeTimers();
+    try {
+      useStore.getState().handleResultPanelResize(0.55);
+      useStore.getState().setResultPanelMaximized(true);
+      expect(useStore.getState().resultPanelMaximized).toBe(true);
+      expect(useStore.getState().resultPanelSize).toBe(0.55);
+      useStore.getState().setResultPanelMaximized(false);
+      expect(useStore.getState().resultPanelMaximized).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("selectEditorPanelSize returns full-width when AI panel is hidden", async () => {

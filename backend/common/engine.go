@@ -246,7 +246,8 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		storepb.Engine_ORACLE,
 		storepb.Engine_MSSQL,
 		storepb.Engine_MARIADB,
-		storepb.Engine_REDSHIFT:
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_COCKROACHDB:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
@@ -259,7 +260,6 @@ func EngineSupportStatementReport(e storepb.Engine) bool {
 		storepb.Engine_BIGQUERY,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
-		storepb.Engine_COCKROACHDB,
 		storepb.Engine_DORIS,
 		storepb.Engine_DYNAMODB,
 		storepb.Engine_ELASTICSEARCH,

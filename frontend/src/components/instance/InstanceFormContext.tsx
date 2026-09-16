@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { SecretInputProvider } from "@/components/SecretInput";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types";
@@ -45,7 +46,11 @@ import {
 } from "./common";
 import { effectivePortForEngine } from "./constants";
 import { hasInstancePermission } from "./permission";
-import { type InstanceSpecs, useInstanceSpecs } from "./specs";
+import {
+  hasConnectionDatabase,
+  type InstanceSpecs,
+  useInstanceSpecs,
+} from "./specs";
 import { type ValidationErrors, validateDataSource } from "./validation";
 
 export type LocalState = {
@@ -303,6 +308,7 @@ export function InstanceFormProvider({
         omit(
           edit,
           "pendingCreate",
+          "updatedSecretFields",
           "updatedPassword",
           "useEmptyPassword",
           "updatedMasterPassword",
@@ -323,7 +329,7 @@ export function InstanceFormProvider({
         ds.externalSecret = undefined;
       }
       ds.port = effectivePortForEngine(engine, ds.port, ds.srv);
-      if (!specs.showDatabase) ds.database = "";
+      if (!hasConnectionDatabase(engine, ds.type)) ds.database = "";
       if (engine !== Engine.ORACLE) {
         ds.sid = "";
         ds.serviceName = "";
@@ -689,7 +695,9 @@ export function InstanceFormProvider({
 
   return (
     <InstanceFormCtx.Provider value={value}>
-      {children}
+      <SecretInputProvider resetKey={dataSourceResetEvent}>
+        {children}
+      </SecretInputProvider>
       <FeatureModal
         open={!!missingFeature}
         feature={missingFeature}

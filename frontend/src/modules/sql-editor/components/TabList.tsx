@@ -30,15 +30,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { tabListEvents } from "@/modules/sql-editor/model/TabList/events";
-import { useSQLEditorStore } from "@/modules/sql-editor/store";
-import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import {
   getSQLEditorTabsState,
   useOpenTabList,
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
-import { canCreateSavedQueryInProject } from "@/utils";
 import { TabContextMenu, type TabContextMenuHandle } from "./TabContextMenu";
 import { TabItem } from "./TabItem/TabItem";
 
@@ -61,8 +58,6 @@ type PendingClose = {
  */
 export function TabList() {
   const { t } = useTranslation();
-  const createSavedQuery = useSQLEditorStore((s) => s.createSavedQuery);
-  const project = useSQLEditorEditorState((s) => s.project);
 
   // Zustand's selector subscribes to in-place tab mutations because
   // `updateTab` reassigns / triggers an immer produce on `tabsById`,
@@ -158,18 +153,12 @@ export function TabList() {
     [confirmCloseUnsaved, recalculateScrollState]
   );
 
-  const handleAddTab = async () => {
+  const handleAddTab = () => {
     if (loading) return;
     setLoading(true);
     try {
-      // A new tab is normally backed by a saved query straight away. Without
-      // the create permission that request would fail, so open a local draft
-      // instead -- the editor keeps working, nothing is persisted.
-      if (!canCreateSavedQueryInProject(project)) {
-        getSQLEditorTabsState().addTab();
-      } else {
-        await createSavedQuery({});
-      }
+      // A blank tab stays local until auto-save sees SQL content.
+      getSQLEditorTabsState().addTab();
       requestAnimationFrame(() => {
         const el = scrollRef.current;
         if (el) el.scrollTo(el.scrollWidth, 0);

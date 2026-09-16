@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControlGroup,
   FormControlRow,
@@ -12,7 +11,6 @@ import {
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -31,19 +29,22 @@ import {
   DataSourceExternalSecret_SecretType,
   DataSourceExternalSecret_TokenType,
   DataSourceExternalSecretSchema,
-  DataSourceType,
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import {
-  PlanFeature,
-  PlanType,
-} from "@/types/proto-es/v1/subscription_service_pb";
+import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { onlyAllowNumber } from "@/utils";
-import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import { CredentialSourceForm } from "./CredentialSourceForm";
-import type { EditDataSource, TlsUpdateState } from "./common";
-import { invalidateSourceDrafts } from "./data-source-drafts";
+import {
+  type EditDataSource,
+  getDataSourceSecretValue,
+  type TlsUpdateState,
+  updateDataSourceSecret,
+} from "./common";
+import {
+  deactivateExternalSecret,
+  invalidateSourceDrafts,
+} from "./data-source-drafts";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
 import { SshConnectionForm } from "./SshConnectionForm";
@@ -66,6 +67,7 @@ import {
 import {
   ValidationField as FormField,
   ValidationInput as Input,
+  ValidationSecretInput as SecretInput,
   ValidationProvider,
 } from "./ValidationField";
 
@@ -146,44 +148,19 @@ export function RedisSentinelFields({
         />
       </FormField>
       <FormField title={t("instance.master-password")}>
-        <div>
-          {!isCreating && allowUsingEmptyPassword && (
-            <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
-              <Checkbox
-                checked={dataSource.useEmptyMasterPassword ?? false}
-                disabled={!allowEdit}
-                onCheckedChange={(checked) => {
-                  update({
-                    useEmptyMasterPassword: checked,
-                    updatedMasterPassword: checked
-                      ? ""
-                      : dataSource.updatedMasterPassword,
-                  });
-                }}
-              />
-              {t("instance.no-password")}
-            </label>
-          )}
-          <Input
-            type="password"
-            className="w-full"
-            autoComplete="off"
-            placeholder={
-              dataSource.useEmptyMasterPassword
-                ? t("instance.no-password")
-                : t("instance.password-write-only")
-            }
-            disabled={!allowEdit || !!dataSource.useEmptyMasterPassword}
-            value={
-              dataSource.useEmptyMasterPassword
-                ? ""
-                : dataSource.updatedMasterPassword
-            }
-            onChange={(e) =>
-              update({ updatedMasterPassword: e.target.value.trim() })
-            }
-          />
-        </div>
+        <SecretInput
+          resetKey={dataSource.id}
+          aria-label={t("instance.master-password")}
+          value={getDataSourceSecretValue(dataSource, "masterPassword")}
+          isCreating={isCreating || dataSource.pendingCreate}
+          disabled={!allowEdit}
+          allowEmpty={allowUsingEmptyPassword}
+          onValueChange={(value) =>
+            onDataSourceChange(
+              updateDataSourceSecret(dataSource, "masterPassword", value)
+            )
+          }
+        />
       </FormField>
     </>
   );
@@ -209,9 +186,6 @@ export function DataSourceForm({
     isCreating,
     allowEdit,
     basicInfo,
-    adminDataSource,
-    hasReadonlyReplicaFeature,
-    setMissingFeature,
     hideAdvancedFeatures,
     needsKeytabResupply,
     dataSourceResetEvent,
@@ -223,8 +197,6 @@ export function DataSourceForm({
     showSSH,
     allowUsingEmptyPassword,
     showAuthenticationDatabase,
-    hasReadonlyReplicaHost,
-    hasReadonlyReplicaPort,
     hasExtraParameters,
   } = specs;
 
@@ -330,23 +302,6 @@ export function DataSourceForm({
       ? "KERBEROS"
       : "PASSWORD";
 
-  const onHiveAuthenticationChange = (val: "KERBEROS" | "PASSWORD") => {
-    if (val === "KERBEROS") {
-      update({
-        saslConfig: create(SASLConfigSchema, {
-          mechanism: {
-            case: "krbConfig",
-            value: create(KerberosConfigSchema, {
-              kdcTransportProtocol: "tcp",
-            }),
-          },
-        }),
-      });
-    } else {
-      update({ saslConfig: undefined });
-    }
-  };
-
   const supportedAuthenticationTypes = useMemo(() => {
     switch (basicInfo.engine) {
       case Engine.COSMOSDB:
@@ -386,7 +341,8 @@ export function DataSourceForm({
             label: t("instance.password-type.google-iam"),
           },
         ];
-      default:
+      case Engine.MYSQL:
+      case Engine.POSTGRES:
         return [
           {
             value: DataSource_AuthenticationType.PASSWORD,
@@ -399,6 +355,13 @@ export function DataSourceForm({
           {
             value: DataSource_AuthenticationType.AWS_RDS_IAM,
             label: t("instance.password-type.aws-iam"),
+          },
+        ];
+      default:
+        return [
+          {
+            value: DataSource_AuthenticationType.PASSWORD,
+            label: t("instance.password-type.password"),
           },
         ];
     }
@@ -439,6 +402,7 @@ export function DataSourceForm({
     const ds = {
       ...dataSource,
       authenticationType: DataSource_AuthenticationType.PASSWORD,
+      ...(basicInfo.engine === Engine.HIVE ? { saslConfig: undefined } : {}),
     };
     const drafts =
       sourceDraftsRef.current.get(dataSource.id) ??
@@ -532,45 +496,6 @@ export function DataSourceForm({
     onDataSourceChange(ds);
   };
 
-  const toggleUseEmptyPassword = (on: boolean) => {
-    update({
-      useEmptyPassword: on,
-      updatedPassword: on ? "" : dataSource.updatedPassword,
-    });
-  };
-
-  const handleHostInput = (value: string) => {
-    if (dataSource.type === DataSourceType.READ_ONLY) {
-      if (!hasReadonlyReplicaFeature) {
-        if (dataSource.host || dataSource.port) {
-          update({
-            host: adminDataSource.host,
-            port: adminDataSource.port,
-          });
-          setMissingFeature(PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION);
-          return;
-        }
-      }
-    }
-    update({ host: value.trim() });
-  };
-
-  const handlePortInput = (value: string) => {
-    if (dataSource.type === DataSourceType.READ_ONLY) {
-      if (!hasReadonlyReplicaFeature) {
-        if (dataSource.host || dataSource.port) {
-          update({
-            host: adminDataSource.host,
-            port: adminDataSource.port,
-          });
-          setMissingFeature(PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION);
-          return;
-        }
-      }
-    }
-    update({ port: value.trim() });
-  };
-
   const handleSSHChange = (
     value: Partial<{
       sshHost: string;
@@ -580,7 +505,12 @@ export function DataSourceForm({
       sshPrivateKey: string;
     }>
   ) => {
-    update(value);
+    let next = { ...dataSource, ...value };
+    for (const field of ["sshPassword", "sshPrivateKey"] as const) {
+      if (value[field] !== undefined)
+        next = updateDataSourceSecret(next, field, value[field]);
+    }
+    onDataSourceChange(next);
   };
 
   const addNewParameter = () => {
@@ -656,13 +586,6 @@ export function DataSourceForm({
     basicInfo.engine !== Engine.BIGQUERY &&
     basicInfo.engine !== Engine.DYNAMODB &&
     basicInfo.engine !== Engine.DATABRICKS;
-
-  const showAuthTypeRadio =
-    basicInfo.engine === Engine.MYSQL ||
-    basicInfo.engine === Engine.POSTGRES ||
-    basicInfo.engine === Engine.COSMOSDB ||
-    basicInfo.engine === Engine.MSSQL ||
-    basicInfo.engine === Engine.ELASTICSEARCH;
 
   const isPasswordAuth =
     dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD;
@@ -785,21 +708,6 @@ export function DataSourceForm({
     ),
   }));
 
-  const passwordSourceControl = !showAuthTypeRadio && !hideAdvancedFeatures && (
-    <SegmentedControl
-      ariaLabel={t("instance.password-source.self")}
-      value={`secret:${passwordType}`}
-      onValueChange={(value) =>
-        changeSecretType(
-          Number(value.split(":")[1]) as DataSourceExternalSecret_SecretType
-        )
-      }
-      options={secretOptions}
-      disabled={!allowEdit}
-      size="sm"
-    />
-  );
-
   const authenticationOptions = supportedAuthenticationTypes.flatMap((item) =>
     item.value === DataSource_AuthenticationType.PASSWORD
       ? hideAdvancedFeatures
@@ -807,11 +715,20 @@ export function DataSourceForm({
         : secretOptions
       : [{ value: `auth:${item.value}`, label: <>{item.label}</> }]
   );
-  const authenticationValue = isPasswordAuth
-    ? `secret:${passwordType}`
-    : `auth:${dataSource.authenticationType}`;
+  if (basicInfo.engine === Engine.HIVE) {
+    authenticationOptions.push({
+      value: "sasl:kerberos",
+      label: <>{t("instance.kerberos")}</>,
+    });
+  }
+  const authenticationValue =
+    basicInfo.engine === Engine.HIVE && hiveAuthentication === "KERBEROS"
+      ? "sasl:kerberos"
+      : isPasswordAuth
+        ? `secret:${passwordType}`
+        : `auth:${dataSource.authenticationType}`;
 
-  const authenticationTypeControl = showAuthTypeRadio && (
+  const authenticationTypeControl = showMainFields && (
     <FormField
       title={t("instance.authentication")}
       className="sm:col-span-3 sm:col-start-1"
@@ -825,6 +742,18 @@ export function DataSourceForm({
             changeSecretType(
               Number(type) as DataSourceExternalSecret_SecretType
             );
+          } else if (kind === "sasl") {
+            onDataSourceChange({
+              ...deactivateExternalSecret(dataSource, sourceDraftsRef.current),
+              saslConfig: create(SASLConfigSchema, {
+                mechanism: {
+                  case: "krbConfig",
+                  value: create(KerberosConfigSchema, {
+                    kdcTransportProtocol: "tcp",
+                  }),
+                },
+              }),
+            });
           } else {
             update({
               authenticationType: Number(type) as DataSource_AuthenticationType,
@@ -869,39 +798,6 @@ export function DataSourceForm({
               {showMainFields && (
                 <>
                   {!hideAuthentication && authenticationTypeControl}
-
-                  {/* Create data source example (edit mode only) */}
-                  {!isCreating && (
-                    <CreateDataSourceExample
-                      className="sm:col-span-3 border-none"
-                      createInstanceFlag={false}
-                      engine={basicInfo.engine}
-                      dataSourceType={dataSource.type}
-                      authenticationType={dataSource.authenticationType}
-                    />
-                  )}
-
-                  {/* Hive authentication */}
-                  {basicInfo.engine === Engine.HIVE && (
-                    <div className="sm:col-span-3 sm:col-start-1">
-                      <RadioGroup
-                        className="textlabel gap-x-4"
-                        value={hiveAuthentication}
-                        onValueChange={(value) =>
-                          onHiveAuthenticationChange(
-                            value as typeof hiveAuthentication
-                          )
-                        }
-                      >
-                        <RadioGroupItem value="PASSWORD" disabled={!allowEdit}>
-                          Plain Password
-                        </RadioGroupItem>
-                        <RadioGroupItem value="KERBEROS" disabled={!allowEdit}>
-                          Kerberos
-                        </RadioGroupItem>
-                      </RadioGroup>
-                    </div>
-                  )}
 
                   {/* Kerberos config */}
                   {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
@@ -1241,51 +1137,37 @@ export function DataSourceForm({
                           DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED && (
                           <FormField
                             title={<>{t("common.password")}</>}
-                            description={t(
-                              "instance.password-source.stored-in-bytebase"
-                            )}
+                            description={
+                              !hideAdvancedFeatures
+                                ? t(
+                                    "instance.password-source.stored-in-bytebase"
+                                  )
+                                : undefined
+                            }
                           >
-                            <div>
-                              {!isCreating && allowUsingEmptyPassword && (
-                                <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">
-                                  <Checkbox
-                                    checked={
-                                      dataSource.useEmptyPassword ?? false
-                                    }
-                                    disabled={!allowEdit}
-                                    onCheckedChange={(checked) =>
-                                      toggleUseEmptyPassword(checked)
-                                    }
-                                  />
-                                  {t("instance.no-password")}
-                                </label>
-                              )}
-                              <div className="flex flex-col gap-2">
-                                {passwordSourceControl}
-                                <Input
-                                  type="password"
-                                  className="min-w-40 flex-1"
-                                  autoComplete="off"
-                                  placeholder={
-                                    dataSource.useEmptyPassword
-                                      ? t("instance.no-password")
-                                      : t("instance.password-write-only")
-                                  }
-                                  disabled={
-                                    !allowEdit || !!dataSource.useEmptyPassword
-                                  }
-                                  value={
-                                    dataSource.useEmptyPassword
-                                      ? ""
-                                      : dataSource.updatedPassword
-                                  }
-                                  onChange={(e) =>
-                                    update({
-                                      updatedPassword: e.target.value.trim(),
-                                    })
-                                  }
-                                />
-                              </div>
+                            <div className="flex flex-col gap-2">
+                              <SecretInput
+                                resetKey={dataSource.id}
+                                aria-label={t("common.password")}
+                                value={getDataSourceSecretValue(
+                                  dataSource,
+                                  "password"
+                                )}
+                                isCreating={
+                                  isCreating || dataSource.pendingCreate
+                                }
+                                disabled={!allowEdit}
+                                allowEmpty={allowUsingEmptyPassword}
+                                onValueChange={(value) =>
+                                  onDataSourceChange(
+                                    updateDataSourceSecret(
+                                      dataSource,
+                                      "password",
+                                      value
+                                    )
+                                  )
+                                }
+                              />
                             </div>
                           </FormField>
                         )}
@@ -1308,7 +1190,6 @@ export function DataSourceForm({
                                   />
                                 }
                               >
-                                {passwordSourceControl}
                                 <ResponsiveFormLayout className="mt-2">
                                   <fieldset
                                     className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
@@ -1988,6 +1869,7 @@ export function DataSourceForm({
               {basicInfo.engine === Engine.SNOWFLAKE && (
                 <>
                   <FormField
+                    validationField="authenticationPrivateKey"
                     className="sm:col-span-3 sm:col-start-1"
                     title={<>{t("data-source.ssh.private-key")}</>}
                   >
@@ -2000,13 +1882,25 @@ export function DataSourceForm({
                         className="text-sm text-accent"
                       />
                     </div>
-                    <textarea
-                      value={dataSource.authenticationPrivateKey ?? ""}
+                    <SecretInput
+                      resetKey={dataSource.id}
+                      aria-label={t("data-source.ssh.private-key")}
+                      value={getDataSourceSecretValue(
+                        dataSource,
+                        "authenticationPrivateKey"
+                      )}
+                      isCreating={isCreating || dataSource.pendingCreate}
                       disabled={!allowEdit}
-                      className="w-full h-32 whitespace-pre-wrap rounded-sm border border-control-border p-2 text-sm font-mono"
-                      placeholder={`-----BEGIN PRIVATE KEY-----\nMIIEvQ...\n-----END PRIVATE KEY-----`}
-                      onChange={(e) =>
-                        update({ authenticationPrivateKey: e.target.value })
+                      multiline
+                      allowEmpty={false}
+                      onValueChange={(value) =>
+                        onDataSourceChange(
+                          updateDataSourceSecret(
+                            dataSource,
+                            "authenticationPrivateKey",
+                            value
+                          )
+                        )
                       }
                     />
                   </FormField>
@@ -2017,20 +1911,23 @@ export function DataSourceForm({
                       <>{t("data-source.private-key-passphrase-tip")}</>
                     }
                   >
-                    <Input
-                      value={
-                        dataSource.authenticationPrivateKeyPassphrase ?? ""
-                      }
-                      type="password"
-                      className="w-full"
-                      disabled={!allowEdit}
-                      placeholder={t(
-                        "data-source.private-key-passphrase-placeholder"
+                    <SecretInput
+                      resetKey={dataSource.id}
+                      aria-label={t("data-source.private-key-passphrase")}
+                      value={getDataSourceSecretValue(
+                        dataSource,
+                        "authenticationPrivateKeyPassphrase"
                       )}
-                      onChange={(e) =>
-                        update({
-                          authenticationPrivateKeyPassphrase: e.target.value,
-                        })
+                      isCreating={isCreating || dataSource.pendingCreate}
+                      disabled={!allowEdit}
+                      onValueChange={(value) =>
+                        onDataSourceChange(
+                          updateDataSourceSecret(
+                            dataSource,
+                            "authenticationPrivateKeyPassphrase",
+                            value
+                          )
+                        )
                       }
                     />
                   </FormField>
@@ -2058,23 +1955,29 @@ export function DataSourceForm({
                     validationField="updatedToken"
                     title={
                       <>
-                        Token <span className="text-error">*</span>
+                        {t("common.token")}{" "}
+                        <span className="text-error">*</span>
                       </>
                     }
                   >
-                    <Input
-                      type="password"
-                      value={dataSource.updatedToken}
-                      className="w-full"
-                      autoComplete="off"
+                    <SecretInput
+                      resetKey={dataSource.id}
+                      aria-label={t("common.token")}
+                      value={getDataSourceSecretValue(
+                        dataSource,
+                        "authenticationPrivateKey"
+                      )}
+                      isCreating={isCreating || dataSource.pendingCreate}
                       disabled={!allowEdit}
-                      placeholder={
-                        isCreating
-                          ? "personal access token"
-                          : t("instance.token-write-only")
-                      }
-                      onChange={(e) =>
-                        update({ updatedToken: e.target.value.trim() })
+                      allowEmpty={false}
+                      onValueChange={(value) =>
+                        onDataSourceChange(
+                          updateDataSourceSecret(
+                            dataSource,
+                            "authenticationPrivateKey",
+                            value
+                          )
+                        )
                       }
                     />
                   </FormField>
@@ -2101,49 +2004,6 @@ export function DataSourceForm({
                   />
                 </FormField>
               )}
-
-              {/* Read-only replica host/port */}
-              {dataSource.type === DataSourceType.READ_ONLY &&
-                (hasReadonlyReplicaHost || hasReadonlyReplicaPort) && (
-                  <>
-                    {hasReadonlyReplicaHost && (
-                      <FormField
-                        validationField="host"
-                        className="sm:col-span-3 sm:col-start-1"
-                        title={<>{t("data-source.read-replica-host")}</>}
-                      >
-                        <Input
-                          className="w-full"
-                          autoComplete="off"
-                          value={dataSource.host}
-                          disabled={!allowEdit}
-                          onChange={(e) => handleHostInput(e.target.value)}
-                        />
-                      </FormField>
-                    )}
-                    {hasReadonlyReplicaPort && (
-                      <FormField
-                        className="sm:col-span-3 sm:col-start-1"
-                        title={<>{t("data-source.read-replica-port")}</>}
-                      >
-                        <Input
-                          className="w-full"
-                          autoComplete="off"
-                          value={dataSource.port}
-                          disabled={!allowEdit}
-                          onChange={(e) => {
-                            if (
-                              e.target.value &&
-                              !onlyAllowNumber(e.target.value)
-                            )
-                              return;
-                            handlePortInput(e.target.value);
-                          }}
-                        />
-                      </FormField>
-                    )}
-                  </>
-                )}
 
               {/* Database field */}
               {showDatabase && (
@@ -2299,6 +2159,7 @@ export function DataSourceForm({
           {!hideAdvancedFeatures && showSSH && isPasswordAuth && (
             <div className="sm:col-span-3 sm:col-start-1">
               <SshConnectionForm
+                key={dataSource.id}
                 title={
                   <span className="flex flex-row items-center gap-x-1">
                     {t("data-source.ssh-connection")}
@@ -2317,6 +2178,17 @@ export function DataSourceForm({
                   </span>
                 }
                 value={dataSource}
+                isCreating={isCreating || dataSource.pendingCreate}
+                secretValues={{
+                  sshPassword: getDataSourceSecretValue(
+                    dataSource,
+                    "sshPassword"
+                  ),
+                  sshPrivateKey: getDataSourceSecretValue(
+                    dataSource,
+                    "sshPrivateKey"
+                  ),
+                }}
                 instance={instance}
                 disabled={!allowEdit}
                 onChange={handleSSHChange}
