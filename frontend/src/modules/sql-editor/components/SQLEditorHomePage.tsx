@@ -98,6 +98,9 @@ export function SQLEditorHomePage() {
   const collapseSidebar = resultPanelMaximized && resultPanelMounted;
 
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
+  // `isNarrowWindow` is a dependency because the panel it drives only exists on
+  // the desktop layout: widening the window past the breakpoint mounts a fresh
+  // panel that still has to be collapsed for a pane maximized while narrow.
   useLayoutEffect(() => {
     const panel = sidebarPanelRef.current;
     if (!panel) return;
@@ -106,7 +109,7 @@ export function SQLEditorHomePage() {
     } else {
       panel.expand();
     }
-  }, [collapseSidebar]);
+  }, [collapseSidebar, isNarrowWindow]);
 
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 

@@ -9,6 +9,8 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   setPendingInsertAtCaret: vi.fn(),
   state: { resultPanelMaximized: false, resultPanelMounted: false },
+  collapse: vi.fn(),
+  expand: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -20,9 +22,18 @@ vi.mock("react-resizable-panels", () => ({
   Group: ({ children }: { children: ReactElement | ReactElement[] }) => (
     <div>{children}</div>
   ),
-  Panel: ({ children }: { children: ReactElement | ReactElement[] }) => (
-    <div>{children}</div>
-  ),
+  Panel: ({
+    children,
+    panelRef,
+  }: {
+    children: ReactElement | ReactElement[];
+    panelRef?: { current: unknown };
+  }) => {
+    if (panelRef) {
+      panelRef.current = { collapse: mocks.collapse, expand: mocks.expand };
+    }
+    return <div>{children}</div>;
+  },
   Separator: () => <div />,
 }));
 
@@ -144,6 +155,8 @@ beforeEach(() => {
   setWindowWidth(1440);
   mocks.state.resultPanelMaximized = false;
   mocks.state.resultPanelMounted = false;
+  mocks.collapse.mockClear();
+  mocks.expand.mockClear();
 });
 
 afterEach(() => {
@@ -188,5 +201,21 @@ describe("SQLEditorHomePage sidebar", () => {
     render();
 
     expect(sidebarToggles()).toHaveLength(1);
+  });
+
+  test("collapses the sidebar a maximized narrow window grows into", () => {
+    setWindowWidth(600);
+    mocks.state.resultPanelMaximized = true;
+    mocks.state.resultPanelMounted = true;
+    render();
+    // The desktop panel the collapse acts on does not exist while narrow.
+    expect(mocks.collapse).not.toHaveBeenCalled();
+
+    act(() => {
+      setWindowWidth(1440);
+      window.dispatchEvent(new Event("resize"));
+    });
+
+    expect(mocks.collapse).toHaveBeenCalled();
   });
 });
