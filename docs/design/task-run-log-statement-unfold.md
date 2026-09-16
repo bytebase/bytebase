@@ -104,13 +104,20 @@ types that carry status words rather than payloads (`BEGIN`, `Completed`, retry 
 which is what the reader expects and what the constant could never do. An error line is not
 clamped — it wraps whole, as it does today.
 
-**D3 · Copy takes the statement.** The shared `CopyButton` (`components/ui/copy-button.tsx`)
-already owns the clipboard write, the toast, the 2-second check state and the `common.copy`
-tooltip; it takes `content` as a thunk, so the string is resolved on click rather than held per
-row. It copies `statement` — real newlines, untrimmed — on every row that ran one, folded or not,
-failed or not, so "copy gives you the SQL" needs no exceptions. It falls back to `error` on a
-failed row whose statement could not be recovered (no `statement`, no usable `range`, or a sheet
-that came back partial). Rows with neither get no copy button.
+**D3 · Copy takes the statement, and sits beside it.** The shared `CopyButton`
+(`components/ui/copy-button.tsx`) already owns the clipboard write, the toast, the 2-second check
+state and the `common.copy` tooltip; it takes `content` as a thunk, so the string is resolved on
+click rather than held per row. It copies `statement`, verbatim — real newlines, untrimmed — and
+never anything else. Where it sits follows what it copies, because position is what a reader
+actually reads: in the row's right-hand cluster while the statement *is* the line, and in the
+top-right corner of the unfolded block once the statement is a block, which is the placement every
+code block on GitHub has already trained people to expect. A failed row's line is the error, so no
+copy button appears on it; that row's copy is in its block, which D4 opens by default. The error
+gets none: wanting an error in the clipboard is rare next to wanting the SQL, and it does not
+justify a second control on the densest surface in the product — it stays selectable text, as it
+is today. A row whose statement could not be recovered at all (no `statement`, no usable `range`,
+or a sheet that came back partial) gets no copy button rather than a fallback to something else,
+so the control never means two things. One meaning, one place: copy is the SQL, beside the SQL.
 
 **D4 · What unfolds by default says what the row is for.** A successful statement identifies
 *which* command ran; the reader scanning for the failure does not want it open, so it starts
@@ -157,16 +164,20 @@ thing the reader can operate at this size.
 
 **D10 · The unfolded block takes the line's place, or sits under it.** Same cell, same left edge;
 `whitespace-pre-wrap break-words` on the verbatim statement, in the row's mono face, on
-`bg-background` inside a `border-control-border` block. On a successful row it replaces the line,
-so one statement is on screen at a time. On a failed row the error keeps the line and the block
-sits beneath it, because both payloads are the point. Either way the index, timestamps and status
-glyph stay pinned to the row's first line, which `items-start` already does.
+`bg-background` inside a `border-control-border` block, with D3's copy button in its top-right
+corner — positioned inside the block's padding so it overlays rather than reflows the SQL, and
+visible for as long as the block is. On a successful row the block replaces the line, so one
+statement is on screen at a time and the cluster's copy button gives way to the block's. On a
+failed row the error keeps the line and the block sits beneath it, because both payloads are the
+point. Either way the index, timestamps and status glyph stay pinned to the row's first line,
+which `items-start` already does.
 
-**D11 · Nothing moves on hover, and the row gets 8px taller.** Both controls occupy their slots
-whether or not they are visible, so revealing copy shifts nothing; it is visible on hover, on
-focus, while the row is open, and always where hover does not exist (`pointer-coarse`). Both slots
-are reserved on every row, including `BEGIN` and `Completed`, so one row height holds for the whole
-list. That height is set by the shared size contract and not by this surface:
+**D11 · Nothing moves on hover, and the row gets 8px taller.** The cluster's copy button occupies
+its slot whether or not it is visible, so revealing it on hover shifts the duration and
+affected-rows beside it by nothing; it shows on hover, on focus, and always where hover does not
+exist (`pointer-coarse`). Row height comes from the fold control's slot instead, which D6 reserves
+on every row including `BEGIN` and `Completed`, so one height holds for the whole list whatever
+else a row carries. That height is set by the shared size contract and not by this surface:
 `docs/agents/frontend-ux.md:75-83` forbids a consumer from replacing a shared control's managed
 height or resizing its managed icon, `no-button-dimension-override` enforces it in
 `check-ui-guideline.mjs`, and the smallest shared size is `xs` at 24px with a 14px icon. So both
@@ -191,8 +202,8 @@ from the live component.
 |---|---|---|
 | A | Today | The 80-character cut, and a failed row that is error-only |
 | B | Folded, hover | D2, D3, D5, D6, D11 — one meaning per control, reserved slots |
-| C | Unfolded | D8, D9, D10 — verbatim formatting, raised cap, one scrollbar |
-| D | A failed command | D1, D4, D10 — the error keeps the line, the failed statement sits beneath it |
+| C | Unfolded | D8, D9, D10 — verbatim formatting, copy in the block, raised cap, one scrollbar |
+| D | A failed command | D1, D3, D4, D10 — the error keeps the line, the failed statement and its copy sit beneath it |
 | E | Narrow container | D2 — the same rows in the deploy sheet, clamped by its width |
 
 ## Scope
@@ -215,8 +226,9 @@ behavior of this function:
   `detail` *and* the failed statement in `statement`, including when it has to come from `range`;
   an entry with no statement yields `"-"` and no `statement`.
 - `SectionContent`: a foldable row toggles and reports `aria-expanded`; a failed row starts
-  unfolded and can be folded; copy receives the verbatim statement, not the line, and falls back to
-  the error only when no statement was recovered; the open set resets when `datasetKey` changes, as
+  unfolded and can be folded; copy receives the verbatim statement, never the line and never the
+  error; a failed row carries no copy button on its error line and one inside its block; a row with
+  no recoverable statement carries none at all; the open set resets when `datasetKey` changes, as
   `showAllItems` already does.
 
 ## Not in this PR
