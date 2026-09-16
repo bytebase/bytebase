@@ -11,9 +11,7 @@ package parsercontext
 
 import (
 	"context"
-	"strings"
-
-	metadatapb "github.com/bytebase/omni/metadata"
+	"log/slog"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -63,86 +61,24 @@ func BuildListDatabaseNamesFunc(storeInstance *store.Store) parserbase.ListDatab
 	}
 }
 
-// BuildGetLinkedDatabaseMetadataFunc returns a closure that resolves Oracle
-// linked-database references (DBLINK syntax) to the actual remote database
-// metadata. Returns nil for non-Oracle engines — the parser interprets that
-// as "linked references not supported here".
+// BuildGetLinkedDatabaseMetadataFunc returns a closure that resolves an Oracle
+// database link (`schema.table@link`) to the Bytebase database it reaches:
+// (instance resource ID, database name, metadata), or nils when Bytebase
+// cannot identify that database. Returns nil for non-Oracle engines; the
+// parser treats that as "linked references not supported here".
 func BuildGetLinkedDatabaseMetadataFunc(storeInstance *store.Store, engine storepb.Engine) parserbase.GetLinkedDatabaseMetadataFunc {
 	if engine != storepb.Engine_ORACLE {
 		return nil
 	}
-	return func(ctx context.Context, instanceID string, linkedDatabaseName string, schemaName string) (string, string, *model.DatabaseMetadata, error) {
-		// Find the linked database metadata.
-		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
-			Workspace:  common.GetWorkspaceIDFromContext(ctx),
-			InstanceID: &instanceID,
-		})
+	return func(ctx context.Context, instanceID string, linkName string, schemaName string) (string, string, *model.DatabaseMetadata, error) {
+		resolution, err := resolveOracleLink(ctx, storeInstance, common.GetWorkspaceIDFromContext(ctx), engine, instanceID, linkName, schemaName)
 		if err != nil {
 			return "", "", nil, err
 		}
-		var linkedMeta *metadatapb.LinkedDatabaseMetadata
-		for _, database := range databases {
-			meta, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-				Workspace:    common.GetWorkspaceIDFromContext(ctx),
-				InstanceID:   database.InstanceID,
-				DatabaseName: database.DatabaseName,
-			})
-			if err != nil {
-				return "", "", nil, err
-			}
-			if linkedMeta = meta.GetLinkedDatabase(linkedDatabaseName); linkedMeta != nil {
-				break
-			}
-		}
-		if linkedMeta == nil {
+		if resolution.Meta == nil {
+			slog.Debug("database link not resolved", slog.String("instance", instanceID), slog.String("link", linkName), slog.String("reason", resolution.Reason))
 			return "", "", nil, nil
 		}
-		// Find the linked database in Bytebase.
-		var linkedDatabase *store.DatabaseMessage
-		databaseName := linkedMeta.GetUsername()
-		if schemaName != "" {
-			databaseName = schemaName
-		}
-		databaseList, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
-			Workspace:    common.GetWorkspaceIDFromContext(ctx),
-			DatabaseName: &databaseName,
-			Engine:       &engine,
-		})
-		if err != nil {
-			return "", "", nil, err
-		}
-		for _, database := range databaseList {
-			instance, err := storeInstance.GetInstance(ctx, &store.FindInstanceMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &database.InstanceID})
-			if err != nil {
-				return "", "", nil, err
-			}
-			if instance != nil {
-				for _, dataSource := range instance.Metadata.DataSources {
-					if strings.Contains(linkedMeta.GetHost(), dataSource.GetHost()) {
-						linkedDatabase = database
-						break
-					}
-				}
-				if linkedDatabase != nil {
-					break
-				}
-			}
-		}
-		if linkedDatabase == nil {
-			return "", "", nil, nil
-		}
-		// Get the linked database metadata.
-		linkedDatabaseMetadata, err := storeInstance.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-			Workspace:    common.GetWorkspaceIDFromContext(ctx),
-			InstanceID:   linkedDatabase.InstanceID,
-			DatabaseName: linkedDatabase.DatabaseName,
-		})
-		if err != nil {
-			return "", "", nil, err
-		}
-		if linkedDatabaseMetadata == nil {
-			return "", "", nil, nil
-		}
-		return linkedDatabase.InstanceID, linkedDatabaseName, linkedDatabaseMetadata, nil
+		return resolution.InstanceID, resolution.DatabaseName, resolution.Meta, nil
 	}
 }
