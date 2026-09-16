@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -29,11 +29,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/components/EngineIcon", () => ({ EngineIcon: () => null }));
 vi.mock("@/components/EnvironmentSelect", () => ({
-  EnvironmentSelect: () => null,
+  EnvironmentSelect: ({ className }: { className?: string }) => (
+    <div data-testid="environment-select" className={className} />
+  ),
 }));
 vi.mock("@/components/FeatureBadge", () => ({ FeatureBadge: () => null }));
 vi.mock("@/components/LabelListEditor", () => ({
-  LabelListEditor: () => null,
+  LabelListEditor: () => <div data-testid="label-list-editor" />,
 }));
 vi.mock("@/components/LearnMoreLink", () => ({ LearnMoreLink: () => null }));
 vi.mock("@/components/ResourceIdField", () => ({
@@ -157,6 +159,7 @@ vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: () => true,
   isValidEnvironmentName: () => false,
   engineNameV1: () => "Engine",
+  supportedEngineV1List: () => [],
   extractInstanceResourceName: () => "prod",
   onlyAllowNumber: (value: string) => /^\d+$/.test(value),
   RE_GCP_PROJECT_ID: /^[a-z-]+$/,
@@ -271,6 +274,116 @@ test("uses a compact segmented synchronization selector", () => {
   expect(group?.classList.contains("rounded-xs")).toBe(true);
   expect(group?.classList.contains("flex-col")).toBe(false);
   expect(group?.querySelectorAll('[role="radio"]')).toHaveLength(2);
+});
+
+test("keeps labels in their own form field", () => {
+  const { container } = render(
+    <InstanceFormProvider>
+      <InstanceFormBody />
+    </InstanceFormProvider>
+  );
+
+  const environmentField = Array.from(
+    container.querySelectorAll('[data-slot="form-field"]')
+  ).find((field) =>
+    field
+      .querySelector('[data-slot="form-field-title"]')
+      ?.textContent?.includes("common.environment")
+  );
+  const labelsField = Array.from(
+    container.querySelectorAll('[data-slot="form-field"]')
+  ).find((field) =>
+    field
+      .querySelector('[data-slot="form-field-title"]')
+      ?.textContent?.includes("common.labels")
+  );
+
+  expect(environmentField?.textContent).not.toContain("instance.add-labels");
+  expect(labelsField).toContainElement(
+    container.querySelector('[data-testid="label-list-editor"]')
+  );
+});
+
+test("uses the shared form width for basic info controls", () => {
+  const { container } = render(
+    <InstanceFormProvider>
+      <InstanceFormBody />
+    </InstanceFormProvider>
+  );
+
+  expect(container.querySelector("#name")).toHaveClass("w-full");
+  expect(container.querySelector("#name")).not.toHaveClass("max-w-[40rem]");
+  expect(
+    container.querySelector('[data-testid="environment-select"]')
+  ).toHaveClass("w-full");
+  expect(
+    container.querySelector('[data-testid="environment-select"]')
+  ).not.toHaveClass("max-w-[40rem]");
+});
+
+test("names the external link info button distinctly", async () => {
+  const { container } = render(
+    <InstanceFormProvider
+      instance={create(InstanceSchema, {
+        name: "instances/production",
+        engine: Engine.POSTGRES,
+        externalLink: "https://example.com",
+      })}
+    >
+      <InstanceFormBody />
+    </InstanceFormProvider>
+  );
+  vi.useFakeTimers();
+
+  try {
+    const externalLinkInput = container.querySelector("#external-link");
+    const field = externalLinkInput?.closest('[data-slot="form-field"]');
+    const infoButton = field?.querySelector<HTMLButtonElement>(
+      'button[aria-label="instance.external-link common.info"]'
+    );
+    const openLinkButton = field?.querySelector<HTMLButtonElement>(
+      'button[aria-label="instance.external-link"]'
+    );
+
+    expect(infoButton).toBeDefined();
+    expect(openLinkButton).toBeDefined();
+
+    fireEvent.focus(infoButton!);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(
+      document.getElementById("bb-react-layer-overlay")?.textContent
+    ).toContain("instance.sentence.console.snowflake");
+
+    const scanIntervalField = Array.from(
+      container.querySelectorAll('[data-slot="form-field"]')
+    ).find((candidate) =>
+      candidate
+        .querySelector('[data-slot="form-field-title"]')
+        ?.textContent?.includes("instance.scan-interval.self")
+    );
+    const scanIntervalInfoButton =
+      scanIntervalField?.querySelector<HTMLButtonElement>(
+        'button[aria-label="instance.scan-interval.self"]'
+      );
+
+    expect(
+      scanIntervalField?.querySelector('[data-slot="form-field-description"]')
+    ).toBeNull();
+    expect(scanIntervalInfoButton).toBeDefined();
+
+    fireEvent.focus(scanIntervalInfoButton!);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+    expect(
+      document.getElementById("bb-react-layer-overlay")?.textContent
+    ).toContain("instance.scan-interval.description");
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("each connection tab edits its own endpoint and authentication", () => {

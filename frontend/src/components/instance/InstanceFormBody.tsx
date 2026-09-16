@@ -1446,7 +1446,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                           appearance="link"
                           size="xs"
                           className="-ml-1 w-6 p-0"
-                          aria-label={t("instance.external-link")}
+                          aria-label={`${t("instance.external-link")} ${t(
+                            "common.info"
+                          )}`}
                         >
                           <Info className="size-3.5" />
                         </Button>
