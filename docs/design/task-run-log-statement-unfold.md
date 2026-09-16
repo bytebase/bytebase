@@ -129,12 +129,19 @@ Postgres driver retries the whole command list up to `MaximumRetries`
 statement can fail three times and the run still succeed. Opening all of them would expand the same
 DDL three times over.
 
-So the rule is: **open the last failed command row in a section, and only when no command row after
-it succeeded.** Execution stops at the failure within an attempt, so a run that recovered on retry
-ends in successes and opens nothing — its transient failures no longer explain anything — while a
-run that really failed ends at its failure and opens exactly that row. The rule reads only the
-entries, which matters because `taskRunStatus` is an optional prop that the changelog and revision
-pages do not pass. Everything else starts folded, and every row toggles either way.
+So the rule is: **open the last failed command row in an execution context, and only when no
+command after it succeeded.** The context is the entry sequence `buildSectionsFromEntries` is
+handed — one replica, one release file — and the test runs over that sequence *before* it is
+grouped. It cannot be section-local: sections are typed groups, and `groupEntriesByType` starts a
+new one whenever the entry type changes, while a retry emits a `RETRY_INFO` entry between attempts
+and, in transaction mode, a rollback and a fresh begin as well. Every transient failure would
+therefore be the last failure in a section of its own, and all of them would open. Scanned across
+the context instead, a run that recovered has successful commands after its failure and opens
+nothing, while a run that really failed ends at the failure and opens exactly that row. Per
+context, not per run, so a failure on one replica is never silenced by another replica's success.
+The test reads only the entries, which matters because `taskRunStatus` is an optional prop that the
+changelog and revision pages do not pass. Everything else starts folded, and every row toggles
+either way.
 
 **D5 · A row is foldable when it ran a statement.** Nothing more. An earlier draft measured
 `scrollWidth > clientWidth` from a shared `ResizeObserver` so the chevron could be hidden on rows
@@ -232,7 +239,7 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 | File | Change |
 |---|---|
 | `task-run-log/types.ts` | `statement?: string` and `error?: string` on `DisplayItem` |
-| `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields |
+| `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section |
 | `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, section cap, `ITEM_HEIGHT` 20 → 28 |
 | `locales/en-US.json` | Two accessible names |
 
@@ -243,12 +250,16 @@ behavior of this function:
   statement past 80 characters is not truncated (regression); a failed command yields the error as
   `detail` *and* the failed statement in `statement`, including when it has to come from `range`;
   an entry with no statement yields `"-"` and no `statement`.
-- `SectionContent`: a foldable row toggles and reports `aria-expanded`; the last failed row starts
-  unfolded and can be folded; a section whose failures are followed by a successful command row —
-  the lock-timeout retry shape — opens nothing; copy receives the verbatim statement, never the
-  line and never the error; a failed row carries no copy button on its error line and one inside
-  its block; a row with no recoverable statement carries none at all; the open set resets when
-  `datasetKey` changes, as `showAllItems` already does.
+- `model.test.ts` again for the auto-open pick, which is where the retry shape has to be locked
+  down: entries for two attempts separated by a `RETRY_INFO`, the first failing and the second
+  succeeding, mark **no** row to open even though the failure is last in its own section; the same
+  entries with the second attempt failing mark only the second failure; and a failure under one
+  replica is not silenced by another replica's success.
+- `SectionContent`: a foldable row toggles and reports `aria-expanded`; a row marked to open starts
+  unfolded and can be folded; copy receives the verbatim statement, never the line and never the
+  error; a failed row carries no copy button on its error line and one inside its block; a row with
+  no recoverable statement carries none at all; the open set resets when `datasetKey` changes, as
+  `showAllItems` already does.
 
 ## Not in this PR
 
