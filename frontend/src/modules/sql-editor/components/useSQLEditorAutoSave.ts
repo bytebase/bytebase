@@ -1,20 +1,21 @@
 import { useEffect, useRef } from "react";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
+import { getSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { isSavedQueryWritableV1 } from "@/utils";
+import { canCreateSavedQueryInProject, isSavedQueryWritableV1 } from "@/utils";
 
 const AUTO_SAVE_DEBOUNCE_MS = 2000;
 
 /**
- * Watches the active tab's `statement` and after a 2s debounce calls
- * `maybeUpdateSavedQuery` if the tab is dirty + writable. Aborts any
- * in-flight auto-save when a newer one starts, reverts the tab to DIRTY
- * on error (unless aborted), and re-flags DIRTY when the statement keeps
- * changing during the save.
+ * Watches the active tab's `statement` and after a 2s debounce persists a
+ * dirty, writable tab. Local drafts become saved queries after their first
+ * non-whitespace SQL; saved queries are updated in place. Aborts any in-flight
+ * auto-save when a newer one starts, reverts the tab to DIRTY on error (unless
+ * aborted), and re-flags DIRTY when the statement keeps changing during save.
  *
  * Mounted once at the SQL Editor layout level; safe to call from any
  * component but should only be active while the SQL Editor route is.
@@ -27,6 +28,7 @@ export function useSQLEditorAutoSave() {
   const maybeUpdateSavedQuery = useSQLEditorStore(
     (s) => s.maybeUpdateSavedQuery
   );
+  const createSavedQuery = useSQLEditorStore((s) => s.createSavedQuery);
 
   const statement = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.statement
@@ -54,12 +56,18 @@ export function useSQLEditorAutoSave() {
   const runAutoSave = async () => {
     const tabsState = getSQLEditorTabsState();
     const tab = tabsState.tabsById.get(tabsState.currentTabId);
-    if (!tab?.savedQuery || tab.status === "CLEAN") return;
+    if (!tab || tab.status === "CLEAN" || !tab.statement.trim()) return;
 
-    const savedQuery = useAppStore
-      .getState()
-      .getSavedQueryByName(tab.savedQuery);
-    if (!savedQuery || !isSavedQueryWritableV1(savedQuery)) return;
+    if (tab.savedQuery) {
+      const savedQuery = useAppStore
+        .getState()
+        .getSavedQueryByName(tab.savedQuery);
+      if (!savedQuery || !isSavedQueryWritableV1(savedQuery)) return;
+    } else if (
+      !canCreateSavedQueryInProject(getSQLEditorEditorState().project)
+    ) {
+      return;
+    }
 
     abortAutoSave();
 
@@ -72,13 +80,21 @@ export function useSQLEditorAutoSave() {
 
     let wasAborted = false;
     try {
-      await maybeUpdateSavedQuery({
-        tabId,
-        savedQuery: tab.savedQuery,
-        database: tab.connection.database,
-        statement: statementToSave,
-        signal: controller.signal,
-      });
+      if (tab.savedQuery) {
+        await maybeUpdateSavedQuery({
+          tabId,
+          savedQuery: tab.savedQuery,
+          database: tab.connection.database,
+          statement: statementToSave,
+          signal: controller.signal,
+        });
+      } else {
+        await createSavedQuery({
+          tabId,
+          database: tab.connection.database,
+          statement: statementToSave,
+        });
+      }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         wasAborted = true;

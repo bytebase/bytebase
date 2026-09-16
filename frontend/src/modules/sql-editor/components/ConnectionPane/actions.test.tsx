@@ -194,7 +194,7 @@ describe("setConnection", () => {
     expect(mocks.addTab).toHaveBeenCalled();
   });
 
-  test("creates a saved query when the caller may", async () => {
+  test("opens an unsaved local tab when the caller may", async () => {
     mocks.canCreateSavedQueryInProject.mockReturnValue(true);
     const { setConnection } = await import("./actions");
 
@@ -206,8 +206,8 @@ describe("setConnection", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.createSavedQuery).toHaveBeenCalled();
-    expect(mocks.addTab).not.toHaveBeenCalled();
+    expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.addTab).toHaveBeenCalled();
   });
 
   test("does not replace a data explorer tab", async () => {
@@ -228,7 +228,8 @@ describe("setConnection", () => {
     });
 
     expect(mocks.maybeUpdateSavedQuery).not.toHaveBeenCalled();
-    expect(mocks.createSavedQuery).toHaveBeenCalled();
+    expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.addTab).toHaveBeenCalled();
   });
 });
 
