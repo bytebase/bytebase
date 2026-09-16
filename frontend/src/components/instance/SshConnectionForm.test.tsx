@@ -63,12 +63,17 @@ describe("SshConnectionForm", () => {
     document.body.innerHTML = "";
   });
 
-  test("renders vertically arranged radio choices", () => {
+  test("renders a compact segmented SSH selector", () => {
     const { container, root } = mount(<ControlledSshConnectionForm />);
     expect(
       container
         .querySelector('[role="radiogroup"]')
-        ?.classList.contains("flex-col")
+        ?.classList.contains("inline-flex")
+    ).toBe(true);
+    expect(
+      container
+        .querySelector('[role="radiogroup"]')
+        ?.classList.contains("rounded-xs")
     ).toBe(true);
 
     act(() => {

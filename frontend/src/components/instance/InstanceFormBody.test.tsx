@@ -27,7 +27,7 @@ describe("SyncDatabases", () => {
     document.body.innerHTML = "";
   });
 
-  test("uses vertically arranged radio choices", () => {
+  test("uses a compact segmented synchronization selector", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -44,7 +44,9 @@ describe("SyncDatabases", () => {
     });
 
     const group = container.querySelector('[role="radiogroup"]');
-    expect(group?.classList.contains("flex-col")).toBe(true);
+    expect(group?.classList.contains("inline-flex")).toBe(true);
+    expect(group?.classList.contains("rounded-xs")).toBe(true);
+    expect(group?.classList.contains("flex-col")).toBe(false);
     expect(group?.querySelectorAll('[role="radio"]')).toHaveLength(2);
 
     act(() => {

@@ -36,6 +36,7 @@ import {
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -704,25 +705,25 @@ export function SyncDatabases({
       }
     >
       <div className="flex flex-col gap-y-2">
-        <RadioGroup
+        <SegmentedControl
           value={syncAll ? "all" : "selected"}
           onValueChange={(value) => setSyncAll(value === "all")}
+          options={[
+            { value: "all", label: t("instance.sync-databases.all-databases") },
+            {
+              value: "selected",
+              label: t("instance.sync-databases.selected-databases"),
+            },
+          ]}
           disabled={!allowEdit}
-          aria-label={
+          ariaLabel={
             hasProjectContext
               ? t("instance.sync-databases.project-sync-all")
               : t("instance.sync-databases.self")
           }
           aria-describedby={disabledReason ? disabledReasonId : undefined}
-          className="flex-col items-start self-start gap-y-2"
-        >
-          <RadioGroupItem value="all" disabled={!allowEdit}>
-            {t("instance.sync-databases.all-databases")}
-          </RadioGroupItem>
-          <RadioGroupItem value="selected" disabled={!allowEdit}>
-            {t("instance.sync-databases.selected-databases")}
-          </RadioGroupItem>
-        </RadioGroup>
+          size="sm"
+        />
         {disabledReason && (
           <p
             id={disabledReasonId}

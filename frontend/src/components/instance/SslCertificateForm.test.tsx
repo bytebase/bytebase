@@ -101,18 +101,24 @@ describe("SslCertificateForm", () => {
         .querySelector('[aria-label="data-source.ssl.posture.self"]')
         ?.classList.contains("self-start")
     ).toBe(true);
-    expect(
-      container
-        .querySelector('[aria-label="data-source.ssl.posture.self"]')
-        ?.classList.contains("flex-col")
-    ).toBe(true);
     const selectedPostureInput = container.querySelector(
       '[aria-label="data-source.ssl.posture.self"] [aria-checked="true"]'
-    ) as HTMLElement | null;
-    expect(selectedPostureInput?.classList.contains("size-4")).toBe(true);
-    expect(selectedPostureInput?.classList.contains("focus-visible:ring-2")).toBe(
-      true
     );
+    const selectedPostureLabel = selectedPostureInput?.closest("label");
+    expect(
+      Array.from(selectedPostureLabel?.classList ?? []).some((className) =>
+        /^z-\d+$/.test(className)
+      )
+    ).toBe(false);
+    expect(selectedPostureLabel?.className).toContain(
+      stylex.props(controlMinHeightStyle("sm")).className
+    );
+    expect(
+      selectedPostureLabel?.classList.contains("focus-within:ring-inset")
+    ).toBe(true);
+    expect(
+      selectedPostureLabel?.nextElementSibling?.classList.contains("border-l")
+    ).toBe(false);
     expect(container.textContent).toContain("data-source.ssl.server-identity");
     expect(container.textContent).not.toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
@@ -170,6 +176,7 @@ describe("SslCertificateForm", () => {
     const segmentSizeClassName =
       stylex.props(controlMinHeightStyle("sm")).className ?? "";
     for (const ariaLabel of [
+      "data-source.ssl.posture.self",
       "data-source.ssl.ca-source.self",
       "data-source.ssl.client-cert-source.self",
     ]) {
