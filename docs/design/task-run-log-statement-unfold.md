@@ -218,6 +218,17 @@ free with `CopyButton`. The fold control needs two new keys under `task-run.log-
 accessible names, not visible labels, and land in `en-US` with the other locales falling back
 until translated.
 
+**D13 · A row that opens by default has to be rendered.** `SectionContent` renders only the first
+`MAX_RENDERED_ITEMS` (50) entries of a section until *Load more* is pressed
+(`SectionContent.tsx:29-32`). A migration whose 300th statement fails would therefore have D4 mark
+a row that is not in the DOM, and the promise would quietly do nothing in the case that needs it
+most — the longest sections are exactly the ones where hunting for the failure by hand is worst.
+The rendered window is therefore the first `MAX_RENDERED_ITEMS` items **plus the marked row when it
+falls outside them**, with the existing *Load more* button between the two reporting how many
+entries it hides; pressing it renders the rest and the marked row keeps its place in sequence.
+Rendering the whole section would keep the promise too, but a section has no bound — a release file
+can carry thousands of statements — and not having to render all of them is what the cap is for.
+
 ## States
 
 Mockups A–E are in the PR description. Product typography, spacing and semantic colors are taken
@@ -240,7 +251,7 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 |---|---|
 | `task-run-log/types.ts` | `statement?: string` and `error?: string` on `DisplayItem` |
 | `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section |
-| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, section cap, `ITEM_HEIGHT` 20 → 28 |
+| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28 |
 | `locales/en-US.json` | Two accessible names |
 
 Tests, none of which exist today — which is how #21276 passed a clean suite while changing the
@@ -256,10 +267,11 @@ behavior of this function:
   entries with the second attempt failing mark only the second failure; and a failure under one
   replica is not silenced by another replica's success.
 - `SectionContent`: a foldable row toggles and reports `aria-expanded`; a row marked to open starts
-  unfolded and can be folded; copy receives the verbatim statement, never the line and never the
-  error; a failed row carries no copy button on its error line and one inside its block; a row with
-  no recoverable statement carries none at all; the open set resets when `datasetKey` changes, as
-  `showAllItems` already does.
+  unfolded and can be folded; a section of 60 entries whose marked failure is the last one renders
+  that row without pressing *Load more*, and still reports the hidden count correctly (D13); copy
+  receives the verbatim statement, never the line and never the error; a failed row carries no copy
+  button on its error line and one inside its block; a row with no recoverable statement carries
+  none at all; the open set resets when `datasetKey` changes, as `showAllItems` already does.
 
 ## Not in this PR
 
