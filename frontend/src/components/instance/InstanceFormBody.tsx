@@ -569,6 +569,11 @@ export function SyncDatabases({
         ? current
         : new Set(selectedDatabases)
     );
+    setDatabaseList((current) =>
+      selectedDatabases.every((database) => current.has(database))
+        ? current
+        : new Set([...current, ...selectedDatabases])
+    );
   }, [syncDatabases]);
 
   useEffect(() => {

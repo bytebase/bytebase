@@ -1,5 +1,12 @@
 import { create } from "@bufbuild/protobuf";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -7,6 +14,7 @@ import {
   DataSource_RedisType,
   DataSourceType,
   InstanceSchema,
+  SyncDatabasesSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
 import {
@@ -274,6 +282,61 @@ test("uses a compact segmented synchronization selector", () => {
   expect(group?.classList.contains("rounded-xs")).toBe(true);
   expect(group?.classList.contains("flex-col")).toBe(false);
   expect(group?.querySelectorAll('[role="radio"]')).toHaveLength(2);
+});
+
+test("keeps newly loaded selections in the database preview", async () => {
+  mocks.listInstanceDatabases.mockResolvedValue({ databases: ["analytics"] });
+  const instance = create(InstanceSchema, {
+    name: "instances/production",
+    engine: Engine.POSTGRES,
+  });
+  const { rerender } = render(
+    <InstanceFormProvider instance={instance}>
+      <SyncDatabases
+        isCreating={false}
+        showLabel={false}
+        allowEdit
+        syncDatabases={create(SyncDatabasesSchema, {
+          databases: ["analytics"],
+        })}
+        onSyncDatabasesChange={() => undefined}
+      />
+    </InstanceFormProvider>
+  );
+
+  try {
+    await waitFor(() => {
+      expect(screen.getByText("analytics")).toBeInTheDocument();
+    });
+
+    rerender(
+      <InstanceFormProvider instance={instance}>
+        <SyncDatabases
+          isCreating={false}
+          showLabel={false}
+          allowEdit
+          syncDatabases={create(SyncDatabasesSchema, {
+            databases: ["app"],
+          })}
+          onSyncDatabasesChange={() => undefined}
+        />
+      </InstanceFormProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("app")).toBeInTheDocument();
+    });
+    expect(
+      screen
+        .getByText("app")
+        .closest("label")
+        ?.querySelector('[role="checkbox"]')
+    ).toHaveAttribute("data-checked");
+  } finally {
+    mocks.listInstanceDatabases.mockResolvedValue({
+      databases: ["app", "analytics"],
+    });
+  }
 });
 
 test("keeps labels in their own form field", () => {
