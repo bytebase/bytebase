@@ -50,55 +50,64 @@ Four problems, ordered by how many users each blocks:
 
 Out of scope: saved plans, plan comparison, index suggestions, live progress.
 
+Also deferred: **explaining a statement from Query History**. It is the right
+entry point — CUJ 1 starts with a slow run, usually noticed later — but
+`QueryHistory` stores only `database` and `statement`, not the schema or data
+source the run used. Explaining `SELECT * FROM orders` from history could
+silently plan a different table under a different search path, and an Estimated
+badge does not warn about a changed target. It needs history to record execution
+context first.
+
 ---
 
 ## 3. Design
 
 ### 3.1 Four triggers
 
-| Trigger | Where the control is | Journey | `Query()` calls |
+| Trigger | Where the control is | Journey | Executes? |
 |---|---|---|---|
-| Click the **Plan** tab on a result | in the result pane, next to Text | 1, 2 | 0 or 1, per engine (§3.4) |
-| Type `EXPLAIN …`, press **Run** (`Ctrl/Cmd+Enter`) | the editor | 1, 2 | 1 |
-| Choose **Explain only**, press `Ctrl/Cmd+E`, or right-click → Explain | Run button's dropdown; keyboard; editor context menu | 3 | 1 |
-| Click **Explain now** on a History row | next to Copy in the History pane | 1, 2 | 1 |
+| Click the **Plan** tab on a result | in the result pane, next to Text | 1, 2 | no |
+| Type `EXPLAIN …`, press **Run** (`Ctrl/Cmd+Enter`) | the editor | 1, 2 | as typed |
+| Choose **Explain**, press `Ctrl/Cmd+E`, or right-click → Explain | Run button's dropdown; keyboard; editor context menu | 3 | **no** |
+| Choose **Explain analyze** | Run button's dropdown | 1, 2 | **yes** |
 
-Explain only goes in the dropdown Run already has, not on the toolbar. Spanner
-Studio puts "Results only / Explanation only" in exactly that place, and none of
-the four reference products ships a toolbar Explain button. It serves the rarest
-journey, so it does not earn permanent space. The keyboard shortcut and the
-right-click item are the same action and keep working. It explains **exactly the
-statements Run would run** — same selection, same caret rule — so there is no
-second scoping rule to learn.
+Both explain actions go in the dropdown Run already has, not on the toolbar.
+Spanner Studio puts "Results only / Explanation only" in exactly that place, and
+none of the four reference products ships a toolbar Explain button. They explain
+**exactly the statements Run would run** — same selection, same caret rule — so
+there is no second scoping rule to learn.
 
-The History trigger matters because the other three assume the query is already
-in the editor, while CUJ 1 starts with a slow run — usually noticed later, in
-history. It stores nothing: History already keeps the statement, so we explain it
-fresh and badge it Estimated (§3.4). It does not reproduce the plan that ran back
-then; that needs saved plans, which are out of scope. The action is named
-**Explain now** for that reason.
+They are two actions, not one, because the difference is whether your query runs.
+pgAdmin splits them the same way (F7 / Shift+F7). **Explain** never executes:
+given a statement that already says `EXPLAIN ANALYZE`, it refuses and says why,
+rather than running an expensive query behind a control whose whole purpose is
+to avoid running it. **Explain analyze** executes by definition, and asks for a
+machine-readable plan on that single run, so nothing needs re-running afterwards.
 
-One rule for all four: if the statement already starts with `EXPLAIN`, run it as
-typed rather than wrapping it twice. pgAdmin, DBeaver, DataGrip, Workbench and
-pgcli all prepend blindly; Workbench turns the resulting error into a dead
-"Explain data not available for statement."
+Run stays literal: a typed `EXPLAIN ANALYZE` executes, because that is what the
+user typed. What we never do is wrap a statement that already starts with
+`EXPLAIN` in a second one — pgAdmin, DBeaver, DataGrip, Workbench and pgcli all
+prepend blindly, and Workbench turns the resulting error into a dead "Explain
+data not available for statement."
 
 ### 3.2 The drawing rule
 
 **Rule: draw a picture whenever the engine gave us a machine-readable plan.
 Otherwise show the plan as text.**
 
-We can tell from the result, so we never read the user's SQL. PostgreSQL labels
-the plan column `json` when you asked for `FORMAT JSON`, `xml` for `FORMAT XML`.
-SQL Server's plan always arrives under a fixed column name. SSMS and pgAdmin
-both work exactly this way.
+We can tell from the result, so the frontend never classifies SQL. PostgreSQL
+always names the column `QUERY PLAN`; it is the column's *type* that changes —
+`json` for `FORMAT JSON`, `xml` for `FORMAT XML`, `text` for TEXT and YAML alike.
+So the check is name plus type plus a plan that parses, which is exactly
+pgAdmin's gate. Execution decisions stay with the backend classification that
+already exists (§2); we do not add a second classifier in the browser.
 
 | Statement Bytebase ran | Result tab shows | `Query()` calls |
 |---|---|---|
-| **Explain only** — we build it, so we ask for JSON | picture | 1 |
+| **Explain** / **Explain analyze** — we build it, so we ask for JSON | picture | 1 |
 | Typed `EXPLAIN (FORMAT JSON \| XML)` | picture, drawn from what came back | 1 — nothing extra |
 | Typed `EXPLAIN` | text, plus a **Visualize** button | 1, +1 only on Visualize |
-| Typed `EXPLAIN ANALYZE` | picture, if we take the exception below; otherwise text with Visualize greyed out | 1 — and it must stay 1 |
+| Typed `EXPLAIN ANALYZE` | text; Visualize is disabled, because re-running would execute the query again | 1 — and it stays 1 |
 | Typed `EXPLAIN (FORMAT YAML)` | text — YAML arrives looking identical to plain text, and no viewer reads it | 1 |
 
 **Cost rule: a picture never costs more than one extra `Query()` call, and never
@@ -121,12 +130,11 @@ one that matters most: a query killed by the workspace query timeout **keeps**
 its Plan tab. No measured plan exists, by definition, but an estimated one is
 usually the answer to why it died.
 
-**Exception worth deciding: `EXPLAIN ANALYZE`.** It runs the query for real, so a
-second `Query()` call would execute it twice and double any writes. Either grey
-out Visualize there, or ask for JSON on the first call so no second one is
-needed. **Recommend the second, for `ANALYZE` only** — the one place this design
-departs from every other product, and the one place the cost rule above would
-otherwise break.
+**A typed `EXPLAIN ANALYZE` gets no Visualize button**, because the only way to
+draw it would be to run the query a second time. The user who wants a picture of
+a measured plan uses **Explain analyze** (§3.1), which asks for the structured
+plan on its single run. That keeps the cost rule intact without this design
+rewriting anyone's statement.
 
 ### 3.3 Reading the plan
 
@@ -144,21 +152,25 @@ optional.
 and leave the reader asking why the Plan tab has no plan in it. One tab there,
 named Plan, containing the plan.
 
-1. **Summary panel** — total cost and the most expensive operators, ranked; click
-   one and the graph jumps to it. Snowflake and Databricks lead with this,
-   because the ranked list names the expensive operator outright, with no graph
-   to read first.
+1. **Summary panel** — the most expensive operators, ranked; click one and the
+   graph jumps to it. Snowflake and Databricks lead with this, because the ranked
+   list names the expensive operator outright, with no graph to read first.
+   **Rank by measured time where the plan is measured, and by estimated cost
+   otherwise, labelling which.** PostgreSQL documents planner costs as arbitrary
+   units, and they are wrong in exactly the cases worth investigating, so ranking
+   a measured plan by estimate would point at the wrong operator precisely when
+   it matters. Where neither is available, say so rather than inventing an order.
+   Loops and parallel workers have to be defined before any percentage is shown.
 2. **Graph** — opens zoomed on the costliest operator, not the root; long
    single-child chains fold into one box with a count. Nodes show their share of
    cost, the top one badged (Spanner); colour follows cost or rows (BigQuery).
 3. **Table** — the same operators as sortable rows, like BigQuery.
-4. **Warnings on the node** — `plan-model.ts` already computes them
-   (`PLAN_FULL_TABLE_SCAN`, `PLAN_FULL_INDEX_SCAN`, a `warnings` array per node)
-   and nothing shows them today. The ranked list says which operator costs most;
-   a warning says what is wrong with it, which is what CUJ 1 actually wants.
-   **Show a warning only when the node is also expensive.** A full scan of a
-   10-row lookup table is the correct plan, not a problem; warn on every scan and
-   readers learn to ignore the colour, which costs us the warnings that matter.
+4. **Warnings** — already computed in `plan-model.ts` and already rendered, on
+   the node in `QueryPlanDiagram` and in `QueryPlanNodeDetails`. Two changes:
+   **show a warning only when the node is also expensive** — a full scan of a
+   10-row lookup table is the correct plan, and warning on every scan teaches
+   readers to ignore the colour — and surface the surviving warnings in the
+   summary panel, so the answer is visible without hunting node to node.
 5. **Planned vs actual rows**, wherever the plan is measured — PostgreSQL under
    `ANALYZE`, SQL Server's actual plan, where `EstimateRows` and `ActualRows` sit
    on one node. Expecting 1,000 rows and getting 1,000,000 explains bad plans
@@ -178,11 +190,12 @@ tab, and Query duplicates the editor they came from.
 | Grid | **Table** |
 | Summary (tab, only when the plan has costs) | **always-visible panel** beside the graph |
 | Raw plan | the **Text** tab, beside Plan |
-| Query | dropped — the result tab already carries its statement in a tooltip |
+| Query | becomes a **View SQL** disclosure in the Plan tab |
 
-Dropping Query is safe only because of that tooltip: the editor may have moved on
-to another statement since the result was produced, so it is not a reliable place
-to read what a plan belongs to.
+View SQL is not a tooltip. The editor may have moved on since the result was
+produced, so the statement a plan belongs to has to be readable somewhere — and
+selectable and copyable, which a hover tooltip is not, least of all for a long
+statement.
 
 Plan or Text is remembered per editor tab, like the result pane's height, so
 comparing two runs does not mean re-selecting Plan each time (CUJ 2).
@@ -231,20 +244,29 @@ statistics, and if the slow run was caused by stale statistics that have since
 refreshed, the plan shown is the *good* one, and the reader concludes the query
 was never the problem. That is the inverted failure this wording exists to stop.
 
-**Most users see text, not a graph** — 9 of 12 engines have no parser. Showing
-their plan as formatted text instead of grid rows is small and helps the
-majority, so it should not be sequenced last. MySQL and Oracle are the cheapest
-graphs to add later: MySQL already emits structured JSON, and Oracle's plan table
-already holds the parent-child links the driver discards.
+**Nine of twelve engines have no parser**, so for those the plan is text. Showing
+it as formatted text instead of grid rows is a small change with wide reach.
+Whether it reaches most *users* is a separate question that engine counts cannot
+answer — the §1 instrumentation is what settles which engines people actually
+explain, and it should settle the sequencing too. MySQL and Oracle are the
+cheapest graphs to add later: MySQL already emits structured JSON, and Oracle's
+plan table already holds the parent-child links the driver discards.
 
-**Two engines give a measured plan with no extra run.** That is the standard:
-BigQuery, Snowflake and Databricks keep a plan for every query because the engine
-records one while it runs. Spanner has a third run mode returning rows *and* plan
-*and* real timings in **one execution**; SQL Server's `SET STATISTICS XML` does
-the same, where `SET SHOWPLAN_XML` only estimates. So this costs one execution —
-the one the user already asked for — plus profiling overhead we should measure
-first. PostgreSQL and MySQL cannot: on both, `EXPLAIN ANALYZE` returns the plan
-*instead of* the rows.
+**Two engines can attach a measured plan to the run itself.** That is the
+standard: BigQuery, Snowflake and Databricks keep a plan for every query because
+the engine records one while it runs. Spanner has a third run mode returning rows
+*and* plan *and* real timings in one execution; SQL Server's `SET STATISTICS XML`
+does the same, where `SET SHOWPLAN_XML` only estimates. PostgreSQL and MySQL
+cannot: on both, `EXPLAIN ANALYZE` returns the plan *instead of* the rows.
+
+It is not free, and it is **opt-in, never the default for every run**. Spanner
+documents profiling overhead and discourages it for production traffic.
+`SET STATISTICS XML` requires `SHOWPLAN` on every database the statement touches,
+so switching it on blindly would fail queries the user is otherwise authorized to
+run. So: the backend decides before executing — it must hold `bb.sql.explain`
+*and* the engine capability — and **falls back to an ordinary run whenever
+profiling is unavailable**, rather than failing the query. A plan attached this
+way is authorized the same as any other plan (§3.5).
 
 Once the Plan tab matches the pop-up page, delete the page, its token hand-off
 and the old link.
@@ -257,11 +279,16 @@ it. For them the Plan tab is **disabled with the reason shown**, not hidden:
 hiding it leaves them unable to tell the capability exists or what to ask an
 admin for.
 
-**Plans are never masked, deliberately.** Explain skips masking
-(`sql_service.go:726`, `:735`), which is sound because a plan echoes the literals
-in the user's own statement, never values read from the table. Written down here
-because §3.1 adds new routes to a plan, and a reviewer should not have to
-rediscover why it is safe.
+**Plans are never masked, and that is a privilege, not a safe default.** Explain
+skips masking (`sql_service.go:726`, `:735`). A plan is not row data, but it is
+not free of data either: SQL Server's parameter-sensitive plans carry
+histogram-derived boundary values, and any engine's predicates and estimates say
+something about the distribution behind them. So the justification is not "there
+is nothing sensitive in here" — it is that reading a plan is a distinct,
+deliberately granted capability, `bb.sql.explain`, held separately from the
+permission to read rows. That boundary applies identically to the Plan tab, the
+Text tab, Copy plan, and any plan attached to an ordinary run (§3.4): all of them
+are the same capability, so none of them may be reachable without it.
 
 **Slow and large plans.** The on-demand call can take as long as any query: show
 a skeleton, allow cancel, time out rather than hang. Past a node cap the Plan tab
@@ -283,8 +310,8 @@ rejects shows that error in the tab, like any failed query.
   the four does. Permanent space for the rarest journey.
 - **Parse the text plan.** PostgreSQL's text output has no escaping, so a string
   containing a newline can fake a plan node. Supabase reverted it; pgcli declined.
-- **Profile every run everywhere.** Free on Spanner and SQL Server; on PostgreSQL
-  it would run every statement twice.
+- **Profile every run everywhere.** Possible only on Spanner and SQL Server, and
+  not free even there (§3.4); on PostgreSQL it would run every statement twice.
 
 ---
 
