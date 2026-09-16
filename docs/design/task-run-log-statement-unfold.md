@@ -238,6 +238,14 @@ entries it hides; pressing it renders the rest and the marked row keeps its plac
 Rendering the whole section would keep the promise too, but a section has no bound — a release file
 can carry thousands of statements — and not having to render all of them is what the cap is for.
 
+Rendering it is not the same as showing it. Fifty rows at 28px is roughly 1,400px of content above
+the marked row, inside a box capped at `max(280px, 60vh)` whose `scrollTop` starts at zero, so the
+row would be mounted, expanded and off-screen — the promise kept in the DOM and broken on the
+screen. When a row becomes the marked one, the section sets its own `scrollTop` to bring it into
+view. Its own, not `scrollIntoView`, which would scroll the page under a reader who was looking at
+something else. It fires once, when the mark lands on a row; later polls do not re-scroll, so a
+reader who has scrolled elsewhere stays where they are.
+
 The window has to carry each item's own index with it. `SectionContent` numbers rows by their
 position in the rendered array (`index + 1` over `visibleItems`, `SectionContent.tsx:40-50`), so a
 sparse window would label statement 300 as row 51 and then renumber it to 300 once *Load more* was
@@ -296,8 +304,8 @@ behavior of this function:
   replica is not silenced by another replica's success.
 - `SectionContent`: a foldable row toggles and reports `aria-expanded`; a row marked to open starts
   unfolded and can be folded; a section of 60 entries whose marked failure is the last one renders
-  that row without pressing *Load more*, still reports the hidden count, and **numbers it 60, not
-  51** (D13); copy receives the verbatim statement, never the line and never the error; a failed row
+  that row without pressing *Load more*, still reports the hidden count, **numbers it 60, not 51**,
+  and leaves the section scrolled to it rather than at the top (D13); copy receives the verbatim statement, never the line and never the error; a failed row
   carries no copy button on its error line and one inside its block; a row with no recoverable
   statement carries none at all.
 - `SectionContent` under live updates (D14), all on an unchanged `datasetKey`: a section rerendered
