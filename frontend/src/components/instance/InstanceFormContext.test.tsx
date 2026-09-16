@@ -20,7 +20,7 @@ import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
 import type { EditDataSource } from "./common";
-import { wrapEditDataSource } from "./common";
+import { createDataSourceDraft } from "./common";
 import {
   InstanceFormProvider,
   useInstanceFormContext,
@@ -801,7 +801,7 @@ describe("InstanceFormProvider", () => {
     const harness = renderIntoContainer();
     try {
       await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
-      const draft = wrapEditDataSource(create(DataSourceSchema, {
+      const draft = createDataSourceDraft(Engine.MYSQL, create(DataSourceSchema, {
         authenticationType,
         host: "project:region:instance",
         region: "us-east-1",
@@ -1087,7 +1087,7 @@ describe("InstanceFormProvider", () => {
     await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
     await act(async () => {
       context.setBasicInfo((previous) => ({ ...previous, engine, title: "Production" }));
-      context.setDataSourceEditState((previous) => ({ ...previous, dataSources: [wrapEditDataSource(create(DataSourceSchema, { id: "admin", type: DataSourceType.ADMIN, projectId: "valid-project", instanceId: "valid-instance" }))] }));
+      context.setDataSourceEditState((previous) => ({ ...previous, dataSources: [createDataSourceDraft(engine, create(DataSourceSchema, { id: "admin", type: DataSourceType.ADMIN, projectId: "valid-project", instanceId: "valid-instance" }))] }));
     });
     expect(context.allowCreate).toBe(false);
     await act(async () => { context.setResourceIdValidated(true); });
@@ -1099,7 +1099,8 @@ describe("InstanceFormProvider", () => {
 
   describe("checkDataSource AWS region requirement", () => {
     const awsDataSource = (region: string, withCredential: boolean) => {
-      const ds = wrapEditDataSource(
+      const ds = createDataSourceDraft(
+        Engine.MYSQL,
         create(DataSourceSchema, {
           id: "admin",
           type: DataSourceType.ADMIN,
@@ -1203,7 +1204,7 @@ describe("InstanceFormProvider", () => {
     });
 
     const editedDataSource = (edit: (ds: EditDataSource) => void) => {
-      const ds = wrapEditDataSource(storedDataSource);
+      const ds = createDataSourceDraft(Engine.HIVE, storedDataSource);
       edit(ds);
       return ds;
     };
@@ -1314,7 +1315,7 @@ describe("InstanceFormProvider", () => {
       });
       expect(
         await renderWithStored([withoutPort], () =>
-          wrapEditDataSource(withoutPort)
+          createDataSourceDraft(Engine.HIVE, withoutPort)
         )
       ).toBe("true");
     });
@@ -1327,7 +1328,7 @@ describe("InstanceFormProvider", () => {
       });
       expect(
         await renderWithStored([withTunnel], () =>
-          wrapEditDataSource(withTunnel)
+          createDataSourceDraft(Engine.HIVE, withTunnel)
         )
       ).toBe("true");
     });
@@ -1343,12 +1344,12 @@ describe("InstanceFormProvider", () => {
       });
       expect(
         await renderWithStored([storedDataSource, readonlyDataSource], () =>
-          wrapEditDataSource(readonlyDataSource)
+          createDataSourceDraft(Engine.HIVE, readonlyDataSource)
         )
       ).toBe("false");
       expect(
         await renderWithStored([storedDataSource, readonlyDataSource], () => {
-          const ds = wrapEditDataSource(readonlyDataSource);
+          const ds = createDataSourceDraft(Engine.HIVE, readonlyDataSource);
           ds.host = "hive-replica-2.example.com";
           return ds;
         })

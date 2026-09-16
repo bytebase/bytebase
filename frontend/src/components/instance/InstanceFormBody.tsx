@@ -72,6 +72,7 @@ import {
   supportedEngineV1List,
   urlfy,
 } from "@/utils";
+import { normalizeAuthenticationType } from "./authentication";
 import type { EditDataSource } from "./common";
 import {
   MongoDBConnectionStringSchemaList,
@@ -1018,7 +1019,13 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       setDataSourceEditState((prev) => {
         const dataSources = prev.dataSources.map((ds) => {
           if (ds.type !== DataSourceType.ADMIN) return ds;
-          const updated = { ...ds };
+          const updated = {
+            ...ds,
+            authenticationType: normalizeAuthenticationType(
+              engine,
+              ds.authenticationType
+            ),
+          };
           switch (engine) {
             case Engine.SNOWFLAKE: {
               clearLocalPlaceholderHost(updated);
@@ -1032,8 +1039,6 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
             }
             case Engine.SPANNER:
             case Engine.BIGQUERY: {
-              updated.authenticationType =
-                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM;
               clearLocalPlaceholderHost(updated);
               break;
             }

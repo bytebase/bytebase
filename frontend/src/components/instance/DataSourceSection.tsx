@@ -9,7 +9,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DataSourceType } from "@/types/proto-es/v1/instance_service_pb";
 import { CreateDataSourceExample } from "./CreateDataSourceExample";
 import type { EditDataSource } from "./common";
-import { wrapEditDataSource } from "./common";
+import { createDataSourceDraft } from "./common";
 import { DataSourceForm } from "./DataSourceForm";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import type { InfoSection } from "./info-content";
@@ -60,7 +60,7 @@ export function DataSourceSection({
   const handleCreateRODataSource = useCallback(() => {
     if (isCreating) return;
     const ds = {
-      ...wrapEditDataSource(undefined, basicInfo.engine),
+      ...createDataSourceDraft(basicInfo.engine),
       type: DataSourceType.READ_ONLY,
       host: adminDataSource.host,
       port: adminDataSource.port,
