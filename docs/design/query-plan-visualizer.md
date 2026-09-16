@@ -143,10 +143,17 @@ what the user asked to see, and no SQL editor we surveyed rewrites a typed
 it seven months later for non-use.
 
 **Not every result has a Plan tab.** DDL and anything else the engine cannot
-explain gets none — an empty tab is worse than no tab. The opposite case is the
-one that matters most: a query killed by the workspace query timeout **keeps**
-its Plan tab. No measured plan exists, by definition, but an estimated one is
-usually the answer to why it died.
+explain gets none — an empty tab is worse than no tab.
+
+A query killed by the workspace timeout is the case worth having: no measured
+plan can exist, but an estimate is usually the answer to why it died. It has a
+prerequisite. Today a timeout returns no result at all — `executeWithTimeout`
+yields nil (`sql_service.go:999`), `Query` turns that into an RPC error
+(`:451-456`), and the client records an empty result set — so there is no
+executed statement to explain, and explaining the user's text instead would plan
+a differently-limited query, which is what §3.4 rejects. The timeout response
+has to carry the executed statement first. Until it does, no Plan tab here
+either.
 
 **PostgreSQL XML is text until someone writes the parser.** `parsePostgresPlan`
 reads JSON only, and `VISUALIZER_EXPLAIN_FORMATS` maps PostgreSQL to JSON, so a
