@@ -75,7 +75,12 @@ Both explain actions go in the dropdown Run already has, not on the toolbar.
 Spanner Studio puts "Results only / Explanation only" in exactly that place, and
 none of the four reference products ships a toolbar Explain button. They explain
 **exactly the statements Run would run** — same selection, same caret rule — so
-there is no second scoping rule to learn.
+there is no second scoping rule to learn. With one refusal: a submission that
+sets session state, such as `SET search_path = tenant; SELECT * FROM orders`,
+cannot be explained statement by statement. `EXPLAIN SET …` is not valid, and
+skipping the `SET` would plan the next statement against the wrong search path.
+The actions say so rather than explaining part of the script — the same rule
+§3.3 applies to the Plan tab, stated once and enforced on both paths.
 
 They are two actions, not one, because the difference is whether your query runs.
 pgAdmin splits them the same way (F7 / Shift+F7). **Explain** never executes:
@@ -203,7 +208,13 @@ named Plan, containing the plan.
    units, and they are wrong in exactly the cases worth investigating, so ranking
    a measured plan by estimate would point at the wrong operator precisely when
    it matters. Where neither is available, say so rather than inventing an order.
-   Loops and parallel workers have to be defined before any percentage is shown.
+
+   Either way the metric is **exclusive**: a parent's `Actual Total Time`
+   includes its children and is reported per loop, so ranking the raw number
+   just finds the root. Subtract the children and multiply out the loops, per
+   engine — which is what the model already does for estimates by ranking
+   `selfCost` (`plan-model.ts:467-468`), and the measured side has to match it
+   before any percentage or opening zoom is shown.
 2. **Graph** — opens zoomed on the costliest operator, not the root; long
    single-child chains fold into one box with a count. Nodes show their share of
    cost, the top one badged (Spanner); colour follows cost or rows (BigQuery).
