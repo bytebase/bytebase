@@ -5,10 +5,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSource_AuthenticationType,
-  DataSource_GCPCredentialSchema,
   DataSourceSchema,
-  DataSourceType,
-  InstanceSchema,
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
@@ -16,7 +13,6 @@ import {
   calcDataSourceUpdateMask,
   createDataSourceDraft,
   type DataSourceSecretField,
-  extractDataSourceEditState,
   getDataSourceSecretValue,
   movesKeytabToNewDestination,
   updateDataSourceSecret,
@@ -452,13 +448,12 @@ describe("secret edit intent", () => {
       const untouched = createDataSourceDraft(Engine.MYSQL, original);
       expect(getDataSourceSecretValue(untouched, field)).toBeUndefined();
       expect(
-        calcDataSourceUpdateMask(Engine.MYSQL, original, original, untouched)
+        calcDataSourceUpdateMask(original, original, untouched)
       ).not.toContain(path);
       const changed = updateDataSourceSecret(untouched, field, "");
       expect(getDataSourceSecretValue(changed, field)).toBe("");
       expect(
         calcDataSourceUpdateMask(
-          Engine.MYSQL,
           create(DataSourceSchema, { ...original, [field]: "" }),
           original,
           changed
@@ -478,7 +473,6 @@ describe("secret edit intent", () => {
     expect(getDataSourceSecretValue(changed, "sshPrivateKey")).toBeUndefined();
     expect(
       calcDataSourceUpdateMask(
-        Engine.MYSQL,
         create(DataSourceSchema, {
           ...original,
           sshPassword: changed.sshPassword,
@@ -491,58 +485,12 @@ describe("secret edit intent", () => {
 });
 
 test.each([Engine.SPANNER, Engine.BIGQUERY])(
-  "normalizes stored GCP connection drafts without mutating the instance for engine %s",
+  "initializes new GCP drafts with IAM for engine %s",
   (engine) => {
-    const instance = create(InstanceSchema, {
-      engine,
-      dataSources: [DataSourceType.ADMIN, DataSourceType.READ_ONLY].map(
-        (type) =>
-          create(DataSourceSchema, {
-            id: String(type),
-            type,
-            authenticationType: DataSource_AuthenticationType.PASSWORD,
-            projectId: "valid-project",
-            instanceId: "valid-instance",
-          })
-      ),
-    });
-    const drafts = extractDataSourceEditState(instance).dataSources;
-    expect(drafts).toHaveLength(2);
-    for (const draft of drafts) {
-      expect(draft.authenticationType).toBe(
-        DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
-      );
-      expect(draft.pendingCreate).toBe(false);
-    }
-    expect(
-      instance.dataSources.every(
-        (ds) => ds.authenticationType === DataSource_AuthenticationType.PASSWORD
-      )
-    ).toBe(true);
-  }
-);
-
-test.each([Engine.SPANNER, Engine.BIGQUERY])(
-  "includes authentication when updating legacy GCP credentials for engine %s",
-  (engine) => {
-    const original = create(DataSourceSchema, {
-      id: "readonly",
-      type: DataSourceType.READ_ONLY,
-      authenticationType: DataSource_AuthenticationType.PASSWORD,
-    });
-    const draft = createDataSourceDraft(engine, original);
-    const editing = create(DataSourceSchema, {
-      ...original,
-      authenticationType: draft.authenticationType,
-      iamExtension: {
-        case: "gcpCredential",
-        value: create(DataSource_GCPCredentialSchema, {
-          content: "new-credential",
-        }),
-      },
-    });
-    expect(calcDataSourceUpdateMask(engine, editing, original, draft)).toEqual(
-      expect.arrayContaining(["gcp_credential", "authentication_type"])
+    const draft = createDataSourceDraft(engine);
+    expect(draft.authenticationType).toBe(
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
     );
+    expect(draft.pendingCreate).toBe(true);
   }
 );

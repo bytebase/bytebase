@@ -1087,7 +1087,7 @@ describe("InstanceFormProvider", () => {
     await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
     await act(async () => {
       context.setBasicInfo((previous) => ({ ...previous, engine, title: "Production" }));
-      context.setDataSourceEditState((previous) => ({ ...previous, dataSources: [createDataSourceDraft(engine, create(DataSourceSchema, { id: "admin", type: DataSourceType.ADMIN, projectId: "valid-project", instanceId: "valid-instance" }))] }));
+      context.setDataSourceEditState((previous) => ({ ...previous, dataSources: [{ ...createDataSourceDraft(engine), id: "admin", type: DataSourceType.ADMIN, projectId: "valid-project", instanceId: "valid-instance" }] }));
     });
     expect(context.allowCreate).toBe(false);
     await act(async () => { context.setResourceIdValidated(true); });
