@@ -103,6 +103,7 @@ export function useSQLEditorAutoSave() {
       } else {
         await createSavedQuery({
           tabId,
+          title: tab.title,
           database: databaseToSave,
           statement: statementToSave,
           signal: controller.signal,

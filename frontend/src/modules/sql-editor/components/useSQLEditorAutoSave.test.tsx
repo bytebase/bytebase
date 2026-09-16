@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   tab: {
     id: "tab-1",
     savedQuery: "",
+    title: "",
     status: "DIRTY",
     statement: "SELECT 1",
     connection: {
@@ -88,6 +89,7 @@ describe("useSQLEditorAutoSave", () => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     mocks.tab.savedQuery = "";
+    mocks.tab.title = "";
     mocks.tab.status = "DIRTY";
     mocks.tab.statement = "SELECT 1";
     mocks.tab.connection = {
@@ -114,10 +116,24 @@ describe("useSQLEditorAutoSave", () => {
 
     expect(mocks.createSavedQuery).toHaveBeenCalledWith({
       tabId: "tab-1",
+      title: "",
       database: "instances/inst1/databases/db1",
       statement: "SELECT 1",
       signal: expect.any(AbortSignal),
     });
+  });
+
+  test("keeps a local draft title when it first auto-saves", async () => {
+    mocks.tab.title = "Query history at 2026-09-16 16:30";
+    renderHook(() => useSQLEditorAutoSave());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(mocks.createSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Query history at 2026-09-16 16:30" })
+    );
   });
 
   test("does not save whitespace-only drafts", async () => {
