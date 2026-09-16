@@ -144,9 +144,14 @@ A live log is a prefix of the finished one, so the test also treats a failure fo
 (`backend/plugin/db/driver.go:357-367`, called at `pg.go:470`), so the marker is the standing
 signal that another attempt is coming; without it, the five-second poll
 (`useTaskRunLogData.ts:101`) landing between a failed attempt and its retry would open a failure
-that is about to be superseded. What remains is the ~200ms between the failure and the marker, and
-D14 closes that: a row opened by a mark folds again when the mark moves, unless the reader has
-touched it.
+that is about to be superseded. What remains is the ~200ms between the failure and the marker,
+and that window is left open deliberately. A poll landing inside it — roughly one chance in
+twenty-five, and only for someone watching a retrying run live — opens a failure that the next
+poll folds again when the marker arrives and the mark moves off it, so the row can sit expanded for
+up to five seconds. Suppressing the mark while the run is still `RUNNING` would remove the flicker
+and take D14's entire point with it, since the case the mark exists for *is* a deploy watched from
+the plan page that fails while you are looking at it. The transient state is not false either: that
+command really did fail at that moment; it is only about to be tried again.
 
 The test reads only the entries, which matters because `taskRunStatus` is an optional prop that the
 changelog and revision pages do not pass. Everything else starts folded, and every row toggles
