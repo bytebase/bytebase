@@ -134,9 +134,15 @@ re-executes a statement that already ran.** Today every Visualize click costs an
 extra call on PostgreSQL and SQL Server, because the link re-runs `EXPLAIN` just
 to change format; drawing from what came back removes it.
 
-Today's Visualize link already fetches a drawable plan — it is just wired to the
-request flag instead of the result. Rewiring it is the smallest fix for
-problem 1.
+**Visualize is a server-side re-explain, not a rewiring.** Changing the gate is
+what makes the button appear on a typed `EXPLAIN`; it is not what makes it work.
+The existing link replays the same params with a different format
+(`getExplainToken`), which leaves `explain` false and returns the same text —
+and flipping `explain` true instead would have the driver prefix a second
+`EXPLAIN` onto a statement that already starts with one. So Visualize sends that
+statement as an explain request naming the format it wants, and the backend
+substitutes the format rather than prefixing, which is the rule §3.1 already
+sets for every statement that arrives already explaining itself.
 
 **We do not silently turn a plain `EXPLAIN` into `FORMAT JSON`.** It would change
 what the user asked to see, and no SQL editor we surveyed rewrites a typed
