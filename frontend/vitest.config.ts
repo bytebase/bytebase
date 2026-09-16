@@ -2,6 +2,14 @@ import { fileURLToPath } from "node:url";
 import { configDefaults, defineConfig, mergeConfig } from "vitest/config";
 import viteConfig from "./vite.config";
 
+// Anything rendering a wall-clock time reads the process timezone, so without
+// a fixed one those assertions pass or fail by where the runner sits. Set it
+// here: this config is evaluated in the main process before any worker starts,
+// and assigning TZ resets Node's zone cache process-wide. A worker setting it
+// for itself would not -- the threads pool shares one process. Asia/Shanghai
+// rather than UTC so a missing zone conversion cannot pass on a zero offset.
+process.env.TZ = "Asia/Shanghai";
+
 export default mergeConfig(
   viteConfig,
   defineConfig({

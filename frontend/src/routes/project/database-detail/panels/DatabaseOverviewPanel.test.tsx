@@ -68,8 +68,12 @@ const mocks = vi.hoisted(() => {
     instanceV1SupportsSequence: vi.fn(() => false),
     instanceV1SupportsTrigger: vi.fn(() => false),
     bytesToString: vi.fn((size: number) => `${size} B`),
+    formatQueueTime: vi.fn(() => "5 minutes ago"),
+    formatCompactDateTime: vi.fn(() => "Jan 1, 1970, 12:00 AM"),
+    formatOperationalDateTime: vi.fn(() => "Jan 1, 1970, 12:00 AM UTC"),
     formatRelativeTime: vi.fn(() => "5 minutes ago"),
     formatAbsoluteDateTime: vi.fn(() => "Jan 1, 1970, 12:00:01 AM UTC"),
+    nextRelativeChangeAt: vi.fn(() => Number.POSITIVE_INFINITY),
   };
 });
 
@@ -148,8 +152,12 @@ vi.mock("@/utils", () => ({
   getDatabaseEngine: mocks.getDatabaseEngine,
   getInstanceResource: mocks.getInstanceResource,
   getDatabaseProject: mocks.getDatabaseProject,
+  formatQueueTime: mocks.formatQueueTime,
+  formatCompactDateTime: mocks.formatCompactDateTime,
+  formatOperationalDateTime: mocks.formatOperationalDateTime,
   formatRelativeTime: mocks.formatRelativeTime,
   formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
+  nextRelativeChangeAt: mocks.nextRelativeChangeAt,
   hasIndexSizeProperty: mocks.hasIndexSizeProperty,
   isDev: mocks.isDev,
   hasProjectPermissionV2: mocks.hasProjectPermissionV2,
@@ -386,6 +394,8 @@ beforeEach(async () => {
   mocks.instanceV1SupportsSequence.mockReturnValue(false);
   mocks.bytesToString.mockReset();
   mocks.bytesToString.mockImplementation((size: number) => `${size} B`);
+  mocks.formatQueueTime.mockReset();
+  mocks.formatQueueTime.mockReturnValue("5 minutes ago");
   mocks.formatRelativeTime.mockReset();
   mocks.formatRelativeTime.mockReturnValue("5 minutes ago");
   mocks.dbSchemaStore.mockReset();

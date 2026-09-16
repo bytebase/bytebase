@@ -68,3 +68,61 @@ export function formatAbsoluteDate(timestampMs: number): string {
     year: "numeric",
   }).format(date);
 }
+
+export function formatQueueTime(timestampMs: number): string {
+  if (Math.abs(Date.now() - timestampMs) >= RELATIVE_THRESHOLD_MS) {
+    return formatAbsoluteDate(timestampMs);
+  }
+  return formatRelativeTime(timestampMs);
+}
+
+export function formatCompactDateTime(timestampMs: number): string {
+  return new Intl.DateTimeFormat(getActiveLocale(), {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(timestampMs));
+}
+
+export function formatOperationalDateTime(timestampMs: number): string {
+  return new Intl.DateTimeFormat(getActiveLocale(), {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(new Date(timestampMs));
+}
+
+/**
+ * The instant at which `formatQueueTime` would next render this timestamp
+ * differently, or `Infinity` once it has settled on an absolute date.
+ *
+ * Buckets are measured from the timestamp, not from the wall clock: a row
+ * created at 10:00:30 turns over to "1 minute ago" at 10:01:30. A display that
+ * woke on a fixed cadence instead would lag by up to a whole bucket.
+ */
+export function nextRelativeChangeAt(timestampMs: number): number {
+  const nowMs = Date.now();
+  const ageMs = Math.abs(nowMs - timestampMs);
+  if (ageMs >= RELATIVE_THRESHOLD_MS) {
+    return Number.POSITIVE_INFINITY;
+  }
+  const bucketMs =
+    ageMs < 60_000
+      ? 1_000
+      : ageMs < 3_600_000
+        ? 60_000
+        : ageMs < 86_400_000
+          ? 3_600_000
+          : 86_400_000;
+  // A past timestamp grows into the next bucket; a future one shrinks back
+  // into the previous one.
+  const intoBucketMs = ageMs % bucketMs;
+  const untilBucketEdgeMs =
+    nowMs >= timestampMs ? bucketMs - intoBucketMs : intoBucketMs || bucketMs;
+  return nowMs + Math.min(untilBucketEdgeMs, RELATIVE_THRESHOLD_MS - ageMs);
+}
