@@ -123,6 +123,7 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
     statement = "",
     folders = [],
     database = "",
+    signal,
   }) => {
     const editorStore = getSQLEditorEditorState();
     const tabStore = getSQLEditorTabsState();
@@ -138,15 +139,35 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
         content: new TextEncoder().encode(statement),
         project: editorStore.project,
         folder: folders.join("/"),
-      })
+      }),
+      signal
     );
 
+    if (signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+
     if (tabId) {
+      const currentTab = tabStore.tabsById.get(tabId);
+      const statementChanged = currentTab?.statement !== statement;
+      const databaseChanged =
+        !currentTab ||
+        currentTab.connection.instance !== connection.instance ||
+        currentTab.connection.database !== connection.database;
+      const nextConnection =
+        currentTab?.connection.instance === connection.instance &&
+        currentTab.connection.database === connection.database
+          ? { ...currentTab.connection, ...connection }
+          : connection;
       return tabStore.updateTab(tabId, {
-        status: "CLEAN",
+        status: statementChanged || databaseChanged ? "DIRTY" : "CLEAN",
         title: savedQueryTitle,
-        statement,
-        connection,
+        statement: statementChanged
+          ? (currentTab?.statement ?? statement)
+          : statement,
+        connection: databaseChanged
+          ? (currentTab?.connection ?? connection)
+          : nextConnection,
         savedQuery: newSavedQuery.name,
       });
     }

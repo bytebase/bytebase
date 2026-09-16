@@ -30,7 +30,7 @@ export function PanelSearchBox({
       <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-control-placeholder pointer-events-none" />
       <Input
         size="sm"
-        className="pl-7 pr-7"
+        style={{ paddingInlineStart: "1.75rem", paddingInlineEnd: "1.75rem" }}
         value={value}
         placeholder={placeholder ?? t("common.search")}
         onChange={handleChange}

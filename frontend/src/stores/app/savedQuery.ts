@@ -186,7 +186,7 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
       return response.folders;
     },
 
-    createSavedQuery: async (savedQuery) => {
+    createSavedQuery: async (savedQuery, signal) => {
       const fullSavedQuery = savedQuery.name
         ? savedQuery
         : clone(SavedQuerySchema, savedQuery);
@@ -194,7 +194,8 @@ export const createSavedQuerySlice: AppSliceCreator<SavedQuerySlice> = (
         createProto(CreateSavedQueryRequestSchema, {
           parent: fullSavedQuery.project,
           savedQuery: fullSavedQuery,
-        })
+        }),
+        { signal }
       );
       setCacheEntry(response, "FULL");
       return response;

@@ -135,7 +135,7 @@ export function MaskingReasonPopover({
                 <span className="text-control-placeholder">
                   {t("masking.reason.context")}:
                 </span>
-                <span className="ml-1">{reason.context}</span>
+                <span className="ml-1 wrap-anywhere">{reason.context}</span>
               </div>
             )}
 

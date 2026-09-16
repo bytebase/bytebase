@@ -655,7 +655,10 @@ export type SavedQuerySlice = {
     parent: string,
     filter?: string
   ) => Promise<string[]>;
-  createSavedQuery: (savedQuery: SavedQuery) => Promise<SavedQuery>;
+  createSavedQuery: (
+    savedQuery: SavedQuery,
+    signal?: AbortSignal
+  ) => Promise<SavedQuery>;
   patchSavedQuery: (
     savedQuery: SavedQuery,
     updateMask: string[],
