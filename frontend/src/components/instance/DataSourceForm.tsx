@@ -338,7 +338,7 @@ export function DataSourceForm({
         return [
           {
             value: DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
-            label: t("instance.password-type.google-iam"),
+            label: t("instance.password-type.google-cloud-iam"),
           },
         ];
       case Engine.MYSQL:
@@ -728,7 +728,9 @@ export function DataSourceForm({
         ? `secret:${passwordType}`
         : `auth:${dataSource.authenticationType}`;
 
-  const authenticationTypeControl = showMainFields && (
+  const authenticationTypeControl = (showMainFields ||
+    basicInfo.engine === Engine.SPANNER ||
+    basicInfo.engine === Engine.BIGQUERY) && (
     <FormField
       title={t("instance.authentication")}
       className="sm:col-span-3 sm:col-start-1"
@@ -794,11 +796,10 @@ export function DataSourceForm({
         ? authenticationTypeControl
         : !optionsOnly && (
             <>
+              {!hideAuthentication && authenticationTypeControl}
               {/* Main credential fields */}
               {showMainFields && (
                 <>
-                  {!hideAuthentication && authenticationTypeControl}
-
                   {/* Kerberos config */}
                   {dataSource.saslConfig?.mechanism?.case === "krbConfig" && (
                     <FormField
@@ -1806,27 +1807,6 @@ export function DataSourceForm({
               {(basicInfo.engine === Engine.SPANNER ||
                 basicInfo.engine === Engine.BIGQUERY) && (
                 <>
-                  <RadioGroup
-                    className="sm:col-span-3 sm:col-start-1 textlabel gap-x-4"
-                    value={String(dataSource.authenticationType)}
-                    onValueChange={(value) =>
-                      update({
-                        authenticationType: Number(
-                          value
-                        ) as DataSource_AuthenticationType,
-                      })
-                    }
-                  >
-                    {supportedAuthenticationTypes.map((item) => (
-                      <RadioGroupItem
-                        key={item.value}
-                        value={String(item.value)}
-                        disabled={!allowEdit}
-                      >
-                        {item.label}
-                      </RadioGroupItem>
-                    ))}
-                  </RadioGroup>
                   <CredentialSourceForm
                     dataSource={dataSource}
                     engine={basicInfo.engine}

@@ -106,53 +106,61 @@ function GCPEndpointInput({
   allowEdit: boolean;
 }>) {
   const { t } = useTranslation();
+  const endpointId = useId();
+  const portId = useId();
   const [expanded, setExpanded] = useState(false);
   const visible = expanded || !!endpoint || !!port;
 
   if (!visible) {
     if (!allowEdit) return null;
     return (
-      <div className="col-span-2">
+      <FormField title={t("instance.endpoint")}>
         <Button
           type="button"
           appearance="link"
           size="xs"
-          className="h-auto p-0 text-sm"
+          className="h-auto p-0 text-sm self-start"
           onClick={() => setExpanded(true)}
         >
           {t("instance.gcp-endpoint-toggle")}
         </Button>
-      </div>
+      </FormField>
     );
   }
 
   return (
-    <>
-      <FormField title={<>{t("instance.endpoint")}</>}>
+    <FormField
+      title={
+        <FormLabel htmlFor={endpointId}>{t("instance.endpoint")}</FormLabel>
+      }
+    >
+      <div className="flex flex-wrap items-center gap-2">
         <Input
+          id={endpointId}
           value={endpoint}
           placeholder={placeholder}
-          className="w-full"
+          className="min-w-0 flex-1"
           disabled={!allowEdit}
           onChange={(e) => onUpdate({ host: e.target.value.trim() })}
         />
-      </FormField>
-      <FormField title={<>{t("instance.port")}</>}>
+        <FormLabel htmlFor={portId}>{t("instance.port")}</FormLabel>
         <Input
+          id={portId}
+          aria-label={t("instance.port")}
           value={port}
           placeholder="443"
-          className="w-full"
+          className="w-20 shrink-0"
           disabled={!allowEdit}
           onChange={(e) => {
             if (e.target.value && !onlyAllowNumber(e.target.value)) return;
             onUpdate({ port: e.target.value.trim() });
           }}
         />
-      </FormField>
-      <p className="col-span-2 text-xs leading-4 text-control-light">
+      </div>
+      <p className="text-xs leading-4 text-control-light">
         {t("instance.gcp-endpoint-tip", { example })}
       </p>
-    </>
+    </FormField>
   );
 }
 
@@ -183,7 +191,7 @@ function SpannerHostInput({
   const isValidInstanceId = RE_GCP_INSTANCE_ID.test(instanceId);
 
   return (
-    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+    <div className="flex flex-col gap-4">
       <FormField
         validationField="projectId"
         title={
@@ -227,19 +235,19 @@ function SpannerHostInput({
             onUpdate({ instanceId: e.target.value.trim() });
           }}
         />
+        <p className="text-xs leading-4 text-control-light">
+          {t("instance.find-gcp-project-id-and-instance-id")}{" "}
+          <a
+            href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="normal-link inline-flex items-center"
+          >
+            {t("common.detailed-guide")}
+            <ExternalLink className="size-4 ml-1" />
+          </a>
+        </p>
       </FormField>
-      <p className="col-span-2 text-xs leading-4 text-control-light">
-        {t("instance.find-gcp-project-id-and-instance-id")}{" "}
-        <a
-          href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="normal-link inline-flex items-center"
-        >
-          {t("common.detailed-guide")}
-          <ExternalLink className="size-4 ml-1" />
-        </a>
-      </p>
       <GCPEndpointInput
         endpoint={endpoint}
         port={port}
@@ -275,7 +283,7 @@ function BigQueryHostInput({
   const isValidProjectId = RE_GCP_PROJECT_ID.test(projectId);
 
   return (
-    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+    <div className="flex flex-col gap-4">
       <FormField
         validationField="projectId"
         title={
@@ -297,19 +305,19 @@ function BigQueryHostInput({
             onUpdate({ projectId: e.target.value.trim() });
           }}
         />
+        <p className="text-xs leading-4 text-control-light">
+          {t("instance.find-gcp-project-id")}{" "}
+          <a
+            href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="normal-link inline-flex items-center"
+          >
+            {t("common.detailed-guide")}
+            <ExternalLink className="size-4 ml-1" />
+          </a>
+        </p>
       </FormField>
-      <p className="col-span-2 text-xs leading-4 text-control-light">
-        {t("instance.find-gcp-project-id")}{" "}
-        <a
-          href="https://docs.bytebase.com/get-started/connect/gcp?source=console"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="normal-link inline-flex items-center"
-        >
-          {t("common.detailed-guide")}
-          <ExternalLink className="size-4 ml-1" />
-        </a>
-      </p>
       <GCPEndpointInput
         endpoint={endpoint}
         port={port}
