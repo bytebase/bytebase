@@ -250,6 +250,9 @@ export function IMPage() {
     []
   );
   const [localValues, setLocalValues] = useState<Record<string, string>[]>([]);
+  const [secretResetKeys, setSecretResetKeys] = useState<
+    Record<string, number>
+  >({});
   const [pendingSaveType, setPendingSaveType] = useState<string | null>(null);
   const [initialized, setInitialized] = useState(false);
 
@@ -326,6 +329,10 @@ export function IMPage() {
     if (!original.isConfigured) {
       setLocalSettings((prev) => prev.filter((_, i) => i !== index));
     } else {
+      setSecretResetKeys((prev) => ({
+        ...prev,
+        [original.type]: (prev[original.type] ?? 0) + 1,
+      }));
       setLocalValues((prev) => {
         const next = [...prev];
         next[index] = { ...original.values };
@@ -456,6 +463,7 @@ export function IMPage() {
                   aria-label={field.label}
                   disabled={!allowEdit}
                   isCreating={!item.isConfigured}
+                  resetKey={secretResetKeys[item.type] ?? 0}
                   placeholder={t("common.sensitive-placeholder")}
                   value={localValues[i]?.[field.key] ?? ""}
                   onValueChange={(value) => updateField(i, field.key, value)}
