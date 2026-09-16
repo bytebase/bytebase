@@ -116,4 +116,27 @@ describe("useSQLEditorAutoSave", () => {
 
     expect(mocks.createSavedQuery).not.toHaveBeenCalled();
   });
+
+  test("saves a whitespace-only statement for an existing saved query", async () => {
+    mocks.tab.savedQuery = "projects/proj1/savedQueries/query1";
+    mocks.tab.statement = "  \n\t ";
+    mocks.getSavedQueryByName.mockReturnValue({
+      name: mocks.tab.savedQuery,
+    });
+    mocks.maybeUpdateSavedQuery.mockResolvedValue(undefined);
+
+    renderHook(() => useSQLEditorAutoSave());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(mocks.maybeUpdateSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tabId: "tab-1",
+        savedQuery: "projects/proj1/savedQueries/query1",
+        statement: "  \n\t ",
+      })
+    );
+  });
 });

@@ -142,10 +142,14 @@ export const createSavedQuerySaveSlice: SQLEditorSliceCreator<
     );
 
     if (tabId) {
+      const currentTab = tabStore.tabsById.get(tabId);
+      const statementChanged = currentTab?.statement !== statement;
       return tabStore.updateTab(tabId, {
-        status: "CLEAN",
+        status: statementChanged ? "DIRTY" : "CLEAN",
         title: savedQueryTitle,
-        statement,
+        statement: statementChanged
+          ? (currentTab?.statement ?? statement)
+          : statement,
         connection,
         savedQuery: newSavedQuery.name,
       });

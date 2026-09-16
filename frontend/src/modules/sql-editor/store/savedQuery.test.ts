@@ -185,6 +185,31 @@ describe("saved query save slice — maybeUpdateSavedQuery", () => {
   });
 });
 
+describe("saved query save slice — createSavedQuery", () => {
+  test("keeps newer local SQL when an earlier create response arrives", async () => {
+    const store = makeStore();
+    const tab = getSQLEditorTabsState().addTab({
+      statement: "SELECT newer",
+      status: "SAVING",
+    });
+    mocks.savedQueryStore.createSavedQuery.mockResolvedValue({
+      name: "projects/default/savedQueries/query1",
+    });
+
+    await store.getState().createSavedQuery({
+      tabId: tab.id,
+      database: "instances/inst1/databases/db1",
+      statement: "SELECT earlier",
+    });
+
+    expect(getSQLEditorTabsState().tabsById.get(tab.id)).toMatchObject({
+      statement: "SELECT newer",
+      status: "DIRTY",
+      savedQuery: "projects/default/savedQueries/query1",
+    });
+  });
+});
+
 describe("saved query save slice — maybeSwitchProject", () => {
   test("with an invalid project name returns undefined without setting project", async () => {
     const store = makeStore();
