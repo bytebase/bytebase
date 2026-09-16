@@ -232,7 +232,8 @@ free with `CopyButton`. The fold control needs two new keys under `task-run.log-
 accessible names, not visible labels, and land in `en-US` with the other locales falling back
 until translated.
 
-**D13 · A row that opens by default has to be rendered.** `SectionContent` renders only the first
+**D13 · A row that opens by default has to be rendered, numbered and in view.** `SectionContent`
+renders only the first
 `MAX_RENDERED_ITEMS` (50) entries of a section until *Load more* is pressed
 (`SectionContent.tsx:29-32`). A migration whose 300th statement fails would therefore have D4 mark
 a row that is not in the DOM, and the promise would quietly do nothing in the case that needs it
@@ -267,8 +268,16 @@ would open it. So the open set is derived rather than initialised: a row is open
 or the reader opened it, and folded when the reader folded it. An explicit toggle outranks the mark
 for as long as the dataset lasts, so a failure the reader folded stays folded through the next
 poll, and a mark that moves off a row — a transient failure that turns out to have been retried —
-takes its auto-open with it. `datasetKey` still clears the reader's toggles, exactly as it already
-clears `showAllItems`.
+takes its auto-open with it.
+
+Those overrides cannot live in `SectionContent`, because it is mounted conditionally: collapsing an
+enclosing section unmounts it and reopening builds a fresh one (`TaskRunLogViewer.tsx:195-201`), and
+a live run also swaps the sole-section rendering for the multi-section tree the moment a second
+entry type arrives. Either remount would discard the reader's folds and pop a marked failure back
+open on a dataset that never changed. The overrides therefore sit in `TaskRunLogViewer`, above the
+conditional mount, keyed by row and cleared when `taskRunName` changes — the same moment
+`datasetKey` already clears `showAllItems`. `showAllItems` keeps its remount-local behavior;
+re-hiding the tail of a long list on collapse is not a promise anyone made.
 
 ## States
 
@@ -292,7 +301,8 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 |---|---|
 | `task-run-log/types.ts` | `statement?: string` and `error?: string` on `DisplayItem` |
 | `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section |
-| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28 |
+| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28 |
+| `task-run-log/TaskRunLogViewer.tsx` | The reader's fold overrides, held above the conditional mount and cleared with `taskRunName` (D14) |
 | `locales/en-US.json` | Two accessible names |
 
 Tests, none of which exist today — which is how #21276 passed a clean suite while changing the
@@ -313,10 +323,12 @@ behavior of this function:
   and leaves the section scrolled to it rather than at the top (D13); copy receives the verbatim statement, never the line and never the error; a failed row
   carries no copy button on its error line and one inside its block; a row with no recoverable
   statement carries none at all.
-- `SectionContent` under live updates (D14), all on an unchanged `datasetKey`: a section rerendered
-  with a newly marked failure opens it without remounting; a row the reader folded stays folded
-  when the next poll arrives; a row whose mark moves away folds again if the reader never touched
-  it; and `datasetKey` changing clears those toggles, as it already clears `showAllItems`.
+- Live updates (D14), all on an unchanged `datasetKey`: a section rerendered with a newly marked
+  failure opens it without remounting; a row the reader folded stays folded when the next poll
+  arrives; a row whose mark moves away folds again if the reader never touched it; a folded row is
+  **still folded after collapsing and reopening its enclosing section**, and after the sole-section
+  rendering gives way to the multi-section tree; and `taskRunName` changing clears those toggles,
+  as `datasetKey` already clears `showAllItems`.
 
 ## Not in this PR
 
