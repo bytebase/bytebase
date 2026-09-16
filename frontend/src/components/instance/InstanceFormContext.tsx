@@ -553,6 +553,7 @@ export function InstanceFormProvider({
             );
             if (!original) throw new Error("should never reach this line");
             const updateMask = calcDataSourceUpdateMask(
+              instance!.engine,
               ds,
               original,
               editingDS

@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { omit } from "lodash-es";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -11,6 +12,8 @@ import {
   InstanceSchema,
   SyncDatabasesSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
+import { calcUpdateMask } from "@/utils/v1/common";
+import { createDataSourceDraft } from "./common";
 import { InstanceFormButtons } from "./InstanceFormButtons";
 
 (
@@ -18,6 +21,8 @@ import { InstanceFormButtons } from "./InstanceFormButtons";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
+  calcUpdateMask: vi.fn<typeof calcUpdateMask>(() => []),
+  updateDataSource: vi.fn(),
   routerCurrentName: "workspace.instance.create",
   routerCurrentQuery: {} as Record<string, unknown>,
   routerPush: vi.fn(),
@@ -72,6 +77,7 @@ vi.mock("@/stores/app", () => {
     isSaaSMode: () => false,
     createInstance: mocks.createInstance,
     updateInstance: mocks.updateInstance,
+    updateDataSource: mocks.updateDataSource,
     getInstanceByName: mocks.getInstanceByName,
     fetchDatabases: mocks.fetchDatabases,
     batchUpdateDatabases: mocks.batchUpdateDatabases,
@@ -88,7 +94,7 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
-  calcUpdateMask: () => [],
+  calcUpdateMask: mocks.calcUpdateMask,
   convertKVListToLabels: (list: { key: string; value: string }[]) =>
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
   extractInstanceResourceName: (name: string) => name.split("/").at(-1) ?? "",
@@ -170,6 +176,7 @@ const flushPromises = async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.calcUpdateMask.mockImplementation(() => []);
   mocks.hasFeature.mockReturnValue(true);
   mocks.routerCurrentName = "workspace.instance.create";
   mocks.routerCurrentQuery = {};
@@ -240,6 +247,56 @@ beforeEach(() => {
 });
 
 describe("InstanceFormButtons", () => {
+  test.each([Engine.SPANNER, Engine.BIGQUERY])(
+    "saves metadata without updating a legacy read-only connection for engine %s",
+    async (engine) => {
+      mocks.calcUpdateMask.mockImplementation(calcUpdateMask);
+      const admin = create(DataSourceSchema, {
+        id: "admin", type: DataSourceType.ADMIN,
+        authenticationType: DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+      });
+      const replica = create(DataSourceSchema, {
+        id: "readonly", type: DataSourceType.READ_ONLY,
+        authenticationType: DataSource_AuthenticationType.PASSWORD,
+      });
+      const saved = create(InstanceSchema, {
+        name: "instances/prod", title: "Before", engine,
+        dataSources: [admin, replica],
+      });
+      mocks.getInstanceByName.mockReturnValue(saved);
+      mocks.updateInstance.mockResolvedValue(saved);
+      const adminDraft = createDataSourceDraft(engine, admin);
+      const replicaDraft = createDataSourceDraft(engine, replica);
+      mocks.context = {
+        ...mocks.context, instance: saved, isCreating: false,
+        basicInfo: { ...saved, title: "After" },
+        adminDataSource: adminDraft, editingDataSource: adminDraft,
+        readonlyDataSourceList: [replicaDraft], hasReadonlyReplicaFeature: false,
+        extractDataSourceFromEdit: vi.fn((_engine, draft) => create(DataSourceSchema, omit(draft, "pendingCreate", "updatedPassword", "updatedMasterPassword", "updatedToken", "useEmptyPassword", "useEmptyMasterPassword"))),
+      };
+      const container = document.createElement("div");
+      const root = createRoot(container);
+      try {
+        await act(async () => { root.render(<InstanceFormButtons />); });
+        const update = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "common.update")!;
+        await act(async () => { update.click(); });
+        expect(mocks.context.setMissingFeature).not.toHaveBeenCalled();
+        expect(mocks.updateInstance).toHaveBeenCalledOnce();
+        expect(mocks.updateDataSource).not.toHaveBeenCalled();
+        expect(mocks.context.testConnection).not.toHaveBeenCalled();
+        expect(replica.authenticationType).toBe(DataSource_AuthenticationType.PASSWORD);
+
+        vi.clearAllMocks();
+        replicaDraft.projectId = "another-project";
+        await act(async () => { update.click(); });
+        expect(mocks.context.setMissingFeature).toHaveBeenCalledOnce();
+        expect(mocks.updateInstance).not.toHaveBeenCalled();
+      } finally {
+        await act(async () => { root.unmount(); });
+      }
+    }
+  );
+
   test("does not require the external-secret feature for an inactive IAM draft", async () => {
     mocks.hasFeature.mockReturnValue(false);
     const dataSource = create(DataSourceSchema, {

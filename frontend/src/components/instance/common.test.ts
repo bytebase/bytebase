@@ -5,6 +5,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSource_AuthenticationType,
+  DataSource_GCPCredentialSchema,
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
@@ -451,12 +452,13 @@ describe("secret edit intent", () => {
       const untouched = createDataSourceDraft(Engine.MYSQL, original);
       expect(getDataSourceSecretValue(untouched, field)).toBeUndefined();
       expect(
-        calcDataSourceUpdateMask(original, original, untouched)
+        calcDataSourceUpdateMask(Engine.MYSQL, original, original, untouched)
       ).not.toContain(path);
       const changed = updateDataSourceSecret(untouched, field, "");
       expect(getDataSourceSecretValue(changed, field)).toBe("");
       expect(
         calcDataSourceUpdateMask(
+          Engine.MYSQL,
           create(DataSourceSchema, { ...original, [field]: "" }),
           original,
           changed
@@ -476,6 +478,7 @@ describe("secret edit intent", () => {
     expect(getDataSourceSecretValue(changed, "sshPrivateKey")).toBeUndefined();
     expect(
       calcDataSourceUpdateMask(
+        Engine.MYSQL,
         create(DataSourceSchema, {
           ...original,
           sshPassword: changed.sshPassword,
@@ -516,5 +519,30 @@ test.each([Engine.SPANNER, Engine.BIGQUERY])(
         (ds) => ds.authenticationType === DataSource_AuthenticationType.PASSWORD
       )
     ).toBe(true);
+  }
+);
+
+test.each([Engine.SPANNER, Engine.BIGQUERY])(
+  "includes authentication when updating legacy GCP credentials for engine %s",
+  (engine) => {
+    const original = create(DataSourceSchema, {
+      id: "readonly",
+      type: DataSourceType.READ_ONLY,
+      authenticationType: DataSource_AuthenticationType.PASSWORD,
+    });
+    const draft = createDataSourceDraft(engine, original);
+    const editing = create(DataSourceSchema, {
+      ...original,
+      authenticationType: draft.authenticationType,
+      iamExtension: {
+        case: "gcpCredential",
+        value: create(DataSource_GCPCredentialSchema, {
+          content: "new-credential",
+        }),
+      },
+    });
+    expect(calcDataSourceUpdateMask(engine, editing, original, draft)).toEqual(
+      expect.arrayContaining(["gcp_credential", "authentication_type"])
+    );
   }
 );

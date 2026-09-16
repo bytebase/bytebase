@@ -132,7 +132,12 @@ export function InstanceFormButtons({
       const editing = extractDataSourceFromEdit(inst.engine, ds);
       const original = inst.dataSources.find((d) => d.id === ds.id);
       if (original) {
-        const updateMask = calcDataSourceUpdateMask(editing, original, ds);
+        const updateMask = calcDataSourceUpdateMask(
+          inst.engine,
+          editing,
+          original,
+          ds
+        );
         if (updateMask.length > 0) return false;
       }
       return true;
@@ -388,7 +393,12 @@ export function InstanceFormButtons({
       editState: EditDataSource
     ): Promise<boolean | undefined> => {
       if (!original) return;
-      const updateMask = calcDataSourceUpdateMask(editing, original, editState);
+      const updateMask = calcDataSourceUpdateMask(
+        inst.engine,
+        editing,
+        original,
+        editState
+      );
       if (updateMask.length === 0) return;
 
       const testResult = await testConnection(editState, true);

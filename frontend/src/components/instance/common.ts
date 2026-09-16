@@ -243,12 +243,23 @@ export const movesKeytabToNewDestination = (
 };
 
 export const calcDataSourceUpdateMask = (
+  engine: Engine,
   editing: DataSource,
   original: DataSource,
   editState: EditDataSource
 ) => {
   const updateMask = new Set(
-    calcUpdateMask(editing, original, true /* toSnakeCase */)
+    calcUpdateMask(
+      editing,
+      {
+        ...original,
+        authenticationType: normalizeAuthenticationType(
+          engine,
+          original.authenticationType
+        ),
+      },
+      true /* toSnakeCase */
+    )
   );
   const { useEmptyPassword, updateSsl } = editState;
   for (const field of editState.updatedSecretFields ?? []) {
@@ -297,6 +308,15 @@ export const calcDataSourceUpdateMask = (
         updateMask.add("gcp_credential");
         break;
     }
+  }
+
+  // Persist normalized authentication alongside real edits so credential updates
+  // satisfy the API's authentication-type requirement.
+  if (
+    updateMask.size > 0 &&
+    editing.authenticationType !== original.authenticationType
+  ) {
+    updateMask.add("authentication_type");
   }
 
   return Array.from(updateMask);
