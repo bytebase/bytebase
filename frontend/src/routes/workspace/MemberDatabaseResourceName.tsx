@@ -57,9 +57,9 @@ export function MemberDatabaseResourceName({
       {display.engine !== undefined && (
         <EngineIcon engine={display.engine} className="mr-1 h-4 w-4" />
       )}
-      <span className="truncate text-gray-600">{display.instanceTitle}</span>
-      <ChevronRight className="h-4 w-4 shrink-0 text-gray-500 opacity-60" />
-      <span className="truncate text-gray-800">{display.databaseName}</span>
+      <span className="truncate text-control">{display.instanceTitle}</span>
+      <ChevronRight className="h-4 w-4 shrink-0 text-control-light opacity-60" />
+      <span className="truncate text-main">{display.databaseName}</span>
     </div>
   );
 }

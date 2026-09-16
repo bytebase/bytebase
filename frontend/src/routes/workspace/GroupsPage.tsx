@@ -349,7 +349,7 @@ function GroupRow({
         <TableCell className="py-2">
           <div className="flex items-center gap-x-2">
             <button
-              className="shrink-0 p-0.5 rounded-xs hover:bg-gray-200"
+              className="shrink-0 p-0.5 rounded-xs hover:bg-control-bg-hover"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggle();

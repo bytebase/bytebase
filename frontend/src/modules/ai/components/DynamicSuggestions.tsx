@@ -154,7 +154,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
             </div>
           )}
           {state === "ENDED" && (
-            <span className="shrink-0 text-gray-500">
+            <span className="shrink-0 text-control-light">
               {t("plugin.ai.conversation.tips.no-more")}
             </span>
           )}

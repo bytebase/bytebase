@@ -4,6 +4,7 @@ import { Pencil, X } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { classificationLevelBackgroundClasses } from "@/components/classification-level";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -131,14 +132,6 @@ interface ClassificationTreeNode {
   level?: number;
   title: string;
 }
-
-const bgColorList = [
-  "bg-green-200",
-  "bg-yellow-200",
-  "bg-orange-300",
-  "bg-amber-500",
-  "bg-red-500",
-];
 
 function toTestId(value: string) {
   return value.replace(/[^a-zA-Z0-9_-]/g, "-");
@@ -347,7 +340,9 @@ function ClassificationLevelBadge({
     (level) => level.level === classificationEntry?.level
   );
   const levelColor =
-    bgColorList[(classificationEntry?.level ?? 0) - 1] ?? "bg-control-bg-hover";
+    classificationLevelBackgroundClasses[
+      (classificationEntry?.level ?? 0) - 1
+    ] ?? "bg-control-bg-hover";
 
   return (
     <span className="flex min-w-0 items-center gap-x-1">

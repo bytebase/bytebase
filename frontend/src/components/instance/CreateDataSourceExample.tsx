@@ -486,7 +486,7 @@ export function CreateDataSourceExample({
 
   return (
     <div className={`w-full flex flex-col justify-start ${className ?? ""}`}>
-      <p className="w-full text-sm text-gray-500">
+      <p className="w-full text-sm text-control-light">
         {descriptionText}
         {!createInstanceFlag && grantStatement && (
           <span
@@ -505,12 +505,12 @@ export function CreateDataSourceExample({
             userName={userName}
           />
           <div className="mt-2 flex flex-row">
-            <pre className="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-gray-50 text-sm whitespace-pre-line rounded-l-xs font-mono overflow-auto">
+            <pre className="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-control-bg/50 text-sm whitespace-pre-line rounded-l-xs font-mono overflow-auto">
               {grantStatement}
             </pre>
             <button
               type="button"
-              className="flex items-center -ml-px px-2 py-2 border border-gray-300 text-sm font-medium text-control-light bg-gray-50 hover:bg-gray-100 focus:ring-control focus:outline-hidden focus-visible:ring-2 focus:ring-offset-1 rounded-r-xs"
+              className="flex items-center -ml-px px-2 py-2 border border-control-border text-sm font-medium text-control-light bg-control-bg/50 hover:bg-control-bg focus:ring-control focus:outline-hidden focus-visible:ring-2 focus:ring-offset-1 rounded-r-xs"
               onClick={handleCopy}
               title="Copy"
             >

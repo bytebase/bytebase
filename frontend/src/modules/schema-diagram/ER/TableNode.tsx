@@ -101,10 +101,10 @@ export function TableNode({ schema, table }: TableNodeProps) {
       const classes: string[] = [];
       if (editable) classes.push("cursor-pointer");
       const status = columnStatus(column);
-      if (status === "changed") classes.push("text-yellow-700 bg-yellow-50");
-      else if (status === "created") classes.push("text-green-700 bg-green-50");
+      if (status === "changed") classes.push("bg-warning/10 text-warning");
+      else if (status === "created") classes.push("bg-success/10 text-success");
       else if (status === "dropped")
-        classes.push("text-red-700 bg-red-50 line-through");
+        classes.push("bg-error/10 text-error line-through");
       return classes.join(" ");
     },
     [editable, columnStatus]
@@ -138,15 +138,15 @@ export function TableNode({ schema, table }: TableNodeProps) {
     >
       <h3
         className={cn(
-          "group font-medium leading-6 text-white px-2 py-2 rounded-t-sm gap-x-1 relative text-center whitespace-pre-wrap break-words"
+          "group font-medium leading-6 text-accent-text px-2 py-2 rounded-t-sm gap-x-1 relative text-center whitespace-pre-wrap break-words"
         )}
         style={{ backgroundColor: tableColor }}
       >
         <FocusButton
           table={table}
           setCenter={false}
-          className="invisible group-hover:visible !absolute top-[50%] -mt-[9px] left-1 text-control group-hover:!bg-white/70 group-hover:!text-control"
-          focusedClass="!text-white"
+          className="invisible group-hover:visible !absolute top-[50%] -mt-[9px] left-1 text-control group-hover:!bg-background/70 group-hover:!text-control"
+          focusedClass="!text-accent-text"
         />
 
         {schema.name !== "" && (
@@ -167,7 +167,7 @@ export function TableNode({ schema, table }: TableNodeProps) {
         {editable && (
           <button
             type="button"
-            className="invisible group-hover:visible absolute top-[50%] -mt-[9px] right-1 text-control bg-white/70 hover:bg-control-bg p-0.5 rounded-sm"
+            className="invisible group-hover:visible absolute top-[50%] -mt-[9px] right-1 text-control bg-background/70 hover:bg-control-bg p-0.5 rounded-sm"
             onClick={() => events.emit("edit-table", { schema, table })}
           >
             <Pencil className="size-4" />

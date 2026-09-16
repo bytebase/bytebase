@@ -394,7 +394,7 @@ export function OAuth2ConsentPage() {
     // margins keep it centred while it still fits.
     <div className="h-full overflow-y-auto flex flex-col mx-auto w-full max-w-sm py-8">
       <BytebaseLogo className="mx-auto mb-8 mt-auto shrink-0" />
-      <div className="rounded-sm border border-control-border bg-white p-6 mb-auto shrink-0">
+      <div className="rounded-sm border border-control-border bg-background p-6 mb-auto shrink-0">
         {consentBody()}
       </div>
     </div>

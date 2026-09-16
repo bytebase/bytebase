@@ -132,7 +132,7 @@ export function DatabaseGroupDataTable({
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50">
+              <TableRow className="bg-control-bg/50">
                 {showSelection && <TableHead className="w-10" />}
                 <TableHead className="w-64">{t("common.name")}</TableHead>
                 <TableHead>{t("database.expression")}</TableHead>
@@ -201,7 +201,7 @@ export function DatabaseGroupDataTable({
                             type="button"
                             className={cn(
                               "flex items-center justify-end cursor-pointer size-6 p-1 opacity-60",
-                              "hover:opacity-100 hover:bg-white hover:shadow-xs rounded-sm"
+                              "hover:opacity-100 hover:bg-background hover:shadow-xs rounded-sm"
                             )}
                             onClick={(e) => handleExternalLink(e, group)}
                             aria-label={t("common.view-details")}

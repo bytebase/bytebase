@@ -54,7 +54,7 @@ export function MultiFactorPage() {
 
   return (
     <div className="mx-auto max-w-2xl h-full py-6 flex flex-col justify-center items-center">
-      <div className="w-80 p-8 py-6 shadow-sm border border-control-border rounded-sm bg-white">
+      <div className="w-80 p-8 py-6 shadow-sm border border-control-border rounded-sm bg-background">
         <img
           src={logoFull}
           alt="Bytebase"

@@ -264,7 +264,7 @@ function ProjectPlanDetailPageInner({
       <div
         ref={setPageHost}
         data-testid="plan-detail-page"
-        className="relative min-h-full overflow-x-clip bg-gray-50"
+        className="relative min-h-full overflow-x-clip bg-control-bg/50"
       >
         <div
           className={cn(
@@ -279,7 +279,7 @@ function ProjectPlanDetailPageInner({
               only when stuck, so the row is flat at the top. */}
           <header
             className={cn(
-              "sticky top-0 z-20 shrink-0 bg-white",
+              "sticky top-0 z-20 shrink-0 bg-background",
               headerStuck && "border-b"
             )}
           >
@@ -362,7 +362,7 @@ function ProjectPlanDetailPageInner({
         </div>
 
         {!page.ready && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-white">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
             <div className="text-sm text-control-light">
               {t("common.loading")}
@@ -438,11 +438,11 @@ function PhaseSection({
   const { t } = useTranslation();
   const dotClass =
     status === "completed"
-      ? "bg-success text-white ring-[3px] ring-success/15 md:ring-4"
+      ? "bg-success text-accent-text ring-[3px] ring-success/15 md:ring-4"
       : status === "closed"
-        ? "bg-control-placeholder text-white"
+        ? "bg-control-placeholder text-accent-text"
         : status === "active"
-          ? "bg-accent text-white ring-[3px] ring-accent/15 md:ring-4"
+          ? "bg-accent text-accent-text ring-[3px] ring-accent/15 md:ring-4"
           : "border-2 border-dashed border-control-border text-control-placeholder";
 
   return (
@@ -506,7 +506,7 @@ function PhaseSection({
                 {t("plan.phase.hide-details")}
               </span>
             </div>
-            <div className="mt-1 overflow-hidden rounded-sm border bg-white">
+            <div className="mt-1 overflow-hidden rounded-sm border bg-background">
               {children}
             </div>
           </div>

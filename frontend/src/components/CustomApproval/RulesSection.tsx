@@ -105,13 +105,13 @@ function SortableRow({
     <div
       ref={setNodeRef}
       style={style}
-      className={`grid border-b border-gray-100 last:border-b-0 hover:bg-gray-50 ${
-        index % 2 === 1 ? "bg-gray-50/50" : ""
+      className={`grid border-b border-block-border last:border-b-0 hover:bg-control-bg/50 ${
+        index % 2 === 1 ? "bg-control-bg/50" : ""
       }`}
     >
       <div className="flex items-center justify-center px-2 py-2">
         <GripVertical
-          className="h-4 w-4 cursor-grab text-gray-400 active:cursor-grabbing"
+          className="h-4 w-4 cursor-grab text-control-placeholder active:cursor-grabbing"
           {...attributes}
           {...listeners}
         />
@@ -150,7 +150,7 @@ function SortableRow({
           <>
             <button
               type="button"
-              className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-gray-200"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-control-bg-hover"
               onClick={handleEditClick}
             >
               <Pencil className="h-3 w-3" />
@@ -158,7 +158,7 @@ function SortableRow({
             {allowAdmin && (
               <button
                 type="button"
-                className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-gray-200"
+                className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-control-bg-hover"
                 onClick={handleDeleteClick}
               >
                 <Trash2 className="h-3 w-3" />
@@ -181,10 +181,10 @@ function RuleRowOverlay({
   return (
     <div
       style={gridStyle}
-      className="grid border border-gray-200 bg-blue-50 opacity-50"
+      className="grid border border-block-border bg-info/10 opacity-50"
     >
       <div className="flex items-center justify-center px-2 py-2">
-        <GripVertical className="h-4 w-4 text-gray-400" />
+        <GripVertical className="h-4 w-4 text-control-placeholder" />
       </div>
       <div className="truncate px-3 py-2">{rule.title || "-"}</div>
       <div className="overflow-hidden text-ellipsis whitespace-nowrap px-3 py-2">
@@ -350,11 +350,11 @@ export function RulesSection({
         </PermissionGuard>
       </div>
 
-      <div className="rounded-sm border border-gray-200 text-sm">
+      <div className="rounded-sm border border-block-border text-sm">
         {/* Table Header */}
         <div
           style={gridStyle}
-          className="grid border-b border-gray-200 bg-gray-50 font-medium text-gray-600"
+          className="grid border-b border-block-border bg-control-bg/50 font-medium text-control"
         >
           <div className="px-2 py-2" />
           <div className="relative px-3 py-2">
@@ -403,7 +403,7 @@ export function RulesSection({
 
         {/* Empty State */}
         {localRules.length === 0 && (
-          <div className="px-3 py-4 text-center text-gray-400">
+          <div className="px-3 py-4 text-center text-control-placeholder">
             {t("common.no-data")}
           </div>
         )}

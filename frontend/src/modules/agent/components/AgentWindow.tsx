@@ -1011,7 +1011,7 @@ export function AgentWindow() {
                           </AgentDropdownMenuItem>
                           <AgentDropdownMenuItem
                             data-agent-delete-all-chats
-                            className="text-error data-highlighted:bg-red-50"
+                            className="text-error data-highlighted:bg-error/10"
                             disabled={isDeleteAllDisabled}
                             onClick={(event) => {
                               event.stopPropagation();

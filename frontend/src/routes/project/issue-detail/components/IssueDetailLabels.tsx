@@ -139,7 +139,7 @@ export function IssueDetailLabels() {
       <div ref={containerRef} className="relative">
         <button
           className={cn(
-            "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-white px-3 py-1.5 text-left text-sm transition-colors",
+            "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-background px-3 py-1.5 text-left text-sm transition-colors",
             allowChange && !isUpdating && "hover:bg-control-bg",
             open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]",
             (!allowChange || isUpdating) && "cursor-not-allowed opacity-60"
@@ -193,7 +193,7 @@ export function IssueDetailLabels() {
         {open && (
           <div
             className={cn(
-              "absolute mt-1 w-full overflow-hidden rounded-sm border border-control-border bg-white shadow-lg",
+              "absolute mt-1 w-full overflow-hidden rounded-sm border border-control-border bg-background shadow-lg",
               LAYER_SURFACE_CLASS
             )}
           >

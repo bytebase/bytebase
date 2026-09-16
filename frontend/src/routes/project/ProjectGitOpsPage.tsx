@@ -233,7 +233,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   return (
     <ProjectPageLayout className="gap-y-1">
       {/* Section 1: What is GitOps */}
-      <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <div className="flex flex-col gap-y-1">
           <h2 className="text-lg font-medium">{t("gitops.overview.title")}</h2>
           <p className="textinfolabel">{t("gitops.overview.description")}</p>
@@ -261,7 +261,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
 
       {/* Section 2: Checks before we start */}
-      <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <h2 className="text-lg font-medium">{t("gitops.checklist.title")}</h2>
 
         <Alert
@@ -397,7 +397,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
             {targetsString && (
               <p className="text-sm text-control-light">
                 <span className="font-medium">targets:</span>{" "}
-                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded-xs">
+                <code className="rounded-xs bg-control-bg px-1 py-0.5 text-xs">
                   {targetsString}
                 </code>
               </p>
@@ -409,7 +409,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
 
       {/* Section 3: Workflow file generation */}
-      <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <div className="flex flex-col gap-y-1">
           <h2 className="text-lg font-medium">{t("gitops.workflow.title")}</h2>
           <p className="text-sm text-control-light">
@@ -507,7 +507,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
 
       {/* Section 4: Test your first GitOps migration */}
-      <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <div className="flex flex-col gap-y-1">
           <h2 className="text-lg font-medium">
             {t("gitops.test-setup.title")}
@@ -600,7 +600,7 @@ function MissingExternalURLAttention() {
 
 function CodeBlock({ code }: { code: string }) {
   return (
-    <div className="relative rounded-xs p-4 bg-gray-50">
+    <div className="relative rounded-xs bg-control-bg/50 p-4">
       <div className="absolute top-2 right-2 p-2">
         <CopyButton content={code} size="sm" />
       </div>
@@ -650,7 +650,7 @@ function StepItem({
 }) {
   return (
     <div className="flex items-start gap-x-3">
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-xs shrink-0 mt-0.5">
+      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-control-bg-hover text-xs text-control">
         {number}
       </span>
       <p className="text-sm text-control-light">{children}</p>

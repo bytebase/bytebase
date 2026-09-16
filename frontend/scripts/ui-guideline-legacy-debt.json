@@ -25,46 +25,10 @@
       "count": 1
     },
     {
-      "path": "src/app/components/SessionExpiredSurface.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/components/AccountMultiSelect.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-manual-dark",
-      "token": "dark:bg-dark-bg",
-      "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-manual-dark",
-      "token": "dark:bg-zinc-700",
-      "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-manual-dark",
-      "token": "dark:border-zinc-700",
-      "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-manual-dark",
-      "token": "dark:placeholder:text-gray-500",
-      "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-manual-dark",
-      "token": "dark:text-gray-100",
-      "count": 2
     },
     {
       "path": "src/components/AdvancedSearch.tsx",
@@ -77,30 +41,6 @@
       "rule": "no-native-control",
       "token": "input",
       "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-raw-color",
-      "token": "dark:bg-zinc-700",
-      "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-raw-color",
-      "token": "dark:border-zinc-700",
-      "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-raw-color",
-      "token": "dark:placeholder:text-gray-500",
-      "count": 1
-    },
-    {
-      "path": "src/components/AdvancedSearch.tsx",
-      "rule": "no-raw-color",
-      "token": "dark:text-gray-100",
-      "count": 2
     },
     {
       "path": "src/components/AuditLogTable.tsx",
@@ -127,66 +67,6 @@
       "count": 1
     },
     {
-      "path": "src/components/BannersWrapper.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-200",
-      "count": 1
-    },
-    {
-      "path": "src/components/BannersWrapper.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-white/10",
-      "count": 1
-    },
-    {
-      "path": "src/components/BannersWrapper.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:text-white",
-      "count": 1
-    },
-    {
-      "path": "src/components/BannersWrapper.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-800",
-      "count": 1
-    },
-    {
-      "path": "src/components/BannersWrapper.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 5
-    },
-    {
-      "path": "src/components/ClassificationTree.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-amber-500",
-      "count": 1
-    },
-    {
-      "path": "src/components/ClassificationTree.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-green-200",
-      "count": 1
-    },
-    {
-      "path": "src/components/ClassificationTree.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-orange-300",
-      "count": 1
-    },
-    {
-      "path": "src/components/ClassificationTree.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-500",
-      "count": 1
-    },
-    {
-      "path": "src/components/ClassificationTree.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-yellow-200",
-      "count": 1
-    },
-    {
       "path": "src/components/CreateWorkloadIdentitySheet.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -199,93 +79,9 @@
       "count": 2
     },
     {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-blue-50",
-      "count": 1
-    },
-    {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50/50",
-      "count": 1
-    },
-    {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "border-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "border-gray-200",
-      "count": 3
-    },
-    {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-200",
-      "count": 2
-    },
-    {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-400",
-      "count": 3
-    },
-    {
-      "path": "src/components/CustomApproval/RulesSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-600",
-      "count": 1
-    },
-    {
       "path": "src/components/DashboardBodyShell.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/components/DashboardBodyShell.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-black/20",
-      "count": 1
-    },
-    {
-      "path": "src/components/DashboardBodyShell.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/components/DashboardSidebar.tsx",
-      "rule": "no-raw-color",
-      "token": "border-gray-300",
-      "count": 1
-    },
-    {
-      "path": "src/components/DashboardSidebar.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 3
-    },
-    {
-      "path": "src/components/DashboardSidebar.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-700",
       "count": 1
     },
     {
@@ -298,18 +94,6 @@
       "path": "src/components/DatabaseGroupDataTable.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/components/DatabaseGroupDataTable.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/components/DatabaseGroupDataTable.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-white",
       "count": 1
     },
     {
@@ -343,18 +127,6 @@
       "count": 1
     },
     {
-      "path": "src/components/header/DashboardHeader.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:text-gray-900",
-      "count": 1
-    },
-    {
-      "path": "src/components/header/DashboardHeader.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 1
-    },
-    {
       "path": "src/components/header/HeaderBreadcrumb.tsx",
       "rule": "no-button-dimension-override",
       "token": "size-6",
@@ -373,39 +145,9 @@
       "count": 1
     },
     {
-      "path": "src/components/header/ProfileMenuTrigger.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-100",
-      "count": 3
-    },
-    {
       "path": "src/components/instance/CreateDataSourceExample.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/CreateDataSourceExample.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 2
-    },
-    {
-      "path": "src/components/instance/CreateDataSourceExample.tsx",
-      "rule": "no-raw-color",
-      "token": "border-gray-300",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/CreateDataSourceExample.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/CreateDataSourceExample.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
       "count": 1
     },
     {
@@ -419,18 +161,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 4
-    },
-    {
-      "path": "src/components/instance/DataSourceSection.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:text-red-700",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/DataSourceSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-500",
-      "count": 1
     },
     {
       "path": "src/components/instance/InfoPanel.tsx",
@@ -493,81 +223,9 @@
       "count": 3
     },
     {
-      "path": "src/components/plan-check/PlanCheckSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/plan-check/PlanCheckSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/components/plan-check/PlanCheckSection.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/ProjectSidebar.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 3
-    },
-    {
-      "path": "src/components/ProjectSidebar.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-700",
-      "count": 1
-    },
-    {
-      "path": "src/components/release/ReleaseInfoCard.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-blue-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/release/ReleaseInfoCard.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 2
-    },
-    {
-      "path": "src/components/release/ReleaseInfoCard.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
-    },
-    {
-      "path": "src/components/release/ReleaseInfoCard.tsx",
-      "rule": "no-raw-color",
-      "token": "text-blue-800",
-      "count": 1
-    },
-    {
       "path": "src/components/ResourceIdField.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/components/ResourceIdField.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-600",
-      "count": 1
-    },
-    {
-      "path": "src/components/ResourceIdField.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-600",
-      "count": 1
-    },
-    {
-      "path": "src/components/ResourceIdField.tsx",
-      "rule": "no-raw-color",
-      "token": "text-yellow-600",
       "count": 1
     },
     {
@@ -589,54 +247,6 @@
       "count": 1
     },
     {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-yellow-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-raw-color",
-      "token": "border-red-800",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-raw-color",
-      "token": "border-yellow-800",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-red-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-yellow-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-800",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-raw-color",
-      "token": "text-yellow-800",
-      "count": 1
-    },
-    {
       "path": "src/components/sql-review/RuleTable.tsx",
       "rule": "no-button-dimension-override",
       "token": "size-7",
@@ -653,54 +263,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 2
-    },
-    {
-      "path": "src/components/TaskStatusIcon.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/components/TaskStatusIcon.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 2
-    },
-    {
-      "path": "src/modules/agent/components/AgentChat.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-amber-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentChat.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-blue-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentChat.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentChat.tsx",
-      "rule": "no-raw-color",
-      "token": "border-amber-200",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentChat.tsx",
-      "rule": "no-raw-color",
-      "token": "text-amber-800",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentChat.tsx",
-      "rule": "no-raw-color",
-      "token": "text-amber-900",
-      "count": 1
     },
     {
       "path": "src/modules/agent/components/AgentChat.tsx",
@@ -727,40 +289,10 @@
       "count": 1
     },
     {
-      "path": "src/modules/agent/components/AgentInput.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-amber-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentInput.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentInput.tsx",
-      "rule": "no-raw-color",
-      "token": "text-amber-700",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentInput.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-700",
-      "count": 1
-    },
-    {
       "path": "src/modules/agent/components/AgentWindow.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 7
-    },
-    {
-      "path": "src/modules/agent/components/AgentWindow.tsx",
-      "rule": "no-raw-color",
-      "token": "data-highlighted:bg-red-50",
-      "count": 1
     },
     {
       "path": "src/modules/ai/components/ChatView/ChatView.tsx",
@@ -779,12 +311,6 @@
       "rule": "no-button-dimension-override",
       "token": "h-[22px]",
       "count": 3
-    },
-    {
-      "path": "src/modules/ai/components/DynamicSuggestions.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 1
     },
     {
       "path": "src/modules/ai/components/PromptInput.tsx",
@@ -808,54 +334,6 @@
       "path": "src/modules/schema-diagram/ER/TableNode.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-green-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white/70",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-yellow-50",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-raw-color",
-      "token": "text-green-700",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-700",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-raw-color",
-      "token": "text-yellow-700",
       "count": 1
     },
     {
@@ -955,12 +433,6 @@
       "count": 3
     },
     {
-      "path": "src/modules/sql-editor/components/ResultView/SelectionCopyTooltips.tsx",
-      "rule": "no-raw-color",
-      "token": "border-white/30",
-      "count": 1
-    },
-    {
       "path": "src/modules/sql-editor/components/ResultView/VirtualDataTable.tsx",
       "rule": "no-button-dimension-override",
       "token": "size-6",
@@ -977,18 +449,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/SchemaPane/TreeNode/icons.tsx",
-      "rule": "no-raw-color",
-      "token": "fill-white",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/SchemaPane/TreeNode/icons.tsx",
-      "rule": "no-raw-color",
-      "token": "text-amber-500",
-      "count": 2
     },
     {
       "path": "src/modules/sql-editor/components/SharePopoverBody.tsx",
@@ -1045,69 +505,21 @@
       "count": 2
     },
     {
-      "path": "src/routes/auth/MultiFactorPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/auth/OAuth2ConsentPage.tsx",
       "rule": "no-native-control",
       "token": "input",
       "count": 7
     },
     {
-      "path": "src/routes/auth/OAuth2ConsentPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/auth/PasswordResetPage.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/routes/auth/PasswordResetPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
       "count": 1
     },
     {
       "path": "src/routes/project/database-detail/DatabaseDetailHeader.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-amber-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-green-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-orange-300",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-yellow-200",
       "count": 1
     },
     {
@@ -1135,135 +547,9 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/issue-detail/components/IssueDetailActionBar.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailActionBar.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailApprovalFlow.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 5
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "border-gray-200",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:text-gray-700",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "ring-white",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-400",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-700",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 3
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-yellow-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-raw-color",
-      "token": "border-yellow-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-800",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-raw-color",
-      "token": "text-yellow-900",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseCreateView.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseCreateView.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-600",
-      "count": 4
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseCreateView.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-900",
       "count": 3
     },
     {
@@ -1271,42 +557,12 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 3
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailLabels.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 4
     },
     {
       "path": "src/routes/project/issue-detail/components/IssueDetailStatementSection.tsx",
       "rule": "no-native-control",
       "token": "input",
       "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailStatementSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailStatementSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 6
     },
     {
       "path": "src/routes/project/issue-detail/components/IssueDetailTitleInput.tsx",
@@ -1321,27 +577,9 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployPendingTasksSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployPendingTasksSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 2
-    },
-    {
       "path": "src/routes/project/plan-detail/components/deploy/DeployTaskFilter.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskFilter.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
       "count": 1
     },
     {
@@ -1354,24 +592,6 @@
       "path": "src/routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskToolbar.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-blue-100",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskToolbar.tsx",
-      "rule": "no-raw-color",
-      "token": "border-blue-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskToolbar.tsx",
-      "rule": "no-raw-color",
-      "token": "text-blue-900",
       "count": 1
     },
     {
@@ -1399,18 +619,6 @@
       "count": 2
     },
     {
-      "path": "src/routes/project/plan-detail/components/PlanDetailChangesBranch.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailChangesBranch.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/plan-detail/components/PlanDetailHeader.tsx",
       "rule": "no-native-control",
       "token": "input",
@@ -1423,111 +631,15 @@
       "count": 3
     },
     {
-      "path": "src/routes/project/plan-detail/components/PlanDetailMeta.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/plan-detail/components/PlanDetailStatementSection.tsx",
       "rule": "no-native-control",
       "token": "input",
       "count": 1
     },
     {
-      "path": "src/routes/project/plan-detail/components/PlanDetailStatementSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailStatementSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-600",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/plan-detail/components/PlanDetailTabStrip.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailTabStrip.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 3
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailTabStrip.tsx",
-      "rule": "no-raw-color",
-      "token": "border-gray-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/ProjectPlanDetailPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/ProjectPlanDetailPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 3
-    },
-    {
-      "path": "src/routes/project/plan-detail/ProjectPlanDetailPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 3
-    },
-    {
-      "path": "src/routes/project/ProjectAccessGrantsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-green-100",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectAccessGrantsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-green-700",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectAccessGrantsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectGitOpsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectGitOpsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectGitOpsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectGitOpsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "border-gray-200",
-      "count": 4
-    },
-    {
-      "path": "src/routes/project/ProjectGitOpsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-600",
       "count": 1
     },
     {
@@ -1535,84 +647,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectIssueDetailPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-black/40",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectIssueDetailPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 3
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-amber-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-green-100",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-green-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-orange-300",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-yellow-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "border-green-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-amber-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-blue-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-green-700",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/ProjectMaskingExemptionPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 2
     },
     {
       "path": "src/routes/project/ProjectPlanDashboardPage.tsx",
@@ -1663,136 +697,22 @@
       "count": 2
     },
     {
-      "path": "src/routes/workspace/EnvironmentsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/EnvironmentsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/EnvironmentsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/EnvironmentsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:text-gray-600",
-      "count": 2
-    },
-    {
-      "path": "src/routes/workspace/EnvironmentsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-400",
-      "count": 2
-    },
-    {
-      "path": "src/routes/workspace/EnvironmentsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-600",
-      "count": 2
-    },
-    {
       "path": "src/routes/workspace/general/BrandingSection.tsx",
       "rule": "no-native-control",
       "token": "input",
       "count": 1
     },
     {
-      "path": "src/routes/workspace/general/BrandingSection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-300",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/general/BrandingSection.tsx",
-      "rule": "no-raw-color",
-      "token": "border-gray-300",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/general/BrandingSection.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-100",
-      "count": 2
-    },
-    {
-      "path": "src/routes/workspace/general/BrandingSection.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:text-indigo-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/general/BrandingSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/general/BrandingSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/general/BrandingSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-indigo-600",
-      "count": 1
-    },
-    {
       "path": "src/routes/workspace/general/SecuritySection.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
     },
     {
-      "path": "src/routes/workspace/general/SecuritySection.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/general/SecuritySection.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:text-gray-700",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/general/SecuritySection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 2
-    },
-    {
       "path": "src/routes/workspace/GlobalMaskingPage.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 3
-    },
-    {
-      "path": "src/routes/workspace/GlobalMaskingPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-800",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/GlobalMaskingPage.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-100",
-      "count": 3
-    },
-    {
-      "path": "src/routes/workspace/GlobalMaskingPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
     },
     {
       "path": "src/routes/workspace/GroupsPage.tsx",
@@ -1804,30 +724,6 @@
       "path": "src/routes/workspace/GroupsPage.tsx",
       "rule": "no-native-control",
       "token": "select",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/GroupsPage.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/MemberDatabaseResourceName.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/MemberDatabaseResourceName.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/MemberDatabaseResourceName.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-800",
       "count": 1
     },
     {
@@ -1843,64 +739,16 @@
       "count": 1
     },
     {
-      "path": "src/routes/workspace/Page403.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/Page403.tsx",
-      "rule": "no-raw-color",
-      "token": "border-red-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/Page403.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/Page403.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-800",
-      "count": 1
-    },
-    {
       "path": "src/routes/workspace/profile/UserPasswordSection.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 2
     },
     {
-      "path": "src/routes/workspace/profile/UserPasswordSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-green-400",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/profile/UserPasswordSection.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-400",
-      "count": 1
-    },
-    {
       "path": "src/routes/workspace/RolesPage.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 2
-    },
-    {
-      "path": "src/routes/workspace/RolesPage.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-50",
-      "count": 2
-    },
-    {
-      "path": "src/routes/workspace/RolesPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
     },
     {
       "path": "src/routes/workspace/SemanticTypesPage.tsx",
@@ -1921,70 +769,10 @@
       "count": 1
     },
     {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-red-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-yellow-50",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "border-red-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "border-yellow-200",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-blue-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-800",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-yellow-800",
-      "count": 1
-    },
-    {
       "path": "src/routes/workspace/users/UserFormSheet.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 2
-    },
-    {
-      "path": "src/routes/workspace/users/UserFormSheet.tsx",
-      "rule": "no-raw-color",
-      "token": "text-green-400",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/users/UserFormSheet.tsx",
-      "rule": "no-raw-color",
-      "token": "text-red-400",
-      "count": 1
     }
   ]
 }

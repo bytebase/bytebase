@@ -166,7 +166,7 @@ export function DataSourceSection({
               {hasReadOnlyDataSource && (
                 <button
                   type="button"
-                  className="ml-1 text-red-500 hover:text-red-700 text-xs pb-2"
+                  className="ml-1 text-error hover:text-error-hover text-xs pb-2"
                   disabled={!allowUpdate}
                   onClick={() => {
                     if (

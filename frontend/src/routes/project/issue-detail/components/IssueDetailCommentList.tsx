@@ -259,7 +259,7 @@ export function IssueDetailCommentList() {
               subjectSuffix={
                 allowEditComment(item) && !activeCommentName ? (
                   <Button
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-control-light hover:text-control"
                     onClick={() => startEditComment(item)}
                     size="xs"
                     appearance="secondary"
@@ -403,29 +403,29 @@ function IssueDescriptionCommentRow({
         )}
         <div className="relative flex items-start">
           <div className="relative">
-            <div className="bg-white pt-1.5" />
+            <div className="bg-background pt-1.5" />
             <UserAvatar
               className="h-7 w-7 text-xs font-medium"
               size="sm"
               title={creator.title || creator.email}
             />
-            <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-control-bg ring-2 ring-white">
+            <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-control-bg ring-2 ring-background">
               <Plus className="h-4 w-4 text-control" />
             </div>
           </div>
 
           <div className="ml-3 min-w-0 flex-1">
-            <div className="overflow-hidden rounded-sm border border-gray-200 bg-white">
-              <div className="bg-gray-50 px-3 py-2">
+            <div className="overflow-hidden rounded-sm border border-block-border bg-background">
+              <div className="bg-control-bg/50 px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm">
                     <CommentCreator creator={creator} />
-                    <span className="wrap-break-word min-w-0 text-gray-600">
+                    <span className="wrap-break-word min-w-0 text-control">
                       {t("activity.sentence.created-issue")}
                     </span>
                     {page.issue?.createTime && (
                       <HumanizeTs
-                        className="text-gray-500"
+                        className="text-control-light"
                         ts={
                           getTimeForPbTimestampProtoEs(
                             page.issue.createTime,
@@ -446,7 +446,7 @@ function IssueDescriptionCommentRow({
                   )}
                 </div>
               </div>
-              <div className="border-t border-gray-200 px-4 py-3 text-sm text-gray-700">
+              <div className="border-t border-block-border px-4 py-3 text-sm text-main">
                 <EditableMarkdownContent
                   allowSave={allowSave}
                   content={page.issue?.description || ""}
@@ -502,7 +502,7 @@ function EditableMarkdownContent({
   if (!isEditing && !content) {
     return (
       <p>
-        <i className="italic text-gray-400">{placeholder}</i>
+        <i className="italic text-control-placeholder">{placeholder}</i>
       </p>
     );
   }

@@ -502,7 +502,7 @@ export function PlanDetailStatementSection({
         <div
           className={cn(
             "flex items-center gap-x-1 textlabel uppercase",
-            isEmpty && "text-red-600"
+            isEmpty && "text-error"
           )}
         >
           <span>{statementTitle}</span>
@@ -599,7 +599,7 @@ export function PlanDetailStatementSection({
         />
       )}
       {isLoading ? (
-        <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-background px-4 py-3 text-sm text-control-light">
           {t("common.loading")}
         </div>
       ) : isEditing || showsReadonlyEditor ? (
@@ -650,7 +650,7 @@ export function PlanDetailStatementSection({
           )}
         </div>
       ) : (
-        <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-background px-4 py-3 text-sm text-control-light">
           {t("common.no-data")}
         </div>
       )}

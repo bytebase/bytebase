@@ -220,7 +220,7 @@ function InlineLabels({
           align="start"
           initialFocus={false}
           finalFocus={false}
-          className="w-56 overflow-hidden bg-white p-0"
+          className="w-56 overflow-hidden bg-background p-0"
         >
           <div className="max-h-60 overflow-y-auto">
             {issueLabels.length === 0 ? (

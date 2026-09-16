@@ -299,7 +299,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                     }
                   }}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 pointer-events-none">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-control-light pointer-events-none">
                   {t("settings.general.workspace.maximum-expiration.days")}
                 </span>
               </div>
@@ -405,12 +405,12 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                   {state.domains.map((domain, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 rounded-xs bg-gray-100 px-2 py-1.5 text-sm"
+                      className="inline-flex items-center gap-1 rounded-xs bg-control-bg px-2 py-1.5 text-sm"
                     >
                       {domain}
                       <button
                         type="button"
-                        className="text-gray-500 hover:text-gray-700 disabled:opacity-50"
+                        className="text-control-light hover:text-control disabled:opacity-50"
                         disabled={!canEdit}
                         onClick={() => removeDomain(index)}
                       >

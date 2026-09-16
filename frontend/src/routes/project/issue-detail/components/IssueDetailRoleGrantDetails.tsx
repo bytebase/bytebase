@@ -213,12 +213,18 @@ function IssueDetailDatabaseResourceTable({
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="bg-gray-50">{t("common.database")}</TableHead>
-            <TableHead className="bg-gray-50">{t("common.table")}</TableHead>
-            <TableHead className="bg-gray-50">
+            <TableHead className="bg-control-bg/50">
+              {t("common.database")}
+            </TableHead>
+            <TableHead className="bg-control-bg/50">
+              {t("common.table")}
+            </TableHead>
+            <TableHead className="bg-control-bg/50">
               {t("common.environment")}
             </TableHead>
-            <TableHead className="bg-gray-50">{t("common.instance")}</TableHead>
+            <TableHead className="bg-control-bg/50">
+              {t("common.instance")}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

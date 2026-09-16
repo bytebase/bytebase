@@ -99,7 +99,7 @@ export function SelectionCopyTooltips() {
                         size="sm"
                         variant="default"
                         aria-label={t("common.copy")}
-                        className="h-6 w-5 px-0 rounded-l-none border-l border-white/30"
+                        className="h-6 w-5 px-0 rounded-l-none border-l border-accent-text/30"
                       >
                         <ChevronDownIcon className="size-3" />
                       </Button>

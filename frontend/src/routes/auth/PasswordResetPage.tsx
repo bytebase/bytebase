@@ -291,7 +291,7 @@ export function PasswordResetPage() {
         <AuthDivider className="mt-6">
           <RouterLink
             to={{ name: AUTH_SIGNIN_MODULE }}
-            className="accent-link bg-white px-2"
+            className="accent-link bg-background px-2"
           >
             {t("auth.password-forget.return-to-sign-in")}
           </RouterLink>

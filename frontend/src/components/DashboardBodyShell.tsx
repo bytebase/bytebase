@@ -59,7 +59,7 @@ export function DashboardBodyShell({
       <button
         aria-label={t("common.close-mobile-sidebar")}
         className={cn(
-          "absolute inset-0 bg-black/20 transition-opacity",
+          "absolute inset-0 bg-overlay/20 transition-opacity",
           isMobileSidebarOpen ? "opacity-100" : "opacity-0"
         )}
         type="button"
@@ -104,7 +104,7 @@ export function DashboardBodyShell({
     <div className="flex h-full flex-col overflow-hidden">
       {showHeader ? (
         <nav
-          className="shrink-0 border-b border-block-border bg-white"
+          className="shrink-0 border-b border-block-border bg-background"
           data-label="bb-dashboard-header"
         >
           <div className="mx-auto max-w-full">

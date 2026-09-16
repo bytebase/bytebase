@@ -14,6 +14,7 @@ import {
   useCredentialProofMode,
 } from "@/components/CredentialProofInput";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { OtpInput } from "@/components/ui/otp-input";
 import { StepIndicator } from "@/components/ui/step-indicator";
@@ -311,7 +312,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
 
   return (
     <div className="px-4 py-4">
-      <p className="text-sm text-gray-500 mb-4">
+      <p className="mb-4 text-sm text-control-light">
         {t("two-factor.description")}
         <LearnMoreLink
           href="https://docs.bytebase.com/administration/2fa?source=console"
@@ -330,21 +331,13 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       {currentStep === SETUP_AUTH_APP_STEP && (
         <div className="w-full max-w-2xl mx-auto flex flex-col justify-start items-start gap-y-4 my-8">
           <p>{t("two-factor.setup-steps.setup-auth-app.description")}</p>
-          <div
-            className={`w-full border rounded-sm p-3 ${
-              isExpired || isExpiringSoon
-                ? "bg-red-50 border-red-200"
-                : "bg-yellow-50 border-yellow-200"
-            }`}
+          <Alert
+            variant={isExpired || isExpiringSoon ? "error" : "warning"}
+            showIcon={false}
+            className="w-full p-3"
           >
             <div className="flex items-center justify-between">
-              <p
-                className={`text-sm ${
-                  isExpired || isExpiringSoon
-                    ? "text-red-800"
-                    : "text-yellow-800"
-                }`}
-              >
+              <p className="text-sm">
                 {isExpired
                   ? t("two-factor.setup-steps.setup-auth-app.expired-notice")
                   : t("two-factor.setup-steps.setup-auth-app.time-remaining", {
@@ -357,7 +350,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
                 </Button>
               )}
             </div>
-          </div>
+          </Alert>
           <p className="text-2xl">
             {t("two-factor.setup-steps.setup-auth-app.scan-qr-code.self")}
           </p>
@@ -375,7 +368,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
                   <span
                     className={
                       !showSecretModal
-                        ? "cursor-pointer text-blue-600"
+                        ? "cursor-pointer text-accent"
                         : undefined
                     }
                     onClick={() => setShowSecretModal(true)}

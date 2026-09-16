@@ -67,7 +67,7 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
 
             {showDesktopSidebar && (
               <div
-                className="shrink-0 border-l bg-white"
+                className="shrink-0 border-l bg-background"
                 style={desktopSidebarStyle}
               >
                 <div className="sticky top-0">
@@ -79,7 +79,7 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
         </div>
 
         {!page.ready && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-white">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-control-border border-t-accent" />
             <div className="text-sm text-control-light">
               {t("common.loading")}
@@ -100,7 +100,7 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
             >
               <button
                 className={cn(
-                  "absolute inset-0 bg-black/40 transition-opacity duration-200",
+                  "absolute inset-0 bg-overlay/40 transition-opacity duration-200",
                   LAYER_BACKDROP_CLASS,
                   page.mobileSidebarOpen ? "opacity-100" : "opacity-0"
                 )}
@@ -109,7 +109,7 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
               />
               <div
                 className={cn(
-                  "absolute right-0 top-0 flex h-full w-[80vw] min-w-[240px] max-w-[320px] transform flex-col border-l bg-white p-2 shadow-lg transition-transform duration-200",
+                  "absolute right-0 top-0 flex h-full w-[80vw] min-w-[240px] max-w-[320px] transform flex-col border-l bg-background p-2 shadow-lg transition-transform duration-200",
                   LAYER_SURFACE_CLASS,
                   page.mobileSidebarOpen ? "translate-x-0" : "translate-x-full"
                 )}

@@ -149,9 +149,9 @@ export function UserPasswordSection({
                   {passwordChecks.map((check, i) => (
                     <li key={i} className="flex gap-x-1 items-center">
                       {check.matched ? (
-                        <CircleCheck className="w-4 text-green-400" />
+                        <CircleCheck className="w-4 text-success" />
                       ) : (
-                        <CircleAlert className="w-4 text-red-400" />
+                        <CircleAlert className="w-4 text-error" />
                       )}
                       {check.text}
                     </li>
