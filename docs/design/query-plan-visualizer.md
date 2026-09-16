@@ -323,6 +323,13 @@ executed statement and its connection context, and View SQL shows that statement
 limit and all. The estimate badge is about statistics moving; it must not quietly
 cover a different query.
 
+That requires every driver that rewrites a statement to record what it actually
+ran, and two do not: SQL Server executes `refinedBatch` but records
+`singleSQLs[i].Text` (`mssql.go:607`), and Spanner executes `limitedStatement`
+but records `statement` (`spanner.go:400`). Their Plan tabs wait on that being
+fixed, exactly as the timed-out case waits on the timeout response carrying its
+statement.
+
 **Say which one it is, in words.** Measured and estimated carry a badge, and an
 estimated plan says *"A new plan, made just now. It may differ from the plan that
 ran."* A timestamp alone is not enough: the plan sits in the Plan tab of the
@@ -389,12 +396,15 @@ are the same capability, so none of them may be reachable without it.
 Two ways that boundary leaks today, both in `checkDatabaseAccess`
 (`sql_service.go:1411-1447`), and both have to close before any of this ships:
 
-- **It is checked per connection, not per referenced database.** An explain
-  request has no query spans, so the permission is evaluated once against the
-  database the editor is connected to. A MySQL or SQL Server statement on `db_a`
-  that reads `db_b` yields `db_b`'s plan to someone with explain on `db_a` only.
-  Explain has to be required on every database the statement references, which
-  means parsing the inner statement for them.
+- **It is checked per connection, not per referenced database**, on both routes.
+  An explain request has no query spans at all; a typed `EXPLAIN` does have one,
+  but MySQL extracts it as a pseudo-table with no source columns
+  (`query_span_extractor.go:468`), so nothing per-resource fires there either.
+  Both end at the same single check against the database the editor is connected
+  to, so `EXPLAIN SELECT * FROM db_b.secret` on `db_a` yields `db_b`'s plan to
+  someone with explain on `db_a` only. Explain has to be required on every
+  database the statement references — typed and generated alike — which means
+  extracting them from the inner statement.
 - **A data access grant exempts it.** The check returns early for a granted
   target before the permission is ever evaluated, so a temporary select or
   unmask grant carries explain along with it. Access grants convey data access;
