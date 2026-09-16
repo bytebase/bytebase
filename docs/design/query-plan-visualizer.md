@@ -386,6 +386,20 @@ permission to read rows. That boundary applies identically to the Plan tab, the
 Text tab, Copy plan, and any plan attached to an ordinary run (§3.4): all of them
 are the same capability, so none of them may be reachable without it.
 
+Two ways that boundary leaks today, both in `checkDatabaseAccess`
+(`sql_service.go:1411-1447`), and both have to close before any of this ships:
+
+- **It is checked per connection, not per referenced database.** An explain
+  request has no query spans, so the permission is evaluated once against the
+  database the editor is connected to. A MySQL or SQL Server statement on `db_a`
+  that reads `db_b` yields `db_b`'s plan to someone with explain on `db_a` only.
+  Explain has to be required on every database the statement references, which
+  means parsing the inner statement for them.
+- **A data access grant exempts it.** The check returns early for a granted
+  target before the permission is ever evaluated, so a temporary select or
+  unmask grant carries explain along with it. Access grants convey data access;
+  they do not convey the right to read plans.
+
 **Slow and large plans.** The on-demand call can take as long as any query: show
 a skeleton, allow cancel, time out rather than hang. Past a node cap the Plan tab
 falls back to Text instead of drawing something unreadable — SSMS degrades the
