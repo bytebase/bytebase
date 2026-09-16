@@ -1242,6 +1242,7 @@
       "external-secret-azure": "Azure Key Vault",
       "external-secret-gcp": "GCP シークレット マネージャー",
       "external-secret-vault": "ボールト (KV v2)",
+      "google-cloud-iam": "Google Cloud IAM",
       "google-iam": "Google Cloud SQL IAM",
       "password": "パスワード"
     },

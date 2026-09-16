@@ -13,6 +13,7 @@ import {
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { calcUpdateMask } from "@/utils";
+import { normalizeAuthenticationType } from "./authentication";
 import { hasSslConfig, SSL_UPDATE_MASK_FIELDS } from "./tls";
 
 export type TlsUpdateState =
@@ -116,13 +117,14 @@ export type DataSourceEditState = {
 export const extractDataSourceEditState = (
   instance: Instance | undefined
 ): DataSourceEditState => {
+  const engine = instance?.engine ?? Engine.MYSQL;
   const dataSources: EditDataSource[] = [];
   instance?.dataSources.forEach((ds) => {
-    dataSources.push(wrapEditDataSource(ds));
+    dataSources.push(createDataSourceDraft(engine, ds));
   });
   const adminDS = dataSources.find((ds) => ds.type === DataSourceType.ADMIN);
   if (!adminDS) {
-    dataSources.unshift(wrapEditDataSource(undefined));
+    dataSources.unshift(createDataSourceDraft(engine));
   }
   const editingDataSourceId =
     dataSources.find((ds) => ds.type === DataSourceType.ADMIN)?.id ??
@@ -160,9 +162,19 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   };
 };
 
-export const wrapEditDataSource = (ds: DataSource | undefined) => {
+export const createDataSourceDraft = (
+  engine: Engine,
+  ds?: DataSource
+): EditDataSource => {
+  const draft = cloneDeep(ds ?? unknownDataSource());
+  if (ds === undefined) {
+    draft.authenticationType = normalizeAuthenticationType(
+      engine,
+      draft.authenticationType
+    );
+  }
   return {
-    ...cloneDeep(ds ?? unknownDataSource()),
+    ...draft,
     pendingCreate: ds === undefined,
     updatedPassword: "",
     updatedMasterPassword: "",

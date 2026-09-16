@@ -4,17 +4,18 @@ import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  DataSource_AuthenticationType,
   DataSourceSchema,
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import {
   calcDataSourceUpdateMask,
+  createDataSourceDraft,
   type DataSourceSecretField,
   getDataSourceSecretValue,
   movesKeytabToNewDestination,
   updateDataSourceSecret,
-  wrapEditDataSource,
 } from "./common";
 import {
   applyLocalTlsCaSource,
@@ -444,7 +445,7 @@ describe("secret edit intent", () => {
     "explicitly clears %s even when the read value is redacted",
     (field, path) => {
       const original = create(DataSourceSchema, { id: "admin" });
-      const untouched = wrapEditDataSource(original);
+      const untouched = createDataSourceDraft(Engine.MYSQL, original);
       expect(getDataSourceSecretValue(untouched, field)).toBeUndefined();
       expect(
         calcDataSourceUpdateMask(original, original, untouched)
@@ -464,7 +465,7 @@ describe("secret edit intent", () => {
   test("preserves whitespace and keeps an unrelated hidden secret out of the mask", () => {
     const original = create(DataSourceSchema, { id: "admin" });
     const changed = updateDataSourceSecret(
-      wrapEditDataSource(original),
+      createDataSourceDraft(Engine.MYSQL, original),
       "sshPassword",
       "  secret  "
     );
@@ -482,3 +483,14 @@ describe("secret edit intent", () => {
     ).toEqual(["ssh_password"]);
   });
 });
+
+test.each([Engine.SPANNER, Engine.BIGQUERY])(
+  "initializes new GCP drafts with IAM for engine %s",
+  (engine) => {
+    const draft = createDataSourceDraft(engine);
+    expect(draft.authenticationType).toBe(
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+    );
+    expect(draft.pendingCreate).toBe(true);
+  }
+);
