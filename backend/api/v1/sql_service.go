@@ -399,6 +399,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	startTime := time.Now()
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
+		DataSourceType:       dataSource.GetType(),
 		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
 		Option:               request.QueryOption,
@@ -640,6 +641,7 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 	switch engine {
 	case storepb.Engine_POSTGRES:
 		return parserbase.ColumnResource{
+			Instance: column.Instance,
 			Server:   column.Server,
 			Database: column.Database,
 			Schema:   database,
@@ -648,6 +650,7 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 		}
 	default:
 		return parserbase.ColumnResource{
+			Instance: column.Instance,
 			Server:   column.Server,
 			Database: database,
 			Schema:   schema,
@@ -655,6 +658,117 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 			Column:   column.Column,
 		}
 	}
+}
+
+// linkedDatabaseMetadataFuncForQuery resolves Oracle database links only for a query that
+// runs under the admin data source, whose ALL_DB_LINKS the sync recorded. Under another
+// data source Oracle resolves the name from that account's own links, where a private link
+// shadows a public one of the same name, and Bytebase has not seen those; every link then
+// resolves to nothing and the access check refuses it.
+// DEFER: resolve from the executing session's ALL_DB_LINKS with OWNER; upgrade when that
+// resolver lands, then drop this gate.
+func linkedDatabaseMetadataFuncForQuery(stores *store.Store, instance *store.InstanceMessage, queryContext db.QueryContext) parserbase.GetLinkedDatabaseMetadataFunc {
+	resolve := parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine())
+	if resolve == nil || queryContext.DataSourceType == storepb.DataSourceType_ADMIN {
+		return resolve
+	}
+	return func(context.Context, string, string, string) (string, string, *model.DatabaseMetadata, error) {
+		return "", "", nil, nil
+	}
+}
+
+// refuseLinkedTargetsOutsideProject mirrors authorizeWriteTargets: the access check
+// evaluates the session project's IAM policy only, so a target in another project is
+// refused. Runs after remoteColumnRefusal, so every linked column is on the connected
+// instance. SUP-222 / BYT-9698, BYT-10226.
+func (s *SQLService) refuseLinkedTargetsOutsideProject(ctx context.Context, columns parserbase.SourceColumnSet, instance *store.InstanceMessage, database *store.DatabaseMessage, perm permission.Permission) (*queryError, error) {
+	var linked []parserbase.ColumnResource
+	for column := range columns {
+		if column.Instance != "" {
+			linked = append(linked, column)
+		}
+	}
+	slices.SortFunc(linked, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
+	targets := map[string]*store.DatabaseMessage{}
+	for _, column := range linked {
+		target, seen := targets[column.Database]
+		if !seen {
+			databaseName := column.Database
+			var err error
+			target, err = s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve linked database %q: %v", column.Database, err))
+			}
+			targets[column.Database] = target
+		}
+		if message := linkedTargetProjectRefusal(column, target, database.ProjectID); message != "" {
+			return &queryError{
+				err:        connect.NewError(connect.CodePermissionDenied, errors.New(message)),
+				permission: perm,
+			}, nil
+		}
+	}
+	return nil, nil
+}
+
+// linkedTargetProjectRefusal decides refuseLinkedTargetsOutsideProject for one column, given
+// the database the link resolved to (nil when Bytebase does not track it).
+func linkedTargetProjectRefusal(column parserbase.ColumnResource, target *store.DatabaseMessage, requestProjectID string) string {
+	table := column.Database + "." + column.Table
+	if target == nil {
+		return fmt.Sprintf("table %s reached through database link %q is in a database Bytebase does not track on this instance", table, column.Server)
+	}
+	if target.ProjectID != requestProjectID {
+		return fmt.Sprintf("table %s reached through database link %q is in project %q: reading another project's database through a link is not supported in SQL Editor", table, column.Server, target.ProjectID)
+	}
+	return ""
+}
+
+// remoteColumnRefusal refuses a remote reference Bytebase could not resolve or that
+// resolves to another instance. The error carries no resource: a placeholder would satisfy
+// a negated condition (table_name != "x") and request-access would offer a grant that
+// cannot help. BYT-10226.
+func remoteColumnRefusal(columns parserbase.SourceColumnSet, connectedInstanceID string, engine storepb.Engine, perm permission.Permission) *queryError {
+	var remote []parserbase.ColumnResource
+	for column := range columns {
+		if column.Server != "" {
+			remote = append(remote, column)
+		}
+	}
+	slices.SortFunc(remote, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
+	for _, column := range remote {
+		table := column.Table
+		if column.Schema != "" {
+			table = column.Schema + "." + table
+		}
+		if column.Database != "" {
+			table = column.Database + "." + table
+		}
+		var message string
+		switch {
+		case column.Instance == "":
+			message = fmt.Sprintf("table %s reached through remote server %q cannot be authorized: Bytebase could not establish which database it reaches", table, column.Server)
+			if engine == storepb.Engine_ORACLE {
+				message += ". In this release a linked table is authorized only for a query running under the admin data source, whose database links Bytebase synced, and only when the connect string of the link names the host, port and service of a data source of exactly one instance"
+			}
+		case column.Instance != connectedInstanceID:
+			// DEFER: links to another instance are refused; upgrade when the masker resolves a
+			// linked column's policy on its own instance (it lists databases by name on the
+			// connected instance), so that a cross-instance read is masked.
+			message = fmt.Sprintf("table %s reached through database link %q is on instance %q: querying another instance through a database link is not supported in SQL Editor", table, column.Server, column.Instance)
+		default:
+			continue
+		}
+		return &queryError{
+			err:        connect.NewError(connect.CodePermissionDenied, errors.New(message)),
+			permission: perm,
+		}
+	}
+	return nil
 }
 
 func isBackupTable(engine storepb.Engine, column parserbase.ColumnResource) bool {
@@ -694,7 +808,7 @@ func queryRetry(
 				InstanceID:                    instance.ResourceID,
 				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
 				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+				GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataFuncForQuery(stores, instance, queryContext),
 			},
 			instance.Metadata.GetEngine(),
 			statements,
@@ -818,7 +932,7 @@ func queryRetry(
 				InstanceID:                    instance.ResourceID,
 				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
 				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
+				GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataFuncForQuery(stores, instance, queryContext),
 			},
 			instance.Metadata.GetEngine(),
 			statements,
@@ -1126,6 +1240,7 @@ func doExport(
 		database.ProjectID,
 	)
 	queryContext := buildExportQueryContext(queryRestriction, user.Email, request.Schema, request.GetContainer(), skipMasking)
+	queryContext.DataSourceType = dataSource.GetType()
 
 	// Split the statement for span analysis
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), request.Statement)
@@ -1552,6 +1667,17 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			continue
 		}
 
+		// Before the type branch: an info-schema classification of a statement that reads
+		// through a remote reference must not skip these refusals.
+		if qe := remoteColumnRefusal(span.SourceColumns, instance.ResourceID, instance.Metadata.GetEngine(), perm); qe != nil {
+			return qe
+		}
+		if qe, err := s.refuseLinkedTargetsOutsideProject(ctx, span.SourceColumns, instance, database, perm); err != nil {
+			return err
+		} else if qe != nil {
+			return qe
+		}
+
 		// For non-SELECT queries or SELECT queries with no source columns (e.g., SELECT 1),
 		// check at database level and skip column-level checks
 		if span.Type != parserbase.Select || len(span.SourceColumns) == 0 {
@@ -1560,7 +1686,6 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			}
 			continue
 		}
-
 		var deniedResources []string
 		for column := range span.SourceColumns {
 			columnDatabaseFullName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
