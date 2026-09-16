@@ -69,8 +69,8 @@ export function StandardPanel() {
     () => useSQLEditorStore.getState().resultPanelSize
   );
   const resultPanelMaximized = useSQLEditorStore((s) => s.resultPanelMaximized);
-  const setResultPanelMounted = useSQLEditorStore(
-    (s) => s.setResultPanelMounted
+  const setResultPanelMaximized = useSQLEditorStore(
+    (s) => s.setResultPanelMaximized
   );
   const handleResultPanelResize = useSQLEditorStore(
     (s) => s.handleResultPanelResize
@@ -96,13 +96,15 @@ export function StandardPanel() {
     }
   }, [resultPanelMaximized]);
 
-  // Tells the shell whether a maximized pane still has its restore control on
-  // screen. Leaving the editor view or losing the connection takes the result
-  // pane with it, and the sidebar has to come back when that happens.
+  // Maximizing is a momentary view of one result, not a remembered preference:
+  // it lasts as long as the pane it belongs to. Switching tabs remounts this
+  // component and losing the connection takes the pane away; either would
+  // otherwise leave a collapsed editor and a hidden sidebar with no control on
+  // screen to undo them.
   useEffect(() => {
-    setResultPanelMounted(showResultPanel);
-    return () => setResultPanelMounted(false);
-  }, [showResultPanel, setResultPanelMounted]);
+    if (!showResultPanel) setResultPanelMaximized(false);
+    return () => setResultPanelMaximized(false);
+  }, [showResultPanel, setResultPanelMaximized]);
 
   if (!isSavedQueryTab) {
     return null;
@@ -184,7 +186,13 @@ export function StandardPanel() {
       >
         {editorWithAi}
       </Panel>
-      <PanelResizeHandle className={resizeHandleClass("horizontal", "h-0.5")} />
+      {/* A maximized pane owns the whole area; dragging it back to a
+          half-state would leave the editor visible under a sidebar that is
+          still hidden. Restore first. */}
+      <PanelResizeHandle
+        disabled={resultPanelMaximized}
+        className={resizeHandleClass("horizontal", "h-0.5")}
+      />
       <Panel
         defaultSize={percent(initialResultPanelSize)}
         minSize={percent(MINIMUM_RESULT_PANEL_SIZE)}

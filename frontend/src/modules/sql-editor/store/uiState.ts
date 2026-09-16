@@ -98,7 +98,6 @@ export const createUIStateSlice: SQLEditorSliceCreator<UIStateSlice> = (
   aiPanelSize: readAIPanelSize(),
   resultPanelSize: readResultPanelSize(),
   resultPanelMaximized: false,
-  resultPanelMounted: false,
   linkedQueryHistory: undefined,
   linkedQueryHistoryTabId: undefined,
   linkedQueryHistoryBaseline: undefined,
@@ -122,7 +121,6 @@ export const createUIStateSlice: SQLEditorSliceCreator<UIStateSlice> = (
     set({ aiPanelSize: next });
   },
   setResultPanelMaximized: (value) => set({ resultPanelMaximized: value }),
-  setResultPanelMounted: (value) => set({ resultPanelMounted: value }),
   // Only a size the reader dragged is worth keeping. A maximized pane reports
   // the full height and a collapsed one reports nothing, so both are ignored
   // rather than written over the remembered height.

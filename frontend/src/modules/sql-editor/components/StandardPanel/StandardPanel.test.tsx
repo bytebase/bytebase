@@ -17,13 +17,13 @@ const mocks = vi.hoisted(() => ({
   onEditorResize: undefined as
     | ((size: { asPercentage: number }) => void)
     | undefined,
+  separatorDisabled: undefined as boolean | undefined,
   state: {
     showAIPanel: false,
     resultPanelSize: 0.4,
     resultPanelMaximized: false,
     disconnected: false,
     setResultPanelMaximized: vi.fn(),
-    setResultPanelMounted: vi.fn(),
     handleResultPanelResize: vi.fn(),
     handleEditorPanelResize: vi.fn(),
     setAsidePanelTab: vi.fn(),
@@ -50,7 +50,10 @@ vi.mock("react-resizable-panels", () => ({
     }
     return <div>{children}</div>;
   },
-  Separator: () => <div />,
+  Separator: ({ disabled }: { disabled?: boolean }) => {
+    mocks.separatorDisabled = disabled;
+    return <div />;
+  },
 }));
 
 vi.mock("@/modules/ai/components", () => ({
@@ -119,8 +122,8 @@ beforeEach(() => {
   mocks.state.resultPanelMaximized = false;
   mocks.state.disconnected = false;
   mocks.state.setResultPanelMaximized.mockClear();
-  mocks.state.setResultPanelMounted.mockClear();
   mocks.state.handleResultPanelResize.mockClear();
+  mocks.separatorDisabled = undefined;
 });
 
 afterEach(() => {
@@ -182,18 +185,42 @@ describe("StandardPanel result pane", () => {
     expect(mocks.state.handleResultPanelResize).not.toHaveBeenCalled();
   });
 
-  test("tells the shell a result pane is on screen", () => {
+  // Maximizing lasts as long as the pane it belongs to: no result pane means
+  // no restore control, so the state cannot outlive it.
+  test("clears a maximized pane once the connection is gone", () => {
+    mocks.state.disconnected = true;
+    mocks.state.resultPanelMaximized = true;
     render();
 
-    expect(mocks.state.setResultPanelMounted).toHaveBeenLastCalledWith(true);
+    expect(mocks.state.setResultPanelMaximized).toHaveBeenCalledWith(false);
   });
 
-  // No result pane means no restore control, so the shell has to stop lending
-  // the sidebar's width to a maximized one.
-  test("tells the shell the result pane is gone once disconnected", () => {
-    mocks.state.disconnected = true;
+  test("clears a maximized pane on unmount", () => {
+    mocks.state.resultPanelMaximized = true;
+    render();
+    expect(mocks.state.setResultPanelMaximized).not.toHaveBeenCalled();
+
+    const mounted = root;
+    root = undefined;
+    act(() => {
+      mounted?.unmount();
+    });
+
+    expect(mocks.state.setResultPanelMaximized).toHaveBeenCalledWith(false);
+  });
+
+  // Dragging back to a half-state would leave the editor visible under a
+  // sidebar that is still hidden.
+  test("locks the separator while the pane is maximized", () => {
+    mocks.state.resultPanelMaximized = true;
     render();
 
-    expect(mocks.state.setResultPanelMounted).toHaveBeenLastCalledWith(false);
+    expect(mocks.separatorDisabled).toBe(true);
+  });
+
+  test("leaves the separator draggable while the pane is docked", () => {
+    render();
+
+    expect(mocks.separatorDisabled).toBe(false);
   });
 });

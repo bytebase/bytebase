@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   setPendingInsertAtCaret: vi.fn(),
-  state: { resultPanelMaximized: false, resultPanelMounted: false },
+  state: { resultPanelMaximized: false },
   collapse: vi.fn(),
   expand: vi.fn(),
 }));
@@ -108,7 +108,6 @@ vi.mock("@/modules/sql-editor/store", () => ({
     selector({
       setPendingInsertAtCaret: mocks.setPendingInsertAtCaret,
       resultPanelMaximized: mocks.state.resultPanelMaximized,
-      resultPanelMounted: mocks.state.resultPanelMounted,
     }),
 }));
 
@@ -154,7 +153,6 @@ beforeEach(() => {
   root = createRoot(container);
   setWindowWidth(1440);
   mocks.state.resultPanelMaximized = false;
-  mocks.state.resultPanelMounted = false;
   mocks.collapse.mockClear();
   mocks.expand.mockClear();
 });
@@ -189,7 +187,6 @@ describe("SQLEditorHomePage sidebar", () => {
 
   test("leaves the phone drawer out of a maximized desktop window", () => {
     mocks.state.resultPanelMaximized = true;
-    mocks.state.resultPanelMounted = true;
     render();
 
     expect(sidebarToggles()).toHaveLength(0);
@@ -206,7 +203,6 @@ describe("SQLEditorHomePage sidebar", () => {
   test("collapses the sidebar a maximized narrow window grows into", () => {
     setWindowWidth(600);
     mocks.state.resultPanelMaximized = true;
-    mocks.state.resultPanelMounted = true;
     render();
     // The desktop panel the collapse acts on does not exist while narrow.
     expect(mocks.collapse).not.toHaveBeenCalled();

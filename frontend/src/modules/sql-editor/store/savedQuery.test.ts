@@ -24,7 +24,6 @@ const stubUIStateSlice = (): UIStateSlice => ({
   aiPanelSize: 0.3,
   resultPanelSize: 0.4,
   resultPanelMaximized: false,
-  resultPanelMounted: false,
   linkedQueryHistory: undefined,
   linkedQueryHistoryTabId: undefined,
   linkedQueryHistoryBaseline: undefined,
@@ -37,7 +36,6 @@ const stubUIStateSlice = (): UIStateSlice => ({
   setIsShowingCode: vi.fn(),
   handleEditorPanelResize: vi.fn(),
   setResultPanelMaximized: vi.fn(),
-  setResultPanelMounted: vi.fn(),
   handleResultPanelResize: vi.fn(),
 });
 

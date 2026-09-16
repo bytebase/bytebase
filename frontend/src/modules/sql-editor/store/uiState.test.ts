@@ -120,7 +120,6 @@ describe("sqlEditor uiState slice", () => {
     expect(s.aiPanelSize).toBe(0.3);
     expect(s.resultPanelSize).toBe(0.4);
     expect(s.resultPanelMaximized).toBe(false);
-    expect(s.resultPanelMounted).toBe(false);
   });
 
   test("resultPanelSize reads the persisted height", async () => {

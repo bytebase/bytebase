@@ -92,10 +92,7 @@ export function SQLEditorHomePage() {
   // floating toggle; a maximized result pane collapses it in place, so the
   // tree keeps its scroll position and its dragged width for the trip back.
   const isNarrowWindow = windowWidth < 800;
-  const resultPanelMaximized = useSQLEditorStore((s) => s.resultPanelMaximized);
-  // The width is only lent while the pane that can give it back is on screen.
-  const resultPanelMounted = useSQLEditorStore((s) => s.resultPanelMounted);
-  const collapseSidebar = resultPanelMaximized && resultPanelMounted;
+  const collapseSidebar = useSQLEditorStore((s) => s.resultPanelMaximized);
 
   const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
   // `isNarrowWindow` is a dependency because the panel it drives only exists on

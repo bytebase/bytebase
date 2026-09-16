@@ -31,13 +31,9 @@ export interface UIStateSlice {
   // reader who drags it taller keeps that height on the next query.
   resultPanelSize: number;
   // True while the result pane fills the editor: the editor pane is collapsed
-  // and the sidebar is hidden, giving rows and plans the whole area.
+  // and the sidebar is hidden, giving rows and plans the whole area. Momentary
+  // — `StandardPanel` clears it when the pane it belongs to goes away.
   resultPanelMaximized: boolean;
-  // Whether a result pane carrying the maximize control is on screen. The
-  // sidebar only yields its width while one is, so leaving the editor view
-  // (a metadata surface, a disconnected tab) cannot strand a hidden tree
-  // with no control to bring it back.
-  resultPanelMounted: boolean;
   // The query history opened from a deep link this session. Surfaced as the
   // "Opened from link" section atop the history pane until dismissed or until
   // its draft tab is edited.
@@ -60,7 +56,6 @@ export interface UIStateSlice {
   setIsShowingCode: (value: boolean) => void;
   handleEditorPanelResize: (size: number) => void;
   setResultPanelMaximized: (value: boolean) => void;
-  setResultPanelMounted: (value: boolean) => void;
   handleResultPanelResize: (size: number) => void;
 }
 
