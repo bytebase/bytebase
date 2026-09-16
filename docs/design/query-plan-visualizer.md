@@ -96,14 +96,14 @@ not what the action promises, and prefixing a second `EXPLAIN` is invalid — so
 it is the same option substitution §3.2 uses for Visualize. Each action does what
 its name says: one refuses to execute, the other insists on it.
 
-**Explain analyze wraps the statement Run would execute, limit included.** The
+**Both actions plan the statement Run would execute, limit included.** The
 drivers apply the result limit only when the request is not an explain
-(`pg.go:801-804`, `mysql.go:530-533`), so reusing that path would analyze the
-unbounded query while Run stops at the limit. The two actions are supposed to run
-the same statement, and here the gap also executes: an unbounded `EXPLAIN
-ANALYZE` against a large table turns a diagnostic into the workload it was meant
-to diagnose. The limited statement has to be carried or reconstructed before
-wrapping.
+(`pg.go:801-804`, `mysql.go:530-533`), so reusing that path plans the unbounded
+query while Run stops at the limit — and `LIMIT` changes plan shape, so the two
+are different queries. The limited statement has to be carried or reconstructed
+before either action wraps it. It matters twice over for **Explain analyze**,
+which executes: unbounded, an `EXPLAIN ANALYZE` against a large table becomes the
+workload it was meant to diagnose.
 
 **Explain analyze returns a plan, not rows.** On PostgreSQL that is automatic —
 `EXPLAIN ANALYZE` replaces the result set. Spanner's profile mode and SQL
@@ -430,6 +430,15 @@ Two ways that boundary leaks today, both in `checkDatabaseAccess`
   target before the permission is ever evaluated, so a temporary select or
   unmask grant carries explain along with it. Access grants convey data access;
   they do not convey the right to read plans.
+
+Reading the statement does not always reveal what it touches. `EXEC dbo.p` is
+classified as DML with no source columns (`tsql/query_type.go:42`,
+`query_span_extractor.go:501-505`), while SHOWPLAN and `STATISTICS XML` expose
+plans for the statements *inside* the procedure — so a procedure reading `db_b`
+would be authorized against `db_a` alone. Resolving routine dependencies is a
+larger feature than this design. **When the resource set is opaque, refuse the
+plan**: no plan is the safe answer, and it is the same choice §3.3 makes for
+session-dependent scripts.
 
 **Slow and large plans.** The on-demand call can take as long as any query: show
 a skeleton, allow cancel, time out rather than hang. Past a node cap the Plan tab
