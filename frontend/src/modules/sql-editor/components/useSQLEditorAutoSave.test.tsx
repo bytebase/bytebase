@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
       database: "instances/inst1/databases/db1",
     },
   },
+  tabsById: new Map(),
+  currentTabId: "tab-1",
 }));
 
 vi.mock("@/modules/sql-editor/store", () => ({
@@ -49,20 +51,20 @@ vi.mock("@/modules/sql-editor/store/editor", () => ({
 
 vi.mock("@/modules/sql-editor/store/tab", () => ({
   getSQLEditorTabsState: () => ({
-    currentTabId: mocks.tab.id,
-    tabsById: new Map([[mocks.tab.id, mocks.tab]]),
+    currentTabId: mocks.currentTabId,
+    tabsById: mocks.tabsById,
     updateTab: mocks.updateTab,
   }),
   useSQLEditorTabState: (
     selector: (state: {
       currentTabId: string;
-      tabsById: Map<string, typeof mocks.tab>;
+      tabsById: typeof mocks.tabsById;
       updateTab: typeof mocks.updateTab;
     }) => unknown
   ) =>
     selector({
-      currentTabId: mocks.tab.id,
-      tabsById: new Map([[mocks.tab.id, mocks.tab]]),
+      currentTabId: mocks.currentTabId,
+      tabsById: mocks.tabsById,
       updateTab: mocks.updateTab,
     }),
 }));
@@ -88,6 +90,13 @@ describe("useSQLEditorAutoSave", () => {
     mocks.tab.savedQuery = "";
     mocks.tab.status = "DIRTY";
     mocks.tab.statement = "SELECT 1";
+    mocks.tab.connection = {
+      instance: "instances/inst1",
+      database: "instances/inst1/databases/db1",
+    };
+    mocks.tabsById.clear();
+    mocks.tabsById.set(mocks.tab.id, mocks.tab);
+    mocks.currentTabId = mocks.tab.id;
     mocks.createSavedQuery.mockResolvedValue(undefined);
     mocks.updateTab.mockReset();
   });
@@ -154,6 +163,34 @@ describe("useSQLEditorAutoSave", () => {
     });
 
     expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+  });
+
+  test("saves the edited tab after switching away from an identical clean tab", async () => {
+    const cleanTab = {
+      ...mocks.tab,
+      id: "tab-2",
+      status: "CLEAN",
+      connection: { ...mocks.tab.connection },
+    };
+    mocks.tabsById.set(cleanTab.id, cleanTab);
+    const { rerender } = renderHook(() => useSQLEditorAutoSave());
+
+    mocks.currentTabId = cleanTab.id;
+    rerender();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+
+    mocks.currentTabId = mocks.tab.id;
+    rerender();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+
+    expect(mocks.createSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ tabId: "tab-1" })
+    );
   });
 
   test("saves a newer database selection after the first create completes", async () => {

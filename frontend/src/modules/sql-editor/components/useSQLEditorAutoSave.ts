@@ -36,6 +36,7 @@ export function useSQLEditorAutoSave() {
   const database = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.connection.database
   );
+  const currentTabId = useSQLEditorTabState((s) => s.currentTabId);
   const [saveVersion, setSaveVersion] = useState(0);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -53,8 +54,8 @@ export function useSQLEditorAutoSave() {
       }
     };
     // A completed save may reveal newer SQL or a newer database selection.
-    // The save reads the live tab state when this timer fires.
-  }, [statement, database, saveVersion]);
+    // The active tab is included because the save reads live tab state at fire.
+  }, [statement, database, currentTabId, saveVersion]);
 
   const runAutoSave = async () => {
     const tabsState = getSQLEditorTabsState();
