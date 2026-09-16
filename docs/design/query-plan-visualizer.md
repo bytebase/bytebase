@@ -245,11 +245,12 @@ regression.
 
 | Engine | Opening the Plan tab on a result | Picture | Measured or estimated |
 |---|---|---|---|
-| **Spanner** | **no `Query()`** — the plan came with the run | graph | **measured** |
-| **SQL Server** | **no `Query()`**, if we ask the right way | graph | **measured** |
-| **PostgreSQL** | one `Query()`, on demand, cached | graph | estimated |
+| **PostgreSQL, SQL Server, Spanner** | one `Query()`, on demand, cached | graph | estimated |
 | **MySQL, Oracle** | one `Query()`, on demand, cached | text | estimated |
 | **7 others** | one `Query()`, on demand, cached | text | estimated |
+
+A plan opened from a result is always an estimate, on every engine. Measured
+plans come from **Explain analyze** (§3.1), which is a deliberate action.
 
 **Say which one it is, in words.** Measured and estimated carry a badge, and an
 estimated plan says *"A new plan, made just now. It may differ from the plan that
@@ -268,21 +269,18 @@ explain, and it should settle the sequencing too. MySQL and Oracle are the
 cheapest graphs to add later: MySQL already emits structured JSON, and Oracle's
 plan table already holds the parent-child links the driver discards.
 
-**Two engines can attach a measured plan to the run itself.** That is the
-standard: BigQuery, Snowflake and Databricks keep a plan for every query because
-the engine records one while it runs. Spanner has a third run mode returning rows
-*and* plan *and* real timings in one execution; SQL Server's `SET STATISTICS XML`
-does the same, where `SET SHOWPLAN_XML` only estimates. PostgreSQL and MySQL
-cannot: on both, `EXPLAIN ANALYZE` returns the plan *instead of* the rows.
+**Attaching a measured plan to an ordinary run is deferred.** Two engines could:
+Spanner has a run mode returning rows and plan and real timings in one execution,
+and SQL Server's `SET STATISTICS XML` does the same. That is how BigQuery,
+Snowflake and Databricks work, and it is tempting.
 
-It is not free, and it is **opt-in, never the default for every run**. Spanner
-documents profiling overhead and discourages it for production traffic.
-`SET STATISTICS XML` requires `SHOWPLAN` on every database the statement touches,
-so switching it on blindly would fail queries the user is otherwise authorized to
-run. So: the backend decides before executing — it must hold `bb.sql.explain`
-*and* the engine capability — and **falls back to an ordinary run whenever
-profiling is unavailable**, rather than failing the query. A plan attached this
-way is authorized the same as any other plan (§3.5).
+It does not fit here. To have the plan ready when someone later clicks Plan, we
+would have to profile *every* run — and Spanner documents profiling overhead and
+discourages it for production traffic, while `SET STATISTICS XML` needs
+`SHOWPLAN` on every database the statement touches, so turning it on blindly
+would fail queries the user is authorized to run. Profiling only when asked
+requires a control that says so before the run, which is a second explain action
+on the Run button for a case **Explain analyze** already covers. Out of scope.
 
 Once the Plan tab matches the pop-up page, delete the page, its token hand-off
 and the old link.
@@ -294,6 +292,11 @@ and the old link.
 it. For them the Plan tab is **disabled with the reason shown**, not hidden:
 hiding it leaves them unable to tell the capability exists or what to ask an
 admin for.
+
+One gap to close: a typed `EXPLAIN ANALYZE` is classified as its *inner*
+statement (`pg/query_type.go:47`), so today it passes on `bb.sql.select` alone
+and still returns a plan. It must require **both** — the permission to execute
+the statement, and `bb.sql.explain` to receive the plan.
 
 **Plans are never masked, and that is a privilege, not a safe default.** Explain
 skips masking (`sql_service.go:726`, `:735`). A plan is not row data, but it is
