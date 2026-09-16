@@ -529,6 +529,8 @@ export function SyncDatabases({
   const [selectedSet, setSelectedSet] = useState<Set<string>>(
     () => new Set(syncDatabases?.databases ?? [])
   );
+  const selectedSetRef = useRef(selectedSet);
+  selectedSetRef.current = selectedSet;
   const [databaseList, setDatabaseList] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -620,7 +622,9 @@ export function SyncDatabases({
           isMountedRef.current &&
           requestId === activeDatabaseListRequestRef.current
         ) {
-          setDatabaseList(new Set([...selectedSet, ...resp.databases]));
+          setDatabaseList(
+            new Set([...selectedSetRef.current, ...resp.databases])
+          );
         }
       } finally {
         if (

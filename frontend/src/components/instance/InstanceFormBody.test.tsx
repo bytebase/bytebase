@@ -339,6 +339,67 @@ test("keeps newly loaded selections in the database preview", async () => {
   }
 });
 
+test("keeps selections added while the database preview request is pending", async () => {
+  const requestCount = mocks.listInstanceDatabases.mock.calls.length;
+  let resolvePreview:
+    | ((value: { databases: string[] }) => void)
+    | undefined;
+  mocks.listInstanceDatabases.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolvePreview = resolve;
+      })
+  );
+  const instance = create(InstanceSchema, {
+    name: "instances/production",
+    engine: Engine.POSTGRES,
+  });
+  const { rerender } = render(
+    <InstanceFormProvider instance={instance}>
+      <SyncDatabases
+        isCreating={false}
+        showLabel={false}
+        allowEdit
+        syncDatabases={create(SyncDatabasesSchema, {
+          databases: ["analytics"],
+        })}
+        onSyncDatabasesChange={() => undefined}
+      />
+    </InstanceFormProvider>
+  );
+
+  try {
+    await waitFor(() => {
+      expect(mocks.listInstanceDatabases).toHaveBeenCalledTimes(requestCount + 1);
+    });
+
+    rerender(
+      <InstanceFormProvider instance={instance}>
+        <SyncDatabases
+          isCreating={false}
+          showLabel={false}
+          allowEdit
+          syncDatabases={create(SyncDatabasesSchema, {
+            databases: ["app"],
+          })}
+          onSyncDatabasesChange={() => undefined}
+        />
+      </InstanceFormProvider>
+    );
+
+    await act(async () => {
+      resolvePreview?.({ databases: ["analytics"] });
+    });
+    await waitFor(() => {
+      expect(screen.getByText("app")).toBeInTheDocument();
+    });
+  } finally {
+    mocks.listInstanceDatabases.mockResolvedValue({
+      databases: ["app", "analytics"],
+    });
+  }
+});
+
 test("keeps labels in their own form field", () => {
   const { container } = render(
     <InstanceFormProvider>
