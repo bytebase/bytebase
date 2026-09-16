@@ -58,7 +58,7 @@ globalThis.ResizeObserver = class ResizeObserver {
 } as typeof ResizeObserver;
 
 const setElementWidth = (
-  element: HTMLElement,
+  element: Element,
   width: { clientWidth: number; scrollWidth: number }
 ) => {
   Object.defineProperty(element, "clientWidth", {
@@ -68,6 +68,25 @@ const setElementWidth = (
   Object.defineProperty(element, "scrollWidth", {
     configurable: true,
     value: width.scrollWidth,
+  });
+};
+
+// The element the bar measures: the truncating span rendered by EllipsisText.
+const statementTextOf = (statement: HTMLElement) => {
+  const text = statement.querySelector("span");
+  if (!text) throw new Error("statement text span not rendered");
+  return text;
+};
+
+const flushResize = () => {
+  act(() => {
+    for (const callback of resizeCallbacks) {
+      callback([] as unknown as ResizeObserverEntry[], {
+        disconnect: vi.fn(),
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+      });
+    }
   });
 };
 
@@ -169,20 +188,14 @@ describe("ResultStatusBar", () => {
     const statusLeft = screen.getByTestId("result-status-left");
     const databaseLabel = screen.getByTestId("result-status-database");
     const statement = screen.getByTestId("result-status-statement");
+    const statementText = statementTextOf(statement);
 
     setElementWidth(statusLeft, { clientWidth: 520, scrollWidth: 520 });
     setElementWidth(databaseLabel, { clientWidth: 210, scrollWidth: 210 });
-    setElementWidth(statement, { clientWidth: 310, scrollWidth: 900 });
+    setElementWidth(statement, { clientWidth: 310, scrollWidth: 310 });
+    setElementWidth(statementText, { clientWidth: 282, scrollWidth: 900 });
 
-    act(() => {
-      for (const callback of resizeCallbacks) {
-        callback([] as unknown as ResizeObserverEntry[], {
-          disconnect: vi.fn(),
-          observe: vi.fn(),
-          unobserve: vi.fn(),
-        });
-      }
-    });
+    flushResize();
 
     expect(databaseLabel.classList.contains("hidden")).toBe(true);
   });
@@ -202,17 +215,63 @@ describe("ResultStatusBar", () => {
 
     setElementWidth(statusLeft, { clientWidth: 520, scrollWidth: 520 });
     setElementWidth(databaseLabel, { clientWidth: 230, scrollWidth: 900 });
-    setElementWidth(statement, { clientWidth: 250, scrollWidth: 250 });
-
-    act(() => {
-      for (const callback of resizeCallbacks) {
-        callback([] as unknown as ResizeObserverEntry[], {
-          disconnect: vi.fn(),
-          observe: vi.fn(),
-          unobserve: vi.fn(),
-        });
-      }
+    setElementWidth(statement, { clientWidth: 282, scrollWidth: 282 });
+    setElementWidth(statementTextOf(statement), {
+      clientWidth: 250,
+      scrollWidth: 250,
     });
+
+    flushResize();
+
+    expect(databaseLabel.classList.contains("hidden")).toBe(false);
+  });
+
+  test("shows the database label again when the container widens back", () => {
+    render(
+      <ResultStatusBar
+        database={database}
+        statement="SELECT db.environment as env, db.instance as ins FROM db JOIN project on db.project = project.resource_id WHERE project.resource_id = 'a' AND db.deleted = false"
+        queryTime="4 ms"
+      />
+    );
+
+    const statusLeft = screen.getByTestId("result-status-left");
+    const databaseLabel = screen.getByTestId("result-status-database");
+    const statement = screen.getByTestId("result-status-statement");
+    const statementText = statementTextOf(statement);
+
+    // Widths measured in Chromium at a 1440px viewport. The statement row
+    // stretches to fill whatever the label leaves, while the text span stays at
+    // its intrinsic 994px in every state below.
+    setElementWidth(statusLeft, { clientWidth: 1319, scrollWidth: 1319 });
+    setElementWidth(databaseLabel, { clientWidth: 233, scrollWidth: 233 });
+    setElementWidth(statement, { clientWidth: 1078, scrollWidth: 1078 });
+    setElementWidth(statementText, { clientWidth: 994, scrollWidth: 994 });
+
+    flushResize();
+
+    expect(databaseLabel.classList.contains("hidden")).toBe(false);
+
+    // Narrowed to a 600px viewport: the statement no longer fits beside the
+    // label, so the label gives up its room.
+    setElementWidth(statusLeft, { clientWidth: 479, scrollWidth: 479 });
+    setElementWidth(databaseLabel, { clientWidth: 216, scrollWidth: 216 });
+    setElementWidth(statement, { clientWidth: 256, scrollWidth: 256 });
+    setElementWidth(statementText, { clientWidth: 224, scrollWidth: 994 });
+
+    flushResize();
+
+    expect(databaseLabel.classList.contains("hidden")).toBe(true);
+
+    // Back to 1440px. The hidden label now measures zero and the statement row
+    // stretches across the whole width, so only the text span still reports
+    // what the statement actually needs.
+    setElementWidth(statusLeft, { clientWidth: 1319, scrollWidth: 1319 });
+    setElementWidth(databaseLabel, { clientWidth: 0, scrollWidth: 0 });
+    setElementWidth(statement, { clientWidth: 1319, scrollWidth: 1319 });
+    setElementWidth(statementText, { clientWidth: 994, scrollWidth: 994 });
+
+    flushResize();
 
     expect(databaseLabel.classList.contains("hidden")).toBe(false);
   });

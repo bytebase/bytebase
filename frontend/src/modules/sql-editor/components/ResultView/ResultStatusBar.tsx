@@ -54,11 +54,13 @@ export function ResultStatusBar({
         databaseWidthRef.current = databaseWidth;
       }
 
-      const statementText = statementLabel.querySelector("span");
-      const statementWidth = Math.max(
-        statementLabel.scrollWidth,
-        statementText?.scrollWidth ?? 0
-      );
+      // Measure the truncating text span, not its row wrapper. The span is
+      // sized to its content, so its scrollWidth is the statement's full width
+      // whether or not the database label is in layout; the wrapper stretches
+      // to fill the row, so measuring it would keep a hidden label hidden at
+      // every width.
+      const statementWidth =
+        statementLabel.querySelector("span")?.scrollWidth ?? 0;
       setHideDatabase(
         databaseWidthRef.current > 0 &&
           statementWidth + databaseWidthRef.current > statusLeft.clientWidth
