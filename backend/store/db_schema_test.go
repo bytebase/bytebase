@@ -8,6 +8,7 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -88,4 +89,46 @@ func TestUpsertDBSchemaKeepsTheLaterRead(t *testing.T) {
 	a.NotNil(database)
 	a.True(later.Equal(database.Metadata.GetLastSyncTime().AsTime()))
 	a.True(database.Metadata.GetDatashare())
+
+	tie := time.Now()
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "tie-first"}, nil, tie))
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "tie-second"}, nil, tie))
+
+	schema, err = s.GetDBSchema(ctx, &store.FindDBSchemaMessage{Workspace: "default", InstanceID: "instance-a", DatabaseName: "db"})
+	a.NoError(err)
+	a.Equal("tie-first", schema.GetProto().GetName())
+}
+
+func TestUpsertDBSchemaIgnoresASyncTimeTheDatabaseHasNotReached(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	t.Cleanup(cancel)
+	db, s, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+		INSERT INTO instance (resource_id, workspace, project) VALUES ('instance-a', 'default', 'project-a');
+		INSERT INTO db (instance, name, project) VALUES ('instance-a', 'db', 'project-a');
+	`)
+	a.NoError(err)
+
+	// A replica clock that ran ahead wrote this before syncs were ordered.
+	_, err = s.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   "instance-a",
+		DatabaseName: "db",
+		MetadataUpdates: []func(*storepb.DatabaseMetadata){
+			func(md *storepb.DatabaseMetadata) { md.LastSyncTime = timestamppb.New(time.Now().Add(time.Hour)) },
+		},
+	})
+	a.NoError(err)
+
+	syncedAt, err := s.Now(ctx)
+	a.NoError(err)
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "synced"}, nil, syncedAt))
+
+	schema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{Workspace: "default", InstanceID: "instance-a", DatabaseName: "db"})
+	a.NoError(err)
+	a.NotNil(schema)
+	a.Equal("synced", schema.GetProto().GetName())
 }

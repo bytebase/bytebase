@@ -81,8 +81,9 @@ func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, ins
 // metadataUpdates to the database's own metadata, and records syncedAt, the
 // metadata database time the sync read the database, as its last sync time. All
 // of it happens in one transaction, and none of it happens when the database
-// records a later read: of two overlapping syncs, on one replica or on two,
-// only the one that read last leaves anything behind.
+// already records a read at or after syncedAt: of two overlapping syncs, on one
+// replica or on two, only one leaves anything behind, and it is the one that
+// read last.
 //
 // It never writes config, which UpdateDBSchema owns: a sync that wrote back the
 // config it read before dumping the schema would undo an edit made meanwhile.
@@ -127,13 +128,21 @@ func (s *Store) UpsertDBSchema(
 		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
 		return err
 	}, func(tx *sql.Tx, ownership *databaseOwnership) error {
+		var databaseNow time.Time
+		if err := tx.QueryRowContext(ctx, "SELECT clock_timestamp()").Scan(&databaseNow); err != nil {
+			return errors.Wrap(err, "failed to read the metadata database clock")
+		}
 		databaseMetadata := &storepb.DatabaseMetadata{}
 		if len(ownership.metadata) > 0 {
 			if err := common.ProtojsonUnmarshaler.Unmarshal(ownership.metadata, databaseMetadata); err != nil {
 				return errors.Wrapf(err, "failed to unmarshal metadata of database %q", common.FormatDatabase(instanceID, databaseName))
 			}
 		}
-		if databaseMetadata.GetLastSyncTime().AsTime().After(syncedAt) {
+		// Of two reads of the same time, the one that stores first keeps the row.
+		// A stored time the metadata database has not reached came from a replica
+		// clock that ran ahead of it, before this ordering existed, and orders
+		// nothing.
+		if stored := databaseMetadata.GetLastSyncTime().AsTime(); !stored.Before(syncedAt) && !stored.After(databaseNow) {
 			return nil
 		}
 		for _, update := range metadataUpdates {
