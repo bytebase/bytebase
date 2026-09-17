@@ -23,7 +23,11 @@ export function Tooltip({
   popupClassName,
   open,
   onOpenChange,
-}: TooltipProps) {
+  render,
+}: TooltipProps & {
+  /** The trigger element; defaults to an inline-flex wrapper around `children`. */
+  readonly render?: ComponentProps<typeof BaseTooltip.Trigger>["render"];
+}) {
   if (!content) {
     return <>{children}</>;
   }
@@ -32,7 +36,7 @@ export function Tooltip({
     <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
       <BaseTooltip.Trigger
         delay={delayDuration}
-        render={<span className="inline-flex" />}
+        render={render ?? <span className="inline-flex" />}
       >
         {children}
       </BaseTooltip.Trigger>

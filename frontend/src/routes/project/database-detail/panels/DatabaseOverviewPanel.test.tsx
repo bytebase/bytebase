@@ -149,7 +149,8 @@ vi.mock("@/utils/datetime", () => ({
   formatOperationalDateTime: mocks.formatAbsoluteDateTime,
   formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
   formatRelativeTime: mocks.formatRelativeTime,
-  nextRelativeChangeAt: () => Number.POSITIVE_INFINITY,
+  nextQueueTimeChangeAt: () => Number.POSITIVE_INFINITY,
+  nextRelativeTimeChangeAt: () => Number.POSITIVE_INFINITY,
 }));
 
 vi.mock("@/utils", () => ({

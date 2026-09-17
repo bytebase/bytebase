@@ -113,9 +113,10 @@ deferred.
 **D6 — Full date-time tooltip on every reduced display.**
 Any timestamp that does not show the full form — relative, date-only after the switch, or the
 compact history tier — carries the full absolute date-time with seconds and timezone in its
-tooltip. This is the universal escape hatch that keeps every reduced cell recoverable. Corollary:
-a context that cannot host a tooltip — i18n-interpolated strings, exports, titles — carries the
-full-precision string itself.
+tooltip. This is the universal escape hatch that keeps every reduced cell recoverable. The rule
+cuts both ways: a tooltip carries only what its label hides, so a label already showing the full
+instant gets none of it repeated. Corollary: a context that cannot host a tooltip —
+i18n-interpolated strings, exports, titles — carries the full-precision string itself.
 
 **D7 — History views carry two precision tiers.**
 *A history row orients; a history record testifies.* Full precision (seconds + timezone,
@@ -265,11 +266,21 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   both JSX and string contexts stays a full-precision string builder — its JSX consumers render
   the component instead.
 - Staleness: no time-varying display (relative buckets, countdowns, `isExpired` derivations) may
-  go stale while mounted; displays that never change with time pay nothing. The mechanism —
-  shared clock, cadence, subscribers, consolidating today's ad-hoc per-component timers — is the
-  implementation PR's design space, guarded by a render-time `Date.now()` sweep and fake-timer
-  tests. GitHub's `relative-time` element, which schedules updates at the next boundary, is the
-  reference behavior.
+  go stale while mounted; displays that never change with time pay nothing. GitHub's
+  `relative-time` element, which schedules updates at the next boundary, is the reference
+  behavior. The contract that makes this hold:
+  - **Every time-varying reading comes as a pair** — the function that renders it and the
+    function returning the first instant its output will differ (`Infinity` if never). The pair
+    lives together and is tested together: sampled across ages, the reading is constant up to
+    that instant and differs at it. A boundary borrowed from a different reading, or re-derived by
+    hand beside one, is the defect this rules out — the two drift silently, and a test of the
+    boundary alone cannot see it.
+  - **The shared clock accepts any instant.** It clamps to the platform timer ceiling and re-arms,
+    wakes only the subscribers that are due, and relies on each woken subscriber declaring a
+    strictly later instant.
+  - Guarded by fake-timer tests and a sweep of render-time `Date.now()` over the touched surfaces
+    at implementation time — a review pass, not a lint: telling render scope from handlers and
+    effects statically would flag most legitimate uses.
 - Tests: threshold boundary (29d/31d), year handling, zh locale, the three modes, the operational
   label/tooltip contract on a sub-minute-tail expiration, the <24h countdown carve-out, and
   fake-timer staleness; update the existing `*.test.tsx` files that assert relative strings.
@@ -299,7 +310,7 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   evidence surfaces — the audit log and the changelog/revision detail views — so the
   year-month-day-hour-minute-second ask is met to the minute on record lists and fully on record
   details. If the customer pushes back specifically on visible seconds, the escalation is flipping
-  those lists to the full tier — a one-line D7 assignment change, no model change.
+  those lists to the full tier — a mode change at each embedded list, no model change.
 - Queue rows 1–29 days old: still "x days ago" (D1/D3 trade-off, accepted because these are queue
   readings). **Risk**: if the reported "ticket history" reading includes *recent* issue-list rows,
   part of the complaint survives. Mitigation: tooltip; escalation path if it recurs is lowering the
@@ -316,14 +327,20 @@ points where the implementation had to choose:
 1. **The relative age on a full cell** (previously open item 5) is rendered as a component the
    tooltip mounts only when it opens, not as a string computed with the row. A string would freeze
    at whatever the row last rendered, which the staleness rule forbids; this way a closed tooltip
-   holds no place on the shared clock and an open one keeps counting.
+   holds no place on the shared clock and an open one keeps counting. The full-tier surfaces — the
+   audit log and the changelog and revision detail views — render through the component to get it.
 2. **The operational tooltip carries the full date-time, not the relative age.** D6 owns that slot,
    and the pill's reduced minute precision is what needs recovering.
 3. **The zh renderings put the timezone before the time** — "2026年9月15日 GMT+8 09:00", where the
    examples above show it trailing. That is ICU's pattern for the locale; the strings come from
    `Intl` rather than being assembled, so the locale's own order wins.
 
-The staleness rule is enforced by `useNow`, a single shared clock: subscribers declare the instant
-their rendering next changes rather than a cadence, since the relative buckets turn over relative
-to the timestamp, not the wall clock. It replaced the ad-hoc interval behind the plan-detail
-created time and covers the SQL-editor grant countdown, which had none.
+The staleness rule holds through `useNow` and the reading pairs described under Implementation
+shape. The clock replaced the ad-hoc interval behind the plan-detail created time, and the pairs
+cover the displays that had no clock at all: the SQL-editor grant countdown, the masking-exemption
+expiry label, and the access-grant roster's expired badge.
+
+The rule governs displays of time. Two kinds of clock read stay outside it: **query membership** —
+the masking-exemption status filter, the role-expiry reminder's "within two days" list — which,
+like the fetched data itself, reflects when the query ran; and the **input side**, the validation
+of an expiration being entered, deferred with the pickers.

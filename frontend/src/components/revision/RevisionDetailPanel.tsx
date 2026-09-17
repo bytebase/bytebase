@@ -2,6 +2,7 @@ import { ArrowUpRight, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { sheetServiceClientConnect } from "@/api";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { ReadonlyMonaco } from "@/components/monaco";
 import { RouterLink } from "@/components/RouterLink";
 import { TaskRunLogViewer } from "@/components/task-run-log";
@@ -10,7 +11,7 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { useRevisionByName } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import { bytesToString, formatAbsoluteDateTime } from "@/utils";
+import { bytesToString } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 import { extractTaskLink, getRevisionType } from "@/utils/v1/revision";
 
@@ -112,9 +113,10 @@ export function RevisionDetailPanel({
   const taskFullLink = revision?.taskRun
     ? extractTaskLink(revision.taskRun)
     : "";
-  const formattedCreateTime = revision
-    ? formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(revision.createTime))
-    : "";
+  // A revision without a create time shows none, rather than the time now.
+  const createTimeMs = revision?.createTime
+    ? getTimeForPbTimestampProtoEs(revision.createTime)
+    : undefined;
   const formattedStatementSize = statement
     ? bytesToString(new TextEncoder().encode(statement).length)
     : "";
@@ -140,8 +142,12 @@ export function RevisionDetailPanel({
           </h2>
           <div className="flex items-center gap-x-3 text-sm text-control-light">
             <span>{getRevisionType(revision.type)}</span>
-            {formattedCreateTime ? <span aria-hidden="true">•</span> : null}
-            {formattedCreateTime ? <span>{formattedCreateTime}</span> : null}
+            {createTimeMs !== undefined ? (
+              <>
+                <span aria-hidden="true">•</span>
+                <HumanizeTs mode="datetime" ts={createTimeMs / 1000} />
+              </>
+            ) : null}
           </div>
         </div>
 

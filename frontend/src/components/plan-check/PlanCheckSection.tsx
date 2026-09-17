@@ -28,8 +28,8 @@ import {
 } from "@/lib/plan/check";
 import { cn } from "@/lib/utils";
 import {
-  getDateForPbTimestampProtoEs,
   getRuleLocalization,
+  getTimeForPbTimestampProtoEs,
   ruleTemplateMapV2,
   ruleTypeToString,
 } from "@/types";
@@ -363,9 +363,9 @@ export function PlanCheckResultsDrawer({
                               <HumanizeTs
                                 className="text-xs text-control-light"
                                 ts={
-                                  (getDateForPbTimestampProtoEs(
+                                  getTimeForPbTimestampProtoEs(
                                     group.createTime
-                                  )?.getTime() ?? 0) / 1000
+                                  ) / 1000
                                 }
                               />
                             )}

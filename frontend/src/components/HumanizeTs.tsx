@@ -7,7 +7,8 @@ import {
   formatOperationalDateTime,
   formatQueueTime,
   formatRelativeTime,
-  nextRelativeChangeAt,
+  nextQueueTimeChangeAt,
+  nextRelativeTimeChangeAt,
 } from "@/utils/datetime";
 
 /**
@@ -27,9 +28,10 @@ interface HumanizeTsProps {
   /** Unix timestamp in seconds. */
   ts: number;
   mode?: TimeDisplayMode;
+  /** Applied to the element that renders the time, which is the only one. */
   className?: string;
   /**
-   * Whether to reveal the absolute timestamp on hover. Defaults to true.
+   * Whether to reveal the hidden reading on hover. Defaults to true.
    * Disable only inside agent-layer overlays, where the shared Tooltip mounts
    * into the lower overlay layer (behind the agent window); supply an
    * AgentTooltip at the call site instead.
@@ -44,21 +46,21 @@ const FORMATTERS: Record<TimeDisplayMode, (tsMs: number) => string> = {
   datetime: formatAbsoluteDateTime,
 };
 
-/**
- * The age of a full-precision cell, which is the one reading its label lacks.
- *
- * A component rather than a string because the tooltip mounts it only while
- * open: closed, it costs nothing and holds no place on the shared clock; open,
- * it keeps counting rather than freezing at whatever the row last rendered.
- */
+// Tooltip bodies mount only while open, so as components they cost nothing
+// for the rows nobody hovers, and a time-varying one can keep counting.
+function FullDateTime({ tsMs }: { tsMs: number }) {
+  return <>{formatAbsoluteDateTime(tsMs)}</>;
+}
+
 function RelativeAge({ tsMs }: { tsMs: number }) {
-  useNow(nextRelativeChangeAt(tsMs));
+  useNow(nextRelativeTimeChangeAt(tsMs));
   return <>{formatRelativeTime(tsMs)}</>;
 }
 
 /**
  * Renders a timestamp in the form its surface calls for, and by default
- * reveals the full date-time on hover. This is the single canonical way to
+ * reveals on hover the reading its label hides: the full date-time for every
+ * reduced form, the age for the full one. This is the single canonical way to
  * display a record timestamp across the app.
  */
 export function HumanizeTs({
@@ -70,22 +72,25 @@ export function HumanizeTs({
   // Subscribe to locale changes so the rendered strings update on a language switch.
   useTranslation();
   const tsMs = ts * 1000;
-  // Only the work-queue form ages. The absolute modes render the same string
-  // forever, so they take no place on the shared clock -- which matters on the
-  // audit log, where thousands of full cells would otherwise subscribe for a
-  // label that never moves. The formatters read the clock themselves; this
-  // call is what brings the render back around.
-  useNow(mode === "queue" ? nextRelativeChangeAt(tsMs) : undefined);
-  const label = <span className={className}>{FORMATTERS[mode](tsMs)}</span>;
+  // Only the work-queue label ages; the absolute labels never change, so they
+  // take no place on the shared clock.
+  useNow(mode === "queue" ? nextQueueTimeChangeAt(tsMs) : undefined);
+  const label = FORMATTERS[mode](tsMs);
   if (!tooltip) {
-    return label;
+    return <span className={className}>{label}</span>;
   }
-  // Every reduced form hides the exact instant, so its tooltip restores it.
-  const content =
-    mode === "datetime" ? (
-      <RelativeAge tsMs={tsMs} />
-    ) : (
-      formatAbsoluteDateTime(tsMs)
-    );
-  return <Tooltip content={content}>{label}</Tooltip>;
+  return (
+    <Tooltip
+      content={
+        mode === "datetime" ? (
+          <RelativeAge tsMs={tsMs} />
+        ) : (
+          <FullDateTime tsMs={tsMs} />
+        )
+      }
+      render={<span className={className} />}
+    >
+      {label}
+    </Tooltip>
+  );
 }

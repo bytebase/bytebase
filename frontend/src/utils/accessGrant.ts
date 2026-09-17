@@ -7,7 +7,7 @@ import {
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { formatAbsoluteDateTime } from "@/utils/datetime";
+import { formatAbsoluteDateTime, hasPassed } from "@/utils/datetime";
 
 export type AccessGrantFilterStatus =
   | "ACTIVE"
@@ -76,7 +76,7 @@ export const getAccessGrantDisplayStatus = (
   if (
     grant.status === AccessGrant_Status.ACTIVE &&
     expireMs !== undefined &&
-    expireMs < Date.now()
+    hasPassed(expireMs)
   ) {
     return "EXPIRED";
   }

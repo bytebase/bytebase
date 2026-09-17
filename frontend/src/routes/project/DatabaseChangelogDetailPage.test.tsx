@@ -211,6 +211,11 @@ vi.mock("@/utils/v1/project", () => ({
   extractProjectResourceName: (name: string) => name.split("/").at(-1) ?? "",
 }));
 
+vi.mock("@/utils/datetime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/datetime")>()),
+  formatAbsoluteDateTime: () => "formatted time",
+}));
+
 vi.mock("@/utils", () => ({
   autoDatabaseRoute: (database: { name: string; project: string }) => {
     const parent = database.name.split("/databases/")[0];

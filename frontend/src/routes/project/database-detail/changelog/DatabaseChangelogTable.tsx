@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type Changelog,
   Changelog_Status,
@@ -104,11 +104,7 @@ export function DatabaseChangelogTable({
                   <HumanizeTs
                     mode="compact"
                     ts={
-                      (
-                        getDateForPbTimestampProtoEs(
-                          changelog.createTime
-                        ) as Date
-                      ).getTime() / 1000
+                      getTimeForPbTimestampProtoEs(changelog.createTime) / 1000
                     }
                   />
                 ) : (

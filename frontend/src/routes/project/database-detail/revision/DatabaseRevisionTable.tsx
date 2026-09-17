@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Revision } from "@/types/proto-es/v1/revision_service_pb";
 import { getRevisionType, revisionLink } from "@/utils/v1/revision";
 
@@ -108,11 +108,7 @@ export function DatabaseRevisionTable({
               {revision.createTime ? (
                 <HumanizeTs
                   mode="compact"
-                  ts={
-                    (
-                      getDateForPbTimestampProtoEs(revision.createTime) as Date
-                    ).getTime() / 1000
-                  }
+                  ts={getTimeForPbTimestampProtoEs(revision.createTime) / 1000}
                 />
               ) : (
                 "-"

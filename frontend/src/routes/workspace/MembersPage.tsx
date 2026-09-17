@@ -865,13 +865,6 @@ function computeExpirationTimestamp(days?: number): number | undefined {
   return Date.now() + days * 86400000;
 }
 
-// Interpolated into an i18n sentence, which cannot host a tooltip, so this
-// carries the full precision itself rather than a reduced form.
-function formatExpirationDate(timestampMs?: number): string {
-  if (!timestampMs) return "";
-  return formatAbsoluteDateTime(timestampMs);
-}
-
 // Validates the form's expiration against the workspace cap. "Never" (no
 // timestamp) is only allowed when no cap is configured; a chosen timestamp
 // must be in the future and within the cap.
@@ -1326,7 +1319,9 @@ function ProjectRoleBindingForm({
         {!form.expirationCustom && form.expirationTimestampInMS && (
           <p className="text-xs leading-4 text-control-light">
             {t("project.members.expires-at", {
-              date: formatExpirationDate(form.expirationTimestampInMS),
+              // An interpolated sentence cannot host a tooltip, so it carries
+              // the full precision itself.
+              date: formatAbsoluteDateTime(form.expirationTimestampInMS),
             })}
           </p>
         )}

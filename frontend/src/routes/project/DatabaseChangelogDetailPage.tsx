@@ -8,6 +8,7 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
 } from "@/app/router/handles";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { ReadonlyDiffMonaco, ReadonlyMonaco } from "@/components/monaco";
 import { RouterLink } from "@/components/RouterLink";
 import { TaskRunLogViewer } from "@/components/task-run-log";
@@ -30,7 +31,6 @@ import {
   autoDatabaseRoute,
   bytesToString,
   extractDatabaseResourceName,
-  formatAbsoluteDateTime,
   getInstanceResource,
 } from "@/utils";
 import { instanceV1SupportsSchemaRollback } from "@/utils/v1/instance";
@@ -303,14 +303,9 @@ export function DatabaseChangelogDetailPage({
   const databaseDisplayName =
     extractDatabaseResourceName(detail.database?.name ?? "").databaseName ||
     databaseName;
-  const formattedCreateTime = useMemo(() => {
-    if (!resolvedChangelog?.createTime) {
-      return "";
-    }
-    return formatAbsoluteDateTime(
-      getTimeForPbTimestampProtoEs(resolvedChangelog.createTime)
-    );
-  }, [resolvedChangelog?.createTime]);
+  const createTimeMs = resolvedChangelog?.createTime
+    ? getTimeForPbTimestampProtoEs(resolvedChangelog.createTime)
+    : undefined;
   const formattedSchemaSize = useMemo(() => {
     if (!resolvedChangelog?.schemaSize) {
       return "";
@@ -407,10 +402,10 @@ export function DatabaseChangelogDetailPage({
           ) : null}
           <div className="flex items-center gap-x-3 text-sm text-control-light">
             <ChangelogStatusIndicator status={resolvedChangelog.status} />
-            {formattedCreateTime ? (
+            {createTimeMs !== undefined ? (
               <>
                 <span aria-hidden="true">•</span>
-                <span>{formattedCreateTime}</span>
+                <HumanizeTs mode="datetime" ts={createTimeMs / 1000} />
               </>
             ) : null}
           </div>

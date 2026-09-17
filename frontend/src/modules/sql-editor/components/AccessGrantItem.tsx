@@ -6,19 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useNow } from "@/hooks/useNow";
 import { cn } from "@/lib/utils";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { formatAbsoluteDateTime } from "@/utils";
 import {
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
-  getAccessGrantExpirationText,
-  getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
 } from "@/utils/accessGrant";
-
-const MINUTE_MS = 60_000;
-const DAY_MS = 24 * 60 * MINUTE_MS;
+import {
+  formatAbsoluteDateTime,
+  nextCountdownChangeAt,
+  readCountdown,
+} from "@/utils/datetime";
 
 function mapTagTypeToBadgeVariant(
   tagType: "success" | "warning" | "error" | "default"
@@ -52,41 +52,41 @@ export function AccessGrantItem({
   const isRejectedOrCanceled =
     displayStatus !== "ACTIVE" && displayStatus !== "PENDING";
   const statusLabel = getAccessGrantDisplayStatusText(grant, issue);
-  const expireTimeMs = getAccessGrantExpireTimeMs(grant);
+  // Only an activated grant carries a fixed deadline; a pending one holds a
+  // duration that starts counting at approval, so it has nothing to count down.
+  const deadlineMs =
+    (isActive || isExpired) && grant.expiration.case === "expireTime"
+      ? getTimeForPbTimestampProtoEs(grant.expiration.value)
+      : undefined;
 
   const statusTagType = getAccessGrantStatusTagType(displayStatus);
   const badgeVariant = mapTagTypeToBadgeVariant(statusTagType);
 
-  // A countdown that stops counting is worse than no countdown, so hold a place
-  // on the shared clock until the grant has lapsed: at the minute while the
-  // remaining time is shown as one, and otherwise at the moment the display
-  // turns from an absolute time into a countdown.
   useNow(
-    (() => {
-      if (expireTimeMs === undefined || isExpired) return undefined;
-      const remainingMs = expireTimeMs - Date.now();
-      if (remainingMs <= 0) return undefined;
-      if (remainingMs > DAY_MS) return expireTimeMs - DAY_MS;
-      return Date.now() + (remainingMs % MINUTE_MS || MINUTE_MS);
-    })()
+    deadlineMs === undefined ? undefined : nextCountdownChangeAt(deadlineMs)
   );
 
-  const expirationText = (() => {
-    if (displayStatus !== "ACTIVE" && displayStatus !== "EXPIRED") return;
-    const info = getAccessGrantExpirationText(grant);
-    if (info.type === "never" || info.type === "duration") return;
-
-    if (!isExpired && expireTimeMs !== undefined) {
-      const diff = expireTimeMs - Date.now();
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      if (hours >= 24) {
-        return t("sql-editor.expire-at", { time: info.value });
+  // The countdown is the one form that hides the deadline, so it alone carries
+  // it in a tooltip; the other two are interpolated sentences and state the
+  // deadline in full themselves.
+  const expiration = (() => {
+    if (deadlineMs === undefined) return undefined;
+    const countdown = readCountdown(deadlineMs);
+    const deadline = formatAbsoluteDateTime(deadlineMs);
+    switch (countdown.kind) {
+      case "passed":
+        return { text: `${t("issue.access-grant.expired-at")} ${deadline}` };
+      case "beyondDay":
+        return { text: t("sql-editor.expire-at", { time: deadline }) };
+      case "within": {
+        const { hours, minutes } = countdown;
+        const left = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
+        return {
+          text: t("sql-editor.expire-in", { time: left }),
+          hiddenDeadline: deadline,
+        };
       }
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const dur = hours > 0 ? `${hours}h${minutes}m` : `${minutes}m`;
-      return t("sql-editor.expire-in", { time: dur });
     }
-    return `${t("issue.access-grant.expired-at")} ${info.value}`;
   })();
 
   const visibleTargets = grant.targets.slice(0, 2);
@@ -161,18 +161,13 @@ export function AccessGrantItem({
             </Badge>
           )}
         </div>
-        {expirationText &&
-          (expireTimeMs !== undefined ? (
-            <Tooltip content={formatAbsoluteDateTime(expireTimeMs)}>
-              <span className="text-xs text-control-placeholder shrink-0">
-                {expirationText}
-              </span>
-            </Tooltip>
-          ) : (
+        {expiration && (
+          <Tooltip content={expiration.hiddenDeadline}>
             <span className="text-xs text-control-placeholder shrink-0">
-              {expirationText}
+              {expiration.text}
             </span>
-          ))}
+          </Tooltip>
+        )}
       </div>
 
       <Tooltip
