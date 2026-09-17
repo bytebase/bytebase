@@ -120,6 +120,15 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 	targetTable := fmt.Sprintf("%s_%s_%s", tablePrefix, table.Table, table.Database)
 	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
 	var buf strings.Builder
+	cteClause, err := backupCTEClause(statementInfoList)
+	if err != nil {
+		return nil, err
+	}
+	if cteClause != "" {
+		if _, err := fmt.Fprintf(&buf, "%s\n", cteClause); err != nil {
+			return nil, errors.Wrap(err, "failed to write buffer")
+		}
+	}
 	if _, err := fmt.Fprintf(&buf, "SELECT * INTO [%s].[%s].[%s] FROM (\n", targetDatabase, defaultSchema, targetTable); err != nil {
 		return nil, errors.Wrap(err, "failed to write buffer")
 	}
@@ -169,6 +178,71 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 	}, nil
 }
 
+// backupCTEClause merges the WITH clauses of every statement in the group into
+// one clause for the backup SELECT INTO. T-SQL only allows a CTE list at the
+// top of a statement, so a CTE referenced inside a UNION branch must be
+// hoisted here. The same CTE name across statements must carry the same
+// definition, because the merged clause can only bind it once.
+func backupCTEClause(statementInfoList []statementInfo) (string, error) {
+	var ctes []string
+	definitions := make(map[string]string)
+	for _, item := range statementInfoList {
+		withClause := dmlWithClause(item.node)
+		if withClause == nil || withClause.CTEs == nil {
+			continue
+		}
+		if withClause.XmlNamespaces != nil {
+			return "", errors.New("prior backup does not support WITH XMLNAMESPACES")
+		}
+		for _, cteNode := range withClause.CTEs.Items {
+			cte, ok := cteNode.(*ast.CommonTableExpr)
+			if !ok {
+				continue
+			}
+			definition := sourceFromLoc(item.statement, cte.Loc)
+			key := strings.ToLower(cte.Name)
+			if previous, ok := definitions[key]; ok {
+				if previous != definition {
+					return "", errors.Errorf("prior backup cannot handle conflicting definitions of CTE %q across statements", cte.Name)
+				}
+				continue
+			}
+			definitions[key] = definition
+			ctes = append(ctes, definition)
+		}
+	}
+	if len(ctes) == 0 {
+		return "", nil
+	}
+	return "WITH " + strings.Join(ctes, ",\n"), nil
+}
+
+func dmlWithClause(node ast.Node) *ast.WithClause {
+	switch n := node.(type) {
+	case *ast.UpdateStmt:
+		return n.WithClause
+	case *ast.DeleteStmt:
+		return n.WithClause
+	default:
+		return nil
+	}
+}
+
+// isCTETarget reports whether an unqualified DML target names a CTE declared
+// by the statement's own WITH clause. Such a DML writes through the CTE to its
+// base table, which the backup cannot resolve, so the caller skips it.
+func isCTETarget(ref *ast.TableRef, withClause *ast.WithClause) bool {
+	if ref == nil || withClause == nil || withClause.CTEs == nil || ref.Database != "" || ref.Schema != "" {
+		return false
+	}
+	for _, cteNode := range withClause.CTEs.Items {
+		if cte, ok := cteNode.(*ast.CommonTableExpr); ok && strings.EqualFold(cte.Name, ref.Object) {
+			return true
+		}
+	}
+	return false
+}
+
 func extractSuffixSelectStatement(node ast.Node, source string) (string, string, error) {
 	switch n := node.(type) {
 	case *ast.UpdateStmt:
@@ -202,15 +276,16 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 		}
 		var (
 			table         *TableReference
+			targetRef     *ast.TableRef
 			statementType StatementType
 			err           error
 		)
 		switch n := node.(type) {
 		case *ast.UpdateStmt:
-			table, err = resolveDMLTargetTable(n.Relation, n.FromClause, databaseName)
+			table, targetRef, err = resolveDMLTargetTable(n.Relation, n.FromClause, databaseName)
 			statementType = StatementTypeUpdate
 		case *ast.DeleteStmt:
-			table, err = resolveDMLTargetTable(n.Relation, n.FromClause, databaseName)
+			table, targetRef, err = resolveDMLTargetTable(n.Relation, n.FromClause, databaseName)
 			statementType = StatementTypeDelete
 		default:
 			continue
@@ -224,6 +299,12 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 		if strings.HasPrefix(table.Table, "#") {
 			slog.Info("prior backup: skipping DML targeting temp table",
 				"table", table.Table,
+				"statementType", statementType)
+			continue
+		}
+		if isCTETarget(targetRef, dmlWithClause(node)) {
+			slog.Info("prior backup: skipping DML targeting CTE",
+				"cte", table.Table,
 				"statementType", statementType)
 			continue
 		}
@@ -241,24 +322,24 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	return dmls, nil
 }
 
-func resolveDMLTargetTable(relation ast.TableExpr, fromClause *ast.List, databaseName string) (*TableReference, error) {
-	table, err := tableReferenceFromTableExpr(relation, databaseName, defaultSchema)
-	if err != nil || table == nil {
-		return table, err
+// resolveDMLTargetTable returns the DML target and the TableRef it was
+// resolved from. When the target is an alias declared in the FROM clause, both
+// describe the aliased physical table.
+func resolveDMLTargetTable(relation ast.TableExpr, fromClause *ast.List, databaseName string) (*TableReference, *ast.TableRef, error) {
+	ref, ok := relation.(*ast.TableRef)
+	if !ok {
+		return nil, nil, errors.Errorf("unsupported DML target table source %T", relation)
 	}
+	table := tableReferenceFromTableRef(ref, databaseName, defaultSchema)
 	if fromClause != nil && table.Database == databaseName && table.Schema == defaultSchema {
-		if physical := findPhysicalTableForAlias(fromClause, table); physical != nil {
-			return physical, nil
+		if physical, physicalRef := findPhysicalTableForAlias(fromClause, table); physical != nil {
+			return physical, physicalRef, nil
 		}
 	}
-	return table, nil
+	return table, ref, nil
 }
 
-func tableReferenceFromTableExpr(expr ast.TableExpr, defaultDatabase, defaultSchema string) (*TableReference, error) {
-	ref, ok := expr.(*ast.TableRef)
-	if !ok {
-		return nil, errors.Errorf("unsupported DML target table source %T", expr)
-	}
+func tableReferenceFromTableRef(ref *ast.TableRef, defaultDatabase, defaultSchema string) *TableReference {
 	schemaName := defaultSchema
 	if ref.Schema != "" {
 		schemaName = ref.Schema
@@ -272,49 +353,43 @@ func tableReferenceFromTableExpr(expr ast.TableExpr, defaultDatabase, defaultSch
 		Schema:   schemaName,
 		Table:    ref.Object,
 		Alias:    ref.Alias,
-	}, nil
+	}
 }
 
-func findPhysicalTableForAlias(list *ast.List, table *TableReference) *TableReference {
+func findPhysicalTableForAlias(list *ast.List, table *TableReference) (*TableReference, *ast.TableRef) {
 	if list == nil || table == nil {
-		return nil
+		return nil, nil
 	}
 	for _, item := range list.Items {
-		if result := findPhysicalTableForAliasInNode(item, table); result != nil {
-			return result
+		if result, ref := findPhysicalTableForAliasInNode(item, table); result != nil {
+			return result, ref
 		}
 	}
-	return nil
+	return nil, nil
 }
 
-func findPhysicalTableForAliasInNode(node ast.Node, table *TableReference) *TableReference {
+func findPhysicalTableForAliasInNode(node ast.Node, table *TableReference) (*TableReference, *ast.TableRef) {
 	switch n := node.(type) {
 	case *ast.TableRef:
 		if n.Alias != "" && n.Alias == table.Table {
-			ref, err := tableReferenceFromTableExpr(n, table.Database, table.Schema)
-			if err != nil {
-				return nil
-			}
-			ref.Alias = n.Alias
-			return ref
+			result := tableReferenceFromTableRef(n, table.Database, table.Schema)
+			result.Alias = n.Alias
+			return result, n
 		}
 	case *ast.AliasedTableRef:
 		if ref, ok := n.Table.(*ast.TableRef); ok && n.Alias == table.Table {
-			result, err := tableReferenceFromTableExpr(ref, table.Database, table.Schema)
-			if err != nil {
-				return nil
-			}
+			result := tableReferenceFromTableRef(ref, table.Database, table.Schema)
 			result.Alias = n.Alias
-			return result
+			return result, ref
 		}
 	case *ast.JoinClause:
-		if result := findPhysicalTableForAliasInNode(n.Left, table); result != nil {
-			return result
+		if result, ref := findPhysicalTableForAliasInNode(n.Left, table); result != nil {
+			return result, ref
 		}
 		return findPhysicalTableForAliasInNode(n.Right, table)
 	default:
 	}
-	return nil
+	return nil, nil
 }
 
 func dmlFromSource(source string, relation ast.TableExpr, fromClause *ast.List, stmtLoc ast.Loc, where ast.ExprNode, option *ast.List) (string, int) {
