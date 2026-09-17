@@ -170,6 +170,20 @@ beforeEach(async () => {
 });
 
 describe("TwoFactorSetupPage", () => {
+  test("does not announce the changing countdown as an alert", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <TwoFactorSetupPage />
+    );
+
+    try {
+      await render();
+
+      expect(container.querySelector('[role="alert"]')).toBeNull();
+    } finally {
+      unmount();
+    }
+  });
+
   test("renders the secret from the enrollment response, not from the user", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <TwoFactorSetupPage />

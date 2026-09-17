@@ -645,10 +645,6 @@
       "user": "User"
     },
     "ssh-connection": "SSH tunnel",
-    "ssh-type": {
-      "none": "None",
-      "tunnel-and-private-key": "Tunnel + Private Key"
-    },
     "ssl": {
       "ca-cert": "CA Certificate",
       "ca-path": "CA Certificate Path",
@@ -1100,7 +1096,6 @@
           "role-id": "Auth role id",
           "secret-env-name": "Environment name",
           "secret-id": "Auth secret id",
-          "secret-plain-text": "Plain text",
           "self": "AppRole"
         },
         "self": "Auth type",
@@ -1263,7 +1258,6 @@
     "sample-project-instance-description-self-host": "Use a Sample Project Instance to explore Bytebase with a ready-to-use database.",
     "sample-project-instance-title": "Try a Sample Project Instance",
     "scan-interval": {
-      "default-never": "Default (never)",
       "description": "Bytebase periodically syncs instance schema and detects anomalies.",
       "min-value": "Min value {{value}} minutes",
       "self": "Scan Interval"

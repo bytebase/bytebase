@@ -73,7 +73,11 @@ function Switch({
         // the off state into a colored fill. Checked uses the accent.
         "bg-control/30 data-[checked]:bg-accent",
         "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
-        "disabled:cursor-not-allowed disabled:opacity-50",
+        // Base UI renders the root as a span and exposes disabled state through
+        // `data-disabled`, so native `:disabled` selectors do not apply here.
+        // Preserve the checked state with a muted accent while making the
+        // locked control visually subordinate.
+        "data-disabled:cursor-not-allowed data-disabled:data-[checked]:bg-accent/50 data-disabled:not-data-[checked]:opacity-50 data-disabled:[&>span]:bg-control-bg",
         className
       )}
     >

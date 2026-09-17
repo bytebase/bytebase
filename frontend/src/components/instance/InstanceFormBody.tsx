@@ -35,7 +35,13 @@ import {
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -456,39 +462,40 @@ function ScanIntervalInput({
       }
       description={t("instance.scan-interval.description")}
     >
-      <RadioGroup
-        className="gap-x-6"
-        value={mode}
-        onValueChange={(value) => handleModeChange(value as typeof mode)}
-      >
-        <RadioGroupItem value="DEFAULT" disabled={!allowEdit}>
-          {t("instance.scan-interval.default-never")}
-        </RadioGroupItem>
-        <RadioGroupItem
-          value="CUSTOM"
+      <div className="flex items-center gap-x-3">
+        <Switch
+          id="customScanInterval"
+          checked={mode === "CUSTOM"}
           disabled={!allowEdit}
-          contentClassName="flex items-center gap-x-2"
-        >
-          <span>{t("common.custom")}</span>
-          <Input
-            type="number"
-            value={minutes ?? ""}
-            className={`w-16 ${!isValid ? "border-error" : ""}`}
-            placeholder={`>= ${MIN_SCAN_MINUTES}`}
-            disabled={mode !== "CUSTOM"}
-            onChange={(e) => handleMinuteChange(e.target.value)}
-          />
-          {!isValid ? (
-            <span className="text-error text-sm">
-              {t("instance.scan-interval.min-value", {
-                value: MIN_SCAN_MINUTES,
-              })}
-            </span>
-          ) : (
-            <span className="text-sm">{t("common.minutes")}</span>
-          )}
-        </RadioGroupItem>
-      </RadioGroup>
+          onCheckedChange={(checked) =>
+            handleModeChange(checked ? "CUSTOM" : "DEFAULT")
+          }
+        />
+        <FormLabel htmlFor="customScanInterval" className="font-normal!">
+          {t("common.custom")}
+        </FormLabel>
+        {mode === "CUSTOM" && (
+          <>
+            <Input
+              type="number"
+              value={minutes ?? ""}
+              className={`w-16 ${!isValid ? "border-error" : ""}`}
+              placeholder={`>= ${MIN_SCAN_MINUTES}`}
+              disabled={!allowEdit}
+              onChange={(e) => handleMinuteChange(e.target.value)}
+            />
+            {!isValid ? (
+              <span className="text-error text-sm">
+                {t("instance.scan-interval.min-value", {
+                  value: MIN_SCAN_MINUTES,
+                })}
+              </span>
+            ) : (
+              <span className="text-sm">{t("common.minutes")}</span>
+            )}
+          </>
+        )}
+      </div>
     </FormField>
   );
 }
@@ -652,25 +659,26 @@ export function SyncDatabases({
       }
     >
       <div className="flex flex-col gap-y-2">
-        <SegmentedControl
-          value={syncAll ? "all" : "selected"}
-          onValueChange={(value) => setSyncAll(value === "all")}
-          options={[
-            { value: "all", label: t("instance.sync-databases.all-databases") },
-            {
-              value: "selected",
-              label: t("instance.sync-databases.selected-databases"),
-            },
-          ]}
-          disabled={!allowEdit}
-          ariaLabel={
-            hasProjectContext
-              ? t("instance.sync-databases.project-sync-all")
-              : t("instance.sync-databases.self")
-          }
-          aria-describedby={disabledReason ? disabledReasonId : undefined}
-          size="sm"
-        />
+        <FormControlRow className="w-fit">
+          <Switch
+            checked={syncAll}
+            onCheckedChange={setSyncAll}
+            disabled={!allowEdit || !!disabledReason}
+            aria-label={
+              hasProjectContext
+                ? t("instance.sync-databases.project-sync-all")
+                : t("instance.sync-databases.self")
+            }
+            aria-describedby={disabledReason ? disabledReasonId : undefined}
+          />
+          <span
+            className={cn("text-sm", disabledReason && "text-control-light")}
+          >
+            {syncAll
+              ? t("instance.sync-databases.all-databases")
+              : t("instance.sync-databases.selected-databases")}
+          </span>
+        </FormControlRow>
         {disabledReason && (
           <p
             id={disabledReasonId}
@@ -686,7 +694,7 @@ export function SyncDatabases({
                 {t("common.loading")}...
               </div>
             ) : (
-              <div className="pl-4 flex flex-col gap-y-2">
+              <div className="flex flex-col gap-y-2">
                 <Input
                   value={searchText}
                   className="w-full"
@@ -1600,9 +1608,14 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     onValueChange={(value) =>
                       handleMongodbConnectionStringSchemaChange(value as string)
                     }
+                    aria-label={t("data-source.connection-string-schema")}
                   >
                     {MongoDBConnectionStringSchemaList.map((type) => (
-                      <RadioGroupItem key={type} value={type}>
+                      <RadioGroupItem
+                        key={type}
+                        value={type}
+                        disabled={!allowEdit}
+                      >
                         {type}
                       </RadioGroupItem>
                     ))}
@@ -1652,7 +1665,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                           connectionDataSource.additionalAddresses.length ===
                             0 && (
                             <FormControlRow className="w-fit">
-                              <Checkbox
+                              <Switch
                                 id="directConnection"
                                 checked={connectionDataSource.directConnection}
                                 disabled={!allowEdit}
@@ -1682,19 +1695,27 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                   <FormLabel htmlFor="connectionStringSchema">
                     {t("data-source.connection-type")}
                   </FormLabel>
-                  <RadioGroup
-                    className="gap-x-4"
+                  <Select
                     value={currentRedisConnectionType}
-                    onValueChange={(value) =>
-                      handleRedisConnectionTypeChange(value as string)
-                    }
+                    onValueChange={(value) => {
+                      if (value) handleRedisConnectionTypeChange(value);
+                    }}
+                    disabled={!allowEdit}
                   >
-                    {RedisConnectionType.map((type) => (
-                      <RadioGroupItem key={type} value={type}>
-                        {type}
-                      </RadioGroupItem>
-                    ))}
-                  </RadioGroup>
+                    <SelectTrigger
+                      aria-label={t("data-source.connection-type")}
+                      className="w-full sm:w-80"
+                    >
+                      <SelectValue>{currentRedisConnectionType}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {RedisConnectionType.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {showAdditionalAddresses && (
                     <ResponsiveFormLayout className="mt-2">
                       <fieldset

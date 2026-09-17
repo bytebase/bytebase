@@ -69,6 +69,17 @@ module.exports = {
         success: "rgb(var(--color-success) / <alpha-value>)",
         "success-hover": "rgb(var(--color-success-hover) / <alpha-value>)",
 
+        "classification-level-1":
+          "rgb(var(--color-classification-level-1) / <alpha-value>)",
+        "classification-level-2":
+          "rgb(var(--color-classification-level-2) / <alpha-value>)",
+        "classification-level-3":
+          "rgb(var(--color-classification-level-3) / <alpha-value>)",
+        "classification-level-4":
+          "rgb(var(--color-classification-level-4) / <alpha-value>)",
+        "classification-level-5":
+          "rgb(var(--color-classification-level-5) / <alpha-value>)",
+
         "link-hover": "rgb(var(--color-link-hover) / <alpha-value>)",
 
         "block-border": "rgb(var(--color-block-border) / <alpha-value>)",

@@ -27,6 +27,7 @@ import {
 } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CopyButton } from "@/components/ui/copy-button";
 import { FormField, FormFieldGroup, FormTitle } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -53,7 +54,6 @@ import {
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
 import { useIdentityProviderList } from "@/hooks/useAppState";
-import { writeTextToClipboard } from "@/lib/clipboard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -166,16 +166,6 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
 
   if (!redirectUrl) return null;
 
-  const handleCopy = async () => {
-    if (await writeTextToClipboard(redirectUrl)) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.copied"),
-      });
-    }
-  };
-
   return (
     <div className="rounded-sm border border-block-border bg-control-bg p-4">
       <div className="flex items-start gap-x-3">
@@ -197,9 +187,11 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
                 readOnly
                 className="flex-1 font-mono"
               />
-              <Button appearance="outline" size="sm" onClick={handleCopy}>
-                {t("common.copy")}
-              </Button>
+              <CopyButton
+                content={redirectUrl}
+                appearance="outline"
+                size="sm"
+              />
             </div>
           </div>
         </div>
