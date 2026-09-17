@@ -1087,29 +1087,14 @@ function ExemptionGrantSection({
 
   const title = useMemo(() => generateGrantTitle(grant), [grant]);
 
-  const daysLeft = grant.expirationTimestamp
-    ? readDaysLeft(grant.expirationTimestamp)
-    : undefined;
   useNow(
     grant.expirationTimestamp
       ? nextDaysLeftChangeAt(grant.expirationTimestamp)
       : undefined
   );
-  const isExpired = daysLeft?.kind === "passed";
-
-  const expiryLabel = (() => {
-    switch (daysLeft?.kind) {
-      case "today":
-        return t("project.masking-exemption.expires-today");
-      case "days":
-        return t("project.masking-exemption.expires-in-days", {
-          days: daysLeft.days,
-          count: daysLeft.days,
-        });
-      default:
-        return "";
-    }
-  })();
+  const daysLeft = grant.expirationTimestamp
+    ? readDaysLeft(grant.expirationTimestamp)
+    : undefined;
 
   return (
     <div>
@@ -1127,7 +1112,11 @@ function ExemptionGrantSection({
             )}
           />
           <span className="font-medium text-sm">{title}</span>
-          {grant.expirationTimestamp && isExpired ? (
+          {!grant.expirationTimestamp || !daysLeft ? (
+            <span className="text-xs font-medium text-amber-600">
+              {t("settings.sensitive-data.never-expires")}
+            </span>
+          ) : daysLeft.kind === "passed" ? (
             <>
               <HumanizeTs
                 className="text-xs text-control-light line-through"
@@ -1138,10 +1127,15 @@ function ExemptionGrantSection({
                 ({t("sql-editor.expired")})
               </span>
             </>
-          ) : grant.expirationTimestamp ? (
+          ) : (
             <>
               <span className="text-xs font-medium text-info">
-                {expiryLabel}
+                {daysLeft.kind === "days"
+                  ? t("project.masking-exemption.expires-in-days", {
+                      days: daysLeft.days,
+                      count: daysLeft.days,
+                    })
+                  : t("project.masking-exemption.expires-today")}
               </span>
               <span className="text-xs text-control-light">
                 (
@@ -1152,10 +1146,6 @@ function ExemptionGrantSection({
                 )
               </span>
             </>
-          ) : (
-            <span className="text-xs font-medium text-warning">
-              {t("settings.sensitive-data.never-expires")}
-            </span>
           )}
         </div>
         <Button

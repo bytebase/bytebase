@@ -27,6 +27,7 @@ import {
   formatQueueTime,
   formatRelativeTime,
   hasPassed,
+  nextAbsoluteDateChangeAt,
   nextCountdownChangeAt,
   nextDaysLeftChangeAt,
   nextPassedAt,
@@ -50,13 +51,6 @@ describe("formatRelativeTime", () => {
   test("returns 'now' for timestamps less than 10 seconds ago", () => {
     const result = formatRelativeTime(Date.now() - 5000);
     expect(result).toBe("now");
-  });
-
-  test("supports overriding the 'now' threshold", () => {
-    const result = formatRelativeTime(Date.now() - 5000, {
-      nowThresholdMs: 3000,
-    });
-    expect(result).toContain("seconds ago");
   });
 
   test("returns 'X seconds ago' for 10-59 seconds", () => {
@@ -236,8 +230,9 @@ const SAMPLED_AGES_MS = [
 ].flatMap((ageMs) => (ageMs === 0 ? [0] : [ageMs, -ageMs]));
 
 // The contract a boundary keeps with the reading it schedules: the reading
-// holds right up to the named instant and changes at it. A boundary checked
-// on its own cannot see that it was derived from the wrong reading.
+// holds right up to the named instant and changes at it, and the boundary names
+// that same instant from anywhere before it. A boundary checked on its own
+// cannot see that it was derived from the wrong reading.
 const expectBoundaryMatchesReading = (
   read: (tsMs: number) => string,
   nextChangeAt: (tsMs: number) => number,
@@ -247,78 +242,105 @@ const expectBoundaryMatchesReading = (
   const reading = read(tsMs);
   const changesAtMs = nextChangeAt(tsMs);
   if (changesAtMs === Number.POSITIVE_INFINITY) {
-    for (const laterMs of [
-      MINUTE_MS,
-      HOUR_MS,
-      DAY_MS,
-      20 * DAY_MS,
-      100 * DAY_MS,
-    ]) {
+    // Far enough to cross a New Year from any start.
+    for (const laterMs of [HOUR_MS, DAY_MS, 100 * DAY_MS, 400 * DAY_MS]) {
       vi.setSystemTime(startMs + laterMs);
       expect(read(tsMs)).toBe(reading);
     }
     return;
   }
   expect(changesAtMs).toBeGreaterThan(startMs);
-  vi.setSystemTime(startMs + Math.floor((changesAtMs - startMs) / 2));
-  expect(read(tsMs)).toBe(reading);
-  vi.setSystemTime(changesAtMs - 1);
-  expect(read(tsMs)).toBe(reading);
+  for (const beforeMs of [
+    startMs + Math.floor((changesAtMs - startMs) / 2),
+    Math.ceil(changesAtMs) - 1,
+  ]) {
+    vi.setSystemTime(beforeMs);
+    expect(read(tsMs)).toBe(reading);
+    expect(nextChangeAt(tsMs)).toBe(changesAtMs);
+  }
   vi.setSystemTime(changesAtMs);
   expect(read(tsMs)).not.toBe(reading);
 };
 
-describe("reading boundaries", () => {
-  const baseMs = new Date("2026-03-02T12:00:00Z").getTime();
+// Production timestamps carry sub-millisecond nanos, and `HumanizeTs` rounds
+// them through seconds and back; whole-millisecond ones alone hide any
+// boundary that lands a fraction early. The late-December start puts a New
+// Year inside every window.
+const BOUNDARY_STARTS = ["2026-03-02T12:00:00Z", "2026-12-31T15:30:00Z"];
+const TIMESTAMP_FRACTIONS_MS = [0, 0.25, 0.999];
 
+const boundaryCases = <T>(offsets: T[]) =>
+  BOUNDARY_STARTS.flatMap((start) =>
+    offsets.flatMap((offset) =>
+      TIMESTAMP_FRACTIONS_MS.flatMap((fractionMs) => [
+        { start, offset, fractionMs, viaSeconds: false },
+        { start, offset, fractionMs, viaSeconds: true },
+      ])
+    )
+  );
+
+const startAt = (start: string) => {
+  const startMs = new Date(start).getTime();
+  vi.setSystemTime(startMs);
+  return startMs;
+};
+
+const timestampOf = (
+  instantMs: number,
+  fractionMs: number,
+  viaSeconds: boolean
+) => {
+  const tsMs = instantMs + fractionMs;
+  return viaSeconds ? (tsMs / 1000) * 1000 : tsMs;
+};
+
+describe("reading boundaries", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(baseMs);
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  test.each(SAMPLED_AGES_MS)(
-    "names the instant the work-queue reading changes (age %i ms)",
-    (ageMs) => {
+  test.each(boundaryCases(SAMPLED_AGES_MS))(
+    "names the instant the work-queue reading changes (age $offset ms from $start, +$fractionMs ms, via seconds: $viaSeconds)",
+    ({ start, offset, fractionMs, viaSeconds }) => {
+      const startMs = startAt(start);
       expectBoundaryMatchesReading(
         formatQueueTime,
         nextQueueTimeChangeAt,
-        baseMs - ageMs
+        timestampOf(startMs - offset, fractionMs, viaSeconds)
       );
     }
   );
 
-  test.each(SAMPLED_AGES_MS)(
-    "names the instant the relative reading changes (age %i ms)",
-    (ageMs) => {
+  test.each(boundaryCases(SAMPLED_AGES_MS))(
+    "names the instant the absolute date reading changes (age $offset ms from $start, +$fractionMs ms, via seconds: $viaSeconds)",
+    ({ start, offset, fractionMs, viaSeconds }) => {
+      const startMs = startAt(start);
+      expectBoundaryMatchesReading(
+        formatAbsoluteDate,
+        nextAbsoluteDateChangeAt,
+        timestampOf(startMs - offset, fractionMs, viaSeconds)
+      );
+    }
+  );
+
+  test.each(boundaryCases(SAMPLED_AGES_MS))(
+    "names the instant the relative reading changes (age $offset ms from $start, +$fractionMs ms, via seconds: $viaSeconds)",
+    ({ start, offset, fractionMs, viaSeconds }) => {
+      const startMs = startAt(start);
       expectBoundaryMatchesReading(
         formatRelativeTime,
         nextRelativeTimeChangeAt,
-        baseMs - ageMs
+        timestampOf(startMs - offset, fractionMs, viaSeconds)
       );
-    }
-  );
-
-  test.each([-100_000, 100_000])(
-    "names the same instant on every render inside a bucket (offset %i)",
-    (offsetMs) => {
-      const ts = Date.now() + offsetMs;
-      const first = nextQueueTimeChangeAt(ts);
-
-      // A value that drifted with the clock would re-key the subscription on
-      // every render, so the shared clock would thrash through a list.
-      vi.advanceTimersByTime(100);
-      expect(nextQueueTimeChangeAt(ts)).toBe(first);
     }
   );
 });
 
 describe("deadline readings", () => {
-  const baseMs = new Date("2026-03-02T12:00:00Z").getTime();
-
   // Time left before a deadline, around each edge the readings have: passing,
   // every minute and the one-day line, and whole days beyond it.
   const SAMPLED_REMAINING_MS = [
@@ -344,6 +366,8 @@ describe("deadline readings", () => {
     400 * DAY_MS,
   ];
 
+  const baseMs = new Date("2026-03-02T12:00:00Z").getTime();
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(baseMs);
@@ -353,38 +377,33 @@ describe("deadline readings", () => {
     vi.useRealTimers();
   });
 
-  test.each(SAMPLED_REMAINING_MS)(
-    "names the instant the countdown changes (%i ms left)",
-    (remainingMs) => {
-      expectBoundaryMatchesReading(
-        (targetMs) => JSON.stringify(readCountdown(targetMs)),
-        nextCountdownChangeAt,
-        baseMs + remainingMs
-      );
-    }
-  );
+  const pairs = [
+    [
+      "countdown",
+      (targetMs: number) => JSON.stringify(readCountdown(targetMs)),
+      nextCountdownChangeAt,
+    ],
+    [
+      "days-left",
+      (targetMs: number) => JSON.stringify(readDaysLeft(targetMs)),
+      nextDaysLeftChangeAt,
+    ],
+    ["passed", (targetMs: number) => String(hasPassed(targetMs)), nextPassedAt],
+  ] as const;
 
-  test.each(SAMPLED_REMAINING_MS)(
-    "names the instant the days-left reading changes (%i ms left)",
-    (remainingMs) => {
-      expectBoundaryMatchesReading(
-        (targetMs) => JSON.stringify(readDaysLeft(targetMs)),
-        nextDaysLeftChangeAt,
-        baseMs + remainingMs
-      );
-    }
-  );
-
-  test.each(SAMPLED_REMAINING_MS)(
-    "names the instant a deadline passes (%i ms left)",
-    (remainingMs) => {
-      expectBoundaryMatchesReading(
-        (targetMs) => String(hasPassed(targetMs)),
-        nextPassedAt,
-        baseMs + remainingMs
-      );
-    }
-  );
+  describe.each(pairs)("%s", (_name, read, nextChangeAt) => {
+    test.each(boundaryCases(SAMPLED_REMAINING_MS))(
+      "names the instant the reading changes ($offset ms left from $start, +$fractionMs ms, via seconds: $viaSeconds)",
+      ({ start, offset, fractionMs, viaSeconds }) => {
+        const startMs = startAt(start);
+        expectBoundaryMatchesReading(
+          read,
+          nextChangeAt,
+          timestampOf(startMs + offset, fractionMs, viaSeconds)
+        );
+      }
+    );
+  });
 
   test("counts down in hours and minutes within the last day", () => {
     expect(

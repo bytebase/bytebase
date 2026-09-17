@@ -51,17 +51,15 @@ export function SectionContent({
           <span className="w-6 shrink-0 text-right text-control-placeholder tabular-nums">
             {index + 1}
           </span>
-          {item.timeMs > 0 ? (
-            <Tooltip content={formatAbsoluteDateTime(item.timeMs)}>
-              <span className="shrink-0 text-control-placeholder tabular-nums">
-                {item.time}
-              </span>
-            </Tooltip>
-          ) : (
+          <Tooltip
+            content={
+              item.timeMs > 0 ? formatAbsoluteDateTime(item.timeMs) : undefined
+            }
+          >
             <span className="shrink-0 text-control-placeholder tabular-nums">
               {item.time}
             </span>
-          )}
+          </Tooltip>
           {item.relativeTime ? (
             <span className="shrink-0 text-control-placeholder tabular-nums">
               {item.relativeTime}

@@ -57,11 +57,12 @@ import {
   type AccessGrantDisplayStatus,
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
+  getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
   getDefaultPagination,
   hasProjectPermissionV2,
+  nextAccessGrantDisplayStatusChangeAt,
 } from "@/utils";
-import { nextPassedAt } from "@/utils/datetime";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 
 type SortKey = "creator" | "create_time" | "expire_time";
@@ -746,24 +747,13 @@ function AccessGrantRow({
   onRevoke: () => void;
 }) {
   const { t } = useTranslation();
+  useNow(nextAccessGrantDisplayStatusChangeAt(grant));
   const status = getAccessGrantDisplayStatus(grant, issue);
 
   const createdTimeMs = grant.createTime
     ? getTimeForPbTimestampProtoEs(grant.createTime)
     : undefined;
-
-  // The roster's creation column is meta on a management list, read for
-  // freshness; the grant's operational fact is when it lapses.
-  const expireTimeMs =
-    grant.expiration.case === "expireTime"
-      ? getTimeForPbTimestampProtoEs(grant.expiration.value)
-      : undefined;
-  // An active grant's badge turns to expired when its deadline passes.
-  useNow(
-    status === "ACTIVE" && expireTimeMs !== undefined
-      ? nextPassedAt(expireTimeMs)
-      : undefined
-  );
+  const expireTimeMs = getAccessGrantExpireTimeMs(grant);
 
   return (
     <TableRow>

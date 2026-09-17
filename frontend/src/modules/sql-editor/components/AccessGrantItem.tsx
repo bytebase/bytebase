@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useNow } from "@/hooks/useNow";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs } from "@/types";
-import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
+import {
+  type AccessGrant,
+  AccessGrant_Status,
+} from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
+  getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
 } from "@/utils/accessGrant";
 import {
@@ -46,25 +49,25 @@ export function AccessGrantItem({
 }: Props) {
   const { t } = useTranslation();
 
+  // Only an activated grant counts down. The countdown's last step is its
+  // deadline passing, so it also schedules the expired badge.
+  const deadlineMs =
+    grant.status === AccessGrant_Status.ACTIVE
+      ? getAccessGrantExpireTimeMs(grant)
+      : undefined;
+  useNow(
+    deadlineMs === undefined ? undefined : nextCountdownChangeAt(deadlineMs)
+  );
+
   const displayStatus = getAccessGrantDisplayStatus(grant, issue);
   const isActive = displayStatus === "ACTIVE";
   const isExpired = displayStatus === "EXPIRED";
   const isRejectedOrCanceled =
     displayStatus !== "ACTIVE" && displayStatus !== "PENDING";
   const statusLabel = getAccessGrantDisplayStatusText(grant, issue);
-  // Only an activated grant carries a fixed deadline; a pending one holds a
-  // duration that starts counting at approval, so it has nothing to count down.
-  const deadlineMs =
-    (isActive || isExpired) && grant.expiration.case === "expireTime"
-      ? getTimeForPbTimestampProtoEs(grant.expiration.value)
-      : undefined;
 
   const statusTagType = getAccessGrantStatusTagType(displayStatus);
   const badgeVariant = mapTagTypeToBadgeVariant(statusTagType);
-
-  useNow(
-    deadlineMs === undefined ? undefined : nextCountdownChangeAt(deadlineMs)
-  );
 
   // The countdown is the one form that hides the deadline, so it alone carries
   // it in a tooltip; the other two are interpolated sentences and state the

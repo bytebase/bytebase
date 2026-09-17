@@ -37,7 +37,6 @@ import {
 import { useAppStore } from "@/stores/app";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
-  getTimeForPbTimestampProtoEs,
   isValidDatabaseName,
   isValidInstanceName,
   isValidProjectName,
@@ -49,13 +48,13 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   extractSavedQueryID,
-  formatAbsoluteDateTime,
   generateSimpleSelectAllStatement,
   getDatabaseEngine,
   getSheetStatement,
   isSavedQueryReadableV1,
   storageKeySqlEditorSidebarTab,
 } from "@/utils";
+import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
 import { SQLEditorHomePage } from "./SQLEditorHomePage";
 
 // Route-name set for the unsaved-changes leave guard. `router.beforeEach`
@@ -411,12 +410,9 @@ export function SQLEditorRouteShell() {
       }
     }
 
-    const title = history.createTime
-      ? `Query history at ${formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(history.createTime))}`
-      : "Query history";
     const tab = getSQLEditorTabsState().addTab(
       {
-        title,
+        title: queryHistoryTabTitle(history),
         statement: history.statement,
         ...(connection ? { connection } : {}),
       },

@@ -73,12 +73,12 @@ export const getTaskRunWaitingMessage = (
     return t("task-run.status.enqueued");
   }
   if (taskRun.status === TaskRun_Status.RUNNING && taskRun.schedulerInfo) {
-    const cause = taskRun.schedulerInfo.waitingCause;
-    if (cause?.cause?.case === "parallelTasksLimit") {
+    const { reportTime, waitingCause } = taskRun.schedulerInfo;
+    // The scheduler stamps a report time on every waiting cause it records;
+    // without one there is no "last report" to name.
+    if (waitingCause?.cause?.case === "parallelTasksLimit" && reportTime) {
       return t("task-run.status.waiting-max-tasks-per-rollout", {
-        time: formatAbsoluteDateTime(
-          getTimeForPbTimestampProtoEs(taskRun.schedulerInfo.reportTime)
-        ),
+        time: formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(reportTime)),
       });
     }
   }

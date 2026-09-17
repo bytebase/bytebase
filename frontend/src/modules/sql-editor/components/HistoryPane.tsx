@@ -29,11 +29,8 @@ import {
 import { useAppStore } from "@/stores/app";
 import { DEBOUNCE_SEARCH_DELAY, getTimeForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/query_history_service_pb";
-import {
-  extractProjectResourceName,
-  extractQueryHistoryUID,
-  formatAbsoluteDateTime,
-} from "@/utils";
+import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
+import { queryHistoryTabTitle } from "@/utils/v1/queryHistory";
 import { HistorySearchInput } from "./HistorySearchInput";
 
 /**
@@ -121,12 +118,6 @@ export function HistoryPane() {
     [resetPageToken, historyQuery]
   );
 
-  // A tab title cannot host a tooltip, so it names the time in full.
-  const titleOfQueryHistory = (h: QueryHistory) =>
-    h.createTime
-      ? `Query history at ${formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(h.createTime))}`
-      : "Query history";
-
   const handleHistoryClick = async (history: QueryHistory) => {
     const { statement } = history;
     const tabsState = getSQLEditorTabsState();
@@ -138,7 +129,7 @@ export function HistoryPane() {
     } else {
       tabsState.addTab(
         {
-          title: titleOfQueryHistory(history),
+          title: queryHistoryTabTitle(history),
           statement,
         },
         /* beside */ true
