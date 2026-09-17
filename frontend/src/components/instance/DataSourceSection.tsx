@@ -3,6 +3,7 @@ import { type ReactNode, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FormFieldGroup } from "@/components/ui/form";
 import { useAppStore } from "@/stores/app";
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -133,10 +134,10 @@ export function DataSourceSection({
   const showROTips = showDataSourceTabs && !hasReadOnlyDataSource;
 
   return (
-    <div>
+    <FormFieldGroup density="compact">
       {/* Data source tabs */}
       {showDataSourceTabs && (
-        <div className="mb-4 flex items-center gap-x-2 border-b border-block-border">
+        <div className="flex items-center gap-x-2 border-b border-block-border">
           <Button
             type="button"
             appearance="secondary"
@@ -213,7 +214,6 @@ export function DataSourceSection({
       {showROTips && (
         <Alert
           variant="warning"
-          className="my-4"
           description={
             <div className="flex items-center justify-between gap-x-2">
               <span>{t("data-source.no-read-only-data-source")}</span>
@@ -232,7 +232,6 @@ export function DataSourceSection({
       {!isCreating && editingDataSource && (
         <CreateDataSourceExample
           key={editingDataSource.id}
-          className="mb-4"
           engine={basicInfo.engine}
           dataSourceType={editingDataSource.type}
           authenticationType={editingDataSource.authenticationType}
@@ -243,16 +242,14 @@ export function DataSourceSection({
       {children}
 
       {editingDataSource && (
-        <div className="mt-4">
-          <DataSourceForm
-            dataSource={editingDataSource}
-            hideOptions={hideOptions}
-            hideAuthentication={hideAuthentication}
-            onDataSourceChange={handleDataSourceChange}
-            onOpenInfoPanel={onOpenInfoPanel}
-          />
-        </div>
+        <DataSourceForm
+          dataSource={editingDataSource}
+          hideOptions={hideOptions}
+          hideAuthentication={hideAuthentication}
+          onDataSourceChange={handleDataSourceChange}
+          onOpenInfoPanel={onOpenInfoPanel}
+        />
       )}
-    </div>
+    </FormFieldGroup>
   );
 }

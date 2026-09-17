@@ -234,9 +234,12 @@ third column for section titles.
   TLS, SSH, IAM, and external-source configuration below its controlling
   choice, using nested flow rather than a framed surface inside another frame.
 - Keep security modes visible; reveal their dependent fields when selected.
-  Switches and select triggers align to the start of their control column.
-  Keep ordinary connection rows on the 16px rhythm. Use explicit choices for
-  modes such as syncing all or selected databases.
+  Switches, select triggers, and radio groups align to the start of their
+  control column. Keep ordinary connection rows on the 16px rhythm using
+  `FormFieldGroup density="compact"`, including across engine-specific field
+  groups. Empty conditional groups MUST NOT reserve space. Larger gaps need a
+  meaningful section boundary. Use explicit choices for modes such as syncing
+  all or selected databases.
 - Empty optional collections MAY start as an add action. Existing entries and
   validation errors MUST remain discoverable.
 - A connection-creation footer MAY place Test Connection beside Create, with

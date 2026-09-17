@@ -230,6 +230,9 @@ const formStyles = stylex.create({
     flexDirection: "column",
     rowGap: 24,
   },
+  fieldGroupCompact: {
+    rowGap: 16,
+  },
   fieldHeader: {
     display: "flex",
     flexDirection: "column",
@@ -318,8 +321,13 @@ export function formControlRowStyle() {
   return formStyles.controlRow;
 }
 
-export function formFieldGroupStyle() {
-  return formStyles.fieldGroup;
+export function formFieldGroupStyle(
+  density: "default" | "compact" = "default"
+) {
+  return [
+    formStyles.fieldGroup,
+    density === "compact" && formStyles.fieldGroupCompact,
+  ];
 }
 
 export function formFieldHeaderStyle() {
