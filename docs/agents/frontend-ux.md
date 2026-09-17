@@ -219,8 +219,11 @@ third column for section titles.
 - Stack labels based on available form width, independently of the navigation
   sidebar breakpoint. Compound controls MAY wrap within the control column
   before the field itself stacks.
-- Keep descriptions and validation beside the control they explain. Associate
-  labels and choice controls with accessible names in both layouts.
+- Keep concise descriptions and validation beside the control they explain.
+  Long secondary guidance that would make a dense form harder to scan MAY use
+  a focusable info tooltip beside the field title; validation and essential
+  status remain visible beside the control. Associate labels and choice controls
+  with accessible names in both layouts.
 - Put choices that determine subsequent fields first. Use one `Select` dropdown
   combining authentication methods and password sources. Do not add a separate
   password-source selector. Use a `Switch` for binary choices such as syncing

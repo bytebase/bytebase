@@ -1941,6 +1941,7 @@ export function DataSourceForm({
                 <>
                   <FormField
                     validationField="warehouseId"
+                    className="sm:col-span-3 sm:col-start-1"
                     title={
                       <>
                         Warehouse ID <span className="text-error">*</span>
@@ -1955,6 +1956,7 @@ export function DataSourceForm({
                   </FormField>
                   <FormField
                     validationField="updatedToken"
+                    className="sm:col-span-3 sm:col-start-1"
                     title={
                       <>
                         {t("common.token")}{" "}

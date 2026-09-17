@@ -63,6 +63,24 @@ describe("SshConnectionForm", () => {
     document.body.innerHTML = "";
   });
 
+  test("renders a compact segmented SSH selector", () => {
+    const { container, root } = mount(<ControlledSshConnectionForm />);
+    expect(
+      container
+        .querySelector('[role="radiogroup"]')
+        ?.classList.contains("inline-flex")
+    ).toBe(true);
+    expect(
+      container
+        .querySelector('[role="radiogroup"]')
+        ?.classList.contains("rounded-xs")
+    ).toBe(true);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("keeps tunnel selected after editing SSH fields before port is entered", () => {
     const { container, root } = mount(<ControlledSshConnectionForm />);
     const tunnelSwitch = container.querySelector(
