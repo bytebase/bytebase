@@ -279,6 +279,17 @@ conditional mount, keyed by row and cleared when `taskRunName` changes — the s
 `datasetKey` already clears `showAllItems`. `showAllItems` keeps its remount-local behavior;
 re-hiding the tail of a long list on collapse is not a promise anyone made.
 
+The promise stops at the phase boundary, deliberately. Both deploy surfaces key the viewer on the
+run's status (`` key={`logs-${taskRun.name}-${taskRun.status}`} ``), so a `RUNNING` → terminal flip
+remounts the whole viewer and takes the overrides with it. That key is not an accident — the
+comment above it says the remount exists "for a fresh disclosure state on the new phase", and it is
+also what invalidates an in-flight `RUNNING` log request before it can be cached as complete.
+Persisting overrides across it, in a module-level map keyed by task-run name, would work and would
+quietly undo that intent. And the behavior it produces is the one this doc wants anyway: the flip
+that reopens a folded failure is the flip to the phase where that failure is the outcome. So folds
+survive polls, section collapse and the sole-to-multi swap *within* a phase, and a new phase starts
+fresh.
+
 ## States
 
 Mockups A–E are in the PR description. Product typography, spacing and semantic colors are taken
