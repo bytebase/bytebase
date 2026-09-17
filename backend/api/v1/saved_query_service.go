@@ -637,7 +637,7 @@ func (s *SavedQueryService) checkProjectWide(ctx context.Context, user *store.Us
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 	}
 	if !ok {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: %s", p))
+		return common.PermissionDeniedError(ctx, errors.Errorf("permission denied: %s", p))
 	}
 	return nil
 }
@@ -1000,6 +1000,11 @@ func (s *SavedQueryService) hasSavedQueryPermission(ctx context.Context, user *s
 	ok, err := s.iamManager.CheckProjectWidePermission(ctx, p, user, common.GetWorkspaceIDFromContext(ctx), savedQuery.ProjectID)
 	if err != nil {
 		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
+	}
+	if !ok {
+		// Callers answer NotFound to hide the saved query's existence, so the
+		// mark is the only record that a permission check refused the caller.
+		common.SetPermissionDenied(ctx)
 	}
 	return ok, nil
 }
