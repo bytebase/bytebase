@@ -1433,6 +1433,11 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", databaseFullName, err))
 		}
 		if !ok {
+			// queryError does not implement Unwrap, and Query reports a refusal
+			// inside its response rather than as an RPC error, so connect.CodeOf
+			// cannot see this verdict. The mark is the only way it reaches the
+			// audit interceptor.
+			common.SetPermissionDenied(ctx)
 			return &queryError{
 				err: connect.NewError(
 					connect.CodePermissionDenied,
@@ -1526,6 +1531,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				return err
 			}
 			if len(deniedResources) > 0 {
+				common.SetPermissionDenied(ctx)
 				return &queryError{
 					err: connect.NewError(
 						connect.CodePermissionDenied,
@@ -1593,6 +1599,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			}
 		}
 		if len(deniedResources) > 0 {
+			common.SetPermissionDenied(ctx)
 			return &queryError{
 				err: connect.NewError(
 					connect.CodePermissionDenied,

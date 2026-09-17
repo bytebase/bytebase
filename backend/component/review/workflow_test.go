@@ -1326,3 +1326,52 @@ func createPendingDatabaseChangeApproval(ctx context.Context, t *testing.T, stor
 	require.NoError(t, err)
 	return plan, issue
 }
+
+func TestApproverRoleRefusalCarriesItsReason(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		actor      string
+		actorRoles []string
+		wantReason ErrorReason
+	}{
+		{
+			name:       "no approver role",
+			actor:      "reviewer@example.com",
+			wantReason: ReasonApproverRoleRequired,
+		},
+		{
+			name:       "self-approval",
+			actor:      "creator@example.com",
+			actorRoles: []string{"roles/projectOwner"},
+			wantReason: ReasonUnspecified,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			if len(test.actorRoles) > 0 {
+				_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+					Workspace: "default",
+					Member:    common.FormatUserEmail(test.actor),
+					Roles:     test.actorRoles,
+				})
+				require.NoError(t, err)
+			}
+			_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+
+			_, err := NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     &store.UserMessage{Email: test.actor},
+				Action:    ActionApprove,
+			})
+
+			var workflowErr *Error
+			require.ErrorAs(t, err, &workflowErr)
+			require.Equal(t, ErrorPermissionDenied, workflowErr.Code)
+			require.Equal(t, test.wantReason, workflowErr.Reason,
+				"only the IAM verdict is marked for the audit log; the self-approval setting is not")
+		})
+	}
+}

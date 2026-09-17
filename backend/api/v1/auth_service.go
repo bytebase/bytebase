@@ -949,7 +949,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspace"))
 	}
 	if ws == nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("not a member of workspace %q", workspaceID))
+		return nil, common.PermissionDeniedError(ctx, errors.Errorf("not a member of workspace %q", workspaceID))
 	}
 
 	// Validate the target workspace's sign-in policies.

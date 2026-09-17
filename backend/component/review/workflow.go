@@ -38,6 +38,10 @@ const (
 	ReasonDraftIssue
 	ReasonApprovalRequired
 	ReasonStaleInput
+	// ReasonApproverRoleRequired separates the one ErrorPermissionDenied that
+	// is an IAM verdict about the caller from the project and ownership rules
+	// that answer the same code: only the verdict is marked for the audit log.
+	ReasonApproverRoleRequired
 )
 
 // Error is a typed review transition error.
@@ -341,7 +345,8 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 			return nil, workflowError(ErrorInvalidAction, "the issue has been approved")
 		}
 		if !w.canReview(ctx, project, input.Actor, role) {
-			return nil, workflowError(ErrorPermissionDenied, "cannot %s because the user does not have the required permission", verb)
+			return nil, workflowReasonError(ErrorPermissionDenied, ReasonApproverRoleRequired,
+				"cannot %s because the user does not have the required permission", verb)
 		}
 		if !project.Setting.GetAllowSelfApproval() && issue.CreatorEmail == input.Actor.Email {
 			return nil, workflowError(ErrorPermissionDenied, "cannot %s because self-approval is not allowed for this project", verb)
@@ -549,8 +554,8 @@ func workflowError(code ErrorCode, format string, args ...any) error {
 	return &Error{Code: code, Err: errors.Errorf(format, args...)}
 }
 
-func workflowReasonError(code ErrorCode, reason ErrorReason, message string) error {
-	return &Error{Code: code, Reason: reason, Err: errors.New(message)}
+func workflowReasonError(code ErrorCode, reason ErrorReason, format string, args ...any) error {
+	return &Error{Code: code, Reason: reason, Err: errors.Errorf(format, args...)}
 }
 
 func workflowWrap(_ ErrorCode, err error, message string) error {
