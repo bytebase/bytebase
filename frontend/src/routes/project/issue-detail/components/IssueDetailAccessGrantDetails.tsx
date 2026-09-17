@@ -2,13 +2,17 @@ import { Download, EyeOff, Loader2, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
-import { getAccessGrantExpirationText } from "@/utils/accessGrant";
+import {
+  getAccessGrantExpirationText,
+  getAccessGrantExpireTimeMs,
+} from "@/utils/accessGrant";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 export function IssueDetailAccessGrantDetails() {
@@ -174,7 +178,14 @@ export function IssueDetailAccessGrantDetails() {
                     // post-activation (input-only proto field); we
                     // can't recover it without double-counting the
                     // approval wait. Bot review #3370767734.
-                    expirationInfo.value}
+                    accessGrant && (
+                      <HumanizeTs
+                        mode="operational"
+                        ts={
+                          (getAccessGrantExpireTimeMs(accessGrant) ?? 0) / 1000
+                        }
+                      />
+                    )}
             </div>
           </div>
         </div>

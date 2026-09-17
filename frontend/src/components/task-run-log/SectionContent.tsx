@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { formatAbsoluteDateTime } from "@/utils";
 import type { Section } from "./types";
 
 const ITEM_HEIGHT = 20;
@@ -49,9 +51,17 @@ export function SectionContent({
           <span className="w-6 shrink-0 text-right text-control-placeholder tabular-nums">
             {index + 1}
           </span>
-          <span className="shrink-0 text-control-placeholder tabular-nums">
-            {item.time}
-          </span>
+          {item.timeMs > 0 ? (
+            <Tooltip content={formatAbsoluteDateTime(item.timeMs)}>
+              <span className="shrink-0 text-control-placeholder tabular-nums">
+                {item.time}
+              </span>
+            </Tooltip>
+          ) : (
+            <span className="shrink-0 text-control-placeholder tabular-nums">
+              {item.time}
+            </span>
+          )}
           {item.relativeTime ? (
             <span className="shrink-0 text-control-placeholder tabular-nums">
               {item.relativeTime}

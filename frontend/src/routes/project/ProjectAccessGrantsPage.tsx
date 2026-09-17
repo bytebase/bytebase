@@ -10,6 +10,7 @@ import {
 import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
 import { EngineIcon } from "@/components/EngineIcon";
 import { FeatureAttention } from "@/components/FeatureAttention";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import {
   ProjectPageContent,
   ProjectPageFooter,
@@ -53,10 +54,10 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   type AccessGrantDisplayStatus,
-  formatAbsoluteDateTime,
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
   getAccessGrantExpirationText,
+  getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
   getDefaultPagination,
   hasProjectPermissionV2,
@@ -747,13 +748,17 @@ function AccessGrantRow({
   const { t } = useTranslation();
   const status = getAccessGrantDisplayStatus(grant, issue);
 
-  const createdAt = grant.createTime
-    ? formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(grant.createTime))
-    : "-";
+  const createdTimeMs = grant.createTime
+    ? getTimeForPbTimestampProtoEs(grant.createTime)
+    : undefined;
 
   const expirationInfo = getAccessGrantExpirationText(grant);
-  const expiration =
-    expirationInfo.type === "datetime" ? expirationInfo.value : "-";
+  // The roster's creation column is meta on a management list, read for
+  // freshness; the grant's operational fact is when it lapses.
+  const expireTimeMs =
+    expirationInfo.type === "datetime"
+      ? getAccessGrantExpireTimeMs(grant)
+      : undefined;
 
   return (
     <TableRow>
@@ -766,10 +771,22 @@ function AccessGrantRow({
         <EllipsisText text={extractUserEmail(grant.creator)} />
       </TableCell>
       <TableCell>
-        <EllipsisText text={createdAt} />
+        {createdTimeMs !== undefined ? (
+          <HumanizeTs className="block truncate" ts={createdTimeMs / 1000} />
+        ) : (
+          "-"
+        )}
       </TableCell>
       <TableCell>
-        <EllipsisText text={expiration} />
+        {expireTimeMs !== undefined ? (
+          <HumanizeTs
+            className="block truncate"
+            mode="operational"
+            ts={expireTimeMs / 1000}
+          />
+        ) : (
+          "-"
+        )}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-x-1 overflow-hidden">

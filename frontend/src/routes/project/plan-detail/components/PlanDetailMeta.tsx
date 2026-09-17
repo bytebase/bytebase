@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { Plus, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
@@ -28,25 +28,14 @@ export function PlanDetailMeta() {
   const page = usePlanDetailContext();
   const { patchState } = page;
   const project = page.project;
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    if (page.isCreating) return;
-    // Only consumer is the plan-creation timestamp, which never advances
-    // faster than once a minute — no need for a 1s tick.
-    const timer = window.setInterval(() => setNow(Date.now()), 60_000);
-    return () => window.clearInterval(timer);
-  }, [page.isCreating]);
-
   const creatorEmail = useMemo(
     () => extractUserEmail(page.plan.creator),
     [page.plan.creator]
   );
-  const createdTimeTs = useMemo(() => {
-    // Reference `now` so the relative label re-renders on each tick.
-    void now;
-    return getTimeForPbTimestampProtoEs(page.plan.createTime, 0);
-  }, [now, page.plan.createTime]);
+  const createdTimeTs = useMemo(
+    () => getTimeForPbTimestampProtoEs(page.plan.createTime, 0),
+    [page.plan.createTime]
+  );
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;

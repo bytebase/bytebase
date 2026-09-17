@@ -102,6 +102,7 @@ export function DatabaseChangelogTable({
               <TableCell className="text-main">
                 {changelog.createTime ? (
                   <HumanizeTs
+                    mode="compact"
                     ts={
                       (
                         getDateForPbTimestampProtoEs(

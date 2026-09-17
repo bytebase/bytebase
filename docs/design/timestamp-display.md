@@ -99,7 +99,7 @@ GitHub behavior).
 The history views — database changelog, revision table, task-run history — flip to **absolute
 date-time always**, consistent with the audit log. They are records of execution, not queues.
 
-**D5 (proposed) — Operational times: absolute with explicit timezone, minute precision.**
+**D5 — Operational times: absolute with explicit timezone, minute precision.**
 Wall-clock renderings of scheduled rollouts and expirations show the absolute date-time with the
 short timezone name in the visible string: "Sep 15, 2026, 9:00 AM GMT+8". Two refinements from
 review: (a) preset-written expirations (`now() + N days`) carry real sub-minute tails, so a
@@ -107,8 +107,8 @@ minute display floors the enforced cutoff by ≤59s — in the safe direction, e
 tooltip; alternatives are keeping seconds for expirations or normalizing preset writes (a
 write-path change, out of scope). (b) The rule targets wall-clock strings only — a pure countdown
 ("expires in 3h20m") cannot be misread across timezones and stays permitted with the D6 tooltip.
-Driven by BYT-10023 — see Operational times below. Proposed, pending confirmation; the pickers
-that write these values are deferred.
+Driven by BYT-10023 — see Operational times below. The pickers that write these values are
+deferred.
 
 **D6 — Full date-time tooltip on every reduced display.**
 Any timestamp that does not show the full form — relative, date-only after the switch, or the
@@ -117,7 +117,7 @@ tooltip. This is the universal escape hatch that keeps every reduced cell recove
 a context that cannot host a tooltip — i18n-interpolated strings, exports, titles — carries the
 full-precision string itself.
 
-**D7 (proposed) — History views carry two precision tiers.**
+**D7 — History views carry two precision tiers.**
 *A history row orients; a history record testifies.* Full precision (seconds + timezone,
 `formatAbsoluteDateTime`) where the time itself is the evidence: the audit log — exportable, and
 the export must preserve the same instant at no less precision than the screen (the export writes
@@ -226,7 +226,7 @@ their list views render relative. D4 makes each list agree with its own detail v
 - All strings locale-aware via `Intl` with the active i18n locale — no hardcoded formats, no new
   locale keys needed.
 
-**History views**: absolute always; precision comes in two tiers under D7 (assignment proposed):
+**History views**: absolute always; precision comes in two tiers under D7:
 
 | History-view occurrence | Space | Tier |
 |---|---|---|
@@ -305,24 +305,25 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   part of the complaint survives. Mitigation: tooltip; escalation path if it recurs is lowering the
   threshold (D3) or a GitLab-style preference (D1 rejected-for-now).
 
-## Open items awaiting ruling
+## Resolutions
 
-Confirmed since the first draft: release list = work queue; comment/activity timelines = feed;
-D6 (full date-time tooltip on every reduced display). Still open:
+Every item above is decided and implemented. D5 and D7 landed as recommended: operational times at
+minute precision, compact tier on the embedded history lists. The scheduled rollout pill shows the
+operational format inline, and the bare-format expirations — masking exemption, role-grant detail —
+adopt it too, while the i18n-interpolated member preview carries the full-precision string. Three
+points where the implementation had to choose:
 
-1. **D7 tier assignment/format** — compact (date + hh:mm) vs full for the embedded history lists.
-   Mockups of both options exist for the changelog table and the 704px task-run sheet;
-   recommendation is compact per the orient/testify principle.
-2. **D5 precision refinement** — operational times at minute precision (no seconds). Pickers
-   write minutes, but day/second-count presets write `now() + offset` with sub-minute tails, so
-   minute display floors the enforced cutoff by ≤59s (safe direction; full value in the tooltip).
-   Alternatives: full seconds for expiration values, or normalizing preset writes to the minute
-   (write-path change, out of scope here).
-3. Scheduled rollout pill shows the operational format inline ("Sep 15, 2026, 9:00 AM GMT+8");
-   relative age moves to the tooltip.
-4. The bare-format expiration displays are fixed in this effort rather than filed as follow-up
-   cleanup: masking exemption and role-grant details adopt the operational mode; the member
-   preview — an i18n-interpolated string — gets the full-precision string per the corollary
-   (or the `Trans`-slot refactor if minute display is preferred there).
-5. Tooltip on *full* cells may show the relative age (inverse tooltip). Alternative: repeat the
-   full string (GitHub parity).
+1. **The relative age on a full cell** (previously open item 5) is rendered as a component the
+   tooltip mounts only when it opens, not as a string computed with the row. A string would freeze
+   at whatever the row last rendered, which the staleness rule forbids; this way a closed tooltip
+   holds no place on the shared clock and an open one keeps counting.
+2. **The operational tooltip carries the full date-time, not the relative age.** D6 owns that slot,
+   and the pill's reduced minute precision is what needs recovering.
+3. **The zh renderings put the timezone before the time** — "2026年9月15日 GMT+8 09:00", where the
+   examples above show it trailing. That is ICU's pattern for the locale; the strings come from
+   `Intl` rather than being assembled, so the locale's own order wins.
+
+The staleness rule is enforced by `useNow`, a single shared clock: subscribers declare the instant
+their rendering next changes rather than a cadence, since the relative buckets turn over relative
+to the timestamp, not the wall clock. It replaced the ad-hoc interval behind the plan-detail
+created time and covers the SQL-editor grant countdown, which had none.

@@ -1,5 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import dayjs from "dayjs";
 import { ChevronRight, ShieldCheck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -15,6 +14,7 @@ import {
 import { classificationLevelBackgroundClasses } from "@/components/classification-level";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { FeatureBadge } from "@/components/FeatureBadge";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { UserHoverCard } from "@/components/UserHoverCard";
 import { Button } from "@/components/ui/button";
@@ -1119,9 +1119,11 @@ function ExemptionGrantSection({
           <span className="font-medium text-sm">{title}</span>
           {grant.expirationTimestamp && isExpired ? (
             <>
-              <span className="text-xs text-control-light line-through">
-                {dayjs(grant.expirationTimestamp).format("YYYY-MM-DD HH:mm")}
-              </span>
+              <HumanizeTs
+                className="text-xs text-control-light line-through"
+                mode="operational"
+                ts={grant.expirationTimestamp / 1000}
+              />
               <span className="text-xs text-control-light">
                 ({t("sql-editor.expired")})
               </span>
@@ -1132,7 +1134,12 @@ function ExemptionGrantSection({
                 {expiryLabel}
               </span>
               <span className="text-xs text-control-light">
-                ({dayjs(grant.expirationTimestamp).format("YYYY-MM-DD HH:mm")})
+                (
+                <HumanizeTs
+                  mode="operational"
+                  ts={grant.expirationTimestamp / 1000}
+                />
+                )
               </span>
             </>
           ) : (

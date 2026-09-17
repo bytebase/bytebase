@@ -22,12 +22,7 @@ import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
-import {
-  databaseForTask,
-  extractTaskUID,
-  formatAbsoluteDateTime,
-  humanizeDurationV1,
-} from "@/utils";
+import { databaseForTask, extractTaskUID, humanizeDurationV1 } from "@/utils";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 export function IssueDetailTaskRunTable({
@@ -182,10 +177,8 @@ function IssueDetailTaskRunComment({ taskRun }: { taskRun: TaskRun }) {
 
 function IssueDetailTaskRunDateCell({
   date,
-  format = "humanized",
 }: {
   date?: Parameters<typeof getDateForPbTimestampProtoEs>[0];
-  format?: "absolute" | "humanized";
 }) {
   if (!date) {
     return <span className="text-control-light">-</span>;
@@ -195,16 +188,10 @@ function IssueDetailTaskRunDateCell({
   if (!parsedDate) {
     return <span className="text-control-light">-</span>;
   }
-  if (format === "absolute") {
-    return (
-      <span className="text-sm text-control">
-        {formatAbsoluteDateTime(parsedDate.getTime())}
-      </span>
-    );
-  }
 
   return (
     <HumanizeTs
+      mode="compact"
       ts={parsedDate.getTime() / 1000}
       className="text-sm text-control"
     />

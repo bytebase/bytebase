@@ -26,6 +26,7 @@ import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { ExprEditor, type OptionConfig } from "@/components/ExprEditor";
 import { FeatureBadge } from "@/components/FeatureBadge";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import {
@@ -864,15 +865,11 @@ function computeExpirationTimestamp(days?: number): number | undefined {
   return Date.now() + days * 86400000;
 }
 
+// Interpolated into an i18n sentence, which cannot host a tooltip, so this
+// carries the full precision itself rather than a reduced form.
 function formatExpirationDate(timestampMs?: number): string {
   if (!timestampMs) return "";
-  return new Date(timestampMs).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatAbsoluteDateTime(timestampMs);
 }
 
 // Validates the form's expiration against the workspace cap. "Never" (no
@@ -1892,11 +1889,14 @@ function EditMemberRoleDrawer({
                                   {row.databaseResource?.table ?? "*"}
                                 </TableCell>
                                 <TableCell>
-                                  {row.expiration
-                                    ? formatAbsoluteDateTime(
-                                        row.expiration.getTime()
-                                      )
-                                    : t("project.members.never-expires")}
+                                  {row.expiration ? (
+                                    <HumanizeTs
+                                      mode="operational"
+                                      ts={row.expiration.getTime() / 1000}
+                                    />
+                                  ) : (
+                                    t("project.members.never-expires")
+                                  )}
                                 </TableCell>
                               </TableRow>
                             ))}

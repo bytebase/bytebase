@@ -107,6 +107,7 @@ export function DatabaseRevisionTable({
             <TableCell>
               {revision.createTime ? (
                 <HumanizeTs
+                  mode="compact"
                   ts={
                     (
                       getDateForPbTimestampProtoEs(revision.createTime) as Date

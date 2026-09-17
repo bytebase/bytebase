@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown> | number | string) => {
       if (key === "task-run.log-viewer.summary" && options) {
@@ -298,6 +299,7 @@ describe("TaskRunLogViewer", () => {
       items: Array.from({ length: 60 }, (_, index) => ({
         key: `item-${index}`,
         time: `12:00:${String(index).padStart(2, "0")}.000`,
+        timeMs: new Date("2026-03-02T12:00:00Z").getTime() + index * 1000,
         relativeTime: "",
         levelIndicator: "✓",
         levelClass: "text-green-600",
