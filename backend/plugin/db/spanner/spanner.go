@@ -18,6 +18,8 @@ import (
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
+	"github.com/bytebase/omni/googlesql/ast"
+	"github.com/bytebase/omni/googlesql/parser"
 	"github.com/pkg/errors"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -33,7 +35,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 var (
@@ -303,17 +304,30 @@ func getColumnTypeName(columnType *sppb.Type) (string, error) {
 	return columnType.Code.String(), nil
 }
 
-// getStatementWithResultLimit wraps a SQL statement in a CTE to enforce a result limit.
-// This is a simple approach that works for SELECT queries but has a critical limitation:
-// Spanner does NOT support DML statements (INSERT/UPDATE/DELETE) inside CTEs.
-//
-// This function should ONLY be called for SELECT statements (verify with util.IsSelect first).
-// For a more robust parser-based approach that can handle complex queries, see the
-// PostgreSQL/MySQL implementations which parse and inject LIMIT clauses directly.
+// getStatementWithResultLimit sets the LIMIT of the outermost query in stmt to
+// at most limit. It never wraps stmt in a subquery, where Spanner rejects a
+// WITH clause, so a query it cannot rewrite runs unchanged and queryStatement
+// caps its rows.
 func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt = strings.TrimRightFunc(stmt, utils.IsSpaceOrSemicolon)
-	limitPart := fmt.Sprintf(" LIMIT %d", limit)
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
+	file, errs := parser.Parse(stmt)
+	if len(errs) > 0 || len(file.Stmts) != 1 {
+		return stmt
+	}
+	query, ok := file.Stmts[0].(*ast.QueryStmt)
+	// FOR UPDATE fails in queryStatement's read-only transaction, so there is no
+	// point fitting a LIMIT before it.
+	if !ok || query.ForUpdate {
+		return stmt
+	}
+	if query.Limit == nil {
+		end := query.Loc.End
+		return stmt[:end] + " LIMIT " + strconv.Itoa(limit) + stmt[end:]
+	}
+	count, ok := query.Limit.(*ast.Literal)
+	if !ok || count.Kind != ast.LitInt || count.Ival <= int64(limit) {
+		return stmt
+	}
+	return stmt[:count.Loc.Start] + strconv.Itoa(limit) + stmt[count.Loc.End:]
 }
 
 // instancePath returns the Spanner instance resource name,
@@ -357,7 +371,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
-				// Only apply limit wrapper for SELECT statements
 				if queryContext.Limit > 0 {
 					statement = getStatementWithResultLimit(statement, queryContext.Limit)
 				}
@@ -446,6 +459,9 @@ func (d *Driver) queryStatement(ctx context.Context, statement string, queryCont
 		n := len(result.Rows)
 		if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
 			result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
+			break
+		}
+		if queryContext.Limit > 0 && n >= queryContext.Limit {
 			break
 		}
 

@@ -17,19 +17,27 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
 
-// TestExplainDMLWithoutRunningIt needs a Spanner that plans queries, which CI
-// cannot provide and the emulator does not do. Spanner Omni works: the client
-// reaches it without TLS or credentials through SPANNER_EMULATOR_HOST, and
-// SPANNER_TEST_DATABASE names a database in it as
-// projects/default/instances/default/databases/d.
-func TestExplainDMLWithoutRunningIt(t *testing.T) {
+// testDatabase returns the database that SPANNER_TEST_DATABASE names, as
+// projects/default/instances/default/databases/d, in the Spanner that the client
+// reaches without TLS or credentials through SPANNER_EMULATOR_HOST. CI provides
+// no Spanner, so the test is skipped without them.
+func testDatabase(t *testing.T) string {
+	t.Helper()
 	database := os.Getenv("SPANNER_TEST_DATABASE")
 	if os.Getenv("SPANNER_EMULATOR_HOST") == "" || database == "" {
-		t.Skip("set SPANNER_EMULATOR_HOST and SPANNER_TEST_DATABASE to run against Spanner Omni")
+		t.Skip("set SPANNER_EMULATOR_HOST and SPANNER_TEST_DATABASE to run against Spanner")
 	}
+	return database
+}
+
+// TestExplainDMLWithoutRunningIt needs a Spanner that plans queries, which the
+// emulator does not do and Spanner Omni does.
+func TestExplainDMLWithoutRunningIt(t *testing.T) {
+	database := testDatabase(t)
 	a := require.New(t)
 	ctx := context.Background()
 
@@ -72,6 +80,108 @@ func TestExplainDMLWithoutRunningIt(t *testing.T) {
 	var total int64
 	a.NoError(row.Column(0, &total))
 	a.Equal(int64(10), total)
+}
+
+func TestQueryConnLimitsQueryStartingWithWith(t *testing.T) {
+	a := require.New(t)
+	ctx := context.Background()
+	client, err := spanner.NewClient(ctx, testDatabase(t))
+	a.NoError(err)
+	defer client.Close()
+
+	driver := &Driver{client: client}
+	for _, statement := range []string{
+		"WITH n AS (SELECT x FROM UNNEST([3, 1, 2]) AS x) SELECT x FROM n ORDER BY x",
+		// The rewrite keeps a non-literal LIMIT, so the driver caps the rows.
+		"WITH n AS (SELECT x FROM UNNEST([3, 1, 2]) AS x) SELECT x FROM n ORDER BY x LIMIT CAST(3 AS INT64)",
+	} {
+		results, err := driver.QueryConn(ctx, nil, statement, db.QueryContext{
+			Limit:                2,
+			MaximumSQLResultSize: math.MaxInt64,
+		})
+		a.NoError(err)
+		a.Len(results, 1)
+		a.Empty(results[0].Error, results[0].Statement)
+		var values []int64
+		for _, row := range results[0].Rows {
+			values = append(values, row.Values[0].GetInt64Value())
+		}
+		a.Equal([]int64{1, 2}, values, results[0].Statement)
+	}
+}
+
+func TestGetStatementWithResultLimit(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		want      string
+	}{
+		{
+			name:      "select",
+			statement: "SELECT * FROM t",
+			want:      "SELECT * FROM t LIMIT 100",
+		},
+		{
+			name:      "with",
+			statement: "WITH a AS (SELECT 1 AS x) SELECT x FROM a",
+			want:      "WITH a AS (SELECT 1 AS x) SELECT x FROM a LIMIT 100",
+		},
+		{
+			name:      "lowercase with, order by, and trailing semicolon",
+			statement: "with a as (select 1 x), b as (select x from a) select x from b order by x desc;",
+			want:      "with a as (select 1 x), b as (select x from a) select x from b order by x desc LIMIT 100;",
+		},
+		{
+			name:      "with and set operation",
+			statement: "WITH a AS (SELECT 1 AS x) (SELECT x FROM a) UNION ALL (SELECT x FROM a) ORDER BY x",
+			want:      "WITH a AS (SELECT 1 AS x) (SELECT x FROM a) UNION ALL (SELECT x FROM a) ORDER BY x LIMIT 100",
+		},
+		{
+			name:      "set operation",
+			statement: "SELECT 1 UNION ALL SELECT 2",
+			want:      "SELECT 1 UNION ALL SELECT 2 LIMIT 100",
+		},
+		{
+			name:      "inner limit belongs to the parenthesized query",
+			statement: "(SELECT x FROM t LIMIT 500)",
+			want:      "(SELECT x FROM t LIMIT 500) LIMIT 100",
+		},
+		{
+			name:      "trailing comment",
+			statement: "SELECT x FROM t -- note",
+			want:      "SELECT x FROM t LIMIT 100 -- note",
+		},
+		{
+			name:      "lower limit is kept",
+			statement: "WITH a AS (SELECT x FROM t) SELECT x FROM a LIMIT 10",
+			want:      "WITH a AS (SELECT x FROM t) SELECT x FROM a LIMIT 10",
+		},
+		{
+			name:      "higher limit is lowered",
+			statement: "WITH a AS (SELECT x FROM t) SELECT x FROM a ORDER BY x LIMIT 5000 OFFSET 10",
+			want:      "WITH a AS (SELECT x FROM t) SELECT x FROM a ORDER BY x LIMIT 100 OFFSET 10",
+		},
+		{
+			name:      "non-literal limit is unchanged",
+			statement: "WITH a AS (SELECT x FROM t) SELECT x FROM a LIMIT CAST(5000 AS INT64)",
+			want:      "WITH a AS (SELECT x FROM t) SELECT x FROM a LIMIT CAST(5000 AS INT64)",
+		},
+		{
+			name:      "for update is unchanged",
+			statement: "SELECT x FROM t ORDER BY x FOR UPDATE",
+			want:      "SELECT x FROM t ORDER BY x FOR UPDATE",
+		},
+		{
+			name:      "unparsable query is unchanged",
+			statement: "WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1",
+			want:      "WITH a AS (SELECT x FROM t) SELECT x FROM a |> WHERE x > 1",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, getStatementWithResultLimit(tc.statement, 100))
+		})
+	}
 }
 
 func TestGetDatabaseFromDSN(t *testing.T) {
