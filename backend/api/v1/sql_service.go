@@ -666,9 +666,7 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 // runs under the admin data source, whose ALL_DB_LINKS the sync recorded. Under another
 // data source Oracle resolves the name from that account's own links, where a private link
 // shadows a public one of the same name, and Bytebase has not seen those; every link then
-// resolves to nothing and the access check refuses it.
-// DEFER: resolve from the executing session's ALL_DB_LINKS with OWNER; upgrade when that
-// resolver lands, then drop this gate.
+// resolves to nothing and the access check refuses it (BYT-10239).
 func linkedDatabaseMetadataFuncForQuery(stores *store.Store, instance *store.InstanceMessage, queryContext db.QueryContext) parserbase.GetLinkedDatabaseMetadataFunc {
 	resolve := parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine())
 	if resolve == nil || queryContext.DataSourceType == storepb.DataSourceType_ADMIN {
@@ -720,21 +718,30 @@ func (s *SQLService) refuseLinkedTargetsOutsideProject(ctx context.Context, colu
 // linkedTargetProjectRefusal decides refuseLinkedTargetsOutsideProject for one column, given
 // the database the link resolved to (nil when Bytebase does not track it).
 func linkedTargetProjectRefusal(column parserbase.ColumnResource, target *store.DatabaseMessage, requestProjectID string) string {
-	table := column.Database + "." + column.Table
 	if target == nil {
-		return fmt.Sprintf("table %s reached through database link %q is in a database Bytebase does not track on this instance", table, column.Server)
+		return linkedTableRefusal(column, "is in a database Bytebase does not track on this instance")
 	}
 	if target.ProjectID != requestProjectID {
-		return fmt.Sprintf("table %s reached through database link %q is in project %q: reading another project's database through a link is not supported in SQL Editor", table, column.Server, target.ProjectID)
+		return linkedTableRefusal(column, fmt.Sprintf("is in project %q: reading another project's database through a link is not supported in SQL Editor", target.ProjectID))
 	}
 	return ""
 }
 
-// remoteColumnRefusal refuses a remote reference Bytebase could not resolve or that
+// linkedTableRefusal names the linked table as written (an unqualified unresolved reference
+// has no database) followed by the reason.
+func linkedTableRefusal(column parserbase.ColumnResource, reason string) string {
+	table := column.Table
+	if column.Database != "" {
+		table = column.Database + "." + table
+	}
+	return fmt.Sprintf("table %s reached through database link %q %s", table, column.Server, reason)
+}
+
+// remoteColumnRefusal refuses an Oracle database link Bytebase could not resolve or that
 // resolves to another instance. The error carries no resource: a placeholder would satisfy
 // a negated condition (table_name != "x") and request-access would offer a grant that
 // cannot help. BYT-10226.
-func remoteColumnRefusal(columns parserbase.SourceColumnSet, connectedInstanceID string, engine storepb.Engine, perm permission.Permission) *queryError {
+func remoteColumnRefusal(columns parserbase.SourceColumnSet, connectedInstanceID string, perm permission.Permission) *queryError {
 	var remote []parserbase.ColumnResource
 	for column := range columns {
 		if column.Server != "" {
@@ -743,25 +750,15 @@ func remoteColumnRefusal(columns parserbase.SourceColumnSet, connectedInstanceID
 	}
 	slices.SortFunc(remote, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
 	for _, column := range remote {
-		table := column.Table
-		if column.Schema != "" {
-			table = column.Schema + "." + table
-		}
-		if column.Database != "" {
-			table = column.Database + "." + table
-		}
 		var message string
 		switch {
 		case column.Instance == "":
-			message = fmt.Sprintf("table %s reached through remote server %q cannot be authorized: Bytebase could not establish which database it reaches", table, column.Server)
-			if engine == storepb.Engine_ORACLE {
-				message += ". In this release a linked table is authorized only for a query running under the admin data source, whose database links Bytebase synced, and only when the connect string of the link names the host, port and service of a data source of exactly one instance"
-			}
+			message = linkedTableRefusal(column, "cannot be authorized: Bytebase could not establish which database it reaches. In this release a linked table is authorized only for a query running under the admin data source, whose database links Bytebase synced, and only when the connect string of the link names the host, port and service of a data source of exactly one instance; on an instance with a read-only data source the query-data policy must allow the admin data source")
 		case column.Instance != connectedInstanceID:
-			// DEFER: links to another instance are refused; upgrade when the masker resolves a
-			// linked column's policy on its own instance (it lists databases by name on the
-			// connected instance), so that a cross-instance read is masked.
-			message = fmt.Sprintf("table %s reached through database link %q is on instance %q: querying another instance through a database link is not supported in SQL Editor", table, column.Server, column.Instance)
+			// Links to another instance are refused until the masker resolves a linked column's
+			// policy on its own instance; it lists databases by name on the connected instance
+			// (BYT-10237).
+			message = linkedTableRefusal(column, fmt.Sprintf("is on instance %q: querying another instance through a database link is not supported in SQL Editor", column.Instance))
 		default:
 			continue
 		}
@@ -1655,17 +1652,6 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			continue
 		}
 
-		// Before the type branch: an info-schema classification of a statement that reads
-		// through a remote reference must not skip these refusals.
-		if qe := remoteColumnRefusal(span.SourceColumns, instance.ResourceID, instance.Metadata.GetEngine(), perm); qe != nil {
-			return qe
-		}
-		if qe, err := s.refuseLinkedTargetsOutsideProject(ctx, span.SourceColumns, instance, database, perm); err != nil {
-			return err
-		} else if qe != nil {
-			return qe
-		}
-
 		// For non-SELECT queries or SELECT queries with no source columns (e.g., SELECT 1),
 		// check at database level and skip column-level checks
 		if span.Type != parserbase.Select || len(span.SourceColumns) == 0 {
@@ -1673,6 +1659,22 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				return err
 			}
 			continue
+		}
+
+		// Oracle database links. A non-Select Oracle span carries no source columns and a linked
+		// table forces the Select classification (plsql getOmniQuerySpan), so none reaches the
+		// branch above. Before the JIT-grant skip below: an unresolved link can carry a local
+		// database name (ALLOWED_S.T@REMOTE2), which a grant on that database would otherwise
+		// authorize. A SQL Server linked-server reference keeps its pre-existing path (BYT-10235).
+		if instance.Metadata.GetEngine() == storepb.Engine_ORACLE {
+			if qe := remoteColumnRefusal(span.SourceColumns, instance.ResourceID, perm); qe != nil {
+				return qe
+			}
+			if qe, err := s.refuseLinkedTargetsOutsideProject(ctx, span.SourceColumns, instance, database, perm); err != nil {
+				return err
+			} else if qe != nil {
+				return qe
+			}
 		}
 		var deniedResources []string
 		for column := range span.SourceColumns {
