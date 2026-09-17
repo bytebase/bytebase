@@ -19,10 +19,10 @@ type Explain struct {
 	// EXPLAIN_FORMAT_UNSPECIFIED when the session decides.
 	DefaultFormat v1pb.QueryOption_ExplainFormat
 	// Statement returns the statement whose result is statement's plan in
-	// format, or an error when statement cannot be explained without running
-	// it. It is nil when the driver plans through the engine's own API, which
-	// never runs the statement.
-	Statement func(statement string, format v1pb.QueryOption_ExplainFormat) (string, error)
+	// format, named as SQL names it ("" for the default), or an error when
+	// statement cannot be explained without running it. It is nil when the
+	// driver plans through the engine's own API, which never runs the statement.
+	Statement func(statement, format string) (string, error)
 }
 
 // PlanFormat returns the format of the plans a request naming format gets.
@@ -63,5 +63,9 @@ func ExplainStatement(engine storepb.Engine, statement string, format v1pb.Query
 	if !ok || explain.Statement == nil {
 		return "", errors.Errorf("%s does not explain by running a statement", engine)
 	}
-	return explain.Statement(statement, format)
+	name := ""
+	if format != v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
+		name = format.String()
+	}
+	return explain.Statement(statement, name)
 }

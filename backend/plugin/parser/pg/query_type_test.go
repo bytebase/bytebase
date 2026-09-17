@@ -47,32 +47,3 @@ func TestClassifyQueryTypeExplain(t *testing.T) {
 		})
 	}
 }
-
-func TestExplainFormat(t *testing.T) {
-	testCases := []struct {
-		statement string
-		want      string
-	}{
-		{"EXPLAIN SELECT 1", "text"},
-		{"-- plan\nexplain verbose select 1;", "text"},
-		{"EXPLAIN (FORMAT JSON) SELECT 1", "json"},
-		{"EXPLAIN (ANALYZE, FORMAT 'xml') SELECT 1", "xml"},
-		// PostgreSQL reads the last FORMAT.
-		{"EXPLAIN (FORMAT JSON, COSTS OFF, FORMAT YAML) SELECT 1", "yaml"},
-		{"EXPLAIN (FORMAT 1) SELECT 1", ""},
-	}
-	for _, tc := range testCases {
-		explain := ParseExplain(tc.statement)
-		require.NotNil(t, explain, tc.statement)
-		require.Equal(t, tc.want, ExplainFormat(explain), tc.statement)
-	}
-
-	for _, statement := range []string{
-		"SELECT 1",
-		"/* EXPLAIN */ SELECT 1",
-		"EXPLAIN SELECT 1; EXPLAIN SELECT 2",
-		"EXPLAIN (SELECT",
-	} {
-		require.Nil(t, ParseExplain(statement), statement)
-	}
-}

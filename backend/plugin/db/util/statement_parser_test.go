@@ -340,7 +340,7 @@ SELECT 1`,
 	}
 	a := require.New(t)
 	for _, tc := range tests {
-		got, err := RemoveCommentsAndTrim(tc.input)
+		got, err := removeCommentsAndTrim(tc.input)
 		if tc.wantErr {
 			a.Error(err)
 		} else {

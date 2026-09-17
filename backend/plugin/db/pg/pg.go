@@ -42,7 +42,11 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_POSTGRES, newDriver)
-	db.RegisterExplain(storepb.Engine_POSTGRES, postgresExplain)
+	db.RegisterExplain(storepb.Engine_POSTGRES, db.Explain{
+		Formats:       []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML},
+		DefaultFormat: v1pb.QueryOption_TEXT,
+		Statement:     pgparser.ExplainStatement,
+	})
 }
 
 // Driver is the Postgres driver.
@@ -874,6 +878,22 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
+}
+
+// typedExplainPlan describes the plan an EXPLAIN in an ordinary query returns,
+// and is nil for any other statement. The Query handler describes the plans of
+// an explain request.
+func typedExplainPlan(statement string) *v1pb.QueryResult_QueryPlan {
+	format, analyze, ok := pgparser.DescribeExplain(statement)
+	if !ok {
+		return nil
+	}
+	// PostgreSQL accepts no format but text, json, xml and yaml, which the enum
+	// values are named after.
+	return &v1pb.QueryResult_QueryPlan{
+		Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(format)]),
+		Executed: analyze,
+	}
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {

@@ -1,17 +1,14 @@
-package util
+package standard
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func TestPrefixExplain(t *testing.T) {
-	explain := PrefixExplain(v1pb.QueryOption_TEXT)
+func TestExplainStatement(t *testing.T) {
 	for _, statement := range []string{"SELECT 1", "SELECT 'EXPLAIN'", "SELECT explained FROM t"} {
-		got, err := explain.Statement(statement, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED)
+		got, err := ExplainStatement(statement, "")
 		require.NoError(t, err, statement)
 		require.Equal(t, "EXPLAIN "+statement, got)
 	}
@@ -21,7 +18,7 @@ func TestPrefixExplain(t *testing.T) {
 		"/* plan */ explain\nSELECT 1",
 		"-- plan\nEXPLAIN FORMAT=JSON SELECT 1",
 	} {
-		_, err := explain.Statement(statement, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED)
+		_, err := ExplainStatement(statement, "")
 		require.Error(t, err, statement)
 	}
 }

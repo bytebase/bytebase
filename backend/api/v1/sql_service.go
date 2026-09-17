@@ -2013,7 +2013,7 @@ func validateExplain(instance *store.InstanceMessage, statement string, format v
 		if stmt.Empty {
 			continue
 		}
-		explained, err := explain.Statement(stmt.Text, format)
+		explained, err := db.ExplainStatement(engine, stmt.Text, format)
 		if err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, err)
 		}
