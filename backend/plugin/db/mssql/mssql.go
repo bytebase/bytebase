@@ -506,6 +506,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 	// Regular query processing for non-EXPLAIN queries
 	startTime := time.Now()
 	var stmtTypes []stmtType
+	var refinedSQLs []string
 	batchBuf := new(strings.Builder)
 	for _, singleSQL := range singleSQLs {
 		stmtType, err := getStmtType(singleSQL.Text)
@@ -518,6 +519,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 		if queryContext.Limit > 0 {
 			s = getStatementWithResultLimit(s, queryContext.Limit)
 		}
+		refinedSQLs = append(refinedSQLs, s)
 		if _, err := batchBuf.WriteString(s); err != nil {
 			return nil, err
 		}
@@ -604,7 +606,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 	latency := time.Since(startTime)
 	for i, res := range ret {
 		res.Latency = durationpb.New(latency)
-		res.Statement = singleSQLs[i].Text
+		res.Statement = refinedSQLs[i]
 	}
 
 	return ret, nil

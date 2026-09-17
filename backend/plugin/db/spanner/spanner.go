@@ -358,11 +358,10 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
 				// Only apply limit wrapper for SELECT statements
-				limitedStatement := statement
 				if queryContext.Limit > 0 {
-					limitedStatement = getStatementWithResultLimit(statement, queryContext.Limit)
+					statement = getStatementWithResultLimit(statement, queryContext.Limit)
 				}
-				return d.queryStatement(ctx, limitedStatement, queryContext)
+				return d.queryStatement(ctx, statement, queryContext)
 			}
 			if util.IsDDL(statement) {
 				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
