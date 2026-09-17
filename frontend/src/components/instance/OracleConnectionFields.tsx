@@ -96,9 +96,15 @@ export function OracleConnectionFields({
         validationField="serviceName"
         className="sm:col-span-3 sm:col-start-1"
       >
-        <FormLabel htmlFor={inputId}>{label}</FormLabel>
+        <FormLabel htmlFor={inputId}>
+          {label}{" "}
+          <span className="text-error" aria-hidden="true">
+            *
+          </span>
+        </FormLabel>
         <ValidationInput
           id={inputId}
+          required
           value={state.drafts[state.mode]}
           placeholder={
             state.mode === "sid"

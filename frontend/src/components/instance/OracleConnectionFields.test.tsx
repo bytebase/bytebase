@@ -21,8 +21,10 @@ function Form({ initial = { sid: "", serviceName: "" }, onChange = vi.fn(), allo
 test("defaults to an empty service name and keeps empty SID selected", () => {
   render(<Form />);
   expect(screen.getByRole("textbox", { name: "instance.service-name" }).getAttribute("value")).toBe("");
+  expect(screen.getByRole("textbox", { name: "instance.service-name" }).hasAttribute("required")).toBe(true);
   fireEvent.click(screen.getByRole("radio", { name: "instance.sid" }));
   const input = screen.getByRole("textbox", { name: "instance.sid" });
+  expect(input.hasAttribute("required")).toBe(true);
   expect(input.getAttribute("value")).toBe("");
   fireEvent.change(input, { target: { value: "ORCL" } });
   fireEvent.change(input, { target: { value: "" } });
