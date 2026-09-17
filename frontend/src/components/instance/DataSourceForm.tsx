@@ -49,6 +49,7 @@ import {
 } from "./data-source-drafts";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
+import { OracleConnectionFields } from "./OracleConnectionFields";
 import { SshConnectionForm } from "./SshConnectionForm";
 import { SslCertificateForm } from "./SslCertificateForm";
 import {
@@ -1845,12 +1846,12 @@ export function DataSourceForm({
 
                 {/* Oracle SID/Service Name */}
                 {basicInfo.engine === Engine.ORACLE && (
-                  <OracleSIDServiceNameInput
+                  <OracleConnectionFields
+                    key={dataSource.id}
                     sid={dataSource.sid ?? ""}
                     serviceName={dataSource.serviceName ?? ""}
                     allowEdit={allowEdit}
-                    onSidChange={(val) => update({ sid: val })}
-                    onServiceNameChange={(val) => update({ serviceName: val })}
+                    onChange={update}
                   />
                 )}
 
@@ -2308,63 +2309,6 @@ export function DataSourceForm({
         )}
       </FormFieldGroup>
     </ValidationProvider>
-  );
-}
-
-function OracleSIDServiceNameInput({
-  sid,
-  serviceName,
-  allowEdit,
-  onSidChange,
-  onServiceNameChange,
-}: {
-  sid: string;
-  serviceName: string;
-  allowEdit: boolean;
-  onSidChange: (val: string) => void;
-  onServiceNameChange: (val: string) => void;
-}) {
-  // Track which mode is selected — default to "serviceName" if both empty
-  const mode = sid ? "sid" : "serviceName";
-
-  const handleModeChange = (newMode: "sid" | "serviceName") => {
-    if (newMode === "sid") {
-      onServiceNameChange("");
-      if (!sid) onSidChange("XE");
-    } else {
-      onSidChange("");
-    }
-  };
-
-  return (
-    <FormField validationField="serviceName">
-      <RadioGroup
-        className="textlabel mb-2 gap-x-4"
-        value={mode}
-        onValueChange={(value) =>
-          handleModeChange(value as "sid" | "serviceName")
-        }
-      >
-        <RadioGroupItem value="sid" disabled={!allowEdit}>
-          SID
-        </RadioGroupItem>
-        <RadioGroupItem value="serviceName" disabled={!allowEdit}>
-          Service Name
-        </RadioGroupItem>
-      </RadioGroup>
-      <Input
-        value={mode === "sid" ? sid : serviceName}
-        className="w-full"
-        disabled={!allowEdit}
-        onChange={(e) => {
-          if (mode === "sid") {
-            onSidChange(e.target.value);
-          } else {
-            onServiceNameChange(e.target.value);
-          }
-        }}
-      />
-    </FormField>
   );
 }
 

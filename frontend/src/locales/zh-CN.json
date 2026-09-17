@@ -994,6 +994,7 @@
     },
     "connect-database-to-project": "连接数据库到项目",
     "connect-instance": "连接实例",
+    "connect-using": "连接方式",
     "connecting-database-to-project": "正在连接数据库...",
     "connection-database": "连接数据库",
     "connection-info": "连接信息",
@@ -1325,7 +1326,11 @@
         "saas": "例如 db.example.com | 数据库 IP"
       }
     },
+    "service-name": "服务名",
+    "service-name-placeholder": "例如 sales.example.com",
     "show-how-to-create": "如何创建",
+    "sid": "SID",
+    "sid-placeholder": "例如 ORCL",
     "snowflake-web-console": "Snowflake Web 控制台",
     "successfully-archived-instance": "成功归档实例'{{0}}'。",
     "successfully-connected-instance": "连接成功。",

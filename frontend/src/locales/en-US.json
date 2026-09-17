@@ -994,6 +994,7 @@
     },
     "connect-database-to-project": "Connect database to project",
     "connect-instance": "Connect instance",
+    "connect-using": "Connect using",
     "connecting-database-to-project": "Connecting database...",
     "connection-database": "Connection database",
     "connection-info": "Connection info",
@@ -1325,7 +1326,11 @@
         "saas": "e.g. db.example.com | database IP"
       }
     },
+    "service-name": "Service name",
+    "service-name-placeholder": "e.g. sales.example.com",
     "show-how-to-create": "Show how to create",
+    "sid": "SID",
+    "sid-placeholder": "e.g. ORCL",
     "snowflake-web-console": "Snowflake Web Console",
     "successfully-archived-instance": "Successfully archived the instance '{{0}}'.",
     "successfully-connected-instance": "Connection successful.",

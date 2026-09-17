@@ -994,6 +994,7 @@
     },
     "connect-database-to-project": "Kết nối cơ sở dữ liệu với dự án",
     "connect-instance": "Kết nối instance",
+    "connect-using": "Kết nối bằng",
     "connecting-database-to-project": "Đang kết nối cơ sở dữ liệu...",
     "connection-database": "Cơ sở dữ liệu kết nối",
     "connection-info": "Thông tin kết nối",
@@ -1325,7 +1326,11 @@
         "saas": "ví dụ: db.example.com | IP cơ sở dữ liệu"
       }
     },
+    "service-name": "Tên dịch vụ",
+    "service-name-placeholder": "Ví dụ: sales.example.com",
     "show-how-to-create": "Hiển thị cách tạo",
+    "sid": "SID",
+    "sid-placeholder": "Ví dụ: ORCL",
     "snowflake-web-console": "Bảng điều khiển web Snowflake",
     "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{{0}}'.",
     "successfully-connected-instance": "Kết nối thành công.",

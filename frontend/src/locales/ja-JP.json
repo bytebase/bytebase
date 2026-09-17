@@ -994,6 +994,7 @@
     },
     "connect-database-to-project": "データベースをプロジェクトに接続",
     "connect-instance": "インスタンスを接続",
+    "connect-using": "接続方式",
     "connecting-database-to-project": "データベースを接続中...",
     "connection-database": "接続先データベース",
     "connection-info": "接続情報",
@@ -1325,7 +1326,11 @@
         "saas": "例: db.example.com | データベース IP"
       }
     },
+    "service-name": "サービス名",
+    "service-name-placeholder": "例: sales.example.com",
     "show-how-to-create": "作成方法",
+    "sid": "SID",
+    "sid-placeholder": "例: ORCL",
     "snowflake-web-console": "スノーフレークウェブコンソール",
     "successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",
     "successfully-connected-instance": "接続に成功しました。",
