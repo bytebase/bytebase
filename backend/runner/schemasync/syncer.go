@@ -301,6 +301,15 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 		}
 		dbwp.Go(func() {
 			slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
+			attemptedAt, nowErr := s.store.Now(ctx)
+			if nowErr != nil {
+				syncFailed.Store(true)
+				slog.Error("Failed to read the metadata database clock",
+					slog.String("instance", database.InstanceID),
+					slog.String("database", database.DatabaseName),
+					log.BBError(nowErr))
+				return
+			}
 			if err := s.SyncDatabaseSchema(ctx, database); err != nil {
 				syncFailed.Store(true)
 				slog.Debug("Failed to sync database schema",
@@ -309,26 +318,19 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 					log.BBError(err))
 				// Save sync error to database metadata. Recording the attempt
 				// keeps a database that fails every time to its sync interval,
-				// and only moves the time a read has to beat forward.
-				failedAt, nowErr := s.store.Now(ctx)
-				if nowErr != nil {
-					syncFailed.Store(true)
-					slog.Error("Failed to read the metadata database clock",
-						slog.String("instance", database.InstanceID),
-						slog.String("database", database.DatabaseName),
-						log.BBError(nowErr))
-					return
-				}
+				// and recording when it started, not when it gave up, leaves a
+				// sync that started later free to store what it read.
 				if _, updateErr := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 					InstanceID:   database.InstanceID,
 					DatabaseName: database.DatabaseName,
 					MetadataUpdates: []func(*storepb.DatabaseMetadata){
 						func(md *storepb.DatabaseMetadata) {
+							if md.GetLastSyncTime().AsTime().After(attemptedAt) {
+								return
+							}
 							md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_FAILED
 							md.SyncError = err.Error()
-							if md.GetLastSyncTime().AsTime().Before(failedAt) {
-								md.LastSyncTime = timestamppb.New(failedAt)
-							}
+							md.LastSyncTime = timestamppb.New(attemptedAt)
 						},
 					},
 				}); updateErr != nil {
