@@ -7,6 +7,7 @@ import (
 	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -18,7 +19,7 @@ import (
 )
 
 // schemaReads gives each SyncDBSchema call on a ClickHouse instance the function that produces its result.
-var schemaReads = make(chan func() *metadatapb.DatabaseSchemaMetadata)
+var schemaReads = make(chan func() (*metadatapb.DatabaseSchemaMetadata, error))
 
 func init() {
 	db.Register(storepb.Engine_CLICKHOUSE, func() db.Driver { return &scriptedReadDriver{} })
@@ -37,7 +38,7 @@ func (*scriptedReadDriver) Close(context.Context) error { return nil }
 func (*scriptedReadDriver) SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error) {
 	select {
 	case read := <-schemaReads:
-		return read(), nil
+		return read()
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	}
@@ -69,10 +70,12 @@ func TestOverlappingSyncsStoreTheLaterRead(t *testing.T) {
 	syncer := NewSyncer(stores, dbfactory.New(stores, licenseService), licenseService, nil)
 
 	runSync := func(done chan<- error) { done <- syncer.SyncDatabaseSchema(ctx, database) }
-	readSchema := func(name string) func() *metadatapb.DatabaseSchemaMetadata {
-		return func() *metadatapb.DatabaseSchemaMetadata { return &metadatapb.DatabaseSchemaMetadata{Name: name} }
+	readSchema := func(name string) func() (*metadatapb.DatabaseSchemaMetadata, error) {
+		return func() (*metadatapb.DatabaseSchemaMetadata, error) {
+			return &metadatapb.DatabaseSchemaMetadata{Name: name}, nil
+		}
 	}
-	handRead := func(read func() *metadatapb.DatabaseSchemaMetadata) {
+	handRead := func(read func() (*metadatapb.DatabaseSchemaMetadata, error)) {
 		select {
 		case schemaReads <- read:
 		case <-ctx.Done():
@@ -83,9 +86,9 @@ func TestOverlappingSyncsStoreTheLaterRead(t *testing.T) {
 	earlierDone, laterDone := make(chan error, 1), make(chan error, 1)
 	finishEarlierRead := make(chan struct{})
 	go runSync(earlierDone)
-	handRead(func() *metadatapb.DatabaseSchemaMetadata {
+	handRead(func() (*metadatapb.DatabaseSchemaMetadata, error) {
 		<-finishEarlierRead
-		return &metadatapb.DatabaseSchemaMetadata{Name: "before-change"}
+		return &metadatapb.DatabaseSchemaMetadata{Name: "before-change"}, nil
 	})
 	go runSync(laterDone)
 	handRead(readSchema("after-change"))
@@ -97,4 +100,46 @@ func TestOverlappingSyncsStoreTheLaterRead(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, stored)
 	require.Equal(t, "after-change", stored.GetProto().GetName())
+}
+
+func TestFailedSyncRecordsTheAttempt(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	stores := setupSyncerStore(ctx, t)
+	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "instance-a",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_CLICKHOUSE,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	database, err := stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+		InstanceID: "instance-a", DatabaseName: "app", ProjectID: "project-a",
+	})
+	require.NoError(t, err)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	syncer := NewSyncer(stores, dbfactory.New(stores, licenseService), licenseService, nil)
+
+	syncer.SyncDatabaseAsync(database)
+	go func() {
+		select {
+		case schemaReads <- func() (*metadatapb.DatabaseSchemaMetadata, error) {
+			return nil, errors.New("target unreachable")
+		}:
+		case <-ctx.Done():
+		}
+	}()
+	require.Error(t, syncer.syncQueuedDatabases(ctx))
+
+	updated, err := stores.GetDatabase(ctx, &store.FindDatabaseMessage{
+		InstanceID: &database.InstanceID, DatabaseName: &database.DatabaseName,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, updated)
+	require.Equal(t, storepb.SyncStatus_SYNC_STATUS_FAILED, updated.Metadata.GetSyncStatus())
+	require.Contains(t, updated.Metadata.GetSyncError(), "target unreachable")
+	require.NotNil(t, updated.Metadata.GetLastSyncTime())
 }

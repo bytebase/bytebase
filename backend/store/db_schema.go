@@ -81,7 +81,7 @@ func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, ins
 // metadataUpdates to the database's own metadata, and records syncedAt, the
 // metadata database time the sync read the database, as its last sync time. All
 // of it happens in one transaction, and none of it happens when the database
-// already records a read at or after syncedAt: of two overlapping syncs, on one
+// already records a sync at or after syncedAt: of two overlapping syncs, on one
 // replica or on two, only one leaves anything behind, and it is the one that
 // read last.
 //

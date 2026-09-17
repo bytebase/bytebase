@@ -307,9 +307,18 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 					slog.String("instance", database.InstanceID),
 					slog.String("databaseName", database.DatabaseName),
 					log.BBError(err))
-				// Save sync error to database metadata. The last sync time stays
-				// at the read behind the stored schema, which this sync failed
-				// to replace.
+				// Save sync error to database metadata. Recording the attempt
+				// keeps a database that fails every time to its sync interval,
+				// and only moves the time a read has to beat forward.
+				failedAt, nowErr := s.store.Now(ctx)
+				if nowErr != nil {
+					syncFailed.Store(true)
+					slog.Error("Failed to read the metadata database clock",
+						slog.String("instance", database.InstanceID),
+						slog.String("database", database.DatabaseName),
+						log.BBError(nowErr))
+					return
+				}
 				if _, updateErr := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 					InstanceID:   database.InstanceID,
 					DatabaseName: database.DatabaseName,
@@ -317,6 +326,9 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 						func(md *storepb.DatabaseMetadata) {
 							md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_FAILED
 							md.SyncError = err.Error()
+							if md.GetLastSyncTime().AsTime().Before(failedAt) {
+								md.LastSyncTime = timestamppb.New(failedAt)
+							}
 						},
 					},
 				}); updateErr != nil {
