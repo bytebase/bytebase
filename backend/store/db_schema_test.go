@@ -34,7 +34,7 @@ func TestUpsertDBSchemaKeepsCatalog(t *testing.T) {
 
 	catalogs := map[string]*storepb.DatabaseConfig{}
 	for _, instanceID := range []string{"instance-a", "instance-b"} {
-		a.NoError(s.UpsertDBSchema(ctx, instanceID, "db", &metadatapb.DatabaseSchemaMetadata{Name: "before"}, nil))
+		a.NoError(s.UpsertDBSchema(ctx, instanceID, "db", &metadatapb.DatabaseSchemaMetadata{Name: "before"}, nil, time.Now()))
 		catalogs[instanceID] = &storepb.DatabaseConfig{Schemas: []*storepb.SchemaCatalog{{
 			Name: "public",
 			Tables: []*storepb.TableCatalog{{
@@ -45,7 +45,7 @@ func TestUpsertDBSchemaKeepsCatalog(t *testing.T) {
 		a.NoError(s.UpdateDBSchema(ctx, instanceID, "db", &store.UpdateDBSchemaMessage{Config: catalogs[instanceID]}))
 	}
 
-	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "after"}, nil))
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "after"}, nil, time.Now()))
 
 	for instanceID, wantMetadata := range map[string]string{"instance-a": "after", "instance-b": "before"} {
 		schema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{Workspace: "default", InstanceID: instanceID, DatabaseName: "db"})
@@ -54,4 +54,34 @@ func TestUpsertDBSchemaKeepsCatalog(t *testing.T) {
 		a.Equal(wantMetadata, schema.GetProto().GetName(), instanceID)
 		a.True(proto.Equal(catalogs[instanceID], schema.GetConfig()), instanceID)
 	}
+}
+
+func TestUpsertDBSchemaKeepsTheLaterRead(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	t.Cleanup(cancel)
+	db, s, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+		INSERT INTO instance (resource_id, workspace, project) VALUES ('instance-a', 'default', 'project-a');
+		INSERT INTO db (instance, name, project) VALUES ('instance-a', 'db', 'project-a');
+	`)
+	a.NoError(err)
+
+	later := time.Now()
+	earlier := later.Add(-time.Minute)
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "read-later"}, nil, later))
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "read-earlier"}, nil, earlier))
+
+	schema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{Workspace: "default", InstanceID: "instance-a", DatabaseName: "db"})
+	a.NoError(err)
+	a.NotNil(schema)
+	a.Equal("read-later", schema.GetProto().GetName())
+
+	database, err := s.GetDatabase(ctx, &store.FindDatabaseMessage{InstanceID: new("instance-a"), DatabaseName: new("db")})
+	a.NoError(err)
+	a.NotNil(database)
+	a.True(later.Equal(database.Metadata.GetLastSyncTime().AsTime()))
 }

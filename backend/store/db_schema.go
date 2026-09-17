@@ -3,10 +3,12 @@ package store
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/qb"
@@ -75,8 +77,13 @@ func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, ins
 	return s.GetDBSchema(ctx, &FindDBSchemaMessage{Workspace: workspaceID, InstanceID: instanceID, DatabaseName: databaseName})
 }
 
-// UpsertDBSchema stores the synced metadata and raw dump of a database. It
-// never writes config, which UpdateDBSchema owns: a sync that wrote back the
+// UpsertDBSchema stores the synced metadata and raw dump of a database, and
+// records syncedAt, the time the sync read it, as the database's last sync
+// time. A sync whose read started before the stored one is ignored, so the
+// slower of two overlapping syncs, on this replica or another, cannot replace a
+// schema read after it.
+//
+// It never writes config, which UpdateDBSchema owns: a sync that wrote back the
 // config it read before dumping the schema would undo an edit made meanwhile.
 func (s *Store) UpsertDBSchema(
 	ctx context.Context,
@@ -84,6 +91,7 @@ func (s *Store) UpsertDBSchema(
 	databaseName string,
 	dbMetadata *metadatapb.DatabaseSchemaMetadata,
 	rawDump []byte,
+	syncedAt time.Time,
 ) error {
 	metadataBytes, err := protojson.Marshal(dbMetadata)
 	if err != nil {
@@ -116,7 +124,24 @@ func (s *Store) UpsertDBSchema(
 	err = s.withDatabaseWrite(ctx, instanceID, databaseName, func(tx *sql.Tx) error {
 		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
 		return err
-	}, func(tx *sql.Tx, _ *databaseOwnership) error {
+	}, func(tx *sql.Tx, ownership *databaseOwnership) error {
+		databaseMetadata := &storepb.DatabaseMetadata{}
+		if len(ownership.metadata) > 0 {
+			if err := common.ProtojsonUnmarshaler.Unmarshal(ownership.metadata, databaseMetadata); err != nil {
+				return errors.Wrapf(err, "failed to unmarshal metadata of database %q", common.FormatDatabase(instanceID, databaseName))
+			}
+		}
+		if databaseMetadata.GetLastSyncTime().AsTime().After(syncedAt) {
+			return nil
+		}
+		databaseMetadata.LastSyncTime = timestamppb.New(syncedAt)
+		databaseMetadataBytes, err := protojson.Marshal(databaseMetadata)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, "UPDATE db SET metadata = $1 WHERE instance = $2 AND name = $3", databaseMetadataBytes, instanceID, databaseName); err != nil {
+			return errors.Wrapf(err, "failed to record the sync time of database %q", common.FormatDatabase(instanceID, databaseName))
+		}
 		var metadata, schema, config []byte
 		return tx.QueryRowContext(ctx, query, args...).Scan(&metadata, &schema, &config)
 	})
@@ -125,6 +150,7 @@ func (s *Store) UpsertDBSchema(
 	}
 
 	s.dbSchemaCache.Remove(getDBSchemaCacheKey(instanceID, databaseName))
+	s.removeDatabaseCache(ctx, instanceID, databaseName)
 
 	return nil
 }

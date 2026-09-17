@@ -88,40 +88,13 @@ func TestOverlappingSyncsStoreTheLaterRead(t *testing.T) {
 		return &metadatapb.DatabaseSchemaMetadata{Name: "before-change"}
 	})
 	go runSync(laterDone)
-	select {
-	case schemaReads <- readSchema("after-change"):
-		// The later sync read while the earlier one was reading: let it store its result first.
-		require.NoError(t, <-laterDone)
-		close(finishEarlierRead)
-	case <-time.After(500 * time.Millisecond):
-		// The later sync is waiting for the earlier one.
-		close(finishEarlierRead)
-		handRead(readSchema("after-change"))
-		require.NoError(t, <-laterDone)
-	}
+	handRead(readSchema("after-change"))
+	require.NoError(t, <-laterDone)
+	close(finishEarlierRead)
 	require.NoError(t, <-earlierDone)
 
 	stored, err := stores.GetDBSchema(ctx, &store.FindDBSchemaMessage{Workspace: "default", InstanceID: "instance-a", DatabaseName: "app"})
 	require.NoError(t, err)
 	require.NotNil(t, stored)
 	require.Equal(t, "after-change", stored.GetProto().GetName())
-	require.Empty(t, syncer.databaseSyncLocks)
-}
-
-func TestLockDatabaseSyncStopsWaitingWhenCanceled(t *testing.T) {
-	syncer := &Syncer{}
-	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "app"}
-	unlock, err := syncer.lockDatabaseSync(context.Background(), database)
-	require.NoError(t, err)
-
-	canceled, cancel := context.WithCancel(context.Background())
-	cancel()
-	_, err = syncer.lockDatabaseSync(canceled, database)
-	require.ErrorIs(t, err, context.Canceled)
-
-	unlock()
-	require.Empty(t, syncer.databaseSyncLocks)
-	unlock, err = syncer.lockDatabaseSync(context.Background(), database)
-	require.NoError(t, err)
-	unlock()
 }
