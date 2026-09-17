@@ -77,11 +77,13 @@ func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, ins
 }
 
 // UpsertDBSchema stores the synced metadata and raw dump of a database, stamps
-// the row with syncedAt, the metadata database time the sync read the database,
-// and applies metadataUpdates to the database's own metadata. All of it happens
-// in one transaction, and none of it happens when the row carries a stamp at or
-// after syncedAt: of two overlapping syncs, on one replica or on two, only the
-// one that read last leaves anything behind.
+// the row with syncedAt (descriptive) and syncToken (the fence, from
+// Store.NextSyncToken), and applies metadataUpdates to the database's own
+// metadata. All of it happens in one transaction, and none of it happens when
+// the row already carries a token at or after syncToken: of two overlapping
+// syncs, on one replica or on two, only the one holding the larger token
+// leaves anything behind. syncToken, not syncedAt, decides this: a wall clock
+// can run backward across a failover, a sequence cannot.
 //
 // It never writes config, which UpdateDBSchema owns: a sync that wrote back the
 // config it read before dumping the schema would undo an edit made meanwhile.
@@ -92,6 +94,7 @@ func (s *Store) UpsertDBSchema(
 	dbMetadata *metadatapb.DatabaseSchemaMetadata,
 	rawDump []byte,
 	syncedAt time.Time,
+	syncToken int64,
 	metadataUpdates ...func(*storepb.DatabaseMetadata),
 ) error {
 	metadataBytes, err := protojson.Marshal(dbMetadata)
@@ -105,21 +108,24 @@ func (s *Store) UpsertDBSchema(
 			db_name,
 			metadata,
 			raw_dump,
-			synced_at
+			synced_at,
+			sync_token
 		)
-		VALUES (?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?)
 		ON CONFLICT(instance, db_name) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump,
-			synced_at = EXCLUDED.synced_at
-		WHERE db_schema.synced_at < EXCLUDED.synced_at
-		RETURNING synced_at`,
+			synced_at = EXCLUDED.synced_at,
+			sync_token = EXCLUDED.sync_token
+		WHERE db_schema.sync_token < EXCLUDED.sync_token
+		RETURNING sync_token`,
 		instanceID,
 		databaseName,
 		metadataBytes,
 		// Convert to string because []byte{} is null which violates db schema constraints.
 		string(rawDump),
-		syncedAt)
+		syncedAt,
+		syncToken)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -130,10 +136,10 @@ func (s *Store) UpsertDBSchema(
 		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
 		return err
 	}, func(tx *sql.Tx, ownership *databaseOwnership) error {
-		// The row keeps the read it carries unless this one is later, so of two
-		// reads of the same time the one that stores first wins.
-		var storedAt time.Time
-		if err := tx.QueryRowContext(ctx, query, args...).Scan(&storedAt); err != nil {
+		// The row keeps the token it carries unless this one is larger, so of
+		// two equal tokens the one that stores first wins.
+		var storedToken int64
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(&storedToken); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil
 			}

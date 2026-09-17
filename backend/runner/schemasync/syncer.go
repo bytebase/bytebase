@@ -584,9 +584,15 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	// Sync database schema
 	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
 	defer cancelFunc()
-	// Take the time before the read, not after: it is what orders this sync
-	// against the others that read the same database, wherever they run.
+	// Take the time and the token before the read, not after: they are what
+	// orders this sync against the others that read the same database, wherever
+	// they run. syncedAt is descriptive; syncToken is the fence, since a wall
+	// clock can run backward across a failover and a sequence cannot.
 	syncedAt, err := s.store.Now(ctx)
+	if err != nil {
+		return "", err
+	}
+	syncToken, err := s.store.NextSyncToken(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -612,13 +618,15 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		return "", errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
 	}
 
-	// What this sync read lands together with the schema it read, or not at all.
-	// A stored time equal to syncedAt can only be a failed attempt with the same
-	// token: a success at that token would have already claimed the db_schema
-	// row and this write would never reach here. Success clears that tie.
+	// What this sync read lands together with the schema it read, or not at all:
+	// UpsertDBSchema applies metadataUpdates only when syncToken wins the
+	// db_schema row. The guard below still compares by wall-clock time so
+	// LastSyncTime never regresses; it applies on a tie, since the stored time
+	// this sync just won past can only be from a failed attempt or a success
+	// this one has now superseded.
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
-		syncedDatabaseMetadata, rawDump, syncedAt,
+		syncedDatabaseMetadata, rawDump, syncedAt, syncToken,
 		func(md *storepb.DatabaseMetadata) {
 			if md.GetLastSyncTime().AsTime().After(syncedAt) {
 				return

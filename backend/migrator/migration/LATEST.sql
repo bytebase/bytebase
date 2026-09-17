@@ -574,6 +574,7 @@ CREATE TABLE db (
 CREATE INDEX idx_db_project ON db(project);
 
 -- db_schema stores the database schema metadata for a particular database.
+CREATE SEQUENCE db_schema_sync_seq;
 CREATE TABLE db_schema (
     instance text NOT NULL,
     db_name text NOT NULL,
@@ -583,8 +584,11 @@ CREATE TABLE db_schema (
     -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
     -- When the sync that stored metadata and raw_dump read the database, by the
-    -- metadata database clock. A sync that read earlier does not replace them.
+    -- metadata database clock. Descriptive only; sync_token is the fence.
     synced_at timestamptz NOT NULL DEFAULT to_timestamp(0),
+    -- The schema fence, from db_schema_sync_seq. A wall clock can run backward
+    -- across a failover; this cannot, so it decides which sync's write holds.
+    sync_token bigint NOT NULL DEFAULT 0,
     PRIMARY KEY (instance, db_name),
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );

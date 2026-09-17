@@ -142,6 +142,18 @@ func (s *Store) Now(ctx context.Context) (time.Time, error) {
 	return now, nil
 }
 
+// NextSyncToken returns the next value of db_schema_sync_seq: a token that only
+// ever grows, on whichever replica reads it, unlike a wall clock, which a
+// failover or a step correction can move backward. UpsertDBSchema uses it, not
+// Now, to fence which sync's read replaces a stored schema.
+func (s *Store) NextSyncToken(ctx context.Context) (int64, error) {
+	var token int64
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT nextval('db_schema_sync_seq')").Scan(&token); err != nil {
+		return 0, errors.Wrap(err, "failed to reserve the next sync token")
+	}
+	return token, nil
+}
+
 // DeleteCache deletes the cache.
 func (s *Store) DeleteCache() {
 	// The setting cache purge participates in the publish-ordering invariant
