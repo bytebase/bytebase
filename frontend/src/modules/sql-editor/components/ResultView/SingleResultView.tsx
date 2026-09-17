@@ -47,6 +47,7 @@ import {
   QueryOption_ExplainFormat,
   QueryOptionSchema,
   type QueryResult,
+  QueryResult_QueryPlan_Format,
 } from "@/types/proto-es/v1/sql_service_pb";
 import {
   createExplainToken,
@@ -94,8 +95,9 @@ export interface SingleResultViewProps {
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
-  // Which statement of a multi-statement run this view shows. Visualize re-runs
+  // Every result of the run, and which one this view shows. Visualize re-runs
   // the whole statement and has to pick the same one back out.
+  results?: QueryResult[];
   resultIndex?: number;
   showExport: boolean;
   // Optional tooltip shown on the export button — used to explain when the
@@ -281,6 +283,7 @@ function SingleResultViewInner({
   params,
   database,
   result,
+  results = [],
   resultIndex = 0,
   showExport,
   exportTooltip,
@@ -397,23 +400,39 @@ function SingleResultViewInner({
     [flattenedTableView, result.masked]
   );
 
-  const showVisualizeButton = isVisualizerEngine(engine) && !!params.explain;
+  const plan = result.queryPlan;
+  const planInRows =
+    isVisualizerEngine(engine) &&
+    plan?.format ===
+      QueryResult_QueryPlan_Format[VISUALIZER_EXPLAIN_FORMATS[engine]];
+  // Visualize draws a text plan by explaining the whole run again in the
+  // visualizer's format. That reproduces this plan only when every earlier
+  // result is a plan that did not execute, so nothing before it changed the
+  // session.
+  const canReplay =
+    isVisualizerEngine(engine) &&
+    plan?.format === QueryResult_QueryPlan_Format.TEXT &&
+    results
+      .slice(0, resultIndex)
+      .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);
+  const showVisualizeButton = planInRows || canReplay;
+  const visualizeDisabledReason =
+    !planInRows && plan?.executed
+      ? t("sql-editor.visualize-explain-executed")
+      : undefined;
 
   const visualizeExplain = async () => {
     if (!isVisualizerEngine(engine)) return;
     try {
-      // Spanner explains only as JSON, so the result on screen already is the
-      // plan the visualizer reads; the other engines show a readable plan.
-      const token =
-        engine === Engine.SPANNER
-          ? getExplainTokenFromResult(result, engine)
-          : await getExplainToken(
-              database,
-              params,
-              runQuery,
-              engine,
-              resultIndex
-            );
+      const token = planInRows
+        ? getExplainTokenFromResult(result, engine)
+        : await getExplainToken(
+            database,
+            params,
+            runQuery,
+            engine,
+            resultIndex
+          );
       if (!token) {
         // The plan is fetched by a second query, so a failure here is invisible
         // unless we say so — the button would otherwise do nothing.
@@ -755,6 +774,7 @@ function SingleResultViewInner({
             statement={result.statement ?? ""}
             queryTime={queryTime}
             showVisualizeButton={showVisualizeButton}
+            visualizeDisabledReason={visualizeDisabledReason}
             onVisualizeExplain={visualizeExplain}
           />
         </>
@@ -830,9 +850,8 @@ function getExplainTokenFromResult(
   return createExplainToken({ statement, explain, engine });
 }
 
-// getExplainToken re-runs the explain in the format the visualizer reads for
-// the engine, whatever format the grid is showing, so the plan is only fetched
-// when the user asks for it.
+// getExplainToken explains the run again in the format the visualizer reads for
+// the engine, so the plan is only fetched when the user asks for it.
 async function getExplainToken(
   database: Database,
   params: SQLEditorQueryParams,
@@ -846,6 +865,7 @@ async function getExplainToken(
     id: uuidv4(),
     params: {
       ...params,
+      explain: true,
       queryOption: create(QueryOptionSchema, { explainFormat }),
     },
     status: "PENDING",

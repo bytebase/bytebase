@@ -312,6 +312,28 @@ message QueryResult {
 
   // Masking reasons for each column (empty for non-masked columns).
   repeated MaskingReason masked = 12;
+
+  // A query plan held in the result's rows.
+  message QueryPlan {
+    enum Format {
+      // The server cannot tell the format, as when MySQL follows the session's
+      // explain_format. Read the plan as text.
+      FORMAT_UNSPECIFIED = 0;
+      TEXT = 1;
+      JSON = 2;
+      XML = 3;
+      YAML = 4;
+    }
+    Format format = 1;
+
+    // Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+    // does.
+    bool executed = 2;
+  }
+
+  // Set when the result is a query plan: the output of an explain request, or
+  // of an EXPLAIN typed on PostgreSQL. Unset for any other result.
+  QueryPlan query_plan = 14;
 }
 
 message MaskingReason {

@@ -406,6 +406,45 @@ func TestExplainGateRejectsSmuggledWrite(t *testing.T) {
 	}
 }
 
+// TestExplainGateRefusesPostgresExecution pins that an explain request never
+// executes on PostgreSQL, even a read: not a typed EXPLAIN ANALYZE, and not a
+// statement that prefixing turns into one.
+func TestExplainGateRefusesPostgresExecution(t *testing.T) {
+	t.Parallel()
+	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
+	for _, stmt := range []string{
+		"EXPLAIN ANALYZE SELECT 1",
+		"EXPLAIN ANALYZE DELETE FROM t",
+		"SELECT 1; EXPLAIN (ANALYZE, FORMAT JSON) SELECT 2",
+		"ANALYZE SELECT 1",
+		"(ANALYZE) SELECT 1",
+	} {
+		for _, format := range []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_JSON} {
+			require.Errorf(t, validateExplainStatements(pg, stmt, format), "%s as %s", stmt, format)
+		}
+	}
+}
+
+func TestExplainResultFormat(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		engine storepb.Engine
+		format v1pb.QueryOption_ExplainFormat
+		want   v1pb.QueryResult_QueryPlan_Format
+	}{
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryResult_QueryPlan_TEXT},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_JSON, v1pb.QueryResult_QueryPlan_JSON},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_XML, v1pb.QueryResult_QueryPlan_XML},
+		{storepb.Engine_MSSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryResult_QueryPlan_TEXT},
+		{storepb.Engine_MSSQL, v1pb.QueryOption_XML, v1pb.QueryResult_QueryPlan_XML},
+		{storepb.Engine_SPANNER, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryResult_QueryPlan_JSON},
+		{storepb.Engine_MYSQL, v1pb.QueryOption_TEXT, v1pb.QueryResult_QueryPlan_FORMAT_UNSPECIFIED},
+		{storepb.Engine_ORACLE, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryResult_QueryPlan_TEXT},
+	} {
+		require.Equalf(t, tc.want, explainResultFormat(tc.engine, tc.format), "%s %s", tc.engine, tc.format)
+	}
+}
+
 // TestExplainGateAllowsPlans confirms the gate does not over-reject legitimate
 // plans. A plain EXPLAIN plans without executing, so a read or a write is allowed;
 // and because the driver splits a multi-statement request and prefixes EXPLAIN to
@@ -420,6 +459,10 @@ func TestExplainGateAllowsPlans(t *testing.T) {
 	// Plain single-statement plans, read or write, are allowed.
 	for _, stmt := range []string{"SELECT 1", "DELETE FROM t"} {
 		require.NoError(t, validateExplainStatements(pg, stmt, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), stmt)
+	}
+	// A typed EXPLAIN gets the requested format rather than a second EXPLAIN.
+	for _, stmt := range []string{"EXPLAIN SELECT 1", "EXPLAIN (COSTS OFF) DELETE FROM t; SELECT 1"} {
+		require.NoError(t, validateExplainStatements(pg, stmt, v1pb.QueryOption_JSON), stmt)
 	}
 	// Engines that split on ';' plan each statement in its own non-executing EXPLAIN,
 	// so a batch of plain writes is allowed rather than over-rejected.

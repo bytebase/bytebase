@@ -650,6 +650,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryResult.QueryPlan"><span class="badge">M</span>QueryResult.QueryPlan</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.QueryResult.SyntaxError"><span class="badge">M</span>QueryResult.SyntaxError</a>
                 </li>
               
@@ -692,6 +696,10 @@
               
                 <li>
                   <a href="#bytebase.v1.QueryResult.Message.Level"><span class="badge">E</span>QueryResult.Message.Level</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.QueryResult.QueryPlan.Format"><span class="badge">E</span>QueryResult.QueryPlan.Format</a>
                 </li>
               
               
@@ -8286,6 +8294,14 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td><p>Masking reasons for each column (empty for non-masked columns). </p></td>
                 </tr>
               
+                <tr>
+                  <td>query_plan</td>
+                  <td><a href="#bytebase.v1.QueryResult.QueryPlan">QueryResult.QueryPlan</a></td>
+                  <td></td>
+                  <td><p>Set when the result is a query plan: the output of an explain request, or
+of an EXPLAIN typed on PostgreSQL. Unset for any other result. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8475,6 +8491,38 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryResult.QueryPlan">QueryResult.QueryPlan</h3>
+        <p>A query plan held in the result's rows.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.v1.QueryResult.QueryPlan.Format">QueryResult.QueryPlan.Format</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>executed</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+does. </p></td>
                 </tr>
               
             </tbody>
@@ -8942,6 +8990,48 @@ SHOWPLAN_XML.</p></td>
                 <td>EXCEPTION</td>
                 <td>6</td>
                 <td><p>Exception message indicating error conditions.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.QueryResult.QueryPlan.Format">QueryResult.QueryPlan.Format</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>FORMAT_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>The server cannot tell the format, as when MySQL follows the session&#39;s
+explain_format. Read the plan as text.</p></td>
+              </tr>
+            
+              <tr>
+                <td>TEXT</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>JSON</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>XML</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>YAML</td>
+                <td>4</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>

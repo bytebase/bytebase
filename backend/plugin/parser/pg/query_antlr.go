@@ -41,7 +41,7 @@ func validateQueryANTLR(statement string) (bool, bool, error) {
 			}
 
 		case *ast.ExplainStmt:
-			if isExplainAnalyzeOmni(n) {
+			if IsExplainAnalyze(n) {
 				// EXPLAIN ANALYZE executes the query, so it must be a read-only SELECT.
 				sel, ok := n.Query.(*ast.SelectStmt)
 				if !ok || isWriteSelect(sel) {

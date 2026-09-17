@@ -126,6 +126,7 @@
     - [QueryResult.CommandError](#bytebase-v1-QueryResult-CommandError)
     - [QueryResult.Message](#bytebase-v1-QueryResult-Message)
     - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
+    - [QueryResult.QueryPlan](#bytebase-v1-QueryResult-QueryPlan)
     - [QueryResult.SyntaxError](#bytebase-v1-QueryResult-SyntaxError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
@@ -138,6 +139,7 @@
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
+    - [QueryResult.QueryPlan.Format](#bytebase-v1-QueryResult-QueryPlan-Format)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -2627,6 +2629,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | command_error | [QueryResult.CommandError](#bytebase-v1-QueryResult-CommandError) |  |  |
 | messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
 | masked | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each column (empty for non-masked columns). |
+| query_plan | [QueryResult.QueryPlan](#bytebase-v1-QueryResult-QueryPlan) |  | Set when the result is a query plan: the output of an explain request, or of an EXPLAIN typed on PostgreSQL. Unset for any other result. |
 
 
 
@@ -2691,6 +2694,22 @@ for field description.
 | file | [string](#string) |  |  |
 | line | [int32](#int32) |  |  |
 | routine | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-QueryPlan"></a>
+
+### QueryResult.QueryPlan
+A query plan held in the result&#39;s rows.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| format | [QueryResult.QueryPlan.Format](#bytebase-v1-QueryResult-QueryPlan-Format) |  |  |
+| executed | [bool](#bool) |  | Whether producing the plan executed the statement, as EXPLAIN ANALYZE does. |
 
 
 
@@ -2877,6 +2896,21 @@ against an engine that has no explain at all.
 | LOG | 4 | General log message. |
 | NOTICE | 5 | Notice message for important information. |
 | EXCEPTION | 6 | Exception message indicating error conditions. |
+
+
+
+<a name="bytebase-v1-QueryResult-QueryPlan-Format"></a>
+
+### QueryResult.QueryPlan.Format
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| FORMAT_UNSPECIFIED | 0 | The server cannot tell the format, as when MySQL follows the session&#39;s explain_format. Read the plan as text. |
+| TEXT | 1 |  |
+| JSON | 2 |  |
+| XML | 3 |  |
+| YAML | 4 |  |
 
 
  

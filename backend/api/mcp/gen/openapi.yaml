@@ -18573,6 +18573,13 @@ components:
             $ref: '#/components/schemas/bytebase.v1.MaskingReason'
           title: masked
           description: Masking reasons for each column (empty for non-masked columns).
+        queryPlan:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.QueryResult.QueryPlan'
+          title: query_plan
+          description: |-
+            Set when the result is a query plan: the output of an explain request, or
+             of an EXPLAIN typed on PostgreSQL. Unset for any other result.
       title: QueryResult
     bytebase.v1.QueryResult.CommandError:
       type: object
@@ -18680,6 +18687,31 @@ components:
       description: |-
         refer https://www.postgresql.org/docs/11/protocol-error-fields.html
          for field description.
+    bytebase.v1.QueryResult.QueryPlan:
+      type: object
+      properties:
+        format:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.QueryResult.QueryPlan.Format'
+          title: format
+        executed:
+          type: boolean
+          title: executed
+          description: |-
+            Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+             does.
+      title: QueryPlan
+      additionalProperties: false
+      description: A query plan held in the result's rows.
+    bytebase.v1.QueryResult.QueryPlan.Format:
+      type: string
+      title: Format
+      enum:
+        - FORMAT_UNSPECIFIED
+        - TEXT
+        - JSON
+        - XML
+        - YAML
     bytebase.v1.QueryResult.SyntaxError:
       type: object
       properties:

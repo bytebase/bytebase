@@ -754,6 +754,12 @@ func queryRetry(
 	}
 	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", originalStatement), slog.Duration("duration", duration))
 	if queryContext.Explain {
+		format := explainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat())
+		for _, result := range results {
+			if result.Error == "" {
+				result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
+			}
+		}
 		return results, nil, duration, nil
 	}
 
@@ -2002,6 +2008,23 @@ func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 	}
 }
 
+// explainResultFormat returns the format of the plans an explain request for
+// format gets back from engine.
+func explainResultFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) v1pb.QueryResult_QueryPlan_Format {
+	switch {
+	case format == v1pb.QueryOption_JSON, engine == storepb.Engine_SPANNER:
+		return v1pb.QueryResult_QueryPlan_JSON
+	case format == v1pb.QueryOption_XML:
+		return v1pb.QueryResult_QueryPlan_XML
+	case engine == storepb.Engine_MYSQL:
+		// The driver sends EXPLAIN without FORMAT, which MySQL 8.0.32 and later
+		// answer in the session's explain_format.
+		return v1pb.QueryResult_QueryPlan_FORMAT_UNSPECIFIED
+	default:
+		return v1pb.QueryResult_QueryPlan_TEXT
+	}
+}
+
 // validateExplainFormat refuses a format the engine cannot produce. This is the
 // one place the engine-to-format support is decided: drivers below map whatever
 // reaches them onto their own syntax, so a request that slipped through would
@@ -2050,7 +2073,10 @@ func validateExplainStatements(instance *store.InstanceMessage, statement string
 		if stmt.Empty {
 			continue
 		}
-		wrapped, ok := db.ExplainStatement(engine, stmt.Text, format)
+		wrapped, ok, err := db.ExplainStatement(engine, stmt.Text, format)
+		if err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, err)
+		}
 		if !ok {
 			return nil
 		}

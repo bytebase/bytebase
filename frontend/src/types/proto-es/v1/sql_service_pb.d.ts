@@ -375,6 +375,14 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
    * @generated from field: repeated bytebase.v1.MaskingReason masked = 12;
    */
   masked: MaskingReason[];
+
+  /**
+   * Set when the result is a query plan: the output of an explain request, or
+   * of an EXPLAIN typed on PostgreSQL. Unset for any other result.
+   *
+   * @generated from field: bytebase.v1.QueryResult.QueryPlan query_plan = 14;
+   */
+  queryPlan?: QueryResult_QueryPlan | undefined;
 };
 
 /**
@@ -632,6 +640,70 @@ export enum QueryResult_Message_Level {
  * Describes the enum bytebase.v1.QueryResult.Message.Level.
  */
 export declare const QueryResult_Message_LevelSchema: GenEnum<QueryResult_Message_Level>;
+
+/**
+ * A query plan held in the result's rows.
+ *
+ * @generated from message bytebase.v1.QueryResult.QueryPlan
+ */
+export declare type QueryResult_QueryPlan = Message<"bytebase.v1.QueryResult.QueryPlan"> & {
+  /**
+   * @generated from field: bytebase.v1.QueryResult.QueryPlan.Format format = 1;
+   */
+  format: QueryResult_QueryPlan_Format;
+
+  /**
+   * Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+   * does.
+   *
+   * @generated from field: bool executed = 2;
+   */
+  executed: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.QueryResult.QueryPlan.
+ * Use `create(QueryResult_QueryPlanSchema)` to create a new message.
+ */
+export declare const QueryResult_QueryPlanSchema: GenMessage<QueryResult_QueryPlan>;
+
+/**
+ * @generated from enum bytebase.v1.QueryResult.QueryPlan.Format
+ */
+export enum QueryResult_QueryPlan_Format {
+  /**
+   * The server cannot tell the format, as when MySQL follows the session's
+   * explain_format. Read the plan as text.
+   *
+   * @generated from enum value: FORMAT_UNSPECIFIED = 0;
+   */
+  FORMAT_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: TEXT = 1;
+   */
+  TEXT = 1,
+
+  /**
+   * @generated from enum value: JSON = 2;
+   */
+  JSON = 2,
+
+  /**
+   * @generated from enum value: XML = 3;
+   */
+  XML = 3,
+
+  /**
+   * @generated from enum value: YAML = 4;
+   */
+  YAML = 4,
+}
+
+/**
+ * Describes the enum bytebase.v1.QueryResult.QueryPlan.Format.
+ */
+export declare const QueryResult_QueryPlan_FormatSchema: GenEnum<QueryResult_QueryPlan_Format>;
 
 /**
  * @generated from message bytebase.v1.MaskingReason

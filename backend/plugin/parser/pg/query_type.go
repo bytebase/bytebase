@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
+	omniparser "github.com/bytebase/omni/pg/parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -44,7 +45,7 @@ func classifyQueryType(node ast.Node, allSystems bool) (queryType base.QueryType
 
 	// EXPLAIN: check for ANALYZE option
 	case *ast.ExplainStmt:
-		if isExplainAnalyzeOmni(n) {
+		if IsExplainAnalyze(n) {
 			qt := classifyExplainedQuery(n.Query)
 			return qt, true
 		}
@@ -124,9 +125,46 @@ func omniIntoClause(n *ast.SelectStmt) *ast.IntoClause {
 	return omniIntoClause(n.Rarg)
 }
 
-// isExplainAnalyzeOmni reports whether an ExplainStmt executes its query: its last ANALYZE option
+// ParseExplain returns the EXPLAIN that statement consists of, or nil when statement is anything else.
+func ParseExplain(statement string) *ast.ExplainStmt {
+	// Most statements are not an EXPLAIN, and the first token says so without a full parse.
+	if omniparser.NewLexer(statement).NextToken().Type != omniparser.EXPLAIN {
+		return nil
+	}
+	stmts, err := ParsePg(statement)
+	if err != nil || len(stmts) != 1 {
+		return nil
+	}
+	explain, ok := stmts[0].AST.(*ast.ExplainStmt)
+	if !ok {
+		return nil
+	}
+	return explain
+}
+
+// ExplainFormat returns the output format an ExplainStmt names, as PostgreSQL reads it from the last
+// FORMAT option: "text" when it names none, and "" when the option has no name to read.
+func ExplainFormat(n *ast.ExplainStmt) string {
+	format := "text"
+	if n.Options == nil {
+		return format
+	}
+	for _, item := range n.Options.Items {
+		de, ok := item.(*ast.DefElem)
+		if !ok || de.Defname != "format" {
+			continue
+		}
+		format = ""
+		if arg, ok := de.Arg.(*ast.String); ok {
+			format = arg.Str
+		}
+	}
+	return format
+}
+
+// IsExplainAnalyze reports whether an ExplainStmt executes its query: its last ANALYZE option
 // is not FALSE, OFF, or 0, the values PostgreSQL reads as false.
-func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
+func IsExplainAnalyze(n *ast.ExplainStmt) bool {
 	if n.Options == nil {
 		return false
 	}
@@ -152,7 +190,7 @@ func isExplainAnalyzeOmni(n *ast.ExplainStmt) bool {
 // within text, the text of the EXPLAIN. It returns any other node and text unchanged.
 func UnwrapExplainAnalyze(node ast.Node, text string) (ast.Node, string) {
 	explain, ok := node.(*ast.ExplainStmt)
-	if !ok || !isExplainAnalyzeOmni(explain) {
+	if !ok || !IsExplainAnalyze(explain) {
 		return node, text
 	}
 	// The statement runs from its WITH clause, which the location of a SELECT leaves out, to the end

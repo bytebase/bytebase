@@ -7,11 +7,14 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   QueryOption_ExplainFormat,
+  type QueryResult,
+  QueryResult_QueryPlan_Format,
+  QueryResult_QueryPlanSchema,
   QueryResultSchema,
   QueryRowSchema,
   RowValueSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { SingleResultView } from "./SingleResultView";
+import { SingleResultView, type SingleResultViewProps } from "./SingleResultView";
 
 const {
   deltaDecorations,
@@ -259,14 +262,21 @@ vi.mock("./ResultStatusBar", () => ({
   formatQueryTime: () => "-",
   ResultStatusBar: ({
     showVisualizeButton,
+    visualizeDisabledReason,
     onVisualizeExplain,
   }: {
     showVisualizeButton?: boolean;
+    visualizeDisabledReason?: string;
     onVisualizeExplain?: () => void;
   }) => (
     <div data-testid="result-status">
       {showVisualizeButton ? (
-        <button type="button" onClick={onVisualizeExplain}>
+        <button
+          type="button"
+          disabled={!!visualizeDisabledReason}
+          title={visualizeDisabledReason}
+          onClick={onVisualizeExplain}
+        >
           visualize-explain
         </button>
       ) : null}
@@ -599,6 +609,54 @@ describe("SingleResultView document view", () => {
   });
 });
 
+const planResult = (
+  statement: string,
+  plan: string,
+  queryPlan?: { format: QueryResult_QueryPlan_Format; executed?: boolean }
+) =>
+  create(QueryResultSchema, {
+    columnNames: ["QUERY PLAN"],
+    statement,
+    rows: [
+      create(QueryRowSchema, {
+        values: [
+          create(RowValueSchema, {
+            kind: { case: "stringValue", value: plan },
+          }),
+        ],
+      }),
+    ],
+    queryPlan: queryPlan && create(QueryResult_QueryPlanSchema, queryPlan),
+  });
+
+const textPlan = { format: QueryResult_QueryPlan_Format.TEXT };
+
+const replayReturns = (...results: QueryResult[]) =>
+  runQuery.mockImplementation(
+    async (
+      _database: unknown,
+      context: { resultSet?: { results: QueryResult[] } }
+    ) => {
+      context.resultSet = { results };
+    }
+  );
+
+const renderPlan = (
+  engine: Engine,
+  result: QueryResult,
+  props: Partial<SingleResultViewProps> = {}
+) =>
+  render(
+    <SingleResultView
+      disallowCopyingData={false}
+      params={{ ...params, engine, statement: "EXPLAIN SELECT 1" }}
+      database={databaseForEngine(engine)}
+      result={result}
+      showExport={false}
+      {...props}
+    />
+  );
+
 describe("SingleResultView explain visualizer", () => {
   beforeEach(() => {
     createExplainToken.mockClear();
@@ -606,67 +664,27 @@ describe("SingleResultView explain visualizer", () => {
     runQuery.mockReset();
   });
 
-  test("PostgreSQL asks for the JSON plan instead of reusing the text plan", async () => {
+  test("replays a text plan as an explain request for the visualizer's format", async () => {
     const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
     const planJSON = '[{"Plan": {"Node Type": "Seq Scan"}}]';
-    runQuery.mockImplementation(
-      async (
-        _database: unknown,
-        context: {
-          resultSet?: { results: unknown[] };
-        }
-      ) => {
-        context.resultSet = {
-          results: [
-            create(QueryResultSchema, {
-              statement: "SELECT 1",
-              rows: [
-                create(QueryRowSchema, {
-                  values: [
-                    create(RowValueSchema, {
-                      kind: { case: "stringValue", value: planJSON },
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        };
-      }
-    );
+    replayReturns(planResult("EXPLAIN (FORMAT JSON) SELECT 1", planJSON));
 
-    render(
-      <SingleResultView
-        disallowCopyingData={false}
-        params={{ ...params, engine: Engine.POSTGRES, explain: true }}
-        database={databaseForEngine(Engine.POSTGRES)}
-        result={create(QueryResultSchema, {
-          columnNames: ["QUERY PLAN"],
-          columnTypeNames: ["TEXT"],
-          statement: "SELECT 1",
-          rows: [
-            create(QueryRowSchema, {
-              values: [
-                create(RowValueSchema, {
-                  kind: { case: "stringValue", value: "Seq Scan on t" },
-                }),
-              ],
-            }),
-          ],
-        })}
-        showExport={false}
-      />
+    renderPlan(
+      Engine.POSTGRES,
+      planResult("EXPLAIN SELECT 1", "Seq Scan on t", textPlan)
     );
-
     fireEvent.click(screen.getByText("visualize-explain"));
 
     await waitFor(() => expect(openSpy).toHaveBeenCalled());
     expect(runQuery).toHaveBeenCalledTimes(1);
-    expect(
-      runQuery.mock.calls[0][1].params.queryOption?.explainFormat
-    ).toBe(QueryOption_ExplainFormat.JSON);
+    const replayed = runQuery.mock.calls[0][1].params;
+    expect(replayed.statement).toBe("EXPLAIN SELECT 1");
+    expect(replayed.explain).toBe(true);
+    expect(replayed.queryOption?.explainFormat).toBe(
+      QueryOption_ExplainFormat.JSON
+    );
     expect(createExplainToken).toHaveBeenCalledWith({
-      statement: "SELECT 1",
+      statement: "EXPLAIN (FORMAT JSON) SELECT 1",
       explain: planJSON,
       engine: Engine.POSTGRES,
     });
@@ -677,51 +695,19 @@ describe("SingleResultView explain visualizer", () => {
     openSpy.mockRestore();
   });
 
-  test("re-runs for the tab the user clicked, not the first result", async () => {
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
-    runQuery.mockImplementation(
-      async (_database: unknown, context: { resultSet?: { results: unknown[] } }) => {
-        const plan = (name: string) =>
-          create(QueryResultSchema, {
-            statement: name,
-            rows: [
-              create(QueryRowSchema, {
-                values: [
-                  create(RowValueSchema, {
-                    kind: { case: "stringValue", value: `plan of ${name}` },
-                  }),
-                ],
-              }),
-            ],
-          });
-        context.resultSet = { results: [plan("first"), plan("second")] };
-      }
+  test("takes the replayed plan of the tab the user clicked", async () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
+    replayReturns(
+      planResult("first", "plan of first"),
+      planResult("second", "plan of second")
     );
+    const first = planResult("first", "Seq Scan on a", textPlan);
+    const second = planResult("second", "Seq Scan on b", textPlan);
 
-    render(
-      <SingleResultView
-        disallowCopyingData={false}
-        params={{ ...params, engine: Engine.POSTGRES, explain: true }}
-        database={databaseForEngine(Engine.POSTGRES)}
-        result={create(QueryResultSchema, {
-          columnNames: ["QUERY PLAN"],
-          columnTypeNames: ["TEXT"],
-          statement: "second",
-          rows: [
-            create(QueryRowSchema, {
-              values: [
-                create(RowValueSchema, {
-                  kind: { case: "stringValue", value: "Seq Scan on t" },
-                }),
-              ],
-            }),
-          ],
-        })}
-        resultIndex={1}
-        showExport={false}
-      />
-    );
-
+    renderPlan(Engine.POSTGRES, second, {
+      results: [first, second],
+      resultIndex: 1,
+    });
     fireEvent.click(screen.getByText("visualize-explain"));
 
     await waitFor(() => expect(createExplainToken).toHaveBeenCalled());
@@ -735,50 +721,12 @@ describe("SingleResultView explain visualizer", () => {
 
   test("reports a blocked pop-up instead of doing nothing", async () => {
     const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
-    runQuery.mockImplementation(
-      async (_database: unknown, context: { resultSet?: { results: unknown[] } }) => {
-        context.resultSet = {
-          results: [
-            create(QueryResultSchema, {
-              statement: "SELECT 1",
-              rows: [
-                create(QueryRowSchema, {
-                  values: [
-                    create(RowValueSchema, {
-                      kind: { case: "stringValue", value: "[]" },
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        };
-      }
-    );
+    replayReturns(planResult("SELECT 1", "[]"));
 
-    render(
-      <SingleResultView
-        disallowCopyingData={false}
-        params={{ ...params, engine: Engine.POSTGRES, explain: true }}
-        database={databaseForEngine(Engine.POSTGRES)}
-        result={create(QueryResultSchema, {
-          columnNames: ["QUERY PLAN"],
-          columnTypeNames: ["TEXT"],
-          statement: "SELECT 1",
-          rows: [
-            create(QueryRowSchema, {
-              values: [
-                create(RowValueSchema, {
-                  kind: { case: "stringValue", value: "Seq Scan on t" },
-                }),
-              ],
-            }),
-          ],
-        })}
-        showExport={false}
-      />
+    renderPlan(
+      Engine.POSTGRES,
+      planResult("SELECT 1", "Seq Scan on t", textPlan)
     );
-
     fireEvent.click(screen.getByText("visualize-explain"));
 
     await waitFor(() => expect(notify).toHaveBeenCalled());
@@ -788,135 +736,105 @@ describe("SingleResultView explain visualizer", () => {
     openSpy.mockRestore();
   });
 
-  test.each([[Engine.MSSQL, QueryOption_ExplainFormat.XML, "<ShowPlanXML/>"]])(
-    "asks engine %s for the plan in the format its visualizer reads",
-    async (engine, explainFormat, plan) => {
-      const openSpy = vi
-        .spyOn(window, "open")
-        .mockReturnValue({} as Window);
-      runQuery.mockImplementation(
-        async (
-          _database: unknown,
-          context: { resultSet?: { results: unknown[] } }
-        ) => {
-          context.resultSet = {
-            results: [
-              create(QueryResultSchema, {
-                statement: "SELECT 1",
-                rows: [
-                  create(QueryRowSchema, {
-                    values: [
-                      create(RowValueSchema, {
-                        kind: { case: "stringValue", value: plan },
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-            ],
-          };
-        }
-      );
+  test("asks SQL Server for the XML plan", async () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
+    replayReturns(planResult("SELECT 1", "<ShowPlanXML/>"));
 
-      render(
-        <SingleResultView
-          disallowCopyingData={false}
-          params={{ ...params, engine, explain: true }}
-          database={databaseForEngine(engine)}
-          result={create(QueryResultSchema, {
-            columnNames: ["QUERY PLAN"],
-            statement: "SELECT 1",
-            rows: [
-              create(QueryRowSchema, {
-                values: [
-                  create(RowValueSchema, {
-                    kind: { case: "stringValue", value: "a readable plan" },
-                  }),
-                ],
-              }),
-            ],
-          })}
-          showExport={false}
-        />
-      );
+    renderPlan(
+      Engine.MSSQL,
+      planResult("SELECT 1", "a readable plan", textPlan)
+    );
+    fireEvent.click(screen.getByText("visualize-explain"));
 
+    await waitFor(() => expect(openSpy).toHaveBeenCalled());
+    expect(runQuery.mock.calls[0][1].params.queryOption?.explainFormat).toBe(
+      QueryOption_ExplainFormat.XML
+    );
+    expect(createExplainToken).toHaveBeenCalledWith({
+      statement: "SELECT 1",
+      explain: "<ShowPlanXML/>",
+      engine: Engine.MSSQL,
+    });
+    expect(notify).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+
+  test.each([
+    [Engine.SPANNER, QueryResult_QueryPlan_Format.JSON, false],
+    [Engine.POSTGRES, QueryResult_QueryPlan_Format.JSON, true],
+    [Engine.MSSQL, QueryResult_QueryPlan_Format.XML, false],
+  ])(
+    "draws engine %s's plan from the rows when it already is format %s",
+    async (engine, format, executed) => {
+      const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
+
+      renderPlan(
+        engine,
+        planResult("SELECT 1", "the plan", { format, executed }),
+        { results: [planResult("SET x = 1", "not a plan")], resultIndex: 1 }
+      );
       fireEvent.click(screen.getByText("visualize-explain"));
 
       await waitFor(() => expect(openSpy).toHaveBeenCalled());
-      expect(
-        runQuery.mock.calls[0][1].params.queryOption?.explainFormat
-      ).toBe(explainFormat);
+      expect(runQuery).not.toHaveBeenCalled();
       expect(createExplainToken).toHaveBeenCalledWith({
         statement: "SELECT 1",
-        explain: plan,
+        explain: "the plan",
         engine,
       });
-      expect(notify).not.toHaveBeenCalled();
       openSpy.mockRestore();
     }
   );
 
-  test("Spanner hands over the plan already in the result", async () => {
-    const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
-    const plan = '{"planNodes":[]}';
-
-    render(
-      <SingleResultView
-        disallowCopyingData={false}
-        params={{ ...params, engine: Engine.SPANNER, explain: true }}
-        database={databaseForEngine(Engine.SPANNER)}
-        result={create(QueryResultSchema, {
-          columnNames: ["QUERY PLAN"],
-          columnTypeNames: ["JSON"],
-          statement: "SELECT 1",
-          rows: [
-            create(QueryRowSchema, {
-              values: [
-                create(RowValueSchema, {
-                  kind: { case: "stringValue", value: plan },
-                }),
-              ],
-            }),
-          ],
-        })}
-        showExport={false}
-      />
+  test("disables Visualize for a text plan that executed its statement", () => {
+    renderPlan(
+      Engine.POSTGRES,
+      planResult("EXPLAIN ANALYZE SELECT 1", "Result", {
+        ...textPlan,
+        executed: true,
+      })
     );
 
-    fireEvent.click(screen.getByText("visualize-explain"));
-
-    await waitFor(() => expect(openSpy).toHaveBeenCalled());
-    expect(runQuery).not.toHaveBeenCalled();
-    expect(createExplainToken).toHaveBeenCalledWith({
-      statement: "SELECT 1",
-      explain: plan,
-      engine: Engine.SPANNER,
-    });
-    openSpy.mockRestore();
+    const button = screen.getByText("visualize-explain");
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute(
+      "title",
+      "sql-editor.visualize-explain-executed"
+    );
   });
 
-  test("offers no visualizer for an engine it cannot draw", () => {
-    render(
-      <SingleResultView
-        disallowCopyingData={false}
-        params={{ ...params, engine: Engine.MYSQL, explain: true }}
-        database={databaseForEngine(Engine.MYSQL)}
-        result={create(QueryResultSchema, {
-          columnNames: ["EXPLAIN"],
-          statement: "SELECT 1",
-          rows: [
-            create(QueryRowSchema, {
-              values: [
-                create(RowValueSchema, {
-                  kind: { case: "stringValue", value: "-> Table scan on t" },
-                }),
-              ],
-            }),
-          ],
-        })}
-        showExport={false}
-      />
-    );
+  test.each([
+    ["a result that is not a plan", undefined],
+    ["a plan that executed its statement", { ...textPlan, executed: true }],
+  ])("offers no replay after %s", (_, earlierPlan) => {
+    renderPlan(Engine.POSTGRES, planResult("EXPLAIN SELECT 1", "", textPlan), {
+      results: [planResult("SET search_path TO x", "", earlierPlan)],
+      resultIndex: 1,
+    });
+
+    expect(screen.queryByText("visualize-explain")).toBeNull();
+  });
+
+  test.each([
+    ["a result that is not a plan", Engine.POSTGRES, undefined],
+    [
+      "a PostgreSQL XML plan",
+      Engine.POSTGRES,
+      { format: QueryResult_QueryPlan_Format.XML },
+    ],
+    [
+      "a YAML plan",
+      Engine.POSTGRES,
+      { format: QueryResult_QueryPlan_Format.YAML },
+    ],
+    [
+      "a plan in an unknown format",
+      Engine.POSTGRES,
+      { format: QueryResult_QueryPlan_Format.FORMAT_UNSPECIFIED },
+    ],
+    ["an engine it cannot draw", Engine.MYSQL, textPlan],
+  ])("offers no visualizer for %s", (_, engine, queryPlan) => {
+    renderPlan(engine, planResult("EXPLAIN SELECT 1", "", queryPlan));
 
     expect(screen.queryByText("visualize-explain")).toBeNull();
   });
