@@ -217,7 +217,9 @@ mild, the mode would be permanent.
 
 **D10 · The unfolded block takes the line's place, or sits under it.** Same cell, same left edge;
 `whitespace-pre-wrap break-words` on the verbatim statement, in the row's mono face, on
-`bg-background` inside a `border-control-border` block, with D3's copy button in its top-right
+`bg-background` inside a `border-block-border` block — the block is a framed content region, and
+`docs/agents/frontend-ux.md:143-144` keeps `border-control-border` for controls — with D3's copy
+button in its top-right
 corner — positioned inside the block's padding so it overlays rather than reflows the SQL, and
 visible for as long as the block is. On a successful row the block replaces the line, so one
 statement is on screen at a time and the cluster's copy button gives way to the block's. On a
@@ -326,6 +328,7 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 |---|---|
 | `task-run-log/types.ts` | `statement?: string` and `error?: string` on `DisplayItem` |
 | `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section |
+| `task-run-log/useTaskRunLogSections.ts` | The hook owns every builder call — flat, per-replica, release-file and orphan — so it forwards `taskRunStatus` into all of them; nothing else invokes the builders, and a guard that stops here is a guard that never runs |
 | `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28 |
 | `task-run-log/TaskRunLogViewer.tsx` | The reader's fold overrides, held above the conditional mount and cleared with `taskRunName` (D14) |
 | `locales/en-US.json` | Two accessible names |
