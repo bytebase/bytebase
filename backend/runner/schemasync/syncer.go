@@ -613,11 +613,14 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 
 	// What this sync read lands together with the schema it read, or not at all.
+	// A stored time equal to syncedAt can only be a failed attempt with the same
+	// token: a success at that token would have already claimed the db_schema
+	// row and this write would never reach here. Success clears that tie.
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
 		syncedDatabaseMetadata, rawDump, syncedAt,
 		func(md *storepb.DatabaseMetadata) {
-			if !md.GetLastSyncTime().AsTime().Before(syncedAt) {
+			if md.GetLastSyncTime().AsTime().After(syncedAt) {
 				return
 			}
 			md.LastSyncTime = timestamppb.New(syncedAt)
