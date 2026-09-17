@@ -44,6 +44,11 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_SPANNER, newDriver)
+	// Spanner returns its plan as JSON and has no text form.
+	db.RegisterExplain(storepb.Engine_SPANNER, db.Explain{
+		Formats:       []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON},
+		DefaultFormat: v1pb.QueryOption_JSON,
+	})
 }
 
 // Driver is the Spanner driver.

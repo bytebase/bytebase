@@ -42,6 +42,7 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_POSTGRES, newDriver)
+	db.RegisterExplain(storepb.Engine_POSTGRES, postgresExplain)
 }
 
 // Driver is the Postgres driver.
@@ -799,7 +800,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_POSTGRES, statement, queryContext.Option.GetExplainFormat())
+			if statement, err = db.ExplainStatement(storepb.Engine_POSTGRES, statement, queryContext.Option.GetExplainFormat()); err != nil {
+				return nil, err
+			}
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
@@ -871,23 +874,6 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
-}
-
-// typedExplainPlan describes the plan an EXPLAIN in an ordinary query returns,
-// and is nil for any other statement. The Query handler describes the plans of
-// an explain request.
-func typedExplainPlan(statement string) *v1pb.QueryResult_QueryPlan {
-	explain := pgparser.ParseExplain(statement)
-	if explain == nil {
-		return nil
-	}
-	// PostgreSQL accepts no format but text, json, xml and yaml, which the enum
-	// values are named after.
-	format := v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(pgparser.ExplainFormat(explain))]
-	return &v1pb.QueryResult_QueryPlan{
-		Format:   v1pb.QueryOption_ExplainFormat(format),
-		Executed: pgparser.IsExplainAnalyze(explain),
-	}
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {

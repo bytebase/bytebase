@@ -45,7 +45,9 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_CLICKHOUSE, statement, queryContext.Option.GetExplainFormat())
+			if statement, err = db.ExplainStatement(storepb.Engine_CLICKHOUSE, statement, queryContext.Option.GetExplainFormat()); err != nil {
+				return nil, err
+			}
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}

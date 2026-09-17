@@ -47,6 +47,7 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_REDSHIFT, newDriver)
+	db.RegisterExplain(storepb.Engine_REDSHIFT, util.PrefixExplain(v1pb.QueryOption_TEXT))
 }
 
 // Driver is the Postgres driver.
@@ -388,7 +389,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", d.databaseName), "")
 		}
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_REDSHIFT, statement, queryContext.Option.GetExplainFormat())
+			if statement, err = db.ExplainStatement(storepb.Engine_REDSHIFT, statement, queryContext.Option.GetExplainFormat()); err != nil {
+				return nil, err
+			}
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}

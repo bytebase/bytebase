@@ -33,6 +33,7 @@ func hiveDriverFunc() db.Driver {
 
 func init() {
 	db.Register(storepb.Engine_HIVE, hiveDriverFunc)
+	db.RegisterExplain(storepb.Engine_HIVE, util.PrefixExplain(v1pb.QueryOption_TEXT))
 }
 
 type Driver struct {
@@ -192,7 +193,9 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	for _, singleSQL := range singleSQLs {
 		statement := util.TrimStatement(singleSQL.Text)
 		if queryCtx.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_HIVE, statement, queryCtx.Option.GetExplainFormat())
+			if statement, err = db.ExplainStatement(storepb.Engine_HIVE, statement, queryCtx.Option.GetExplainFormat()); err != nil {
+				return nil, err
+			}
 		}
 
 		result, err := d.queryStatementWithLimit(ctx, statement, queryCtx.MaximumSQLResultSize)

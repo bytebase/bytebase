@@ -33,6 +33,7 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_SNOWFLAKE, newDriver)
+	db.RegisterExplain(storepb.Engine_SNOWFLAKE, util.PrefixExplain(v1pb.QueryOption_TEXT))
 }
 
 // Driver is the Snowflake driver.
@@ -337,7 +338,9 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_SNOWFLAKE, statement, queryContext.Option.GetExplainFormat())
+			if statement, err = db.ExplainStatement(storepb.Engine_SNOWFLAKE, statement, queryContext.Option.GetExplainFormat()); err != nil {
+				return nil, err
+			}
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
