@@ -217,6 +217,19 @@ describe("nextRelativeChangeAt", () => {
     expect(nextRelativeChangeAt(ts)).toBe(Date.now() + 3_600_000);
   });
 
+  test.each([-90_000, 90_000])(
+    "names the same instant on every render inside a bucket (offset %i)",
+    (offsetMs) => {
+      const ts = Date.now() + offsetMs;
+      const first = nextRelativeChangeAt(ts);
+
+      // A value that drifted with the clock would re-key the subscription on
+      // every render, so the shared clock would thrash through a list.
+      vi.advanceTimersByTime(100);
+      expect(nextRelativeChangeAt(ts)).toBe(first);
+    }
+  );
+
   test("never wakes for a label already showing an absolute date", () => {
     const ts = Date.now() - RELATIVE_THRESHOLD_MS - 86_400_000;
     expect(nextRelativeChangeAt(ts)).toBe(Number.POSITIVE_INFINITY);
