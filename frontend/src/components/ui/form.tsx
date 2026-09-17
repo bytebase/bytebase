@@ -243,12 +243,13 @@ function FormTitle({ className, ref, style, ...props }: ComponentProps<"div">) {
  * ```
  */
 function FormFieldGroup({
+  density = "default",
   className,
   ref,
   style,
   ...props
-}: ComponentProps<"div">) {
-  const stylexProps = stylex.props(formFieldGroupStyle());
+}: ComponentProps<"div"> & { density?: "default" | "compact" }) {
+  const stylexProps = stylex.props(formFieldGroupStyle(density));
   return (
     <div
       ref={ref}
