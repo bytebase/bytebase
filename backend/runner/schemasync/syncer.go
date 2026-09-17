@@ -617,6 +617,9 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		database.InstanceID, database.DatabaseName,
 		syncedDatabaseMetadata, rawDump, syncedAt,
 		func(md *storepb.DatabaseMetadata) {
+			if !md.GetLastSyncTime().AsTime().Before(syncedAt) {
+				return
+			}
 			md.LastSyncTime = timestamppb.New(syncedAt)
 			md.BackupAvailable = backupAvailable
 			md.Datashare = syncedDatabaseMetadata.Datashare

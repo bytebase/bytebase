@@ -96,3 +96,29 @@ func TestUpsertDBSchemaKeepsTheLaterRead(t *testing.T) {
 	a.NoError(err)
 	a.Equal("tie-first", schema.GetProto().GetName())
 }
+
+func TestUpsertDBSchemaReplacesARowFromBeforeTheColumn(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	t.Cleanup(cancel)
+	db, s, _ := testcontainer.NewMetadataDB(t)
+	// A row an upgraded installation carries: synced_at is the column default.
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
+		INSERT INTO instance (resource_id, workspace, project) VALUES ('instance-a', 'default', 'project-a');
+		INSERT INTO db (instance, name, project) VALUES ('instance-a', 'db', 'project-a');
+		INSERT INTO db_schema (instance, db_name, metadata) VALUES ('instance-a', 'db', '{"name":"before-upgrade"}');
+	`)
+	a.NoError(err)
+
+	syncedAt, err := s.Now(ctx)
+	a.NoError(err)
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "synced"}, nil, syncedAt))
+
+	schema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{Workspace: "default", InstanceID: "instance-a", DatabaseName: "db"})
+	a.NoError(err)
+	a.NotNil(schema)
+	a.Equal("synced", schema.GetProto().GetName())
+}

@@ -112,7 +112,8 @@ func (s *Store) UpsertDBSchema(
 			metadata = EXCLUDED.metadata,
 			raw_dump = EXCLUDED.raw_dump,
 			synced_at = EXCLUDED.synced_at
-		RETURNING metadata, raw_dump, config`,
+		WHERE db_schema.synced_at < EXCLUDED.synced_at
+		RETURNING synced_at`,
 		instanceID,
 		databaseName,
 		metadataBytes,
@@ -125,17 +126,18 @@ func (s *Store) UpsertDBSchema(
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	var stored time.Time
 	err = s.withDatabaseWrite(ctx, instanceID, databaseName, func(tx *sql.Tx) error {
-		err := tx.QueryRowContext(ctx, "SELECT synced_at FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName).Scan(&stored)
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil
-		}
+		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
 		return err
 	}, func(tx *sql.Tx, ownership *databaseOwnership) error {
-		// Of two reads of the same time, the one that stores first keeps the row.
-		if !stored.Before(syncedAt) {
-			return nil
+		// The row keeps the read it carries unless this one is later, so of two
+		// reads of the same time the one that stores first wins.
+		var storedAt time.Time
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(&storedAt); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil
+			}
+			return err
 		}
 		databaseMetadata := &storepb.DatabaseMetadata{}
 		if len(ownership.metadata) > 0 {
@@ -153,8 +155,7 @@ func (s *Store) UpsertDBSchema(
 		if _, err := tx.ExecContext(ctx, "UPDATE db SET metadata = $1 WHERE instance = $2 AND name = $3", databaseMetadataBytes, instanceID, databaseName); err != nil {
 			return errors.Wrapf(err, "failed to record the sync of database %q", common.FormatDatabase(instanceID, databaseName))
 		}
-		var metadata, schema, config []byte
-		return tx.QueryRowContext(ctx, query, args...).Scan(&metadata, &schema, &config)
+		return nil
 	})
 	if err != nil {
 		return err
