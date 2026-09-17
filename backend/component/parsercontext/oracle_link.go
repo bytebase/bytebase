@@ -20,10 +20,9 @@ type oracleEndpoint struct {
 
 // oracleLinkTarget is what an Oracle database link's connect string
 // (ALL_DB_LINKS.HOST) names: one service or SID, reachable at one or more
-// addresses. DEFER: every address of one descriptor is taken as the same
-// database, as in RAC and Data Guard links, so a descriptor mixing databases
-// under one service resolves to whichever address a data source matches;
-// upgrade when such a descriptor is seen, then require every address to match.
+// addresses. Every address of one descriptor is taken as the same database,
+// as in RAC and Data Guard links, so a descriptor mixing databases under one
+// service resolves to whichever address a data source matches (BYT-10240).
 type oracleLinkTarget struct {
 	endpoints []oracleEndpoint
 	// Exactly one of service and sid is set, as written. They name different
