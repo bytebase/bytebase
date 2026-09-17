@@ -54,6 +54,16 @@ const dateTimeFormatter = (
 ): Intl.DateTimeFormat =>
   cachedFormatter(name, (locale) => new Intl.DateTimeFormat(locale, options));
 
+/**
+ * A value that changes with time, paired with the first instant it changes
+ * (`Infinity` if never). Displays read one only through `useTimeReading`,
+ * which keeps the two together and schedules the display on the shared clock.
+ */
+export type TimeReading<Input, Value> = {
+  read: (input: Input) => Value;
+  nextChangeAt: (input: Input) => number;
+};
+
 export function formatRelativeTime(timestampMs: number): string {
   const diffMs = Date.now() - timestampMs;
   const ageMs = Math.abs(diffMs);
@@ -158,16 +168,17 @@ function absoluteDateChangeAt(timestampMs: number, nowMs: number): number {
   );
 }
 
-/** The first instant `formatRelativeTime` renders this timestamp differently. */
-export function nextRelativeTimeChangeAt(timestampMs: number): number {
+function nextRelativeTimeChangeAt(timestampMs: number): number {
   return relativeTimeChangeAt(timestampMs, Date.now());
 }
 
-/**
- * The first instant `formatQueueTime` renders this timestamp differently, or
- * `Infinity` once it has settled on a date for good.
- */
-export function nextQueueTimeChangeAt(timestampMs: number): number {
+/** A timestamp's age, as "5 minutes ago" or "in 2 days". */
+export const relativeTimeReading: TimeReading<number, string> = {
+  read: formatRelativeTime,
+  nextChangeAt: nextRelativeTimeChangeAt,
+};
+
+function nextQueueTimeChangeAt(timestampMs: number): number {
   const nowMs = Date.now();
   const diffMs = nowMs - timestampMs;
   if (Math.abs(diffMs) < RELATIVE_THRESHOLD_MS) {
@@ -186,19 +197,32 @@ export function nextQueueTimeChangeAt(timestampMs: number): number {
   return Math.min(reentersAtMs, absoluteDateChangeAt(timestampMs, nowMs));
 }
 
-// Readings of a deadline. Each is paired with the first instant it changes, so
-// a display showing one stays current on the shared clock.
+/**
+ * A work-queue timestamp: its age within 30 days, a date beyond. Settles for
+ * good once it reads as a date from another year.
+ */
+export const queueTimeReading: TimeReading<number, string> = {
+  read: formatQueueTime,
+  nextChangeAt: nextQueueTimeChangeAt,
+};
 
-/** Whether a deadline is behind us; the deadline instant itself is not. */
-export function hasPassed(targetMs: number): boolean {
+// Readings of a deadline.
+
+function hasPassed(targetMs: number): boolean {
   return targetMs < Date.now();
 }
 
-export function nextPassedAt(targetMs: number): number {
+function nextPassedAt(targetMs: number): number {
   return hasPassed(targetMs)
     ? Number.POSITIVE_INFINITY
     : Math.floor(targetMs) + 1;
 }
+
+/** Whether a deadline is behind us; the deadline instant itself is not. */
+export const passedReading: TimeReading<number, boolean> = {
+  read: hasPassed,
+  nextChangeAt: nextPassedAt,
+};
 
 /**
  * Time left before a deadline as a countdown: hours and whole minutes within
@@ -209,7 +233,7 @@ export type Countdown =
   | { kind: "beyondDay" }
   | { kind: "within"; hours: number; minutes: number };
 
-export function readCountdown(targetMs: number): Countdown {
+function readCountdown(targetMs: number): Countdown {
   const remainingMs = targetMs - Date.now();
   if (remainingMs < 0) {
     return { kind: "passed" };
@@ -224,7 +248,7 @@ export function readCountdown(targetMs: number): Countdown {
   };
 }
 
-export function nextCountdownChangeAt(targetMs: number): number {
+function nextCountdownChangeAt(targetMs: number): number {
   const remainingMs = targetMs - Date.now();
   if (remainingMs < 0) {
     return Number.POSITIVE_INFINITY;
@@ -238,6 +262,11 @@ export function nextCountdownChangeAt(targetMs: number): number {
   return Math.floor(targetMs - thresholdMs) + 1;
 }
 
+export const countdownReading: TimeReading<number, Countdown> = {
+  read: readCountdown,
+  nextChangeAt: nextCountdownChangeAt,
+};
+
 /**
  * Time left before a deadline in whole days, rounded up; "today" within the
  * last day. Unlike `hasPassed`, the deadline instant itself counts as passed.
@@ -247,7 +276,7 @@ export type DaysLeft =
   | { kind: "today" }
   | { kind: "days"; days: number };
 
-export function readDaysLeft(targetMs: number): DaysLeft {
+function readDaysLeft(targetMs: number): DaysLeft {
   const remainingMs = targetMs - Date.now();
   if (remainingMs <= 0) {
     return { kind: "passed" };
@@ -258,7 +287,7 @@ export function readDaysLeft(targetMs: number): DaysLeft {
   return { kind: "days", days: Math.ceil(remainingMs / DAY_MS) };
 }
 
-export function nextDaysLeftChangeAt(targetMs: number): number {
+function nextDaysLeftChangeAt(targetMs: number): number {
   const remainingMs = targetMs - Date.now();
   if (remainingMs <= 0) {
     return Number.POSITIVE_INFINITY;
@@ -274,3 +303,8 @@ export function nextDaysLeftChangeAt(targetMs: number): number {
     ? Math.floor(targetMs - DAY_MS) + 1
     : Math.ceil(targetMs - (days - 1) * DAY_MS);
 }
+
+export const daysLeftReading: TimeReading<number, DaysLeft> = {
+  read: readDaysLeft,
+  nextChangeAt: nextDaysLeftChangeAt,
+};

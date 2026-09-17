@@ -27,7 +27,7 @@ vi.mock("@/utils/v1/changelog", () => ({
 }));
 
 vi.mock("@/types", () => ({
-  getDateForPbTimestampProtoEs: () => new Date("2026-04-15T00:00:00Z"),
+  getTimeForPbTimestampProtoEs: () => new Date("2026-04-15T00:00:00Z").getTime(),
 }));
 
 vi.mock("@/components/HumanizeTs", () => ({

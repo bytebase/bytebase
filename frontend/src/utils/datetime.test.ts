@@ -20,21 +20,19 @@ const withLocale = (language: string, run: () => void) => {
 };
 
 import {
+  countdownReading,
+  daysLeftReading,
   formatAbsoluteDate,
   formatAbsoluteDateTime,
   formatCompactDateTime,
   formatOperationalDateTime,
   formatQueueTime,
   formatRelativeTime,
-  hasPassed,
-  nextCountdownChangeAt,
-  nextDaysLeftChangeAt,
-  nextPassedAt,
-  nextQueueTimeChangeAt,
-  nextRelativeTimeChangeAt,
+  passedReading,
+  queueTimeReading,
   RELATIVE_THRESHOLD_MS,
-  readCountdown,
-  readDaysLeft,
+  relativeTimeReading,
+  type TimeReading,
 } from "./datetime";
 
 const SECOND_MS = 1_000;
@@ -249,11 +247,12 @@ const FINAL_PROBES_MS = [
   400 * DAY_MS,
 ];
 
-const expectBoundaryMatchesReading = (
-  read: (tsMs: number) => string,
-  nextChangeAt: (tsMs: number) => number,
+const expectBoundaryMatchesReading = <Value>(
+  reading: TimeReading<number, Value>,
   tsMs: number
 ) => {
+  const read = (input: number) => JSON.stringify(reading.read(input));
+  const { nextChangeAt } = reading;
   for (let link = 0; link < CHAIN_LINKS; link++) {
     const startMs = Date.now();
     const reading = read(tsMs);
@@ -322,8 +321,7 @@ describe("reading boundaries", () => {
     ({ start, offset, fractionMs }) => {
       const startMs = startAt(start);
       expectBoundaryMatchesReading(
-        formatQueueTime,
-        nextQueueTimeChangeAt,
+        queueTimeReading,
         startMs - offset + fractionMs
       );
     }
@@ -334,8 +332,7 @@ describe("reading boundaries", () => {
     ({ start, offset, fractionMs }) => {
       const startMs = startAt(start);
       expectBoundaryMatchesReading(
-        formatRelativeTime,
-        nextRelativeTimeChangeAt,
+        relativeTimeReading,
         startMs - offset + fractionMs
       );
     }
@@ -379,28 +376,19 @@ describe("deadline readings", () => {
     vi.useRealTimers();
   });
 
-  const pairs = [
-    [
-      "countdown",
-      (targetMs: number) => JSON.stringify(readCountdown(targetMs)),
-      nextCountdownChangeAt,
-    ],
-    [
-      "days-left",
-      (targetMs: number) => JSON.stringify(readDaysLeft(targetMs)),
-      nextDaysLeftChangeAt,
-    ],
-    ["passed", (targetMs: number) => String(hasPassed(targetMs)), nextPassedAt],
+  const readings = [
+    ["countdown", countdownReading],
+    ["days-left", daysLeftReading],
+    ["passed", passedReading],
   ] as const;
 
-  describe.each(pairs)("%s", (_name, read, nextChangeAt) => {
+  describe.each(readings)("%s", (_name, reading) => {
     test.each(boundaryCases(SAMPLED_REMAINING_MS))(
       "names the instant the reading changes ($offset ms left from $start, +$fractionMs ms)",
       ({ start, offset, fractionMs }) => {
         const startMs = startAt(start);
         expectBoundaryMatchesReading(
-          read,
-          nextChangeAt,
+          reading as TimeReading<number, unknown>,
           startMs + offset + fractionMs
         );
       }
@@ -409,24 +397,31 @@ describe("deadline readings", () => {
 
   test("counts down in hours and minutes within the last day", () => {
     expect(
-      readCountdown(baseMs + 3 * HOUR_MS + 20 * MINUTE_MS + 59_999)
+      countdownReading.read(baseMs + 3 * HOUR_MS + 20 * MINUTE_MS + 59_999)
     ).toEqual({ kind: "within", hours: 3, minutes: 20 });
-    expect(readCountdown(baseMs + DAY_MS)).toEqual({ kind: "beyondDay" });
-    expect(readCountdown(baseMs)).toEqual({
+    expect(countdownReading.read(baseMs + DAY_MS)).toEqual({
+      kind: "beyondDay",
+    });
+    expect(countdownReading.read(baseMs)).toEqual({
       kind: "within",
       hours: 0,
       minutes: 0,
     });
-    expect(readCountdown(baseMs - 1)).toEqual({ kind: "passed" });
+    expect(countdownReading.read(baseMs - 1)).toEqual({ kind: "passed" });
   });
 
   test("rounds whole days up, and treats the deadline itself as passed", () => {
-    expect(readDaysLeft(baseMs + DAY_MS + 1)).toEqual({
+    expect(daysLeftReading.read(baseMs + DAY_MS + 1)).toEqual({
       kind: "days",
       days: 2,
     });
-    expect(readDaysLeft(baseMs + DAY_MS)).toEqual({ kind: "days", days: 1 });
-    expect(readDaysLeft(baseMs + DAY_MS - 1)).toEqual({ kind: "today" });
-    expect(readDaysLeft(baseMs)).toEqual({ kind: "passed" });
+    expect(daysLeftReading.read(baseMs + DAY_MS)).toEqual({
+      kind: "days",
+      days: 1,
+    });
+    expect(daysLeftReading.read(baseMs + DAY_MS - 1)).toEqual({
+      kind: "today",
+    });
+    expect(daysLeftReading.read(baseMs)).toEqual({ kind: "passed" });
   });
 });

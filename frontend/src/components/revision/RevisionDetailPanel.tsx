@@ -113,10 +113,7 @@ export function RevisionDetailPanel({
   const taskFullLink = revision?.taskRun
     ? extractTaskLink(revision.taskRun)
     : "";
-  // A revision without a create time shows none, rather than the time now.
-  const createTimeMs = revision?.createTime
-    ? getTimeForPbTimestampProtoEs(revision.createTime)
-    : undefined;
+  const createTimeMs = getTimeForPbTimestampProtoEs(revision?.createTime);
   const formattedStatementSize = statement
     ? bytesToString(new TextEncoder().encode(statement).length)
     : "";

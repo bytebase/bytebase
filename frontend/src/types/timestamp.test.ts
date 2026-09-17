@@ -14,12 +14,11 @@ describe("getTimeForPbTimestampProtoEs", () => {
     expect(getTimeForPbTimestampProtoEs(undefined, 0)).toBe(0);
   });
 
-  test("refuses to invent a time when a caller bypasses the types", () => {
-    // Substituting the current time would show "now" as when something
-    // happened; the overloads make this unreachable from typed code.
-    const untyped = getTimeForPbTimestampProtoEs as unknown as (
-      timestamp?: undefined
-    ) => number;
-    expect(() => untyped(undefined)).toThrow();
+  test("has no reading for an absent timestamp without a fallback", () => {
+    // The current time or the epoch would each show a plausible-looking time.
+    const absent:
+      | Parameters<typeof getTimeForPbTimestampProtoEs>[0]
+      | undefined = undefined;
+    expect(getTimeForPbTimestampProtoEs(absent)).toBeUndefined();
   });
 });

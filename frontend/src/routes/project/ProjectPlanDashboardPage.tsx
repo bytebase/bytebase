@@ -511,7 +511,7 @@ function PlanTable({
         resizable: true,
         render: (_plan, ctx) =>
           ctx.updateTimeTs === undefined ? (
-            "-"
+            <span className="text-control-light">-</span>
           ) : (
             <HumanizeTs
               ts={ctx.updateTimeTs}

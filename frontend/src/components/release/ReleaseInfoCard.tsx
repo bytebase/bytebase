@@ -96,9 +96,7 @@ function NotFoundBlock() {
 function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
   const { t } = useTranslation();
   const displayedFiles = release.files.slice(0, MAX_DISPLAYED_RELEASE_FILES);
-  const createdTimeMs = release.createTime
-    ? getTimeForPbTimestampProtoEs(release.createTime)
-    : undefined;
+  const createdTimeMs = getTimeForPbTimestampProtoEs(release.createTime);
 
   return (
     <div className="rounded-sm border border-control-border bg-control-bg/50 px-4 py-3">

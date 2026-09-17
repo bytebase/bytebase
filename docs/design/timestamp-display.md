@@ -270,23 +270,35 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   `relative-time` element, which schedules updates at the next boundary, is the reference
   behavior. The contract that makes this hold:
   - **Every time-varying reading comes as a pair** — the function that renders it and the
-    function returning the first instant its output will differ (`Infinity` if never). The pair
-    lives together and is tested together: sampled across ages, the reading is constant up to
-    that instant and differs at it, followed across several successive boundaries so a reading
-    that leaves a value and later returns to it cannot hide a skipped span. The samples include
-    sub-millisecond timestamps, starts off the whole minute, and a turn of the year, where a
-    boundary a fraction early, one computed from a rounded clock, or a seasonal change otherwise
-    hides. A boundary
-    borrowed from a different reading, or re-derived by hand beside one, is the defect this rules
-    out — the two drift silently, and a test of the boundary alone cannot see it.
-  - **A boundary is evaluated no later than its reading.** Evaluated after, it can see a change
-    the reading just missed, name the change after that, and leave the stale reading on screen.
+    function returning the first instant its output will differ (`Infinity` if never), defined
+    together as one reading object and tested together: sampled across ages, the reading is
+    constant up to that instant and differs at it, followed across several successive boundaries
+    so a reading that leaves a value and later returns to it cannot hide a skipped span. The
+    samples include sub-millisecond timestamps, starts off the whole minute, and a turn of the
+    year, where a boundary a fraction early, one computed from a rounded clock, or a seasonal
+    change otherwise hides.
+  - **A display gets a reading only through `useTimeReading`**, which takes the reading object,
+    evaluates its boundary before its value, and subscribes to the shared clock. Pairing,
+    subscription and evaluation order therefore hold by construction rather than by convention at
+    each call site: a boundary borrowed from a different reading or re-derived beside one, a
+    display that forgot to subscribe, and a boundary evaluated after its value — which can see a
+    change the value just missed and schedule the one after — are each impossible to write
+    without leaving the hook.
   - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip
     time the machine sleeps, so the clock re-checks at least once a minute: a display is at most
-    a minute behind after sleep or a clock adjustment. It wakes only the subscribers that are due,
-    re-checks a woken display that names the same instant again after a resync interval rather
-    than on every other display's wake, and leaves a short gap after each wake so a boundary that
-    keeps naming a past instant cannot spin it.
+    a minute behind after sleep or a clock adjustment. A boundary is only valid on a clock at
+    least as late as the one it was computed on, so a clock stepped backward wakes every
+    subscribed display at the next check. A reading that has settled for good holds no
+    subscription, so a clock stepped back past its last change leaves it as it was until something
+    else renders it — the price of settled displays costing nothing. The clock wakes only the
+    subscribers that are due, re-checks a
+    woken display that names the same instant again after a resync interval rather than on every
+    other display's wake, and leaves a short gap after each wake so a boundary that keeps naming
+    a past instant cannot spin it.
+  - **An absent timestamp has no reading.** The conversion yields nothing rather than a
+    substitute — the current time and the epoch are both plausible-looking lies — and the
+    container picks the empty form: "-" in a table cell, or the label dropped along with its
+    separator in an inline line.
   - Guarded by fake-timer tests and a sweep of render-time `Date.now()` over the touched surfaces
     at implementation time — a review pass, not a lint: telling render scope from handlers and
     effects statically would flag most legitimate uses.
@@ -344,10 +356,11 @@ points where the implementation had to choose:
    examples above show it trailing. That is ICU's pattern for the locale; the strings come from
    `Intl` rather than being assembled, so the locale's own order wins.
 
-The staleness rule holds through `useNow` and the reading pairs described under Implementation
-shape. The clock replaced the ad-hoc interval behind the plan-detail created time, and the pairs
-cover the displays that had no clock at all: the SQL-editor grant countdown, the masking-exemption
-expiry label, the sample-instance expiry alert, and the access-grant expired badge.
+The staleness rule holds through `useTimeReading` and the reading objects described under
+Implementation shape. The clock replaced the ad-hoc interval behind the plan-detail created time,
+and the readings cover the displays that had no clock at all: the SQL-editor grant countdown, the
+masking-exemption expiry label, the sample-instance expiry alert, and the access-grant expired
+badge.
 
 The rule governs displays of time. Two kinds of clock read stay outside it: **query membership** —
 the masking-exemption status filter, the role-expiry reminder's "within two days" list — which,
