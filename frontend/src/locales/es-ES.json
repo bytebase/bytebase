@@ -990,6 +990,7 @@
     },
     "connect-database-to-project": "Conectar base de datos al proyecto",
     "connect-instance": "Conectar instancia",
+    "connect-using": "Conectar usando",
     "connecting-database-to-project": "Conectando base de datos...",
     "connection-database": "Base de datos de conexión",
     "connection-info": "Información de conexión",
@@ -1319,7 +1320,11 @@
         "saas": "por ejemplo, db.example.com | IP de la base de datos"
       }
     },
+    "service-name": "Nombre del servicio",
+    "service-name-placeholder": "p. ej., sales.example.com",
     "show-how-to-create": "Mostrar cómo crear",
+    "sid": "SID",
+    "sid-placeholder": "p. ej., ORCL",
     "snowflake-web-console": "Consola web de Snowflake",
     "successfully-archived-instance": "Se archivó exitosamente la instancia '{{0}}'.",
     "successfully-connected-instance": "Conexión correcta.",
