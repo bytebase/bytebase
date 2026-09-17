@@ -36,6 +36,7 @@ func TestBackupOmniBoundaryCases(t *testing.T) {
 		name        string
 		input       string
 		wantSQL     string
+		wantSQLs    []string
 		wantErrPart string
 	}{
 		{
@@ -100,8 +101,7 @@ func TestBackupOmniBoundaryCases(t *testing.T) {
 			name:  "delete with cte",
 			input: "WITH c (id) AS (SELECT id FROM src), d AS (SELECT 1 AS n) DELETE FROM test WHERE id IN (SELECT id FROM c);",
 			wantSQL: strings.Join([]string{
-				"WITH c (id) AS (SELECT id FROM src),",
-				"d AS (SELECT 1 AS n)",
+				"WITH c (id) AS (SELECT id FROM src), d AS (SELECT 1 AS n)",
 				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
 				"  SELECT [db].[dbo].[test].* FROM test WHERE id IN (SELECT id FROM c)) AS backup_table;",
 			}, "\n"),
@@ -116,27 +116,52 @@ func TestBackupOmniBoundaryCases(t *testing.T) {
 			}, "\n"),
 		},
 		{
-			name: "cte lists merge across statements",
+			name: "identical with clause across statements is hoisted once",
+			input: strings.Join([]string{
+				"WITH c AS (SELECT id FROM src) UPDATE test SET c1 = 1 WHERE id IN (SELECT id FROM c);",
+				"WITH c AS (SELECT id FROM src) UPDATE test SET c1 = 2 WHERE id IN (SELECT id FROM c);",
+			}, "\n"),
+			wantSQL: strings.Join([]string{
+				"WITH c AS (SELECT id FROM src)",
+				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
+				"  SELECT [db].[dbo].[test].* FROM test WHERE id IN (SELECT id FROM c)",
+				"  UNION",
+				"  SELECT [db].[dbo].[test].* FROM test WHERE id IN (SELECT id FROM c)) AS backup_table;",
+			}, "\n"),
+		},
+		{
+			name: "different with clauses on the same table rejected",
 			input: strings.Join([]string{
 				"WITH c AS (SELECT id FROM src) UPDATE test SET c1 = 1 WHERE id IN (SELECT id FROM c);",
 				"WITH c AS (SELECT id FROM src), d AS (SELECT id FROM other) UPDATE test SET c1 = 2 WHERE id IN (SELECT id FROM d);",
 			}, "\n"),
-			wantSQL: strings.Join([]string{
-				"WITH c AS (SELECT id FROM src),",
-				"d AS (SELECT id FROM other)",
-				"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
-				"  SELECT [db].[dbo].[test].* FROM test WHERE id IN (SELECT id FROM c)",
-				"  UNION",
-				"  SELECT [db].[dbo].[test].* FROM test WHERE id IN (SELECT id FROM d)) AS backup_table;",
-			}, "\n"),
+			wantErrPart: "different WITH clauses on the same table",
 		},
 		{
-			name: "conflicting cte definitions rejected",
+			name: "with clause would capture a base table name in another statement",
 			input: strings.Join([]string{
 				"WITH c AS (SELECT id FROM src) UPDATE test SET c1 = 1 WHERE id IN (SELECT id FROM c);",
-				"WITH c AS (SELECT id FROM other) UPDATE test SET c1 = 2 WHERE id IN (SELECT id FROM c);",
+				"UPDATE test SET c1 = 2 WHERE id IN (SELECT id FROM c);",
 			}, "\n"),
-			wantErrPart: `conflicting definitions of CTE "c"`,
+			wantErrPart: "different WITH clauses on the same table",
+		},
+		{
+			name: "with clause on another table is scoped to its own backup",
+			input: strings.Join([]string{
+				"WITH c AS (SELECT id FROM src) UPDATE test SET c1 = 1 WHERE id IN (SELECT id FROM c);",
+				"UPDATE c SET c1 = 2 WHERE id = 1;",
+			}, "\n"),
+			wantSQLs: []string{
+				strings.Join([]string{
+					"SELECT * INTO [backupDB].[dbo].[rollback_c_db] FROM (",
+					"  SELECT [db].[dbo].[c].* FROM c WHERE id = 1) AS backup_table;",
+				}, "\n"),
+				strings.Join([]string{
+					"WITH c AS (SELECT id FROM src)",
+					"SELECT * INTO [backupDB].[dbo].[rollback_test_db] FROM (",
+					"  SELECT [db].[dbo].[test].* FROM test WHERE id IN (SELECT id FROM c)) AS backup_table;",
+				}, "\n"),
+			},
 		},
 		{
 			name:        "xmlnamespaces rejected",
@@ -154,33 +179,34 @@ func TestBackupOmniBoundaryCases(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+			if tc.wantSQLs != nil {
+				var got []string
+				for _, item := range result {
+					got = append(got, item.Statement)
+				}
+				slices.Sort(got)
+				require.Equal(t, tc.wantSQLs, got)
+				return
+			}
 			require.Len(t, result, 1)
 			require.Equal(t, tc.wantSQL, result[0].Statement)
 		})
 	}
 }
 
-func TestBackupSkipsCTETarget(t *testing.T) {
+func TestBackupRejectsCTETarget(t *testing.T) {
 	for name, input := range map[string]string{
-		"direct":       "WITH c AS (SELECT id, c1 FROM test) UPDATE c SET c1 = 1 WHERE id = 1;",
-		"alias":        "WITH c AS (SELECT id, c1 FROM test) UPDATE x SET c1 = 1 FROM c AS x WHERE x.id = 1;",
-		"delete":       "WITH c AS (SELECT id FROM test) DELETE FROM c WHERE id = 1;",
-		"mixed case":   "WITH C AS (SELECT id, c1 FROM test) UPDATE c SET c1 = 1 WHERE id = 1;",
-		"other backed": "WITH c AS (SELECT id FROM test) UPDATE c SET c1 = 1 WHERE id = 1; DELETE FROM test WHERE id = 2;",
+		"direct":          "WITH c AS (SELECT id, c1 FROM test) UPDATE c SET c1 = 1 WHERE id = 1;",
+		"alias":           "WITH c AS (SELECT id, c1 FROM test) UPDATE x SET c1 = 1 FROM c AS x WHERE x.id = 1;",
+		"delete":          "WITH c AS (SELECT id FROM test) DELETE FROM c WHERE id = 1;",
+		"mixed case":      "WITH C AS (SELECT id, c1 FROM test) UPDATE c SET c1 = 1 WHERE id = 1;",
+		"after other dml": "DELETE FROM test WHERE id = 2; WITH c AS (SELECT id FROM test) UPDATE c SET c1 = 1 WHERE id = 1;",
 	} {
 		t.Run(name, func(t *testing.T) {
 			result, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, input, "db", "backupDB", "rollback")
-			require.NoError(t, err)
-			for _, item := range result {
-				require.NotEqual(t, "c", item.SourceTableName, item.Statement)
-				require.NotContains(t, item.Statement, "WITH", item.Statement)
-			}
-			if name == "other backed" {
-				require.Len(t, result, 1)
-				require.Equal(t, "test", result[0].SourceTableName)
-			} else {
-				require.Empty(t, result)
-			}
+			require.Error(t, err)
+			require.Contains(t, err.Error(), `does not support DML targeting CTE "c"`)
+			require.Empty(t, result)
 		})
 	}
 	// A schema-qualified target is a real table even when a CTE shares its name.

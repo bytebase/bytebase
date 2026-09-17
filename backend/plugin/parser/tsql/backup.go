@@ -178,43 +178,33 @@ func generateSQLForTable(statementInfoList []statementInfo, targetDatabase strin
 	}, nil
 }
 
-// backupCTEClause merges the WITH clauses of every statement in the group into
-// one clause for the backup SELECT INTO. T-SQL only allows a CTE list at the
-// top of a statement, so a CTE referenced inside a UNION branch must be
-// hoisted here. The same CTE name across statements must carry the same
-// definition, because the merged clause can only bind it once.
+// backupCTEClause returns the WITH clause to place ahead of the backup SELECT
+// INTO. T-SQL only allows a CTE list at the top of a statement, so a CTE
+// referenced inside a UNION branch must be hoisted to the shared clause. The
+// hoisted clause becomes the name scope of every branch, so it is only safe
+// when each statement in the group carries the same clause text; a branch
+// written without that clause could otherwise resolve a base table name to a
+// CTE.
 func backupCTEClause(statementInfoList []statementInfo) (string, error) {
-	var ctes []string
-	definitions := make(map[string]string)
-	for _, item := range statementInfoList {
+	var clause string
+	for i, item := range statementInfoList {
 		withClause := dmlWithClause(item.node)
-		if withClause == nil || withClause.CTEs == nil {
+		var text string
+		if withClause != nil {
+			if withClause.XmlNamespaces != nil {
+				return "", errors.New("prior backup does not support WITH XMLNAMESPACES")
+			}
+			text = sourceFromLoc(item.statement, withClause.Loc)
+		}
+		if i == 0 {
+			clause = text
 			continue
 		}
-		if withClause.XmlNamespaces != nil {
-			return "", errors.New("prior backup does not support WITH XMLNAMESPACES")
-		}
-		for _, cteNode := range withClause.CTEs.Items {
-			cte, ok := cteNode.(*ast.CommonTableExpr)
-			if !ok {
-				continue
-			}
-			definition := sourceFromLoc(item.statement, cte.Loc)
-			key := strings.ToLower(cte.Name)
-			if previous, ok := definitions[key]; ok {
-				if previous != definition {
-					return "", errors.Errorf("prior backup cannot handle conflicting definitions of CTE %q across statements", cte.Name)
-				}
-				continue
-			}
-			definitions[key] = definition
-			ctes = append(ctes, definition)
+		if text != clause {
+			return "", errors.New("prior backup cannot handle statements with different WITH clauses on the same table")
 		}
 	}
-	if len(ctes) == 0 {
-		return "", nil
-	}
-	return "WITH " + strings.Join(ctes, ",\n"), nil
+	return clause, nil
 }
 
 func dmlWithClause(node ast.Node) *ast.WithClause {
@@ -229,8 +219,9 @@ func dmlWithClause(node ast.Node) *ast.WithClause {
 }
 
 // isCTETarget reports whether an unqualified DML target names a CTE declared
-// by the statement's own WITH clause. Such a DML writes through the CTE to its
-// base table, which the backup cannot resolve, so the caller skips it.
+// by the statement's own WITH clause. Such a DML writes through the CTE to a
+// base table the backup cannot resolve, so the caller rejects it rather than
+// letting the migration run without backup data.
 func isCTETarget(ref *ast.TableRef, withClause *ast.WithClause) bool {
 	if ref == nil || withClause == nil || withClause.CTEs == nil || ref.Database != "" || ref.Schema != "" {
 		return false
@@ -303,10 +294,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 			continue
 		}
 		if isCTETarget(targetRef, dmlWithClause(node)) {
-			slog.Info("prior backup: skipping DML targeting CTE",
-				"cte", table.Table,
-				"statementType", statementType)
-			continue
+			return nil, errors.Errorf("prior backup does not support DML targeting CTE %q, target the base table directly", table.Table)
 		}
 		table.StatementType = statementType
 		loc := dmlNodeLoc(node)
