@@ -205,8 +205,11 @@ third column for section titles.
 - Stack labels based on available form width, independently of the navigation
   sidebar breakpoint. Compound controls MAY wrap within the control column
   before the field itself stacks.
-- Keep descriptions and validation beside the control they explain. Associate
-  labels and radio groups with accessible names in both layouts.
+- Keep concise descriptions and validation beside the control they explain.
+  Long secondary guidance that would make a dense form harder to scan MAY use
+  a focusable info tooltip beside the field title; validation and essential
+  status remain visible beside the control. Associate labels and radio groups
+  with accessible names in both layouts.
 - Put choices that determine subsequent fields first. Use one `Select` dropdown
   combining authentication methods and password sources. Do not add a separate
   password-source selector. Keep synchronization choices visible in a
@@ -217,9 +220,9 @@ third column for section titles.
   TLS, SSH, IAM, and external-source configuration below its controlling
   choice, using nested flow rather than a framed surface inside another frame.
 - Keep security modes visible; reveal their dependent fields when selected.
-  Switches and segmented controls align to the start of their control column.
-  Keep ordinary connection rows on the 16px rhythm. Use explicit choices for
-  modes such as syncing all or selected databases.
+  Switches, segmented controls, and radio groups align to the start of their
+  control column. Keep ordinary connection rows on the 16px rhythm. Use
+  explicit choices for modes such as syncing all or selected databases.
 - Empty optional collections MAY start as an add action. Existing entries and
   validation errors MUST remain discoverable.
 - A connection-creation footer MAY place Test Connection beside Create, with
