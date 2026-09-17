@@ -76,6 +76,39 @@ func TestAuditSinksOnBothChains(t *testing.T) {
 	memberSettings := v1connect.NewSettingServiceClient(ctl.client, ctl.rootURL, memberAuth)
 	memberIssues := v1connect.NewIssueServiceClient(ctl.client, ctl.rootURL, memberAuth)
 	memberGroups := v1connect.NewDatabaseGroupServiceClient(ctl.client, ctl.rootURL, memberAuth)
+	memberSQL := v1connect.NewSQLServiceClient(ctl.client, ctl.rootURL, memberAuth)
+
+	// grantMemberProjectRole binds the member to one project role and returns
+	// the undo, so a probe that needs the member past the ACL leaves the rest
+	// looking at a member who holds no role.
+	grantMemberProjectRole := func(t *testing.T, role string) func() {
+		t.Helper()
+		set := func(bindings []*v1pb.Binding) {
+			policy, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{Resource: project}))
+			require.NoError(t, err)
+			var kept []*v1pb.Binding
+			for _, binding := range policy.Msg.Bindings {
+				var members []string
+				for _, member := range binding.Members {
+					if !strings.Contains(member, memberEmail) {
+						members = append(members, member)
+					}
+				}
+				if len(members) > 0 {
+					binding.Members = members
+					kept = append(kept, binding)
+				}
+			}
+			kept = append(kept, bindings...)
+			policy.Msg.Bindings = kept
+			_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+				Resource: project, Policy: policy.Msg,
+			}))
+			require.NoError(t, err)
+		}
+		set([]*v1pb.Binding{{Role: role, Members: []string{"user:" + memberEmail}}})
+		return func() { set(nil) }
+	}
 
 	// The clamp fixture leaves the ceiling at READ_ONLY; every other MCP probe
 	// runs under READ_WRITE.
@@ -214,6 +247,31 @@ func TestAuditSinksOnBothChains(t *testing.T) {
 				write := queryDatabaseOnSession(ctx, t, clamp.session, clamp.name, "INSERT INTO employee VALUES (2, 'agent')")
 				require.True(t, write.isError, write.text)
 				require.Contains(t, write.text, "READ_ONLY")
+			},
+		},
+		{
+			name: "public/audited refused by the SQL Editor access check", method: v1connect.SQLServiceQueryProcedure,
+			member: true, parent: project,
+			wantRow: true, wantWarning: true,
+			call: func(t *testing.T) {
+				// projectDeveloper carries bb.databases.get, so the ACL admits
+				// the call, and not bb.sql.select, so the handler's own check
+				// refuses it.
+				restore := grantMemberProjectRole(t, "roles/projectDeveloper")
+				defer restore()
+				resp, err := memberSQL.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
+					Name: clamp.database, Statement: "SELECT * FROM employee;", Limit: 1,
+				}))
+				// Query reports this refusal inside its response: the RPC
+				// answers OK and the row's status stays empty, so severity is
+				// the only field that can carry the denial to the audit log.
+				require.NoError(t, err)
+				require.Len(t, resp.Msg.Results, 1)
+				require.Equal(t, []string{"bb.sql.select"},
+					resp.Msg.Results[0].GetPermissionDenied().GetRequiredPermissions())
+			},
+			checkRow: func(t *testing.T, row *v1pb.AuditLog) {
+				require.Nil(t, row.Status, "the refusal never reaches the RPC status")
 			},
 		},
 		{
