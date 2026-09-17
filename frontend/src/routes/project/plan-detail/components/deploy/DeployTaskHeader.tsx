@@ -87,7 +87,7 @@ export function DeployTaskHeader({
             {isExpanded && scheduledTimeTs > 0 && (
               <span className="flex shrink-0 items-center gap-x-1 rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
                 <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
-                <HumanizeTs ts={scheduledTimeTs} />
+                <HumanizeTs mode="operational" ts={scheduledTimeTs} />
               </span>
             )}
           </div>
@@ -104,7 +104,7 @@ export function DeployTaskHeader({
                 <span className="flex items-center gap-x-1 text-info">
                   <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
                   {scheduledTimeTs > 0 ? (
-                    <HumanizeTs ts={scheduledTimeTs} />
+                    <HumanizeTs mode="operational" ts={scheduledTimeTs} />
                   ) : (
                     timingDisplay
                   )}

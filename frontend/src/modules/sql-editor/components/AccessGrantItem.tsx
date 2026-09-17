@@ -4,9 +4,11 @@ import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useNow } from "@/hooks/useNow";
 import { cn } from "@/lib/utils";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
+import { formatAbsoluteDateTime } from "@/utils";
 import {
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
@@ -14,6 +16,9 @@ import {
   getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
 } from "@/utils/accessGrant";
+
+const MINUTE_MS = 60_000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
 
 function mapTagTypeToBadgeVariant(
   tagType: "success" | "warning" | "error" | "default"
@@ -51,6 +56,20 @@ export function AccessGrantItem({
 
   const statusTagType = getAccessGrantStatusTagType(displayStatus);
   const badgeVariant = mapTagTypeToBadgeVariant(statusTagType);
+
+  // A countdown that stops counting is worse than no countdown, so hold a place
+  // on the shared clock until the grant has lapsed: at the minute while the
+  // remaining time is shown as one, and otherwise at the moment the display
+  // turns from an absolute time into a countdown.
+  useNow(
+    (() => {
+      if (expireTimeMs === undefined || isExpired) return undefined;
+      const remainingMs = expireTimeMs - Date.now();
+      if (remainingMs <= 0) return undefined;
+      if (remainingMs > DAY_MS) return expireTimeMs - DAY_MS;
+      return Date.now() + (remainingMs % MINUTE_MS || MINUTE_MS);
+    })()
+  );
 
   const expirationText = (() => {
     if (displayStatus !== "ACTIVE" && displayStatus !== "EXPIRED") return;
@@ -142,11 +161,18 @@ export function AccessGrantItem({
             </Badge>
           )}
         </div>
-        {expirationText && (
-          <span className="text-xs text-control-placeholder shrink-0">
-            {expirationText}
-          </span>
-        )}
+        {expirationText &&
+          (expireTimeMs !== undefined ? (
+            <Tooltip content={formatAbsoluteDateTime(expireTimeMs)}>
+              <span className="text-xs text-control-placeholder shrink-0">
+                {expirationText}
+              </span>
+            </Tooltip>
+          ) : (
+            <span className="text-xs text-control-placeholder shrink-0">
+              {expirationText}
+            </span>
+          ))}
       </div>
 
       <Tooltip

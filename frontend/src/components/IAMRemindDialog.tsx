@@ -5,6 +5,7 @@ import {
   useCurrentRoute,
   useNavigate,
 } from "@/app/router";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -16,7 +17,7 @@ import {
   writeJson,
 } from "@/stores/app/utils";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import { displayRoleTitle, formatAbsoluteDateTime } from "@/utils";
+import { displayRoleTitle } from "@/utils";
 import { storageKeyIamRemind, workspaceCacheScope } from "@/utils/storage-keys";
 
 interface IAMRemindDialogProps {
@@ -106,7 +107,10 @@ export function IAMRemindDialog({ project }: IAMRemindDialogProps) {
               <li key={role.name}>
                 {displayRoleTitle(role.name)}:{" "}
                 <span className="text-error">
-                  {formatAbsoluteDateTime(expiration.getTime())}
+                  <HumanizeTs
+                    mode="operational"
+                    ts={expiration.getTime() / 1000}
+                  />
                 </span>
               </li>
             ))}

@@ -8,7 +8,7 @@ import {
   formatQueueTime,
   formatRelativeTime,
   nextRelativeChangeAt,
-} from "@/utils";
+} from "@/utils/datetime";
 
 /**
  * Which reading a surface supports, per `docs/design/timestamp-display.md`.
@@ -44,14 +44,17 @@ const FORMATTERS: Record<TimeDisplayMode, (tsMs: number) => string> = {
   datetime: formatAbsoluteDateTime,
 };
 
-// Every reduced form hides the exact instant, so its tooltip restores it. The
-// full form hides nothing but the age, so its tooltip supplies that instead.
-const TOOLTIPS: Record<TimeDisplayMode, (tsMs: number) => string> = {
-  queue: formatAbsoluteDateTime,
-  compact: formatAbsoluteDateTime,
-  operational: formatAbsoluteDateTime,
-  datetime: formatRelativeTime,
-};
+/**
+ * The age of a full-precision cell, which is the one reading its label lacks.
+ *
+ * A component rather than a string because the tooltip mounts it only while
+ * open: closed, it costs nothing and holds no place on the shared clock; open,
+ * it keeps counting rather than freezing at whatever the row last rendered.
+ */
+function RelativeAge({ tsMs }: { tsMs: number }) {
+  useNow(nextRelativeChangeAt(tsMs));
+  return <>{formatRelativeTime(tsMs)}</>;
+}
 
 /**
  * Renders a timestamp in the form its surface calls for, and by default
@@ -77,5 +80,12 @@ export function HumanizeTs({
   if (!tooltip) {
     return label;
   }
-  return <Tooltip content={TOOLTIPS[mode](tsMs)}>{label}</Tooltip>;
+  // Every reduced form hides the exact instant, so its tooltip restores it.
+  const content =
+    mode === "datetime" ? (
+      <RelativeAge tsMs={tsMs} />
+    ) : (
+      formatAbsoluteDateTime(tsMs)
+    );
+  return <Tooltip content={content}>{label}</Tooltip>;
 }

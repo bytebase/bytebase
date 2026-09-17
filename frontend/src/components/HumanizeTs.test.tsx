@@ -6,7 +6,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: "en" } }),
 }));
 
-vi.mock("@/utils", () => ({
+vi.mock("@/utils/datetime", () => ({
   // Age-based so a label that never re-renders is visibly distinguishable from
   // one that keeps up with the clock.
   formatQueueTime: (ms: number) => `queue:${Date.now() - ms}`,
@@ -14,7 +14,7 @@ vi.mock("@/utils", () => ({
   formatCompactDateTime: (ms: number) => `compact:${ms}`,
   formatOperationalDateTime: (ms: number) => `operational:${ms}`,
   formatAbsoluteDateTime: (ms: number) => `absolute:${ms}`,
-  formatRelativeTime: (ms: number) => `relative:${ms}`,
+  formatRelativeTime: (ms: number) => `relative:${Date.now() - ms}`,
 }));
 
 import { HumanizeTs } from "./HumanizeTs";
@@ -88,17 +88,27 @@ describe("HumanizeTs", () => {
     act(() => root.unmount());
   });
 
-  test("inverts the tooltip on a full cell, where age is the missing reading", async () => {
+  test("offers the age on a full cell, which is the reading its label lacks", async () => {
     vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
     const { container, root } = mount();
+    const ts = Math.floor(Date.now() / 1000) - 30;
 
-    act(() => root.render(<HumanizeTs mode="datetime" ts={1000} />));
-    expect(container.textContent).toContain("absolute:1000000");
+    act(() => root.render(<HumanizeTs mode="datetime" ts={ts} />));
+    expect(container.textContent).toContain("absolute:");
 
     await focus(container.querySelector("span"));
 
     const overlay = document.getElementById("bb-react-layer-overlay");
-    expect(overlay?.textContent).toContain("relative:1000000");
+    // The tooltip opens 100ms after focus, which the age already reflects.
+    expect(overlay?.textContent).toContain("relative:30100");
+
+    // An age that froze at whatever the row last rendered would be worse than
+    // no age at all, so the open tooltip holds its own place on the clock.
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(overlay?.textContent).toContain("relative:90100");
 
     act(() => root.unmount());
   });

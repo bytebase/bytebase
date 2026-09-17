@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -359,11 +360,14 @@ export function PlanCheckResultsDrawer({
                               </Tooltip>
                             )}
                             {group.createTime && (
-                              <span className="text-xs text-control-light">
-                                {getDateForPbTimestampProtoEs(
-                                  group.createTime
-                                )?.toLocaleString() ?? ""}
-                              </span>
+                              <HumanizeTs
+                                className="text-xs text-control-light"
+                                ts={
+                                  (getDateForPbTimestampProtoEs(
+                                    group.createTime
+                                  )?.getTime() ?? 0) / 1000
+                                }
+                              />
                             )}
                           </div>
                         </div>

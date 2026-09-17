@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { debounce, omit } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -50,6 +49,7 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   extractSavedQueryID,
+  formatAbsoluteDateTime,
   generateSimpleSelectAllStatement,
   getDatabaseEngine,
   getSheetStatement,
@@ -411,9 +411,9 @@ export function SQLEditorRouteShell() {
       }
     }
 
-    const title = `Query history at ${dayjs(
-      getDateForPbTimestampProtoEs(history.createTime)
-    ).format("YYYY-MM-DD HH:mm:ss")}`;
+    const title = `Query history at ${formatAbsoluteDateTime(
+      (getDateForPbTimestampProtoEs(history.createTime) as Date).getTime()
+    )}`;
     const tab = getSQLEditorTabsState().addTab(
       {
         title,

@@ -1,9 +1,9 @@
-import dayjs from "dayjs";
 import type { TFunction } from "i18next";
 import { ExternalLink, Loader2, Package } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { cn } from "@/lib/utils";
 import { State, VCSType } from "@/types/proto-es/v1/common_pb";
@@ -96,10 +96,8 @@ function NotFoundBlock() {
 function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
   const { t } = useTranslation();
   const displayedFiles = release.files.slice(0, MAX_DISPLAYED_RELEASE_FILES);
-  const createdTime = release.createTime
-    ? dayjs(getDateForPbTimestampProtoEs(release.createTime)).format(
-        "YYYY-MM-DD HH:mm:ss"
-      )
+  const createdTimeMs = release.createTime
+    ? getDateForPbTimestampProtoEs(release.createTime)?.getTime()
     : undefined;
 
   return (
@@ -171,8 +169,11 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
           </div>
         )}
 
-        {createdTime && (
-          <div className="text-xs text-control-light">{createdTime}</div>
+        {createdTimeMs !== undefined && (
+          <HumanizeTs
+            className="text-xs text-control-light"
+            ts={createdTimeMs / 1000}
+          />
         )}
       </div>
     </div>

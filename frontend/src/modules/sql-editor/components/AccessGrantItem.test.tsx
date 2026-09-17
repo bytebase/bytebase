@@ -30,6 +30,7 @@ vi.mock("@/components/DatabaseTargetDisplay", () => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
