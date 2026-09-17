@@ -143,9 +143,7 @@ func TestFailedSyncRecordsTheFailure(t *testing.T) {
 	require.NotNil(t, updated)
 	require.Equal(t, storepb.SyncStatus_SYNC_STATUS_FAILED, updated.Metadata.GetSyncStatus())
 	require.Contains(t, updated.Metadata.GetSyncError(), "target unreachable")
-	require.Nil(t, updated.Metadata.GetLastSyncTime())
-	_, remembered := syncer.lastFailedSync(database)
-	require.True(t, remembered)
+	require.NotNil(t, updated.Metadata.GetLastSyncTime())
 }
 
 func TestFailedSyncLeavesALaterSyncAlone(t *testing.T) {
@@ -203,7 +201,7 @@ func TestFailedSyncLeavesALaterSyncAlone(t *testing.T) {
 	require.True(t, storedAt.Equal(updated.Metadata.GetLastSyncTime().AsTime()))
 }
 
-func TestTrySyncAllWaitsOutAFailedSync(t *testing.T) {
+func TestTrySyncAllWaitsOutTheInterval(t *testing.T) {
 	ctx := context.Background()
 	stores := setupSyncerStore(ctx, t)
 	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
@@ -220,15 +218,24 @@ func TestTrySyncAllWaitsOutAFailedSync(t *testing.T) {
 	require.NoError(t, err)
 	database, err := stores.UpsertDatabase(ctx, &store.DatabaseMessage{
 		ProjectID: "project-a", InstanceID: "instance-a", DatabaseName: "app",
+		Metadata: &storepb.DatabaseMetadata{LastSyncTime: timestamppb.New(time.Now())},
 	})
 	require.NoError(t, err)
 
 	syncer := NewSyncer(stores, nil, nil, nil)
-	syncer.failedSyncMap.Store(database.String(), time.Now())
 	syncer.trySyncAll(ctx)
 	require.Zero(t, queuedDatabases(syncer))
 
-	syncer.failedSyncMap.Store(database.String(), time.Now().Add(-2*time.Hour))
+	_, err = stores.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		MetadataUpdates: []func(*storepb.DatabaseMetadata){
+			func(md *storepb.DatabaseMetadata) {
+				md.LastSyncTime = timestamppb.New(time.Now().Add(-2 * time.Hour))
+			},
+		},
+	})
+	require.NoError(t, err)
 	syncer.trySyncAll(ctx)
 	require.Equal(t, 1, queuedDatabases(syncer))
 }

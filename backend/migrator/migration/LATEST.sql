@@ -582,6 +582,9 @@ CREATE TABLE db_schema (
     raw_dump text NOT NULL DEFAULT '',
     -- Stored as DatabaseConfig (proto/store/store/database.proto)
     config jsonb NOT NULL DEFAULT '{}',
+    -- When the sync that stored metadata and raw_dump read the database, by the
+    -- metadata database clock. A sync that read earlier does not replace them.
+    synced_at timestamptz NOT NULL DEFAULT '-infinity',
     PRIMARY KEY (instance, db_name),
     CONSTRAINT db_schema_instance_db_name_fkey FOREIGN KEY(instance, db_name) REFERENCES db(instance, name)
 );
