@@ -9,6 +9,7 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -103,7 +104,7 @@ func TestOverlappingSyncsStoreTheLaterRead(t *testing.T) {
 	require.Equal(t, "after-change", stored.GetProto().GetName())
 }
 
-func TestFailedSyncRecordsTheAttempt(t *testing.T) {
+func TestFailedSyncRecordsTheFailure(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	stores := setupSyncerStore(ctx, t)
@@ -142,7 +143,9 @@ func TestFailedSyncRecordsTheAttempt(t *testing.T) {
 	require.NotNil(t, updated)
 	require.Equal(t, storepb.SyncStatus_SYNC_STATUS_FAILED, updated.Metadata.GetSyncStatus())
 	require.Contains(t, updated.Metadata.GetSyncError(), "target unreachable")
-	require.NotNil(t, updated.Metadata.GetLastSyncTime())
+	require.Nil(t, updated.Metadata.GetLastSyncTime())
+	_, remembered := syncer.lastFailedSync(database)
+	require.True(t, remembered)
 }
 
 func TestFailedSyncLeavesALaterSyncAlone(t *testing.T) {
@@ -198,4 +201,43 @@ func TestFailedSyncLeavesALaterSyncAlone(t *testing.T) {
 	require.NotNil(t, updated)
 	require.Equal(t, storepb.SyncStatus_SYNC_STATUS_OK, updated.Metadata.GetSyncStatus())
 	require.True(t, storedAt.Equal(updated.Metadata.GetLastSyncTime().AsTime()))
+}
+
+func TestTrySyncAllWaitsOutAFailedSync(t *testing.T) {
+	ctx := context.Background()
+	stores := setupSyncerStore(ctx, t)
+	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "instance-a",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Activation:   true,
+			SyncInterval: durationpb.New(time.Hour),
+			LastSyncTime: timestamppb.New(time.Now()),
+			Engine:       storepb.Engine_CLICKHOUSE,
+			DataSources:  []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	database, err := stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID: "project-a", InstanceID: "instance-a", DatabaseName: "app",
+	})
+	require.NoError(t, err)
+
+	syncer := NewSyncer(stores, nil, nil, nil)
+	syncer.failedSyncMap.Store(database.String(), time.Now())
+	syncer.trySyncAll(ctx)
+	require.Zero(t, queuedDatabases(syncer))
+
+	syncer.failedSyncMap.Store(database.String(), time.Now().Add(-2*time.Hour))
+	syncer.trySyncAll(ctx)
+	require.Equal(t, 1, queuedDatabases(syncer))
+}
+
+func queuedDatabases(syncer *Syncer) int {
+	queued := 0
+	syncer.databaseSyncMap.Range(func(_, _ any) bool {
+		queued++
+		return true
+	})
+	return queued
 }

@@ -58,6 +58,10 @@ type Syncer struct {
 	licenseService  *enterprise.LicenseService
 	productMetrics  *productmetrics.ProductMetrics
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
+	// failedSyncMap records when a database's sync last failed on this replica,
+	// so trySyncAll waits out its interval before trying again. The database's
+	// last sync time cannot say, because a failed sync stores nothing.
+	failedSyncMap sync.Map // map[string]time.Time
 }
 
 // Run will run the schema syncer once.
@@ -232,6 +236,9 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 			continue
 		}
 		lastSyncTime := getOrDefaultLastSyncTime(database.Metadata.LastSyncTime)
+		if failedAt, ok := s.lastFailedSync(database); ok && failedAt.After(lastSyncTime) {
+			lastSyncTime = failedAt
+		}
 		// lastSyncTime + syncInterval > now
 		// Next round not started yet.
 		nextSyncTime := lastSyncTime.Add(interval)
@@ -310,16 +317,18 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 					log.BBError(nowErr))
 				return
 			}
+			s.failedSyncMap.Delete(database.String())
 			if err := s.SyncDatabaseSchema(ctx, database); err != nil {
+				s.failedSyncMap.Store(database.String(), time.Now())
 				syncFailed.Store(true)
 				slog.Debug("Failed to sync database schema",
 					slog.String("instance", database.InstanceID),
 					slog.String("databaseName", database.DatabaseName),
 					log.BBError(err))
-				// Save sync error to database metadata. Recording the attempt
-				// keeps a database that fails every time to its sync interval,
-				// and recording when it started, not when it gave up, leaves a
-				// sync that started later free to store what it read.
+				// Save sync error to database metadata, unless a sync that read
+				// after this one started has already spoken for the database.
+				// The last sync time belongs to the schema that is stored, and
+				// this attempt stored none.
 				if _, updateErr := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 					InstanceID:   database.InstanceID,
 					DatabaseName: database.DatabaseName,
@@ -330,7 +339,6 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 							}
 							md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_FAILED
 							md.SyncError = err.Error()
-							md.LastSyncTime = timestamppb.New(attemptedAt)
 						},
 					},
 				}); updateErr != nil {
@@ -646,6 +654,16 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 
 	return "", nil
+}
+
+// lastFailedSync returns when this replica last saw a sync of the database fail.
+func (s *Syncer) lastFailedSync(database *store.DatabaseMessage) (time.Time, bool) {
+	value, ok := s.failedSyncMap.Load(database.String())
+	if !ok {
+		return time.Time{}, false
+	}
+	failedAt, ok := value.(time.Time)
+	return failedAt, ok
 }
 
 func errorFromPanic(value any, message string) error {
