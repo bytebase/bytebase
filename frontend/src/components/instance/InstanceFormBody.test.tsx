@@ -265,7 +265,7 @@ afterEach(cleanup);
 const input = (container: HTMLElement, id: string) =>
   container.querySelector<HTMLInputElement>(`#${id}`)!;
 
-test("uses a compact segmented synchronization selector", () => {
+test("uses a switch for synchronization scope", () => {
   const { container } = render(
     <InstanceFormProvider>
       <SyncDatabases
@@ -277,11 +277,10 @@ test("uses a compact segmented synchronization selector", () => {
     </InstanceFormProvider>
   );
 
-  const group = container.querySelector('[role="radiogroup"]');
-  expect(group?.classList.contains("inline-flex")).toBe(true);
-  expect(group?.classList.contains("rounded-xs")).toBe(true);
-  expect(group?.classList.contains("flex-col")).toBe(false);
-  expect(group?.querySelectorAll('[role="radio"]')).toHaveLength(2);
+  expect(container.querySelector('[role="switch"]')).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
 });
 
 test("keeps newly loaded selections in the database preview", async () => {

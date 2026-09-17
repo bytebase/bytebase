@@ -63,18 +63,12 @@ describe("SshConnectionForm", () => {
     document.body.innerHTML = "";
   });
 
-  test("renders a compact segmented SSH selector", () => {
+  test("renders an SSH tunnel switch", () => {
     const { container, root } = mount(<ControlledSshConnectionForm />);
-    expect(
-      container
-        .querySelector('[role="radiogroup"]')
-        ?.classList.contains("inline-flex")
-    ).toBe(true);
-    expect(
-      container
-        .querySelector('[role="radiogroup"]')
-        ?.classList.contains("rounded-xs")
-    ).toBe(true);
+    expect(container.querySelector('[role="switch"]')).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
 
     act(() => {
       root.unmount();
