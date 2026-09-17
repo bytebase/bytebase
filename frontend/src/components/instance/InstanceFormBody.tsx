@@ -31,6 +31,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   FormControlGroup,
   FormControlRow,
+  FormFieldGroup,
   FormLabel,
   FormSection,
   ResponsiveFormLayout,
@@ -1534,159 +1535,252 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
         {/* Connection Card */}
         <FormSection layout="stacked" title={t("instance.section.connection")}>
-          <DataSourceSection
-            hideOptions
-            hideAuthentication
-            onOpenInfoPanel={onOpenInfoPanel}
-          >
-            <div className="flex flex-col gap-4">
-              {isSaaSMode && (
-                <Alert variant="info">
-                  <div className="flex flex-wrap items-center gap-x-2">
-                    <span>{t("instance.sentence.firewall-info")}</span>
-                    <LearnMoreLink href="https://docs.bytebase.com/get-started/cloud#prerequisites" />
-                  </div>
-                </Alert>
-              )}
-              {editingDataSource && (
-                <DataSourceForm
-                  authOnly
-                  dataSource={connectionDataSource}
-                  onDataSourceChange={handleDataSourceChange}
-                  onOpenInfoPanel={onOpenInfoPanel}
-                />
-              )}
-              {/* Host input */}
-              {basicInfo.engine === Engine.SPANNER ? (
-                <SpannerHostInput
-                  projectId={connectionDataSource.projectId}
-                  instanceId={connectionDataSource.instanceId}
-                  endpoint={connectionDataSource.host}
-                  port={connectionDataSource.port}
-                  onUpdate={(update) => updateConnectionDataSource(update)}
-                  allowEdit={allowEdit}
-                />
-              ) : basicInfo.engine === Engine.BIGQUERY ? (
-                <BigQueryHostInput
-                  projectId={connectionDataSource.projectId}
-                  endpoint={connectionDataSource.host}
-                  port={connectionDataSource.port}
-                  onUpdate={(update) => updateConnectionDataSource(update)}
-                  allowEdit={allowEdit}
-                />
-              ) : (
-                <FormField
-                  validationField="host"
-                  title={
-                    <span className="flex items-center gap-1">
-                      <FormLabel htmlFor="host">
-                        {basicInfo.engine === Engine.SNOWFLAKE
-                          ? t("instance.account-locator")
-                          : basicInfo.engine === Engine.COSMOSDB
-                            ? t("instance.endpoint")
-                            : connectionDataSource.authenticationType ===
-                                DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
-                              ? t(
-                                  "instance.sentence.google-cloud-sql.instance-name"
-                                )
-                              : t("instance.hostname")}
-                        {basicInfo.engine !== Engine.DYNAMODB && (
-                          <span className="text-error"> *</span>
+          <FormFieldGroup density="compact">
+            <DataSourceSection
+              hideOptions
+              hideAuthentication
+              onOpenInfoPanel={onOpenInfoPanel}
+            >
+              <div className="flex flex-col gap-4">
+                {isSaaSMode && (
+                  <Alert variant="info">
+                    <div className="flex flex-wrap items-center gap-x-2">
+                      <span>{t("instance.sentence.firewall-info")}</span>
+                      <LearnMoreLink href="https://docs.bytebase.com/get-started/cloud#prerequisites" />
+                    </div>
+                  </Alert>
+                )}
+                {editingDataSource && (
+                  <DataSourceForm
+                    authOnly
+                    dataSource={connectionDataSource}
+                    onDataSourceChange={handleDataSourceChange}
+                    onOpenInfoPanel={onOpenInfoPanel}
+                  />
+                )}
+                {/* Host input */}
+                {basicInfo.engine === Engine.SPANNER ? (
+                  <SpannerHostInput
+                    projectId={connectionDataSource.projectId}
+                    instanceId={connectionDataSource.instanceId}
+                    endpoint={connectionDataSource.host}
+                    port={connectionDataSource.port}
+                    onUpdate={(update) => updateConnectionDataSource(update)}
+                    allowEdit={allowEdit}
+                  />
+                ) : basicInfo.engine === Engine.BIGQUERY ? (
+                  <BigQueryHostInput
+                    projectId={connectionDataSource.projectId}
+                    endpoint={connectionDataSource.host}
+                    port={connectionDataSource.port}
+                    onUpdate={(update) => updateConnectionDataSource(update)}
+                    allowEdit={allowEdit}
+                  />
+                ) : (
+                  <FormField
+                    validationField="host"
+                    title={
+                      <span className="flex items-center gap-1">
+                        <FormLabel htmlFor="host">
+                          {basicInfo.engine === Engine.SNOWFLAKE
+                            ? t("instance.account-locator")
+                            : basicInfo.engine === Engine.COSMOSDB
+                              ? t("instance.endpoint")
+                              : connectionDataSource.authenticationType ===
+                                  DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+                                ? t(
+                                    "instance.sentence.google-cloud-sql.instance-name"
+                                  )
+                                : t("instance.hostname")}
+                          {basicInfo.engine !== Engine.DYNAMODB && (
+                            <span className="text-error"> *</span>
+                          )}
+                        </FormLabel>
+                        {onOpenInfoPanel && hasHostInfo && (
+                          <Button
+                            appearance="link"
+                            size="xs"
+                            className="h-auto shrink-0 p-0"
+                            aria-label={t("instance.hostname")}
+                            onClick={() => openInfoPanel("host")}
+                          >
+                            <Info className="size-3.5" />
+                          </Button>
                         )}
-                      </FormLabel>
-                      {onOpenInfoPanel && hasHostInfo && (
-                        <Button
-                          appearance="link"
-                          size="xs"
-                          className="h-auto shrink-0 p-0"
-                          aria-label={t("instance.hostname")}
-                          onClick={() => openInfoPanel("host")}
-                        >
-                          <Info className="size-3.5" />
-                        </Button>
-                      )}
-                    </span>
-                  }
-                >
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="host"
-                      value={connectionDataSource.host}
-                      required={basicInfo.engine !== Engine.DYNAMODB}
-                      placeholder={
-                        basicInfo.engine === Engine.SNOWFLAKE
-                          ? t("instance.your-snowflake-account-locator")
-                          : isSaaSMode
-                            ? t("instance.sentence.host.saas")
-                            : t("instance.sentence.host.none-snowflake")
-                      }
-                      className="min-w-0 flex-1"
-                      disabled={!allowEdit}
-                      onChange={(e) =>
-                        updateConnectionDataSource({ host: e.target.value })
-                      }
-                    />
-                    {basicInfo.engine !== Engine.DATABRICKS &&
-                      basicInfo.engine !== Engine.COSMOSDB &&
-                      connectionDataSource.authenticationType !==
-                        DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
-                        <>
-                          <FormLabel htmlFor="port">
-                            {t("instance.port")}
-                          </FormLabel>
-                          <Input
-                            id="port"
-                            value={connectionDataSource.port}
-                            className="w-20 shrink-0"
-                            placeholder={defaultPort}
-                            disabled={!allowEdit || !allowEditPort}
-                            onChange={handlePortChange}
-                          />
-                        </>
-                      )}
-                  </div>
-                  {connectionDataSource.authenticationType ===
-                    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
-                    <p className="text-xs text-control-light">
-                      {t(
-                        "instance.sentence.google-cloud-sql.instance-name-tips",
-                        { instance: "{project-id}:{region}:{instance-name}" }
-                      )}
-                    </p>
-                  )}
-                  {basicInfo.engine === Engine.SNOWFLAKE && (
-                    <LearnMoreLink href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier" />
-                  )}
-                </FormField>
-              )}
-
-              {/* MongoDB connection string schema */}
-              {basicInfo.engine === Engine.MONGODB && (
-                <FormField>
-                  <FormLabel htmlFor="connectionStringSchema">
-                    {t("data-source.connection-string-schema")}
-                  </FormLabel>
-                  <RadioGroup
-                    className="gap-x-4"
-                    value={currentMongoDBConnectionSchema}
-                    onValueChange={(value) =>
-                      handleMongodbConnectionStringSchemaChange(value as string)
+                      </span>
                     }
                   >
-                    {MongoDBConnectionStringSchemaList.map((type) => (
-                      <RadioGroupItem key={type} value={type}>
-                        {type}
-                      </RadioGroupItem>
-                    ))}
-                  </RadioGroup>
-                  {!connectionDataSource.srv && (
-                    <ResponsiveFormLayout className="mt-2">
-                      <fieldset
-                        aria-label={t("data-source.connection-string-schema")}
-                        className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
-                      >
-                        {/* Additional addresses */}
-                        {showAdditionalAddresses && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="host"
+                        value={connectionDataSource.host}
+                        required={basicInfo.engine !== Engine.DYNAMODB}
+                        placeholder={
+                          basicInfo.engine === Engine.SNOWFLAKE
+                            ? t("instance.your-snowflake-account-locator")
+                            : isSaaSMode
+                              ? t("instance.sentence.host.saas")
+                              : t("instance.sentence.host.none-snowflake")
+                        }
+                        className="min-w-0 flex-1"
+                        disabled={!allowEdit}
+                        onChange={(e) =>
+                          updateConnectionDataSource({ host: e.target.value })
+                        }
+                      />
+                      {basicInfo.engine !== Engine.DATABRICKS &&
+                        basicInfo.engine !== Engine.COSMOSDB &&
+                        connectionDataSource.authenticationType !==
+                          DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
+                          <>
+                            <FormLabel htmlFor="port">
+                              {t("instance.port")}
+                            </FormLabel>
+                            <Input
+                              id="port"
+                              value={connectionDataSource.port}
+                              className="w-20 shrink-0"
+                              placeholder={defaultPort}
+                              disabled={!allowEdit || !allowEditPort}
+                              onChange={handlePortChange}
+                            />
+                          </>
+                        )}
+                    </div>
+                    {connectionDataSource.authenticationType ===
+                      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM && (
+                      <p className="text-xs text-control-light">
+                        {t(
+                          "instance.sentence.google-cloud-sql.instance-name-tips",
+                          { instance: "{project-id}:{region}:{instance-name}" }
+                        )}
+                      </p>
+                    )}
+                    {basicInfo.engine === Engine.SNOWFLAKE && (
+                      <LearnMoreLink href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier" />
+                    )}
+                  </FormField>
+                )}
+
+                {/* MongoDB connection string schema */}
+                {basicInfo.engine === Engine.MONGODB && (
+                  <FormField>
+                    <FormLabel htmlFor="connectionStringSchema">
+                      {t("data-source.connection-string-schema")}
+                    </FormLabel>
+                    <RadioGroup
+                      className="gap-x-4"
+                      value={currentMongoDBConnectionSchema}
+                      onValueChange={(value) =>
+                        handleMongodbConnectionStringSchemaChange(
+                          value as string
+                        )
+                      }
+                    >
+                      {MongoDBConnectionStringSchemaList.map((type) => (
+                        <RadioGroupItem key={type} value={type}>
+                          {type}
+                        </RadioGroupItem>
+                      ))}
+                    </RadioGroup>
+                    {!connectionDataSource.srv && (
+                      <ResponsiveFormLayout className="mt-2">
+                        <fieldset
+                          aria-label={t("data-source.connection-string-schema")}
+                          className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
+                        >
+                          {/* Additional addresses */}
+                          {showAdditionalAddresses && (
+                            <AdditionalAddressesFields
+                              addresses={
+                                connectionDataSource.additionalAddresses
+                              }
+                              defaultPort={defaultPort}
+                              allowEdit={allowEdit}
+                              allowEditPort={allowEditPort}
+                              onAdd={addDSAdditionalAddress}
+                              onRemove={removeDSAdditionalAddress}
+                              onHostChange={handleAdditionalAddressHostChange}
+                              onPortChange={handleAdditionalAddressPortChange}
+                            />
+                          )}
+                          {/* MongoDB replica set */}
+                          {basicInfo.engine === Engine.MONGODB &&
+                            !connectionDataSource.srv && (
+                              <FormField>
+                                <FormLabel htmlFor="replicaSet">
+                                  {t("data-source.replica-set")}
+                                </FormLabel>
+                                <Input
+                                  value={connectionDataSource.replicaSet}
+                                  required
+                                  className="w-full"
+                                  disabled={!allowEdit}
+                                  onChange={(e) =>
+                                    updateConnectionDataSource({
+                                      replicaSet: e.target.value,
+                                    })
+                                  }
+                                />
+                              </FormField>
+                            )}
+                          {/* MongoDB direct connection */}
+                          {basicInfo.engine === Engine.MONGODB &&
+                            !connectionDataSource.srv &&
+                            connectionDataSource.additionalAddresses.length ===
+                              0 && (
+                              <FormControlRow className="w-fit">
+                                <Checkbox
+                                  id="directConnection"
+                                  checked={
+                                    connectionDataSource.directConnection
+                                  }
+                                  disabled={!allowEdit}
+                                  onCheckedChange={(checked) =>
+                                    updateConnectionDataSource({
+                                      directConnection: checked,
+                                    })
+                                  }
+                                />
+                                <FormLabel
+                                  htmlFor="directConnection"
+                                  className="font-normal!"
+                                >
+                                  {t("data-source.direct-connection")}
+                                </FormLabel>
+                              </FormControlRow>
+                            )}{" "}
+                        </fieldset>
+                      </ResponsiveFormLayout>
+                    )}
+                  </FormField>
+                )}
+
+                {/* Redis connection type */}
+                {basicInfo.engine === Engine.REDIS && (
+                  <FormField>
+                    <FormLabel htmlFor="connectionStringSchema">
+                      {t("data-source.connection-type")}
+                    </FormLabel>
+                    <RadioGroup
+                      className="gap-x-4"
+                      value={currentRedisConnectionType}
+                      onValueChange={(value) =>
+                        handleRedisConnectionTypeChange(value as string)
+                      }
+                    >
+                      {RedisConnectionType.map((type) => (
+                        <RadioGroupItem key={type} value={type}>
+                          {type}
+                        </RadioGroupItem>
+                      ))}
+                    </RadioGroup>
+                    {showAdditionalAddresses && (
+                      <ResponsiveFormLayout className="mt-2">
+                        <fieldset
+                          aria-label={currentRedisConnectionType}
+                          className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
+                        >
                           <AdditionalAddressesFields
                             addresses={connectionDataSource.additionalAddresses}
                             defaultPort={defaultPort}
@@ -1697,142 +1791,51 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                             onHostChange={handleAdditionalAddressHostChange}
                             onPortChange={handleAdditionalAddressPortChange}
                           />
-                        )}
-                        {/* MongoDB replica set */}
-                        {basicInfo.engine === Engine.MONGODB &&
-                          !connectionDataSource.srv && (
-                            <FormField>
-                              <FormLabel htmlFor="replicaSet">
-                                {t("data-source.replica-set")}
-                              </FormLabel>
-                              <Input
-                                value={connectionDataSource.replicaSet}
-                                required
-                                className="w-full"
-                                disabled={!allowEdit}
-                                onChange={(e) =>
-                                  updateConnectionDataSource({
-                                    replicaSet: e.target.value,
-                                  })
-                                }
-                              />
-                            </FormField>
-                          )}
-                        {/* MongoDB direct connection */}
-                        {basicInfo.engine === Engine.MONGODB &&
-                          !connectionDataSource.srv &&
-                          connectionDataSource.additionalAddresses.length ===
-                            0 && (
-                            <FormControlRow className="w-fit">
-                              <Checkbox
-                                id="directConnection"
-                                checked={connectionDataSource.directConnection}
-                                disabled={!allowEdit}
-                                onCheckedChange={(checked) =>
-                                  updateConnectionDataSource({
-                                    directConnection: checked,
-                                  })
-                                }
-                              />
-                              <FormLabel
-                                htmlFor="directConnection"
-                                className="font-normal!"
-                              >
-                                {t("data-source.direct-connection")}
-                              </FormLabel>
-                            </FormControlRow>
-                          )}{" "}
-                      </fieldset>
-                    </ResponsiveFormLayout>
-                  )}
-                </FormField>
-              )}
-
-              {/* Redis connection type */}
-              {basicInfo.engine === Engine.REDIS && (
-                <FormField>
-                  <FormLabel htmlFor="connectionStringSchema">
-                    {t("data-source.connection-type")}
-                  </FormLabel>
-                  <RadioGroup
-                    className="gap-x-4"
-                    value={currentRedisConnectionType}
-                    onValueChange={(value) =>
-                      handleRedisConnectionTypeChange(value as string)
-                    }
-                  >
-                    {RedisConnectionType.map((type) => (
-                      <RadioGroupItem key={type} value={type}>
-                        {type}
-                      </RadioGroupItem>
-                    ))}
-                  </RadioGroup>
-                  {showAdditionalAddresses && (
-                    <ResponsiveFormLayout className="mt-2">
-                      <fieldset
-                        aria-label={currentRedisConnectionType}
-                        className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2"
-                      >
-                        <AdditionalAddressesFields
-                          addresses={connectionDataSource.additionalAddresses}
-                          defaultPort={defaultPort}
+                        </fieldset>
+                      </ResponsiveFormLayout>
+                    )}
+                    {editingDataSource?.redisType ===
+                      DataSource_RedisType.SENTINEL && (
+                      <ResponsiveFormLayout className="mt-2">
+                        <RedisSentinelFields
+                          dataSource={editingDataSource}
+                          isCreating={isCreating}
                           allowEdit={allowEdit}
-                          allowEditPort={allowEditPort}
-                          onAdd={addDSAdditionalAddress}
-                          onRemove={removeDSAdditionalAddress}
-                          onHostChange={handleAdditionalAddressHostChange}
-                          onPortChange={handleAdditionalAddressPortChange}
+                          allowUsingEmptyPassword={allowUsingEmptyPassword}
+                          onDataSourceChange={handleDataSourceChange}
                         />
-                      </fieldset>
-                    </ResponsiveFormLayout>
-                  )}
-                  {editingDataSource?.redisType ===
-                    DataSource_RedisType.SENTINEL && (
-                    <ResponsiveFormLayout className="mt-2">
-                      <RedisSentinelFields
-                        dataSource={editingDataSource}
-                        isCreating={isCreating}
-                        allowEdit={allowEdit}
-                        allowUsingEmptyPassword={allowUsingEmptyPassword}
-                        onDataSourceChange={handleDataSourceChange}
-                      />
-                    </ResponsiveFormLayout>
-                  )}
-                </FormField>
-              )}
+                      </ResponsiveFormLayout>
+                    )}
+                  </FormField>
+                )}
 
-              {/* Additional addresses */}
-              {basicInfo.engine === Engine.CASSANDRA && (
-                <AdditionalAddressesFields
-                  addresses={connectionDataSource.additionalAddresses}
-                  defaultPort={defaultPort}
-                  allowEdit={allowEdit}
-                  allowEditPort={allowEditPort}
-                  onAdd={addDSAdditionalAddress}
-                  onRemove={removeDSAdditionalAddress}
-                  onHostChange={handleAdditionalAddressHostChange}
-                  onPortChange={handleAdditionalAddressPortChange}
-                />
-              )}
-            </div>
-          </DataSourceSection>
-
-          {basicInfo.engine !== Engine.DYNAMODB && editingDataSource && (
-            <div className="mt-4">
-              <div>
-                <DataSourceForm
-                  dataSource={editingDataSource}
-                  optionsOnly
-                  onDataSourceChange={handleDataSourceChange}
-                  onOpenInfoPanel={onOpenInfoPanel}
-                />
+                {/* Additional addresses */}
+                {basicInfo.engine === Engine.CASSANDRA && (
+                  <AdditionalAddressesFields
+                    addresses={connectionDataSource.additionalAddresses}
+                    defaultPort={defaultPort}
+                    allowEdit={allowEdit}
+                    allowEditPort={allowEditPort}
+                    onAdd={addDSAdditionalAddress}
+                    onRemove={removeDSAdditionalAddress}
+                    onHostChange={handleAdditionalAddressHostChange}
+                    onPortChange={handleAdditionalAddressPortChange}
+                  />
+                )}
               </div>
-            </div>
-          )}
+            </DataSourceSection>
 
-          {basicInfo.engine !== Engine.DYNAMODB &&
-            connectionDataSource.type === DataSourceType.ADMIN && (
-              <div className="mt-4">
+            {basicInfo.engine !== Engine.DYNAMODB && editingDataSource && (
+              <DataSourceForm
+                dataSource={editingDataSource}
+                optionsOnly
+                onDataSourceChange={handleDataSourceChange}
+                onOpenInfoPanel={onOpenInfoPanel}
+              />
+            )}
+
+            {basicInfo.engine !== Engine.DYNAMODB &&
+              connectionDataSource.type === DataSourceType.ADMIN && (
                 <SyncDatabases
                   isCreating={isCreating}
                   showLabel
@@ -1856,8 +1859,8 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                   syncDatabases={basicInfo.syncDatabases}
                   onSyncDatabasesChange={handleChangeSyncDatabases}
                 />
-              </div>
-            )}
+              )}
+          </FormFieldGroup>
         </FormSection>
       </div>
     </ValidationProvider>
