@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   getAccessGrantDisplayStatus: vi.fn(),
   getAccessGrantDisplayStatusText: vi.fn(),
-  getAccessGrantExpirationText: vi.fn(),
   getAccessGrantExpireTimeMs: vi.fn(),
   getAccessGrantStatusTagType: vi.fn(),
 }));
@@ -37,7 +36,6 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/utils/accessGrant", () => ({
   getAccessGrantDisplayStatus: mocks.getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText: mocks.getAccessGrantDisplayStatusText,
-  getAccessGrantExpirationText: mocks.getAccessGrantExpirationText,
   getAccessGrantExpireTimeMs: mocks.getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType: mocks.getAccessGrantStatusTagType,
 }));
@@ -144,7 +142,6 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
   mocks.getAccessGrantDisplayStatus.mockReturnValue("ACTIVE");
   mocks.getAccessGrantDisplayStatusText.mockReturnValue("Active");
-  mocks.getAccessGrantExpirationText.mockReturnValue({ type: "never" });
   mocks.getAccessGrantExpireTimeMs.mockReturnValue(undefined);
   mocks.getAccessGrantStatusTagType.mockReturnValue("success");
 

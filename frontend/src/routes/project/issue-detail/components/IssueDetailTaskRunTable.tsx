@@ -1,3 +1,4 @@
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
@@ -20,7 +21,7 @@ import {
 } from "@/lib/taskRun";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Task, TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { databaseForTask, extractTaskUID, humanizeDurationV1 } from "@/utils";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
@@ -175,24 +176,14 @@ function IssueDetailTaskRunComment({ taskRun }: { taskRun: TaskRun }) {
   );
 }
 
-function IssueDetailTaskRunDateCell({
-  date,
-}: {
-  date?: Parameters<typeof getDateForPbTimestampProtoEs>[0];
-}) {
+function IssueDetailTaskRunDateCell({ date }: { date?: Timestamp }) {
   if (!date) {
     return <span className="text-control-light">-</span>;
   }
-
-  const parsedDate = getDateForPbTimestampProtoEs(date);
-  if (!parsedDate) {
-    return <span className="text-control-light">-</span>;
-  }
-
   return (
     <HumanizeTs
       mode="compact"
-      ts={parsedDate.getTime() / 1000}
+      ts={getTimeForPbTimestampProtoEs(date) / 1000}
       className="text-sm text-control"
     />
   );

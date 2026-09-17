@@ -5,10 +5,9 @@ import { useEffect, useReducer } from "react";
  *
  * Each subscriber declares the instant its rendering next changes, so the clock
  * holds one timeout, set for the earliest of those, and wakes only the
- * subscribers that are due. A woken subscriber re-renders and must declare a
- * strictly later instant; one that does not is left out of the next deadline,
- * so a boundary that fails to advance freezes its label rather than spinning
- * the clock. A display that never changes with time subscribes to nothing.
+ * subscribers that are due. A woken subscriber is retired until it re-renders
+ * and declares its next instant; one whose boundary fails to advance keeps its
+ * last reading rather than being woken again.
  */
 type Subscriber = {
   changesAtMs: number;
@@ -18,10 +17,16 @@ type Subscriber = {
 const subscribers = new Set<Subscriber>();
 let timer: ReturnType<typeof setTimeout> | undefined;
 let armedForMs = Number.POSITIVE_INFINITY;
+let lastTickMs = Number.NEGATIVE_INFINITY;
 
-// setTimeout keeps its delay in a signed 32-bit integer and fires at once when
-// asked for more, so a far deadline is reached in steps of at most this.
-const MAX_TIMER_DELAY_MS = 2 ** 31 - 1;
+// Deadlines are wall-clock instants, but timers do not count time the machine
+// sleeps and the wall clock can be adjusted, so the clock re-checks at least
+// this often however far its earliest deadline is. It also keeps delays inside
+// setTimeout's 32-bit range.
+const RESYNC_MS = 60_000;
+// A boundary that names a past instant on every render would otherwise re-arm
+// at zero delay and spin.
+const MIN_WAKE_GAP_MS = 250;
 
 function disarm(): void {
   if (timer !== undefined) {
@@ -37,10 +42,13 @@ function arm(changesAtMs: number): void {
     return;
   }
   armedForMs = changesAtMs;
-  const delayMs = Math.min(
-    Math.max(changesAtMs - Date.now(), 0),
-    MAX_TIMER_DELAY_MS
+  const nowMs = Date.now();
+  // Bounded above too, so a clock stepped backward cannot stretch the gap.
+  const gapMs = Math.min(
+    Math.max(lastTickMs + MIN_WAKE_GAP_MS - nowMs, 0),
+    MIN_WAKE_GAP_MS
   );
+  const delayMs = Math.min(Math.max(changesAtMs - nowMs, gapMs), RESYNC_MS);
   timer = setTimeout(tick, delayMs);
 }
 
@@ -48,12 +56,11 @@ function tick(): void {
   timer = undefined;
   armedForMs = Number.POSITIVE_INFINITY;
   const nowMs = Date.now();
-  // Woken subscribers still hold the instant that just passed until they
-  // re-render, so the next deadline comes only from those still waiting; each
-  // woken one re-arms the clock as it declares its next instant.
+  lastTickMs = nowMs;
   let nextMs = Number.POSITIVE_INFINITY;
   for (const subscriber of subscribers) {
     if (subscriber.changesAtMs <= nowMs) {
+      subscriber.changesAtMs = Number.POSITIVE_INFINITY;
       subscriber.wake();
     } else {
       nextMs = Math.min(nextMs, subscriber.changesAtMs);
@@ -63,8 +70,12 @@ function tick(): void {
 }
 
 /**
- * Re-renders the caller once `changesAtMs` arrives. Pass `undefined` for a
- * display that does not vary with time; it then holds no subscription.
+ * Re-renders the caller once `changesAtMs` arrives; `undefined` or `Infinity`
+ * holds no subscription.
+ *
+ * Compute `changesAtMs` before the reading it schedules. Computed after, it can
+ * see a change the reading just missed, name the change after that, and leave
+ * the stale reading on screen.
  */
 export function useNow(changesAtMs: number | undefined): void {
   // A counter rather than the time: setting a timestamp can bail out when two
@@ -83,8 +94,7 @@ export function useNow(changesAtMs: number | undefined): void {
     return () => {
       subscribers.delete(subscriber);
       // Leaving the timer armed for a departed subscriber costs at most one
-      // early wake, which re-arms from those remaining; only an empty clock
-      // needs no timer at all.
+      // early wake, which re-arms from those remaining.
       if (subscribers.size === 0) {
         disarm();
       }

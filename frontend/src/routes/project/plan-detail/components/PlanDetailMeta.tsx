@@ -32,10 +32,7 @@ export function PlanDetailMeta() {
     () => extractUserEmail(page.plan.creator),
     [page.plan.creator]
   );
-  const createdTimeTs = useMemo(
-    () => getTimeForPbTimestampProtoEs(page.plan.createTime, 0),
-    [page.plan.createTime]
-  );
+  const createdTimeTs = getTimeForPbTimestampProtoEs(page.plan.createTime, 0);
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;

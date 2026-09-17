@@ -7,7 +7,11 @@ import {
 } from "@/types/proto-es/v1/access_grant_service_pb";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
-import { formatAbsoluteDateTime, hasPassed } from "@/utils/datetime";
+import {
+  formatAbsoluteDateTime,
+  hasPassed,
+  nextPassedAt,
+} from "@/utils/datetime";
 
 export type AccessGrantFilterStatus =
   | "ACTIVE"
@@ -21,17 +25,16 @@ export type AccessGrantDisplayStatus =
   | "CANCELED"
   | "UNKNOWN";
 
+/**
+ * The fixed deadline of a grant, if it has one. A pending grant holds a ttl
+ * instead: a duration that starts at approval, which names no instant yet.
+ */
 export const getAccessGrantExpireTimeMs = (
   grant: AccessGrant
-): number | undefined => {
-  if (grant.expiration.case === "expireTime") {
-    return getTimeForPbTimestampProtoEs(grant.expiration.value);
-  }
-  if (grant.expiration.case === "ttl") {
-    return Date.now() + Number(grant.expiration.value.seconds) * 1000;
-  }
-  return undefined;
-};
+): number | undefined =>
+  grant.expiration.case === "expireTime"
+    ? getTimeForPbTimestampProtoEs(grant.expiration.value)
+    : undefined;
 
 export const getAccessGrantExpirationText = (
   grant: AccessGrant
@@ -98,6 +101,16 @@ export const getAccessGrantDisplayStatus = (
     default:
       return "UNKNOWN";
   }
+};
+
+/** The first instant `getAccessGrantDisplayStatus` reads this grant differently. */
+export const nextAccessGrantDisplayStatusChangeAt = (
+  grant: AccessGrant
+): number => {
+  const expireMs = getAccessGrantExpireTimeMs(grant);
+  return grant.status === AccessGrant_Status.ACTIVE && expireMs !== undefined
+    ? nextPassedAt(expireMs)
+    : Number.POSITIVE_INFINITY;
 };
 
 export const getAccessGrantDisplayStatusText = (

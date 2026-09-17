@@ -121,6 +121,48 @@ describe("useNow", () => {
     act(() => root.unmount());
   });
 
+  test("catches up when the wall clock passes a deadline the timer has not", () => {
+    // Timers do not count time the machine sleeps, so after a night asleep the
+    // wall clock can be past a deadline that the timer still waits hours for.
+    const deadlineMs = Date.now() + 2 * 3_600_000;
+    const { renders } = mount([{ changesAtMs: () => deadlineMs }]);
+
+    vi.setSystemTime(Date.now() + 3 * 3_600_000);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(renders).toEqual([2]);
+  });
+
+  test("does not spin on a boundary that keeps naming a past instant", () => {
+    const { renders } = mount([{ changesAtMs: () => Date.now() - 1 }]);
+
+    // Step as a browser would, committing between timer turns.
+    for (let step = 0; step < 100; step++) {
+      act(() => {
+        vi.advanceTimersByTime(10);
+      });
+    }
+    expect(renders[0]).toBeLessThanOrEqual(6);
+  });
+
+  test("leaves a subscriber whose boundary did not advance to its last reading", () => {
+    const stuckMs = Date.now() + 500;
+    const { renders } = mount([
+      { changesAtMs: () => stuckMs },
+      // A neighbour that wakes every second.
+      { changesAtMs: () => Math.floor(Date.now() / 1_000) * 1_000 + 1_000 },
+    ]);
+
+    for (let second = 0; second < 10; second++) {
+      act(() => {
+        vi.advanceTimersByTime(1_000);
+      });
+    }
+    expect(renders[0]).toBe(2);
+    expect(renders[1]).toBeGreaterThanOrEqual(10);
+  });
+
   test("releases the timer when the last subscriber leaves", () => {
     const { root } = mount([{ changesAtMs: () => Date.now() + 1_000 }]);
     expect(vi.getTimerCount()).toBe(1);

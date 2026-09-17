@@ -6,11 +6,7 @@ const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
 export const RELATIVE_THRESHOLD_MS = 30 * DAY_MS;
-export const DEFAULT_NOW_THRESHOLD_MS = 10_000;
-
-type RelativeTimeFormatOptions = {
-  nowThresholdMs?: number;
-};
+const NOW_THRESHOLD_MS = 10 * SECOND_MS;
 
 export function getActiveLocale(): string {
   return i18n.language;
@@ -24,16 +20,16 @@ type RelativeUnit = {
 
 // The units a relative reading counts in, each from the age it takes over at.
 // Below the first, the reading is "now". Both `formatRelativeTime` and the
-// boundaries that schedule it read this table, so the two cannot drift apart.
-const relativeUnits = (nowThresholdMs: number): RelativeUnit[] => [
-  { fromMs: nowThresholdMs, unitMs: SECOND_MS, unit: "second" },
+// boundary that schedules it read this table, so the two cannot drift apart.
+const RELATIVE_UNITS: readonly RelativeUnit[] = [
+  { fromMs: NOW_THRESHOLD_MS, unitMs: SECOND_MS, unit: "second" },
   { fromMs: MINUTE_MS, unitMs: MINUTE_MS, unit: "minute" },
   { fromMs: HOUR_MS, unitMs: HOUR_MS, unit: "hour" },
   { fromMs: DAY_MS, unitMs: DAY_MS, unit: "day" },
 ];
 
-const unitIndexForAge = (units: RelativeUnit[], ageMs: number): number =>
-  units.findLastIndex((unit) => ageMs >= unit.fromMs);
+const unitIndexForAge = (ageMs: number): number =>
+  RELATIVE_UNITS.findLastIndex((unit) => ageMs >= unit.fromMs);
 
 // Building an Intl formatter costs tens of times more than formatting with one,
 // and these run in every table cell, so each is built once per locale. The time
@@ -58,11 +54,7 @@ const dateTimeFormatter = (
 ): Intl.DateTimeFormat =>
   cachedFormatter(name, (locale) => new Intl.DateTimeFormat(locale, options));
 
-export function formatRelativeTime(
-  timestampMs: number,
-  options: RelativeTimeFormatOptions = {}
-): string {
-  const { nowThresholdMs = DEFAULT_NOW_THRESHOLD_MS } = options;
+export function formatRelativeTime(timestampMs: number): string {
   const diffMs = Date.now() - timestampMs;
   const ageMs = Math.abs(diffMs);
   const rtf = cachedFormatter(
@@ -70,12 +62,11 @@ export function formatRelativeTime(
     (locale) => new Intl.RelativeTimeFormat(locale, { numeric: "auto" })
   );
 
-  const units = relativeUnits(nowThresholdMs);
-  const index = unitIndexForAge(units, ageMs);
+  const index = unitIndexForAge(ageMs);
   if (index < 0) {
     return rtf.format(0, "second");
   }
-  const { unitMs, unit } = units[index];
+  const { unitMs, unit } = RELATIVE_UNITS[index];
   const sign = diffMs >= 0 ? -1 : 1;
   return rtf.format(sign * Math.round(ageMs / unitMs), unit);
 }
@@ -134,60 +125,47 @@ export function formatOperationalDateTime(timestampMs: number): string {
   }).format(timestampMs);
 }
 
-/**
- * The ages bracketing `ageMs` at which a relative reading changes: the latest
- * at or below it and the earliest above it. A reading changes where its unit
- * switches and, because the count is rounded, at every half unit in between.
- * At `capMs` it stops counting altogether.
- */
-function relativeChangePoints(
-  ageMs: number,
-  nowThresholdMs: number,
-  capMs: number
-): { atOrBelowMs?: number; aboveMs: number } {
-  if (ageMs >= capMs) {
-    return { atOrBelowMs: capMs, aboveMs: Number.POSITIVE_INFINITY };
-  }
-  const units = relativeUnits(nowThresholdMs);
-  const index = unitIndexForAge(units, ageMs);
+function relativeTimeChangeAt(timestampMs: number, nowMs: number): number {
+  const diffMs = nowMs - timestampMs;
+  const ageMs = Math.abs(diffMs);
+  const index = unitIndexForAge(ageMs);
+  // Inside the "now" window the reading holds across the timestamp itself,
+  // until the past side leaves the window.
   if (index < 0) {
-    return { aboveMs: Math.min(units[0].fromMs, capMs) };
+    return Math.ceil(timestampMs + NOW_THRESHOLD_MS);
   }
-  const { fromMs, unitMs } = units[index];
-  const toMs = Math.min(
-    units[index + 1]?.fromMs ?? Number.POSITIVE_INFINITY,
-    capMs
-  );
-  return {
-    atOrBelowMs: Math.max(
-      (Math.floor(ageMs / unitMs - 0.5) + 0.5) * unitMs,
-      fromMs
-    ),
-    aboveMs: Math.min((Math.floor(ageMs / unitMs + 0.5) + 0.5) * unitMs, toMs),
-  };
+  // The reading prints a rounded count, so it changes at every half unit as
+  // well as where the unit switches.
+  const { fromMs, unitMs } = RELATIVE_UNITS[index];
+  const count = Math.round(ageMs / unitMs);
+  if (diffMs >= 0) {
+    const toMs = RELATIVE_UNITS[index + 1]?.fromMs ?? Number.POSITIVE_INFINITY;
+    return Math.ceil(timestampMs + Math.min((count + 0.5) * unitMs, toMs));
+  }
+  // A future timestamp counts down: its reading changes the moment its age
+  // drops below the change point at or under it.
+  return Math.floor(timestampMs - Math.max((count - 0.5) * unitMs, fromMs)) + 1;
 }
 
-function nextRelativeReadingChangeAt(
-  timestampMs: number,
-  nowThresholdMs: number,
-  capMs: number
-): number {
-  const diffMs = Date.now() - timestampMs;
-  const { atOrBelowMs, aboveMs } = relativeChangePoints(
-    Math.abs(diffMs),
-    nowThresholdMs,
-    capMs
+function absoluteDateChangeAt(timestampMs: number, nowMs: number): number {
+  // A date shows its year unless it falls in the current one, so it changes
+  // when the current year turns into or out of the timestamp's.
+  const year = new Date(timestampMs).getFullYear();
+  return (
+    [year, year + 1]
+      .map((y) => new Date(y, 0, 1).getTime())
+      .find((yearStartMs) => yearStartMs > nowMs) ?? Number.POSITIVE_INFINITY
   );
-  if (diffMs >= 0) {
-    return Math.ceil(timestampMs + aboveMs);
-  }
-  // A future timestamp counts down, so its reading changes the moment its age
-  // drops below the change point at or under it. Inside the "now" window there
-  // is none: "now" holds across the timestamp until the past side leaves it.
-  if (atOrBelowMs === undefined) {
-    return Math.ceil(timestampMs + nowThresholdMs);
-  }
-  return Math.floor(timestampMs - atOrBelowMs) + 1;
+}
+
+/** The first instant `formatRelativeTime` renders this timestamp differently. */
+export function nextRelativeTimeChangeAt(timestampMs: number): number {
+  return relativeTimeChangeAt(timestampMs, Date.now());
+}
+
+/** The first instant `formatAbsoluteDate` renders this timestamp differently. */
+export function nextAbsoluteDateChangeAt(timestampMs: number): number {
+  return absoluteDateChangeAt(timestampMs, Date.now());
 }
 
 /**
@@ -195,33 +173,21 @@ function nextRelativeReadingChangeAt(
  * `Infinity` once it has settled on a date for good.
  */
 export function nextQueueTimeChangeAt(timestampMs: number): number {
-  const changesAtMs = nextRelativeReadingChangeAt(
-    timestampMs,
-    DEFAULT_NOW_THRESHOLD_MS,
-    RELATIVE_THRESHOLD_MS
-  );
-  if (Math.abs(Date.now() - timestampMs) < RELATIVE_THRESHOLD_MS) {
-    return changesAtMs;
+  const nowMs = Date.now();
+  const diffMs = nowMs - timestampMs;
+  if (Math.abs(diffMs) < RELATIVE_THRESHOLD_MS) {
+    const changesAtMs = relativeTimeChangeAt(timestampMs, nowMs);
+    return diffMs < 0
+      ? changesAtMs
+      : Math.min(changesAtMs, Math.ceil(timestampMs + RELATIVE_THRESHOLD_MS));
   }
-  // A date shows its year unless it falls in the current one, so the reading
-  // also changes when the current year turns into or out of the timestamp's.
-  const timestampYear = new Date(timestampMs).getFullYear();
-  const yearTurnsMs = [timestampYear, timestampYear + 1]
-    .map((year) => new Date(year, 0, 1).getTime())
-    .find((yearStartMs) => yearStartMs > Date.now());
-  return Math.min(changesAtMs, yearTurnsMs ?? Number.POSITIVE_INFINITY);
-}
-
-/** The first instant `formatRelativeTime` renders this timestamp differently. */
-export function nextRelativeTimeChangeAt(
-  timestampMs: number,
-  options: RelativeTimeFormatOptions = {}
-): number {
-  return nextRelativeReadingChangeAt(
-    timestampMs,
-    options.nowThresholdMs ?? DEFAULT_NOW_THRESHOLD_MS,
-    Number.POSITIVE_INFINITY
-  );
+  // Past the switch it reads as a date, and a future one counts back into
+  // the relative window.
+  const reentersAtMs =
+    diffMs < 0
+      ? Math.floor(timestampMs - RELATIVE_THRESHOLD_MS) + 1
+      : Number.POSITIVE_INFINITY;
+  return Math.min(reentersAtMs, absoluteDateChangeAt(timestampMs, nowMs));
 }
 
 // Readings of a deadline. Each is paired with the first instant it changes, so
@@ -269,10 +235,10 @@ export function nextCountdownChangeAt(targetMs: number): number {
   }
   // The count is whole minutes left, so it drops the moment the time left
   // falls below the current count. With no minute left, that is the deadline.
-  const thresholdMs =
-    remainingMs >= DAY_MS
-      ? DAY_MS
-      : Math.floor(remainingMs / MINUTE_MS) * MINUTE_MS;
+  const thresholdMs = Math.min(
+    Math.floor(remainingMs / MINUTE_MS) * MINUTE_MS,
+    DAY_MS
+  );
   return Math.floor(targetMs - thresholdMs) + 1;
 }
 

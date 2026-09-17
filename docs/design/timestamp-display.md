@@ -272,12 +272,17 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   - **Every time-varying reading comes as a pair** — the function that renders it and the
     function returning the first instant its output will differ (`Infinity` if never). The pair
     lives together and is tested together: sampled across ages, the reading is constant up to
-    that instant and differs at it. A boundary borrowed from a different reading, or re-derived by
-    hand beside one, is the defect this rules out — the two drift silently, and a test of the
-    boundary alone cannot see it.
-  - **The shared clock accepts any instant.** It clamps to the platform timer ceiling and re-arms,
-    wakes only the subscribers that are due, and relies on each woken subscriber declaring a
-    strictly later instant.
+    that instant and differs at it. The samples include sub-millisecond timestamps and a turn of
+    the year, where a boundary a fraction early or a seasonal change otherwise hides. A boundary
+    borrowed from a different reading, or re-derived by hand beside one, is the defect this rules
+    out — the two drift silently, and a test of the boundary alone cannot see it.
+  - **A boundary is evaluated no later than its reading.** Evaluated after, it can see a change
+    the reading just missed, name the change after that, and leave the stale reading on screen.
+  - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip
+    time the machine sleeps, so the clock re-checks at least once a minute: a display is at most
+    a minute behind after sleep or a clock adjustment. It wakes only the subscribers that are due,
+    retires each woken deadline until the display declares its next one, and leaves a short gap
+    after each wake so a boundary that keeps naming a past instant cannot spin it.
   - Guarded by fake-timer tests and a sweep of render-time `Date.now()` over the touched surfaces
     at implementation time — a review pass, not a lint: telling render scope from handlers and
     effects statically would flag most legitimate uses.
@@ -338,7 +343,7 @@ points where the implementation had to choose:
 The staleness rule holds through `useNow` and the reading pairs described under Implementation
 shape. The clock replaced the ad-hoc interval behind the plan-detail created time, and the pairs
 cover the displays that had no clock at all: the SQL-editor grant countdown, the masking-exemption
-expiry label, and the access-grant roster's expired badge.
+expiry label, the sample-instance expiry alert, and the access-grant expired badge.
 
 The rule governs displays of time. Two kinds of clock read stay outside it: **query membership** —
 the masking-exemption status filter, the role-expiry reminder's "within two days" list — which,

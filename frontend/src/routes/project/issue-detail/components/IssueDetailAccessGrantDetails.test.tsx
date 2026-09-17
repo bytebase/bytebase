@@ -71,6 +71,7 @@ vi.mock("@/utils", () => ({
 
 vi.mock("@/utils/accessGrant", () => ({
   getAccessGrantExpirationText: () => ({ type: "never" }),
+  getAccessGrantExpireTimeMs: () => undefined,
 }));
 
 vi.mock("../context/IssueDetailContext", () => ({
