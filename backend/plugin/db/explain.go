@@ -2,11 +2,10 @@ package db
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/bytebase/omni/pg/ast"
-	omniparser "github.com/bytebase/omni/pg/parser"
-	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -26,14 +25,11 @@ import (
 // EXPLAIN at all. Those drivers produce a plan on their own and pass "" here.
 //
 // On PostgreSQL, a statement that already is an EXPLAIN is not prefixed again;
-// its FORMAT is set to the requested one, text by default, instead. The error
-// refuses a PostgreSQL statement whose plan would execute it, as EXPLAIN
-// ANALYZE does.
-func ExplainStatement(engine storepb.Engine, statement string, format v1pb.QueryOption_ExplainFormat) (string, bool, error) {
+// its FORMAT is set to the requested one, text by default, instead.
+func ExplainStatement(engine storepb.Engine, statement string, format v1pb.QueryOption_ExplainFormat) (string, bool) {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		explain, err := explainPostgres(statement, format)
-		return explain, true, err
+		return explainPostgres(statement, format), true
 	case storepb.Engine_MYSQL,
 		storepb.Engine_MARIADB,
 		storepb.Engine_OCEANBASE,
@@ -46,79 +42,51 @@ func ExplainStatement(engine storepb.Engine, statement string, format v1pb.Query
 		storepb.Engine_DORIS,
 		storepb.Engine_HIVE,
 		storepb.Engine_TRINO:
-		return fmt.Sprintf("EXPLAIN %s", statement), true, nil
+		return fmt.Sprintf("EXPLAIN %s", statement), true
 	default:
-		return "", false, nil
+		return "", false
 	}
 }
 
-func explainPostgres(statement string, format v1pb.QueryOption_ExplainFormat) (string, error) {
-	name := "text"
-	if format == v1pb.QueryOption_JSON || format == v1pb.QueryOption_XML {
-		name = strings.ToLower(format.String())
+func explainPostgres(statement string, format v1pb.QueryOption_ExplainFormat) string {
+	if format == v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
+		format = v1pb.QueryOption_TEXT
 	}
 	explain := pgparser.ParseExplain(statement)
-	switch {
-	case explain == nil && name == "text":
-		statement = "EXPLAIN " + statement
-	case explain == nil:
-		statement = fmt.Sprintf("EXPLAIN (FORMAT %s) %s", format, statement)
-	case pgparser.ExplainFormat(explain) != name:
-		var err error
-		if statement, err = setExplainFormat(statement, name); err != nil {
-			return "", err
-		}
-	default:
+	if explain != nil && pgparser.ExplainFormat(explain) == strings.ToLower(format.String()) {
+		return statement
 	}
-	// A statement that does not parse is left to the query validator, which
-	// refuses it.
-	if stmts, err := pgparser.ParsePg(statement); err == nil {
-		for _, stmt := range stmts {
-			if explain, ok := stmt.AST.(*ast.ExplainStmt); ok && pgparser.IsExplainAnalyze(explain) {
-				return "", errors.New("explaining this statement would execute it, as EXPLAIN ANALYZE does; run it instead")
-			}
-		}
+	start := -1
+	if explain != nil {
+		start = pgparser.ExplainedStatementStart(explain)
 	}
-	return statement, nil
-}
-
-// setExplainFormat rewrites an EXPLAIN to produce format, keeping its other
-// options as written.
-func setExplainFormat(statement, format string) (string, error) {
-	tokens := omniparser.Tokenize(statement)
-	// tokens[0] is EXPLAIN. The options follow it in parentheses, or as the
-	// ANALYZE and VERBOSE keywords.
+	// An EXPLAIN whose explained statement cannot be found is prefixed like any
+	// other statement, which gives a syntax error the query validator refuses.
+	if start < 0 || start > len(statement) {
+		if format == v1pb.QueryOption_TEXT {
+			return fmt.Sprintf("EXPLAIN %s", statement)
+		}
+		return fmt.Sprintf("EXPLAIN (FORMAT %s) %s", format, statement)
+	}
 	var options []string
-	i := 1
-	if i < len(tokens) && tokens[i].Type == '(' {
-		depth, start := 0, i+1
-		for ; i < len(tokens); i++ {
-			switch tokens[i].Type {
-			case '(':
-				depth++
-			case ')':
-				depth--
+	if explain.Options != nil {
+		for _, item := range explain.Options.Items {
+			option, ok := item.(*ast.DefElem)
+			if !ok || option.Defname == "format" {
+				continue
+			}
+			switch arg := option.Arg.(type) {
+			case *ast.String:
+				options = append(options, option.Defname+" "+arg.Str)
+			case *ast.Integer:
+				options = append(options, option.Defname+" "+strconv.FormatInt(arg.Ival, 10))
+			case *ast.Float:
+				options = append(options, option.Defname+" "+arg.Fval)
 			default:
-			}
-			if depth == 0 || depth == 1 && tokens[i].Type == ',' {
-				if start < i && tokens[start].Str != "format" {
-					options = append(options, statement[tokens[start].Loc:tokens[i-1].End])
-				}
-				start = i + 1
-			}
-			if depth == 0 {
-				break
+				options = append(options, option.Defname)
 			}
 		}
-		i++
-	} else {
-		for ; i < len(tokens) && (tokens[i].Type == omniparser.ANALYZE || tokens[i].Type == omniparser.ANALYSE || tokens[i].Type == omniparser.VERBOSE); i++ {
-			options = append(options, strings.ToUpper(tokens[i].Str))
-		}
 	}
-	if i >= len(tokens) {
-		return "", errors.New("failed to read the EXPLAIN options")
-	}
-	options = append(options, "FORMAT "+strings.ToUpper(format))
-	return fmt.Sprintf("EXPLAIN (%s) %s", strings.Join(options, ", "), statement[tokens[i].Loc:]), nil
+	options = append(options, fmt.Sprintf("FORMAT %s", format))
+	return fmt.Sprintf("EXPLAIN (%s) %s", strings.Join(options, ", "), statement[start:])
 }

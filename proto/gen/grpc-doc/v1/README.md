@@ -139,7 +139,6 @@
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
-    - [QueryResult.QueryPlan.Format](#bytebase-v1-QueryResult-QueryPlan-Format)
   
     - [SQLService](#bytebase-v1-SQLService)
   
@@ -2708,7 +2707,7 @@ A query plan held in the result&#39;s rows.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| format | [QueryResult.QueryPlan.Format](#bytebase-v1-QueryResult-QueryPlan-Format) |  |  |
+| format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
 | executed | [bool](#bool) |  | Whether producing the plan executed the statement, as EXPLAIN ANALYZE does. |
 
 
@@ -2848,10 +2847,11 @@ against an engine that has no explain at all.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. |
+| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a result, a default the server could not resolve, as when MySQL follows the session&#39;s explain_format; read such a plan as text. |
 | TEXT | 1 | The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server: SHOWPLAN_ALL. |
 | JSON | 2 | The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON). |
 | XML | 3 | The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server: SHOWPLAN_XML. |
+| YAML | 4 | The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML). |
 
 
 
@@ -2896,21 +2896,6 @@ against an engine that has no explain at all.
 | LOG | 4 | General log message. |
 | NOTICE | 5 | Notice message for important information. |
 | EXCEPTION | 6 | Exception message indicating error conditions. |
-
-
-
-<a name="bytebase-v1-QueryResult-QueryPlan-Format"></a>
-
-### QueryResult.QueryPlan.Format
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| FORMAT_UNSPECIFIED | 0 | The server cannot tell the format, as when MySQL follows the session&#39;s explain_format. Read the plan as text. |
-| TEXT | 1 |  |
-| JSON | 2 |  |
-| XML | 3 |  |
-| YAML | 4 |  |
 
 
  

@@ -26057,6 +26057,7 @@ components:
         - TEXT
         - JSON
         - XML
+        - YAML
       description: |-
         Which explain output the caller wants, for an explain request.
 
@@ -26369,7 +26370,7 @@ components:
       properties:
         format:
           allOf:
-            - $ref: '#/components/schemas/bytebase.v1.QueryResult.QueryPlan.Format'
+            - $ref: '#/components/schemas/bytebase.v1.QueryOption.ExplainFormat'
           title: format
         executed:
           type: boolean
@@ -26380,15 +26381,6 @@ components:
       title: QueryPlan
       additionalProperties: false
       description: A query plan held in the result's rows.
-    bytebase.v1.QueryResult.QueryPlan.Format:
-      type: string
-      title: Format
-      enum:
-        - FORMAT_UNSPECIFIED
-        - TEXT
-        - JSON
-        - XML
-        - YAML
     bytebase.v1.QueryResult.SyntaxError:
       type: object
       properties:

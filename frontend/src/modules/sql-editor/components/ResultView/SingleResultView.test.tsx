@@ -8,7 +8,6 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   QueryOption_ExplainFormat,
   type QueryResult,
-  QueryResult_QueryPlan_Format,
   QueryResult_QueryPlanSchema,
   QueryResultSchema,
   QueryRowSchema,
@@ -612,7 +611,7 @@ describe("SingleResultView document view", () => {
 const planResult = (
   statement: string,
   plan: string,
-  queryPlan?: { format: QueryResult_QueryPlan_Format; executed?: boolean }
+  queryPlan?: { format: QueryOption_ExplainFormat; executed?: boolean }
 ) =>
   create(QueryResultSchema, {
     columnNames: ["QUERY PLAN"],
@@ -629,7 +628,7 @@ const planResult = (
     queryPlan: queryPlan && create(QueryResult_QueryPlanSchema, queryPlan),
   });
 
-const textPlan = { format: QueryResult_QueryPlan_Format.TEXT };
+const textPlan = { format: QueryOption_ExplainFormat.TEXT };
 
 const replayReturns = (...results: QueryResult[]) =>
   runQuery.mockImplementation(
@@ -760,9 +759,9 @@ describe("SingleResultView explain visualizer", () => {
   });
 
   test.each([
-    [Engine.SPANNER, QueryResult_QueryPlan_Format.JSON, false],
-    [Engine.POSTGRES, QueryResult_QueryPlan_Format.JSON, true],
-    [Engine.MSSQL, QueryResult_QueryPlan_Format.XML, false],
+    [Engine.SPANNER, QueryOption_ExplainFormat.JSON, false],
+    [Engine.POSTGRES, QueryOption_ExplainFormat.JSON, true],
+    [Engine.MSSQL, QueryOption_ExplainFormat.XML, false],
   ])(
     "draws engine %s's plan from the rows when it already is format %s",
     async (engine, format, executed) => {
@@ -820,17 +819,17 @@ describe("SingleResultView explain visualizer", () => {
     [
       "a PostgreSQL XML plan",
       Engine.POSTGRES,
-      { format: QueryResult_QueryPlan_Format.XML },
+      { format: QueryOption_ExplainFormat.XML },
     ],
     [
       "a YAML plan",
       Engine.POSTGRES,
-      { format: QueryResult_QueryPlan_Format.YAML },
+      { format: QueryOption_ExplainFormat.YAML },
     ],
     [
       "a plan in an unknown format",
       Engine.POSTGRES,
-      { format: QueryResult_QueryPlan_Format.FORMAT_UNSPECIFIED },
+      { format: QueryOption_ExplainFormat.EXPLAIN_FORMAT_UNSPECIFIED },
     ],
     ["an engine it cannot draw", Engine.MYSQL, textPlan],
   ])("offers no visualizer for %s", (_, engine, queryPlan) => {

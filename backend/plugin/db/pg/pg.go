@@ -799,9 +799,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			if statement, _, err = db.ExplainStatement(storepb.Engine_POSTGRES, statement, queryContext.Option.GetExplainFormat()); err != nil {
-				return nil, err
-			}
+			statement, _ = db.ExplainStatement(storepb.Engine_POSTGRES, statement, queryContext.Option.GetExplainFormat())
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
@@ -885,9 +883,9 @@ func typedExplainPlan(statement string) *v1pb.QueryResult_QueryPlan {
 	}
 	// PostgreSQL accepts no format but text, json, xml and yaml, which the enum
 	// values are named after.
-	format := v1pb.QueryResult_QueryPlan_Format_value[strings.ToUpper(pgparser.ExplainFormat(explain))]
+	format := v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(pgparser.ExplainFormat(explain))]
 	return &v1pb.QueryResult_QueryPlan{
-		Format:   v1pb.QueryResult_QueryPlan_Format(format),
+		Format:   v1pb.QueryOption_ExplainFormat(format),
 		Executed: pgparser.IsExplainAnalyze(explain),
 	}
 }

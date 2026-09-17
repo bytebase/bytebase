@@ -47,7 +47,6 @@ import {
   QueryOption_ExplainFormat,
   QueryOptionSchema,
   type QueryResult,
-  QueryResult_QueryPlan_Format,
 } from "@/types/proto-es/v1/sql_service_pb";
 import {
   createExplainToken,
@@ -404,14 +403,14 @@ function SingleResultViewInner({
   const planInRows =
     isVisualizerEngine(engine) &&
     plan?.format ===
-      QueryResult_QueryPlan_Format[VISUALIZER_EXPLAIN_FORMATS[engine]];
+      QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   // Visualize draws a text plan by explaining the whole run again in the
   // visualizer's format. That reproduces this plan only when every earlier
   // result is a plan that did not execute, so nothing before it changed the
   // session.
   const canReplay =
     isVisualizerEngine(engine) &&
-    plan?.format === QueryResult_QueryPlan_Format.TEXT &&
+    plan?.format === QueryOption_ExplainFormat.TEXT &&
     results
       .slice(0, resultIndex)
       .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);

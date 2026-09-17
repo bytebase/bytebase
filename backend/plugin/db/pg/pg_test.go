@@ -418,7 +418,7 @@ func TestQueryConnExplainFormat(t *testing.T) {
 		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
 	})
 	require.NoError(t, err)
-	require.Equal(t, "EXPLAIN (COSTS OFF, FORMAT JSON) "+statement, typedResults[0].GetStatement())
+	require.Equal(t, "EXPLAIN (costs off, FORMAT JSON) "+statement, typedResults[0].GetStatement())
 	plan = nil
 	require.NoError(t, json.Unmarshal([]byte(firstStringValue(t, typedResults)), &plan))
 	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
@@ -457,12 +457,12 @@ func TestQueryConnDescribesTypedExplain(t *testing.T) {
 		want      *v1pb.QueryResult_QueryPlan
 	}{
 		{"SELECT id FROM plan_target", nil},
-		{"EXPLAIN SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryResult_QueryPlan_TEXT}},
-		{"EXPLAIN (FORMAT JSON) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryResult_QueryPlan_JSON}},
-		{"EXPLAIN (FORMAT XML) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryResult_QueryPlan_XML}},
-		{"EXPLAIN (FORMAT YAML) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryResult_QueryPlan_YAML}},
-		{"EXPLAIN ANALYZE VERBOSE SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryResult_QueryPlan_TEXT, Executed: true}},
-		{"EXPLAIN (ANALYZE, FORMAT JSON) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryResult_QueryPlan_JSON, Executed: true}},
+		{"EXPLAIN SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_TEXT}},
+		{"EXPLAIN (FORMAT JSON) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_JSON}},
+		{"EXPLAIN (FORMAT XML) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_XML}},
+		{"EXPLAIN (FORMAT YAML) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_YAML}},
+		{"EXPLAIN ANALYZE VERBOSE SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_TEXT, Executed: true}},
+		{"EXPLAIN (ANALYZE, FORMAT JSON) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_JSON, Executed: true}},
 		// The editor runs a write for its affected rows, so this plan is not returned.
 		{"EXPLAIN ANALYZE DELETE FROM plan_target WHERE id = 0", nil},
 	} {

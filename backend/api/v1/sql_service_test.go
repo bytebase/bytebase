@@ -346,6 +346,8 @@ func TestValidateExplainFormat(t *testing.T) {
 		{name: "postgres json", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_JSON},
 		{name: "postgres xml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_XML},
 		{name: "postgres text", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_TEXT},
+		{name: "postgres yaml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_YAML},
+		{name: "mssql yaml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_YAML, wantErr: true},
 		{name: "mssql xml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_XML},
 		{name: "mssql json", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_JSON, wantErr: true},
 		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
@@ -414,7 +416,9 @@ func TestExplainGateRefusesPostgresExecution(t *testing.T) {
 	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
 	for _, stmt := range []string{
 		"EXPLAIN ANALYZE SELECT 1",
-		"EXPLAIN ANALYZE DELETE FROM t",
+		"EXPLAIN ANALYSE VERBOSE SELECT 1",
+		"EXPLAIN (ANALYZE, FORMAT JSON) SELECT 1",
+		"EXPLAIN (COSTS OFF, ANALYZE on) SELECT 1",
 		"SELECT 1; EXPLAIN (ANALYZE, FORMAT JSON) SELECT 2",
 		"ANALYZE SELECT 1",
 		"(ANALYZE) SELECT 1",
@@ -423,6 +427,30 @@ func TestExplainGateRefusesPostgresExecution(t *testing.T) {
 			require.Errorf(t, validateExplainStatements(pg, stmt, format), "%s as %s", stmt, format)
 		}
 	}
+	require.NoError(t, validateExplainStatements(pg, "EXPLAIN (ANALYZE false) SELECT 1", v1pb.QueryOption_JSON))
+}
+
+// TestExplainGateRefusesTypedExplain pins that no engine but PostgreSQL gets a
+// second EXPLAIN prefixed onto a statement that already is one.
+func TestExplainGateRefusesTypedExplain(t *testing.T) {
+	t.Parallel()
+	for _, engine := range []storepb.Engine{storepb.Engine_MYSQL, storepb.Engine_ORACLE, storepb.Engine_SPANNER} {
+		instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
+		for _, stmt := range []string{
+			"EXPLAIN SELECT 1",
+			"/* plan */ explain\nSELECT 1",
+			"SELECT 1; EXPLAIN SELECT 2",
+		} {
+			err := validateExplainStatements(instance, stmt, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED)
+			require.Errorf(t, err, "%s: %s", engine, stmt)
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		}
+		for _, stmt := range []string{"SELECT 'EXPLAIN'", "SELECT explained FROM t"} {
+			require.NoErrorf(t, validateExplainStatements(instance, stmt, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: %s", engine, stmt)
+		}
+	}
+	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
+	require.NoError(t, validateExplainStatements(pg, "EXPLAIN SELECT 1", v1pb.QueryOption_JSON))
 }
 
 func TestExplainResultFormat(t *testing.T) {
@@ -430,16 +458,19 @@ func TestExplainResultFormat(t *testing.T) {
 	for _, tc := range []struct {
 		engine storepb.Engine
 		format v1pb.QueryOption_ExplainFormat
-		want   v1pb.QueryResult_QueryPlan_Format
+		want   v1pb.QueryOption_ExplainFormat
 	}{
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryResult_QueryPlan_TEXT},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_JSON, v1pb.QueryResult_QueryPlan_JSON},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_XML, v1pb.QueryResult_QueryPlan_XML},
-		{storepb.Engine_MSSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryResult_QueryPlan_TEXT},
-		{storepb.Engine_MSSQL, v1pb.QueryOption_XML, v1pb.QueryResult_QueryPlan_XML},
-		{storepb.Engine_SPANNER, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryResult_QueryPlan_JSON},
-		{storepb.Engine_MYSQL, v1pb.QueryOption_TEXT, v1pb.QueryResult_QueryPlan_FORMAT_UNSPECIFIED},
-		{storepb.Engine_ORACLE, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryResult_QueryPlan_TEXT},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_JSON, v1pb.QueryOption_JSON},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_XML, v1pb.QueryOption_XML},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_YAML, v1pb.QueryOption_YAML},
+		{storepb.Engine_MSSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
+		{storepb.Engine_MSSQL, v1pb.QueryOption_XML, v1pb.QueryOption_XML},
+		{storepb.Engine_SPANNER, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_JSON},
+		{storepb.Engine_SPANNER, v1pb.QueryOption_JSON, v1pb.QueryOption_JSON},
+		{storepb.Engine_MYSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{storepb.Engine_MYSQL, v1pb.QueryOption_TEXT, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{storepb.Engine_ORACLE, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
 	} {
 		require.Equalf(t, tc.want, explainResultFormat(tc.engine, tc.format), "%s %s", tc.engine, tc.format)
 	}

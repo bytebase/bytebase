@@ -698,10 +698,6 @@
                   <a href="#bytebase.v1.QueryResult.Message.Level"><span class="badge">E</span>QueryResult.Message.Level</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.v1.QueryResult.QueryPlan.Format"><span class="badge">E</span>QueryResult.QueryPlan.Format</a>
-                </li>
-              
               
               
                 <li>
@@ -8512,7 +8508,7 @@ of an EXPLAIN typed on PostgreSQL. Unset for any other result. </p></td>
               
                 <tr>
                   <td>format</td>
-                  <td><a href="#bytebase.v1.QueryResult.QueryPlan.Format">QueryResult.QueryPlan.Format</a></td>
+                  <td><a href="#bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -8852,7 +8848,9 @@ These are custom, flexible checks powered by AI models.</p></td>
               <tr>
                 <td>EXPLAIN_FORMAT_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL.</p></td>
+                <td><p>The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a
+result, a default the server could not resolve, as when MySQL follows the
+session&#39;s explain_format; read such a plan as text.</p></td>
               </tr>
             
               <tr>
@@ -8873,6 +8871,12 @@ SHOWPLAN_ALL.</p></td>
                 <td>3</td>
                 <td><p>The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
 SHOWPLAN_XML.</p></td>
+              </tr>
+            
+              <tr>
+                <td>YAML</td>
+                <td>4</td>
+                <td><p>The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML).</p></td>
               </tr>
             
           </tbody>
@@ -8990,48 +8994,6 @@ SHOWPLAN_XML.</p></td>
                 <td>EXCEPTION</td>
                 <td>6</td>
                 <td><p>Exception message indicating error conditions.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.QueryResult.QueryPlan.Format">QueryResult.QueryPlan.Format</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>FORMAT_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The server cannot tell the format, as when MySQL follows the session&#39;s
-explain_format. Read the plan as text.</p></td>
-              </tr>
-            
-              <tr>
-                <td>TEXT</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>JSON</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>XML</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>YAML</td>
-                <td>4</td>
-                <td><p></p></td>
               </tr>
             
           </tbody>

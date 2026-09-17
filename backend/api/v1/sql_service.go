@@ -16,6 +16,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/alexmullins/zip"
+	"github.com/bytebase/omni/pg/ast"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -32,7 +33,9 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -1990,7 +1993,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFormat {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML}
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML}
 	case storepb.Engine_MSSQL:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}
 	case storepb.Engine_SPANNER:
@@ -2010,18 +2013,18 @@ func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 
 // explainResultFormat returns the format of the plans an explain request for
 // format gets back from engine.
-func explainResultFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) v1pb.QueryResult_QueryPlan_Format {
+func explainResultFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) v1pb.QueryOption_ExplainFormat {
 	switch {
-	case format == v1pb.QueryOption_JSON, engine == storepb.Engine_SPANNER:
-		return v1pb.QueryResult_QueryPlan_JSON
-	case format == v1pb.QueryOption_XML:
-		return v1pb.QueryResult_QueryPlan_XML
 	case engine == storepb.Engine_MYSQL:
 		// The driver sends EXPLAIN without FORMAT, which MySQL 8.0.32 and later
 		// answer in the session's explain_format.
-		return v1pb.QueryResult_QueryPlan_FORMAT_UNSPECIFIED
+		return v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED
+	case format != v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED:
+		return format
+	case engine == storepb.Engine_SPANNER:
+		return v1pb.QueryOption_JSON
 	default:
-		return v1pb.QueryResult_QueryPlan_TEXT
+		return v1pb.QueryOption_TEXT
 	}
 }
 
@@ -2052,6 +2055,8 @@ func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_Explai
 	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain format %s, supported formats: %s", engine, format, strings.Join(names, ", ")))
 }
 
+var explainKeywordRegexp = regexp.MustCompile(`(?i)^EXPLAIN\b`)
+
 // validateExplainStatements refuses an explain request whose EXPLAIN-wrapped form
 // would execute a write. The driver splits a multi-statement request and prefixes
 // EXPLAIN to each statement (see pg.go and its siblings), so this validates the
@@ -2060,6 +2065,10 @@ func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_Explai
 // not a statement prefix (Oracle EXPLAIN PLAN, SQL Server SHOWPLAN, Spanner/BigQuery
 // plan APIs) report ok=false from db.ExplainStatement and run their own plan API,
 // which does not execute the statement.
+//
+// A statement that already is an EXPLAIN is refused on every engine but
+// PostgreSQL, whose db.ExplainStatement sets its format instead. Telling whether
+// another engine's EXPLAIN executes would take that engine's parser.
 func validateExplainStatements(instance *store.InstanceMessage, statement string, format v1pb.QueryOption_ExplainFormat) error {
 	engine := instance.Metadata.GetEngine()
 	statements, err := parserbase.SplitMultiSQL(engine, statement)
@@ -2073,15 +2082,32 @@ func validateExplainStatements(instance *store.InstanceMessage, statement string
 		if stmt.Empty {
 			continue
 		}
-		wrapped, ok, err := db.ExplainStatement(engine, stmt.Text, format)
-		if err != nil {
-			return connect.NewError(connect.CodeInvalidArgument, err)
+		if engine != storepb.Engine_POSTGRES {
+			// An unclosed literal leaves nothing to match, and the database
+			// rejects the doubled EXPLAIN instead.
+			text, _ := util.RemoveCommentsAndTrim(stmt.Text)
+			if explainKeywordRegexp.MatchString(text) {
+				return connect.NewError(connect.CodeInvalidArgument, errors.New("the statement is already an EXPLAIN; run it to see its plan"))
+			}
 		}
+		wrapped, ok := db.ExplainStatement(engine, stmt.Text, format)
 		if !ok {
-			return nil
+			continue
 		}
 		if err := validateQueryRequest(instance, wrapped); err != nil {
 			return err
+		}
+		// An explain request never executes, even a read.
+		if engine == storepb.Engine_POSTGRES {
+			nodes, err := pgparser.ParsePg(wrapped)
+			if err != nil {
+				return connect.NewError(connect.CodeInvalidArgument, err)
+			}
+			for _, node := range nodes {
+				if explain, ok := node.AST.(*ast.ExplainStmt); ok && pgparser.IsExplainAnalyze(explain) {
+					return connect.NewError(connect.CodeInvalidArgument, errors.New("explaining this statement would execute it, as EXPLAIN ANALYZE does; run it instead"))
+				}
+			}
 		}
 	}
 	return nil

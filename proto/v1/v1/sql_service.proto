@@ -199,7 +199,9 @@ message QueryOption {
   // INVALID_ARGUMENT rather than a silent fallback, as is any explain request
   // against an engine that has no explain at all.
   enum ExplainFormat {
-    // The engine's default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL.
+    // The engine's default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a
+    // result, a default the server could not resolve, as when MySQL follows the
+    // session's explain_format; read such a plan as text.
     EXPLAIN_FORMAT_UNSPECIFIED = 0;
     // The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
     // SHOWPLAN_ALL.
@@ -209,6 +211,8 @@ message QueryOption {
     // The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
     // SHOWPLAN_XML.
     XML = 3;
+    // The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML).
+    YAML = 4;
   }
   ExplainFormat explain_format = 3;
 }
@@ -315,16 +319,7 @@ message QueryResult {
 
   // A query plan held in the result's rows.
   message QueryPlan {
-    enum Format {
-      // The server cannot tell the format, as when MySQL follows the session's
-      // explain_format. Read the plan as text.
-      FORMAT_UNSPECIFIED = 0;
-      TEXT = 1;
-      JSON = 2;
-      XML = 3;
-      YAML = 4;
-    }
-    Format format = 1;
+    QueryOption.ExplainFormat format = 1;
 
     // Whether producing the plan executed the statement, as EXPLAIN ANALYZE
     // does.

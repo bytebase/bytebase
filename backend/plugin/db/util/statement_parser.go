@@ -17,7 +17,7 @@ var selectStatements = map[string]bool{"WITH": true, "SELECT": true}
 // of query a string is a lot easier, as only the first word(s) need to be
 // checked after this has been removed.
 // source: https://github.com/googleapis/go-sql-spanner/blob/e33bd23e1ebfa2fe1b947bced9eacdc6454595eb/statement_parser.go
-func removeCommentsAndTrim(sql string) (string, error) {
+func RemoveCommentsAndTrim(sql string) (string, error) {
 	const singleQuote = '\''
 	const doubleQuote = '"'
 	const backtick = '`'
@@ -193,7 +193,7 @@ func splitStatement(sql string) ([]string, error) {
 
 // SanitizeSQL removes comments, splits the sql by `;` and returns the trimmed sql statement array.
 func SanitizeSQL(sql string) ([]string, error) {
-	query, err := removeCommentsAndTrim(sql)
+	query, err := RemoveCommentsAndTrim(sql)
 	if err != nil {
 		return nil, err
 	}
