@@ -51,8 +51,8 @@ type statementInfo struct {
 	endPosition   *storepb.Position
 }
 
-func TransformDMLToSelect(_ context.Context, _ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
-	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
+func TransformDMLToSelect(_ context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	statementInfoList, err := prepareTransformation(sourceDatabase, statement, tCtx.IsCaseSensitive)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}
@@ -221,13 +221,18 @@ func dmlWithClause(node ast.Node) *ast.WithClause {
 // isCTETarget reports whether an unqualified DML target names a CTE declared
 // by the statement's own WITH clause. Such a DML writes through the CTE to a
 // base table the backup cannot resolve, so the caller rejects it rather than
-// letting the migration run without backup data.
-func isCTETarget(ref *ast.TableRef, withClause *ast.WithClause) bool {
+// letting the migration run without backup data. Name comparison follows the
+// instance collation: a case-sensitive collation keeps c and C distinct.
+func isCTETarget(ref *ast.TableRef, withClause *ast.WithClause, caseSensitive bool) bool {
 	if ref == nil || withClause == nil || withClause.CTEs == nil || ref.Database != "" || ref.Schema != "" {
 		return false
 	}
 	for _, cteNode := range withClause.CTEs.Items {
-		if cte, ok := cteNode.(*ast.CommonTableExpr); ok && strings.EqualFold(cte.Name, ref.Object) {
+		cte, ok := cteNode.(*ast.CommonTableExpr)
+		if !ok {
+			continue
+		}
+		if cte.Name == ref.Object || (!caseSensitive && strings.EqualFold(cte.Name, ref.Object)) {
 			return true
 		}
 	}
@@ -253,7 +258,7 @@ func extractSuffixSelectStatement(node ast.Node, source string) (string, string,
 	}
 }
 
-func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
+func prepareTransformation(databaseName, statement string, caseSensitive bool) ([]statementInfo, error) {
 	parsedStatements, err := parseTSQLStatements(statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse statement")
@@ -293,7 +298,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 				"statementType", statementType)
 			continue
 		}
-		if isCTETarget(targetRef, dmlWithClause(node)) {
+		if isCTETarget(targetRef, dmlWithClause(node), caseSensitive) {
 			return nil, errors.Errorf("prior backup does not support DML targeting CTE %q, target the base table directly", table.Table)
 		}
 		table.StatementType = statementType

@@ -215,6 +215,21 @@ func TestBackupRejectsCTETarget(t *testing.T) {
 	require.Len(t, result, 1)
 	require.Equal(t, "c", result[0].SourceTableName)
 	require.True(t, strings.HasPrefix(result[0].Statement, "WITH c AS (SELECT id FROM src)\n"), result[0].Statement)
+
+	// Under a case-sensitive collation, c and C are different identifiers.
+	caseSensitive := base.TransformContext{IsCaseSensitive: true}
+	result, err = TransformDMLToSelect(context.Background(), caseSensitive, "WITH C AS (SELECT id FROM src) UPDATE c SET c1 = 1 WHERE id IN (SELECT id FROM C);", "db", "backupDB", "rollback")
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+	require.Equal(t, "c", result[0].SourceTableName)
+	require.Equal(t, strings.Join([]string{
+		"WITH C AS (SELECT id FROM src)",
+		"SELECT * INTO [backupDB].[dbo].[rollback_c_db] FROM (",
+		"  SELECT [db].[dbo].[c].* FROM c WHERE id IN (SELECT id FROM C)) AS backup_table;",
+	}, "\n"), result[0].Statement)
+	_, err = TransformDMLToSelect(context.Background(), caseSensitive, "WITH c AS (SELECT id, c1 FROM test) UPDATE c SET c1 = 1 WHERE id = 1;", "db", "backupDB", "rollback")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), `does not support DML targeting CTE "c"`)
 }
 
 func TestBackup(t *testing.T) {
