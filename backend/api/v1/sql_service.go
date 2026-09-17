@@ -2029,19 +2029,24 @@ func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_Explai
 	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain format %s, supported formats: %s", engine, format, strings.Join(names, ", ")))
 }
 
-// validateExplainStatements refuses an explain request whose EXPLAIN-wrapped form
-// would execute a write. The driver splits a multi-statement request and prefixes
-// EXPLAIN to each statement (see pg.go and its siblings), so this validates the
-// same per-statement wrapped form: a smuggled "ANALYZE DELETE FROM t" becomes
-// EXPLAIN ANALYZE DELETE and is rejected before it runs. Engines whose EXPLAIN is
-// not a statement prefix (Oracle EXPLAIN PLAN, SQL Server SHOWPLAN, Spanner/BigQuery
-// plan APIs) report ok=false from db.ExplainStatement and run their own plan API,
-// which does not execute the statement.
+// validateExplainStatements refuses an explain request whose planned form would
+// execute a write. The driver splits a multi-statement request and builds the
+// EXPLAIN of each statement (see pg.go and its siblings), so this validates the
+// same per-statement form built the same way: a smuggled "ANALYZE DELETE FROM t"
+// is not a statement the parser can plan, and an EXPLAIN ANALYZE DELETE the caller
+// wrote itself is rebuilt as a plain EXPLAIN or refused before it runs.
+//
+// An engine whose EXPLAIN is not a statement prefix (Oracle EXPLAIN PLAN, SQL
+// Server SHOWPLAN, Spanner/BigQuery plan APIs) runs its own plan API, which does
+// not execute the statement, and so has nothing registered to validate here.
 func validateExplainStatements(instance *store.InstanceMessage, statement string, format v1pb.QueryOption_ExplainFormat) error {
 	engine := instance.Metadata.GetEngine()
+	if !parserbase.HasExplainStatement(engine) {
+		return nil
+	}
 	statements, err := parserbase.SplitMultiSQL(engine, statement)
 	if err != nil {
-		// No splitter for this engine: validate the whole statement wrapped once.
+		// No splitter for this engine: validate the whole statement planned once.
 		// Execution goes through the same splitter, so a request that fails to split
 		// here fails there too rather than executing.
 		statements = []parserbase.Statement{{Text: statement}}
@@ -2050,11 +2055,11 @@ func validateExplainStatements(instance *store.InstanceMessage, statement string
 		if stmt.Empty {
 			continue
 		}
-		wrapped, ok := db.ExplainStatement(engine, stmt.Text, format)
-		if !ok {
-			return nil
+		planned, err := parserbase.ExplainStatement(engine, stmt.Text, db.ExplainFormat(format))
+		if err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		if err := validateQueryRequest(instance, wrapped); err != nil {
+		if err := validateQueryRequest(instance, planned); err != nil {
 			return err
 		}
 	}
