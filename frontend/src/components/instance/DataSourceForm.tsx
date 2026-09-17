@@ -1847,7 +1847,8 @@ export function DataSourceForm({
                 {/* Oracle SID/Service Name */}
                 {basicInfo.engine === Engine.ORACLE && (
                   <OracleConnectionFields
-                    key={dataSource.id}
+                    dataSourceId={dataSource.id}
+                    instanceName={instance?.name}
                     sid={dataSource.sid ?? ""}
                     serviceName={dataSource.serviceName ?? ""}
                     resetEvent={dataSourceResetEvent}

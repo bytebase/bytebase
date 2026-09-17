@@ -7,38 +7,54 @@ import { ValidationField, ValidationInput } from "./ValidationField";
 type Identifier = { sid: string; serviceName: string };
 type IdentifierMode = keyof Identifier;
 
-const initialState = (source: Identifier, resetEvent: number) => ({
+const initialState = (source: Identifier) => ({
   source,
-  resetEvent,
   drafts: source,
   mode: (source.sid ? "sid" : "serviceName") as IdentifierMode,
 });
 
 export function OracleConnectionFields({
+  dataSourceId,
+  instanceName,
   sid,
   serviceName,
   allowEdit,
   resetEvent,
   onChange,
 }: Identifier & {
+  dataSourceId: string;
+  instanceName: string | undefined;
   allowEdit: boolean;
   resetEvent: number;
   onChange: (identifier: Identifier) => void;
 }) {
   const { t } = useTranslation();
   const inputId = useId();
-  const [state, setState] = useState(() =>
-    initialState({ sid, serviceName }, resetEvent)
-  );
+  const [cache, setCache] = useState(() => ({
+    instanceName,
+    resetEvent,
+    entries: new Map([[dataSourceId, initialState({ sid, serviceName })]]),
+  }));
 
-  // Revert must discard inactive drafts even when the saved identifier is
-  // already active. Our own updates preserve drafts by recording their source.
-  if (
-    state.resetEvent !== resetEvent ||
-    state.source.sid !== sid ||
-    state.source.serviceName !== serviceName
-  ) {
-    setState(initialState({ sid, serviceName }, resetEvent));
+  // Tab changes retain each data source's drafts. Revert and instance changes
+  // discard all drafts, including those belonging to inactive tabs.
+  const entries =
+    cache.instanceName === instanceName && cache.resetEvent === resetEvent
+      ? cache.entries
+      : new Map<string, ReturnType<typeof initialState>>();
+  const cached = entries.get(dataSourceId);
+  const state =
+    cached &&
+    cached.source.sid === sid &&
+    cached.source.serviceName === serviceName
+      ? cached
+      : initialState({ sid, serviceName });
+  if (entries !== cache.entries || state !== cached) {
+    setCache({
+      instanceName,
+      resetEvent,
+      entries: new Map(entries).set(dataSourceId, state),
+    });
   }
 
   const update = (mode: IdentifierMode, drafts: Identifier) => {
@@ -46,7 +62,11 @@ export function OracleConnectionFields({
       sid: mode === "sid" ? drafts.sid : "",
       serviceName: mode === "serviceName" ? drafts.serviceName : "",
     };
-    setState({ mode, drafts, source, resetEvent });
+    setCache({
+      instanceName,
+      resetEvent,
+      entries: new Map(entries).set(dataSourceId, { mode, drafts, source }),
+    });
     onChange(source);
   };
 

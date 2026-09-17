@@ -12,7 +12,7 @@ function Form({ initial = { sid: "", serviceName: "" }, onChange = vi.fn(), allo
   const [resetEvent, setResetEvent] = useState(0);
   return (
     <ValidationProvider errors={!identifier.sid && !identifier.serviceName ? { serviceName: "oracle-service" } : {}}>
-      <OracleConnectionFields {...identifier} resetEvent={resetEvent} allowEdit={allowEdit} onChange={(next) => { setIdentifier(next); onChange(next); }} />
+      <OracleConnectionFields dataSourceId="admin" instanceName="instances/one" {...identifier} resetEvent={resetEvent} allowEdit={allowEdit} onChange={(next) => { setIdentifier(next); onChange(next); }} />
       <button type="button" onClick={() => { setIdentifier(initial); setResetEvent((event) => event + 1); }}>Revert</button>
     </ValidationProvider>
   );
@@ -78,4 +78,48 @@ test.each([
   fireEvent.click(screen.getByRole("button", { name: "Revert" }));
   fireEvent.click(screen.getByRole("radio", { name: inactive }));
   expect(screen.getByRole("textbox", { name: inactive }).getAttribute("value")).toBe("");
+});
+
+
+function TabbedForm() {
+  const saved = { admin: { sid: "", serviceName: "sales" }, readonly: { sid: "", serviceName: "sales" } };
+  const [sources, setSources] = useState(saved);
+  const [activeId, setActiveId] = useState<"admin" | "readonly">("admin");
+  const [resetEvent, setResetEvent] = useState(0);
+  const [instanceName, setInstanceName] = useState("instances/one");
+  return <>
+    <button type="button" onClick={() => setActiveId(activeId === "admin" ? "readonly" : "admin")}>Switch data source</button>
+    <button type="button" onClick={() => { setSources(saved); setResetEvent((event) => event + 1); }}>Revert</button>
+    <button type="button" onClick={() => { setSources(saved); setInstanceName("instances/two"); }}>Switch instance</button>
+    <OracleConnectionFields dataSourceId={activeId} instanceName={instanceName} {...sources[activeId]} resetEvent={resetEvent} allowEdit onChange={(next) => setSources({ ...sources, [activeId]: next })} />
+  </>;
+}
+
+test("keeps independent identifier drafts for data sources with identical saved values", () => {
+  render(<TabbedForm />);
+  fireEvent.click(screen.getByRole("radio", { name: "instance.sid" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "instance.sid" }), { target: { value: "ADMIN" } });
+  fireEvent.click(screen.getByRole("radio", { name: "instance.service-name" }));
+  fireEvent.click(screen.getByRole("button", { name: "Switch data source" }));
+  fireEvent.click(screen.getByRole("radio", { name: "instance.sid" }));
+  expect(screen.getByRole("textbox", { name: "instance.sid" }).getAttribute("value")).toBe("");
+  fireEvent.change(screen.getByRole("textbox", { name: "instance.sid" }), { target: { value: "READONLY" } });
+  fireEvent.click(screen.getByRole("button", { name: "Switch data source" }));
+  expect(screen.getByRole("radio", { name: "instance.service-name" }).getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(screen.getByRole("radio", { name: "instance.sid" }));
+  expect(screen.getByRole("textbox", { name: "instance.sid" }).getAttribute("value")).toBe("ADMIN");
+  fireEvent.click(screen.getByRole("button", { name: "Switch data source" }));
+  expect(screen.getByRole("textbox", { name: "instance.sid" }).getAttribute("value")).toBe("READONLY");
+});
+
+test.each(["Revert", "Switch instance"])("%s discards drafts for inactive data sources too", (action) => {
+  render(<TabbedForm />);
+  fireEvent.click(screen.getByRole("radio", { name: "instance.sid" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "instance.sid" }), { target: { value: "discarded" } });
+  fireEvent.click(screen.getByRole("radio", { name: "instance.service-name" }));
+  fireEvent.click(screen.getByRole("button", { name: "Switch data source" }));
+  fireEvent.click(screen.getByRole("button", { name: action }));
+  fireEvent.click(screen.getByRole("button", { name: "Switch data source" }));
+  fireEvent.click(screen.getByRole("radio", { name: "instance.sid" }));
+  expect(screen.getByRole("textbox", { name: "instance.sid" }).getAttribute("value")).toBe("");
 });
