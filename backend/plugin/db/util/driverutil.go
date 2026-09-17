@@ -87,6 +87,13 @@ func parseSQLTimestamp(value string) (time.Time, error) {
 }
 
 func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, *sql.ColumnType, any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
+	return RowsToLimitedQueryResult(rows, valueMaker, rowValueConverter, limit, 0)
+}
+
+// RowsToLimitedQueryResult is RowsToQueryResult keeping at most maxRows rows, so that only the
+// rows it returns count towards limit. It reads the rows past maxRows without keeping them,
+// leaving rows at the end of the result set.
+func RowsToLimitedQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, *sql.ColumnType, any) *v1pb.RowValue, limit int64, maxRows int) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -109,6 +116,9 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 
 	if columnLength > 0 {
 		for rows.Next() {
+			if maxRows > 0 && len(result.Rows) >= maxRows {
+				continue
+			}
 			values := make([]any, columnLength)
 			for i, v := range columnTypeNames {
 				values[i] = valueMaker(v, columnTypes[i])

@@ -115,6 +115,13 @@ SELECT id FROM dbo.t WHERE id = 3;`, queryContext)
 	require.NoError(t, err)
 	require.Equal(t, []string{"EXEC dbo.two_sets; [id] 2", "EXEC dbo.two_sets; [s] 1"}, describe(results))
 
+	// The size limit covers the rows kept, not the ones the row limit cuts.
+	results, err = driver.QueryConn(ctx, conn, "EXEC('SELECT TOP 200 name FROM sys.all_objects');", db.QueryContext{Limit: 2, MaximumSQLResultSize: 2000})
+	require.NoError(t, err)
+	require.Len(t, results, 1)
+	require.Empty(t, results[0].GetError())
+	require.Len(t, results[0].GetRows(), 2)
+
 	// Masking cannot trace the rows of a procedure call or an OUTPUT clause.
 	results, err = driver.QueryConn(ctx, conn, "EXEC dbo.two_sets;\nGO\nUPDATE dbo.t SET id = id OUTPUT inserted.id;\nSELECT id FROM dbo.t WHERE id = 1;", db.QueryContext{MaskingEnabled: true, MaximumSQLResultSize: 1 << 30})
 	require.NoError(t, err)

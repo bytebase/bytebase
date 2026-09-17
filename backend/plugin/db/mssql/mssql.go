@@ -600,27 +600,23 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 	return results, procedureResults, nil
 }
 
-// readResultSet reads the current result set, cut to the result limit.
+// readResultSet reads the current result set. The limit rewrite covers only SELECT,
+// so the row limit is applied here as well, for the rows of a procedure call or an
+// OUTPUT clause.
 func readResultSet(rows *sql.Rows, queryContext db.QueryContext) (*v1pb.QueryResult, error) {
-	result, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize)
+	result, err := util.RowsToLimitedQueryResult(rows, makeValueByTypeName, convertValue, queryContext.MaximumSQLResultSize, queryContext.Limit)
 	if err != nil {
 		return nil, err
 	}
 	if result.Error != "" {
-		// RowsToQueryResult stopped at the size limit, and the next message only
-		// arrives once the rest of the result set has been read. Past the end of
-		// a result set, Next would read the following one.
+		// The read stopped at the size limit, and the next message only arrives
+		// once the rest of the result set has been read. Past the end of a result
+		// set, Next would read the following one.
 		for rows.Next() {
 		}
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-	}
-	// The limit rewrite covers only SELECT, not the rows of a procedure call or
-	// an OUTPUT clause.
-	if queryContext.Limit > 0 && len(result.Rows) > queryContext.Limit {
-		result.Rows = result.Rows[:queryContext.Limit]
-		result.RowsCount = int64(queryContext.Limit)
 	}
 	return result, nil
 }
