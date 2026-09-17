@@ -28,7 +28,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 )
 
 const (
@@ -580,22 +579,6 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 	rawDump := schemaBuf.Bytes()
 
-	dbMetadata, err := s.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
-		Workspace:    instance.Workspace,
-		InstanceID:   database.InstanceID,
-		DatabaseName: database.DatabaseName,
-	})
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
-	}
-	// If the schema does not exist, then we create a new one.
-	// This happens when creating a new database in the test.
-	if dbMetadata == nil {
-		dbMetadata = model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{}, nil, &storepb.DatabaseConfig{}, instance.Metadata.GetEngine(), store.IsObjectCaseSensitive(instance))
-	}
-
-	dbConfig := dbMetadata.GetConfig()
-
 	// Resolve store reads before UpdateDatabase opens its write transaction.
 	// Acquiring another pool connection inside the callback can deadlock sync bursts.
 	backupAvailable := s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
@@ -622,7 +605,7 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 
 	if err := s.store.UpsertDBSchema(ctx,
 		database.InstanceID, database.DatabaseName,
-		syncedDatabaseMetadata, dbConfig, rawDump,
+		syncedDatabaseMetadata, rawDump,
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") || strings.Contains(err.Error(), "invalid byte sequence") {
 			if metadataBytes, err := protojson.Marshal(syncedDatabaseMetadata); err == nil {

@@ -75,20 +75,17 @@ func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, ins
 	return s.GetDBSchema(ctx, &FindDBSchemaMessage{Workspace: workspaceID, InstanceID: instanceID, DatabaseName: databaseName})
 }
 
-// UpsertDBSchema upserts a database schema.
+// UpsertDBSchema stores the synced metadata and raw dump of a database. It
+// never writes config, which UpdateDBSchema owns: a sync that wrote back the
+// config it read before dumping the schema would undo an edit made meanwhile.
 func (s *Store) UpsertDBSchema(
 	ctx context.Context,
 	instanceID,
 	databaseName string,
 	dbMetadata *metadatapb.DatabaseSchemaMetadata,
-	dbConfig *storepb.DatabaseConfig,
 	rawDump []byte,
 ) error {
 	metadataBytes, err := protojson.Marshal(dbMetadata)
-	if err != nil {
-		return err
-	}
-	configBytes, err := protojson.Marshal(dbConfig)
 	if err != nil {
 		return err
 	}
@@ -98,21 +95,18 @@ func (s *Store) UpsertDBSchema(
 			instance,
 			db_name,
 			metadata,
-			raw_dump,
-			config
+			raw_dump
 		)
-		VALUES (?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?)
 		ON CONFLICT(instance, db_name) DO UPDATE SET
 			metadata = EXCLUDED.metadata,
-			raw_dump = EXCLUDED.raw_dump,
-			config = EXCLUDED.config
+			raw_dump = EXCLUDED.raw_dump
 		RETURNING metadata, raw_dump, config`,
 		instanceID,
 		databaseName,
 		metadataBytes,
 		// Convert to string because []byte{} is null which violates db schema constraints.
-		string(rawDump),
-		configBytes)
+		string(rawDump))
 
 	query, args, err := q.ToSQL()
 	if err != nil {
