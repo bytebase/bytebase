@@ -58,6 +58,16 @@ type Syncer struct {
 	licenseService  *enterprise.LicenseService
 	productMetrics  *productmetrics.ProductMetrics
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
+
+	databaseSyncLocksMu sync.Mutex
+	databaseSyncLocks   map[string]*databaseSyncLock
+}
+
+// databaseSyncLock admits one schema sync of a database at a time.
+type databaseSyncLock struct {
+	token chan struct{}
+	// users counts the syncs holding or waiting for token, guarded by Syncer.databaseSyncLocksMu.
+	users int
 }
 
 // Run will run the schema syncer once.
@@ -554,6 +564,11 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 			panic(panicValue)
 		}
 	}()
+	unlock, err := s.lockDatabaseSync(ctx, database)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to wait for another sync of database %q", database.DatabaseName)
+	}
+	defer unlock()
 	instance, err := s.store.GetInstanceByResourceID(ctx, database.InstanceID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
@@ -630,6 +645,43 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 
 	return "", nil
+}
+
+// lockDatabaseSync waits until no other sync of the database runs in this
+// process, so a sync that read the schema before a change cannot store its
+// result after a sync that read it after the change.
+func (s *Syncer) lockDatabaseSync(ctx context.Context, database *store.DatabaseMessage) (func(), error) {
+	key := database.String()
+	s.databaseSyncLocksMu.Lock()
+	if s.databaseSyncLocks == nil {
+		s.databaseSyncLocks = map[string]*databaseSyncLock{}
+	}
+	lock, ok := s.databaseSyncLocks[key]
+	if !ok {
+		lock = &databaseSyncLock{token: make(chan struct{}, 1)}
+		s.databaseSyncLocks[key] = lock
+	}
+	lock.users++
+	s.databaseSyncLocksMu.Unlock()
+
+	leave := func() {
+		s.databaseSyncLocksMu.Lock()
+		defer s.databaseSyncLocksMu.Unlock()
+		lock.users--
+		if lock.users == 0 {
+			delete(s.databaseSyncLocks, key)
+		}
+	}
+	select {
+	case lock.token <- struct{}{}:
+		return func() {
+			<-lock.token
+			leave()
+		}, nil
+	case <-ctx.Done():
+		leave()
+		return nil, ctx.Err()
+	}
 }
 
 func errorFromPanic(value any, message string) error {
