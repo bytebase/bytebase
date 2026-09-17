@@ -11,22 +11,27 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
 )
 
-const stmtErrFmt = "statement: %s"
+func init() {
+	base.RegisterResultLimitFunc(storepb.Engine_SNOWFLAKE, statementWithResultLimit)
+}
 
-func getStatementWithResultLimit(statement string, limit int) string {
-	stmt, err := getStatementWithResultLimitInline(statement, limit)
+// statementWithResultLimit implements base.ResultLimitFunc for Snowflake, which
+// takes no engineVersion.
+func statementWithResultLimit(statement string, limit int, _ string) string {
+	stmt, err := statementWithResultLimitInline(statement, limit)
 	if err != nil {
 		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
-		return fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", util.TrimStatement(statement), limit)
+		return fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", base.TrimStatement(statement), limit)
 	}
 	return stmt
 }
 
-// getStatementWithResultLimitInline rewrites the single statement so that its
+// statementWithResultLimitInline rewrites the single statement so that its
 // outermost query returns at most limitCount rows. The rewrite splices the
 // replacement into the original statement text via omni AST byte offsets
 // (ast.Loc), preserving the original formatting. The output shape mirrors the
@@ -44,12 +49,12 @@ func getStatementWithResultLimit(statement string, limit int) string {
 // Non-query statements are returned unchanged (the legacy listener never
 // fired on them). Any error makes the caller fall back to wrapping the
 // statement in SELECT * FROM (...) LIMIT n.
-func getStatementWithResultLimitInline(singleStatement string, limitCount int) (string, error) {
+func statementWithResultLimitInline(singleStatement string, limitCount int) (string, error) {
 	trimmed := strings.TrimRightFunc(singleStatement, utils.IsSpaceOrSemicolon)
 
 	file, err := omniparser.Parse(trimmed)
 	if err != nil {
-		return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
+		return "", errors.Wrapf(err, "statement: %s", singleStatement)
 	}
 	if len(file.Stmts) != 1 {
 		return "", errors.Errorf("expected exactly 1 statement, got %d", len(file.Stmts))
@@ -65,7 +70,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	if sel.Limit != nil {
 		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Limit), limitCount)
 		if err != nil {
-			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
+			return "", errors.Wrapf(err, "statement: %s", singleStatement)
 		}
 		return spliced + "\n;", nil
 	}
@@ -74,7 +79,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	if sel.Fetch != nil {
 		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Fetch.Count), limitCount)
 		if err != nil {
-			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
+			return "", errors.Wrapf(err, "statement: %s", singleStatement)
 		}
 		return spliced + "\n;", nil
 	}
@@ -90,7 +95,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	if sel.Top != nil {
 		spliced, err := spliceLimitNumber(trimmed, omniast.NodeLoc(sel.Top), limitCount)
 		if err != nil {
-			return "", errors.Wrapf(err, stmtErrFmt, singleStatement)
+			return "", errors.Wrapf(err, "statement: %s", singleStatement)
 		}
 		return spliced + "\n;", nil
 	}

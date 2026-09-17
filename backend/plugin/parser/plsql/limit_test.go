@@ -1,4 +1,4 @@
-package oracle
+package plsql
 
 import (
 	"io"
@@ -11,7 +11,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common/yamltest"
-	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 func TestGetStatementWithResultLimit(t *testing.T) {
@@ -51,7 +50,7 @@ func TestAddResultLimitKeepsNonSelectStatementsUnchanged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := addResultLimit(tc.statement, 10, tc.engineVersion)
+			got := statementWithResultLimit(tc.statement, 10, tc.engineVersion)
 
 			require.Equal(t, tc.statement, got)
 		})
@@ -83,7 +82,7 @@ func TestAddResultLimitSkipsOnlySimpleDualSelect(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := addResultLimit(tc.statement, 10, "19.0.0.0.0")
+			got := statementWithResultLimit(tc.statement, 10, "19.0.0.0.0")
 
 			require.Equal(t, tc.want, got)
 		})
@@ -157,7 +156,7 @@ func TestAddLimitFor12cAndLaterRegressionClauseOrder(t *testing.T) {
 			require.Equal(t, tc.want, got)
 			assertSubstringsInOrder(t, got, tc.clausesInOrder)
 			if tc.validateParse {
-				_, err := plsqlparser.ParsePLSQL(got)
+				_, err := ParsePLSQL(got)
 				require.NoError(t, err, "rewritten SQL should remain parseable: %s", got)
 			}
 		})

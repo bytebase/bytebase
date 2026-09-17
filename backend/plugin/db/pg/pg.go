@@ -805,7 +805,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			}
 			statement = explained
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			statement = base.StatementWithResultLimit(storepb.Engine_POSTGRES, statement, queryContext.Limit, "")
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
