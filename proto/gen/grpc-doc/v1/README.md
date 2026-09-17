@@ -2562,7 +2562,9 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
-| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
+| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  | Which explain output the caller wants, for an explain request.
+
+Leave it unspecified for the engine&#39;s own default, which is the only output most engines have. Naming a format an engine cannot produce is INVALID_ARGUMENT rather than a silent fallback, as is any explain request against an engine that has no explain at all. |
 
 
 
@@ -2838,12 +2840,7 @@ RuleType indicates the source of the linting rule.
 <a name="bytebase-v1-QueryOption-ExplainFormat"></a>
 
 ### QueryOption.ExplainFormat
-Which explain output the caller wants, for an explain request.
-
-Leave it unspecified for the engine&#39;s own default, which is the only
-output most engines have. Naming a format an engine cannot produce is
-INVALID_ARGUMENT rather than a silent fallback, as is any explain request
-against an engine that has no explain at all.
+The output format of a query plan.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |

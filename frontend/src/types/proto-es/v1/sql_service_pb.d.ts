@@ -191,6 +191,13 @@ export declare type QueryOption = Message<"bytebase.v1.QueryOption"> & {
   redisRunCommandsOn: QueryOption_RedisRunCommandsOn;
 
   /**
+   * Which explain output the caller wants, for an explain request.
+   *
+   * Leave it unspecified for the engine's own default, which is the only
+   * output most engines have. Naming a format an engine cannot produce is
+   * INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+   * against an engine that has no explain at all.
+   *
    * @generated from field: bytebase.v1.QueryOption.ExplainFormat explain_format = 3;
    */
   explainFormat: QueryOption_ExplainFormat;
@@ -234,12 +241,7 @@ export enum QueryOption_RedisRunCommandsOn {
 export declare const QueryOption_RedisRunCommandsOnSchema: GenEnum<QueryOption_RedisRunCommandsOn>;
 
 /**
- * Which explain output the caller wants, for an explain request.
- *
- * Leave it unspecified for the engine's own default, which is the only
- * output most engines have. Naming a format an engine cannot produce is
- * INVALID_ARGUMENT rather than a silent fallback, as is any explain request
- * against an engine that has no explain at all.
+ * The output format of a query plan.
  *
  * @generated from enum bytebase.v1.QueryOption.ExplainFormat
  */

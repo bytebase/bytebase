@@ -77,12 +77,7 @@ func (QueryOption_RedisRunCommandsOn) EnumDescriptor() ([]byte, []int) {
 	return file_v1_sql_service_proto_rawDescGZIP(), []int{4, 0}
 }
 
-// Which explain output the caller wants, for an explain request.
-//
-// Leave it unspecified for the engine's own default, which is the only
-// output most engines have. Naming a format an engine cannot produce is
-// INVALID_ARGUMENT rather than a silent fallback, as is any explain request
-// against an engine that has no explain at all.
+// The output format of a query plan.
 type QueryOption_ExplainFormat int32
 
 const (
@@ -683,9 +678,15 @@ func (x *QueryResponse) GetAppliedAccessGrant() string {
 type QueryOption struct {
 	state              protoimpl.MessageState         `protogen:"open.v1"`
 	RedisRunCommandsOn QueryOption_RedisRunCommandsOn `protobuf:"varint,1,opt,name=redis_run_commands_on,json=redisRunCommandsOn,proto3,enum=bytebase.v1.QueryOption_RedisRunCommandsOn" json:"redis_run_commands_on,omitempty"`
-	ExplainFormat      QueryOption_ExplainFormat      `protobuf:"varint,3,opt,name=explain_format,json=explainFormat,proto3,enum=bytebase.v1.QueryOption_ExplainFormat" json:"explain_format,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Which explain output the caller wants, for an explain request.
+	//
+	// Leave it unspecified for the engine's own default, which is the only
+	// output most engines have. Naming a format an engine cannot produce is
+	// INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+	// against an engine that has no explain at all.
+	ExplainFormat QueryOption_ExplainFormat `protobuf:"varint,3,opt,name=explain_format,json=explainFormat,proto3,enum=bytebase.v1.QueryOption_ExplainFormat" json:"explain_format,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *QueryOption) Reset() {

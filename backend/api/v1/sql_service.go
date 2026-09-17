@@ -2068,7 +2068,9 @@ var explainKeywordRegexp = regexp.MustCompile(`(?i)^EXPLAIN\b`)
 //
 // A statement that already is an EXPLAIN is refused on every engine but
 // PostgreSQL, whose db.ExplainStatement sets its format instead. Telling whether
-// another engine's EXPLAIN executes would take that engine's parser.
+// another engine's EXPLAIN executes would take that engine's parser. On
+// PostgreSQL, a wrapped statement that would execute at all is refused, reads
+// included.
 func validateExplainStatements(instance *store.InstanceMessage, statement string, format v1pb.QueryOption_ExplainFormat) error {
 	engine := instance.Metadata.GetEngine()
 	statements, err := parserbase.SplitMultiSQL(engine, statement)
