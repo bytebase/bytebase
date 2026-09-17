@@ -2099,7 +2099,6 @@ func validateExplainStatements(instance *store.InstanceMessage, statement string
 		if err := validateQueryRequest(instance, wrapped); err != nil {
 			return err
 		}
-		// An explain request never executes, even a read.
 		if engine == storepb.Engine_POSTGRES {
 			nodes, err := pgparser.ParsePg(wrapped)
 			if err != nil {
