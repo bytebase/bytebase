@@ -117,8 +117,10 @@ func rewriteExistingLimit(sql string, limitNode ast.Node, limitCount int) (strin
 	}
 
 	if countStart, countEnd, ok := findCommaLimitCount(sql, limitLoc); ok {
+		// A literal 0 count (LIMIT offset,0) is a valid, stricter limit and must
+		// be kept, matching the non-comma path below.
 		existingCount, _ := strconv.Atoi(sql[countStart:countEnd])
-		if existingCount > 0 && existingCount <= limitCount {
+		if existingCount >= 0 && existingCount <= limitCount {
 			return sql, nil
 		}
 		return sql[:countStart] + fmt.Sprintf("%d", limitCount) + sql[countEnd:], nil

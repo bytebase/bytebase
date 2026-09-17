@@ -34,6 +34,12 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:      "SELECT * FROM users LIMIT 5",
 		},
 		{
+			name:      "SELECT with existing LIMIT 0 is kept, not replaced",
+			statement: "SELECT * FROM users LIMIT 0",
+			limit:     10,
+			want:      "SELECT * FROM users LIMIT 0",
+		},
+		{
 			name:      "WITH query (CTE)",
 			statement: "WITH active_users AS (SELECT * FROM users WHERE active = true) SELECT * FROM active_users",
 			limit:     10,
@@ -121,6 +127,12 @@ func TestGetStatementWithResultLimitInline(t *testing.T) {
 			statement: "SELECT * FROM t LIMIT (1+2)",
 			limit:     5,
 			wantErr:   true,
+		},
+		{
+			name:      "LIMIT 0 is kept, not replaced with the requested cap",
+			statement: "SELECT * FROM t LIMIT 0",
+			limit:     5,
+			want:      "SELECT * FROM t LIMIT 0",
 		},
 	}
 

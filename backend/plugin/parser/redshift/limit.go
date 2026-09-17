@@ -57,12 +57,17 @@ func statementWithResultLimitInline(statement string, limitCount int) (string, e
 // using byte-offset positions from the omni AST to surgically edit the original SQL text.
 func rewriteSelectLimit(sql string, sel *redshiftast.SelectStmt, limitCount int) (string, error) {
 	if sel.LimitCount != nil {
-		// Already has LIMIT — replace the value if ours is lower.
+		// Already has LIMIT — replace the value if ours is lower. extractIntFromNode
+		// returns 0 both for a genuine LIMIT 0 and for an expression it cannot read
+		// (e.g. LIMIT (1+2)), so a zero is trusted as "already stricter" only when
+		// loc also proves the node is a literal A_Const — the same one the
+		// replacement below can locate. A positive value never had this ambiguity.
 		existingLimit := extractIntFromNode(sel.LimitCount)
-		if existingLimit > 0 && existingLimit <= limitCount {
+		loc := nodeLocOf(sel.LimitCount)
+		isLiteral := loc.Start >= 0
+		if (existingLimit > 0 || (existingLimit == 0 && isLiteral)) && existingLimit <= limitCount {
 			return sql, nil // existing limit is already lower or equal, keep it
 		}
-		loc := nodeLocOf(sel.LimitCount)
 		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
 			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
 		}

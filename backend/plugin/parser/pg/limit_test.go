@@ -44,6 +44,12 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:      "SELECT * FROM users LIMIT 5",
 		},
 		{
+			name:      "SELECT with existing LIMIT 0 is kept, not replaced",
+			statement: "SELECT * FROM users LIMIT 0",
+			limit:     10,
+			want:      "SELECT * FROM users LIMIT 0",
+		},
+		{
 			name:      "WITH query (CTE)",
 			statement: "WITH active_users AS (SELECT * FROM users WHERE active = true) SELECT * FROM active_users",
 			limit:     10,
@@ -216,6 +222,12 @@ func TestGetStatementWithResultLimitInline(t *testing.T) {
 			statement: "SELECT * FROM t LIMIT (1+2)",
 			limit:     5,
 			wantErr:   true,
+		},
+		{
+			name:      "LIMIT 0 is kept, not replaced with the requested cap",
+			statement: "SELECT * FROM t LIMIT 0",
+			limit:     5,
+			want:      "SELECT * FROM t LIMIT 0",
 		},
 		{
 			name: "CTE with lateral and ORDER BY",
@@ -406,4 +418,9 @@ func TestCockroachDBReusesPGLimitRewrite(t *testing.T) {
 		base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, "DELETE FROM t", 10, ""))
 	require.Equal(t, "SELECT * FROM t LIMIT 10",
 		base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, "SELECT * FROM t LIMIT 100", 10, ""))
+	// The blind CTE-wrap CockroachDB used before this reuse preserved a literal
+	// LIMIT 0 (the inner zero always won regardless of the outer cap); the
+	// precise rewrite must keep preserving it rather than replacing it.
+	require.Equal(t, "SELECT * FROM t LIMIT 0",
+		base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, "SELECT * FROM t LIMIT 0", 10, ""))
 }
