@@ -9,6 +9,7 @@ package store
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -608,7 +609,9 @@ type PageToken struct {
 	// Maximum number of items to return.
 	Limit int32 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
 	// Number of items to skip before starting to return results.
-	Offset        int32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	Offset int32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	// The newest row the first page saw, for a list its own reads write to.
+	Snapshot      *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -655,6 +658,13 @@ func (x *PageToken) GetOffset() int32 {
 		return x.Offset
 	}
 	return 0
+}
+
+func (x *PageToken) GetSnapshot() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Snapshot
+	}
+	return nil
 }
 
 // Position in a text expressed as one-based line and one-based column.
@@ -795,10 +805,11 @@ var File_store_common_proto protoreflect.FileDescriptor
 
 const file_store_common_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/common.proto\x12\x0ebytebase.store\"9\n" +
+	"\x12store/common.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"q\n" +
 	"\tPageToken\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x05R\x06offset\"6\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\x126\n" +
+	"\bsnapshot\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\bsnapshot\"6\n" +
 	"\bPosition\x12\x12\n" +
 	"\x04line\x18\x01 \x01(\x05R\x04line\x12\x16\n" +
 	"\x06column\x18\x02 \x01(\x05R\x06column\"/\n" +
@@ -939,23 +950,25 @@ func file_store_common_proto_rawDescGZIP() []byte {
 var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
-	(Engine)(0),           // 0: bytebase.store.Engine
-	(VCSType)(0),          // 1: bytebase.store.VCSType
-	(ExportFormat)(0),     // 2: bytebase.store.ExportFormat
-	(RiskLevel)(0),        // 3: bytebase.store.RiskLevel
-	(SchemaChangeType)(0), // 4: bytebase.store.SchemaChangeType
-	(WebhookType)(0),      // 5: bytebase.store.WebhookType
-	(StatementType)(0),    // 6: bytebase.store.StatementType
-	(*PageToken)(nil),     // 7: bytebase.store.PageToken
-	(*Position)(nil),      // 8: bytebase.store.Position
-	(*Range)(nil),         // 9: bytebase.store.Range
+	(Engine)(0),                   // 0: bytebase.store.Engine
+	(VCSType)(0),                  // 1: bytebase.store.VCSType
+	(ExportFormat)(0),             // 2: bytebase.store.ExportFormat
+	(RiskLevel)(0),                // 3: bytebase.store.RiskLevel
+	(SchemaChangeType)(0),         // 4: bytebase.store.SchemaChangeType
+	(WebhookType)(0),              // 5: bytebase.store.WebhookType
+	(StatementType)(0),            // 6: bytebase.store.StatementType
+	(*PageToken)(nil),             // 7: bytebase.store.PageToken
+	(*Position)(nil),              // 8: bytebase.store.Position
+	(*Range)(nil),                 // 9: bytebase.store.Range
+	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 }
 var file_store_common_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	10, // 0: bytebase.store.PageToken.snapshot:type_name -> google.protobuf.Timestamp
+	1,  // [1:1] is the sub-list for method output_type
+	1,  // [1:1] is the sub-list for method input_type
+	1,  // [1:1] is the sub-list for extension type_name
+	1,  // [1:1] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_store_common_proto_init() }

@@ -271,6 +271,31 @@ func ApplyRetentionFilter(userFilterQ *qb.Query, cutoff *time.Time) *qb.Query {
 	return qb.Q().Space("(?)", q)
 }
 
+// AuditLogTraversalStart is the bound a paged audit-log traversal pins on its
+// first page. It is read from the database because created_at is written
+// there: a time taken in this process is not comparable with it.
+func (s *Store) AuditLogTraversalStart(ctx context.Context) (time.Time, error) {
+	var now time.Time
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT now()").Scan(&now); err != nil {
+		return time.Time{}, errors.Wrapf(err, "failed to read the database time")
+	}
+	return now, nil
+}
+
+// ApplySnapshotFilter bounds a search to the rows that existed when the
+// traversal started. A search writes its own audit row, so without it an
+// offset traversal never reaches the end of the set.
+func ApplySnapshotFilter(userFilterQ *qb.Query, snapshot time.Time) *qb.Query {
+	snapshotQ := qb.Q().Space("created_at <= ?", snapshot)
+	if userFilterQ == nil {
+		return qb.Q().Space("(?)", snapshotQ)
+	}
+	q := qb.Q()
+	q.Space("?", userFilterQ)
+	q.And("?", snapshotQ)
+	return qb.Q().Space("(?)", q)
+}
+
 func GetAuditLogOrders(orderBy string) ([]*OrderByKey, error) {
 	keys, err := parseOrderBy(orderBy)
 	if err != nil {

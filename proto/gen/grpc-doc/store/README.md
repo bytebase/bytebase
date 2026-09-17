@@ -419,6 +419,7 @@ PageToken is used internally for obfuscating pagination tokens.
 | ----- | ---- | ----- | ----------- |
 | limit | [int32](#int32) |  | Maximum number of items to return. |
 | offset | [int32](#int32) |  | Number of items to skip before starting to return results. |
+| snapshot | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The newest row the first page saw, for a list its own reads write to. |
 
 
 

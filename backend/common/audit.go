@@ -19,7 +19,7 @@ import (
 // surface the protos define and where the next reader would go looking for a
 // descriptor. component/recovery already names its rows the same way, under
 // bytebase.cli. The method part names what was ATTEMPTED — the row's status
-// carries the verdict, exactly as for an RPC that ACL refused.
+// carries the verdict.
 const (
 	// AuditMethodMCPSessionAuthorize is a bearer token presented at /mcp and
 	// held against the workspace ceiling. Per REQUEST, not per session: /mcp is
@@ -32,8 +32,8 @@ const (
 	AuditMethodMCPConsentApprove = "/bytebase.mcp.Consent/Approve"
 )
 
-// AuditLogWriter is the one store method a door outside the connect chains
-// needs to record its own denial.
+// AuditLogWriter inserts one audit row. The v1 audit interceptor and the doors
+// outside the connect chains write through it.
 type AuditLogWriter interface {
 	CreateAuditLog(ctx context.Context, workspace string, payload *storepb.AuditLog) error
 }
@@ -78,11 +78,10 @@ const maxAuditPayloadChars = 102400
 // Logs include a "log_type": "audit" field to distinguish from application logs.
 // This is a best-effort operation - errors are not returned to avoid failing the audit flow.
 //
-// Every writer in the server process calls this when stdout audit is enabled:
-// the stream is a mirror of the table, and a row only one of them carries is a
-// row an operator reading the other cannot see. The recovery CLI
-// (component/recovery) is the exception — it writes without a profile to read
-// the flag from.
+// Every writer in the server process calls this when stdout audit is enabled,
+// so the stream carries every stored row. It also carries the v1 calls a
+// permission check refused. The recovery CLI (component/recovery) is the
+// exception — it writes without a profile to read the flag from.
 func LogAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	attrs := []slog.Attr{
 		slog.String("log_type", "audit"),

@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -351,12 +352,15 @@ type pageSize struct {
 type pageOffset struct {
 	limit  int
 	offset int
+	// snapshot is set by a list whose own reads write rows it would page over.
+	snapshot *timestamppb.Timestamp
 }
 
 func (p *pageOffset) getNextPageToken() (string, error) {
 	return marshalPageToken(&storepb.PageToken{
-		Limit:  int32(p.limit),
-		Offset: int32(p.offset + p.limit),
+		Limit:    int32(p.limit),
+		Offset:   int32(p.offset + p.limit),
+		Snapshot: p.snapshot,
 	})
 }
 
@@ -372,6 +376,7 @@ func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
 		}
 		offset.limit = int(size.limit)
 		offset.offset = int(token.Offset)
+		offset.snapshot = token.Snapshot
 	} else {
 		offset.limit = int(size.limit)
 	}

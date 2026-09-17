@@ -305,46 +305,29 @@ func mcpSettingsForCurrentWorkspace(ctx context.Context, reader mcpSettingsReade
 //
 // It belongs to the internal MCP chain only — every request there originates at
 // /mcp — and sits inside the audit interceptor, outside ACL: the ceiling
-// refuses regardless of what RBAC would have said, and the refusal is recorded.
+// refuses regardless of what RBAC would have said, and the refusal is streamed.
 //
 // The ceiling is read live, per request, with no caching anywhere in the path
 // (store.GetMCPSettingsUncached, which resolves the masking toggle off the same
 // row). An admin tightening the ceiling binds the next request of a session
 // already open; work already admitted finishes.
 //
-// A policy denial is recorded whatever the method's audit annotation says: the
-// gate marks the outcome and the audit interceptor records it (see
-// common.SetMCPPolicyDenied). 39 of the 113 refused methods carry no audit
-// annotation — the 4 FORBIDDEN ones that were silent before this gate
-// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting) plus 35
-// EXCLUDED ones — and TestEmailSetting and TestIdentityProvider are the rows an
-// operator would most want, since each would have carried a stored secret to an
-// address the agent chose. Recording requests that were never recorded is why
-// redaction has to cover more than the audited RPCs (audit.go): a denial must
-// not transcribe the secret it refused.
+// A policy denial is marked (common.SetPermissionDenied), so the audit
+// interceptor streams it whatever the method's audit annotation says. That is
+// why redaction covers every refused request, not only the audited RPCs.
 //
 // A ceiling the gate cannot act on splits in two, and the split is the same one
 // the /mcp connection gate makes. A stored value this build cannot interpret —
 // a mistyped enum name, a wrong-typed row — is a policy refusal: it will never
-// succeed on retry, so it answers CodePermissionDenied and is audited, and the
+// succeed on retry, so it answers CodePermissionDenied and is marked, and the
 // connection gate answers 403 for it. A read that FAILED is an outage: it
 // answers CodeUnavailable, is not marked as a policy denial, and the connection
 // gate answers 503, the same way it already answers 503 rather than 401 when it
 // cannot resolve the token audience. Both refuse — an unknown policy never
 // permits — and neither is allowed to describe itself as the other.
 //
-// Two gaps survive this PR, and both are worth knowing because nothing in the
-// annotations shows either.
-//
-//   - RequestPasswordReset, ResetPassword and SendEmailLoginCode are
-//     allow_without_credential, so createAuditLog takes their audit parent ONLY
-//     from what the handler announced (handlerValidatedWorkspaceMethod,
-//     audit.go) — an unvalidated workspace on an unauthenticated method would
-//     let anyone write rows into someone else's. This gate refuses before
-//     dispatch, so the handler never runs and no parent is ever set. Their
-//     denials are still silent, TestMCPResetFlowDenialsAreSilent pins that they
-//     are, and closing it means letting the audit path trust the workspace of
-//     the delegated credential the internal chain already verified.
+// One gap survives, and it is worth knowing because nothing in the annotations
+// shows it.
 //
 //   - Two refusals this gate is the right slot for the CLASS of, but not the
 //     right place for the decision, because the fact they turn on is not in the
@@ -376,11 +359,10 @@ func (in *internalMCPGateInterceptor) WrapUnary(next connect.UnaryFunc) connect.
 			return next(ctx, req)
 		}
 		if policyDenial {
-			// Record the refusal before returning it: the audit interceptor
-			// wraps this one and reads the mark when the request comes back
-			// out. Only a verdict about the caller is marked — an unreadable
-			// ceiling and a broken chain are not policy denials.
-			common.SetMCPPolicyDenied(ctx)
+			// The audit interceptor wraps this one and reads the mark when the
+			// request comes back out. Only a verdict about the caller is marked —
+			// an unreadable ceiling and a broken chain are not policy denials.
+			common.SetPermissionDenied(ctx)
 		}
 		return nil, err
 	}
@@ -411,7 +393,7 @@ func (*internalMCPGateInterceptor) WrapStreamingHandler(connect.StreamingHandler
 
 // refuse returns the error the gate refuses this request with, or nil to let it
 // through to ACL. The bool reports whether the refusal is a verdict about the
-// caller, which is an audited outcome; an infrastructure failure is not.
+// caller, which is marked; an infrastructure failure is not.
 //
 // The context it returns carries the MCP settings this request was held
 // against, for the enforcement points that read the request's argument rather
@@ -479,7 +461,7 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 	// the state and the remedy, never the error. What it does get is the right
 	// KIND of answer, because the two failures are opposites for a client. A
 	// stored value this build cannot interpret never succeeds on retry — an
-	// admin has to rewrite it — so it is a policy refusal and an audited one.
+	// admin has to rewrite it — so it is a policy refusal and a marked one.
 	// A read that failed is an outage: retryable, and not a verdict about the
 	// caller.
 	//
@@ -539,7 +521,7 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 //
 // This lives inside the gate rather than beside it. The decision is the same
 // decision — may this MCP session make this call? — and it has to be taken at
-// the same point in the chain, so that the denial is recorded the same way, is
+// the same point in the chain, so that the denial is marked the same way, is
 // worded the same way, and reaches the caller before any handler side effect
 // can land. A second interceptor would duplicate the slot, the message, and the
 // audit mark to serve one method, and it would put the exception somewhere the

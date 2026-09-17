@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "generated-go/store";
 
 // PageToken is used internally for obfuscating pagination tokens.
@@ -10,6 +12,8 @@ message PageToken {
   int32 limit = 1;
   // Number of items to skip before starting to return results.
   int32 offset = 2;
+  // The newest row the first page saw, for a list its own reads write to.
+  google.protobuf.Timestamp snapshot = 3;
 }
 
 // Engine represents the type of database system.

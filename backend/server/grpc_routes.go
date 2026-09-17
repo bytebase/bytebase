@@ -134,13 +134,18 @@ func configureGrpcRouters(
 	// Create validation interceptor.
 	validateInterceptor := validate.NewInterceptor()
 
+	// The first-listed interceptor is outermost. Audit wraps ACL, so a call ACL
+	// refuses is still streamed to the stdout audit log. Auth stays outside
+	// audit: it populates the identity and workspace every row needs. ACL stays
+	// last on both chains, because its admission is what the audit interceptor
+	// reads as the call reaching its handler.
 	handlerOpts := connect.WithHandlerOptions(
 		connect.WithRecover(onPanic),
 		connect.WithInterceptors(
 			validateInterceptor,
 			auth.New(stores, secret, licenseService, bus, profile),
-			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 			apiv1.NewAuditInterceptor(stores, secret, profile),
+			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 		),
 	)
 
@@ -198,18 +203,9 @@ func configureGrpcRouters(
 	// chain: the credential carries identity + grant state, while authorization
 	// is re-resolved live per request.
 	//
-	// Unlike the public chain, audit sits OUTSIDE ACL (first-listed interceptor
-	// is outermost, so listing audit before ACL wraps it): an ACL denial must
-	// still produce an audit row, because a denied MCP call is exactly the
-	// event an operator investigating an agent needs to see. Methods whose
-	// annotation opts out of auditing stay unaudited for permitted and denied
-	// calls alike (needAudit gates both).
-	//
-	// The MCP ceiling gate sits between them — inside audit, so a denial is
-	// recorded, and outside ACL, because the ceiling refuses whatever the
-	// caller's RBAC would have allowed. It marks its denials so the audit
-	// interceptor records them even on methods whose annotation asks for no
-	// audit row at all.
+	// The order is the public chain's plus the MCP ceiling gate, which sits
+	// inside audit, so its refusals are streamed like ACL's, and outside ACL,
+	// because the ceiling refuses whatever the caller's RBAC would have allowed.
 	internalHandlerOpts := connect.WithHandlerOptions(
 		connect.WithRecover(onPanic),
 		connect.WithInterceptors(

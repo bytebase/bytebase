@@ -1628,7 +1628,7 @@
           "title": "Truy cập MCP đang tắt"
         },
         "line": {
-          "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
+          "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối được ghi vào đầu ra chuẩn khi bật ghi nhật ký kiểm toán vào đầu ra chuẩn",
           "capped": "Giới hạn bởi chính quyền Bytebase của bạn",
           "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
           "no-write": "Không thay đổi dữ liệu hay lược đồ",
@@ -2687,7 +2687,7 @@
         "title": "Prompt đầu tiên của bạn"
       },
       "policy": {
-        "audit": "Các lần từ chối theo chính sách MCP được ghi vào nhật ký kiểm toán.",
+        "audit": "Các lần từ chối theo chính sách MCP được ghi vào đầu ra chuẩn khi bật ghi nhật ký kiểm toán vào đầu ra chuẩn.",
         "description": "Mức tối đa mà một phiên MCP được phép làm trong không gian làm việc này. Mỗi phiên còn bị giới hạn thêm bởi quyền của chính người dùng đang kết nối.",
         "edit": "Sửa chính sách",
         "in-force": "Đang áp dụng",

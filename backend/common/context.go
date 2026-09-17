@@ -19,7 +19,8 @@ const (
 	ServiceDataKey
 	WorkspaceIDContextKey
 	AuditWorkspaceIDKey
-	MCPPolicyDenialKey
+	PermissionDeniedKey
+	HandlerReachedKey
 )
 
 func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
@@ -54,29 +55,36 @@ func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
 	setter(workspaceID)
 }
 
-// WithSetMCPPolicyDenied registers a callback the MCP ceiling gate uses to tell
-// the audit interceptor that it refused this request. The gate runs inside the
-// audit interceptor, so a value it puts on the context cannot travel back out;
-// this is the same setter shape WithSetAuditWorkspaceID already uses for the
-// same reason.
-//
-// The signal is needed because the audit interceptor otherwise writes a row
-// only when the method's own audit annotation asks for one, and 47 of the
-// methods the gate refuses carry no such annotation. A denial nobody can see is
-// the outcome an operator most needs to see.
-func WithSetMCPPolicyDenied(ctx context.Context, setMCPPolicyDenied func()) context.Context {
-	return context.WithValue(ctx, MCPPolicyDenialKey, setMCPPolicyDenied)
+// WithSetPermissionDenied registers a callback that a permission check inside
+// the audit interceptor uses to report that it refused the request. The check
+// runs inside the interceptor, so a value it puts on the context cannot travel
+// back out; WithSetAuditWorkspaceID has the same shape for the same reason.
+func WithSetPermissionDenied(ctx context.Context, setPermissionDenied func()) context.Context {
+	return context.WithValue(ctx, PermissionDeniedKey, setPermissionDenied)
 }
 
-// SetMCPPolicyDenied records that the MCP ceiling gate refused the current
-// request, if the audit interceptor registered a setter on the context. Safe to
-// call when it did not: the public chain never runs the gate at all.
-func SetMCPPolicyDenied(ctx context.Context) {
-	setter, ok := ctx.Value(MCPPolicyDenialKey).(func())
-	if !ok {
-		return
+// SetPermissionDenied reports that a permission check refused the current
+// request. Mark only a verdict about the caller's permission, not an outage, a
+// license gate, a workflow state or an ownership rule.
+func SetPermissionDenied(ctx context.Context) {
+	if setter, ok := ctx.Value(PermissionDeniedKey).(func()); ok {
+		setter()
 	}
-	setter()
+}
+
+// WithSetHandlerReached registers a callback the ACL interceptor uses to report
+// that it admitted the request to its handler.
+func WithSetHandlerReached(ctx context.Context, setHandlerReached func()) context.Context {
+	return context.WithValue(ctx, HandlerReachedKey, setHandlerReached)
+}
+
+// SetHandlerReached reports that the current request passed every interceptor
+// check and is about to run its handler. The audit interceptor stores a row
+// only for such a call.
+func SetHandlerReached(ctx context.Context) {
+	if setter, ok := ctx.Value(HandlerReachedKey).(func()); ok {
+		setter()
+	}
 }
 
 // GetWorkspaceIDFromContext returns the workspace ID from the request context.

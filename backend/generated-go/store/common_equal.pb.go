@@ -16,6 +16,9 @@ func (x *PageToken) Equal(y *PageToken) bool {
 	if x.Offset != y.Offset {
 		return false
 	}
+	if p, q := x.Snapshot, y.Snapshot; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
 	return true
 }
 
