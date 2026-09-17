@@ -424,3 +424,14 @@ func TestCockroachDBReusesPGLimitRewrite(t *testing.T) {
 	require.Equal(t, "SELECT * FROM t LIMIT 0",
 		base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, "SELECT * FROM t LIMIT 0", 10, ""))
 }
+
+func TestUnlimitedResultLimit(t *testing.T) {
+	for _, clause := range []string{"ALL", "NULL"} {
+		t.Run(clause, func(t *testing.T) {
+			statement := "SELECT * FROM t LIMIT " + clause + " OFFSET 2;"
+			got := statementWithResultLimit(statement, 10, "")
+			require.Equal(t, got, base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, statement, 10, ""))
+			require.Equal(t, "WITH result AS (\nSELECT * FROM t LIMIT "+clause+" OFFSET 2\n) SELECT * FROM result LIMIT 10;", got)
+		})
+	}
+}

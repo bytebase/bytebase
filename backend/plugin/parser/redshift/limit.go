@@ -57,23 +57,17 @@ func statementWithResultLimitInline(statement string, limitCount int) (string, e
 // using byte-offset positions from the omni AST to surgically edit the original SQL text.
 func rewriteSelectLimit(sql string, sel *redshiftast.SelectStmt, limitCount int) (string, error) {
 	if sel.LimitCount != nil {
-		// Already has LIMIT — replace the value if ours is lower. extractIntFromNode
-		// returns 0 both for a genuine LIMIT 0 and for an expression it cannot read
-		// (e.g. LIMIT (1+2)), so a zero is trusted as "already stricter" only when
-		// loc also proves the node is a literal A_Const — the same one the
-		// replacement below can locate. A positive value never had this ambiguity.
-		existingLimit := extractIntFromNode(sel.LimitCount)
+		existingLimit, isInteger := extractIntFromNode(sel.LimitCount)
 		loc := nodeLocOf(sel.LimitCount)
-		isLiteral := loc.Start >= 0
-		if (existingLimit > 0 || (existingLimit == 0 && isLiteral)) && existingLimit <= limitCount {
+		if isInteger && existingLimit >= 0 && existingLimit <= limitCount {
 			return sql, nil // existing limit is already lower or equal, keep it
 		}
-		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
+		if isInteger && loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
 			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
 		}
-		// LimitCount is a non-constant expression (e.g. LIMIT $1, LIMIT (1+2)).
-		// Cannot safely rewrite in-place; let the caller fall back to CTE wrapper.
-		return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
+		// ALL/NULL and non-constant limits lack reliable replacement spans.
+		// Cap them with the outer query instead of rewriting their text.
+		return "", errors.Errorf("cannot rewrite LIMIT expression in place")
 	}
 
 	// No LIMIT clause — find the right insertion point.
@@ -113,18 +107,19 @@ func findLimitInsertPosition(sel *redshiftast.SelectStmt) (int, bool) {
 	return end, false
 }
 
-// extractIntFromNode extracts an integer value from a LIMIT/OFFSET node.
-func extractIntFromNode(node redshiftast.Node) int {
+// extractIntFromNode distinguishes integer limits, including zero, from unlimited
+// ALL/NULL constants and expressions that require the fallback wrapper.
+func extractIntFromNode(node redshiftast.Node) (int, bool) {
 	switch n := node.(type) {
 	case *redshiftast.Integer:
-		return int(n.Ival)
+		return int(n.Ival), true
 	case *redshiftast.A_Const:
 		if iv, ok := n.Val.(*redshiftast.Integer); ok {
-			return int(iv.Ival)
+			return int(iv.Ival), true
 		}
-		return 0
+		return 0, false
 	default:
-		return 0
+		return 0, false
 	}
 }
 

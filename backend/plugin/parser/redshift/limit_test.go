@@ -216,3 +216,13 @@ func assertSubstringsInOrder(t *testing.T, s string, substrings []string) {
 		start += index + len(substring)
 	}
 }
+
+func TestUnlimitedResultLimit(t *testing.T) {
+	for _, clause := range []string{"ALL", "NULL"} {
+		t.Run(clause, func(t *testing.T) {
+			statement := "SELECT * FROM t LIMIT " + clause + " OFFSET 2;"
+			got := statementWithResultLimit(statement, 10, "")
+			require.Equal(t, "WITH result AS (\nSELECT * FROM t LIMIT "+clause+" OFFSET 2\n) SELECT * FROM result LIMIT 10;", got)
+		})
+	}
+}

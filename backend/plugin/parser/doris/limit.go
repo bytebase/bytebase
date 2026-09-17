@@ -27,12 +27,46 @@ func statementWithResultLimit(statement string, limit int, _ string) string {
 		return statement
 	}
 
-	stmt, err := statementWithResultLimitInline(statement, limit)
+	query, outfile := splitOutfileClause(statement)
+	stmt, err := statementWithResultLimitInline(query, limit)
 	if err != nil {
 		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
-		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", base.TrimStatement(statement), limit)
+		if outfile == "" {
+			return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", base.TrimStatement(query), limit)
+		}
+		stmt = fmt.Sprintf("SELECT * FROM (\n%s\n) result LIMIT %d", base.TrimStatement(query), limit)
+	}
+	if outfile != "" {
+		return strings.TrimRight(stmt, " \t\r\n") + "\n" + outfile
 	}
 	return stmt
+}
+
+// The Doris AST cannot represent INTO OUTFILE. Keep this top-level clause outside
+// the query while capping it, including when a set operation needs wrapping.
+func splitOutfileClause(statement string) (string, string) {
+	tokens, errs := parser.Tokenize(statement)
+	if len(errs) > 0 {
+		return statement, ""
+	}
+	intoKind, _ := parser.KeywordToken("into")
+	depth := 0
+	for i, token := range tokens {
+		switch token.Kind {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		case ';':
+			return statement, ""
+		case intoKind:
+			if depth == 0 && i+1 < len(tokens) && tokens[i+1].Kind == outfileTokenKind {
+				return statement[:token.Loc.Start], statement[token.Loc.Start:]
+			}
+		default:
+		}
+	}
+	return statement, ""
 }
 
 func statementWithResultLimitInline(statement string, limitCount int) (string, error) {

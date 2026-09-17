@@ -197,3 +197,67 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
 }
+
+func TestResultLimitOutfile(t *testing.T) {
+	tests := []struct {
+		name      string
+		statement string
+		want      string
+	}{
+		{
+			name:      "select with export options",
+			statement: `SELECT * FROM orders INTO OUTFILE 's3://bucket/export/' FORMAT AS CSV PROPERTIES("column_separator" = ",");`,
+			want:      "SELECT * FROM orders LIMIT 10\n" + `INTO OUTFILE 's3://bucket/export/' FORMAT AS CSV PROPERTIES("column_separator" = ",");`,
+		},
+		{
+			name:      "existing limit",
+			statement: "SELECT * FROM orders LIMIT 100 INTO OUTFILE 's3://bucket/export/';",
+			want:      "SELECT * FROM orders LIMIT 10\nINTO OUTFILE 's3://bucket/export/';",
+		},
+		{
+			name:      "zero limit",
+			statement: "SELECT * FROM orders LIMIT 0 INTO OUTFILE 's3://bucket/export/';",
+			want:      "SELECT * FROM orders LIMIT 0\nINTO OUTFILE 's3://bucket/export/';",
+		},
+		{
+			name:      "zero comma limit",
+			statement: "SELECT * FROM orders LIMIT 5,0 INTO OUTFILE 's3://bucket/export/';",
+			want:      "SELECT * FROM orders LIMIT 5,0\nINTO OUTFILE 's3://bucket/export/';",
+		},
+		{
+			name:      "union fallback",
+			statement: "SELECT a FROM t1 UNION SELECT a FROM t2 INTO OUTFILE 's3://bucket/export/';",
+			want:      "SELECT * FROM (\nSELECT a FROM t1 UNION SELECT a FROM t2\n) result LIMIT 10\nINTO OUTFILE 's3://bucket/export/';",
+		},
+		{
+			name:      "comments and case",
+			statement: "SELECT * FROM orders -- export\ninto /* target */ outfile 's3://bucket/export/';",
+			want:      "SELECT * FROM orders LIMIT 10 -- export\ninto /* target */ outfile 's3://bucket/export/';",
+		},
+		{
+			name:      "union with trailing comment",
+			statement: "SELECT a FROM t1 UNION SELECT a FROM t2 -- export\nINTO OUTFILE 's3://bucket/export/';",
+			want:      "SELECT * FROM (\nSELECT a FROM t1 UNION SELECT a FROM t2 -- export\n) result LIMIT 10\nINTO OUTFILE 's3://bucket/export/';",
+		},
+		{
+			name:      "parenthesized query",
+			statement: "(SELECT * FROM orders) INTO OUTFILE 's3://bucket/export/';",
+			want:      "(SELECT * FROM orders) LIMIT 10\nINTO OUTFILE 's3://bucket/export/';",
+		},
+		{
+			name:      "quoted words",
+			statement: "SELECT 'INTO OUTFILE', `INTO OUTFILE` FROM t",
+			want:      "SELECT 'INTO OUTFILE', `INTO OUTFILE` FROM t LIMIT 10",
+		},
+		{
+			name:      "comment words",
+			statement: "SELECT * FROM t /* INTO OUTFILE */;",
+			want:      "SELECT * FROM t LIMIT 10 /* INTO OUTFILE */;",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, statementWithResultLimit(tt.statement, 10, ""))
+		})
+	}
+}
