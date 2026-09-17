@@ -367,13 +367,6 @@ func resolveRawResourceWithArchivedProject(ctx context.Context, stores *store.St
 
 	parts := strings.Split(name, "/")
 	route := getResourceRoute(parts)
-	if allowArchivedProject && route == (resourceRoute{projectCollection}) {
-		projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
-		if err != nil {
-			return nil, err
-		}
-		return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
-	}
 	if allowArchivedProject && route == (resourceRoute{projectCollection, instanceCollection}) {
 		return resolveProjectInstanceResourceForLifecycle(ctx, stores, parts)
 	}
@@ -590,8 +583,7 @@ func resolveProjectInstanceResourceForLifecycle(ctx context.Context, stores *sto
 
 func allowsArchivedProjectResourceResolution(method string) bool {
 	return method == v1connect.InstanceServiceDeleteInstanceProcedure ||
-		method == v1connect.InstanceServiceUndeleteInstanceProcedure ||
-		method == v1connect.InstanceServicePrepareSampleProjectInstanceProcedure
+		method == v1connect.InstanceServiceUndeleteInstanceProcedure
 }
 
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {
