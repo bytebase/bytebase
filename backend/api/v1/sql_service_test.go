@@ -346,6 +346,8 @@ func TestValidateExplainFormat(t *testing.T) {
 		{name: "postgres json", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_JSON},
 		{name: "postgres xml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_XML},
 		{name: "postgres text", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_TEXT},
+		{name: "postgres yaml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_YAML},
+		{name: "mssql yaml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_YAML, wantErr: true},
 		{name: "mssql xml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_XML},
 		{name: "mssql json", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_JSON, wantErr: true},
 		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
@@ -365,7 +367,8 @@ func TestValidateExplainFormat(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			err := validateExplainFormat(tc.engine, tc.format)
+			instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: tc.engine}}
+			err := validateExplain(instance, "SELECT 1", tc.format)
 			if !tc.wantErr {
 				require.NoError(t, err)
 				return
@@ -379,7 +382,7 @@ func TestValidateExplainFormat(t *testing.T) {
 // TestExplainGateRejectsSmuggledWrite locks the smuggle defense. An explain
 // request carries the bare statement and the driver prefixes EXPLAIN, so
 // "ANALYZE DELETE FROM t" — not valid SQL on its own — would become
-// EXPLAIN ANALYZE DELETE and execute the DELETE. validateExplainStatements wraps
+// EXPLAIN ANALYZE DELETE and execute the DELETE. validateExplain explains
 // each statement the way the driver does and refuses it unless read-only. Every
 // prefix engine must classify the wrapped smuggle as non-read-only (by verdict or
 // syntax error) so it never reaches the driver.
@@ -400,10 +403,43 @@ func TestExplainGateRejectsSmuggledWrite(t *testing.T) {
 		t.Run(engine.String(), func(t *testing.T) {
 			t.Parallel()
 			instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
-			require.Error(t, validateExplainStatements(instance, "ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED),
+			require.Error(t, validateExplain(instance, "ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED),
 				"EXPLAIN ANALYZE DELETE must not pass the read-only gate")
 		})
 	}
+}
+
+// TestExplainGateRefusesPostgresExecution pins that an explain request never
+// executes on PostgreSQL, even a read, wherever the statement sits and however
+// prefixing turns it into an EXPLAIN ANALYZE.
+func TestExplainGateRefusesPostgresExecution(t *testing.T) {
+	t.Parallel()
+	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
+	for _, stmt := range []string{
+		"SELECT 1; EXPLAIN (ANALYZE, FORMAT JSON) SELECT 2",
+		"ANALYZE SELECT 1",
+		"(ANALYZE) SELECT 1",
+	} {
+		for _, format := range []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_JSON} {
+			require.Errorf(t, validateExplain(pg, stmt, format), "%s as %s", stmt, format)
+		}
+	}
+	require.NoError(t, validateExplain(pg, "EXPLAIN (ANALYZE false) SELECT 1", v1pb.QueryOption_JSON))
+}
+
+// TestExplainGateRefusesTypedExplain pins that an engine that explains by
+// prefixing never gets a second EXPLAIN, while PostgreSQL sets the format.
+func TestExplainGateRefusesTypedExplain(t *testing.T) {
+	t.Parallel()
+	mysql := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_MYSQL}}
+	for _, stmt := range []string{"EXPLAIN SELECT 1", "SELECT 1; EXPLAIN SELECT 2"} {
+		err := validateExplain(mysql, stmt, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED)
+		require.Errorf(t, err, stmt)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	}
+	require.NoError(t, validateExplain(mysql, "SELECT 'EXPLAIN'", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
+	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
+	require.NoError(t, validateExplain(pg, "EXPLAIN SELECT 1", v1pb.QueryOption_JSON))
 }
 
 // TestExplainGateAllowsPlans confirms the gate does not over-reject legitimate
@@ -419,20 +455,24 @@ func TestExplainGateAllowsPlans(t *testing.T) {
 	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
 	// Plain single-statement plans, read or write, are allowed.
 	for _, stmt := range []string{"SELECT 1", "DELETE FROM t"} {
-		require.NoError(t, validateExplainStatements(pg, stmt, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), stmt)
+		require.NoError(t, validateExplain(pg, stmt, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), stmt)
+	}
+	// A typed EXPLAIN gets the requested format rather than a second EXPLAIN.
+	for _, stmt := range []string{"EXPLAIN SELECT 1", "EXPLAIN (COSTS OFF) DELETE FROM t; SELECT 1"} {
+		require.NoError(t, validateExplain(pg, stmt, v1pb.QueryOption_JSON), stmt)
 	}
 	// Engines that split on ';' plan each statement in its own non-executing EXPLAIN,
 	// so a batch of plain writes is allowed rather than over-rejected.
 	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_MYSQL} {
 		instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
-		require.NoErrorf(t, validateExplainStatements(instance, "DELETE FROM hello; DELETE FROM hello", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: batch of plain writes", engine)
+		require.NoErrorf(t, validateExplain(instance, "DELETE FROM hello; DELETE FROM hello", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: batch of plain writes", engine)
 	}
 	// A write smuggled into a batch is refused wherever it sits — on engines that
 	// split it (pg, mysql) and on one whose splitter keeps it whole and validates
 	// the unwrapped tail (clickhouse).
 	for _, engine := range []storepb.Engine{storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_CLICKHOUSE} {
 		instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
-		require.Errorf(t, validateExplainStatements(instance, "SELECT 1; ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle after a read", engine)
-		require.Errorf(t, validateExplainStatements(instance, "ANALYZE DELETE FROM t; SELECT 1", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle before a read", engine)
+		require.Errorf(t, validateExplain(instance, "SELECT 1; ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle after a read", engine)
+		require.Errorf(t, validateExplain(instance, "ANALYZE DELETE FROM t; SELECT 1", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s: smuggle before a read", engine)
 	}
 }

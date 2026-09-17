@@ -9,28 +9,23 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func TestExplainStatement(t *testing.T) {
-	tests := []struct {
-		engine storepb.Engine
-		format v1pb.QueryOption_ExplainFormat
-		want   string
-		wantOK bool
+func TestExplainFormats(t *testing.T) {
+	for _, tc := range []struct {
+		engine        storepb.Engine
+		formats       []v1pb.QueryOption_ExplainFormat
+		defaultFormat v1pb.QueryOption_ExplainFormat
 	}{
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "EXPLAIN SELECT 1", true},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_JSON, "EXPLAIN (FORMAT JSON) SELECT 1", true},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_XML, "EXPLAIN (FORMAT XML) SELECT 1", true},
-		{storepb.Engine_MYSQL, v1pb.QueryOption_JSON, "EXPLAIN SELECT 1", true},
-		{storepb.Engine_TRINO, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "EXPLAIN SELECT 1", true},
-		{storepb.Engine_HIVE, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "EXPLAIN SELECT 1", true},
-		// Non-prefix engines (their driver builds the plan another way) report ok=false.
-		{storepb.Engine_ORACLE, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "", false},
-		{storepb.Engine_MSSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "", false},
-		{storepb.Engine_SPANNER, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "", false},
-		{storepb.Engine_MONGODB, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, "", false},
+		{storepb.Engine_POSTGRES, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML}, v1pb.QueryOption_TEXT},
+		{storepb.Engine_MSSQL, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}, v1pb.QueryOption_TEXT},
+		{storepb.Engine_SPANNER, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}, v1pb.QueryOption_JSON},
+		{storepb.Engine_MYSQL, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{storepb.Engine_ORACLE, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}, v1pb.QueryOption_TEXT},
+	} {
+		formats, defaultFormat, ok := ExplainFormats(tc.engine)
+		require.Truef(t, ok, "%s", tc.engine)
+		require.Equalf(t, tc.formats, formats, "%s", tc.engine)
+		require.Equalf(t, tc.defaultFormat, defaultFormat, "%s", tc.engine)
 	}
-	for _, tc := range tests {
-		got, ok := ExplainStatement(tc.engine, "SELECT 1", tc.format)
-		require.Equalf(t, tc.wantOK, ok, "%s ok", tc.engine)
-		require.Equalf(t, tc.want, got, "%s statement", tc.engine)
-	}
+	_, _, ok := ExplainFormats(storepb.Engine_MONGODB)
+	require.False(t, ok)
 }

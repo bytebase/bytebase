@@ -650,6 +650,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.QueryResult.QueryPlan"><span class="badge">M</span>QueryResult.QueryPlan</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.QueryResult.SyntaxError"><span class="badge">M</span>QueryResult.SyntaxError</a>
                 </li>
               
@@ -8059,7 +8063,12 @@ Empty when the user was authorized through normal ACL rather than a grant. </p><
                   <td>explain_format</td>
                   <td><a href="#bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Which explain output the caller wants, for an explain request.
+
+Leave it unspecified for the engine&#39;s own default, which is the only
+output most engines have. Naming a format an engine cannot produce is
+INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+against an engine that has no explain at all. </p></td>
                 </tr>
               
             </tbody>
@@ -8286,6 +8295,14 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td><p>Masking reasons for each column (empty for non-masked columns). </p></td>
                 </tr>
               
+                <tr>
+                  <td>query_plan</td>
+                  <td><a href="#bytebase.v1.QueryResult.QueryPlan">QueryResult.QueryPlan</a></td>
+                  <td></td>
+                  <td><p>Set when the result is a query plan: the output of an explain request, or
+of an EXPLAIN typed on PostgreSQL. Unset for any other result. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8475,6 +8492,38 @@ Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.QueryResult.QueryPlan">QueryResult.QueryPlan</h3>
+        <p>A query plan held in the result's rows.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>executed</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+does. </p></td>
                 </tr>
               
             </tbody>
@@ -8794,7 +8843,7 @@ These are custom, flexible checks powered by AI models.</p></td>
         </table>
       
         <h3 id="bytebase.v1.QueryOption.ExplainFormat">QueryOption.ExplainFormat</h3>
-        <p>Which explain output the caller wants, for an explain request.</p><p>Leave it unspecified for the engine's own default, which is the only</p><p>output most engines have. Naming a format an engine cannot produce is</p><p>INVALID_ARGUMENT rather than a silent fallback, as is any explain request</p><p>against an engine that has no explain at all.</p>
+        <p>The output format of a query plan.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -8804,7 +8853,9 @@ These are custom, flexible checks powered by AI models.</p></td>
               <tr>
                 <td>EXPLAIN_FORMAT_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL.</p></td>
+                <td><p>The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a
+result, a default the server could not resolve, as when MySQL follows the
+session&#39;s explain_format; read such a plan as text.</p></td>
               </tr>
             
               <tr>
@@ -8825,6 +8876,12 @@ SHOWPLAN_ALL.</p></td>
                 <td>3</td>
                 <td><p>The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
 SHOWPLAN_XML.</p></td>
+              </tr>
+            
+              <tr>
+                <td>YAML</td>
+                <td>4</td>
+                <td><p>The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML).</p></td>
               </tr>
             
           </tbody>

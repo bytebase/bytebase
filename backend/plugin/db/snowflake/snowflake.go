@@ -337,7 +337,9 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_SNOWFLAKE, statement, queryContext.Option.GetExplainFormat())
+			if statement, err = base.ExplainStatement(storepb.Engine_SNOWFLAKE, statement, queryContext.Option.GetExplainFormat().String()); err != nil {
+				return nil, err
+			}
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}

@@ -17,6 +17,8 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_HIVE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_BIGQUERY, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_CASSANDRA, ValidateSQLForEditor)
+	base.RegisterExplainFunc(storepb.Engine_CLICKHOUSE, ExplainStatement)
+	base.RegisterExplainFunc(storepb.Engine_HIVE, ExplainStatement)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.

@@ -799,7 +799,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_POSTGRES, statement, queryContext.Option.GetExplainFormat())
+			if statement, err = base.ExplainStatement(storepb.Engine_POSTGRES, statement, queryContext.Option.GetExplainFormat().String()); err != nil {
+				return nil, err
+			}
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
@@ -837,6 +839,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				if err := rows.Err(); err != nil {
 					return nil, err
 				}
+				if !queryContext.Explain {
+					r.QueryPlan = typedExplainPlan(statement)
+				}
 				return r, nil
 			}
 
@@ -868,6 +873,22 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
+}
+
+// typedExplainPlan describes the plan an EXPLAIN in an ordinary query returns,
+// and is nil for any other statement. The Query handler describes the plans of
+// an explain request.
+func typedExplainPlan(statement string) *v1pb.QueryResult_QueryPlan {
+	format, analyze, ok := pgparser.DescribeExplain(statement)
+	if !ok {
+		return nil
+	}
+	// PostgreSQL accepts no format but text, json, xml and yaml, which the enum
+	// values are named after.
+	return &v1pb.QueryResult_QueryPlan{
+		Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(format)]),
+		Executed: analyze,
+	}
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {

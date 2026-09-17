@@ -5,10 +5,12 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_TIDB, validateQuery)
+	base.RegisterExplainFunc(storepb.Engine_TIDB, standard.ExplainStatement)
 }
 
 // validateQuery validates the SQL statement for SQL editor.

@@ -26047,6 +26047,13 @@ components:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.QueryOption.ExplainFormat'
           title: explain_format
+          description: |-
+            Which explain output the caller wants, for an explain request.
+
+             Leave it unspecified for the engine's own default, which is the only
+             output most engines have. Naming a format an engine cannot produce is
+             INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+             against an engine that has no explain at all.
       title: QueryOption
       additionalProperties: false
     bytebase.v1.QueryOption.ExplainFormat:
@@ -26057,13 +26064,8 @@ components:
         - TEXT
         - JSON
         - XML
-      description: |-
-        Which explain output the caller wants, for an explain request.
-
-         Leave it unspecified for the engine's own default, which is the only
-         output most engines have. Naming a format an engine cannot produce is
-         INVALID_ARGUMENT rather than a silent fallback, as is any explain request
-         against an engine that has no explain at all.
+        - YAML
+      description: The output format of a query plan.
     bytebase.v1.QueryOption.RedisRunCommandsOn:
       type: string
       title: RedisRunCommandsOn
@@ -26250,6 +26252,13 @@ components:
             $ref: '#/components/schemas/bytebase.v1.MaskingReason'
           title: masked
           description: Masking reasons for each column (empty for non-masked columns).
+        queryPlan:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.QueryResult.QueryPlan'
+          title: query_plan
+          description: |-
+            Set when the result is a query plan: the output of an explain request, or
+             of an EXPLAIN typed on PostgreSQL. Unset for any other result.
       title: QueryResult
     bytebase.v1.QueryResult.CommandError:
       type: object
@@ -26357,6 +26366,22 @@ components:
       description: |-
         refer https://www.postgresql.org/docs/11/protocol-error-fields.html
          for field description.
+    bytebase.v1.QueryResult.QueryPlan:
+      type: object
+      properties:
+        format:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.QueryOption.ExplainFormat'
+          title: format
+        executed:
+          type: boolean
+          title: executed
+          description: |-
+            Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+             does.
+      title: QueryPlan
+      additionalProperties: false
+      description: A query plan held in the result's rows.
     bytebase.v1.QueryResult.SyntaxError:
       type: object
       properties:

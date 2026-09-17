@@ -410,6 +410,68 @@ func TestQueryConnExplainFormat(t *testing.T) {
 	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
 	require.Positive(t, plan[0].Plan.TotalCost)
 	require.Positive(t, plan[0].Plan.PlanRows)
+
+	// A typed EXPLAIN is explained once, in the requested format.
+	typedResults, err := driver.QueryConn(ctx, conn, "EXPLAIN (COSTS OFF) "+statement, db.QueryContext{
+		Explain:              true,
+		MaximumSQLResultSize: 1 << 30,
+		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "EXPLAIN (costs off, FORMAT JSON) "+statement, typedResults[0].GetStatement())
+	plan = nil
+	require.NoError(t, json.Unmarshal([]byte(firstStringValue(t, typedResults)), &plan))
+	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
+	require.Zero(t, plan[0].Plan.TotalCost)
+}
+
+// TestQueryConnDescribesTypedExplain pins how an EXPLAIN typed into an ordinary
+// query describes its plan.
+func TestQueryConnDescribesTypedExplain(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, rawDB := testcontainer.NewPgDatabase(t)
+	_, err := rawDB.ExecContext(ctx, `CREATE TABLE plan_target (id int PRIMARY KEY); INSERT INTO plan_target VALUES (1);`)
+	require.NoError(t, err)
+
+	driver, err := (&Driver{}).Open(ctx, storepb.Engine_POSTGRES, db.ConnectionConfig{
+		DataSource: &storepb.DataSource{
+			Host:     pgContainer.GetHost(),
+			Port:     pgContainer.GetPort(),
+			Username: "postgres",
+		},
+		Password:          "root-password",
+		ConnectionContext: db.ConnectionContext{DatabaseName: dbName},
+	})
+	require.NoError(t, err)
+	defer driver.Close(ctx)
+
+	conn, err := driver.GetDB().Conn(ctx)
+	require.NoError(t, err)
+	defer conn.Close()
+
+	for _, tc := range []struct {
+		statement string
+		want      *v1pb.QueryResult_QueryPlan
+	}{
+		{"SELECT id FROM plan_target", nil},
+		{"EXPLAIN SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_TEXT}},
+		{"EXPLAIN (FORMAT JSON) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_JSON}},
+		{"EXPLAIN (FORMAT XML) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_XML}},
+		{"EXPLAIN (FORMAT YAML) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_YAML}},
+		{"EXPLAIN ANALYZE VERBOSE SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_TEXT, Executed: true}},
+		{"EXPLAIN (ANALYZE, FORMAT JSON) SELECT id FROM plan_target", &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_JSON, Executed: true}},
+		// The editor runs a write for its affected rows, so this plan is not returned.
+		{"EXPLAIN ANALYZE DELETE FROM plan_target WHERE id = 0", nil},
+	} {
+		results, err := driver.QueryConn(ctx, conn, tc.statement, db.QueryContext{Limit: 5000, MaximumSQLResultSize: 1 << 30})
+		require.NoError(t, err, tc.statement)
+		require.Len(t, results, 1, tc.statement)
+		require.Empty(t, results[0].GetError(), tc.statement)
+		require.Truef(t, tc.want.Equal(results[0].GetQueryPlan()), "%s: got %v", tc.statement, results[0].GetQueryPlan())
+	}
 }
 
 func firstStringValue(t *testing.T, results []*v1pb.QueryResult) string {

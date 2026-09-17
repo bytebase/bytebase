@@ -333,6 +333,7 @@ export function ResultView({
                       params={executeParams}
                       database={database}
                       result={result}
+                      results={resultSet.results}
                       resultIndex={resultSet.results.indexOf(result)}
                       showExport={false}
                       maximumExportCount={queryDataPolicy?.maximumResultRows}

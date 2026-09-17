@@ -233,7 +233,10 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 				strings.HasPrefix(upperStmt, "EXPLAIN")
 
 			if queryContext.Explain {
-				stmt, _ = db.ExplainStatement(storepb.Engine_TRINO, stmt, queryContext.Option.GetExplainFormat())
+				var err error
+				if stmt, err = base.ExplainStatement(storepb.Engine_TRINO, stmt, queryContext.Option.GetExplainFormat().String()); err != nil {
+					return nil, err
+				}
 				isQuery = true
 			}
 

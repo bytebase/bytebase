@@ -5,11 +5,13 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
 
 func init() {
 	// Override the existing PG-based validator with Redshift-specific one
 	base.RegisterQueryValidator(storepb.Engine_REDSHIFT, ValidateSQLForEditor)
+	base.RegisterExplainFunc(storepb.Engine_REDSHIFT, standard.ExplainStatement)
 }
 
 // ValidateSQLForEditor validates the SQL statement for SQL editor.

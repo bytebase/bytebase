@@ -126,6 +126,7 @@
     - [QueryResult.CommandError](#bytebase-v1-QueryResult-CommandError)
     - [QueryResult.Message](#bytebase-v1-QueryResult-Message)
     - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
+    - [QueryResult.QueryPlan](#bytebase-v1-QueryResult-QueryPlan)
     - [QueryResult.SyntaxError](#bytebase-v1-QueryResult-SyntaxError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
@@ -2561,7 +2562,9 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
-| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
+| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  | Which explain output the caller wants, for an explain request.
+
+Leave it unspecified for the engine&#39;s own default, which is the only output most engines have. Naming a format an engine cannot produce is INVALID_ARGUMENT rather than a silent fallback, as is any explain request against an engine that has no explain at all. |
 
 
 
@@ -2627,6 +2630,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | command_error | [QueryResult.CommandError](#bytebase-v1-QueryResult-CommandError) |  |  |
 | messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
 | masked | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each column (empty for non-masked columns). |
+| query_plan | [QueryResult.QueryPlan](#bytebase-v1-QueryResult-QueryPlan) |  | Set when the result is a query plan: the output of an explain request, or of an EXPLAIN typed on PostgreSQL. Unset for any other result. |
 
 
 
@@ -2691,6 +2695,22 @@ for field description.
 | file | [string](#string) |  |  |
 | line | [int32](#int32) |  |  |
 | routine | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-QueryPlan"></a>
+
+### QueryResult.QueryPlan
+A query plan held in the result&#39;s rows.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
+| executed | [bool](#bool) |  | Whether producing the plan executed the statement, as EXPLAIN ANALYZE does. |
 
 
 
@@ -2820,19 +2840,15 @@ RuleType indicates the source of the linting rule.
 <a name="bytebase-v1-QueryOption-ExplainFormat"></a>
 
 ### QueryOption.ExplainFormat
-Which explain output the caller wants, for an explain request.
-
-Leave it unspecified for the engine&#39;s own default, which is the only
-output most engines have. Naming a format an engine cannot produce is
-INVALID_ARGUMENT rather than a silent fallback, as is any explain request
-against an engine that has no explain at all.
+The output format of a query plan.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. |
+| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a result, a default the server could not resolve, as when MySQL follows the session&#39;s explain_format; read such a plan as text. |
 | TEXT | 1 | The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server: SHOWPLAN_ALL. |
 | JSON | 2 | The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON). |
 | XML | 3 | The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server: SHOWPLAN_XML. |
+| YAML | 4 | The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML). |
 
 
 
