@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   getAccessGrantDisplayStatus: vi.fn(),
   getAccessGrantDisplayStatusText: vi.fn(),
-  getAccessGrantExpireTimeMs: vi.fn(),
+  getActiveAccessGrantDeadlineMs: vi.fn(),
+  nextAccessGrantDisplayStatusChangeAt: vi.fn(),
   getAccessGrantStatusTagType: vi.fn(),
 }));
 
@@ -36,7 +37,9 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/utils/accessGrant", () => ({
   getAccessGrantDisplayStatus: mocks.getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText: mocks.getAccessGrantDisplayStatusText,
-  getAccessGrantExpireTimeMs: mocks.getAccessGrantExpireTimeMs,
+  getActiveAccessGrantDeadlineMs: mocks.getActiveAccessGrantDeadlineMs,
+  nextAccessGrantDisplayStatusChangeAt:
+    mocks.nextAccessGrantDisplayStatusChangeAt,
   getAccessGrantStatusTagType: mocks.getAccessGrantStatusTagType,
 }));
 
@@ -142,7 +145,10 @@ beforeEach(async () => {
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
   mocks.getAccessGrantDisplayStatus.mockReturnValue("ACTIVE");
   mocks.getAccessGrantDisplayStatusText.mockReturnValue("Active");
-  mocks.getAccessGrantExpireTimeMs.mockReturnValue(undefined);
+  mocks.getActiveAccessGrantDeadlineMs.mockReturnValue(undefined);
+  mocks.nextAccessGrantDisplayStatusChangeAt.mockReturnValue(
+    Number.POSITIVE_INFINITY
+  );
   mocks.getAccessGrantStatusTagType.mockReturnValue("success");
 
   ({ AccessGrantItem } = await import("./AccessGrantItem"));

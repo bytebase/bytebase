@@ -5,9 +5,10 @@ import { useEffect, useReducer } from "react";
  *
  * Each subscriber declares the instant its rendering next changes, so the clock
  * holds one timeout, set for the earliest of those, and wakes only the
- * subscribers that are due. A woken subscriber is retired until it re-renders
- * and declares its next instant; one whose boundary fails to advance keeps its
- * last reading rather than being woken again.
+ * subscribers that are due. A woken subscriber normally re-renders and declares
+ * its next instant; one that names the same instant again -- a wall clock
+ * stepped back before the render, or a boundary held stale -- is re-checked
+ * after a resync interval rather than on every neighbour's tick.
  */
 type Subscriber = {
   changesAtMs: number;
@@ -53,18 +54,15 @@ function arm(changesAtMs: number): void {
 }
 
 function tick(): void {
-  timer = undefined;
-  armedForMs = Number.POSITIVE_INFINITY;
   const nowMs = Date.now();
   lastTickMs = nowMs;
   let nextMs = Number.POSITIVE_INFINITY;
   for (const subscriber of subscribers) {
     if (subscriber.changesAtMs <= nowMs) {
-      subscriber.changesAtMs = Number.POSITIVE_INFINITY;
+      subscriber.changesAtMs = nowMs + RESYNC_MS;
       subscriber.wake();
-    } else {
-      nextMs = Math.min(nextMs, subscriber.changesAtMs);
     }
+    nextMs = Math.min(nextMs, subscriber.changesAtMs);
   }
   arm(nextMs);
 }

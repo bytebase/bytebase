@@ -65,7 +65,7 @@ describe("useNow", () => {
 
   test("wakes a subscriber at its deadline and not before", () => {
     const deadlineMs = Date.now() + 1_000;
-    const { root, renders } = mount([{ changesAtMs: () => deadlineMs }]);
+    const { renders } = mount([{ changesAtMs: () => deadlineMs }]);
 
     act(() => {
       vi.advanceTimersByTime(999);
@@ -76,15 +76,13 @@ describe("useNow", () => {
       vi.advanceTimersByTime(1);
     });
     expect(renders).toEqual([2]);
-
-    act(() => root.unmount());
   });
 
   test("waits quietly for a deadline beyond the platform timer ceiling", () => {
     // setTimeout holds its delay in 32 bits; anything past ~24.8 days fires at
     // once. A date waiting for the year to turn is ordinary input.
     const deadlineMs = Date.now() + 90 * DAY_MS;
-    const { root, renders } = mount([{ changesAtMs: () => deadlineMs }]);
+    const { renders } = mount([{ changesAtMs: () => deadlineMs }]);
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
 
     act(() => {
@@ -97,8 +95,6 @@ describe("useNow", () => {
       vi.advanceTimersByTime(90 * DAY_MS);
     });
     expect(renders).toEqual([2]);
-
-    act(() => root.unmount());
   });
 
   test("wakes each due subscriber once and re-arms once for the lot", () => {
@@ -109,7 +105,7 @@ describe("useNow", () => {
     const probes = Array.from({ length: 50 }, () => ({
       changesAtMs: () => (Date.now() < firstMs ? firstMs : secondMs),
     }));
-    const { root, renders } = mount(probes);
+    const { renders } = mount(probes);
     const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
 
     act(() => {
@@ -117,8 +113,6 @@ describe("useNow", () => {
     });
     expect(renders.every((count) => count === 2)).toBe(true);
     expect(setTimeoutSpy.mock.calls.length).toBeLessThanOrEqual(2);
-
-    act(() => root.unmount());
   });
 
   test("catches up when the wall clock passes a deadline the timer has not", () => {
@@ -146,7 +140,30 @@ describe("useNow", () => {
     expect(renders[0]).toBeLessThanOrEqual(6);
   });
 
-  test("leaves a subscriber whose boundary did not advance to its last reading", () => {
+  test("re-checks a woken subscriber whose boundary did not advance", () => {
+    // A wall clock stepped back between the wake and its render, or a boundary
+    // held stale by a memo, names the instant that just passed a second time.
+    let stepBackMs = 0;
+    const deadlineMs = Date.now() + 1_000;
+    const { renders } = mount([
+      { changesAtMs: () => (Date.now() - stepBackMs < deadlineMs ? deadlineMs : deadlineMs + 60_000) },
+    ]);
+
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+      stepBackMs = 2;
+      vi.setSystemTime(Date.now() - stepBackMs);
+    });
+    expect(renders).toEqual([2]);
+
+    // Re-checked once a resync interval has passed on the wall clock.
+    act(() => {
+      vi.advanceTimersByTime(61_000);
+    });
+    expect(renders[0]).toBeGreaterThan(2);
+  });
+
+  test("does not re-wake a stuck subscriber on every neighbour's tick", () => {
     const stuckMs = Date.now() + 500;
     const { renders } = mount([
       { changesAtMs: () => stuckMs },
@@ -172,9 +189,7 @@ describe("useNow", () => {
   });
 
   test("holds nothing for a display that does not vary with time", () => {
-    const { root } = mount([{ changesAtMs: () => undefined }]);
+    mount([{ changesAtMs: () => undefined }]);
     expect(vi.getTimerCount()).toBe(0);
-
-    act(() => root.unmount());
   });
 });

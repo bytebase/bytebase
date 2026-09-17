@@ -163,11 +163,6 @@ export function nextRelativeTimeChangeAt(timestampMs: number): number {
   return relativeTimeChangeAt(timestampMs, Date.now());
 }
 
-/** The first instant `formatAbsoluteDate` renders this timestamp differently. */
-export function nextAbsoluteDateChangeAt(timestampMs: number): number {
-  return absoluteDateChangeAt(timestampMs, Date.now());
-}
-
 /**
  * The first instant `formatQueueTime` renders this timestamp differently, or
  * `Infinity` once it has settled on a date for good.
@@ -176,10 +171,11 @@ export function nextQueueTimeChangeAt(timestampMs: number): number {
   const nowMs = Date.now();
   const diffMs = nowMs - timestampMs;
   if (Math.abs(diffMs) < RELATIVE_THRESHOLD_MS) {
-    const changesAtMs = relativeTimeChangeAt(timestampMs, nowMs);
-    return diffMs < 0
-      ? changesAtMs
-      : Math.min(changesAtMs, Math.ceil(timestampMs + RELATIVE_THRESHOLD_MS));
+    // A future timestamp's relative boundary always comes before the switch.
+    return Math.min(
+      relativeTimeChangeAt(timestampMs, nowMs),
+      Math.ceil(timestampMs + RELATIVE_THRESHOLD_MS)
+    );
   }
   // Past the switch it reads as a date, and a future one counts back into
   // the relative window.

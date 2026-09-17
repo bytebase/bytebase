@@ -6,16 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useNow } from "@/hooks/useNow";
 import { cn } from "@/lib/utils";
-import {
-  type AccessGrant,
-  AccessGrant_Status,
-} from "@/types/proto-es/v1/access_grant_service_pb";
+import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
   getAccessGrantDisplayStatus,
   getAccessGrantDisplayStatusText,
-  getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
+  getActiveAccessGrantDeadlineMs,
+  nextAccessGrantDisplayStatusChangeAt,
 } from "@/utils/accessGrant";
 import {
   formatAbsoluteDateTime,
@@ -49,14 +47,14 @@ export function AccessGrantItem({
 }: Props) {
   const { t } = useTranslation();
 
-  // Only an activated grant counts down. The countdown's last step is its
-  // deadline passing, so it also schedules the expired badge.
-  const deadlineMs =
-    grant.status === AccessGrant_Status.ACTIVE
-      ? getAccessGrantExpireTimeMs(grant)
-      : undefined;
+  const deadlineMs = getActiveAccessGrantDeadlineMs(grant);
   useNow(
-    deadlineMs === undefined ? undefined : nextCountdownChangeAt(deadlineMs)
+    Math.min(
+      nextAccessGrantDisplayStatusChangeAt(grant),
+      deadlineMs === undefined
+        ? Number.POSITIVE_INFINITY
+        : nextCountdownChangeAt(deadlineMs)
+    )
   );
 
   const displayStatus = getAccessGrantDisplayStatus(grant, issue);
