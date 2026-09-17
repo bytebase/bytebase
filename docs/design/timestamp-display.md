@@ -272,8 +272,11 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   - **Every time-varying reading comes as a pair** — the function that renders it and the
     function returning the first instant its output will differ (`Infinity` if never). The pair
     lives together and is tested together: sampled across ages, the reading is constant up to
-    that instant and differs at it. The samples include sub-millisecond timestamps and a turn of
-    the year, where a boundary a fraction early or a seasonal change otherwise hides. A boundary
+    that instant and differs at it, followed across several successive boundaries so a reading
+    that leaves a value and later returns to it cannot hide a skipped span. The samples include
+    sub-millisecond timestamps, starts off the whole minute, and a turn of the year, where a
+    boundary a fraction early, one computed from a rounded clock, or a seasonal change otherwise
+    hides. A boundary
     borrowed from a different reading, or re-derived by hand beside one, is the defect this rules
     out — the two drift silently, and a test of the boundary alone cannot see it.
   - **A boundary is evaluated no later than its reading.** Evaluated after, it can see a change
@@ -281,8 +284,9 @@ no seconds per D5. Relative age may accompany it in the tooltip.
   - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip
     time the machine sleeps, so the clock re-checks at least once a minute: a display is at most
     a minute behind after sleep or a clock adjustment. It wakes only the subscribers that are due,
-    retires each woken deadline until the display declares its next one, and leaves a short gap
-    after each wake so a boundary that keeps naming a past instant cannot spin it.
+    re-checks a woken display that names the same instant again after a resync interval rather
+    than on every other display's wake, and leaves a short gap after each wake so a boundary that
+    keeps naming a past instant cannot spin it.
   - Guarded by fake-timer tests and a sweep of render-time `Date.now()` over the touched surfaces
     at implementation time — a review pass, not a lint: telling render scope from handlers and
     effects statically would flag most legitimate uses.

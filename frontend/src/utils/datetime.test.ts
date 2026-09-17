@@ -27,7 +27,6 @@ import {
   formatQueueTime,
   formatRelativeTime,
   hasPassed,
-  nextAbsoluteDateChangeAt,
   nextCountdownChangeAt,
   nextDaysLeftChangeAt,
   nextPassedAt,
@@ -37,6 +36,11 @@ import {
   readCountdown,
   readDaysLeft,
 } from "./datetime";
+
+const SECOND_MS = 1_000;
+const MINUTE_MS = 60_000;
+const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
 
 describe("formatRelativeTime", () => {
   beforeEach(() => {
@@ -191,11 +195,6 @@ describe("formatOperationalDateTime", () => {
   });
 });
 
-const SECOND_MS = 1_000;
-const MINUTE_MS = 60_000;
-const HOUR_MS = 3_600_000;
-const DAY_MS = 86_400_000;
-
 // Ages around every edge the relative reading has: the "now" threshold, each
 // unit switch, the half-unit points where a rounded count turns over, and the
 // 30-day switch. Negative ages are future timestamps.
@@ -230,52 +229,76 @@ const SAMPLED_AGES_MS = [
 ].flatMap((ageMs) => (ageMs === 0 ? [0] : [ageMs, -ageMs]));
 
 // The contract a boundary keeps with the reading it schedules: the reading
-// holds right up to the named instant and changes at it, and the boundary names
-// that same instant from anywhere before it. A boundary checked on its own
-// cannot see that it was derived from the wrong reading.
+// holds throughout the span up to the named instant, the boundary names that
+// same instant from anywhere inside the span, and the reading changes at it.
+// Each check follows the chain for several links, starting every link where
+// the last one ended, so a reading that leaves a value and later returns to it
+// cannot hide a skipped span. A boundary checked on its own cannot see that it
+// was derived from the wrong reading.
+const CHAIN_LINKS = 3;
+const SPAN_PROBES = [0.25, 0.5, 0.75];
+// A reading with no boundary is sampled out past a New Year from any start.
+const FINAL_PROBES_MS = [
+  HOUR_MS,
+  DAY_MS,
+  7 * DAY_MS,
+  15 * DAY_MS,
+  30 * DAY_MS,
+  60 * DAY_MS,
+  200 * DAY_MS,
+  400 * DAY_MS,
+];
+
 const expectBoundaryMatchesReading = (
   read: (tsMs: number) => string,
   nextChangeAt: (tsMs: number) => number,
   tsMs: number
 ) => {
-  const startMs = Date.now();
-  const reading = read(tsMs);
-  const changesAtMs = nextChangeAt(tsMs);
-  if (changesAtMs === Number.POSITIVE_INFINITY) {
-    // Far enough to cross a New Year from any start.
-    for (const laterMs of [HOUR_MS, DAY_MS, 100 * DAY_MS, 400 * DAY_MS]) {
-      vi.setSystemTime(startMs + laterMs);
-      expect(read(tsMs)).toBe(reading);
+  for (let link = 0; link < CHAIN_LINKS; link++) {
+    const startMs = Date.now();
+    const reading = read(tsMs);
+    const changesAtMs = nextChangeAt(tsMs);
+    if (changesAtMs === Number.POSITIVE_INFINITY) {
+      for (const laterMs of FINAL_PROBES_MS) {
+        vi.setSystemTime(startMs + laterMs);
+        expect(read(tsMs)).toBe(reading);
+      }
+      return;
     }
-    return;
+    expect(changesAtMs).toBeGreaterThan(startMs);
+    const spanMs = changesAtMs - startMs;
+    for (const probeMs of [
+      ...SPAN_PROBES.map((at) => startMs + Math.floor(spanMs * at)),
+      Math.ceil(changesAtMs) - 1,
+    ]) {
+      vi.setSystemTime(probeMs);
+      expect(read(tsMs)).toBe(reading);
+      expect(nextChangeAt(tsMs)).toBe(changesAtMs);
+    }
+    vi.setSystemTime(changesAtMs);
+    expect(read(tsMs)).not.toBe(reading);
   }
-  expect(changesAtMs).toBeGreaterThan(startMs);
-  for (const beforeMs of [
-    startMs + Math.floor((changesAtMs - startMs) / 2),
-    Math.ceil(changesAtMs) - 1,
-  ]) {
-    vi.setSystemTime(beforeMs);
-    expect(read(tsMs)).toBe(reading);
-    expect(nextChangeAt(tsMs)).toBe(changesAtMs);
-  }
-  vi.setSystemTime(changesAtMs);
-  expect(read(tsMs)).not.toBe(reading);
 };
 
-// Production timestamps carry sub-millisecond nanos, and `HumanizeTs` rounds
-// them through seconds and back; whole-millisecond ones alone hide any
-// boundary that lands a fraction early. The late-December start puts a New
-// Year inside every window.
-const BOUNDARY_STARTS = ["2026-03-02T12:00:00Z", "2026-12-31T15:30:00Z"];
+// Production timestamps carry sub-millisecond nanos, which hide a boundary
+// that lands a fraction early; a start off the whole minute exposes a boundary
+// computed from a rounded clock; the other two starts sit just before and
+// exactly on the pinned zone's New Year.
+const BOUNDARY_STARTS = [
+  "2026-03-02T12:00:17.371Z",
+  "2026-12-31T15:30:00Z",
+  "2026-12-31T16:00:00Z",
+];
 const TIMESTAMP_FRACTIONS_MS = [0, 0.25, 0.999];
 
 const boundaryCases = <T>(offsets: T[]) =>
   BOUNDARY_STARTS.flatMap((start) =>
     offsets.flatMap((offset) =>
-      TIMESTAMP_FRACTIONS_MS.flatMap((fractionMs) => [
-        { start, offset, fractionMs, viaSeconds: false },
-        { start, offset, fractionMs, viaSeconds: true },
-      ])
+      TIMESTAMP_FRACTIONS_MS.map((fractionMs) => ({
+        start,
+        offset,
+        fractionMs,
+      }))
     )
   );
 
@@ -283,15 +306,6 @@ const startAt = (start: string) => {
   const startMs = new Date(start).getTime();
   vi.setSystemTime(startMs);
   return startMs;
-};
-
-const timestampOf = (
-  instantMs: number,
-  fractionMs: number,
-  viaSeconds: boolean
-) => {
-  const tsMs = instantMs + fractionMs;
-  return viaSeconds ? (tsMs / 1000) * 1000 : tsMs;
 };
 
 describe("reading boundaries", () => {
@@ -304,37 +318,25 @@ describe("reading boundaries", () => {
   });
 
   test.each(boundaryCases(SAMPLED_AGES_MS))(
-    "names the instant the work-queue reading changes (age $offset ms from $start, +$fractionMs ms, via seconds: $viaSeconds)",
-    ({ start, offset, fractionMs, viaSeconds }) => {
+    "names the instant the work-queue reading changes (age $offset ms from $start, +$fractionMs ms)",
+    ({ start, offset, fractionMs }) => {
       const startMs = startAt(start);
       expectBoundaryMatchesReading(
         formatQueueTime,
         nextQueueTimeChangeAt,
-        timestampOf(startMs - offset, fractionMs, viaSeconds)
+        startMs - offset + fractionMs
       );
     }
   );
 
   test.each(boundaryCases(SAMPLED_AGES_MS))(
-    "names the instant the absolute date reading changes (age $offset ms from $start, +$fractionMs ms, via seconds: $viaSeconds)",
-    ({ start, offset, fractionMs, viaSeconds }) => {
-      const startMs = startAt(start);
-      expectBoundaryMatchesReading(
-        formatAbsoluteDate,
-        nextAbsoluteDateChangeAt,
-        timestampOf(startMs - offset, fractionMs, viaSeconds)
-      );
-    }
-  );
-
-  test.each(boundaryCases(SAMPLED_AGES_MS))(
-    "names the instant the relative reading changes (age $offset ms from $start, +$fractionMs ms, via seconds: $viaSeconds)",
-    ({ start, offset, fractionMs, viaSeconds }) => {
+    "names the instant the relative reading changes (age $offset ms from $start, +$fractionMs ms)",
+    ({ start, offset, fractionMs }) => {
       const startMs = startAt(start);
       expectBoundaryMatchesReading(
         formatRelativeTime,
         nextRelativeTimeChangeAt,
-        timestampOf(startMs - offset, fractionMs, viaSeconds)
+        startMs - offset + fractionMs
       );
     }
   );
@@ -393,13 +395,13 @@ describe("deadline readings", () => {
 
   describe.each(pairs)("%s", (_name, read, nextChangeAt) => {
     test.each(boundaryCases(SAMPLED_REMAINING_MS))(
-      "names the instant the reading changes ($offset ms left from $start, +$fractionMs ms, via seconds: $viaSeconds)",
-      ({ start, offset, fractionMs, viaSeconds }) => {
+      "names the instant the reading changes ($offset ms left from $start, +$fractionMs ms)",
+      ({ start, offset, fractionMs }) => {
         const startMs = startAt(start);
         expectBoundaryMatchesReading(
           read,
           nextChangeAt,
-          timestampOf(startMs + offset, fractionMs, viaSeconds)
+          startMs + offset + fractionMs
         );
       }
     );

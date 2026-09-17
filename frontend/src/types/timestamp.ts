@@ -16,9 +16,12 @@ export function getTimeForPbTimestampProtoEs(
 ): number;
 export function getTimeForPbTimestampProtoEs(
   timestamp?: TimestampProtoEs,
-  defaultValue = Date.now()
+  defaultValue?: number
 ): number {
   if (!timestamp) {
+    if (defaultValue === undefined) {
+      throw new Error("An absent timestamp needs an explicit fallback");
+    }
     return defaultValue;
   }
   return Number(timestamp.seconds) * 1000 + timestamp.nanos / 1000000;

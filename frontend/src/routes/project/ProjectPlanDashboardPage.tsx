@@ -378,7 +378,7 @@ interface PlanColumn {
 
 interface PlanRowContext {
   creator: { title: string; name: string };
-  updateTimeTs: number;
+  updateTimeTs: number | undefined;
   approvalTag: { label: string; variant: ReviewBadge["variant"] } | undefined;
   isDeleted: boolean;
   draftState: PlanDraftState;
@@ -509,12 +509,15 @@ function PlanTable({
         defaultWidth: 152,
         minWidth: 100,
         resizable: true,
-        render: (_plan, ctx) => (
-          <HumanizeTs
-            ts={ctx.updateTimeTs}
-            className="text-control-light whitespace-nowrap"
-          />
-        ),
+        render: (_plan, ctx) =>
+          ctx.updateTimeTs === undefined ? (
+            "-"
+          ) : (
+            <HumanizeTs
+              ts={ctx.updateTimeTs}
+              className="text-control-light whitespace-nowrap"
+            />
+          ),
       },
     ],
     [t, isMobile]
@@ -604,9 +607,9 @@ function PlanRow({
   );
   const creator = creatorUser || unknownUser(plan.creator);
 
-  const updateTimeTs = Math.floor(
-    getTimeForPbTimestampProtoEs(plan.updateTime, 0) / 1000
-  );
+  const updateTimeTs = plan.updateTime
+    ? Math.floor(getTimeForPbTimestampProtoEs(plan.updateTime) / 1000)
+    : undefined;
 
   const planUrl = useMemo(() => {
     return router.resolve({

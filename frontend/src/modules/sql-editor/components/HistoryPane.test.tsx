@@ -148,9 +148,6 @@ vi.mock("./HistorySearchInput", () => ({
 
 vi.mock("@/types", () => ({
   DEBOUNCE_SEARCH_DELAY: 300,
-  getDateForPbTimestampProtoEs: vi.fn((ts: unknown) =>
-    ts ? new Date("2024-01-15T10:30:00Z") : new Date(0)
-  ),
   getTimeForPbTimestampProtoEs: vi.fn((ts: unknown, defaultValue = 0) =>
     ts ? new Date("2024-01-15T10:30:00Z").getTime() : defaultValue
   ),
