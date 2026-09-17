@@ -517,7 +517,7 @@ func (*Driver) queryBatch(ctx context.Context, conn *sql.Conn, batch string, que
 		// Before sending the batch to server, we add the limit clause to the statement.
 		s := singleSQL.Text
 		if queryContext.Limit > 0 {
-			s = getStatementWithResultLimit(s, queryContext.Limit)
+			s = base.StatementWithResultLimit(storepb.Engine_MSSQL, s, queryContext.Limit, "")
 		}
 		refinedSQLs = append(refinedSQLs, s)
 		if _, err := batchBuf.WriteString(s); err != nil {

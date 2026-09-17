@@ -264,7 +264,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got := getStatementWithResultLimit(tc.stmt, tc.count)
+		got := statementWithResultLimit(tc.stmt, tc.count, "")
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
 }

@@ -213,7 +213,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got := getStatementWithResultLimit(tc.stmt, tc.count)
+		got := statementWithResultLimit(tc.stmt, tc.count, "")
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
 }
@@ -237,7 +237,7 @@ func TestGetStatementWithResultLimitFallback(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got := getStatementWithResultLimit(tc.stmt, tc.count)
+		got := statementWithResultLimit(tc.stmt, tc.count, "")
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
 }
@@ -277,7 +277,7 @@ func TestGetStatementWithResultLimitInline(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got, err := getStatementWithResultLimitInline(tc.stmt, tc.count)
+		got, err := statementWithResultLimitInline(tc.stmt, tc.count)
 		if tc.wantErr {
 			require.Error(t, err, tc.stmt)
 			continue
@@ -291,6 +291,6 @@ func TestGetStatementWithResultLimitUnicodeBeforeInto(t *testing.T) {
 	stmt := "SELECT 'ı' FROM t INTO OUTFILE '/tmp/a';"
 	want := "SELECT 'ı' FROM t LIMIT 10 INTO OUTFILE '/tmp/a';"
 
-	got := getStatementWithResultLimit(stmt, 10)
+	got := statementWithResultLimit(stmt, 10, "")
 	require.Equal(t, want, got)
 }

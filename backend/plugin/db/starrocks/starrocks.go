@@ -315,7 +315,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			}
 			statement = explained
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			statement = base.StatementWithResultLimit(d.dbType, statement, queryContext.Limit, "")
 		}
 		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
 

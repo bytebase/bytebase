@@ -18,8 +18,6 @@ import (
 	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
 	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
-	"github.com/bytebase/omni/googlesql/ast"
-	"github.com/bytebase/omni/googlesql/parser"
 	"github.com/pkg/errors"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
@@ -35,6 +33,9 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	// Register how this engine plans a limit, for base.StatementWithResultLimit below.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/spanner"
 )
 
 var (
@@ -304,32 +305,6 @@ func getColumnTypeName(columnType *sppb.Type) (string, error) {
 	return columnType.Code.String(), nil
 }
 
-// getStatementWithResultLimit sets the LIMIT of the outermost query in stmt to
-// at most limit. It never wraps stmt in a subquery, where Spanner rejects a
-// WITH clause, so a query it cannot rewrite runs unchanged and queryStatement
-// caps its rows.
-func getStatementWithResultLimit(stmt string, limit int) string {
-	file, errs := parser.Parse(stmt)
-	if len(errs) > 0 || len(file.Stmts) != 1 {
-		return stmt
-	}
-	query, ok := file.Stmts[0].(*ast.QueryStmt)
-	// FOR UPDATE fails in queryStatement's read-only transaction, so there is no
-	// point fitting a LIMIT before it.
-	if !ok || query.ForUpdate {
-		return stmt
-	}
-	if query.Limit == nil {
-		end := query.Loc.End
-		return stmt[:end] + " LIMIT " + strconv.Itoa(limit) + stmt[end:]
-	}
-	count, ok := query.Limit.(*ast.Literal)
-	if !ok || count.Kind != ast.LitInt || count.Ival <= int64(limit) {
-		return stmt
-	}
-	return stmt[:count.Loc.Start] + strconv.Itoa(limit) + stmt[count.Loc.End:]
-}
-
 // instancePath returns the Spanner instance resource name,
 // e.g. projects/<project>/instances/<instance>.
 func (d *Driver) instancePath() string {
@@ -372,7 +347,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
 				if queryContext.Limit > 0 {
-					statement = getStatementWithResultLimit(statement, queryContext.Limit)
+					statement = base.StatementWithResultLimit(storepb.Engine_SPANNER, statement, queryContext.Limit, "")
 				}
 				return d.queryStatement(ctx, statement, queryContext)
 			}
