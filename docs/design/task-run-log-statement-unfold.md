@@ -154,8 +154,17 @@ the plan page that fails while you are looking at it. The transient state is not
 command really did fail at that moment; it is only about to be tried again.
 
 The test reads only the entries, which matters because `taskRunStatus` is an optional prop that the
-changelog and revision pages do not pass. Everything else starts folded, and every row toggles
-either way.
+changelog and revision pages do not pass. One guard uses it where it exists: when a caller passes a
+status of `DONE`, nothing is marked at all. That is cheap, it costs D14 nothing — D14 is about a run
+still `RUNNING` — and it covers the one shape the entries get wrong today. CockroachDB's autocommit
+path logs a single `COMMAND_EXECUTE` outside its retry and a response *per attempt* from inside it
+(`backend/plugin/db/cockroachdb/cockroachdb.go:485-503`), while the converter attaches the first
+response and drops the rest (`rollout_service_converter.go:408-417`), so a statement that succeeded
+on retry is recorded as a failure. No rule reading entries can recover a response the converter
+discarded, and the row is already wrong before this design reaches it: the log shows a red ✗ for a
+command that worked. The guard stops the viewer from expanding it on the surfaces that know better;
+the record itself is a backend defect and is listed below. Everything else starts folded, and every
+row toggles either way.
 
 **D5 · A row is foldable when it ran a statement.** Nothing more. An earlier draft measured
 `scrollWidth > clientWidth` from a shared `ResizeObserver` so the chevron could be hidden on rows
@@ -326,8 +335,9 @@ behavior of this function:
 - `model.test.ts` again for the auto-open pick, which is where the retry shape has to be locked
   down: entries for two attempts separated by a `RETRY_INFO`, the first failing and the second
   succeeding, mark **no** row to open even though the failure is last in its own section; the same
-  entries with the second attempt failing mark only the second failure; and a failure under one
-  replica is not silenced by another replica's success.
+  entries with the second attempt failing mark only the second failure; a failure under one replica
+  is not silenced by another replica's success; and a `DONE` `taskRunStatus` marks nothing at all,
+  whatever the entries say.
 - `SectionContent`: a foldable row toggles and reports `aria-expanded`; a row marked to open starts
   unfolded and can be folded; a section of 60 entries whose marked failure is the last one renders
   that row without pressing *Load more*, still reports the hidden count, **numbers it 60, not 51**,
@@ -347,6 +357,12 @@ The implementation, which follows separately. Also deliberately out:
 
 - **A smaller shared control size.** The 8px the row gains is the cost of the shared size contract
   (D11). A 20px tier is a design-system change, not a log-viewer one.
+- **The CockroachDB retry that is logged as a failure.** One `COMMAND_EXECUTE` and a response per
+  attempt, of which the converter keeps the first, so a statement that succeeded on retry shows a
+  red ✗ and an error in every task-run log today, and marks its whole section failed. It is a
+  backend defect, not a viewer one — the successful response never reaches the API — and it wants
+  either a `COMMAND_EXECUTE` per attempt, matching the Postgres shape, or a converter that replaces
+  rather than drops. D4's `DONE` guard keeps this design from making it louder; it does not fix it.
 - **Giving the deploy sheet's body the scroll.** It would remove the one nested scroll region the
   viewer sits in (D9), but it buys a second layout mode on a surface whose nesting is already the
   status quo. Worth revisiting if the sheet is where people actually read long statements.
