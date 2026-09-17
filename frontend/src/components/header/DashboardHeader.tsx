@@ -65,15 +65,17 @@ export function DashboardHeader({
       ) : null}
 
       {showMobileSidebarToggle ? (
-        <button
+        <Button
           type="button"
+          appearance="secondary"
+          size="xs"
           aria-label={t("common.open-mobile-sidebar")}
           title={t("common.open-mobile-sidebar")}
-          className="p-1 text-control-light hover:text-main md:hidden"
+          className="text-control-light hover:text-main md:hidden"
           onClick={onOpenMobileSidebar}
         >
           <Menu className="h-4 w-4" />
-        </button>
+        </Button>
       ) : null}
 
       <div

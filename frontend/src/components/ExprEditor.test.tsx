@@ -202,8 +202,8 @@ describe("ExprEditor", () => {
     await flushEffects();
 
     const deleteButtons = Array.from(
-      container.querySelectorAll('button[type="button"]')
-    ).filter((button) => button.className.includes("size-7"));
+      container.querySelectorAll("svg.lucide-trash-2")
+    ).map((icon) => icon.closest("button"));
     expect(deleteButtons).toHaveLength(2);
 
     await act(async () => {

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Popover,
@@ -167,7 +168,9 @@ function InlineLabels({
         />
         <span className="truncate">{value}</span>
         {allowChange && (
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             aria-label={t("common.remove")}
             className={cn(
               "inline-flex shrink-0 items-center justify-center text-control-placeholder transition-colors",
@@ -180,7 +183,7 @@ function InlineLabels({
             type="button"
           >
             <X className="size-3" />
-          </button>
+          </Button>
         )}
       </span>
     );
@@ -194,7 +197,9 @@ function InlineLabels({
       <Popover open={open} onOpenChange={allowChange ? setOpen : undefined}>
         <PopoverTrigger
           render={
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               className={cn(
                 "inline-flex items-center gap-1 rounded-xs border border-dashed border-control-border px-1.5 py-0.5 text-xs text-control-placeholder transition-colors",
                 allowChange &&
@@ -231,7 +236,9 @@ function InlineLabels({
               issueLabels.map((option) => {
                 const isSelected = labels.includes(option.value);
                 return (
-                  <button
+                  <Button
+                    appearance="secondary"
+                    size="xs"
                     key={option.value}
                     className="flex w-full items-center gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
                     disabled={isUpdating}
@@ -248,7 +255,7 @@ function InlineLabels({
                       }}
                     />
                     <span>{option.value}</span>
-                  </button>
+                  </Button>
                 );
               })
             )}

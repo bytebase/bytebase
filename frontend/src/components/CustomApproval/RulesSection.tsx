@@ -148,21 +148,25 @@ function SortableRow({
           </div>
         ) : (
           <>
-            <button
+            <Button
               type="button"
-              className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-control-bg-hover"
+              appearance="secondary"
+              size="xs"
+              className="hover:bg-control-bg-hover"
               onClick={handleEditClick}
             >
               <Pencil className="h-3 w-3" />
-            </button>
+            </Button>
             {allowAdmin && (
-              <button
+              <Button
                 type="button"
-                className="inline-flex h-6 w-6 items-center justify-center rounded-xs hover:bg-control-bg-hover"
+                appearance="secondary"
+                size="xs"
+                className="hover:bg-control-bg-hover"
                 onClick={handleDeleteClick}
               >
                 <Trash2 className="h-3 w-3" />
-              </button>
+              </Button>
             )}
           </>
         )}

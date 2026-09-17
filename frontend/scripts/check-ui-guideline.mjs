@@ -1,14 +1,10 @@
 // Enforces the objective subset of docs/agents/frontend-ux.md.
 //
-// Existing feature debt is recorded as exact file/rule/token fingerprints in
-// ui-guideline-legacy-debt.json. Shared primitives cannot use debt exceptions.
 // This is a conservative static scanner, not a complete Tailwind evaluator.
 
 import {
-  existsSync,
   readFileSync,
   readdirSync,
-  writeFileSync,
 } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -18,32 +14,7 @@ import ts from "typescript-6";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const frontendRoot = resolve(scriptDir, "..");
 const sourceRoot = resolve(frontendRoot, "src");
-const baselinePath = resolve(scriptDir, "ui-guideline-legacy-debt.json");
 const sharedPrimitivePrefix = "src/components/ui/";
-const baselineDescription =
-  "Committed legacy UX debt. New or increased violations are rejected.";
-const baselineUpdateCommand =
-  "node frontend/scripts/check-ui-guideline.mjs --write-baseline";
-const baselineRemovalCondition =
-  "Delete this file and baseline handling after all violations are fixed.";
-
-const legacyRules = [
-  "no-ad-hoc-sheet-width",
-  "no-arbitrary-gap",
-  "no-arbitrary-type",
-  "no-manual-dark",
-  "no-native-control",
-  "no-raw-color",
-  "no-space-between",
-];
-const enforcedRules = [
-  ...legacyRules,
-  "no-button-dimension-override",
-  "no-literal-color",
-  "no-off-scale-gap",
-  "no-off-scale-radius",
-  "no-raw-table",
-].sort();
 
 const legacyIgnoredPrefixes = ["src/apps/explain-visualizer/"];
 const generatedPrefixes = ["src/types/proto-es/"];
@@ -375,84 +346,6 @@ export function scanCssSource(source, path) {
   return sortViolations(counts.values());
 }
 
-const violationKey = ({ path, rule, token }) =>
-  JSON.stringify([path, rule, token]);
-
-export function compareWithBaseline(violations, baseline) {
-  if (
-    ![1, 2].includes(baseline.version) ||
-    !Array.isArray(baseline.violations) ||
-    (baseline.version === 2 && !Array.isArray(baseline.rules))
-  ) {
-    return [{ kind: "invalid", rule: "baseline", token: "version" }];
-  }
-
-  const issues = [];
-  const currentByKey = new Map();
-  const baselineByKey = new Map();
-
-  for (const violation of violations) {
-    if (isSharedPrimitive(violation.path)) {
-      issues.push({ kind: "shared", ...violation });
-      continue;
-    }
-    currentByKey.set(violationKey(violation), violation);
-  }
-  for (const violation of baseline.violations) {
-    if (!isSharedPrimitive(violation.path)) {
-      baselineByKey.set(violationKey(violation), violation);
-    }
-  }
-
-  for (const [key, violation] of currentByKey) {
-    const expected = baselineByKey.get(key);
-    if (!expected || expected.count !== violation.count) {
-      issues.push({ kind: "new", ...violation });
-    }
-  }
-  for (const [key, violation] of baselineByKey) {
-    const current = currentByKey.get(key);
-    if (!current || current.count !== violation.count) {
-      issues.push({ kind: "stale", ...violation });
-    }
-  }
-
-  return sortViolations(issues);
-}
-
-export function getBaselineUpdateIssues(violations, baseline) {
-  if (
-    ![1, 2].includes(baseline.version) ||
-    !Array.isArray(baseline.violations) ||
-    (baseline.version === 2 && !Array.isArray(baseline.rules))
-  ) {
-    return [{ kind: "invalid", rule: "baseline", token: "version" }];
-  }
-
-  const previouslyEnforcedRules = new Set(
-    baseline.version === 1 ? legacyRules : baseline.rules
-  );
-
-  const expectedByKey = new Map(
-    baseline.violations
-      .filter((violation) => !isSharedPrimitive(violation.path))
-      .map((violation) => [violationKey(violation), violation])
-  );
-  const issues = [];
-  for (const violation of violations) {
-    if (isSharedPrimitive(violation.path)) {
-      issues.push({ kind: "shared", ...violation });
-      continue;
-    }
-    if (!previouslyEnforcedRules.has(violation.rule)) continue;
-    const expected = expectedByKey.get(violationKey(violation));
-    if (!expected || violation.count > expected.count) {
-      issues.push({ kind: "new", ...violation });
-    }
-  }
-  return sortViolations(issues);
-}
-
 const findSourceFiles = (directory) =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = resolve(directory, entry.name);
@@ -480,38 +373,8 @@ const printViolation = (violation) => {
 };
 
 const run = () => {
-  const writeBaseline = process.argv.includes("--write-baseline");
   const reportOnly = process.argv.includes("--report-only");
   const violations = scanFrontend();
-
-  if (writeBaseline) {
-    const previousBaseline = existsSync(baselinePath)
-      ? JSON.parse(readFileSync(baselinePath, "utf8"))
-      : { version: 1, violations: [] };
-    const updateIssues = existsSync(baselinePath)
-      ? getBaselineUpdateIssues(violations, previousBaseline)
-      : violations
-          .filter((violation) => isSharedPrimitive(violation.path))
-          .map((violation) => ({ kind: "shared", ...violation }));
-    if (updateIssues.length > 0) {
-      console.error(
-        "The UI guideline baseline may only remove existing debt. Fix new and shared violations first:\n"
-      );
-      updateIssues.forEach(printViolation);
-      process.exit(1);
-    }
-    const baseline = {
-      description: baselineDescription,
-      updateCommand: baselineUpdateCommand,
-      removalCondition: baselineRemovalCondition,
-      version: 2,
-      rules: enforcedRules,
-      violations,
-    };
-    writeFileSync(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`);
-    console.log(`Wrote ${violations.length} UI guideline fingerprints`);
-    return;
-  }
 
   if (reportOnly) {
     if (violations.length === 0) {
@@ -523,33 +386,13 @@ const run = () => {
     return;
   }
 
-  if (!existsSync(baselinePath)) {
-    console.error(
-      "UI guideline baseline is missing. Run with --write-baseline after fixing shared violations."
-    );
+  if (violations.length > 0) {
+    console.error("UI guideline check failed:\n");
+    violations.forEach(printViolation);
     process.exit(1);
   }
 
-  const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
-  const issues = compareWithBaseline(violations, baseline);
-  if (issues.length > 0) {
-    console.error("UI guideline ratchet failed:\n");
-    for (const issue of issues) {
-      const prefix =
-        issue.kind === "stale"
-          ? "remove stale baseline"
-          : issue.kind === "shared"
-            ? "fix shared primitive"
-            : issue.kind === "new"
-              ? "new violation"
-              : "invalid baseline";
-      console.error(`${prefix}:`);
-      printViolation(issue);
-    }
-    process.exit(1);
-  }
-
-  console.log(`UI guideline check passed (${violations.length} legacy fingerprints)`);
+  console.log("UI guideline check passed");
 };
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {

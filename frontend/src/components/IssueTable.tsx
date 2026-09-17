@@ -37,6 +37,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -1124,7 +1125,8 @@ export function BatchIssueStatusActionDrawer({
             <div className="font-medium text-control">
               {t("common.comment")}
             </div>
-            <textarea
+            <Textarea
+              size="md"
               className="w-full border border-control-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent min-h-[6rem] resize-y"
               value={comment}
               placeholder={t("issue.leave-a-comment")}

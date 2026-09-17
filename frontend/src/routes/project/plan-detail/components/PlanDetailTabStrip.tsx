@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function PlanDetailTabStrip({
@@ -64,7 +65,9 @@ export function PlanDetailTabItem({
           : "border-b-block-border border-transparent hover:opacity-80"
       )}
     >
-      <button
+      <Button
+        appearance="secondary"
+        size="xs"
         aria-label={accessibleLabel}
         className={cn(
           "flex min-h-9 min-w-0 items-center gap-2 px-4 py-2 text-left",
@@ -74,7 +77,7 @@ export function PlanDetailTabItem({
         type="button"
       >
         {children}
-      </button>
+      </Button>
       {action && (
         // Pulled into the label's right padding so it sits close to the text.
         <div className="-ml-3 mr-2 flex shrink-0 items-center">{action}</div>

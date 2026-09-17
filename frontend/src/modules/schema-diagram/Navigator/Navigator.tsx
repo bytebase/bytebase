@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PanelSearchBox } from "@/modules/sql-editor/components/Panels/common/PanelSearchBox";
 import { getInstanceResource, hasSchemaProperty } from "@/utils";
@@ -107,11 +108,13 @@ export function Navigator({ treeHeight }: NavigatorProps) {
        *     way to re-open. Anchoring the collapsed button at `left-1`
        *     keeps the whole 24px visible inside Canvas, on top.
        */}
-      <button
+      <Button
+        appearance="secondary"
+        size="xs"
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
         className={cn(
-          "absolute z-10 rounded-full shadow-lg w-6 h-6 top-16 flex items-center justify-center bg-background hover:bg-control-bg cursor-pointer transition-all",
+          "absolute z-10 rounded-full shadow-lg top-16 flex items-center justify-center bg-background hover:bg-control-bg cursor-pointer transition-all",
           expanded ? "left-full -translate-x-3" : "left-1"
         )}
       >
@@ -121,7 +124,7 @@ export function Navigator({ treeHeight }: NavigatorProps) {
             !expanded && "-scale-100"
           )}
         />
-      </button>
+      </Button>
     </div>
   );
 }

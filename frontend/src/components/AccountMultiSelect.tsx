@@ -2,6 +2,7 @@ import { Check, ChevronDown, KeyRound, Shield, Users, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
+import { Button } from "@/components/ui/button";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { SearchInput } from "@/components/ui/search-input";
 import { useCurrentUser } from "@/hooks/useAppState";
@@ -552,16 +553,19 @@ export function AccountMultiSelect({
           >
             {chipLabel(binding)}
             {!disabled && (
-              <button
+              <Button
                 type="button"
-                className="hover:text-error"
+                appearance="secondary"
+                size="xs"
+                aria-label={t("common.remove")}
+                className="text-control-light hover:text-error"
                 onClick={(e) => {
                   e.stopPropagation();
                   remove(binding);
                 }}
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
             )}
           </span>
         ))}

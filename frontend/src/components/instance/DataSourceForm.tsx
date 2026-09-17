@@ -10,6 +10,7 @@ import {
   FormError,
   ResponsiveFormLayout,
 } from "@/components/ui/form";
+import { Input as SharedInput } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
@@ -1015,7 +1016,7 @@ export function DataSourceForm({
                                 keytabResupplyRequired && "border-error"
                               )}
                             >
-                              <input
+                              <SharedInput
                                 type="file"
                                 accept=".keytab"
                                 className="hidden"

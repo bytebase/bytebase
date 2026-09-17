@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { tabListEvents } from "@/modules/sql-editor/model/TabList/events";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
@@ -145,10 +146,11 @@ export function Label({ tab }: Props) {
         />
       )}
       {editing && (
-        <input
+        <Input
+          size="xs"
           ref={inputRef}
           type="text"
-          className="absolute inset-0 border-0 border-b p-0 text-sm leading-5 bg-background"
+          className="absolute inset-0 h-auto border-0 border-b p-0 text-sm leading-5 bg-background"
           value={draft}
           placeholder={t("common.untitled")}
           onChange={(e) => setDraft(e.target.value)}

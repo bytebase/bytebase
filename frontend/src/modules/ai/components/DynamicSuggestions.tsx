@@ -105,7 +105,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
   };
 
   return (
-    <div className="flex items-center overflow-hidden h-[22px]">
+    <div className="flex h-6 items-center overflow-hidden">
       {!ready && (
         <>
           <Loader2 className="mr-2 size-4 animate-spin" />
@@ -121,7 +121,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
             <Button
               appearance="outline"
               size="xs"
-              className="flex-1 overflow-hidden h-[22px]"
+              className="flex-1 overflow-hidden"
               onClick={handleConsume}
             >
               <span className="w-full truncate leading-5">{current}</span>
@@ -136,7 +136,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
               <Button
                 appearance="secondary"
                 size="xs"
-                className="shrink-0 h-[22px] px-1.5"
+                className="shrink-0"
                 onClick={handleRefresh}
                 aria-label={t("plugin.ai.conversation.tips.suggest-prompt")}
               >
@@ -145,7 +145,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
               <Button
                 appearance="secondary"
                 size="xs"
-                className="shrink-0 h-[22px] px-1.5"
+                className="shrink-0"
                 onClick={() => setShowSuggestion(false)}
                 aria-label={t("common.close")}
               >

@@ -926,9 +926,11 @@ export function AgentWindow() {
             </span>
           </div>
           <div className="flex items-center gap-x-1">
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               data-agent-window-action
-              className="flex size-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
+              className="flex items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
               title={t("agent.minimize")}
               onClick={(e) => {
                 e.stopPropagation();
@@ -936,10 +938,12 @@ export function AgentWindow() {
               }}
             >
               &#8722;
-            </button>
-            <button
+            </Button>
+            <Button
+              appearance="secondary"
+              size="xs"
               data-agent-window-action
-              className="flex size-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
+              className="flex items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control-light"
               title={t("agent.close")}
               onClick={(e) => {
                 e.stopPropagation();
@@ -947,7 +951,7 @@ export function AgentWindow() {
               }}
             >
               &#10005;
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -1077,7 +1081,9 @@ export function AgentWindow() {
                       />
                     ) : (
                       <div className="flex items-start gap-x-2">
-                        <button
+                        <Button
+                          appearance="secondary"
+                          size="xs"
                           type="button"
                           className="min-w-0 flex-1 text-left disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={
@@ -1111,7 +1117,7 @@ export function AgentWindow() {
                               />
                             </AgentTooltip>
                           </span>
-                        </button>
+                        </Button>
                         <div className="pointer-events-none flex shrink-0 items-center gap-x-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100">
                           {chat.archived ? (
                             <>
@@ -1162,7 +1168,9 @@ export function AgentWindow() {
           </aside>
 
           {/* Sidebar resize handle */}
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             type="button"
             data-agent-window-action
             data-agent-sidebar-resize
@@ -1170,7 +1178,7 @@ export function AgentWindow() {
             onPointerDown={startSidebarResize}
           >
             <span className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-transparent transition-colors group-hover:bg-accent" />
-          </button>
+          </Button>
 
           {/* Main panel */}
           <div className="flex min-w-0 flex-1 flex-col">
@@ -1235,7 +1243,9 @@ function ConfirmDialog({
               {...triggerProps}
             />
           ) : (
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
               onClick={(event) => event.stopPropagation()}
               {...triggerProps}
@@ -1259,19 +1269,25 @@ function ConfirmDialog({
         <div className="flex justify-end gap-x-2">
           <AgentDialogClose
             render={
-              <button className="rounded-xs border px-3 py-1.5 text-sm font-medium text-control-light hover:bg-control-bg">
+              <Button
+                appearance="secondary"
+                size="xs"
+                className="rounded-xs border px-3 py-1.5 text-sm font-medium text-control-light hover:bg-control-bg"
+              >
                 {t("common.cancel")}
-              </button>
+              </Button>
             }
           />
           <AgentDialogClose
             render={
-              <button
+              <Button
+                appearance="secondary"
+                size="xs"
                 className="rounded-xs bg-accent px-3 py-1.5 text-sm font-medium text-accent-text hover:bg-accent-hover"
                 onClick={onConfirm}
               >
                 {t("common.confirm")}
-              </button>
+              </Button>
             }
           />
         </div>

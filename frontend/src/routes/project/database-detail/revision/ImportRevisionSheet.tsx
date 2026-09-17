@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetBody,
   SheetContent,
@@ -578,7 +585,9 @@ function SourceOption({
   onSelect: (source: "release" | "local") => void;
 }) {
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="xs"
       type="button"
       role="radio"
       aria-checked={selected}
@@ -601,7 +610,7 @@ function SourceOption({
           <p className="mt-1 text-sm text-control-light">{description}</p>
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -700,7 +709,7 @@ function LocalFileUpload({
       <div className="text-sm text-control-light">
         {t("database.revision.upload-files-description")}
       </div>
-      <input
+      <Input
         ref={fileInputRef}
         type="file"
         multiple
@@ -781,25 +790,30 @@ function LocalFileUpload({
                       <span className="text-xs text-control-light">
                         {t("database.revision.revision-type")}
                       </span>
-                      <select
-                        className="h-9 rounded-xs border border-control-border bg-background px-2 text-sm"
+                      <Select
                         value={file.type}
-                        onChange={(event) => {
+                        onValueChange={(type: Revision_Type | null) => {
+                          if (type === null) return;
                           const next = [...files];
                           next[index] = {
                             ...file,
-                            type: Number(event.target.value) as Revision_Type,
+                            type,
                           };
                           onFilesChange(next);
                         }}
                       >
-                        <option value={Revision_Type.VERSIONED}>
-                          {t("database.revision.type-versioned")}
-                        </option>
-                        <option value={Revision_Type.DECLARATIVE}>
-                          {t("database.revision.type-declarative")}
-                        </option>
-                      </select>
+                        <SelectTrigger className="px-2 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={Revision_Type.VERSIONED}>
+                            {t("database.revision.type-versioned")}
+                          </SelectItem>
+                          <SelectItem value={Revision_Type.DECLARATIVE}>
+                            {t("database.revision.type-declarative")}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </label>
                   </div>
                   {file.content && (

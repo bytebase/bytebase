@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { InstanceLabel } from "@/components/InstanceLabel";
 import { RouterLink } from "@/components/RouterLink";
+import { Button } from "@/components/ui/button";
 import { useEnvironment, usePlanFeature } from "@/hooks/useAppState";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -102,7 +103,9 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
           <span className="min-w-0 truncate" title={database.name}>
             {database.name}
           </span>
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             type="button"
             className="inline-flex shrink-0 items-center p-0.5 text-control-light hover:text-main"
             onClick={() => void handleCopy()}
@@ -112,7 +115,7 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

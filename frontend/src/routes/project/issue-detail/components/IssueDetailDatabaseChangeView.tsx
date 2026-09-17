@@ -11,6 +11,7 @@ import {
 import { buildPlanRolloutRouteFromPlanName } from "@/app/router/routeHelpers";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { RouterLink } from "@/components/RouterLink";
+import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import {
   Select,
@@ -114,7 +115,9 @@ export function IssueDetailDatabaseChangeView({
             {specs.map((spec, index) => {
               const isSelected = selectedSpec?.id === spec.id;
               return (
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   key={spec.id}
                   className={cn(
                     "relative -mb-px flex cursor-pointer items-center gap-1 rounded-t-sm border px-3 py-1.5 text-sm transition-colors",
@@ -132,7 +135,7 @@ export function IssueDetailDatabaseChangeView({
                       <span className="text-error">*</span>
                     </Tooltip>
                   )}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -666,13 +669,15 @@ function IssueDetailDatabaseChangeTargets({
               </div>
             ))}
             {targets.length > DEFAULT_VISIBLE_TARGETS && (
-              <button
-                className="h-7 cursor-pointer rounded-sm px-2 text-xs text-control transition-colors hover:bg-control-bg"
+              <Button
+                appearance="secondary"
+                size="sm"
+                className="cursor-pointer rounded-sm text-xs text-control transition-colors hover:bg-control-bg"
                 onClick={() => setShowAllTargetsDialog(true)}
                 type="button"
               >
                 {t("plan.targets.view-all", { count: targets.length })}
-              </button>
+              </Button>
             )}
           </div>
         ) : (
@@ -817,13 +822,15 @@ function IssueDetailDatabaseGroupTarget({
           {extractDatabaseGroupName(databaseGroup.name || target)}
         </span>
         {isValidDatabaseGroupName(databaseGroup.name) && (
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             className="flex cursor-pointer items-center opacity-60 hover:opacity-100"
             onClick={gotoDatabaseGroupDetailPage}
             type="button"
           >
             <ExternalLink className="h-4 w-auto" />
-          </button>
+          </Button>
         )}
       </div>
 

@@ -445,15 +445,15 @@ export const VirtualDataTable = forwardRef<
                   }}
                 >
                   {showRowDetailAction && (
-                    <div className="absolute left-3 top-1/2 size-6 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
+                    <div className="absolute left-3 top-1/2 size-7 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
                       <Tooltip
                         content={t("sql-editor.view-detail")}
                         side="right"
                       >
                         <Button
-                          size="sm"
+                          size="xs"
                           appearance="outline"
-                          className="size-6 rounded-full p-0 shadow"
+                          className="rounded-full shadow"
                           aria-label={t("sql-editor.view-detail")}
                           onClick={(event) => {
                             event.stopPropagation();
@@ -479,7 +479,9 @@ export const VirtualDataTable = forwardRef<
                     {rowIndex + 1}
                   </span>
                   {selectionEnabled && (
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       type="button"
                       aria-label={`Select row ${rowIndex + 1}`}
                       onClick={(e) => handleSelectRow(e, rowIndex)}

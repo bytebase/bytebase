@@ -3,6 +3,7 @@ import { Bold, Code2, Hash, Heading1, Link2 } from "lucide-react";
 import MarkdownIt from "markdown-it";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import "./MarkdownEditor.css";
@@ -273,15 +274,17 @@ function ToolbarButton({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
       aria-label={label}
-      className="rounded-xs p-1 text-control transition-colors hover:bg-control-bg hover:text-main"
+      appearance="secondary"
+      size="xs"
+      className="text-control hover:bg-control-bg hover:text-main"
       onClick={onClick}
       title={label}
       type="button"
     >
       {icon}
-    </button>
+    </Button>
   );
 }
 

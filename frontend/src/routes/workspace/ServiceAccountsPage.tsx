@@ -602,7 +602,8 @@ function ServiceAccountForm({
               <Input value={serviceAccount?.email ?? ""} disabled />
             ) : (
               <div className="px-1 flex items-center border border-control-border rounded-xs overflow-hidden focus-within:border-accent">
-                <input
+                <Input
+                  size="md"
                   type="text"
                   autoComplete="off"
                   value={emailPrefix}

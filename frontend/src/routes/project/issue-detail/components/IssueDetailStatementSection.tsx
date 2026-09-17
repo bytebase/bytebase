@@ -7,6 +7,7 @@ import { MonacoEditor, ReadonlyMonaco } from "@/components/monaco";
 import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCurrentUser, useReleaseByName } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
@@ -395,7 +396,7 @@ export function IssueDetailStatementSection({
           <span>{statementTitle}</span>
           {isEmpty && <span className="text-error">*</span>}
         </div>
-        <input
+        <Input
           ref={inputRef}
           accept=".sql,.txt,application/sql,text/plain"
           className="hidden"

@@ -264,10 +264,12 @@ function RuleSelectList({
                 rule.engine
               );
               return (
-                <button
+                <Button
                   key={key}
                   type="button"
-                  className="w-full flex items-center gap-x-3 px-4 py-3 text-left hover:bg-control-bg/60"
+                  appearance="secondary"
+                  size="xs"
+                  className="h-auto w-full px-4 py-3 text-left hover:bg-control-bg/60"
                   onClick={() => onToggleRule(rule)}
                 >
                   <Checkbox
@@ -286,7 +288,7 @@ function RuleSelectList({
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
-                </button>
+                </Button>
               );
             })}
           </div>

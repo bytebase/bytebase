@@ -18,6 +18,7 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/components/PermissionGuard";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -408,14 +409,16 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                       className="inline-flex items-center gap-1 rounded-xs bg-control-bg px-2 py-1.5 text-sm"
                     >
                       {domain}
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
                         className="text-control-light hover:text-control disabled:opacity-50"
                         disabled={!canEdit}
                         onClick={() => removeDomain(index)}
                       >
                         <X className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </span>
                   ))}
                 </div>

@@ -249,13 +249,15 @@ function BannerUpgradeSubscription() {
                   }}
                   components={{
                     neededPlan: (
-                      <button
+                      <Button
                         type="button"
-                        className="mr-1 cursor-pointer whitespace-nowrap underline hover:opacity-60"
+                        appearance="link"
+                        size="xs"
+                        className="mr-1 h-auto p-0 whitespace-nowrap text-sm text-main underline hover:opacity-60"
                         onClick={() => setShowModal(true)}
                       >
                         {neededPlanFeatures}
-                      </button>
+                      </Button>
                     ),
                   }}
                 />

@@ -46,6 +46,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { StepIndicator } from "@/components/ui/step-indicator";
+import { Table } from "@/components/ui/table";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useProjectByName } from "@/hooks/useProjectByName";
@@ -797,11 +798,13 @@ function ChangelogSelector({
 
   return (
     <div ref={containerRef} className="relative w-full">
-      <button
+      <Button
+        appearance="secondary"
+        size="md"
         type="button"
         disabled={disabled}
         className={cn(
-          "w-full flex items-center justify-between gap-2 border border-control-border rounded-xs h-9 px-3 text-sm bg-background text-left transition-colors",
+          "w-full flex items-center justify-between gap-2 border border-control-border rounded-xs text-sm bg-background text-left transition-colors",
           "hover:border-control-border",
           "disabled:opacity-50 disabled:pointer-events-none",
           open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
@@ -826,7 +829,7 @@ function ChangelogSelector({
             open && "rotate-180"
           )}
         />
-      </button>
+      </Button>
       {open && (
         <div
           className={cn(
@@ -836,7 +839,9 @@ function ChangelogSelector({
         >
           <div className="max-h-60 overflow-y-auto">
             {entries.map((entry) => (
-              <button
+              <Button
+                appearance="secondary"
+                size="xs"
                 key={entry.name}
                 type="button"
                 className={cn(
@@ -850,10 +855,12 @@ function ChangelogSelector({
                 }}
               >
                 <ChangelogLabel entry={entry} />
-              </button>
+              </Button>
             ))}
             {nextPageToken && (
-              <button
+              <Button
+                appearance="secondary"
+                size="xs"
                 type="button"
                 className="w-full text-center px-3 py-2 text-sm text-accent hover:bg-control-bg transition-colors"
                 onClick={(e) => {
@@ -863,7 +870,7 @@ function ChangelogSelector({
                 disabled={loadingMore}
               >
                 {loadingMore ? t("common.loading") : t("common.load-more")}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -1066,7 +1073,9 @@ function SourceSchemaInfo({
       <span>{t("database.sync-schema.source-schema")}</span>
       {changelogSourceSchema ? (
         <>
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg hover:bg-control-bg-hover text-sm transition-colors"
             onClick={gotoDatabase}
           >
@@ -1078,14 +1087,16 @@ function SourceSchemaInfo({
                   .databaseName
               }
             </span>
-          </button>
-          <button
+          </Button>
+          <Button
+            appearance="secondary"
+            size="xs"
             className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg hover:bg-control-bg-hover text-sm transition-colors"
             onClick={gotoChangelog}
           >
             <span className="opacity-60 mr-1">{t("common.changelog")}</span>
             <span>{changelogUID ? `#${changelogUID}` : "Latest"}</span>
-          </button>
+          </Button>
         </>
       ) : (
         <>
@@ -1407,17 +1418,21 @@ function SelectTargetDatabasesView({
                 <span className="text-sm">
                   {t("database.sync-schema.target-databases")}
                 </span>
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   className="p-0.5 rounded-sm bg-control-bg hover:shadow-sm hover:opacity-80"
                   onClick={() => setShowSelectPanel(true)}
                 >
                   <Plus className="w-4 h-auto" />
-                </button>
+                </Button>
               </div>
               {targetDatabaseList.length > 0 && (
                 <div className="w-full mt-2 px-2">
                   <div className="flex rounded-xs bg-control-bg p-0.5">
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       className={cn(
                         "flex-1 text-xs px-2 py-1 rounded-xs transition-colors",
                         showDatabaseWithDiff
@@ -1430,8 +1445,10 @@ function SelectTargetDatabasesView({
                       <span className="text-control-placeholder">
                         ({databaseListWithDiff.length})
                       </span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       className={cn(
                         "flex-1 text-xs px-2 py-1 rounded-xs transition-colors",
                         !showDatabaseWithDiff
@@ -1444,7 +1461,7 @@ function SelectTargetDatabasesView({
                       <span className="text-control-placeholder">
                         ({databaseListWithoutDiff.length})
                       </span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -1477,7 +1494,9 @@ function SelectTargetDatabasesView({
                     </span>
                   </span>
                   <div className="grow" />
-                  <button
+                  <Button
+                    appearance="secondary"
+                    size="xs"
                     className="hidden shrink-0 group-hover:block ml-1 p-0.5 rounded-sm bg-background hover:shadow-sm"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1485,7 +1504,7 @@ function SelectTargetDatabasesView({
                     }}
                   >
                     <Minus className="w-4 h-auto text-control-light" />
-                  </button>
+                  </Button>
                 </div>
               ))}
               {targetDatabaseList.length === 0 && (
@@ -1576,28 +1595,32 @@ function DiffViewPanel({
     <div className="w-full h-full flex flex-col gap-y-2">
       {/* Tabs */}
       <div className="flex border-b border-control-border gap-x-4">
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           className={cn(
-            "relative px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
+            "relative h-auto px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
             tab === "diff"
-              ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
+              ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:border-b-2 after:border-accent"
               : "text-control-light hover:text-control"
           )}
           onClick={() => setTab("diff")}
         >
           {t("database.sync-schema.schema-change")}
-        </button>
-        <button
+        </Button>
+        <Button
+          appearance="secondary"
+          size="xs"
           className={cn(
-            "relative px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
+            "relative h-auto px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
             tab === "ddl"
-              ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
+              ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:border-b-2 after:border-accent"
               : "text-control-light hover:text-control"
           )}
           onClick={() => setTab("ddl")}
         >
           {t("database.sync-schema.generated-ddl-statement")}
-        </button>
+        </Button>
       </div>
 
       <div className="flex-1 w-full flex flex-col gap-y-2 overflow-hidden">
@@ -2042,7 +2065,7 @@ function TargetDatabasesSelectPanel({
             </div>
           ) : (
             <>
-              <table className="w-full text-sm">
+              <Table>
                 <thead>
                   <tr className="border-b">
                     <th className="py-2 px-2 w-8 text-left">
@@ -2099,7 +2122,7 @@ function TargetDatabasesSelectPanel({
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
               {dbNextPageToken && (
                 <div className="flex justify-center py-3">
                   <Button

@@ -193,7 +193,9 @@ export function ConnectChooser({
           filteredOptions.map((option) => {
             const isSelected = option.value === value;
             return (
-              <button
+              <Button
+                appearance="secondary"
+                size="xs"
                 key={option.value}
                 type="button"
                 className={cn(
@@ -214,7 +216,7 @@ export function ConnectChooser({
                 {isSelected && (
                   <Check className="size-4 text-accent shrink-0" />
                 )}
-              </button>
+              </Button>
             );
           })
         )}
@@ -263,10 +265,7 @@ export function ConnectChooser({
           ref={triggerRef}
           variant="default"
           size="sm"
-          className={cn(
-            "h-7 min-w-[10rem] px-1.5 gap-1 rounded-r-none text-sm",
-            triggerClassName
-          )}
+          className={cn("min-w-[10rem] rounded-r-none", triggerClassName)}
           aria-label={placeholder}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}

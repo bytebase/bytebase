@@ -390,13 +390,13 @@ describe("AgentInput", () => {
     const row = container.querySelector("[data-agent-input-row]");
     expect(row?.className).toContain("items-end");
     expect(container.querySelector("textarea")?.className).toContain(
-      "min-h-[34px]"
+      "min-h-9"
     );
     expect(container.querySelector("textarea")?.className).toContain(
       "max-h-[134px]"
     );
     expect(container.querySelector("textarea")?.className).toContain("block");
-    expect(container.querySelector("button")?.className).toContain("h-[34px]");
+    expect(container.querySelector("button")?.className).toContain("h-9");
 
     unmount();
   });

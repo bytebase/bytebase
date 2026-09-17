@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import type { Conversation } from "../../types";
 import { useAIContext } from "../context";
 import { AIMessageView } from "./AIMessageView";
@@ -92,13 +93,15 @@ export function ChatView({ mode = "CHAT", conversation }: Props) {
           <div className="w-full h-full flex flex-col justify-end items-center pb-8">
             <p className="text-sm text-control-light">
               {selectOrCreateParts[0]}
-              <button
+              <Button
+                appearance="secondary"
+                size="xs"
                 type="button"
                 className="text-accent underline hover:text-accent-hover cursor-pointer"
                 onClick={() => events.emit("new-conversation", { input: "" })}
               >
                 {t("common.create")}
-              </button>
+              </Button>
               {selectOrCreateParts[1] ?? ""}
             </p>
           </div>
