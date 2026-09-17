@@ -307,7 +307,9 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 					slog.String("instance", database.InstanceID),
 					slog.String("databaseName", database.DatabaseName),
 					log.BBError(err))
-				// Save sync error to database metadata
+				// Save sync error to database metadata. The last sync time stays
+				// at the read behind the stored schema, which this sync failed
+				// to replace.
 				if _, updateErr := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
 					InstanceID:   database.InstanceID,
 					DatabaseName: database.DatabaseName,
@@ -315,7 +317,6 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 						func(md *storepb.DatabaseMetadata) {
 							md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_FAILED
 							md.SyncError = err.Error()
-							md.LastSyncTime = timestamppb.Now()
 						},
 					},
 				}); updateErr != nil {
@@ -570,8 +571,11 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
 	defer cancelFunc()
 	// Take the time before the read, not after: it is what orders this sync
-	// against the others that read the same database.
-	syncedAt := time.Now()
+	// against the others that read the same database, wherever they run.
+	syncedAt, err := s.store.Now(ctx)
+	if err != nil {
+		return "", err
+	}
 	syncedDatabaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
@@ -586,33 +590,24 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	// Acquiring another pool connection inside the callback can deadlock sync bursts.
 	backupAvailable := s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
 
-	// Build metadata updates. UpsertDBSchema records the last sync time and
-	// ignores a read older than the stored one; leave the rest of the metadata
-	// to that newer sync too.
-	metadataUpdates := []func(*storepb.DatabaseMetadata){
+	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+		Deleted:      new(false),
+	}); err != nil {
+		return "", errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+	}
+
+	// What this sync read lands together with the schema it read, or not at all.
+	if err := s.store.UpsertDBSchema(ctx,
+		database.InstanceID, database.DatabaseName,
+		syncedDatabaseMetadata, rawDump, syncedAt,
 		func(md *storepb.DatabaseMetadata) {
-			if md.GetLastSyncTime().AsTime().After(syncedAt) {
-				return
-			}
 			md.BackupAvailable = backupAvailable
 			md.Datashare = syncedDatabaseMetadata.Datashare
 			md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_OK
 			md.SyncError = ""
 		},
-	}
-
-	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-		InstanceID:      database.InstanceID,
-		DatabaseName:    database.DatabaseName,
-		Deleted:         new(false),
-		MetadataUpdates: metadataUpdates,
-	}); err != nil {
-		return "", errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
-	}
-
-	if err := s.store.UpsertDBSchema(ctx,
-		database.InstanceID, database.DatabaseName,
-		syncedDatabaseMetadata, rawDump, syncedAt,
 	); err != nil {
 		if strings.Contains(err.Error(), "escape sequence") || strings.Contains(err.Error(), "invalid byte sequence") {
 			if metadataBytes, err := protojson.Marshal(syncedDatabaseMetadata); err == nil {

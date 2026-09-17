@@ -72,8 +72,11 @@ func TestUpsertDBSchemaKeepsTheLaterRead(t *testing.T) {
 
 	later := time.Now()
 	earlier := later.Add(-time.Minute)
-	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "read-later"}, nil, later))
-	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "read-earlier"}, nil, earlier))
+	datashare := func(v bool) func(*storepb.DatabaseMetadata) {
+		return func(md *storepb.DatabaseMetadata) { md.Datashare = v }
+	}
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "read-later"}, nil, later, datashare(true)))
+	a.NoError(s.UpsertDBSchema(ctx, "instance-a", "db", &metadatapb.DatabaseSchemaMetadata{Name: "read-earlier"}, nil, earlier, datashare(false)))
 
 	schema, err := s.GetDBSchema(ctx, &store.FindDBSchemaMessage{Workspace: "default", InstanceID: "instance-a", DatabaseName: "db"})
 	a.NoError(err)
@@ -84,4 +87,5 @@ func TestUpsertDBSchemaKeepsTheLaterRead(t *testing.T) {
 	a.NoError(err)
 	a.NotNil(database)
 	a.True(later.Equal(database.Metadata.GetLastSyncTime().AsTime()))
+	a.True(database.Metadata.GetDatashare())
 }

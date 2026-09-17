@@ -12,6 +12,7 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -129,6 +130,16 @@ func (s *Store) Close() error {
 
 func (s *Store) GetDB() *sql.DB {
 	return s.dbConnManager.GetDB()
+}
+
+// Now returns the metadata database's clock. Replicas do not share a clock, so
+// a value that orders the writes of several replicas has to come from here.
+func (s *Store) Now(ctx context.Context) (time.Time, error) {
+	var now time.Time
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT clock_timestamp()").Scan(&now); err != nil {
+		return time.Time{}, errors.Wrap(err, "failed to read the metadata database clock")
+	}
+	return now, nil
 }
 
 // DeleteCache deletes the cache.

@@ -77,11 +77,12 @@ func (s *Store) GetDBSchemaSnapshot(ctx context.Context, workspaceID string, ins
 	return s.GetDBSchema(ctx, &FindDBSchemaMessage{Workspace: workspaceID, InstanceID: instanceID, DatabaseName: databaseName})
 }
 
-// UpsertDBSchema stores the synced metadata and raw dump of a database, and
-// records syncedAt, the time the sync read it, as the database's last sync
-// time. A sync whose read started before the stored one is ignored, so the
-// slower of two overlapping syncs, on this replica or another, cannot replace a
-// schema read after it.
+// UpsertDBSchema stores the synced metadata and raw dump of a database, applies
+// metadataUpdates to the database's own metadata, and records syncedAt, the
+// metadata database time the sync read the database, as its last sync time. All
+// of it happens in one transaction, and none of it happens when the database
+// records a later read: of two overlapping syncs, on one replica or on two,
+// only the one that read last leaves anything behind.
 //
 // It never writes config, which UpdateDBSchema owns: a sync that wrote back the
 // config it read before dumping the schema would undo an edit made meanwhile.
@@ -92,6 +93,7 @@ func (s *Store) UpsertDBSchema(
 	dbMetadata *metadatapb.DatabaseSchemaMetadata,
 	rawDump []byte,
 	syncedAt time.Time,
+	metadataUpdates ...func(*storepb.DatabaseMetadata),
 ) error {
 	metadataBytes, err := protojson.Marshal(dbMetadata)
 	if err != nil {
@@ -133,6 +135,9 @@ func (s *Store) UpsertDBSchema(
 		}
 		if databaseMetadata.GetLastSyncTime().AsTime().After(syncedAt) {
 			return nil
+		}
+		for _, update := range metadataUpdates {
+			update(databaseMetadata)
 		}
 		databaseMetadata.LastSyncTime = timestamppb.New(syncedAt)
 		databaseMetadataBytes, err := protojson.Marshal(databaseMetadata)
