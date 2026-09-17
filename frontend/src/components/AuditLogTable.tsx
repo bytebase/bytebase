@@ -319,13 +319,16 @@ function JSONStringView({ jsonString }: { jsonString: string }) {
         <p className="line-clamp-2">
           <code className="text-sm break-all">{jsonString}</code>
         </p>
-        <div className="hidden group-hover:block shrink-0 h-[22px]">
-          <button
-            className="p-0.5 border border-control-border rounded-xs hover:bg-control-bg"
+        <div className="hidden h-6 shrink-0 group-hover:block">
+          <Button
+            type="button"
+            appearance="outline"
+            size="xs"
+            aria-label={t("common.view-details")}
             onClick={() => setShowModal(true)}
           >
             <Maximize2 className="size-3" />
-          </button>
+          </Button>
         </div>
       </div>
       {showModal && (

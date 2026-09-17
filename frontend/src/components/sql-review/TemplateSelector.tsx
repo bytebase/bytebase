@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useProjectByName } from "@/hooks/useProjectByName";
@@ -106,12 +107,14 @@ export function TemplateSelector({
           <>
             <div className="flex flex-wrap gap-4">
               {reviewPolicyTemplateList.map((template) => (
-                <button
+                <Button
                   type="button"
                   key={template.id}
+                  appearance="secondary"
+                  size="xs"
                   aria-pressed={isSelected(template)}
                   className={cn(
-                    "relative flex w-full cursor-pointer flex-col rounded-sm border border-control-border px-6 py-4 text-left transition-colors sm:max-w-xs",
+                    "relative h-auto w-full flex-col rounded-sm border border-control-border px-6 py-4 text-left sm:max-w-xs",
                     "hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
                     isSelected(template) && "bg-control-bg"
                   )}
@@ -136,7 +139,7 @@ export function TemplateSelector({
                   {isSelected(template) && (
                     <CheckCircle className="absolute right-3 top-3 size-7 text-accent" />
                   )}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -146,12 +149,14 @@ export function TemplateSelector({
 
         <div className="flex flex-wrap gap-4">
           {builtInTemplateList.map((template) => (
-            <button
+            <Button
               type="button"
               key={template.id}
+              appearance="secondary"
+              size="xs"
               aria-pressed={isSelected(template)}
               className={cn(
-                "relative flex w-full cursor-pointer flex-col rounded-sm border border-control-border px-6 py-4 text-left transition-colors sm:max-w-xs",
+                "relative h-auto w-full flex-col rounded-sm border border-control-border px-6 py-4 text-left sm:max-w-xs",
                 "hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
                 isSelected(template) && "bg-control-bg"
               )}
@@ -174,7 +179,7 @@ export function TemplateSelector({
               {isSelected(template) && (
                 <CheckCircle className="absolute right-3 top-3 size-7 text-accent" />
               )}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
 import { Button } from "@/components/ui/button";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
+import { Textarea } from "@/components/ui/textarea";
 import type { DomRefSuggestion } from "../dom";
 import { lazyExtractDomRefSuggestions } from "../dom";
 import { runAgentLoop } from "../logic/agentLoop";
@@ -697,20 +698,24 @@ export function AgentInput() {
           <div className="font-medium">{t("agent.interrupted")}</div>
           <div className="mt-1">{t("agent.interrupted-retry-hint")}</div>
           <div className="mt-2 flex flex-wrap gap-x-2 gap-y-2">
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               className="rounded-xs bg-error px-3 py-2 text-sm text-accent-text hover:bg-error/90 disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={retryLastTurn}
             >
               {t("agent.retry-last-chat-turn")}
-            </button>
-            <button
+            </Button>
+            <Button
+              appearance="secondary"
+              size="xs"
               className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={dismissInterrupted}
             >
               {t("common.dismiss")}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -725,26 +730,32 @@ export function AgentInput() {
       {/* Confirm buttons */}
       {isAwaitingConfirm ? (
         <div className="flex flex-wrap gap-x-2 gap-y-2">
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             className="rounded-xs bg-accent px-3 py-2 text-sm text-accent-text hover:bg-accent-hover disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(true)}
           >
             {confirmLabel}
-          </button>
-          <button
+          </Button>
+          <Button
+            appearance="secondary"
+            size="xs"
             className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(false)}
           >
             {cancelLabel}
-          </button>
+          </Button>
         </div>
       ) : isAwaitingChoose ? (
         /* Choose options */
         <div className="flex flex-col gap-y-2">
           {chooseOptions.map((option) => (
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               key={option.value}
               className="rounded-xs border px-3 py-2 text-left text-sm hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning}
@@ -756,7 +767,7 @@ export function AgentInput() {
                   {option.description}
                 </div>
               )}
-            </button>
+            </Button>
           ))}
         </div>
       ) : (
@@ -771,11 +782,12 @@ export function AgentInput() {
                 {inputPlaceholder}
               </div>
             )}
-            <textarea
+            <Textarea
+              size="md"
               ref={textareaRef}
               value={input}
               rows={1}
-              className="block min-h-[34px] max-h-[134px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              className="block min-h-9 max-h-[134px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               aria-label={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
               onChange={(e) => {
@@ -841,16 +853,16 @@ export function AgentInput() {
           {loading ? (
             <Button
               variant="destructive"
-              size="sm"
-              className="h-[34px] shrink-0 self-end whitespace-nowrap"
+              size="md"
+              className="shrink-0 self-end whitespace-nowrap"
               onClick={() => useAgentStore.getState().cancel(currentChat?.id)}
             >
               {t("agent.stop")}
             </Button>
           ) : (
             <Button
-              size="sm"
-              className="h-[34px] shrink-0 self-end whitespace-nowrap"
+              size="md"
+              className="shrink-0 self-end whitespace-nowrap"
               disabled={isSendDisabled}
               onClick={() => void send()}
             >

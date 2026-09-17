@@ -1122,7 +1122,7 @@ function TableDetailSheetContent({
                 />
               </div>
               <div className="rounded-sm border border-block-border">
-                <table className="min-w-full divide-y divide-block-border text-sm">
+                <Table className="min-w-full divide-y divide-block-border">
                   <thead className="bg-control-bg">
                     <tr className="text-left text-sm text-control-light">
                       <th className="px-4 py-2 font-medium">
@@ -1247,7 +1247,7 @@ function TableDetailSheetContent({
                       </tr>
                     )}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </DetailSection>
           )}
@@ -1262,7 +1262,7 @@ function TableDetailSheetContent({
                   <div className="border-b border-block-border px-4 py-3 text-base font-medium text-main">
                     {index.name}
                   </div>
-                  <table className="min-w-full divide-y divide-block-border text-sm">
+                  <Table className="min-w-full divide-y divide-block-border">
                     <thead className="bg-control-bg">
                       <tr className="text-left text-sm text-control-light">
                         <th className="px-4 py-2 font-medium">
@@ -1303,7 +1303,7 @@ function TableDetailSheetContent({
                         )}
                       </tr>
                     </tbody>
-                  </table>
+                  </Table>
                 </div>
               ))}
             </DetailSection>

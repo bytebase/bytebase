@@ -136,16 +136,18 @@ export function EmailCodeSigninForm({ loading, onSignin }: Props) {
             length={6}
           />
           <div className="flex items-center justify-end">
-            <button
+            <Button
               type="button"
-              className="text-sm text-accent disabled:text-control-light disabled:cursor-not-allowed"
+              appearance="link"
+              size="xs"
+              className="h-auto p-0 text-sm disabled:text-control-light"
               disabled={resendCountdown > 0}
               onClick={sendCode}
             >
               {resendCountdown > 0
                 ? t("auth.sign-in.resend-in", { seconds: resendCountdown })
                 : t("auth.sign-in.resend-code")}
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -645,33 +645,39 @@ export function GlobalMaskingPage() {
                 {reorderRules ? (
                   <div className="pt-2 flex flex-col">
                     {index > 0 && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-control-bg"
+                        className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                         onClick={() => onReorder(item, -1)}
                       >
                         <ChevronUp className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
                     {index !== items.length - 1 && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-control-bg"
+                        className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                         onClick={() => onReorder(item, 1)}
                       >
                         <ChevronDown className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ) : (
                   <div className="pt-2">
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       type="button"
-                      className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-control-bg"
+                      className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                       onClick={() => onEdit(index)}
                     >
                       <Pencil className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

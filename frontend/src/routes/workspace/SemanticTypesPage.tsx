@@ -640,7 +640,9 @@ function MaskingAlgorithmDrawer({
             </label>
             <div className="grid grid-cols-3 gap-2 mt-2">
               {maskingTypeOptions.map((opt) => (
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   key={opt.value}
                   className={`px-3 py-2 text-sm border rounded-sm transition-colors ${
                     maskingType === opt.value
@@ -650,7 +652,7 @@ function MaskingAlgorithmDrawer({
                   onClick={() => onMaskingTypeChange(opt.value)}
                 >
                   {opt.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -739,7 +741,9 @@ function MaskingAlgorithmDrawer({
                         }
                       />
                     </div>
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       className="p-1 rounded-xs hover:bg-error/10 text-error mb-0.5"
                       onClick={() =>
                         setRangeMaskSlices((prev) =>
@@ -748,7 +752,7 @@ function MaskingAlgorithmDrawer({
                       }
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 ))}
                 {rangeMaskErrorMessage && (
@@ -1037,7 +1041,9 @@ function SemanticTypeRow({
             </span>
           )}
           {!isItemReadonly && (
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
               onClick={() => {
                 const algo = getMaskingType(row.item.algorithm)
@@ -1047,7 +1053,7 @@ function SemanticTypeRow({
               }}
             >
               <Pencil className="w-4 h-4" />
-            </button>
+            </Button>
           )}
         </div>
       </TableCell>
@@ -1057,12 +1063,14 @@ function SemanticTypeRow({
             {!isBuiltin && (
               <>
                 {isEditing && (
-                  <button
+                  <Button
+                    appearance="secondary"
+                    size="xs"
                     className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
                     onClick={() => onCancel(index)}
                   >
                     <Undo2 className="w-4 h-4" />
-                  </button>
+                  </Button>
                 )}
                 {row.mode === "EDIT" && (
                   <DeleteConfirmButton
@@ -1077,7 +1085,9 @@ function SemanticTypeRow({
                 {isEditing && (
                   <Tooltip content={confirmDisabledReason}>
                     <span className="inline-flex">
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
                         aria-label={t("common.confirm")}
                         className="p-1 rounded-xs hover:bg-accent/10 text-accent disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1085,17 +1095,19 @@ function SemanticTypeRow({
                         onClick={() => onConfirm(index)}
                       >
                         <Check className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </span>
                   </Tooltip>
                 )}
                 {row.mode === "NORMAL" && (
-                  <button
+                  <Button
+                    appearance="secondary"
+                    size="xs"
                     className="p-1 rounded-xs hover:bg-control-bg-hover text-control-light"
                     onClick={() => onStartEdit(index)}
                   >
                     <Pencil className="w-4 h-4" />
-                  </button>
+                  </Button>
                 )}
               </>
             )}
@@ -1177,7 +1189,7 @@ function IconPicker({ value, onChange }: IconPickerProps) {
               {t("common.upload")}
             </span>
           )}
-          <input
+          <Input
             ref={fileInputRef}
             type="file"
             className="hidden"

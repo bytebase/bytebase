@@ -589,7 +589,7 @@ export function PlanDetailChangesBranch({
                 aria-label={t("plan.add-spec")}
                 className={cn(
                   ICON_ACTION_CLASS,
-                  "size-7 rounded-xs p-0 [touch-action:manipulation]"
+                  "rounded-xs [touch-action:manipulation]"
                 )}
                 disabled={Boolean(pendingNewSpec)}
                 onClick={() => setShowAddSpecSheet(true)}
@@ -1695,7 +1695,9 @@ function DatabaseAndGroupSelector({
   return (
     <div className="flex flex-col gap-y-3">
       <div className="flex border-b border-control-border">
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           type="button"
           className={cn(
             "border-b-2 -mb-px px-4 py-2 text-sm font-medium transition-colors",
@@ -1709,8 +1711,10 @@ function DatabaseAndGroupSelector({
             <DatabaseIcon className="size-4" />
             {t("common.databases")}
           </span>
-        </button>
-        <button
+        </Button>
+        <Button
+          appearance="secondary"
+          size="xs"
           type="button"
           className={cn(
             "border-b-2 -mb-px px-4 py-2 text-sm font-medium transition-colors",
@@ -1724,7 +1728,7 @@ function DatabaseAndGroupSelector({
             <FolderTree className="size-4" />
             {t("common.database-group")}
           </span>
-        </button>
+        </Button>
       </div>
 
       {changeSource === "DATABASE" ? (
@@ -2096,7 +2100,7 @@ export function DatabaseGroupTarget({
               <PopoverTrigger
                 render={
                   <Button
-                    className="h-6 px-1.5 text-xs text-accent hover:bg-accent/10 hover:text-accent"
+                    className="text-accent hover:bg-accent/10 hover:text-accent"
                     size="xs"
                     type="button"
                     appearance="secondary"

@@ -62,6 +62,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   WorkspacePageLayout,
@@ -404,9 +405,11 @@ function MemberTable({
                       avatar={
                         mb.type === "groups" ? (
                           <>
-                            <button
+                            <Button
+                              appearance="secondary"
+                              size="xs"
                               type="button"
-                              className="flex size-5 shrink-0 items-center justify-center cursor-pointer"
+                              className="flex shrink-0 items-center justify-center cursor-pointer"
                               onClick={() =>
                                 mb.group && toggleGroupExpand(mb.group)
                               }
@@ -416,7 +419,7 @@ function MemberTable({
                               ) : (
                                 <ChevronRight className="size-4 text-control-light" />
                               )}
-                            </button>
+                            </Button>
                             <div className="size-9 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
                               <Users className="size-4 text-control-light" />
                             </div>
@@ -903,7 +906,9 @@ function ExpirationChip({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="xs"
       type="button"
       className={cn(
         "px-2.5 py-1 text-xs rounded-sm border transition-colors",
@@ -914,7 +919,7 @@ function ExpirationChip({
       onClick={onClick}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -1157,13 +1162,15 @@ function ProjectRoleBindingForm({
   return (
     <div className="border rounded-sm p-4 flex flex-col gap-y-4 relative">
       {canRemove && (
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           type="button"
           className="absolute top-2 right-2 text-control-light hover:text-error"
           onClick={onRemove}
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       )}
 
       {/* Role select */}
@@ -1205,7 +1212,8 @@ function ProjectRoleBindingForm({
           </>
         }
       >
-        <textarea
+        <Textarea
+          size="sm"
           className="w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm resize-none"
           rows={2}
           value={form.reason}

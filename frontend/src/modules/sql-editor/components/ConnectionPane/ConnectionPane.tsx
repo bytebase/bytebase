@@ -11,6 +11,7 @@ import {
 import { DatabaseGroupTable } from "@/components/DatabaseGroupTable";
 import { EngineIcon } from "@/components/EngineIcon";
 import { FeatureBadge } from "@/components/FeatureBadge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
@@ -785,10 +786,12 @@ function SelectedDatabaseTag({
       )}
       <ChevronRight className="size-3 shrink-0" />
       <span className="truncate max-w-[10rem]">{dbLabel}</span>
-      <button
+      <Button
+        appearance="secondary"
+        size="xs"
         type="button"
         className={cn(
-          "inline-flex items-center justify-center size-4 rounded-sm",
+          "inline-flex items-center justify-center rounded-sm",
           "hover:bg-control-bg-hover disabled:opacity-50 disabled:cursor-not-allowed"
         )}
         aria-label={t("common.close")}
@@ -799,7 +802,7 @@ function SelectedDatabaseTag({
         }}
       >
         <X className="size-3" />
-      </button>
+      </Button>
     </span>
   );
 }
@@ -1091,7 +1094,7 @@ function TreeRow({
         // wrappers (Base UI's Tooltip.Trigger renders a `<span>`) can be
         // the actual mousedown target when the wrapped control is
         // disabled — `target.closest('button')` from that span walks UP
-        // and won't find the disabled `<button>` descendant. Wrappers
+        // and won't find the disabled `<Button appearance="secondary" size="xs">` descendant. Wrappers
         // owning interactive controls in this row mark themselves with
         // `data-row-interactive` to opt out of row activation regardless
         // of internal nesting.
@@ -1157,14 +1160,16 @@ function LoadMoreButton({
   const { t } = useTranslation();
   return (
     <div className="w-full flex items-center justify-start pl-4">
-      <button
+      <Button
+        appearance="secondary"
+        size="xs"
         type="button"
         className="text-sm text-accent hover:underline disabled:opacity-50"
         disabled={loading}
         onClick={() => void onLoadMore()}
       >
         {t("common.load-more")}
-      </button>
+      </Button>
     </div>
   );
 }

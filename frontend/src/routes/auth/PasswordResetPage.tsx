@@ -231,7 +231,9 @@ export function PasswordResetPage() {
                 />
               </div>
               <div className="mt-2 flex items-center justify-end">
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   type="button"
                   className="text-sm text-accent disabled:text-control-light disabled:cursor-not-allowed"
                   disabled={resendCountdown > 0}
@@ -242,7 +244,7 @@ export function PasswordResetPage() {
                         seconds: resendCountdown,
                       })
                     : t("auth.sign-in.resend-code")}
-                </button>
+                </Button>
               </div>
             </div>
           </>

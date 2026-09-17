@@ -12,6 +12,13 @@ import {
   FormFieldGroup,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tooltip } from "@/components/ui/tooltip";
 import i18n from "@/lib/i18n";
 import type { PayloadValueType } from "@/lib/sql-review/rule-config-types";
@@ -332,7 +339,7 @@ function StringArrayInput({
                 type="button"
                 appearance="secondary"
                 size="xs"
-                className="size-4 p-0 text-control-light hover:bg-transparent hover:text-error"
+                className="text-control-light hover:bg-transparent hover:text-error"
                 onClick={() => removeTag(i)}
               >
                 <XIcon className="w-3 h-3" />
@@ -379,18 +386,24 @@ function TemplateSelect({
   }));
 
   return (
-    <select
-      className="flex h-9 w-full rounded-xs border border-control-border bg-transparent px-3 py-1 text-sm text-main focus:outline-hidden focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50"
+    <Select
       value={value}
       disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
+      onValueChange={(nextValue: string | null) => {
+        if (nextValue !== null) onChange(nextValue);
+      }}
     >
-      {options.map((opt) => (
-        <option key={opt.id} value={opt.id}>
-          {opt.description}
-        </option>
-      ))}
-    </select>
+      <SelectTrigger className="w-full bg-transparent text-main">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt.id} value={opt.id}>
+            {opt.description}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

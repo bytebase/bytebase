@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -72,21 +73,24 @@ export function MaxRowCountSelect({
       <PopoverContent side="bottom" align="start" className="p-1 min-w-32">
         <div className="flex flex-col">
           {rowCountOptions.map((n) => (
-            <button
+            <Button
               key={n}
               type="button"
+              appearance="secondary"
+              size="xs"
               className={cn(
-                "px-3 py-1.5 text-sm text-left rounded-xs cursor-pointer",
+                "h-auto px-3 py-1.5 text-left text-sm",
                 "hover:bg-control-bg",
                 n === value && "bg-control-bg font-medium"
               )}
               onClick={() => handlePresetClick(n)}
             >
               {t("common.rows.n-rows", { n })}
-            </button>
+            </Button>
           ))}
           <div className="flex items-center gap-1 px-3 py-1.5 border-t mt-1">
-            <input
+            <Input
+              size="xs"
               type="number"
               className="w-20 border border-control-border rounded-xs px-2 py-0.5 text-sm"
               value={value}

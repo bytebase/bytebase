@@ -245,7 +245,7 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
                       })}
                     </p>
                   </div>
-                  <input
+                  <Input
                     ref={fileInputRef}
                     type="file"
                     accept={SUPPORT_IMAGE_EXTENSIONS.join(",")}

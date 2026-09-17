@@ -287,7 +287,9 @@ export function TabList() {
                 />
               ))}
               <div className="shrink-0 sticky right-0 bg-background flex items-stretch justify-end">
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   type="button"
                   className={cn(
                     "bg-control-bg/20 hover:bg-accent/10 py-1 px-1.5",
@@ -298,7 +300,7 @@ export function TabList() {
                   aria-label={t("common.add")}
                 >
                   <Plus className="size-5" strokeWidth={2.5} />
-                </button>
+                </Button>
               </div>
             </div>
           </SortableContext>

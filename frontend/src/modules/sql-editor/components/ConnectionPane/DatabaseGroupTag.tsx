@@ -1,6 +1,7 @@
 import { Boxes, X } from "lucide-react";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
@@ -42,10 +43,12 @@ export function DatabaseGroupTag({
       >
         <Boxes className="size-4 shrink-0" />
         <span className="truncate max-w-[12rem]">{databaseGroup.title}</span>
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           type="button"
           className={cn(
-            "inline-flex items-center justify-center size-4 rounded-sm",
+            "inline-flex items-center justify-center rounded-sm",
             "hover:bg-control-bg-hover disabled:opacity-50 disabled:cursor-not-allowed"
           )}
           aria-label={t("common.close")}
@@ -57,7 +60,7 @@ export function DatabaseGroupTag({
           }}
         >
           <X className="size-3" />
-        </button>
+        </Button>
       </span>
     </Tooltip>
   );

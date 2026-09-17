@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { SQL_EDITOR_SAVED_QUERY_MODULE } from "@/app/router/handles";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { useAppStore } from "@/stores/app";
@@ -97,7 +98,8 @@ export function SharePopoverBody({ savedQuery }: Props) {
           <Link2 className="size-4" />
         </div>
         {/* URL input — always read-only; the link itself is not editable. */}
-        <input
+        <Input
+          size="sm"
           type="text"
           readOnly
           value={sharedTabLink}
@@ -115,7 +117,7 @@ export function SharePopoverBody({ savedQuery }: Props) {
           data-copy-btn
           disabled={!sharedTabLink}
           onClick={handleCopyLink}
-          className="h-full rounded-none border-l border-control-border bg-background enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg focus-visible:ring-inset focus-visible:ring-offset-0"
+          className="self-stretch rounded-none border-l border-control-border bg-background enabled:hover:bg-control-bg-hover enabled:hover:text-main disabled:bg-control-bg focus-visible:ring-inset focus-visible:ring-offset-0"
         >
           <Copy className="size-4" />
         </Button>

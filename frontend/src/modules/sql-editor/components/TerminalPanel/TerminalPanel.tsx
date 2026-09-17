@@ -2,6 +2,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { IStandaloneCodeEditor } from "@/components/monaco/types";
+import { Button } from "@/components/ui/button";
 import { ConnectionHolder } from "@/modules/sql-editor/components/ConnectionHolder";
 import { EditorAction } from "@/modules/sql-editor/components/EditorAction";
 import { ResultView } from "@/modules/sql-editor/components/ResultView";
@@ -245,13 +246,15 @@ export function TerminalPanel() {
                       <div className="absolute inset-0 bg-overlay/20 flex justify-center items-center gap-2">
                         <Loader2 className="size-5 animate-spin text-control-light" />
                         {query === currentQuery && expired && (
-                          <button
+                          <Button
+                            appearance="secondary"
+                            size="xs"
                             type="button"
                             className="text-control-placeholder cursor-pointer hover:underline text-sm select-none"
                             onClick={handleCancelQuery}
                           >
                             {t("common.cancel")}
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}

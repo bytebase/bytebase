@@ -261,7 +261,6 @@ describe("RuleTable", () => {
       'tbody tr[data-sql-review-rule-view="desktop"] button[aria-label="common.edit"]'
     );
     expect(editButton).toBeTruthy();
-    expect(editButton?.className).toContain("size-7");
     expect(editButton?.textContent).toBe("");
     expect(editButton?.className).not.toContain("border");
 
@@ -269,7 +268,6 @@ describe("RuleTable", () => {
       'tbody tr[data-sql-review-rule-view="desktop"] button[aria-label="common.delete"]'
     );
     expect(deleteButton).toBeTruthy();
-    expect(deleteButton?.className).toContain("size-7");
     expect(deleteButton?.textContent).toBe("");
     expect(deleteButton?.className).not.toContain("border");
     expect(editButton?.parentElement?.className).toContain("gap-x-1");
@@ -497,10 +495,6 @@ describe("RuleTable", () => {
     );
     expect(mobileEditButton).toBeTruthy();
     expect(mobileDeleteButton).toBeTruthy();
-    expect(mobileEditButton?.className).toContain("size-7");
-    expect(mobileDeleteButton?.className).toContain("size-7");
-    expect(mobileEditButton?.className).not.toContain("size-8");
-    expect(mobileDeleteButton?.className).not.toContain("size-8");
     expect(mobileDeleteButton?.textContent).toBe("");
 
     unmount();

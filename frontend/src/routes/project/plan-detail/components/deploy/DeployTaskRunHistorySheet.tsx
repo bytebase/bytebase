@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
 import { TaskRunLogViewer } from "@/components/task-run-log";
+import { Button } from "@/components/ui/button";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import {
   Sheet,
@@ -116,7 +117,9 @@ function TaskRunHistoryItem({
 
   return (
     <div className="rounded-sm border">
-      <button
+      <Button
+        appearance="secondary"
+        size="xs"
         aria-expanded={isExpanded}
         className="flex w-full items-center gap-x-2 rounded-sm px-3 py-2 text-left hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
         onClick={onToggle}
@@ -153,7 +156,7 @@ function TaskRunHistoryItem({
             </span>
           )}
         </span>
-      </button>
+      </Button>
       {isExpanded && (
         <div className="flex flex-col gap-2 border-t p-3">
           <TaskRunErrorAlert taskRun={taskRun} />

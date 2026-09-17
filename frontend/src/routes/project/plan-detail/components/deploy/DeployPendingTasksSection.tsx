@@ -143,7 +143,9 @@ export function DeployPendingTasksSection({
               {groups.map((group) => (
                 <div key={group.environment} className="rounded-sm border">
                   <div className="flex items-center gap-2 bg-control-bg/50 px-3 py-2">
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       className="flex flex-1 items-center gap-2 text-left"
                       onClick={() => toggleEnv(group.environment)}
                       type="button"
@@ -161,7 +163,7 @@ export function DeployPendingTasksSection({
                           count: group.tasks.length,
                         })}
                       </span>
-                    </button>
+                    </Button>
                     <Button
                       disabled={Boolean(creatingEnv)}
                       onClick={async () => {

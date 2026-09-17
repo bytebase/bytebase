@@ -137,9 +137,11 @@ export function DataSourceSection({
       {/* Data source tabs */}
       {showDataSourceTabs && (
         <div className="mb-4 flex items-center gap-x-2 border-b border-block-border">
-          <button
+          <Button
             type="button"
-            className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+            appearance="secondary"
+            size="xs"
+            className={`h-auto pb-2 px-1 text-sm font-medium border-b-2 ${
               dataSourceEditState.editingDataSourceId === adminDataSource.id
                 ? "border-accent text-accent"
                 : "border-transparent text-control-light hover:text-main"
@@ -148,12 +150,14 @@ export function DataSourceSection({
           >
             {t("common.admin")}
             {incompleteMarker(adminDataSource)}
-          </button>
+          </Button>
           {readonlyDataSourceList.map((ds) => (
             <div key={ds.id} className="flex items-center">
-              <button
+              <Button
                 type="button"
-                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                appearance="secondary"
+                size="xs"
+                className={`h-auto pb-2 px-1 text-sm font-medium border-b-2 ${
                   dataSourceEditState.editingDataSourceId === ds.id
                     ? "border-accent text-accent"
                     : "border-transparent text-control-light hover:text-main"
@@ -162,11 +166,13 @@ export function DataSourceSection({
               >
                 {t("common.read-only")}
                 {incompleteMarker(ds)}
-              </button>
+              </Button>
               {hasReadOnlyDataSource && (
-                <button
+                <Button
                   type="button"
-                  className="ml-1 text-error hover:text-error-hover text-xs pb-2"
+                  appearance="secondary"
+                  size="xs"
+                  className="ml-1 h-auto pb-2 text-error hover:text-error-hover"
                   disabled={!allowUpdate}
                   onClick={() => {
                     if (
@@ -180,7 +186,7 @@ export function DataSourceSection({
                   }}
                 >
                   ✕
-                </button>
+                </Button>
               )}
             </div>
           ))}
@@ -190,14 +196,16 @@ export function DataSourceSection({
             </span>
           )}
           {allowEdit && (
-            <button
+            <Button
               type="button"
-              className="pb-2 px-1 text-control-light hover:text-main disabled:opacity-50"
+              appearance="secondary"
+              size="xs"
+              className="h-auto px-1 pb-2 text-control-light hover:text-main"
               disabled={!allowUpdate}
               onClick={handleCreateRODataSource}
             >
               <Plus className="w-4 h-4" />
-            </button>
+            </Button>
           )}
         </div>
       )}

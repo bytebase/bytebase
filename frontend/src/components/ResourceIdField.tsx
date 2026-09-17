@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
 import type { ValidatedMessage } from "@/types";
@@ -207,13 +208,15 @@ export const ResourceIdField = forwardRef<
           {!readonly && (
             <div>
               <span>{t("resource-id.cannot-be-changed-later")}</span>
-              <button
+              <Button
                 type="button"
-                className="text-accent font-medium cursor-pointer hover:opacity-80 ml-1"
+                appearance="link"
+                size="xs"
+                className="ml-1 h-auto p-0 font-medium hover:opacity-80"
                 onClick={() => setManualEdit(true)}
               >
                 {t("common.edit")}
-              </button>
+              </Button>
             </div>
           )}
         </div>

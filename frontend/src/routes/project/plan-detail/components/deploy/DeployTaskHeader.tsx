@@ -73,7 +73,9 @@ export function DeployTaskHeader({
         {/* The identity is the toggle. It hugs its content, not the full row,
             so the hover and hit target track the target — not the empty space
             out to the caret. */}
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           aria-expanded={isExpanded}
           className="flex min-w-0 cursor-pointer items-center gap-x-2 rounded-sm border-0 bg-transparent p-0 text-left outline-none hover:bg-control-bg/50 focus-visible:ring-2 focus-visible:ring-accent"
           onClick={onToggleExpand}
@@ -89,7 +91,7 @@ export function DeployTaskHeader({
               </span>
             )}
           </div>
-        </button>
+        </Button>
 
         {/* Right cluster, pushed to the row's edge: the collapsed duration or
             the expanded actions, then the caret. Actions live in the header —
@@ -137,7 +139,9 @@ export function DeployTaskHeader({
           {/* Redundant mouse affordance for the toggle; the identity button is
               the keyboard-accessible control, so keep this out of the tab
               order. */}
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             aria-hidden="true"
             className="shrink-0 rounded-sm p-1 text-control-light outline-none hover:bg-control-bg/50"
             onClick={onToggleExpand}
@@ -149,7 +153,7 @@ export function DeployTaskHeader({
             ) : (
               <ChevronRight className="size-4" />
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

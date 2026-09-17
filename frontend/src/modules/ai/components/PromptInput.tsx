@@ -2,6 +2,7 @@ import { CornerDownLeft } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { keyboardShortcutStr } from "@/utils";
@@ -129,7 +130,8 @@ export function PromptInput({ disabled = false, onEnter }: Props) {
 
   return (
     <div className="relative w-full">
-      <textarea
+      <Textarea
+        size="xs"
         ref={textareaRef}
         value={value}
         disabled={disabled}
@@ -149,7 +151,7 @@ export function PromptInput({ disabled = false, onEnter }: Props) {
         <Button
           appearance="secondary"
           size="xs"
-          className="absolute right-5 bottom-1 h-6 px-1.5 text-accent"
+          className="absolute right-5 bottom-1 text-accent"
           disabled={!value || disabled}
           onClick={handleSubmitClick}
           aria-label={t("plugin.ai.send")}

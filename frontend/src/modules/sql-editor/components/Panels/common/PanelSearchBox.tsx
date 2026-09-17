@@ -1,6 +1,7 @@
 import { Search, X } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -36,14 +37,16 @@ export function PanelSearchBox({
         onChange={handleChange}
       />
       {value ? (
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           type="button"
           aria-label={t("common.clear")}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 size-5 inline-flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-control-bg"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-control-bg"
           onClick={() => onChange("")}
         >
           <X className="size-3.5" />
-        </button>
+        </Button>
       ) : null}
     </div>
   );

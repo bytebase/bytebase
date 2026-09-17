@@ -12,6 +12,7 @@ import { issueServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { useClickOutside } from "@/hooks/useClickOutside";
@@ -137,7 +138,9 @@ export function IssueDetailLabels() {
         {project?.forceIssueLabels && <span className="text-error">*</span>}
       </div>
       <div ref={containerRef} className="relative">
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           className={cn(
             "flex min-h-9 w-full items-center justify-between gap-2 rounded-sm border border-control-border bg-background px-3 py-1.5 text-left text-sm transition-colors",
             allowChange && !isUpdating && "hover:bg-control-bg",
@@ -163,7 +166,9 @@ export function IssueDetailLabels() {
                     />
                     <span className="truncate">{value}</span>
                     {allowChange && !isUpdating && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         className="text-control-placeholder hover:text-control"
                         onClick={(e) => {
                           void removeSelectedLabel(value, e);
@@ -171,7 +176,7 @@ export function IssueDetailLabels() {
                         type="button"
                       >
                         <X className="size-3" />
-                      </button>
+                      </Button>
                     )}
                   </span>
                 );
@@ -188,7 +193,7 @@ export function IssueDetailLabels() {
               open && "rotate-180"
             )}
           />
-        </button>
+        </Button>
 
         {open && (
           <div
@@ -221,7 +226,9 @@ export function IssueDetailLabels() {
                 options.map((option) => {
                   const isSelected = selected.includes(option.value);
                   return (
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       key={option.value}
                       className="flex w-full items-center gap-x-2 px-3 py-2 text-left text-sm transition-colors hover:bg-control-bg"
                       disabled={isUpdating}
@@ -236,7 +243,7 @@ export function IssueDetailLabels() {
                         style={{ backgroundColor: option.color }}
                       />
                       <span>{option.value}</span>
-                    </button>
+                    </Button>
                   );
                 })
               )}

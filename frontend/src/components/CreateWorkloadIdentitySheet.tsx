@@ -924,9 +924,11 @@ function WorkloadIdentityForm({
 
           {/* Advanced Settings Toggle */}
           {!isGenericOIDC && (
-            <button
+            <Button
               type="button"
-              className="flex items-center gap-x-1 text-sm text-accent hover:underline w-fit"
+              appearance="link"
+              size="xs"
+              className="h-auto p-0 text-sm"
               onClick={() => setShowAdvanced(!showAdvanced)}
             >
               {t("settings.members.workload-identity-advanced")}
@@ -935,7 +937,7 @@ function WorkloadIdentityForm({
               ) : (
                 <ChevronDown className="size-4" />
               )}
-            </button>
+            </Button>
           )}
         </div>
       </SheetBody>

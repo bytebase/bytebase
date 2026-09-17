@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Table } from "@/components/ui/table";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
@@ -174,9 +175,9 @@ export function AgentChat({ className }: AgentChatProps) {
                       </blockquote>
                     ),
                     table: ({ children }) => (
-                      <table className="my-1 border-collapse text-xs">
+                      <Table className="my-1 border-collapse text-xs">
                         {children}
-                      </table>
+                      </Table>
                     ),
                     th: ({ children }) => (
                       <th className="border border-control-border px-2 py-1">

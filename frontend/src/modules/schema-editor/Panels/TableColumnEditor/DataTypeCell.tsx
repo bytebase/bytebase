@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { Button } from "@/components/ui/button";
 import {
   getPortalDropdownStyle,
   isPortalDropdownStyleEqual,
@@ -171,7 +172,9 @@ export function DataTypeCell({
             )}
           >
             {suggestions.map((type) => (
-              <button
+              <Button
+                appearance="secondary"
+                size="xs"
                 key={type}
                 type="button"
                 className={cn(
@@ -186,7 +189,7 @@ export function DataTypeCell({
                 }}
               >
                 {type}
-              </button>
+              </Button>
             ))}
           </div>,
           getLayerRoot("overlay")

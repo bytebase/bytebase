@@ -107,14 +107,16 @@ export function PlanCheckSection({
 
       {hasAnyChecks ? (
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             aria-label={t("plan.navigator.checks")}
             className="cursor-pointer text-left"
             onClick={() => setDrawerOpen(true)}
             type="button"
           >
             <PlanCheckSummaryRow summary={summary} />
-          </button>
+          </Button>
           {trailingSummary}
         </div>
       ) : (
@@ -217,7 +219,9 @@ function PlanCheckFilterPills({
       {entries.map(({ count, icon: Icon, label, status, textClass }) => {
         const isSelected = selectedStatus === status;
         return (
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             className={cn(
               "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 transition-colors",
               textClass,
@@ -230,7 +234,7 @@ function PlanCheckFilterPills({
             <Icon className="h-5 w-5" />
             <span>{label}</span>
             <span>{count}</span>
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -383,7 +387,9 @@ export function PlanCheckResultsDrawer({
               </div>
               {remainingCount > 0 && (
                 <div className="flex justify-center py-4">
-                  <button
+                  <Button
+                    appearance="secondary"
+                    size="xs"
                     className="cursor-pointer text-sm text-accent hover:underline"
                     onClick={() =>
                       setDisplayCount((count) => count + PAGE_SIZE)
@@ -391,7 +397,7 @@ export function PlanCheckResultsDrawer({
                     type="button"
                   >
                     {t("common.load-more")} ({remainingCount})
-                  </button>
+                  </Button>
                 </div>
               )}
             </>

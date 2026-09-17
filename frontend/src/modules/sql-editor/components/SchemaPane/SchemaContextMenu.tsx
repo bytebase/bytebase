@@ -1,6 +1,7 @@
 import { Menu as BaseMenu } from "@base-ui/react/menu";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,7 +80,9 @@ export const SchemaContextMenu = forwardRef<SchemaContextMenuHandle, Props>(
           aria-hidden
           tabIndex={-1}
           render={
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               type="button"
               style={{
                 position: "fixed",
