@@ -388,7 +388,11 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", d.databaseName), "")
 		}
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_REDSHIFT, statement, queryContext.Option.GetExplainFormat())
+			explained, err := base.ExplainStatement(storepb.Engine_REDSHIFT, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			statement = explained
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}

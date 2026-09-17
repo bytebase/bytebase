@@ -98,7 +98,7 @@ its name says: one refuses to execute, the other insists on it.
 
 **Both actions plan the statement Run would execute, limit included.** The
 drivers apply the result limit only when the request is not an explain
-(`pg.go:801-804`, `mysql.go:530-533`), so reusing that path plans the unbounded
+(`pg.go:801-809`, `mysql.go:530-538`), so reusing that path plans the unbounded
 query while Run stops at the limit — and `LIMIT` changes plan shape, so the two
 are different queries. The limited statement has to be carried or reconstructed
 before either action wraps it. It matters twice over for **Explain analyze**,
@@ -125,7 +125,7 @@ Otherwise show the plan as text.**
 
 **The backend states the format on the result; the frontend never infers it.**
 The server already knows: it builds explain statements through
-`db.ExplainStatement` with an explicit `QueryOption.ExplainFormat`, and it
+`base.ExplainStatement` with an explicit `QueryOption.ExplainFormat`, and it
 already parses a typed `EXPLAIN` to classify it (§2). Carrying that answer on
 `QueryResult` is the whole mechanism. The driver reports the format it actually
 received, and **unknown is a valid answer** — from MySQL 8.0.32 an omitted format
@@ -164,6 +164,12 @@ and flipping `explain` true instead would have the driver prefix a second
 statement as an explain request naming the format it wants, and the backend
 substitutes the format rather than prefixing, which is the rule §3.1 already
 sets for every statement that arrives already explaining itself.
+
+Substitution today keeps the planned statement and nothing else: the caller's
+remaining options (`VERBOSE`, `COSTS OFF`) go with the format they came with,
+because the parsers locate the planned statement rather than re-render an option
+list. An `EXPLAIN ANALYZE` is refused instead of being replanned, per §3.1, so
+what substitution drops is never the difference between planning and executing.
 
 **We do not silently turn a plain `EXPLAIN` into `FORMAT JSON`.** It would change
 what the user asked to see, and no SQL editor we surveyed rewrites a typed
@@ -332,7 +338,7 @@ plans come from **Explain analyze** (§3.1), which is a deliberate action.
 
 **It explains the statement that ran, limits included.** The driver wraps an
 ordinary query with the result limit but skips that wrapper on the explain path
-(`pg.go:801-804`), so explaining the original text would plan an unbounded query
+(`pg.go:801-809`), so explaining the original text would plan an unbounded query
 when the user ran a bounded one — and PostgreSQL plans for `LIMIT`, so the two
 differ, not just in cost but in shape. The plan request and its cache carry the
 executed statement and its connection context, and View SQL shows that statement,

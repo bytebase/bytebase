@@ -28,13 +28,10 @@ func init() {
 // Every other statement (USE, INSERT/UPDATE/DELETE/MERGE, CALL, COPY, COMMENT,
 // TRUNCATE, GRANT/REVOKE, CREATE/ALTER/DROP, ...) is not read-only.
 //
-// EXPLAIN is special-cased because omni's parser does not yet support it
-// (parser.Parse returns an error). The legacy listener accepted any
-// other_command.explain as read-only and data-returning without inspecting the
-// inner statement; we preserve that via a lexical EXPLAIN check.
+// EXPLAIN is read-only and data-returning whatever it plans, without inspecting
+// the inner statement, which is what the ANTLR listener before it did.
 func validateQuery(statement string) (bool, bool, error) {
-	// Split into top-level statements with the omni splitter so EXPLAIN (which
-	// omni cannot parse) can be classified per-segment before parsing.
+	// Split first: the parser reads one statement, and the verdict is per statement.
 	stmts, err := SplitSQL(statement)
 	if err != nil {
 		return false, false, err
