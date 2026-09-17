@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { act } from "react";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -9,10 +10,9 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  getAccessGrantDisplayStatus: vi.fn(),
+  readStatus: vi.fn(),
+  actualReadStatus: undefined as unknown as (input: never) => unknown,
   getAccessGrantDisplayStatusText: vi.fn(),
-  getActiveAccessGrantDeadlineMs: vi.fn(),
-  nextAccessGrantDisplayStatusChangeAt: vi.fn(),
   getAccessGrantStatusTagType: vi.fn(),
 }));
 
@@ -34,14 +34,21 @@ vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
 }));
 
-vi.mock("@/utils/accessGrant", () => ({
-  getAccessGrantDisplayStatus: mocks.getAccessGrantDisplayStatus,
-  getAccessGrantDisplayStatusText: mocks.getAccessGrantDisplayStatusText,
-  getActiveAccessGrantDeadlineMs: mocks.getActiveAccessGrantDeadlineMs,
-  nextAccessGrantDisplayStatusChangeAt:
-    mocks.nextAccessGrantDisplayStatusChangeAt,
-  getAccessGrantStatusTagType: mocks.getAccessGrantStatusTagType,
-}));
+// The real module, with the status value and its labels stubbed per test; the
+// status boundary and the deadline stay real, so the clock wiring is exercised.
+vi.mock("@/utils/accessGrant", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/utils/accessGrant")>();
+  mocks.actualReadStatus = actual.accessGrantStatusReading.read as never;
+  return {
+    ...actual,
+    accessGrantStatusReading: {
+      read: mocks.readStatus,
+      nextChangeAt: actual.accessGrantStatusReading.nextChangeAt,
+    },
+    getAccessGrantDisplayStatusText: mocks.getAccessGrantDisplayStatusText,
+    getAccessGrantStatusTagType: mocks.getAccessGrantStatusTagType,
+  };
+});
 
 // Stub Badge and Tooltip as simple pass-through
 vi.mock("@/components/ui/badge", () => ({
@@ -143,18 +150,15 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.useTranslation.mockReturnValue({ t: (key: string) => key });
-  mocks.getAccessGrantDisplayStatus.mockReturnValue("ACTIVE");
+  mocks.readStatus.mockReturnValue("ACTIVE");
   mocks.getAccessGrantDisplayStatusText.mockReturnValue("Active");
-  mocks.getActiveAccessGrantDeadlineMs.mockReturnValue(undefined);
-  mocks.nextAccessGrantDisplayStatusChangeAt.mockReturnValue(
-    Number.POSITIVE_INFINITY
-  );
   mocks.getAccessGrantStatusTagType.mockReturnValue("success");
 
   ({ AccessGrantItem } = await import("./AccessGrantItem"));
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   document.body.innerHTML = "";
 });
 
@@ -197,7 +201,7 @@ describe("AccessGrantItem", () => {
   });
 
   test("renders status badge with correct label for ACTIVE status", () => {
-    mocks.getAccessGrantDisplayStatus.mockReturnValue("ACTIVE");
+    mocks.readStatus.mockReturnValue("ACTIVE");
     mocks.getAccessGrantDisplayStatusText.mockReturnValue("Active");
     mocks.getAccessGrantStatusTagType.mockReturnValue("success");
 
@@ -241,7 +245,7 @@ describe("AccessGrantItem", () => {
   });
 
   test("Run button shows only for ACTIVE status", () => {
-    mocks.getAccessGrantDisplayStatus.mockReturnValue("ACTIVE");
+    mocks.readStatus.mockReturnValue("ACTIVE");
     const grant = makeGrant();
     const onRun = vi.fn();
     const onRequest = vi.fn();
@@ -261,7 +265,7 @@ describe("AccessGrantItem", () => {
   });
 
   test("Run button is absent for non-ACTIVE status", () => {
-    mocks.getAccessGrantDisplayStatus.mockReturnValue("PENDING");
+    mocks.readStatus.mockReturnValue("PENDING");
     const grant = makeGrant();
     const onRun = vi.fn();
     const onRequest = vi.fn();
@@ -281,7 +285,7 @@ describe("AccessGrantItem", () => {
   });
 
   test("Re-request button shows for REJECTED status", () => {
-    mocks.getAccessGrantDisplayStatus.mockReturnValue("REJECTED");
+    mocks.readStatus.mockReturnValue("REJECTED");
     mocks.getAccessGrantDisplayStatusText.mockReturnValue("Rejected");
     mocks.getAccessGrantStatusTagType.mockReturnValue("error");
 
@@ -304,7 +308,7 @@ describe("AccessGrantItem", () => {
   });
 
   test("Click Run → onRun(grant) called with the grant", async () => {
-    mocks.getAccessGrantDisplayStatus.mockReturnValue("ACTIVE");
+    mocks.readStatus.mockReturnValue("ACTIVE");
     const grant = makeGrant();
     const onRun = vi.fn();
     const onRequest = vi.fn();
@@ -327,6 +331,51 @@ describe("AccessGrantItem", () => {
 
     expect(onRun).toHaveBeenCalledTimes(1);
     expect(onRun).toHaveBeenCalledWith(grant);
+    unmount();
+  });
+
+  test("counts down while mounted, then turns expired at the deadline", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+    mocks.readStatus.mockImplementation(mocks.actualReadStatus);
+    mocks.useTranslation.mockReturnValue({
+      t: (key: string, options?: { time?: string }) =>
+        options?.time && key === "sql-editor.expire-in"
+          ? `${key}:${options.time}`
+          : key,
+    });
+    const deadlineMs = Date.now() + 3 * 60_000;
+    const grant = makeGrant({
+      expiration: {
+        case: "expireTime",
+        value: timestampFromMs(deadlineMs),
+      } as never,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantItem grant={grant as never} onRun={vi.fn()} onRequest={vi.fn()} />
+    );
+    render();
+    const advanceSeconds = (seconds: number) => {
+      for (let second = 0; second < seconds; second++) {
+        act(() => {
+          vi.advanceTimersByTime(1_000);
+        });
+      }
+    };
+
+    expect(container.textContent).toContain("sql-editor.expire-in:3m");
+    advanceSeconds(1);
+    expect(container.textContent).toContain("sql-editor.expire-in:2m");
+    advanceSeconds(60);
+    expect(container.textContent).toContain("sql-editor.expire-in:1m");
+    advanceSeconds(60);
+    expect(container.textContent).toContain("sql-editor.expire-in:0m");
+    expect(container.querySelector("[data-run-btn]")).not.toBeNull();
+
+    advanceSeconds(60);
+    expect(container.textContent).toContain("issue.access-grant.expired-at");
+    expect(container.querySelector("[data-run-btn]")).toBeNull();
     unmount();
   });
 });

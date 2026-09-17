@@ -144,13 +144,17 @@ vi.mock("@/stores/app/databaseCatalog", () => ({
 }));
 
 vi.mock("@/utils/datetime", () => ({
-  formatQueueTime: mocks.formatRelativeTime,
+  queueTimeReading: {
+    read: mocks.formatRelativeTime,
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  },
+  relativeTimeReading: {
+    read: mocks.formatRelativeTime,
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  },
   formatCompactDateTime: mocks.formatAbsoluteDateTime,
   formatOperationalDateTime: mocks.formatAbsoluteDateTime,
   formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
-  formatRelativeTime: mocks.formatRelativeTime,
-  nextQueueTimeChangeAt: () => Number.POSITIVE_INFINITY,
-  nextRelativeTimeChangeAt: () => Number.POSITIVE_INFINITY,
 }));
 
 vi.mock("@/utils", () => ({

@@ -303,9 +303,9 @@ export function DatabaseChangelogDetailPage({
   const databaseDisplayName =
     extractDatabaseResourceName(detail.database?.name ?? "").databaseName ||
     databaseName;
-  const createTimeMs = resolvedChangelog?.createTime
-    ? getTimeForPbTimestampProtoEs(resolvedChangelog.createTime)
-    : undefined;
+  const createTimeMs = getTimeForPbTimestampProtoEs(
+    resolvedChangelog?.createTime
+  );
   const formattedSchemaSize = useMemo(() => {
     if (!resolvedChangelog?.schemaSize) {
       return "";

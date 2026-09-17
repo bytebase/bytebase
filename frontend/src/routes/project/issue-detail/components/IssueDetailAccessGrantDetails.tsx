@@ -9,10 +9,7 @@ import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { isValidDatabaseName } from "@/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import { extractProjectResourceName, hasProjectPermissionV2 } from "@/utils";
-import {
-  getAccessGrantExpirationText,
-  getAccessGrantExpireTimeMs,
-} from "@/utils/accessGrant";
+import { getAccessGrantExpirationText } from "@/utils/accessGrant";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 export function IssueDetailAccessGrantDetails() {
@@ -83,9 +80,6 @@ export function IssueDetailAccessGrantDetails() {
   const expirationInfo = accessGrant
     ? getAccessGrantExpirationText(accessGrant)
     : { type: "never" as const };
-  const expireTimeMs = accessGrant
-    ? getAccessGrantExpireTimeMs(accessGrant)
-    : undefined;
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -168,22 +162,18 @@ export function IssueDetailAccessGrantDetails() {
               {t("common.expiration")}
             </span>
             <div className="text-base">
-              {expirationInfo.type === "never"
-                ? t("project.members.never-expires")
-                : expirationInfo.type === "duration"
-                  ? // Pending grant — TTL is still on the proto, safe
-                    // to surface as "{{duration}} after issue approved".
-                    t("issue.access-grant.duration-after-approval", {
-                      duration: expirationInfo.value,
-                    })
-                  : // Active grant — show the absolute expire datetime
-                    // only. The original requested duration is gone
-                    // post-activation (input-only proto field); we
-                    // can't recover it without double-counting the
-                    // approval wait. Bot review #3370767734.
-                    expireTimeMs !== undefined && (
-                      <HumanizeTs mode="operational" ts={expireTimeMs / 1000} />
-                    )}
+              {expirationInfo.type === "never" ? (
+                t("project.members.never-expires")
+              ) : expirationInfo.type === "duration" ? (
+                t("issue.access-grant.duration-after-approval", {
+                  duration: expirationInfo.value,
+                })
+              ) : (
+                <HumanizeTs
+                  mode="operational"
+                  ts={expirationInfo.expireTimeMs / 1000}
+                />
+              )}
             </div>
           </div>
         </div>

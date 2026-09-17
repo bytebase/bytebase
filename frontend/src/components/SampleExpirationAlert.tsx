@@ -1,14 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
-import { useNow } from "@/hooks/useNow";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import { normalizeInstanceName } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import {
-  formatAbsoluteDateTime,
-  nextDaysLeftChangeAt,
-  readDaysLeft,
-} from "@/utils/datetime";
+import { daysLeftReading, formatAbsoluteDateTime } from "@/utils/datetime";
 
 type SampleExpirationAlertProps = Readonly<{
   instanceName: string;
@@ -24,19 +20,14 @@ export function SampleExpirationAlert({
     ({ instance }) => instance === canonicalInstanceName
   )?.expireTime;
 
-  const expireTimeMs = expireTime
-    ? getTimeForPbTimestampProtoEs(expireTime)
-    : undefined;
-  useNow(
-    expireTimeMs === undefined ? undefined : nextDaysLeftChangeAt(expireTimeMs)
-  );
+  const expireTimeMs = getTimeForPbTimestampProtoEs(expireTime);
+  const daysLeft = useTimeReading(daysLeftReading, expireTimeMs);
 
-  if (expireTimeMs === undefined) {
+  if (expireTimeMs === undefined || daysLeft === undefined) {
     return null;
   }
 
   const formattedExpireTime = formatAbsoluteDateTime(expireTimeMs);
-  const daysLeft = readDaysLeft(expireTimeMs);
   const description =
     daysLeft.kind === "passed"
       ? t("instance.sample-expiration-expired", {

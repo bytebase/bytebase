@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { useNow } from "./useNow";
+import { useTimeReading } from "./useTimeReading";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -9,15 +9,24 @@ import { useNow } from "./useNow";
 
 const DAY_MS = 86_400_000;
 
+type ProbeSpec = {
+  changesAtMs: () => number;
+  // An absent input has no reading.
+  input?: number;
+};
+
 function Probe({
-  changesAtMs,
+  spec,
   onRender,
 }: {
-  changesAtMs: () => number | undefined;
-  onRender: () => void;
+  spec: ProbeSpec;
+  onRender: (value: string | undefined) => void;
 }) {
-  useNow(changesAtMs());
-  onRender();
+  const value = useTimeReading(
+    { read: (input: number) => `read:${input}`, nextChangeAt: spec.changesAtMs },
+    "input" in spec ? spec.input : 0
+  );
+  onRender(value);
   return null;
 }
 
@@ -25,31 +34,33 @@ function Probe({
 // the module-level clock for the next test.
 const roots: ReturnType<typeof createRoot>[] = [];
 
-const mount = (probes: { changesAtMs: () => number | undefined }[]) => {
+const mount = (probes: ProbeSpec[]) => {
   const container = document.createElement("div");
   const root = createRoot(container);
   roots.push(root);
   const renders = probes.map(() => 0);
+  const values: (string | undefined)[] = probes.map(() => undefined);
   act(() =>
     root.render(
       <>
-        {probes.map((probe, index) => (
+        {probes.map((spec, index) => (
           <Probe
-            changesAtMs={probe.changesAtMs}
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed probe list
             key={index}
-            onRender={() => {
+            spec={spec}
+            onRender={(value) => {
               renders[index] += 1;
+              values[index] = value;
             }}
           />
         ))}
       </>
     )
   );
-  return { root, renders };
+  return { root, renders, values };
 };
 
-describe("useNow", () => {
+describe("useTimeReading", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
@@ -143,16 +154,17 @@ describe("useNow", () => {
   test("re-checks a woken subscriber whose boundary did not advance", () => {
     // A wall clock stepped back between the wake and its render, or a boundary
     // held stale by a memo, names the instant that just passed a second time.
-    let stepBackMs = 0;
     const deadlineMs = Date.now() + 1_000;
     const { renders } = mount([
-      { changesAtMs: () => (Date.now() - stepBackMs < deadlineMs ? deadlineMs : deadlineMs + 60_000) },
+      {
+        changesAtMs: () =>
+          Date.now() < deadlineMs ? deadlineMs : deadlineMs + 60_000,
+      },
     ]);
 
     act(() => {
       vi.advanceTimersByTime(1_000);
-      stepBackMs = 2;
-      vi.setSystemTime(Date.now() - stepBackMs);
+      vi.setSystemTime(Date.now() - 2);
     });
     expect(renders).toEqual([2]);
 
@@ -188,8 +200,100 @@ describe("useNow", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  test("holds nothing for a display that does not vary with time", () => {
-    mount([{ changesAtMs: () => undefined }]);
+  test("holds nothing for an absent input, and reads nothing", () => {
+    const { values } = mount([
+      { changesAtMs: () => Date.now() + 1_000, input: undefined },
+    ]);
+    expect(values).toEqual([undefined]);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  test("evaluates the boundary before the value it schedules", () => {
+    const calls: string[] = [];
+    function OrderProbe() {
+      useTimeReading(
+        {
+          read: () => calls.push("read"),
+          nextChangeAt: () => {
+            calls.push("boundary");
+            return Number.POSITIVE_INFINITY;
+          },
+        },
+        0
+      );
+      return null;
+    }
+    const root = createRoot(document.createElement("div"));
+    roots.push(root);
+    act(() => root.render(<OrderProbe />));
+    expect(calls).toEqual(["boundary", "read"]);
+  });
+
+  test("returns the reading's current value, and keeps it current", () => {
+    let value = "before";
+    const deadlineMs = Date.now() + 1_000;
+    const { values } = mount([
+      {
+        changesAtMs: () => {
+          value = Date.now() < deadlineMs ? "before" : "after";
+          return Date.now() < deadlineMs ? deadlineMs : Number.POSITIVE_INFINITY;
+        },
+      },
+    ]);
+    expect(values).toEqual(["read:0"]);
+    expect(value).toBe("before");
+
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+    expect(value).toBe("after");
+  });
+
+  test("wakes every display when the wall clock steps backward", () => {
+    // Each boundary was computed on the later clock; on the earlier one it can
+    // be far off in either direction.
+    const deadlineMs = Date.now() + 5 * 60_000;
+    const { renders } = mount([{ changesAtMs: () => deadlineMs }]);
+
+    vi.setSystemTime(Date.now() - 10 * 60_000);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(renders[0]).toBe(2);
+  });
+
+  test("never stretches the wake gap past its bound after a clock step", () => {
+    const firstMs = Date.now() + 1_000;
+    mount([{ changesAtMs: () => (Date.now() < firstMs ? firstMs : Number.POSITIVE_INFINITY) }]);
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+
+    vi.setSystemTime(Date.now() - 3_600_000);
+    const secondMs = Date.now() + 100;
+    const { renders } = mount([
+      { changesAtMs: () => (Date.now() < secondMs ? secondMs : Number.POSITIVE_INFINITY) },
+    ]);
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    expect(renders).toEqual([2]);
+  });
+
+  test("starts no wake gap from a re-check that woke nobody", () => {
+    const farMs = Date.now() + 2 * 60_000;
+    mount([{ changesAtMs: () => farMs }]);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+
+    const soonMs = Date.now() + 10;
+    const { renders } = mount([
+      { changesAtMs: () => (Date.now() < soonMs ? soonMs : Number.POSITIVE_INFINITY) },
+    ]);
+    act(() => {
+      vi.advanceTimersByTime(20);
+    });
+    expect(renders).toEqual([2]);
   });
 });

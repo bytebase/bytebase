@@ -6,19 +6,26 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: "en" } }),
 }));
 
-const formatters = vi.hoisted(() => ({
-  // Age-based so a label that never re-renders is visibly distinguishable from
-  // one that keeps up with the clock.
-  formatQueueTime: (ms: number) => `queue:${Date.now() - ms}`,
-  formatRelativeTime: (ms: number) => `relative:${Date.now() - ms}`,
-  formatCompactDateTime: (ms: number) => `compact:${ms}`,
-  formatOperationalDateTime: (ms: number) => `operational:${ms}`,
-  formatAbsoluteDateTime: vi.fn((ms: number) => `absolute:${ms}`),
-  // Distinct offsets, so a reading scheduled on the other reading's boundary
-  // wakes at the wrong time and shows it.
-  nextQueueTimeChangeAt: (ms: number) => ms + 60_000,
-  nextRelativeTimeChangeAt: (ms: number) => ms + 45_000,
-}));
+const formatters = vi.hoisted(() => {
+  // A reading whose label is its age, so a display that was not re-rendered
+  // shows a stale age, and whose boundary is a fixed offset after the timestamp.
+  // The two offsets differ, so a label scheduled on the other reading's
+  // boundary re-renders at the wrong second and shows it.
+  const ageReading = (prefix: string, boundaryOffsetMs: number) => ({
+    read: (ms: number) => `${prefix}:${Date.now() - ms}`,
+    nextChangeAt: (ms: number) =>
+      Date.now() < ms + boundaryOffsetMs
+        ? ms + boundaryOffsetMs
+        : Number.POSITIVE_INFINITY,
+  });
+  return {
+    queueTimeReading: ageReading("queue", 60_000),
+    relativeTimeReading: ageReading("relative", 45_000),
+    formatCompactDateTime: (ms: number) => `compact:${ms}`,
+    formatOperationalDateTime: (ms: number) => `operational:${ms}`,
+    formatAbsoluteDateTime: vi.fn((ms: number) => `absolute:${ms}`),
+  };
+});
 
 vi.mock("@/utils/datetime", () => formatters);
 
@@ -47,6 +54,16 @@ const openTooltip = async (el: Element | null) => {
 
 const overlayText = () =>
   document.getElementById("bb-react-layer-overlay")?.textContent ?? "";
+
+// One act per second, as a browser commits between timer turns; a single long
+// act would commit only once, at its end, and hide when the render happened.
+const advanceSeconds = (seconds: number) => {
+  for (let second = 0; second < seconds; second++) {
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+  }
+};
 
 const secondsAgo = (seconds: number) =>
   Math.floor(Date.now() / 1000) - seconds;
@@ -110,10 +127,11 @@ describe("HumanizeTs", () => {
     // The tooltip opens 100ms after focus, which the age already reflects.
     expect(overlayText()).toContain("relative:30100");
 
-    // The relative reading's own boundary is 45s after the timestamp.
-    act(() => {
-      vi.advanceTimersByTime(15_000);
-    });
+    // The relative reading's boundary is 45s after the timestamp: the age holds
+    // until then and moves on at it.
+    advanceSeconds(14);
+    expect(overlayText()).toContain("relative:30100");
+    advanceSeconds(1);
     expect(overlayText()).toContain("relative:45100");
   });
 
@@ -131,10 +149,10 @@ describe("HumanizeTs", () => {
     act(() => root.render(<HumanizeTs ts={secondsAgo(30)} tooltip={false} />));
     expect(container.textContent).toBe("queue:30000");
 
-    // The work-queue reading's own boundary is 60s after the timestamp.
-    act(() => {
-      vi.advanceTimersByTime(30_000);
-    });
+    // The work-queue reading's boundary is 60s after the timestamp.
+    advanceSeconds(29);
+    expect(container.textContent).toBe("queue:30000");
+    advanceSeconds(1);
     expect(container.textContent).toBe("queue:60000");
   });
 

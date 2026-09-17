@@ -4,22 +4,17 @@ import { RouterLink } from "@/components/RouterLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useNow } from "@/hooks/useNow";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import { cn } from "@/lib/utils";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import {
-  getAccessGrantDisplayStatus,
+  accessGrantStatusReading,
   getAccessGrantDisplayStatusText,
   getAccessGrantStatusTagType,
   getActiveAccessGrantDeadlineMs,
-  nextAccessGrantDisplayStatusChangeAt,
 } from "@/utils/accessGrant";
-import {
-  formatAbsoluteDateTime,
-  nextCountdownChangeAt,
-  readCountdown,
-} from "@/utils/datetime";
+import { countdownReading, formatAbsoluteDateTime } from "@/utils/datetime";
 
 function mapTagTypeToBadgeVariant(
   tagType: "success" | "warning" | "error" | "default"
@@ -48,21 +43,16 @@ export function AccessGrantItem({
   const { t } = useTranslation();
 
   const deadlineMs = getActiveAccessGrantDeadlineMs(grant);
-  useNow(
-    Math.min(
-      nextAccessGrantDisplayStatusChangeAt(grant),
-      deadlineMs === undefined
-        ? Number.POSITIVE_INFINITY
-        : nextCountdownChangeAt(deadlineMs)
-    )
-  );
-
-  const displayStatus = getAccessGrantDisplayStatus(grant, issue);
+  const countdown = useTimeReading(countdownReading, deadlineMs);
+  const displayStatus = useTimeReading(accessGrantStatusReading, {
+    grant,
+    issue,
+  });
   const isActive = displayStatus === "ACTIVE";
   const isExpired = displayStatus === "EXPIRED";
   const isRejectedOrCanceled =
     displayStatus !== "ACTIVE" && displayStatus !== "PENDING";
-  const statusLabel = getAccessGrantDisplayStatusText(grant, issue);
+  const statusLabel = getAccessGrantDisplayStatusText(displayStatus);
 
   const statusTagType = getAccessGrantStatusTagType(displayStatus);
   const badgeVariant = mapTagTypeToBadgeVariant(statusTagType);
@@ -71,8 +61,7 @@ export function AccessGrantItem({
   // it in a tooltip; the other two are interpolated sentences and state the
   // deadline in full themselves.
   const expiration = (() => {
-    if (deadlineMs === undefined) return undefined;
-    const countdown = readCountdown(deadlineMs);
+    if (deadlineMs === undefined || countdown === undefined) return undefined;
     const deadline = formatAbsoluteDateTime(deadlineMs);
     switch (countdown.kind) {
       case "passed":

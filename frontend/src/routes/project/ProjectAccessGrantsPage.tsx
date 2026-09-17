@@ -37,9 +37,9 @@ import {
   distributeColumnWidths,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
-import { useNow } from "@/hooks/useNow";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
 import { useProjectByName } from "@/hooks/useProjectByName";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type { AccessGrantFilter as AccessFilter } from "@/stores/app/types";
@@ -55,13 +55,12 @@ import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   type AccessGrantDisplayStatus,
-  getAccessGrantDisplayStatus,
+  accessGrantStatusReading,
   getAccessGrantDisplayStatusText,
   getAccessGrantExpireTimeMs,
   getAccessGrantStatusTagType,
   getDefaultPagination,
   hasProjectPermissionV2,
-  nextAccessGrantDisplayStatusChangeAt,
 } from "@/utils";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 
@@ -747,19 +746,15 @@ function AccessGrantRow({
   onRevoke: () => void;
 }) {
   const { t } = useTranslation();
-  useNow(nextAccessGrantDisplayStatusChangeAt(grant));
-  const status = getAccessGrantDisplayStatus(grant, issue);
-
-  const createdTimeMs = grant.createTime
-    ? getTimeForPbTimestampProtoEs(grant.createTime)
-    : undefined;
+  const status = useTimeReading(accessGrantStatusReading, { grant, issue });
+  const createdTimeMs = getTimeForPbTimestampProtoEs(grant.createTime);
   const expireTimeMs = getAccessGrantExpireTimeMs(grant);
 
   return (
     <TableRow>
       <TableCell>
         <Badge variant={statusTagVariant(status)}>
-          {getAccessGrantDisplayStatusText(grant, issue)}
+          {getAccessGrantDisplayStatusText(status)}
         </Badge>
       </TableCell>
       <TableCell>

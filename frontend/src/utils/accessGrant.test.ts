@@ -12,19 +12,28 @@ vi.mock("@/lib/i18n", () => ({
 }));
 
 import {
-  getAccessGrantDisplayStatus,
+  accessGrantStatusReading,
   getAccessGrantExpireTimeMs,
-  nextAccessGrantDisplayStatusChangeAt,
 } from "./accessGrant";
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 
-const grantWithDeadline = (status: AccessGrant_Status, deadlineMs: number) =>
-  create(AccessGrantSchema, {
+const grantWithDeadline = (status: AccessGrant_Status, deadlineMs: number) => {
+  // Proto timestamps carry sub-millisecond nanos, where a boundary written by
+  // hand a fraction late would otherwise hide.
+  const expireTime = timestampFromMs(Math.floor(deadlineMs));
+  expireTime.nanos += Math.round((deadlineMs % 1) * 1_000_000);
+  return create(AccessGrantSchema, {
     status,
-    expiration: { case: "expireTime", value: timestampFromMs(deadlineMs) },
+    expiration: { case: "expireTime", value: expireTime },
   });
+};
+
+const statusOf = (grant: ReturnType<typeof grantWithDeadline>) =>
+  accessGrantStatusReading.read({ grant });
+const statusChangesAt = (grant: ReturnType<typeof grantWithDeadline>) =>
+  accessGrantStatusReading.nextChangeAt({ grant });
 
 describe("access grant status over time", () => {
   const baseMs = new Date("2026-03-02T12:00:00Z").getTime();
@@ -38,20 +47,23 @@ describe("access grant status over time", () => {
     vi.useRealTimers();
   });
 
-  test("an activated grant reads expired from the instant after its deadline", () => {
-    const deadlineMs = baseMs + HOUR_MS;
-    const grant = grantWithDeadline(AccessGrant_Status.ACTIVE, deadlineMs);
+  test.each([0, 0.5])(
+    "an activated grant reads expired from the instant after its deadline (+%s ms)",
+    (fractionMs) => {
+      const deadlineMs = baseMs + HOUR_MS + fractionMs;
+      const grant = grantWithDeadline(AccessGrant_Status.ACTIVE, deadlineMs);
 
-    const changesAtMs = nextAccessGrantDisplayStatusChangeAt(grant);
-    expect(changesAtMs).toBe(deadlineMs + 1);
+      const changesAtMs = statusChangesAt(grant);
+      expect(changesAtMs).toBe(baseMs + HOUR_MS + 1);
 
-    vi.setSystemTime(changesAtMs - 1);
-    expect(getAccessGrantDisplayStatus(grant)).toBe("ACTIVE");
-    expect(nextAccessGrantDisplayStatusChangeAt(grant)).toBe(changesAtMs);
+      vi.setSystemTime(changesAtMs - 1);
+      expect(statusOf(grant)).toBe("ACTIVE");
+      expect(statusChangesAt(grant)).toBe(changesAtMs);
 
-    vi.setSystemTime(changesAtMs);
-    expect(getAccessGrantDisplayStatus(grant)).toBe("EXPIRED");
-  });
+      vi.setSystemTime(changesAtMs);
+      expect(statusOf(grant)).toBe("EXPIRED");
+    }
+  );
 
   test.each([
     ["an expired", AccessGrant_Status.ACTIVE, baseMs - HOUR_MS],
@@ -61,13 +73,11 @@ describe("access grant status over time", () => {
     "%s grant's status has nothing left to change",
     (_, status, deadlineMs) => {
       const grant = grantWithDeadline(status, deadlineMs);
-      const status0 = getAccessGrantDisplayStatus(grant);
+      const status0 = statusOf(grant);
 
-      expect(nextAccessGrantDisplayStatusChangeAt(grant)).toBe(
-        Number.POSITIVE_INFINITY
-      );
+      expect(statusChangesAt(grant)).toBe(Number.POSITIVE_INFINITY);
       vi.setSystemTime(baseMs + 400 * DAY_MS);
-      expect(getAccessGrantDisplayStatus(grant)).toBe(status0);
+      expect(statusOf(grant)).toBe(status0);
     }
   );
 
@@ -82,7 +92,7 @@ describe("access grant status over time", () => {
     });
 
     expect(getAccessGrantExpireTimeMs(grant)).toBeUndefined();
-    expect(nextAccessGrantDisplayStatusChangeAt(grant)).toBe(
+    expect(accessGrantStatusReading.nextChangeAt({ grant })).toBe(
       Number.POSITIVE_INFINITY
     );
   });

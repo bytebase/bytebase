@@ -1,15 +1,14 @@
 import type { ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { Tooltip } from "@/components/ui/tooltip";
-import { useNow } from "@/hooks/useNow";
+import { useTimeReading } from "@/hooks/useTimeReading";
 import {
   formatAbsoluteDateTime,
   formatCompactDateTime,
   formatOperationalDateTime,
-  formatQueueTime,
-  formatRelativeTime,
-  nextQueueTimeChangeAt,
-  nextRelativeTimeChangeAt,
+  queueTimeReading,
+  relativeTimeReading,
+  type TimeReading,
 } from "@/utils/datetime";
 
 /**
@@ -46,29 +45,32 @@ function FullDateTime({ tsMs }: { tsMs: number }) {
 }
 
 function RelativeAge({ tsMs }: { tsMs: number }) {
-  useNow(nextRelativeTimeChangeAt(tsMs));
-  return <>{formatRelativeTime(tsMs)}</>;
+  return <>{useTimeReading(relativeTimeReading, tsMs)}</>;
 }
 
-// Each mode's label, the boundary that keeps it current if it changes with
-// time, and the reading its tooltip restores: the full date-time for every
-// reduced form, the age for the full one.
+const fixed = (
+  format: (tsMs: number) => string
+): TimeReading<number, string> => ({
+  read: format,
+  nextChangeAt: () => Number.POSITIVE_INFINITY,
+});
+
+// Each mode's label reading, and the reading its tooltip restores: the full
+// date-time for every reduced form, the age for the full one.
 const MODES: Record<
   TimeDisplayMode,
   {
-    format: (tsMs: number) => string;
-    nextChangeAt?: (tsMs: number) => number;
+    label: TimeReading<number, string>;
     Hidden: ComponentType<{ tsMs: number }>;
   }
 > = {
-  queue: {
-    format: formatQueueTime,
-    nextChangeAt: nextQueueTimeChangeAt,
+  queue: { label: queueTimeReading, Hidden: FullDateTime },
+  compact: { label: fixed(formatCompactDateTime), Hidden: FullDateTime },
+  operational: {
+    label: fixed(formatOperationalDateTime),
     Hidden: FullDateTime,
   },
-  compact: { format: formatCompactDateTime, Hidden: FullDateTime },
-  operational: { format: formatOperationalDateTime, Hidden: FullDateTime },
-  datetime: { format: formatAbsoluteDateTime, Hidden: RelativeAge },
+  datetime: { label: fixed(formatAbsoluteDateTime), Hidden: RelativeAge },
 };
 
 /**
@@ -85,9 +87,8 @@ export function HumanizeTs({
   // Subscribe to locale changes so the rendered strings update on a language switch.
   useTranslation();
   const tsMs = ts * 1000;
-  const { format, nextChangeAt, Hidden } = MODES[mode];
-  useNow(nextChangeAt?.(tsMs));
-  const label = format(tsMs);
+  const { label: labelReading, Hidden } = MODES[mode];
+  const label = useTimeReading(labelReading, tsMs);
   if (!tooltip) {
     return <span className={className}>{label}</span>;
   }
