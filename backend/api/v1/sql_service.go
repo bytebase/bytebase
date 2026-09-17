@@ -734,6 +734,7 @@ func queryRetry(
 
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
 		licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
+	queryContext.MaskingEnabled = maskingEnabled
 
 	if maskingEnabled {
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
