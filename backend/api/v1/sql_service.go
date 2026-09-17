@@ -401,6 +401,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	startTime := time.Now()
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
+		DataSourceType:       dataSource.GetType(),
 		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
 		Option:               request.QueryOption,
@@ -642,6 +643,7 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 	switch engine {
 	case storepb.Engine_POSTGRES:
 		return parserbase.ColumnResource{
+			Instance: column.Instance,
 			Server:   column.Server,
 			Database: column.Database,
 			Schema:   database,
@@ -650,6 +652,7 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 		}
 	default:
 		return parserbase.ColumnResource{
+			Instance: column.Instance,
 			Server:   column.Server,
 			Database: database,
 			Schema:   schema,
@@ -657,6 +660,159 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 			Column:   column.Column,
 		}
 	}
+}
+
+// privateDatabaseLinkOwner is implemented by a driver whose session account can own
+// private database links (Oracle).
+type privateDatabaseLinkOwner interface {
+	OwnsPrivateDatabaseLink(ctx context.Context, conn *sql.Conn) (bool, error)
+}
+
+// refuseLinkedReadsShadowedByPrivateLinks refuses a linked read when the executing account
+// owns any private database link. Oracle resolves @name to the executing account's private
+// link before a public one, and the sync recorded the admin account's links only, so a
+// private link on another account can shadow the synced definition. No link name is
+// compared: Oracle expands a bare name with the database domain and accepts connection
+// qualifiers, and the synced list cannot settle either. The admin data source is the synced
+// account and is exempt. Runs on the executing connection right before execution, so a link
+// created by an earlier statement of the same request is seen. A failed check refuses.
+// BYT-10239 replaces this with resolution from the executing session's own links.
+func refuseLinkedReadsShadowedByPrivateLinks(ctx context.Context, driver db.Driver, conn *sql.Conn, instance *store.InstanceMessage, queryContext db.QueryContext, spans []*parserbase.QuerySpan) error {
+	if instance.Metadata.GetEngine() != storepb.Engine_ORACLE || queryContext.DataSourceType == storepb.DataSourceType_ADMIN {
+		return nil
+	}
+	linked := linkedColumns(spans)
+	if len(linked) == 0 {
+		return nil
+	}
+	owner, ok := driver.(privateDatabaseLinkOwner)
+	if !ok || conn == nil {
+		return privateLinkRefusal(linked, false, errors.New("the driver exposes no session connection"))
+	}
+	owns, err := owner.OwnsPrivateDatabaseLink(ctx, conn)
+	return privateLinkRefusal(linked, owns, err)
+}
+
+// linkedColumns lists the columns reached through a resolved database link, in a stable order.
+func linkedColumns(spans []*parserbase.QuerySpan) []parserbase.ColumnResource {
+	var linked []parserbase.ColumnResource
+	for _, span := range spans {
+		if span == nil {
+			continue
+		}
+		for column := range span.SourceColumns {
+			if column.Instance != "" {
+				linked = append(linked, column)
+			}
+		}
+	}
+	slices.SortFunc(linked, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
+	return linked
+}
+
+// privateLinkRefusal is the verdict of refuseLinkedReadsShadowedByPrivateLinks: nil only when
+// the check ran and found no private link.
+func privateLinkRefusal(linked []parserbase.ColumnResource, owns bool, err error) error {
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check the executing account's private database links; %s", linkedTableRefusal(linked[0], "is not executed")))
+	}
+	if owns {
+		return connect.NewError(connect.CodePermissionDenied, errors.New(linkedTableRefusal(linked[0], "cannot be authorized: the executing account owns private database links, which Oracle resolves before the public links Bytebase synced. Run the query under the admin data source, or remove the private links from the account behind the read-only data source (BYT-10239)")))
+	}
+	return nil
+}
+
+// refuseLinkedTargetsOutsideProject mirrors authorizeWriteTargets: the access check
+// evaluates the session project's IAM policy only, so a target in another project is
+// refused. Runs after remoteColumnRefusal, so every linked column is on the connected
+// instance. SUP-222 / BYT-9698, BYT-10226.
+func (s *SQLService) refuseLinkedTargetsOutsideProject(ctx context.Context, columns parserbase.SourceColumnSet, instance *store.InstanceMessage, database *store.DatabaseMessage, perm permission.Permission) (*queryError, error) {
+	var linked []parserbase.ColumnResource
+	for column := range columns {
+		if column.Instance != "" {
+			linked = append(linked, column)
+		}
+	}
+	slices.SortFunc(linked, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
+	targets := map[string]*store.DatabaseMessage{}
+	for _, column := range linked {
+		target, seen := targets[column.Database]
+		if !seen {
+			databaseName := column.Database
+			var err error
+			target, err = s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve linked database %q: %v", column.Database, err))
+			}
+			targets[column.Database] = target
+		}
+		if message := linkedTargetProjectRefusal(column, target, database.ProjectID); message != "" {
+			return &queryError{
+				err:        connect.NewError(connect.CodePermissionDenied, errors.New(message)),
+				permission: perm,
+			}, nil
+		}
+	}
+	return nil, nil
+}
+
+// linkedTargetProjectRefusal decides refuseLinkedTargetsOutsideProject for one column, given
+// the database the link resolved to (nil when Bytebase does not track it).
+func linkedTargetProjectRefusal(column parserbase.ColumnResource, target *store.DatabaseMessage, requestProjectID string) string {
+	if target == nil {
+		return linkedTableRefusal(column, "is in a database Bytebase does not track on this instance")
+	}
+	if target.ProjectID != requestProjectID {
+		return linkedTableRefusal(column, fmt.Sprintf("is in project %q: reading another project's database through a link is not supported in SQL Editor", target.ProjectID))
+	}
+	return ""
+}
+
+// linkedTableRefusal names the linked table as written (an unqualified unresolved reference
+// has no database) followed by the reason.
+func linkedTableRefusal(column parserbase.ColumnResource, reason string) string {
+	table := column.Table
+	if column.Database != "" {
+		table = column.Database + "." + table
+	}
+	return fmt.Sprintf("table %s reached through database link %q %s", table, column.Server, reason)
+}
+
+// remoteColumnRefusal refuses an Oracle database link Bytebase could not resolve or that
+// resolves to another instance. The error carries no resource: a placeholder would satisfy
+// a negated condition (table_name != "x") and request-access would offer a grant that
+// cannot help. BYT-10226.
+func remoteColumnRefusal(columns parserbase.SourceColumnSet, connectedInstanceID string, perm permission.Permission) *queryError {
+	var remote []parserbase.ColumnResource
+	for column := range columns {
+		if column.Server != "" {
+			remote = append(remote, column)
+		}
+	}
+	slices.SortFunc(remote, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
+	for _, column := range remote {
+		var message string
+		switch {
+		case column.Instance == "":
+			message = linkedTableRefusal(column, "cannot be authorized: Bytebase could not establish which database it reaches. A link is authorized when the connect string Bytebase synced for it names the host, port and service of a data source of exactly one instance")
+		case column.Instance != connectedInstanceID:
+			// Links to another instance are refused until the masker resolves a linked column's
+			// policy on its own instance; it lists databases by name on the connected instance
+			// (BYT-10237).
+			message = linkedTableRefusal(column, fmt.Sprintf("is on instance %q: querying another instance through a database link is not supported in SQL Editor", column.Instance))
+		default:
+			continue
+		}
+		return &queryError{
+			err:        connect.NewError(connect.CodePermissionDenied, errors.New(message)),
+			permission: perm,
+		}
+	}
+	return nil
 }
 
 func isBackupTable(engine storepb.Engine, column parserbase.ColumnResource) bool {
@@ -739,6 +895,9 @@ func queryRetry(
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
 			return nil, nil, time.Duration(0), err
 		}
+	}
+	if err := refuseLinkedReadsShadowedByPrivateLinks(ctx, driver, conn, instance, queryContext, spans); err != nil {
+		return nil, nil, time.Duration(0), err
 	}
 
 	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", originalStatement))
@@ -1120,6 +1279,7 @@ func doExport(
 		database.ProjectID,
 	)
 	queryContext := buildExportQueryContext(queryRestriction, user.Email, request.Schema, request.GetContainer(), skipMasking)
+	queryContext.DataSourceType = dataSource.GetType()
 
 	// Split the statement for span analysis
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), request.Statement)
@@ -1549,6 +1709,21 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			continue
 		}
 
+		// Oracle database links. A non-Select Oracle span carries no source columns and a linked
+		// table forces the Select classification (plsql getOmniQuerySpan), so none reaches the
+		// branch above. Before the JIT-grant skip below: an unresolved link can carry a local
+		// database name (ALLOWED_S.T@REMOTE2), which a grant on that database would otherwise
+		// authorize. A SQL Server linked-server reference keeps its pre-existing path (BYT-10235).
+		if instance.Metadata.GetEngine() == storepb.Engine_ORACLE {
+			if qe := remoteColumnRefusal(span.SourceColumns, instance.ResourceID, perm); qe != nil {
+				return qe
+			}
+			if qe, err := s.refuseLinkedTargetsOutsideProject(ctx, span.SourceColumns, instance, database, perm); err != nil {
+				return err
+			} else if qe != nil {
+				return qe
+			}
+		}
 		var deniedResources []string
 		for column := range span.SourceColumns {
 			columnDatabaseFullName := formatDatabaseResourceName(instance, &store.DatabaseMessage{

@@ -11,7 +11,8 @@ type SchemaResource struct {
 	Schema   string
 	Table    string
 
-	// LinkedServer is the special resource for MSSQL, which can be used to specify the linked server.
+	// LinkedServer is the remote reference as the statement wrote it: an MSSQL linked server or
+	// an Oracle database link. Empty for a table on the connected server.
 	LinkedServer string
 }
 
