@@ -1,71 +1,42 @@
 package db
 
 import (
-	"fmt"
-	"sync"
-
-	"github.com/pkg/errors"
-
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// Explain is how an engine answers an explain request. A driver whose engine
-// can explain registers one with RegisterExplain.
-type Explain struct {
-	// Formats lists the plan formats a request may name.
-	Formats []v1pb.QueryOption_ExplainFormat
-	// DefaultFormat is the plan format when a request names none, or
-	// EXPLAIN_FORMAT_UNSPECIFIED when the session decides.
-	DefaultFormat v1pb.QueryOption_ExplainFormat
-	// Statement returns the statement whose result is statement's plan in
-	// format, named as SQL names it ("" for the default), or an error when
-	// statement cannot be explained without running it. It is nil when the
-	// driver plans through the engine's own API, which never runs the statement.
-	Statement func(statement, format string) (string, error)
-}
-
-// PlanFormat returns the format of the plans a request naming format gets.
-func (e Explain) PlanFormat(format v1pb.QueryOption_ExplainFormat) v1pb.QueryOption_ExplainFormat {
-	if format == v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
-		return e.DefaultFormat
+// ExplainFormats returns the plan formats a request may name for engine, and
+// the format of a plan when the request names none. ok is false when engine
+// cannot explain.
+func ExplainFormats(engine storepb.Engine) (formats []v1pb.QueryOption_ExplainFormat, defaultFormat v1pb.QueryOption_ExplainFormat, ok bool) {
+	text := []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML}, v1pb.QueryOption_TEXT, true
+	case storepb.Engine_MSSQL:
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}, v1pb.QueryOption_TEXT, true
+	case storepb.Engine_SPANNER:
+		// Spanner returns its plan as JSON and has no text form.
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}, v1pb.QueryOption_JSON, true
+	case storepb.Engine_MYSQL:
+		// MySQL 8.0.32 and later answer an EXPLAIN without FORMAT in the
+		// session's explain_format.
+		return text, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, true
+	case storepb.Engine_MARIADB,
+		storepb.Engine_OCEANBASE,
+		storepb.Engine_TIDB,
+		storepb.Engine_REDSHIFT,
+		storepb.Engine_COCKROACHDB,
+		storepb.Engine_SNOWFLAKE,
+		storepb.Engine_CLICKHOUSE,
+		storepb.Engine_STARROCKS,
+		storepb.Engine_DORIS,
+		storepb.Engine_HIVE,
+		storepb.Engine_TRINO,
+		storepb.Engine_ORACLE,
+		storepb.Engine_BIGQUERY:
+		return text, v1pb.QueryOption_TEXT, true
+	default:
+		return nil, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, false
 	}
-	return format
-}
-
-var (
-	explainsMu sync.RWMutex
-	explains   = make(map[storepb.Engine]Explain)
-)
-
-// RegisterExplain makes engine explainable.
-func RegisterExplain(engine storepb.Engine, explain Explain) {
-	explainsMu.Lock()
-	defer explainsMu.Unlock()
-	if _, dup := explains[engine]; dup {
-		panic(fmt.Sprintf("db: RegisterExplain called twice for %s", engine))
-	}
-	explains[engine] = explain
-}
-
-// GetExplain returns how engine explains, and false when it cannot.
-func GetExplain(engine storepb.Engine) (Explain, bool) {
-	explainsMu.RLock()
-	defer explainsMu.RUnlock()
-	explain, ok := explains[engine]
-	return explain, ok
-}
-
-// ExplainStatement returns the statement a driver runs for statement's plan.
-// The Query handler validates the same statement before the driver runs it.
-func ExplainStatement(engine storepb.Engine, statement string, format v1pb.QueryOption_ExplainFormat) (string, error) {
-	explain, ok := GetExplain(engine)
-	if !ok || explain.Statement == nil {
-		return "", errors.Errorf("%s does not explain by running a statement", engine)
-	}
-	name := ""
-	if format != v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
-		name = format.String()
-	}
-	return explain.Statement(statement, name)
 }

@@ -45,11 +45,6 @@ func init() {
 	db.Register(storepb.Engine_MYSQL, newDriver)
 	db.Register(storepb.Engine_MARIADB, newDriver)
 	db.Register(storepb.Engine_OCEANBASE, newDriver)
-	// The driver sends EXPLAIN without FORMAT, which MySQL 8.0.32 and later
-	// answer in the session's explain_format.
-	db.RegisterExplain(storepb.Engine_MYSQL, util.PrefixExplain(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
-	db.RegisterExplain(storepb.Engine_MARIADB, util.PrefixExplain(v1pb.QueryOption_TEXT))
-	db.RegisterExplain(storepb.Engine_OCEANBASE, util.PrefixExplain(v1pb.QueryOption_TEXT))
 }
 
 // validateMySQLExtraConnectionParameters validates that no dangerous parameters are present.
@@ -533,7 +528,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			if statement, err = db.ExplainStatement(d.dbType, statement, queryContext.Option.GetExplainFormat()); err != nil {
+			if statement, err = base.ExplainStatement(d.dbType, statement, queryContext.Option.GetExplainFormat().String()); err != nil {
 				return nil, err
 			}
 		} else if queryContext.Limit > 0 {

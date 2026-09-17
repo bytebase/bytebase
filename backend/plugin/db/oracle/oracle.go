@@ -33,10 +33,6 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_ORACLE, newDriver)
-	db.RegisterExplain(storepb.Engine_ORACLE, db.Explain{
-		Formats:       []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT},
-		DefaultFormat: v1pb.QueryOption_TEXT,
-	})
 }
 
 // Driver is the Oracle driver.

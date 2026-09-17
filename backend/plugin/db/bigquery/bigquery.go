@@ -30,10 +30,6 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_BIGQUERY, newDriver)
-	db.RegisterExplain(storepb.Engine_BIGQUERY, db.Explain{
-		Formats:       []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT},
-		DefaultFormat: v1pb.QueryOption_TEXT,
-	})
 }
 
 // Driver is the BigQuery driver.

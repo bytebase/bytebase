@@ -747,8 +747,10 @@ func queryRetry(
 	}
 	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", originalStatement), slog.Duration("duration", duration))
 	if queryContext.Explain {
-		explain, _ := db.GetExplain(instance.Metadata.GetEngine())
-		format := explain.PlanFormat(queryContext.Option.GetExplainFormat())
+		format := queryContext.Option.GetExplainFormat()
+		if format == v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
+			_, format, _ = db.ExplainFormats(instance.Metadata.GetEngine())
+		}
 		for _, result := range results {
 			if result.Error == "" {
 				result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
@@ -1978,28 +1980,29 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 }
 
 // validateExplain refuses an explain request that the engine cannot answer or
-// that would run a statement. An engine without a registered explain is
-// refused whatever format is asked: its driver would run the statement as an
-// ordinary query, and an explain request skips the read-only validation above.
+// that would run a statement. An engine that cannot explain is refused whatever
+// format is asked: its driver would run the statement as an ordinary query, and
+// an explain request skips the read-only validation above.
 //
 // The driver splits a multi-statement request and runs each statement's
-// db.ExplainStatement, so this checks the same statements. Each must be
+// parserbase.ExplainStatement, so this checks the same statements. Each must be
 // read-only: a smuggled "ANALYZE DELETE FROM t" becomes EXPLAIN ANALYZE DELETE,
-// which would run the DELETE.
+// which would run the DELETE. An engine that plans through its own API never
+// runs the statement.
 func validateExplain(instance *store.InstanceMessage, statement string, format v1pb.QueryOption_ExplainFormat) error {
 	engine := instance.Metadata.GetEngine()
-	explain, ok := db.GetExplain(engine)
+	formats, _, ok := db.ExplainFormats(engine)
 	if !ok {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support EXPLAIN", engine))
 	}
-	if format != v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED && !slices.Contains(explain.Formats, format) {
-		names := make([]string, 0, len(explain.Formats))
-		for _, f := range explain.Formats {
+	if format != v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED && !slices.Contains(formats, format) {
+		names := make([]string, 0, len(formats))
+		for _, f := range formats {
 			names = append(names, f.String())
 		}
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain format %s, supported formats: %s", engine, format, strings.Join(names, ", ")))
 	}
-	if explain.Statement == nil {
+	if !parserbase.HasExplainFunc(engine) {
 		return nil
 	}
 	statements, err := parserbase.SplitMultiSQL(engine, statement)
@@ -2013,7 +2016,7 @@ func validateExplain(instance *store.InstanceMessage, statement string, format v
 		if stmt.Empty {
 			continue
 		}
-		explained, err := db.ExplainStatement(engine, stmt.Text, format)
+		explained, err := parserbase.ExplainStatement(engine, stmt.Text, format.String())
 		if err != nil {
 			return connect.NewError(connect.CodeInvalidArgument, err)
 		}

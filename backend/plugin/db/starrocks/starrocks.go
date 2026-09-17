@@ -39,8 +39,6 @@ var (
 func init() {
 	db.Register(storepb.Engine_STARROCKS, newDriver)
 	db.Register(storepb.Engine_DORIS, newDriver)
-	db.RegisterExplain(storepb.Engine_STARROCKS, util.PrefixExplain(v1pb.QueryOption_TEXT))
-	db.RegisterExplain(storepb.Engine_DORIS, util.PrefixExplain(v1pb.QueryOption_TEXT))
 }
 
 // Driver is the MySQL driver.
@@ -306,7 +304,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			if statement, err = db.ExplainStatement(d.dbType, statement, queryContext.Option.GetExplainFormat()); err != nil {
+			if statement, err = base.ExplainStatement(d.dbType, statement, queryContext.Option.GetExplainFormat().String()); err != nil {
 				return nil, err
 			}
 		} else if queryContext.Limit > 0 {

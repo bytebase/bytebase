@@ -40,10 +40,6 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_MSSQL, newDriver)
-	db.RegisterExplain(storepb.Engine_MSSQL, db.Explain{
-		Formats:       []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML},
-		DefaultFormat: v1pb.QueryOption_TEXT,
-	})
 }
 
 // Driver is the MSSQL driver.

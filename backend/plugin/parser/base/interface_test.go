@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestWithSearchPath(t *testing.T) {
@@ -78,4 +80,10 @@ func TestTSQLRecognizeExplainType(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestExplainStatementNeedsARegisteredEngine(t *testing.T) {
+	require.False(t, HasExplainFunc(storepb.Engine_MONGODB))
+	_, err := ExplainStatement(storepb.Engine_MONGODB, "SELECT 1", "")
+	require.Error(t, err)
 }

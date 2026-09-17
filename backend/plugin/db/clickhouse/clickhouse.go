@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -42,7 +41,6 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_CLICKHOUSE, newDriver)
-	db.RegisterExplain(storepb.Engine_CLICKHOUSE, util.PrefixExplain(v1pb.QueryOption_TEXT))
 }
 
 // Driver is the ClickHouse driver.

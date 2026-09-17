@@ -9,14 +9,23 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-func TestPlanFormat(t *testing.T) {
-	explain := Explain{DefaultFormat: v1pb.QueryOption_TEXT}
-	require.Equal(t, v1pb.QueryOption_TEXT, explain.PlanFormat(v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
-	require.Equal(t, v1pb.QueryOption_JSON, explain.PlanFormat(v1pb.QueryOption_JSON))
-}
-
-func TestExplainStatementNeedsAStatementExplain(t *testing.T) {
-	// No driver is registered in this package's tests.
-	_, err := ExplainStatement(storepb.Engine_POSTGRES, "SELECT 1", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED)
-	require.Error(t, err)
+func TestExplainFormats(t *testing.T) {
+	for _, tc := range []struct {
+		engine        storepb.Engine
+		formats       []v1pb.QueryOption_ExplainFormat
+		defaultFormat v1pb.QueryOption_ExplainFormat
+	}{
+		{storepb.Engine_POSTGRES, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML}, v1pb.QueryOption_TEXT},
+		{storepb.Engine_MSSQL, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}, v1pb.QueryOption_TEXT},
+		{storepb.Engine_SPANNER, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}, v1pb.QueryOption_JSON},
+		{storepb.Engine_MYSQL, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{storepb.Engine_ORACLE, []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}, v1pb.QueryOption_TEXT},
+	} {
+		formats, defaultFormat, ok := ExplainFormats(tc.engine)
+		require.Truef(t, ok, "%s", tc.engine)
+		require.Equalf(t, tc.formats, formats, "%s", tc.engine)
+		require.Equalf(t, tc.defaultFormat, defaultFormat, "%s", tc.engine)
+	}
+	_, _, ok := ExplainFormats(storepb.Engine_MONGODB)
+	require.False(t, ok)
 }

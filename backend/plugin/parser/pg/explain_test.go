@@ -13,6 +13,7 @@ func TestExplainStatement(t *testing.T) {
 		want      string
 	}{
 		{"SELECT 1", "", "EXPLAIN SELECT 1"},
+		{"SELECT 1", "EXPLAIN_FORMAT_UNSPECIFIED", "EXPLAIN SELECT 1"},
 		{"SELECT 1", "JSON", "EXPLAIN (FORMAT JSON) SELECT 1"},
 		{"SELECT 1", "XML", "EXPLAIN (FORMAT XML) SELECT 1"},
 		{"SELECT 1", "YAML", "EXPLAIN (FORMAT YAML) SELECT 1"},

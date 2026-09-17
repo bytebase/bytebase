@@ -52,6 +52,7 @@ var (
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 	statementParsers        = make(map[storepb.Engine]ParseStatementsFunc)
 	statementTypeGetters    = make(map[storepb.Engine]GetStatementTypesFunc)
+	explainFuncs            = make(map[storepb.Engine]ExplainFunc)
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
@@ -117,6 +118,39 @@ func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, bool, 
 func HasQueryValidator(engine storepb.Engine) bool {
 	_, ok := queryValidators[engine]
 	return ok
+}
+
+// ExplainFunc returns the statement whose result is statement's query plan,
+// or an error when statement cannot be explained without running it. format
+// names the requested plan format, such as JSON; a name the engine does not
+// write means its default.
+type ExplainFunc func(statement, format string) (string, error)
+
+// RegisterExplainFunc registers how an engine that plans a statement by running
+// an EXPLAIN writes that EXPLAIN.
+func RegisterExplainFunc(engine storepb.Engine, f ExplainFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := explainFuncs[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	explainFuncs[engine] = f
+}
+
+// HasExplainFunc reports whether engine plans a statement by running an EXPLAIN,
+// rather than through an API of its own.
+func HasExplainFunc(engine storepb.Engine) bool {
+	_, ok := explainFuncs[engine]
+	return ok
+}
+
+// ExplainStatement returns the EXPLAIN that engine runs for statement's plan.
+func ExplainStatement(engine storepb.Engine, statement, format string) (string, error) {
+	f, ok := explainFuncs[engine]
+	if !ok {
+		return "", errors.Errorf("%s does not explain by running a statement", engine)
+	}
+	return f(statement, format)
 }
 
 func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChangedResourcesFunc) {

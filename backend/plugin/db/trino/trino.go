@@ -23,7 +23,6 @@ import (
 
 func init() {
 	db.Register(storepb.Engine_TRINO, newDriver)
-	db.RegisterExplain(storepb.Engine_TRINO, util.PrefixExplain(v1pb.QueryOption_TEXT))
 }
 
 type Driver struct {
@@ -235,7 +234,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 
 			if queryContext.Explain {
 				var err error
-				if stmt, err = db.ExplainStatement(storepb.Engine_TRINO, stmt, queryContext.Option.GetExplainFormat()); err != nil {
+				if stmt, err = base.ExplainStatement(storepb.Engine_TRINO, stmt, queryContext.Option.GetExplainFormat().String()); err != nil {
 					return nil, err
 				}
 				isQuery = true

@@ -6,10 +6,12 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_TRINO, validateQuery)
+	base.RegisterExplainFunc(storepb.Engine_TRINO, standard.ExplainStatement)
 }
 
 // validateQuery reports whether the given statement is valid for the SQL editor,

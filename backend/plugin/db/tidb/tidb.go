@@ -37,7 +37,6 @@ var (
 
 func init() {
 	db.Register(storepb.Engine_TIDB, newDriver)
-	db.RegisterExplain(storepb.Engine_TIDB, util.PrefixExplain(v1pb.QueryOption_TEXT))
 }
 
 // Driver is the MySQL driver.
@@ -374,7 +373,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			if statement, err = db.ExplainStatement(storepb.Engine_TIDB, statement, queryContext.Option.GetExplainFormat()); err != nil {
+			if statement, err = base.ExplainStatement(storepb.Engine_TIDB, statement, queryContext.Option.GetExplainFormat().String()); err != nil {
 				return nil, err
 			}
 		} else if queryContext.Limit > 0 {

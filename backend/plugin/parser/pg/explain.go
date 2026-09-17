@@ -11,15 +11,16 @@ import (
 )
 
 // ExplainStatement returns the statement whose result is statement's query
-// plan in format, the name of an EXPLAIN FORMAT, or text when format is empty.
-// A statement that already is an EXPLAIN gets format in place of its own
-// rather than a second EXPLAIN, and one whose plan would run it, as EXPLAIN
-// ANALYZE does, is refused.
+// plan in format: JSON, XML, YAML, or text for any other name. A statement that
+// already is an EXPLAIN gets format in place of its own rather than a second
+// EXPLAIN, and one whose plan would run it, as EXPLAIN ANALYZE does, is
+// refused.
 func ExplainStatement(statement, format string) (string, error) {
-	if format == "" {
+	format = strings.ToLower(format)
+	if format != "json" && format != "xml" && format != "yaml" {
 		format = "text"
 	}
-	explained := withExplainFormat(statement, strings.ToLower(format))
+	explained := withExplainFormat(statement, format)
 	// A statement that does not parse is left to the query validator, which
 	// refuses it with the same parser.
 	if stmts, err := ParsePg(explained); err == nil {

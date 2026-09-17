@@ -5,12 +5,16 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 )
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_MYSQL, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_MARIADB, validateQuery)
 	base.RegisterQueryValidator(storepb.Engine_OCEANBASE, validateQuery)
+	base.RegisterExplainFunc(storepb.Engine_MYSQL, standard.ExplainStatement)
+	base.RegisterExplainFunc(storepb.Engine_MARIADB, standard.ExplainStatement)
+	base.RegisterExplainFunc(storepb.Engine_OCEANBASE, standard.ExplainStatement)
 }
 
 // validateQuery validates the SQL statement for SQL editor.

@@ -10,24 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
-
-	// Drivers register how their engines explain.
-	_ "github.com/bytebase/bytebase/backend/plugin/db/bigquery"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/clickhouse"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/cockroachdb"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/hive"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/redshift"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/snowflake"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/spanner"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/starrocks"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/tidb"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/trino"
 )
 
 func TestSQLIAMDatabaseResourceUsesCanonicalInstanceScope(t *testing.T) {
@@ -348,22 +331,11 @@ func TestResolveDataSourceIDKeepsReadOnlyForDocumentEngineAutomaticReadQueryWhen
 	}
 }
 
-// TestValidateExplainFormat pins which engines explain, and in which formats. A
-// format an engine cannot produce has to be refused here, because the drivers
-// below map anything that reaches them onto their own default rather than failing.
+// TestValidateExplainFormat pins the engine-to-format support table. A format an
+// engine cannot produce has to be refused here, because the drivers below map
+// anything that reaches them onto their own default rather than failing.
 func TestValidateExplainFormat(t *testing.T) {
 	t.Parallel()
-	for _, engine := range []storepb.Engine{
-		storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB,
-		storepb.Engine_OCEANBASE, storepb.Engine_TIDB, storepb.Engine_REDSHIFT,
-		storepb.Engine_COCKROACHDB, storepb.Engine_SNOWFLAKE, storepb.Engine_CLICKHOUSE,
-		storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_HIVE,
-		storepb.Engine_TRINO, storepb.Engine_ORACLE, storepb.Engine_MSSQL,
-		storepb.Engine_SPANNER, storepb.Engine_BIGQUERY,
-	} {
-		instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
-		require.NoErrorf(t, validateExplain(instance, "SELECT 1", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED), "%s explains", engine)
-	}
 	for _, tc := range []struct {
 		name    string
 		engine  storepb.Engine
@@ -468,30 +440,6 @@ func TestExplainGateRefusesTypedExplain(t *testing.T) {
 	require.NoError(t, validateExplain(mysql, "SELECT 'EXPLAIN'", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
 	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
 	require.NoError(t, validateExplain(pg, "EXPLAIN SELECT 1", v1pb.QueryOption_JSON))
-}
-
-func TestExplainResultFormat(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		engine storepb.Engine
-		format v1pb.QueryOption_ExplainFormat
-		want   v1pb.QueryOption_ExplainFormat
-	}{
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_JSON, v1pb.QueryOption_JSON},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_XML, v1pb.QueryOption_XML},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_YAML, v1pb.QueryOption_YAML},
-		{storepb.Engine_MSSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
-		{storepb.Engine_MSSQL, v1pb.QueryOption_XML, v1pb.QueryOption_XML},
-		{storepb.Engine_SPANNER, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_JSON},
-		{storepb.Engine_SPANNER, v1pb.QueryOption_JSON, v1pb.QueryOption_JSON},
-		{storepb.Engine_MYSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
-		{storepb.Engine_ORACLE, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
-	} {
-		explain, ok := db.GetExplain(tc.engine)
-		require.Truef(t, ok, "%s", tc.engine)
-		require.Equalf(t, tc.want, explain.PlanFormat(tc.format), "%s %s", tc.engine, tc.format)
-	}
 }
 
 // TestExplainGateAllowsPlans confirms the gate does not over-reject legitimate
