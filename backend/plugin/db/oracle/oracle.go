@@ -222,6 +222,17 @@ func (*Driver) executeInAutoCommitMode(ctx context.Context, conn *sql.Conn, comm
 }
 
 // QueryConn queries a SQL statement in a given connection.
+// OwnsPrivateDatabaseLink reports whether the session's account owns a private database link.
+// SYS.USER_DB_LINKS lists the links owned by the current user; the SYS qualifier keeps a
+// same-named local object from standing in for the dictionary view.
+func (*Driver) OwnsPrivateDatabaseLink(ctx context.Context, conn *sql.Conn) (bool, error) {
+	var count int
+	if err := conn.QueryRowContext(ctx, "SELECT COUNT(*) FROM SYS.USER_DB_LINKS").Scan(&count); err != nil {
+		return false, errors.Wrap(err, "failed to count private database links")
+	}
+	return count > 0, nil
+}
+
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {

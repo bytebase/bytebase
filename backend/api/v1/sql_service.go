@@ -660,19 +660,64 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 	}
 }
 
-// linkedDatabaseMetadataFuncForQuery resolves Oracle database links only for a query that
-// runs under the admin data source, whose ALL_DB_LINKS the sync recorded. Under another
-// data source Oracle resolves the name from that account's own links, where a private link
-// shadows a public one of the same name, and Bytebase has not seen those; every link then
-// resolves to nothing and the access check refuses it (BYT-10239).
-func linkedDatabaseMetadataFuncForQuery(stores *store.Store, instance *store.InstanceMessage, queryContext db.QueryContext) parserbase.GetLinkedDatabaseMetadataFunc {
-	resolve := parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine())
-	if resolve == nil || queryContext.DataSourceType == storepb.DataSourceType_ADMIN {
-		return resolve
+// privateDatabaseLinkOwner is implemented by a driver whose session account can own
+// private database links (Oracle).
+type privateDatabaseLinkOwner interface {
+	OwnsPrivateDatabaseLink(ctx context.Context, conn *sql.Conn) (bool, error)
+}
+
+// refuseLinkedReadsShadowedByPrivateLinks refuses a linked read when the executing account
+// owns any private database link. Oracle resolves @name to the executing account's private
+// link before a public one, and the sync recorded the admin account's links only, so a
+// private link on another account can shadow the synced definition. No link name is
+// compared: Oracle expands a bare name with the database domain and accepts connection
+// qualifiers, and the synced list cannot settle either. The admin data source is the synced
+// account and is exempt. Runs on the executing connection right before execution, so a link
+// created by an earlier statement of the same request is seen. A failed check refuses.
+// BYT-10239 replaces this with resolution from the executing session's own links.
+func refuseLinkedReadsShadowedByPrivateLinks(ctx context.Context, driver db.Driver, conn *sql.Conn, instance *store.InstanceMessage, queryContext db.QueryContext, spans []*parserbase.QuerySpan) error {
+	if instance.Metadata.GetEngine() != storepb.Engine_ORACLE || queryContext.DataSourceType == storepb.DataSourceType_ADMIN {
+		return nil
 	}
-	return func(context.Context, string, string, string) (string, string, *model.DatabaseMetadata, error) {
-		return "", "", nil, nil
+	linked := linkedColumns(spans)
+	if len(linked) == 0 {
+		return nil
 	}
+	owner, ok := driver.(privateDatabaseLinkOwner)
+	if !ok || conn == nil {
+		return privateLinkRefusal(linked, false, errors.New("the driver exposes no session connection"))
+	}
+	owns, err := owner.OwnsPrivateDatabaseLink(ctx, conn)
+	return privateLinkRefusal(linked, owns, err)
+}
+
+// linkedColumns lists the columns reached through a resolved database link, in a stable order.
+func linkedColumns(spans []*parserbase.QuerySpan) []parserbase.ColumnResource {
+	var linked []parserbase.ColumnResource
+	for _, span := range spans {
+		if span == nil {
+			continue
+		}
+		for column := range span.SourceColumns {
+			if column.Instance != "" {
+				linked = append(linked, column)
+			}
+		}
+	}
+	slices.SortFunc(linked, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
+	return linked
+}
+
+// privateLinkRefusal is the verdict of refuseLinkedReadsShadowedByPrivateLinks: nil only when
+// the check ran and found no private link.
+func privateLinkRefusal(linked []parserbase.ColumnResource, owns bool, err error) error {
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check the executing account's private database links; %s", linkedTableRefusal(linked[0], "is not executed")))
+	}
+	if owns {
+		return connect.NewError(connect.CodePermissionDenied, errors.New(linkedTableRefusal(linked[0], "cannot be authorized: the executing account owns private database links, which Oracle resolves before the public links Bytebase synced. Run the query under the admin data source, or remove the private links from the account behind the read-only data source (BYT-10239)")))
+	}
+	return nil
 }
 
 // refuseLinkedTargetsOutsideProject mirrors authorizeWriteTargets: the access check
@@ -751,7 +796,7 @@ func remoteColumnRefusal(columns parserbase.SourceColumnSet, connectedInstanceID
 		var message string
 		switch {
 		case column.Instance == "":
-			message = linkedTableRefusal(column, "cannot be authorized: Bytebase could not establish which database it reaches. In this release a linked table is authorized only for a query running under the admin data source, whose database links Bytebase synced, and only when the connect string of the link names the host, port and service of a data source of exactly one instance; on an instance with a read-only data source the query-data policy must allow the admin data source")
+			message = linkedTableRefusal(column, "cannot be authorized: Bytebase could not establish which database it reaches. A link is authorized when the connect string Bytebase synced for it names the host, port and service of a data source of exactly one instance")
 		case column.Instance != connectedInstanceID:
 			// Links to another instance are refused until the masker resolves a linked column's
 			// policy on its own instance; it lists databases by name on the connected instance
@@ -805,7 +850,7 @@ func queryRetry(
 				InstanceID:                    instance.ResourceID,
 				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
 				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataFuncForQuery(stores, instance, queryContext),
+				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 			},
 			instance.Metadata.GetEngine(),
 			statements,
@@ -849,6 +894,9 @@ func queryRetry(
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
 			return nil, nil, time.Duration(0), err
 		}
+	}
+	if err := refuseLinkedReadsShadowedByPrivateLinks(ctx, driver, conn, instance, queryContext, spans); err != nil {
+		return nil, nil, time.Duration(0), err
 	}
 
 	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", originalStatement))
@@ -929,7 +977,7 @@ func queryRetry(
 				InstanceID:                    instance.ResourceID,
 				GetDatabaseMetadataFunc:       parsercontext.BuildGetDatabaseMetadataFunc(stores),
 				ListDatabaseNamesFunc:         parsercontext.BuildListDatabaseNamesFunc(stores),
-				GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataFuncForQuery(stores, instance, queryContext),
+				GetLinkedDatabaseMetadataFunc: parsercontext.BuildGetLinkedDatabaseMetadataFunc(stores, instance.Metadata.GetEngine()),
 			},
 			instance.Metadata.GetEngine(),
 			statements,
