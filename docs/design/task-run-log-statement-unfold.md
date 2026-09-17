@@ -162,9 +162,14 @@ path logs a single `COMMAND_EXECUTE` outside its retry and a response *per attem
 response and drops the rest (`rollout_service_converter.go:408-417`), so a statement that succeeded
 on retry is recorded as a failure. No rule reading entries can recover a response the converter
 discarded, and the row is already wrong before this design reaches it: the log shows a red ✗ for a
-command that worked. The guard stops the viewer from expanding it on the surfaces that know better;
-the record itself is a backend defect and is listed below. Everything else starts folded, and every
-row toggles either way.
+command that worked. The guard is opportunistic mitigation, not part of the rule: it
+costs nothing where the prop already exists and it is not extended to where it does not. The
+changelog and revision pages would need a success signal invented for them — a changelog's status
+is not a task run's — to half-cover one engine's converter bug, and on those two pages that row
+**already** reads as a failure today, before this design touches it. Auto-opening makes a wrong row
+larger; it does not make it wrong. The converter fix below closes it on all four surfaces at once,
+which is why that is where it belongs. Everything else starts folded, and every row toggles either
+way.
 
 **D5 · A row is foldable when it ran a statement.** Nothing more. An earlier draft measured
 `scrollWidth > clientWidth` from a shared `ResizeObserver` so the chevron could be hidden on rows
