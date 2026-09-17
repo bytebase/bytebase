@@ -2,10 +2,14 @@ import { type DragEvent, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { ResponsiveFormLayout } from "@/components/ui/form";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  SegmentedControl,
-  type SegmentedControlOption,
-} from "@/components/ui/segmented-control";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -131,7 +135,7 @@ function CaSourceSelector({
   isSaaSMode?: boolean;
 }) {
   const { t } = useTranslation();
-  const options: SegmentedControlOption<LocalTlsCaSource>[] = [
+  const options = [
     {
       value: LOCAL_TLS_CA_SOURCE_SYSTEM_TRUST,
       label: t("data-source.ssl.ca-source.system-trust"),
@@ -151,14 +155,34 @@ function CaSourceSelector({
   ];
 
   return (
-    <SegmentedControl
+    <Select
       value={value}
-      onValueChange={onChange}
-      ariaLabel={t("data-source.ssl.ca-source.self")}
-      options={options}
+      onValueChange={(next) => {
+        if (next) onChange(next);
+      }}
       disabled={disabled}
-      size="sm"
-    />
+    >
+      <SelectTrigger
+        aria-label={t("data-source.ssl.ca-source.self")}
+        className="w-full sm:w-80"
+      >
+        <SelectValue>
+          {options.find((option) => option.value === value)?.label}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
+            title={option.tooltip}
+          >
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -176,7 +200,7 @@ function ClientCertSourceSelector({
   allowNone?: boolean;
 }) {
   const { t } = useTranslation();
-  const options: SegmentedControlOption<LocalTlsClientCertSource>[] = [
+  const options = [
     ...(allowNone
       ? [
           {
@@ -199,15 +223,57 @@ function ClientCertSourceSelector({
     },
   ];
 
+  if (!allowNone) {
+    return (
+      <RadioGroup
+        className="gap-x-4"
+        value={value}
+        onValueChange={(next) => onChange(next as LocalTlsClientCertSource)}
+        aria-label={t("data-source.ssl.client-cert-source.self")}
+      >
+        {options.map((option) => (
+          <RadioGroupItem
+            key={option.value}
+            value={option.value}
+            disabled={disabled || option.disabled}
+            title={option.tooltip}
+          >
+            {option.label}
+          </RadioGroupItem>
+        ))}
+      </RadioGroup>
+    );
+  }
+
   return (
-    <SegmentedControl
+    <Select
       value={value}
-      onValueChange={(next) => onChange(next)}
-      ariaLabel={t("data-source.ssl.client-cert-source.self")}
-      options={options}
+      onValueChange={(next) => {
+        if (next) onChange(next);
+      }}
       disabled={disabled}
-      size="sm"
-    />
+    >
+      <SelectTrigger
+        aria-label={t("data-source.ssl.client-cert-source.self")}
+        className="w-full sm:w-80"
+      >
+        <SelectValue>
+          {options.find((option) => option.value === value)?.label}
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            disabled={option.disabled}
+            title={option.tooltip}
+          >
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -369,7 +435,7 @@ export function SslCertificateForm({
     </div>
   );
   const renderPostureControl = () => {
-    const options: SegmentedControlOption<LocalTlsPosture>[] = [
+    const options = [
       {
         value: LOCAL_TLS_POSTURE_DISABLED,
         label: t("data-source.ssl.posture.disabled"),
@@ -390,14 +456,37 @@ export function SslCertificateForm({
 
     return (
       <div className="flex flex-col gap-y-1">
-        <SegmentedControl
+        <Select
           value={resolvedPosture}
-          onValueChange={(next) => onPostureChange?.(next)}
-          ariaLabel={t("data-source.ssl.posture.self")}
-          options={options}
+          onValueChange={(next) => {
+            if (next) onPostureChange?.(next);
+          }}
           disabled={disabled}
-          size="sm"
-        />
+        >
+          <SelectTrigger
+            aria-label={t("data-source.ssl.posture.self")}
+            className="w-full sm:w-80"
+          >
+            <SelectValue>
+              {
+                options.find((option) => option.value === resolvedPosture)
+                  ?.label
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem
+                key={option.value}
+                value={option.value}
+                disabled={option.disabled}
+                title={option.tooltip}
+              >
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     );
   };

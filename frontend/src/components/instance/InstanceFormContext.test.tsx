@@ -399,9 +399,10 @@ describe("InstanceFormProvider", () => {
         </InstanceFormProvider>
       );
 
-      expect(
-        harness.container.querySelector('input[type="radio"][value="selected"]')
-      ).toBeChecked();
+      expect(harness.container.querySelector('[role="switch"]')).toHaveAttribute(
+        "aria-checked",
+        "false"
+      );
     } finally {
       harness.unmount();
     }
@@ -535,23 +536,25 @@ describe("InstanceFormProvider", () => {
         </InstanceFormProvider>
       );
       await act(async () => {
-        harness.container
-          .querySelector<HTMLElement>('[role="radio"][value="selected"]')
-          ?.click();
+        const syncScope = harness.container.querySelector<HTMLElement>(
+          '[role="switch"]'
+        );
+        expect(syncScope).not.toBeNull();
+        syncScope!.click();
         await vi.advanceTimersByTimeAsync(600);
       });
 
       const checkbox = harness.container.querySelector<HTMLElement>(
         '[role="checkbox"]'
       );
-      expect(checkbox).toBeDefined();
+      expect(checkbox).not.toBeNull();
       mocks.listInstanceDatabases.mockClear();
       mocks.listInstanceDatabases.mockImplementation(
         () => new Promise(() => {})
       );
 
       await act(async () => {
-        checkbox?.click();
+        checkbox!.click();
         await vi.advanceTimersByTimeAsync(300);
       });
 

@@ -1,8 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { writeTextToClipboard } from "@/lib/clipboard";
+import { CopyButton } from "@/components/ui/copy-button";
 import {
   DATASOURCE_ADMIN_USER_NAME,
   DATASOURCE_READONLY_USER_NAME,
@@ -469,10 +468,6 @@ export function CreateDataSourceExample({
     [engine, dataSourceType, authenticationType]
   );
 
-  const handleCopy = useCallback(() => {
-    void writeTextToClipboard(grantStatement);
-  }, [grantStatement]);
-
   const toggleExample = useCallback(() => {
     setShowExample((prev) => !prev);
   }, []);
@@ -509,24 +504,10 @@ export function CreateDataSourceExample({
             <pre className="flex-1 min-w-0 w-full inline-flex items-center px-3 py-2 border border-r border-control-border bg-control-bg/50 text-sm whitespace-pre-line rounded-l-xs font-mono overflow-auto">
               {grantStatement}
             </pre>
-            <Button
-              type="button"
-              appearance="secondary"
-              size="xs"
+            <CopyButton
+              content={grantStatement}
               className="-ml-px h-auto rounded-r-xs border border-control-border bg-control-bg/50 px-2 py-2 text-sm text-control-light hover:bg-control-bg focus:ring-control"
-              onClick={handleCopy}
-              title="Copy"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            </Button>
+            />
           </div>
         </div>
       )}

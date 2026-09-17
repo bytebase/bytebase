@@ -265,7 +265,7 @@ afterEach(cleanup);
 const input = (container: HTMLElement, id: string) =>
   container.querySelector<HTMLInputElement>(`#${id}`)!;
 
-test("uses a compact segmented synchronization selector", () => {
+test("uses a switch for synchronization scope", () => {
   const { container } = render(
     <InstanceFormProvider>
       <SyncDatabases
@@ -277,11 +277,10 @@ test("uses a compact segmented synchronization selector", () => {
     </InstanceFormProvider>
   );
 
-  const group = container.querySelector('[role="radiogroup"]');
-  expect(group?.classList.contains("inline-flex")).toBe(true);
-  expect(group?.classList.contains("rounded-xs")).toBe(true);
-  expect(group?.classList.contains("flex-col")).toBe(false);
-  expect(group?.querySelectorAll('[role="radio"]')).toHaveLength(2);
+  expect(container.querySelector('[role="switch"]')).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
 });
 
 test("keeps newly loaded selections in the database preview", async () => {
@@ -623,10 +622,15 @@ test("MongoDB SRV mode only clears the selected connection's address fields", ()
   expect(context.adminDataSource.additionalAddresses).toHaveLength(1);
 });
 
-test("Redis connection mode belongs to the selected data source", () => {
+test("Redis connection mode belongs to the selected data source", async () => {
   mount(Engine.REDIS);
   fireEvent.click(screen.getByRole("button", { name: "common.read-only" }));
-  fireEvent.click(screen.getByRole("radio", { name: "Cluster" }));
+  fireEvent.click(
+    screen.getByRole("combobox", { name: "data-source.connection-type" })
+  );
+  const cluster = await screen.findByRole("option", { name: "Cluster" });
+  fireEvent.pointerDown(cluster, { pointerType: "mouse" });
+  fireEvent.click(cluster);
   expect(context.readonlyDataSourceList[0].redisType).toBe(
     DataSource_RedisType.CLUSTER
   );

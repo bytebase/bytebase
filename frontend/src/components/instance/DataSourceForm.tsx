@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -906,27 +907,28 @@ export function DataSourceForm({
                                   className="w-fit textlabel gap-x-3"
                                   value={
                                     dataSource.saslConfig?.mechanism?.value
-                                      ?.kdcTransportProtocol ?? ""
+                                      ?.kdcTransportProtocol ?? "tcp"
                                   }
-                                  onValueChange={(proto) => {
+                                  onValueChange={(protocol) => {
                                     const updated = { ...dataSource };
                                     if (
                                       updated.saslConfig?.mechanism?.case ===
                                       "krbConfig"
                                     ) {
                                       updated.saslConfig.mechanism.value.kdcTransportProtocol =
-                                        String(proto);
+                                        protocol as string;
                                     }
                                     onDataSourceChange(updated);
                                   }}
+                                  aria-label={t("instance.kerberos-kdc")}
                                 >
-                                  {["tcp", "udp"].map((proto) => (
+                                  {["tcp", "udp"].map((protocol) => (
                                     <RadioGroupItem
-                                      key={proto}
-                                      value={proto}
+                                      key={protocol}
+                                      value={protocol}
                                       disabled={!allowEdit}
                                     >
-                                      {proto.toUpperCase()}
+                                      {protocol.toUpperCase()}
                                     </RadioGroupItem>
                                   ))}
                                 </RadioGroup>
@@ -1254,11 +1256,15 @@ export function DataSourceForm({
                                                   ) as DataSourceExternalSecret_AuthType
                                                 )
                                               }
+                                              aria-label={t(
+                                                "instance.external-secret-vault.vault-auth-type.self"
+                                              )}
                                             >
                                               <RadioGroupItem
                                                 value={String(
                                                   DataSourceExternalSecret_AuthType.TOKEN
                                                 )}
+                                                disabled={!allowEdit}
                                               >
                                                 {t(
                                                   "instance.external-secret-vault.vault-auth-type.token.self"
@@ -1268,6 +1274,7 @@ export function DataSourceForm({
                                                 value={String(
                                                   DataSourceExternalSecret_AuthType.VAULT_APP_ROLE
                                                 )}
+                                                disabled={!allowEdit}
                                               >
                                                 {t(
                                                   "instance.external-secret-vault.vault-auth-type.approle.self"
@@ -1335,48 +1342,68 @@ export function DataSourceForm({
                                           which is disallowed in SaaS mode; only
                                           plain is offered there. */}
                                                   {!isSaaSMode && (
-                                                    <RadioGroup
-                                                      className="textlabel my-1 gap-x-4"
+                                                    <Select
                                                       value={String(tokenType)}
-                                                      onValueChange={(value) =>
-                                                        changeTokenType(
-                                                          Number(
-                                                            value
-                                                          ) as DataSourceExternalSecret_TokenType
-                                                        )
-                                                      }
+                                                      onValueChange={(
+                                                        value
+                                                      ) => {
+                                                        if (value) {
+                                                          changeTokenType(
+                                                            Number(
+                                                              value
+                                                            ) as DataSourceExternalSecret_TokenType
+                                                          );
+                                                        }
+                                                      }}
+                                                      disabled={!allowEdit}
                                                     >
-                                                      <RadioGroupItem
-                                                        value={String(
-                                                          DataSourceExternalSecret_TokenType.PLAIN
-                                                        )}
-                                                        disabled={!allowEdit}
-                                                      >
-                                                        {t(
-                                                          "instance.external-secret-vault.vault-auth-type.token.type-plain"
-                                                        )}
-                                                      </RadioGroupItem>
-                                                      <RadioGroupItem
-                                                        value={String(
+                                                      <SelectTrigger className="my-1 w-full sm:w-80">
+                                                        <SelectValue>
+                                                          {tokenType ===
                                                           DataSourceExternalSecret_TokenType.ENVIRONMENT
-                                                        )}
-                                                        disabled={!allowEdit}
-                                                      >
-                                                        {t(
-                                                          "instance.external-secret-vault.vault-auth-type.token.type-environment"
-                                                        )}
-                                                      </RadioGroupItem>
-                                                      <RadioGroupItem
-                                                        value={String(
-                                                          DataSourceExternalSecret_TokenType.FILE
-                                                        )}
-                                                        disabled={!allowEdit}
-                                                      >
-                                                        {t(
-                                                          "instance.external-secret-vault.vault-auth-type.token.type-file"
-                                                        )}
-                                                      </RadioGroupItem>
-                                                    </RadioGroup>
+                                                            ? t(
+                                                                "instance.external-secret-vault.vault-auth-type.token.type-environment"
+                                                              )
+                                                            : tokenType ===
+                                                                DataSourceExternalSecret_TokenType.FILE
+                                                              ? t(
+                                                                  "instance.external-secret-vault.vault-auth-type.token.type-file"
+                                                                )
+                                                              : t(
+                                                                  "instance.external-secret-vault.vault-auth-type.token.type-plain"
+                                                                )}
+                                                        </SelectValue>
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                        <SelectItem
+                                                          value={String(
+                                                            DataSourceExternalSecret_TokenType.PLAIN
+                                                          )}
+                                                        >
+                                                          {t(
+                                                            "instance.external-secret-vault.vault-auth-type.token.type-plain"
+                                                          )}
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                          value={String(
+                                                            DataSourceExternalSecret_TokenType.ENVIRONMENT
+                                                          )}
+                                                        >
+                                                          {t(
+                                                            "instance.external-secret-vault.vault-auth-type.token.type-environment"
+                                                          )}
+                                                        </SelectItem>
+                                                        <SelectItem
+                                                          value={String(
+                                                            DataSourceExternalSecret_TokenType.FILE
+                                                          )}
+                                                        >
+                                                          {t(
+                                                            "instance.external-secret-vault.vault-auth-type.token.type-file"
+                                                          )}
+                                                        </SelectItem>
+                                                      </SelectContent>
+                                                    </Select>
                                                   )}
                                                   <Input
                                                     value={
@@ -1481,62 +1508,58 @@ export function DataSourceForm({
                                         which is disallowed in SaaS mode; only plain
                                         is offered there. */}
                                                 {!isSaaSMode && (
-                                                  <RadioGroup
-                                                    className="textlabel my-1 gap-x-4"
-                                                    value={String(
-                                                      dataSource.externalSecret
-                                                        .authOption.value.type
-                                                    )}
-                                                    onValueChange={(value) => {
-                                                      const ds = {
-                                                        ...dataSource,
-                                                      };
-                                                      if (
-                                                        ds.externalSecret
-                                                          ?.authOption?.case ===
-                                                        "appRole"
-                                                      ) {
-                                                        ds.externalSecret = {
-                                                          ...ds.externalSecret,
-                                                          authOption: {
-                                                            ...ds.externalSecret
-                                                              .authOption,
-                                                            value: {
+                                                  <FormControlRow className="my-1 w-fit">
+                                                    <Switch
+                                                      id="appRoleSecretType"
+                                                      checked={
+                                                        dataSource
+                                                          .externalSecret
+                                                          .authOption.value
+                                                          .type ===
+                                                        DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
+                                                      }
+                                                      disabled={!allowEdit}
+                                                      onCheckedChange={(
+                                                        checked
+                                                      ) => {
+                                                        const ds = {
+                                                          ...dataSource,
+                                                        };
+                                                        if (
+                                                          ds.externalSecret
+                                                            ?.authOption
+                                                            ?.case === "appRole"
+                                                        ) {
+                                                          ds.externalSecret = {
+                                                            ...ds.externalSecret,
+                                                            authOption: {
                                                               ...ds
                                                                 .externalSecret
-                                                                .authOption
-                                                                .value,
-                                                              type: Number(
-                                                                value
-                                                              ) as DataSourceExternalSecret_AppRoleAuthOption_SecretType,
+                                                                .authOption,
+                                                              value: {
+                                                                ...ds
+                                                                  .externalSecret
+                                                                  .authOption
+                                                                  .value,
+                                                                type: checked
+                                                                  ? DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
+                                                                  : DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN,
+                                                              },
                                                             },
-                                                          },
-                                                        };
-                                                      }
-                                                      onDataSourceChange(ds);
-                                                    }}
-                                                  >
-                                                    <RadioGroupItem
-                                                      value={String(
-                                                        DataSourceExternalSecret_AppRoleAuthOption_SecretType.PLAIN
-                                                      )}
-                                                      disabled={!allowEdit}
-                                                    >
-                                                      {t(
-                                                        "instance.external-secret-vault.vault-auth-type.approle.secret-plain-text"
-                                                      )}
-                                                    </RadioGroupItem>
-                                                    <RadioGroupItem
-                                                      value={String(
-                                                        DataSourceExternalSecret_AppRoleAuthOption_SecretType.ENVIRONMENT
-                                                      )}
-                                                      disabled={!allowEdit}
+                                                          };
+                                                        }
+                                                        onDataSourceChange(ds);
+                                                      }}
+                                                    />
+                                                    <label
+                                                      htmlFor="appRoleSecretType"
+                                                      className="text-sm"
                                                     >
                                                       {t(
                                                         "instance.external-secret-vault.vault-auth-type.approle.secret-env-name"
                                                       )}
-                                                    </RadioGroupItem>
-                                                  </RadioGroup>
+                                                    </label>
+                                                  </FormControlRow>
                                                 )}
                                                 <Input
                                                   value={

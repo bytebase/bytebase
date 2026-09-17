@@ -194,6 +194,20 @@ behavior:
 - Required fields, disabled state, pending state, and server errors MUST remain
   understandable without color alone.
 
+### Choice Controls
+
+- Use the shared `Switch` only for an independent binary behavior: its label
+  names the behavior being enabled, such as "Use SSH tunnel" or "Sync all
+  databases". The off state MUST have a clear, meaningful result.
+- Use `RadioGroup` for two peer values where neither value is an enabled or
+  disabled version of the other, such as `TCP` versus `UDP`. Keep both values
+  visible when users need to compare them or their descriptions.
+- Use the shared `Select` dropdown for more than two mutually exclusive
+  options. It MAY also be used for two peer values when space is constrained
+  and comparison is unnecessary.
+- Do not use `SegmentedControl` for ordinary form values. Reserve it for
+  compact view or mode controls outside forms.
+
 ### Dense Horizontal Forms
 
 Multi-option connection forms MAY use horizontal fields through shared form
@@ -208,19 +222,19 @@ third column for section titles.
 - Keep concise descriptions and validation beside the control they explain.
   Long secondary guidance that would make a dense form harder to scan MAY use
   a focusable info tooltip beside the field title; validation and essential
-  status remain visible beside the control. Associate labels and radio groups
+  status remain visible beside the control. Associate labels and choice controls
   with accessible names in both layouts.
 - Put choices that determine subsequent fields first. Use one `Select` dropdown
   combining authentication methods and password sources. Do not add a separate
-  password-source selector. Keep synchronization choices visible in a
-  `SegmentedControl`.
+  password-source selector. Use a `Switch` for binary choices such as syncing
+  all databases; reveal the selected-database controls only when it is off.
 - Reveal the selected authentication method's fields below the selector.
   External sources reveal their configuration there. Preserve separate drafts
   while switching sources, and submit only the active source. Reveal dependent
   TLS, SSH, IAM, and external-source configuration below its controlling
   choice, using nested flow rather than a framed surface inside another frame.
 - Keep security modes visible; reveal their dependent fields when selected.
-  Switches, segmented controls, and radio groups align to the start of their
+  Switches, select triggers, and radio groups align to the start of their
   control column. Keep ordinary connection rows on the 16px rhythm using
   `FormFieldGroup density="compact"`, including across engine-specific field
   groups. Empty conditional groups MUST NOT reserve space. Larger gaps need a

@@ -645,10 +645,6 @@
       "user": "Nombre de usuario"
     },
     "ssh-connection": "Túnel SSH",
-    "ssh-type": {
-      "none": "Ninguno",
-      "tunnel-and-private-key": "Túnel + Clave Privada"
-    },
     "ssl": {
       "ca-cert": "Certificado de CA",
       "ca-path": "Ruta del certificado de CA",
@@ -1099,7 +1095,6 @@
           "role-id": "ID de rol de autenticación",
           "secret-env-name": "Nombre del entorno",
           "secret-id": "ID de secreto de autenticación",
-          "secret-plain-text": "Texto sin formato",
           "self": "AppRole"
         },
         "self": "Tipo de autenticación",
@@ -1262,7 +1257,6 @@
     "sample-project-instance-description-self-host": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar.",
     "sample-project-instance-title": "Pruebe una instancia de proyecto de muestra",
     "scan-interval": {
-      "default-never": "Predeterminado (nunca)",
       "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
       "min-value": "Valor mínimo {{value}} minutos",
       "self": "Intervalo de escaneo"

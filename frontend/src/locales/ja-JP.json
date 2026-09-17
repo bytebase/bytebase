@@ -645,10 +645,6 @@
       "user": "ユーザー名"
     },
     "ssh-connection": "SSH トンネル",
-    "ssh-type": {
-      "none": "なし",
-      "tunnel-and-private-key": "トンネル + 秘密鍵"
-    },
     "ssl": {
       "ca-cert": "CA証明書",
       "ca-path": "CA証明書のパス",
@@ -1099,7 +1095,6 @@
           "role-id": "認証ロールID",
           "secret-env-name": "環境変数名",
           "secret-id": "認証シークレットID",
-          "secret-plain-text": "プレーンテキスト",
           "self": "AppRole"
         },
         "self": "認証タイプ",
@@ -1262,7 +1257,6 @@
     "sample-project-instance-description-self-host": "すぐに使えるデータベースを備えたサンプルプロジェクトインスタンスを使用して、Bytebase を試すことができます。",
     "sample-project-instance-title": "サンプルプロジェクトインスタンスを試す",
     "scan-interval": {
-      "default-never": "デフォルト (なし)",
       "description": "Bytebase は定期的にインスタンスのスキーマを同期し、異常検出を実行します。",
       "min-value": "最短 {{value}} 分",
       "self": "スキャン間隔"

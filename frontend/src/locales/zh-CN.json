@@ -645,10 +645,6 @@
       "user": "用户名"
     },
     "ssh-connection": "SSH 隧道",
-    "ssh-type": {
-      "none": "不使用",
-      "tunnel-and-private-key": "隧道 + 私钥"
-    },
     "ssl": {
       "ca-cert": "CA 证书",
       "ca-path": "CA 证书路径",
@@ -1099,7 +1095,6 @@
           "role-id": "Auth role id",
           "secret-env-name": "环境变量名",
           "secret-id": "Auth secret id",
-          "secret-plain-text": "明文",
           "self": "AppRole"
         },
         "self": "认证方式",
@@ -1262,7 +1257,6 @@
     "sample-project-instance-description-self-host": "使用带有预配置数据库的示例项目实例探索 Bytebase。",
     "sample-project-instance-title": "试用示例项目实例",
     "scan-interval": {
-      "default-never": "默认（永不）",
       "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
       "min-value": "最小值 {{value}} 分钟",
       "self": "扫描间隔"

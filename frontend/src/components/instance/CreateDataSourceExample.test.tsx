@@ -6,6 +6,7 @@ import { DataSource_AuthenticationType, DataSourceType } from "@/types/proto-es/
 import { CreateDataSourceExample } from "./CreateDataSourceExample";
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key.split(".").reduce<unknown>((value, part) => (value as Record<string, unknown>)[part], enUS) }),
 }));
 vi.mock("@/types", () => ({
@@ -14,6 +15,7 @@ vi.mock("@/types", () => ({
   languageOfEngineV1: () => "sql",
 }));
 vi.mock("@/lib/clipboard", () => ({ writeTextToClipboard: vi.fn() }));
+vi.mock("@/components/ui/copy-button", () => ({ CopyButton: () => null }));
 afterEach(cleanup);
 
 test.each([

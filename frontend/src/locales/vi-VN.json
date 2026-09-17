@@ -645,10 +645,6 @@
       "user": "Người dùng"
     },
     "ssh-connection": "Đường hầm SSH",
-    "ssh-type": {
-      "none": "Không có",
-      "tunnel-and-private-key": "Đường hầm + Khóa riêng"
-    },
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
       "ca-path": "Đường dẫn chứng chỉ CA",
@@ -1099,7 +1095,6 @@
           "role-id": "ID vai trò xác thực",
           "secret-env-name": "Tên môi trường",
           "secret-id": "ID bí mật xác thực",
-          "secret-plain-text": "Văn bản thuần",
           "self": "AppRole"
         },
         "self": "Loại xác thực",
@@ -1262,7 +1257,6 @@
     "sample-project-instance-description-self-host": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng.",
     "sample-project-instance-title": "Dùng thử Phiên bản dự án mẫu",
     "scan-interval": {
-      "default-never": "Mặc định (không bao giờ)",
       "description": "Bytebase định kỳ đồng bộ lược đồ phiên bản và phát hiện bất thường.",
       "min-value": "Giá trị nhỏ nhất {{value}} phút",
       "self": "Khoảng thời gian quét"

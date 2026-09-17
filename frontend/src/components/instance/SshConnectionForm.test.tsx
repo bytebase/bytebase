@@ -63,18 +63,12 @@ describe("SshConnectionForm", () => {
     document.body.innerHTML = "";
   });
 
-  test("renders a compact segmented SSH selector", () => {
+  test("renders an SSH tunnel switch", () => {
     const { container, root } = mount(<ControlledSshConnectionForm />);
-    expect(
-      container
-        .querySelector('[role="radiogroup"]')
-        ?.classList.contains("inline-flex")
-    ).toBe(true);
-    expect(
-      container
-        .querySelector('[role="radiogroup"]')
-        ?.classList.contains("rounded-xs")
-    ).toBe(true);
+    expect(container.querySelector('[role="switch"]')).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
 
     act(() => {
       root.unmount();
@@ -83,13 +77,13 @@ describe("SshConnectionForm", () => {
 
   test("keeps tunnel selected after editing SSH fields before port is entered", () => {
     const { container, root } = mount(<ControlledSshConnectionForm />);
-    const tunnelRadio = container.querySelector(
-      'input[value="TUNNEL+PK"]'
-    ) as HTMLInputElement | null;
-    expect(tunnelRadio).not.toBeNull();
+    const tunnelSwitch = container.querySelector(
+      '[role="switch"]'
+    ) as HTMLElement | null;
+    expect(tunnelSwitch).not.toBeNull();
 
     act(() => {
-      tunnelRadio?.click();
+      tunnelSwitch?.click();
     });
 
     let userInput = container.querySelector(
@@ -103,10 +97,10 @@ describe("SshConnectionForm", () => {
 
     userInput = container.querySelector("#sshUser");
     expect(userInput).not.toBeNull();
-    expect(
-      (container.querySelector('input[value="TUNNEL+PK"]') as HTMLInputElement)
-        .checked
-    ).toBe(true);
+    expect(container.querySelector('[role="switch"]')).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
 
     act(() => {
       root.unmount();

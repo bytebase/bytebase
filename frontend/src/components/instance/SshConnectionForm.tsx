@@ -2,12 +2,13 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SecretInput } from "@/components/SecretInput";
 import {
+  FormControlRow,
   FormField,
   FormLabel,
   ResponsiveFormLayout,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Switch } from "@/components/ui/switch";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 
 const SSH_TYPES = ["NONE", "TUNNEL+PK"] as const;
@@ -77,28 +78,21 @@ export function SshConnectionForm({
     [onChange]
   );
 
-  const getSshTypeLabel = (type: SshType): string => {
-    if (type === "TUNNEL+PK") {
-      return t("data-source.ssh-type.tunnel-and-private-key");
-    }
-    return t("data-source.ssh-type.none");
-  };
-
   return (
     <div className="flex flex-col gap-4">
       <FormField title={title ?? t("data-source.ssh-connection")}>
         <div className="flex flex-col gap-4">
-          <SegmentedControl
-            value={sshType}
-            onValueChange={(value) => handleSelectType(value as SshType)}
-            ariaLabel={t("data-source.ssh-connection")}
-            options={SSH_TYPES.map((type) => ({
-              value: type,
-              label: getSshTypeLabel(type),
-            }))}
-            size="sm"
-            disabled={disabled}
-          />
+          <FormControlRow className="w-fit">
+            <Switch
+              checked={sshType === "TUNNEL+PK"}
+              onCheckedChange={(checked) =>
+                handleSelectType(checked ? "TUNNEL+PK" : "NONE")
+              }
+              aria-label={t("data-source.ssh-connection")}
+              disabled={disabled}
+            />
+            <span className="text-sm">{t("data-source.ssh-connection")}</span>
+          </FormControlRow>
           {sshType !== "NONE" && (
             <ResponsiveFormLayout>
               <fieldset className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2">

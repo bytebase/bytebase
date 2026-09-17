@@ -764,6 +764,7 @@ export function AdvancedSearch({
             "flex-1 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none",
             visibleTags.length > 0 ? "min-w-[40px]" : "min-w-[120px]"
           )}
+          autoComplete="off"
           value={inputText}
           placeholder={
             visibleTags.length > 0 ? "" : (placeholder ?? t("common.filter"))
