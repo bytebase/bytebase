@@ -9,10 +9,11 @@ afterEach(cleanup);
 
 function Form({ initial = { sid: "", serviceName: "" }, onChange = vi.fn(), allowEdit = true }) {
   const [identifier, setIdentifier] = useState(initial);
+  const [resetEvent, setResetEvent] = useState(0);
   return (
     <ValidationProvider errors={!identifier.sid && !identifier.serviceName ? { serviceName: "oracle-service" } : {}}>
-      <OracleConnectionFields {...identifier} allowEdit={allowEdit} onChange={(next) => { setIdentifier(next); onChange(next); }} />
-      <button type="button" onClick={() => setIdentifier(initial)}>Revert</button>
+      <OracleConnectionFields {...identifier} resetEvent={resetEvent} allowEdit={allowEdit} onChange={(next) => { setIdentifier(next); onChange(next); }} />
+      <button type="button" onClick={() => { setIdentifier(initial); setResetEvent((event) => event + 1); }}>Revert</button>
     </ValidationProvider>
   );
 }
@@ -63,4 +64,18 @@ test("disables the identifier and mode choices without edit permission", () => {
   for (const radio of screen.getAllByRole("radio")) {
     expect(radio.getAttribute("aria-disabled")).toBe("true");
   }
+});
+
+
+test.each([
+  { initial: { sid: "", serviceName: "sales.example.com" }, active: "instance.service-name", inactive: "instance.sid" },
+  { initial: { sid: "ORCL", serviceName: "" }, active: "instance.sid", inactive: "instance.service-name" },
+])("Revert clears hidden drafts when the saved $active value is already active", ({ initial, active, inactive }) => {
+  render(<Form initial={initial} />);
+  fireEvent.click(screen.getByRole("radio", { name: inactive }));
+  fireEvent.change(screen.getByRole("textbox", { name: inactive }), { target: { value: "discarded-draft" } });
+  fireEvent.click(screen.getByRole("radio", { name: active }));
+  fireEvent.click(screen.getByRole("button", { name: "Revert" }));
+  fireEvent.click(screen.getByRole("radio", { name: inactive }));
+  expect(screen.getByRole("textbox", { name: inactive }).getAttribute("value")).toBe("");
 });

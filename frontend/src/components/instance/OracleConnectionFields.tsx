@@ -7,8 +7,9 @@ import { ValidationField, ValidationInput } from "./ValidationField";
 type Identifier = { sid: string; serviceName: string };
 type IdentifierMode = keyof Identifier;
 
-const initialState = (source: Identifier) => ({
+const initialState = (source: Identifier, resetEvent: number) => ({
   source,
+  resetEvent,
   drafts: source,
   mode: (source.sid ? "sid" : "serviceName") as IdentifierMode,
 });
@@ -17,19 +18,27 @@ export function OracleConnectionFields({
   sid,
   serviceName,
   allowEdit,
+  resetEvent,
   onChange,
 }: Identifier & {
   allowEdit: boolean;
+  resetEvent: number;
   onChange: (identifier: Identifier) => void;
 }) {
   const { t } = useTranslation();
   const inputId = useId();
-  const [state, setState] = useState(() => initialState({ sid, serviceName }));
+  const [state, setState] = useState(() =>
+    initialState({ sid, serviceName }, resetEvent)
+  );
 
-  // External replacements (including Revert) reset drafts; our own updates
-  // record their expected source so switching preserves the inactive draft.
-  if (state.source.sid !== sid || state.source.serviceName !== serviceName) {
-    setState(initialState({ sid, serviceName }));
+  // Revert must discard inactive drafts even when the saved identifier is
+  // already active. Our own updates preserve drafts by recording their source.
+  if (
+    state.resetEvent !== resetEvent ||
+    state.source.sid !== sid ||
+    state.source.serviceName !== serviceName
+  ) {
+    setState(initialState({ sid, serviceName }, resetEvent));
   }
 
   const update = (mode: IdentifierMode, drafts: Identifier) => {
@@ -37,7 +46,7 @@ export function OracleConnectionFields({
       sid: mode === "sid" ? drafts.sid : "",
       serviceName: mode === "serviceName" ? drafts.serviceName : "",
     };
-    setState({ mode, drafts, source });
+    setState({ mode, drafts, source, resetEvent });
     onChange(source);
   };
 

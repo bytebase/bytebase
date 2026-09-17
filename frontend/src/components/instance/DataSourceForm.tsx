@@ -1850,6 +1850,7 @@ export function DataSourceForm({
                     key={dataSource.id}
                     sid={dataSource.sid ?? ""}
                     serviceName={dataSource.serviceName ?? ""}
+                    resetEvent={dataSourceResetEvent}
                     allowEdit={allowEdit}
                     onChange={update}
                   />
