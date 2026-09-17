@@ -37,7 +37,7 @@ import {
 import { useAppStore } from "@/stores/app";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
-  getDateForPbTimestampProtoEs,
+  getTimeForPbTimestampProtoEs,
   isValidDatabaseName,
   isValidInstanceName,
   isValidProjectName,
@@ -411,9 +411,9 @@ export function SQLEditorRouteShell() {
       }
     }
 
-    const title = `Query history at ${formatAbsoluteDateTime(
-      (getDateForPbTimestampProtoEs(history.createTime) as Date).getTime()
-    )}`;
+    const title = history.createTime
+      ? `Query history at ${formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(history.createTime))}`
+      : "Query history";
     const tab = getSQLEditorTabsState().addTab(
       {
         title,

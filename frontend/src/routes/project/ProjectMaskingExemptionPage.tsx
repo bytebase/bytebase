@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentUser } from "@/hooks/useAppState";
+import { useNow } from "@/hooks/useNow";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import {
   buildMemberSummary,
@@ -64,6 +65,7 @@ import {
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { getDefaultPagination, hasProjectPermissionV2 } from "@/utils";
+import { nextDaysLeftChangeAt, readDaysLeft } from "@/utils/datetime";
 import {
   batchConvertFromCELString,
   type ConditionExpression,
@@ -1085,20 +1087,28 @@ function ExemptionGrantSection({
 
   const title = useMemo(() => generateGrantTitle(grant), [grant]);
 
-  const isExpired =
-    !!grant.expirationTimestamp && grant.expirationTimestamp <= Date.now();
+  const daysLeft = grant.expirationTimestamp
+    ? readDaysLeft(grant.expirationTimestamp)
+    : undefined;
+  useNow(
+    grant.expirationTimestamp
+      ? nextDaysLeftChangeAt(grant.expirationTimestamp)
+      : undefined
+  );
+  const isExpired = daysLeft?.kind === "passed";
 
   const expiryLabel = (() => {
-    if (!grant.expirationTimestamp) return "";
-    const msRemaining = grant.expirationTimestamp - Date.now();
-    const hoursRemaining = msRemaining / (1000 * 60 * 60);
-    if (hoursRemaining < 24)
-      return t("project.masking-exemption.expires-today");
-    const days = Math.ceil(hoursRemaining / 24);
-    return t("project.masking-exemption.expires-in-days", {
-      days,
-      count: days,
-    });
+    switch (daysLeft?.kind) {
+      case "today":
+        return t("project.masking-exemption.expires-today");
+      case "days":
+        return t("project.masking-exemption.expires-in-days", {
+          days: daysLeft.days,
+          count: daysLeft.days,
+        });
+      default:
+        return "";
+    }
   })();
 
   return (

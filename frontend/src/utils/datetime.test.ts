@@ -26,8 +26,15 @@ import {
   formatOperationalDateTime,
   formatQueueTime,
   formatRelativeTime,
-  nextRelativeChangeAt,
+  hasPassed,
+  nextCountdownChangeAt,
+  nextDaysLeftChangeAt,
+  nextPassedAt,
+  nextQueueTimeChangeAt,
+  nextRelativeTimeChangeAt,
   RELATIVE_THRESHOLD_MS,
+  readCountdown,
+  readDaysLeft,
 } from "./datetime";
 
 describe("formatRelativeTime", () => {
@@ -190,48 +197,215 @@ describe("formatOperationalDateTime", () => {
   });
 });
 
-describe("nextRelativeChangeAt", () => {
+const SECOND_MS = 1_000;
+const MINUTE_MS = 60_000;
+const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
+
+// Ages around every edge the relative reading has: the "now" threshold, each
+// unit switch, the half-unit points where a rounded count turns over, and the
+// 30-day switch. Negative ages are future timestamps.
+const SAMPLED_AGES_MS = [
+  0,
+  5 * SECOND_MS,
+  9_999,
+  10 * SECOND_MS,
+  10_400,
+  10_500,
+  30 * SECOND_MS,
+  59_400,
+  59_500,
+  MINUTE_MS,
+  89 * SECOND_MS,
+  90 * SECOND_MS,
+  119 * SECOND_MS,
+  30 * MINUTE_MS,
+  59.5 * MINUTE_MS,
+  HOUR_MS,
+  1.5 * HOUR_MS,
+  23.4 * HOUR_MS,
+  DAY_MS,
+  1.2 * DAY_MS,
+  1.5 * DAY_MS,
+  29 * DAY_MS,
+  29.5 * DAY_MS,
+  30 * DAY_MS - 1,
+  30 * DAY_MS,
+  45 * DAY_MS,
+  400 * DAY_MS,
+].flatMap((ageMs) => (ageMs === 0 ? [0] : [ageMs, -ageMs]));
+
+// The contract a boundary keeps with the reading it schedules: the reading
+// holds right up to the named instant and changes at it. A boundary checked
+// on its own cannot see that it was derived from the wrong reading.
+const expectBoundaryMatchesReading = (
+  read: (tsMs: number) => string,
+  nextChangeAt: (tsMs: number) => number,
+  tsMs: number
+) => {
+  const startMs = Date.now();
+  const reading = read(tsMs);
+  const changesAtMs = nextChangeAt(tsMs);
+  if (changesAtMs === Number.POSITIVE_INFINITY) {
+    for (const laterMs of [
+      MINUTE_MS,
+      HOUR_MS,
+      DAY_MS,
+      20 * DAY_MS,
+      100 * DAY_MS,
+    ]) {
+      vi.setSystemTime(startMs + laterMs);
+      expect(read(tsMs)).toBe(reading);
+    }
+    return;
+  }
+  expect(changesAtMs).toBeGreaterThan(startMs);
+  vi.setSystemTime(startMs + Math.floor((changesAtMs - startMs) / 2));
+  expect(read(tsMs)).toBe(reading);
+  vi.setSystemTime(changesAtMs - 1);
+  expect(read(tsMs)).toBe(reading);
+  vi.setSystemTime(changesAtMs);
+  expect(read(tsMs)).not.toBe(reading);
+};
+
+describe("reading boundaries", () => {
+  const baseMs = new Date("2026-03-02T12:00:00Z").getTime();
+
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+    vi.setSystemTime(baseMs);
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  test("tracks the second while the label still counts seconds", () => {
-    expect(nextRelativeChangeAt(Date.now() - 30_000)).toBe(Date.now() + 1_000);
-  });
+  test.each(SAMPLED_AGES_MS)(
+    "names the instant the work-queue reading changes (age %i ms)",
+    (ageMs) => {
+      expectBoundaryMatchesReading(
+        formatQueueTime,
+        nextQueueTimeChangeAt,
+        baseMs - ageMs
+      );
+    }
+  );
 
-  test("waits for the turn of the minute, not a fixed minute from now", () => {
-    expect(nextRelativeChangeAt(Date.now() - 90_000)).toBe(Date.now() + 30_000);
-  });
+  test.each(SAMPLED_AGES_MS)(
+    "names the instant the relative reading changes (age %i ms)",
+    (ageMs) => {
+      expectBoundaryMatchesReading(
+        formatRelativeTime,
+        nextRelativeTimeChangeAt,
+        baseMs - ageMs
+      );
+    }
+  );
 
-  test("counts a future timestamp down to the same boundary", () => {
-    expect(nextRelativeChangeAt(Date.now() + 90_000)).toBe(Date.now() + 30_000);
-  });
-
-  test("wakes at the 30-day switch rather than at the next day", () => {
-    const ts = Date.now() - (RELATIVE_THRESHOLD_MS - 3_600_000);
-    expect(nextRelativeChangeAt(ts)).toBe(Date.now() + 3_600_000);
-  });
-
-  test.each([-90_000, 90_000])(
+  test.each([-100_000, 100_000])(
     "names the same instant on every render inside a bucket (offset %i)",
     (offsetMs) => {
       const ts = Date.now() + offsetMs;
-      const first = nextRelativeChangeAt(ts);
+      const first = nextQueueTimeChangeAt(ts);
 
       // A value that drifted with the clock would re-key the subscription on
       // every render, so the shared clock would thrash through a list.
       vi.advanceTimersByTime(100);
-      expect(nextRelativeChangeAt(ts)).toBe(first);
+      expect(nextQueueTimeChangeAt(ts)).toBe(first);
+    }
+  );
+});
+
+describe("deadline readings", () => {
+  const baseMs = new Date("2026-03-02T12:00:00Z").getTime();
+
+  // Time left before a deadline, around each edge the readings have: passing,
+  // every minute and the one-day line, and whole days beyond it.
+  const SAMPLED_REMAINING_MS = [
+    -DAY_MS,
+    -1,
+    0,
+    1,
+    30 * SECOND_MS,
+    MINUTE_MS - 1,
+    MINUTE_MS,
+    MINUTE_MS + 1,
+    90 * SECOND_MS,
+    HOUR_MS - 1,
+    HOUR_MS,
+    3 * HOUR_MS + 20 * MINUTE_MS,
+    DAY_MS - 1,
+    DAY_MS,
+    DAY_MS + 1,
+    1.5 * DAY_MS,
+    2 * DAY_MS,
+    2 * DAY_MS + 1,
+    45 * DAY_MS,
+    400 * DAY_MS,
+  ];
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(baseMs);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test.each(SAMPLED_REMAINING_MS)(
+    "names the instant the countdown changes (%i ms left)",
+    (remainingMs) => {
+      expectBoundaryMatchesReading(
+        (targetMs) => JSON.stringify(readCountdown(targetMs)),
+        nextCountdownChangeAt,
+        baseMs + remainingMs
+      );
     }
   );
 
-  test("never wakes for a label already showing an absolute date", () => {
-    const ts = Date.now() - RELATIVE_THRESHOLD_MS - 86_400_000;
-    expect(nextRelativeChangeAt(ts)).toBe(Number.POSITIVE_INFINITY);
+  test.each(SAMPLED_REMAINING_MS)(
+    "names the instant the days-left reading changes (%i ms left)",
+    (remainingMs) => {
+      expectBoundaryMatchesReading(
+        (targetMs) => JSON.stringify(readDaysLeft(targetMs)),
+        nextDaysLeftChangeAt,
+        baseMs + remainingMs
+      );
+    }
+  );
+
+  test.each(SAMPLED_REMAINING_MS)(
+    "names the instant a deadline passes (%i ms left)",
+    (remainingMs) => {
+      expectBoundaryMatchesReading(
+        (targetMs) => String(hasPassed(targetMs)),
+        nextPassedAt,
+        baseMs + remainingMs
+      );
+    }
+  );
+
+  test("counts down in hours and minutes within the last day", () => {
+    expect(
+      readCountdown(baseMs + 3 * HOUR_MS + 20 * MINUTE_MS + 59_999)
+    ).toEqual({ kind: "within", hours: 3, minutes: 20 });
+    expect(readCountdown(baseMs + DAY_MS)).toEqual({ kind: "beyondDay" });
+    expect(readCountdown(baseMs)).toEqual({
+      kind: "within",
+      hours: 0,
+      minutes: 0,
+    });
+    expect(readCountdown(baseMs - 1)).toEqual({ kind: "passed" });
+  });
+
+  test("rounds whole days up, and treats the deadline itself as passed", () => {
+    expect(readDaysLeft(baseMs + DAY_MS + 1)).toEqual({
+      kind: "days",
+      days: 2,
+    });
+    expect(readDaysLeft(baseMs + DAY_MS)).toEqual({ kind: "days", days: 1 });
+    expect(readDaysLeft(baseMs + DAY_MS - 1)).toEqual({ kind: "today" });
+    expect(readDaysLeft(baseMs)).toEqual({ kind: "passed" });
   });
 });

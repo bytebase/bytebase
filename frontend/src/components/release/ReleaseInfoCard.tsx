@@ -6,11 +6,11 @@ import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { cn } from "@/lib/utils";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { State, VCSType } from "@/types/proto-es/v1/common_pb";
 import type { Release } from "@/types/proto-es/v1/release_service_pb";
 import { Release_Type } from "@/types/proto-es/v1/release_service_pb";
 import { isValidReleaseName } from "@/types/release";
-import { getDateForPbTimestampProtoEs } from "@/types/timestamp";
 
 const MAX_DISPLAYED_RELEASE_FILES = 4;
 
@@ -97,7 +97,7 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
   const { t } = useTranslation();
   const displayedFiles = release.files.slice(0, MAX_DISPLAYED_RELEASE_FILES);
   const createdTimeMs = release.createTime
-    ? getDateForPbTimestampProtoEs(release.createTime)?.getTime()
+    ? getTimeForPbTimestampProtoEs(release.createTime)
     : undefined;
 
   return (

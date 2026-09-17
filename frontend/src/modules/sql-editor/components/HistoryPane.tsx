@@ -27,7 +27,7 @@ import {
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
-import { DEBOUNCE_SEARCH_DELAY, getDateForPbTimestampProtoEs } from "@/types";
+import { DEBOUNCE_SEARCH_DELAY, getTimeForPbTimestampProtoEs } from "@/types";
 import type { QueryHistory } from "@/types/proto-es/v1/query_history_service_pb";
 import {
   extractProjectResourceName,
@@ -121,11 +121,11 @@ export function HistoryPane() {
     [resetPageToken, historyQuery]
   );
 
-  // Feeds a tab title, which cannot host a tooltip, so it stays full precision.
+  // A tab title cannot host a tooltip, so it names the time in full.
   const titleOfQueryHistory = (h: QueryHistory) =>
-    formatAbsoluteDateTime(
-      (getDateForPbTimestampProtoEs(h.createTime) as Date).getTime()
-    );
+    h.createTime
+      ? `Query history at ${formatAbsoluteDateTime(getTimeForPbTimestampProtoEs(h.createTime))}`
+      : "Query history";
 
   const handleHistoryClick = async (history: QueryHistory) => {
     const { statement } = history;
@@ -138,7 +138,7 @@ export function HistoryPane() {
     } else {
       tabsState.addTab(
         {
-          title: `Query history at ${titleOfQueryHistory(history)}`,
+          title: titleOfQueryHistory(history),
           statement,
         },
         /* beside */ true
@@ -206,15 +206,13 @@ export function HistoryPane() {
     >
       <div className="w-full flex flex-row justify-between items-center">
         <div className="flex items-start gap-x-1">
-          <HumanizeTs
-            className="text-xs text-control-placeholder"
-            mode="compact"
-            ts={
-              (
-                getDateForPbTimestampProtoEs(history.createTime) as Date
-              ).getTime() / 1000
-            }
-          />
+          {history.createTime && (
+            <HumanizeTs
+              className="text-xs text-control-placeholder"
+              mode="compact"
+              ts={getTimeForPbTimestampProtoEs(history.createTime) / 1000}
+            />
+          )}
         </div>
         <div className="flex items-center gap-x-1">
           <Button

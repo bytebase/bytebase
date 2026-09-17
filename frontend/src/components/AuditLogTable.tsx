@@ -13,6 +13,7 @@ import {
   type SearchParams,
   type ValueOption,
 } from "@/components/AdvancedSearch";
+import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
 import { Badge } from "@/components/ui/badge";
@@ -50,7 +51,7 @@ import {
   userNamePrefix,
   workloadIdentityNamePrefix,
 } from "@/stores/modules/v1/common";
-import { getDateForPbTimestampProtoEs } from "@/types";
+import { getTimeForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import type {
   AuditLog,
@@ -68,11 +69,7 @@ import { RolloutService } from "@/types/proto-es/v1/rollout_service_pb";
 import { SQLService } from "@/types/proto-es/v1/sql_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
-import {
-  formatAbsoluteDateTime,
-  getDefaultPagination,
-  humanizeDurationV1,
-} from "@/utils";
+import { getDefaultPagination, humanizeDurationV1 } from "@/utils";
 import { celString } from "@/utils/v1/celLiteral";
 
 dayjs.extend(utc);
@@ -445,8 +442,13 @@ function useColumnDefs(): ColumnDef[] {
         resizable: true,
         sortable: true,
         render: (log: AuditLog) =>
-          formatAbsoluteDateTime(
-            getDateForPbTimestampProtoEs(log.createTime)?.getTime() ?? 0
+          log.createTime ? (
+            <HumanizeTs
+              mode="datetime"
+              ts={getTimeForPbTimestampProtoEs(log.createTime) / 1000}
+            />
+          ) : (
+            "-"
           ),
       },
       {

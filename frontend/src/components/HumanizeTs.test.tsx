@@ -1,21 +1,26 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (k: string) => k, i18n: { language: "en" } }),
 }));
 
-vi.mock("@/utils/datetime", () => ({
+const formatters = vi.hoisted(() => ({
   // Age-based so a label that never re-renders is visibly distinguishable from
   // one that keeps up with the clock.
   formatQueueTime: (ms: number) => `queue:${Date.now() - ms}`,
-  nextRelativeChangeAt: (ms: number) => ms + 60_000,
+  formatRelativeTime: (ms: number) => `relative:${Date.now() - ms}`,
   formatCompactDateTime: (ms: number) => `compact:${ms}`,
   formatOperationalDateTime: (ms: number) => `operational:${ms}`,
-  formatAbsoluteDateTime: (ms: number) => `absolute:${ms}`,
-  formatRelativeTime: (ms: number) => `relative:${Date.now() - ms}`,
+  formatAbsoluteDateTime: vi.fn((ms: number) => `absolute:${ms}`),
+  // Distinct offsets, so a reading scheduled on the other reading's boundary
+  // wakes at the wrong time and shows it.
+  nextQueueTimeChangeAt: (ms: number) => ms + 60_000,
+  nextRelativeTimeChangeAt: (ms: number) => ms + 45_000,
 }));
+
+vi.mock("@/utils/datetime", () => formatters);
 
 import { HumanizeTs } from "./HumanizeTs";
 
@@ -23,160 +28,124 @@ import { HumanizeTs } from "./HumanizeTs";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+const roots: ReturnType<typeof createRoot>[] = [];
+
 const mount = () => {
   const container = document.createElement("div");
   document.body.appendChild(container);
-  return { container, root: createRoot(container) };
+  const root = createRoot(container);
+  roots.push(root);
+  return { container, root };
 };
 
-const focus = async (el: Element | null) => {
+const openTooltip = async (el: Element | null) => {
   await act(async () => {
     el?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
     vi.advanceTimersByTime(100);
   });
 };
 
+const overlayText = () =>
+  document.getElementById("bb-react-layer-overlay")?.textContent ?? "";
+
+const secondsAgo = (seconds: number) =>
+  Math.floor(Date.now() / 1000) - seconds;
+
 describe("HumanizeTs", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+    formatters.formatAbsoluteDateTime.mockClear();
+  });
+
   afterEach(() => {
+    for (const root of roots.splice(0)) {
+      act(() => root.unmount());
+    }
     vi.useRealTimers();
     document.body.innerHTML = "";
   });
 
-  test("renders the work-queue form by default and the full time on hover", async () => {
-    vi.useFakeTimers();
-    const { container, root } = mount();
+  test.each([
+    [undefined, "queue:"],
+    ["compact", "compact:"],
+    ["operational", "operational:"],
+  ] as const)(
+    "renders the %s reading and restores the full time on hover",
+    async (mode, prefix) => {
+      const { container, root } = mount();
+      act(() => root.render(<HumanizeTs mode={mode} ts={1000} />));
+      expect(container.textContent).toContain(prefix);
 
-    // `ts` is in seconds; both labels are computed from milliseconds.
+      await openTooltip(container.firstElementChild);
+      expect(overlayText()).toContain("absolute:1000000");
+    }
+  );
+
+  test("builds the full time only once the tooltip opens", async () => {
+    const { container, root } = mount();
     act(() => root.render(<HumanizeTs ts={1000} />));
-    expect(container.textContent).toContain("queue:");
+    expect(formatters.formatAbsoluteDateTime).not.toHaveBeenCalled();
 
-    await focus(container.querySelector("span"));
-
-    const overlay = document.getElementById("bb-react-layer-overlay");
-    expect(overlay?.textContent).toContain("absolute:1000000");
-
-    act(() => root.unmount());
+    await openTooltip(container.firstElementChild);
+    expect(formatters.formatAbsoluteDateTime).toHaveBeenCalledWith(1000000);
   });
 
-  test("renders the compact history tier and keeps full precision on hover", async () => {
-    vi.useFakeTimers();
+  test("renders one element, so layout classes reach the box that lays out", () => {
     const { container, root } = mount();
-
-    act(() => root.render(<HumanizeTs mode="compact" ts={1000} />));
-    expect(container.textContent).toContain("compact:1000000");
-
-    await focus(container.querySelector("span"));
-
-    const overlay = document.getElementById("bb-react-layer-overlay");
-    expect(overlay?.textContent).toContain("absolute:1000000");
-
-    act(() => root.unmount());
+    act(() =>
+      root.render(<HumanizeTs className="block truncate" ts={1000} />)
+    );
+    expect(container.childElementCount).toBe(1);
+    expect(container.firstElementChild?.className).toContain("block truncate");
+    expect(container.firstElementChild?.childElementCount).toBe(0);
   });
 
-  test("names the timezone inline for a time the reader will act on", async () => {
-    vi.useFakeTimers();
+  test("offers the age on a full cell, and keeps it counting while open", async () => {
     const { container, root } = mount();
-
-    act(() => root.render(<HumanizeTs mode="operational" ts={1000} />));
-    expect(container.textContent).toContain("operational:1000000");
-
-    await focus(container.querySelector("span"));
-
-    const overlay = document.getElementById("bb-react-layer-overlay");
-    expect(overlay?.textContent).toContain("absolute:1000000");
-
-    act(() => root.unmount());
-  });
-
-  test("offers the age on a full cell, which is the reading its label lacks", async () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
-    const { container, root } = mount();
-    const ts = Math.floor(Date.now() / 1000) - 30;
-
-    act(() => root.render(<HumanizeTs mode="datetime" ts={ts} />));
+    act(() => root.render(<HumanizeTs mode="datetime" ts={secondsAgo(30)} />));
     expect(container.textContent).toContain("absolute:");
 
-    await focus(container.querySelector("span"));
-
-    const overlay = document.getElementById("bb-react-layer-overlay");
+    await openTooltip(container.firstElementChild);
     // The tooltip opens 100ms after focus, which the age already reflects.
-    expect(overlay?.textContent).toContain("relative:30100");
+    expect(overlayText()).toContain("relative:30100");
 
-    // An age that froze at whatever the row last rendered would be worse than
-    // no age at all, so the open tooltip holds its own place on the clock.
+    // The relative reading's own boundary is 45s after the timestamp.
     act(() => {
-      vi.advanceTimersByTime(60_000);
+      vi.advanceTimersByTime(15_000);
     });
-    expect(overlay?.textContent).toContain("relative:90100");
-
-    act(() => root.unmount());
+    expect(overlayText()).toContain("relative:45100");
   });
 
   test("omits the tooltip when tooltip is false", async () => {
-    vi.useFakeTimers();
     const { container, root } = mount();
-
     act(() => root.render(<HumanizeTs ts={1000} tooltip={false} />));
     expect(container.textContent).toContain("queue:");
 
-    await focus(container.querySelector("span"));
-
-    const overlay = document.getElementById("bb-react-layer-overlay");
-    expect(overlay?.textContent ?? "").not.toContain("absolute:");
-
-    act(() => root.unmount());
-  });
-});
-
-describe("HumanizeTs freshness", () => {
-  afterEach(() => {
-    vi.useRealTimers();
-    document.body.innerHTML = "";
+    await openTooltip(container.firstElementChild);
+    expect(overlayText()).not.toContain("absolute:");
   });
 
   test("keeps a mounted work-queue label up with the clock", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
     const { container, root } = mount();
-    const ts = Math.floor(Date.now() / 1000) - 30;
-
-    act(() => root.render(<HumanizeTs ts={ts} tooltip={false} />));
+    act(() => root.render(<HumanizeTs ts={secondsAgo(30)} tooltip={false} />));
     expect(container.textContent).toBe("queue:30000");
 
+    // The work-queue reading's own boundary is 60s after the timestamp.
     act(() => {
-      vi.advanceTimersByTime(60_000);
+      vi.advanceTimersByTime(30_000);
     });
-    expect(container.textContent).toBe("queue:90000");
-
-    act(() => root.unmount());
+    expect(container.textContent).toBe("queue:60000");
   });
 
   test.each(["compact", "datetime", "operational"] as const)(
     "puts no %s display on the shared clock",
     (mode) => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
       const { root } = mount();
-      const ts = Math.floor(Date.now() / 1000) - 30;
-
-      act(() => root.render(<HumanizeTs mode={mode} ts={ts} tooltip={false} />));
+      act(() =>
+        root.render(<HumanizeTs mode={mode} ts={secondsAgo(30)} tooltip={false} />)
+      );
       expect(vi.getTimerCount()).toBe(0);
-
-      act(() => root.unmount());
     }
   );
-
-  test("releases the clock when the last subscriber unmounts", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
-    const { root } = mount();
-    const ts = Math.floor(Date.now() / 1000) - 30;
-
-    act(() => root.render(<HumanizeTs ts={ts} tooltip={false} />));
-    expect(vi.getTimerCount()).toBe(1);
-
-    act(() => root.unmount());
-    expect(vi.getTimerCount()).toBe(0);
-  });
 });
