@@ -421,9 +421,25 @@ its neighbours and stays legible next to them. It does not belong in
 `components/ui/styles.stylex.ts`: that file holds the shared control-size scale every primitive
 reads, and `frontend/AGENTS.md` sends *repeated* measurements there — this one has a single
 consumer, and filing a log-viewer column width in the design system would make it look like a token
-other components should reach for. The index moves from `w-6` to `min-w-6` for the same reason:
-a fixed 24px clips at four digits, which `MAX_RENDERED_ITEMS` and D13 together can reach. The UX
-contract already asks for right-aligned numerics in tables; these are the same columns in a
+other components should reach for.
+
+A per-row minimum is not enough, and an earlier draft of this decision got that wrong twice. It
+moved the index from `w-6` to `min-w-6` so four digits would not clip, and gave the relative time a
+minimum of seven characters — but each row is its own flex container, so a minimum only sets a
+floor. A section that reaches row 1000, or one whose run lasted long enough for `+1234.56s`, widens
+*that row's* cell and pushes its chevron and statement right, while every other row stays where it
+was. The result is the ragged edge this decision exists to remove, reintroduced by the fix for it,
+and worst in D13's sparse window, where a four-digit failure sits directly beneath three-digit
+neighbours.
+
+So both columns are sized **once per section, from the widest value that section will actually
+render**, and every row uses that width — not a minimum. `SectionContent` already knows the numbers
+it is about to draw, including the real index D13 gives the marked row, so it measures them, writes
+the two widths onto the scroll box as custom properties, and the cells read them. One write per
+render, no per-row variation possible. The floors stay as floors: 24px for the index, seven
+characters for the time, so a short section looks exactly as it does now.
+
+The UX contract already asks for right-aligned numerics in tables; these are the same columns in a
 different frame. This straightens the statement column too, which is the part of the fix that
 improves the log as it stands today.
 
@@ -479,6 +495,9 @@ behavior of this function:
 - `model.test.ts` for the marking edges: a failed command with neither `statement` nor a usable
   `range` is still marked, so D13 renders and scrolls to its error, and no cap change follows
   because it has no block.
+- Column widths (D15): a section containing row 1000, and one containing a `+1234.56s`, put every
+  row's fold control at the same x — the wide value sets the column for all of them, including in
+  D13's sparse window where a four-digit index sits under three-digit neighbours.
 - Row identity (D14): two `COMMAND_EXECUTE` entries from the same replica sharing a timestamp and
   carrying `statement` rather than `range` — the SDL shape — get distinct keys, so folding one
   leaves the other open; and a row's key is unchanged by a second replica appearing or a retry
