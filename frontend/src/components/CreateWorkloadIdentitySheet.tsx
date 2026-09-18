@@ -927,7 +927,7 @@ function WorkloadIdentityForm({
             <Button
               type="button"
               appearance="link"
-              size="xs"
+              size="md"
               className="h-auto p-0 text-sm"
               onClick={() => setShowAdvanced(!showAdvanced)}
             >

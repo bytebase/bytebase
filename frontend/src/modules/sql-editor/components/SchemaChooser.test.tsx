@@ -66,13 +66,21 @@ vi.mock("./ConnectChooser", () => ({
     options,
     isChosen,
     value,
+    dropdownMinWidth,
+    triggerClassName,
   }: {
     placeholder: string;
     options: { value: string; label: string }[];
     isChosen: boolean;
     value: string;
+    dropdownMinWidth?: number;
+    triggerClassName?: string;
   }) => (
-    <div data-testid="connect-chooser">
+    <div
+      data-testid="connect-chooser"
+      data-dropdown-min-width={dropdownMinWidth}
+      data-trigger-class-name={triggerClassName}
+    >
       <span data-testid="placeholder">{placeholder}</span>
       <span data-testid="value">{value}</span>
       <span data-testid="is-chosen">{String(isChosen)}</span>
@@ -151,6 +159,18 @@ describe("SchemaChooser", () => {
     expect(
       container.querySelector("[data-testid='connect-chooser']")
     ).not.toBeNull();
+    unmount();
+  });
+
+  test("keeps the schema menu wide enough for option labels", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <SchemaChooser />
+    );
+    render();
+
+    const chooser = container.querySelector("[data-testid='connect-chooser']");
+    expect(chooser?.getAttribute("data-dropdown-min-width")).toBe("192");
+    expect(chooser?.getAttribute("data-trigger-class-name")).toBeNull();
     unmount();
   });
 

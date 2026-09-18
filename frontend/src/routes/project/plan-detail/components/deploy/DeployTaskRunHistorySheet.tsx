@@ -119,9 +119,9 @@ function TaskRunHistoryItem({
     <div className="rounded-sm border">
       <Button
         appearance="secondary"
-        size="xs"
+        size="md"
         aria-expanded={isExpanded}
-        className="flex w-full items-center gap-x-2 rounded-sm px-3 py-2 text-left hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
+        className="h-auto w-full items-center justify-start gap-x-2 rounded-sm px-3 py-2 text-left whitespace-normal hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
         onClick={onToggle}
         type="button"
       >

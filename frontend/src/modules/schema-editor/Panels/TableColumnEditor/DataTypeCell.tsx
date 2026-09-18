@@ -174,11 +174,11 @@ export function DataTypeCell({
             {suggestions.map((type) => (
               <Button
                 appearance="secondary"
-                size="xs"
+                size="md"
                 key={type}
                 type="button"
                 className={cn(
-                  "block w-full px-3 py-1 text-left text-sm hover:bg-control-bg",
+                  "h-auto w-full justify-start px-3 py-1 text-left text-sm hover:bg-control-bg",
                   type === value && "bg-accent/5 text-accent"
                 )}
                 // onMouseDown (not onClick) so selection happens before the

@@ -27,10 +27,10 @@ export function DeployTaskFilter({
         return (
           <Button
             appearance="secondary"
-            size="xs"
+            size="md"
             key={status}
             className={[
-              "inline-flex items-center gap-1 rounded-full border px-2 py-1",
+              "h-auto inline-flex items-center gap-1 rounded-full border px-2 py-1",
               checked
                 ? "border-accent bg-accent/10"
                 : "border-control-border bg-background",

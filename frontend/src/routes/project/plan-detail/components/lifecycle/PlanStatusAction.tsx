@@ -151,7 +151,7 @@ export function PlanStatusAction({
 function GateLabel({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <span className="min-w-0 flex-1">
-      <span className="block text-sm font-medium leading-tight text-main">
+      <span className="block break-words text-sm font-medium leading-tight text-main">
         {title}
       </span>
       {subtitle && (
@@ -182,8 +182,8 @@ function GateRow({
     <div>
       <Button
         appearance="secondary"
-        size="xs"
-        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-control-bg/40"
+        size="md"
+        className="h-auto w-full items-center justify-start gap-3 px-4 py-3 text-left whitespace-normal hover:bg-control-bg/40"
         onClick={onToggle}
         type="button"
       >

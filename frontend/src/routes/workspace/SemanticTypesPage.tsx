@@ -642,7 +642,7 @@ function MaskingAlgorithmDrawer({
               {maskingTypeOptions.map((opt) => (
                 <Button
                   appearance="secondary"
-                  size="xs"
+                  size="md"
                   key={opt.value}
                   className={`px-3 py-2 text-sm border rounded-sm transition-colors ${
                     maskingType === opt.value

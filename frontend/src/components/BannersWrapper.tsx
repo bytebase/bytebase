@@ -252,7 +252,7 @@ function BannerUpgradeSubscription() {
                       <Button
                         type="button"
                         appearance="link"
-                        size="xs"
+                        size="md"
                         className="mr-1 h-auto p-0 whitespace-nowrap text-sm text-main underline hover:opacity-60"
                         onClick={() => setShowModal(true)}
                       >

@@ -141,7 +141,7 @@ export function DataSourceSection({
           <Button
             type="button"
             appearance="secondary"
-            size="xs"
+            size="md"
             className={`h-auto pb-2 px-1 text-sm font-medium border-b-2 ${
               dataSourceEditState.editingDataSourceId === adminDataSource.id
                 ? "border-accent text-accent"
@@ -157,7 +157,7 @@ export function DataSourceSection({
               <Button
                 type="button"
                 appearance="secondary"
-                size="xs"
+                size="md"
                 className={`h-auto pb-2 px-1 text-sm font-medium border-b-2 ${
                   dataSourceEditState.editingDataSourceId === ds.id
                     ? "border-accent text-accent"
@@ -200,7 +200,7 @@ export function DataSourceSection({
             <Button
               type="button"
               appearance="secondary"
-              size="xs"
+              size="md"
               className="h-auto px-1 pb-2 text-control-light hover:text-main"
               disabled={!allowUpdate}
               onClick={handleCreateRODataSource}

@@ -1083,9 +1083,9 @@ export function AgentWindow() {
                       <div className="flex items-start gap-x-2">
                         <Button
                           appearance="secondary"
-                          size="xs"
+                          size="md"
                           type="button"
-                          className="min-w-0 flex-1 text-left disabled:cursor-not-allowed disabled:opacity-60"
+                          className="h-auto min-w-0 flex-1 flex-col items-start p-0 text-left whitespace-normal disabled:cursor-not-allowed disabled:opacity-60"
                           disabled={
                             !useAgentStore.getState().canSelectChat(chat.id)
                           }
@@ -1095,13 +1095,13 @@ export function AgentWindow() {
                           onClick={() => handleChatRowClick(chat.id)}
                         >
                           <div
-                            className="truncate font-medium"
+                            className="w-full truncate font-medium"
                             data-agent-chat-title
                           >
                             {getChatLabel(chat)}
                           </div>
                           <span
-                            className={`mt-1 block truncate text-xs ${
+                            className={`mt-1 block w-full truncate text-xs ${
                               chat.id === currentChatId
                                 ? "text-accent/80"
                                 : "text-control-light"
@@ -1245,7 +1245,7 @@ function ConfirmDialog({
           ) : (
             <Button
               appearance="secondary"
-              size="xs"
+              size="sm"
               className="rounded-xs border px-2 py-1.5 text-xs font-medium text-control-light hover:bg-background"
               onClick={(event) => event.stopPropagation()}
               {...triggerProps}
@@ -1271,8 +1271,8 @@ function ConfirmDialog({
             render={
               <Button
                 appearance="secondary"
-                size="xs"
-                className="rounded-xs border px-3 py-1.5 text-sm font-medium text-control-light hover:bg-control-bg"
+                size="md"
+                className="h-auto rounded-xs border px-3 py-1.5 text-sm font-medium text-control-light hover:bg-control-bg"
               >
                 {t("common.cancel")}
               </Button>
@@ -1282,8 +1282,8 @@ function ConfirmDialog({
             render={
               <Button
                 appearance="secondary"
-                size="xs"
-                className="rounded-xs bg-accent px-3 py-1.5 text-sm font-medium text-accent-text hover:bg-accent-hover"
+                size="md"
+                className="h-auto rounded-xs bg-accent px-3 py-1.5 text-sm font-medium text-accent-text hover:bg-accent-hover"
                 onClick={onConfirm}
               >
                 {t("common.confirm")}

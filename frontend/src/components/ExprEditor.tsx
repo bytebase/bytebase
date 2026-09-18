@@ -367,7 +367,7 @@ function SearchableSelect({
         type="button"
         appearance="outline"
         size="md"
-        className="w-full bg-background text-left text-control"
+        className="w-full justify-start bg-background text-left text-control"
         disabled={disabled}
         onClick={handleOpen}
       >
@@ -758,7 +758,7 @@ function MultiCheckSelect({
         size="xs"
         className={cn(
           VALUE_MULTI_FIELD_CLASS,
-          "h-auto w-full flex-wrap text-left hover:bg-control-bg disabled:pointer-events-none"
+          "h-auto w-full flex-wrap text-left whitespace-normal hover:bg-control-bg disabled:pointer-events-none"
         )}
         disabled={disabled}
         onClick={() => setOpen(!open)}
@@ -1086,7 +1086,7 @@ function ValueInput({
       return (
         <Input
           type="number"
-          className="max-w-20"
+          className="w-full"
           value={getNumberValue()}
           disabled={readonly}
           onChange={(e) => setNumberValue(Number(e.target.value))}
@@ -1107,7 +1107,7 @@ function ValueInput({
             if (val != null) setBooleanValue(val === "true");
           }}
         >
-          <SelectTrigger className="min-w-24">
+          <SelectTrigger className="w-full">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1119,7 +1119,7 @@ function ValueInput({
     }
     return (
       <Input
-        className="min-w-28"
+        className="w-full"
         value={getStringValue()}
         disabled={readonly}
         onChange={(e) => setStringValue(e.target.value)}
@@ -1155,7 +1155,7 @@ function ValueInput({
           else setStringValue(val);
         }}
       >
-        <SelectTrigger className="min-w-28">
+        <SelectTrigger className="w-full">
           <SelectValue placeholder={t("cel.condition.select-value")}>
             {(value: string | null) => {
               if (!value) return null;
@@ -1237,7 +1237,7 @@ function ConditionRow({
         groupPath={groupPath}
         operandIndex={operandIndex}
       />
-      <div className="flex-1 min-w-0">
+      <div className="w-56 shrink-0">
         <ValueInput
           expr={expr}
           groupPath={groupPath}
@@ -1248,7 +1248,7 @@ function ConditionRow({
         <Button
           type="button"
           appearance="secondary"
-          size="xs"
+          size="sm"
           className="shrink-0 text-control-placeholder hover:text-control hover:bg-control-bg"
           onClick={() =>
             doUpdate((group) => {
@@ -1300,7 +1300,7 @@ function RawStringEditor({
         <Button
           type="button"
           appearance="secondary"
-          size="xs"
+          size="sm"
           className="shrink-0 text-control-placeholder hover:text-control hover:bg-control-bg"
           onClick={() =>
             doUpdate((group) => {
@@ -1508,8 +1508,8 @@ function ConditionGroup({
           <Button
             type="button"
             appearance="secondary"
-            size="xs"
-            className="h-auto px-1.5 py-0.5 text-sm text-control-light hover:bg-control-bg"
+            size="md"
+            className="h-auto gap-1 px-1.5 py-0.5 text-sm text-control-light hover:bg-control-bg"
             disabled={readonly}
             onClick={addCondition}
           >
@@ -1519,8 +1519,8 @@ function ConditionGroup({
           <Button
             type="button"
             appearance="secondary"
-            size="xs"
-            className="h-auto px-1.5 py-0.5 text-sm text-control-light hover:bg-control-bg"
+            size="md"
+            className="h-auto gap-1 px-1.5 py-0.5 text-sm text-control-light hover:bg-control-bg"
             disabled={readonly}
             onClick={addRawString}
           >
@@ -1535,8 +1535,8 @@ function ConditionGroup({
           <Button
             type="button"
             appearance="secondary"
-            size="xs"
-            className="h-auto px-1.5 py-0.5 text-sm hover:bg-control-bg"
+            size="md"
+            className="h-auto gap-1 px-1.5 py-0.5 text-sm hover:bg-control-bg"
             disabled={readonly}
             onClick={addCondition}
           >
@@ -1546,8 +1546,8 @@ function ConditionGroup({
           <Button
             type="button"
             appearance="secondary"
-            size="xs"
-            className="h-auto px-1.5 py-0.5 text-sm hover:bg-control-bg"
+            size="md"
+            className="h-auto gap-1 px-1.5 py-0.5 text-sm hover:bg-control-bg"
             disabled={readonly}
             onClick={addConditionGroup}
           >
@@ -1561,8 +1561,8 @@ function ConditionGroup({
             <Button
               type="button"
               appearance="secondary"
-              size="xs"
-              className="h-auto px-1.5 py-0.5 text-sm hover:bg-control-bg"
+              size="md"
+              className="h-auto gap-1 px-1.5 py-0.5 text-sm hover:bg-control-bg"
               disabled={readonly}
               onClick={addRawString}
             >

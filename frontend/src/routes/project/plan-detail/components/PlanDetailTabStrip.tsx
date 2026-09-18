@@ -67,10 +67,10 @@ export function PlanDetailTabItem({
     >
       <Button
         appearance="secondary"
-        size="xs"
+        size="md"
         aria-label={accessibleLabel}
         className={cn(
-          "flex min-h-9 min-w-0 items-center gap-2 px-4 py-2 text-left",
+          "flex min-h-9 min-w-0 items-center justify-start gap-2 px-4 py-2 text-left",
           boundedWidth ? "flex-1" : "shrink-0"
         )}
         onClick={onSelect}
