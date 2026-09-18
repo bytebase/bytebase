@@ -68,16 +68,26 @@ const mount = (probes: ProbeSpec[]) => {
   return { root, renders, values };
 };
 
+// The clock's state is the page's: it has no reset, so a test that rewound the
+// wall clock would hand the next one a clock stepped backward -- the very
+// condition the clock exists to detect, and it would detect it. Time only
+// moves forward here, as it does on a page. Each test starts a day after the
+// last one *ended*, since a test that waits out the timer ceiling ends weeks
+// after it began.
+let testStartMs = Date.UTC(2026, 2, 2, 12);
+
 describe("useTimeReading", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+    vi.setSystemTime(testStartMs);
   });
 
   afterEach(() => {
     for (const root of roots.splice(0)) {
       act(() => root.unmount());
     }
+    // Read while the fake clock still holds where this test reached.
+    testStartMs = Date.now() + 86_400_000;
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
@@ -200,15 +210,22 @@ describe("useTimeReading", () => {
     expect(renders[1]).toBeGreaterThanOrEqual(10);
   });
 
-  test("holds one timer however often it re-arms, and none once empty", () => {
-    const { root } = mount([{ changesAtMs: () => Date.now() + 60_000 }]);
+  test("keeps the clock for the displays that remain, and stops for none", () => {
+    const staying = mount([{ changesAtMs: () => Date.now() + 60_000 }]);
     expect(vi.getTimerCount()).toBe(1);
 
-    const nearer = mount([{ changesAtMs: () => Date.now() + 1_000 }]);
+    // A nearer deadline re-arms: one timer for the lot, not one per arm.
+    const leaving = mount([{ changesAtMs: () => Date.now() + 1_000 }]);
     expect(vi.getTimerCount()).toBe(1);
 
-    act(() => nearer.root.unmount());
-    act(() => root.unmount());
+    act(() => leaving.root.unmount());
+    expect(vi.getTimerCount()).toBe(1);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(staying.renders).toEqual([2]);
+
+    act(() => staying.root.unmount());
     expect(vi.getTimerCount()).toBe(0);
   });
 
@@ -295,33 +312,38 @@ describe("useTimeReading", () => {
     expect(renders[0]).toBe(afterStep + 1);
   });
 
-  test("wakes every display when the wall clock steps backward", () => {
-    // Each boundary was computed on the later clock; on the earlier one it can
-    // be far off in either direction.
-    const deadlineMs = Date.now() + 5 * 60_000;
-    const { renders } = mount([{ changesAtMs: () => deadlineMs }]);
+  test("reads a clock that has not moved as forward, not backward", () => {
+    // A boundary already past arms at no delay, so the tick lands in the very
+    // millisecond the clock armed in. Standing still is not a step backward,
+    // and waking the display that is not due for it would be a wake for
+    // nothing.
+    const { renders } = mount([
+      { changesAtMs: () => Date.now() + 60_000 },
+      { changesAtMs: () => Date.now() - 1 },
+    ]);
 
-    vi.setSystemTime(Date.now() - 10 * 60_000);
     act(() => {
-      vi.advanceTimersByTime(60_000);
+      vi.advanceTimersToNextTimer();
     });
-    expect(renders[0]).toBe(2);
+    expect(renders[0]).toBe(1);
   });
 
-  test("leaves a settled display alone when the wall clock steps backward", () => {
-    // A reading settled for good holds no subscription, so the step cannot
-    // reach it -- the price of a settled display costing nothing.
+  test("wakes the subscribed displays when the clock steps back, and only those", () => {
+    // Each boundary was computed on the later clock; on the earlier one it can
+    // be far off in either direction. A reading settled for good holds no
+    // subscription, so the step cannot reach it -- the price of a settled
+    // display costing nothing.
+    const deadlineMs = Date.now() + 5 * 60_000;
     const { renders } = mount([
       { changesAtMs: () => Number.POSITIVE_INFINITY },
-      { changesAtMs: () => Date.now() + 5 * 60_000 },
+      { changesAtMs: () => deadlineMs },
     ]);
 
     vi.setSystemTime(Date.now() - 10 * 60_000);
     act(() => {
       vi.advanceTimersByTime(60_000);
     });
-    expect(renders[1]).toBe(2);
-    expect(renders[0]).toBe(1);
+    expect(renders).toEqual([1, 2]);
   });
 
   test("never stretches the wake gap past its bound after a clock step", () => {
