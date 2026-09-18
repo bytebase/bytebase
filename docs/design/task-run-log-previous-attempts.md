@@ -195,6 +195,8 @@ Re-running a failed task therefore does **not** put the old run into Previous
 attempts; it starts a new run whose log begins empty, and the failed run moves
 into the history sheet with its own log intact.
 
+![A retry and a re-run](task-run-log-previous-attempts/13-transition-retry-vs-rerun.png)
+
 The two are easy to conflate, and the labels should carry the difference rather
 than leave it to be inferred: the history button reads "History (3)" today, which
 names no level. Renaming it "Previous runs (3)" pairs it with "Previous attempts"
@@ -214,6 +216,8 @@ work.
 | Run reaches a terminal status | the viewer remounts — its key carries the status — so everything returns to defaults | acceptable, because collapsed *is* the default |
 | Someone clicks Re-run | a new `task_run`; the viewer remounts on the new name with no umbrella; the finished run moves to the history sheet | not a retry, and not this row's business |
 
+![The first retry arriving](task-run-log-previous-attempts/11-transition-first-retry.png)
+
 Two existing behaviors compose with this without special handling, and are worth
 stating so nobody adds handling they do not need. When a task run moved between
 replicas, every replica group but the last has its still-running sections forced
@@ -225,27 +229,30 @@ an older run shows its own umbrella derived from its own entries.
 
 ### What must survive a poll
 
-Expansion state does not survive one today. `resolvedDatasetKey` in
-`useTaskRunLogSections.ts` is built from every entry in the log, and its effect
-clears every expansion set whenever that key changes — which, on a live run, is
-every time an entry arrives. Section ids compound it: they are positional
-(`section-${index}`), so inserting an attempt boundary renumbers every section
-after it.
+Expansion state already survives one. `TaskRunLogViewer` passes
+`datasetKey: taskRunName` into `useTaskRunLogSections`, and `resolvedDatasetKey`
+returns that before it considers the entries, so the reset fires when the viewer
+shows a different task run and not when entries are appended. The entry-derived
+fallback in that hook is dead code for this consumer. Nothing about the reset
+needs changing.
 
-Both are survivable today because a live log is watched more than it is read. This
-change ends that: the reason to open a superseded attempt is to read the error
-that caused the retry, and retries happen *while the run is still streaming*. As
-it stands, the row a reader just opened would close under them within five
-seconds, and under positional ids could reopen as a different section entirely.
+What does not survive is the **identity of a section**. Ids are positional —
+`section-${index}` — while expansion is a set of those ids. Inserting an attempt
+boundary regroups the list, so a section's index changes while the set still holds
+the old one. The expansion then lands on whichever section now occupies that
+index: the row the reader opened closes, and an unrelated row opens in its place.
 
-So this design depends on two fixes, both in the grouping layer:
+That is worse than it sounds, because the regrouping happens at exactly the moment
+a reader has a reason to be reading. The first `RETRY_INFO` folds every earlier
+section into the umbrella and renumbers everything after it, in one poll, while
+the run is still streaming.
 
-- **Stable ids.** Derive a section's id from what it is — its scope, attempt
-  ordinal, entry type, and first entry's timestamp — rather than from its index.
-- **A narrower reset.** Reset expansion only when the log's identity changes, that
-  is, when the viewer is showing a different task run. With stable ids an append
-  needs no reset at all: sections that did not exist before are simply absent from
-  the expanded set.
+So this design depends on one fix in the grouping layer: derive a section's id
+from what it is — its scope, attempt ordinal, entry type, and first entry's
+timestamp — rather than from its position. Ids then survive regrouping, and
+expansion follows the section it belongs to.
+
+![Expansion follows the section it belongs to](task-run-log-previous-attempts/12-transition-expansion-follows-section.png)
 
 ## Alternatives rejected
 
@@ -278,20 +285,18 @@ Implementation follows in a separate PR, after #21417 lands.
   contains, with the entries themselves untouched.
 - `useTaskRunLogSections.ts`: a third grouping layer alongside the replica and
   release-file layers, and auto-expand restricted to error sections outside the
-  superseded attempts. Also the two transition fixes — content-derived section
-  ids in place of positional ones, and an expansion reset keyed to the task run
-  rather than to every appended entry — without which an opened attempt closes on
-  the next poll.
+  superseded attempts. Also content-derived section ids in place of positional
+  ones, without which regrouping at the first marker moves a reader's expansion
+  onto a different section.
 - `TaskRunLogViewer.tsx` and `SectionHeader.tsx`: the umbrella and nested-attempt
   rows, plus locale keys for the labels.
 - Tests mirror the truth table and the cutting cases: no marker, one marker,
   several markers, a marker inside a release-file group, several release-file
   groups retrying different numbers of times, replica-grouped entries, an empty
   final segment, and a prior-backup section that must stay outside attempt 1.
-  Transition coverage appends entries to a rendered log and asserts that ids hold
-  and an opened attempt stays open across the append, that the first marker folds
-  the earlier sections without disturbing the streaming segment, and that a
-  different task run does reset the view.
+  Transition coverage asserts that a section keeps its id across the regrouping
+  the first marker causes, so an expanded section stays the expanded one, and that
+  the marker folds the earlier sections without disturbing the streaming segment.
 
 ### Building on #21417
 
