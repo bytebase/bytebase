@@ -297,7 +297,9 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     past it, measured: a key that is not a plain identifier or quoted string, and a destructure of
     two or more properties. Neither is what anyone writes by accident. Test files are excluded,
     since a test builds a reading and reads it directly, and matching the member reserves both
-    names across the app — a permission object spelled `{ read: true }` would be reported too. The rule
+    names across the app: a permission object spelled `{ read: true }`, a stream reader's
+    `.read()`, and — because the object-literal case descends the whole subtree — any literal with
+    an identifier `read` anywhere beneath it. Type annotations and interfaces are not reported. The rule
     is the convention; the plugin is what makes drifting off it loud.
   - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip time
     the machine sleeps, so the clock re-checks at least once a minute: a display is at most a
@@ -324,8 +326,14 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     no time for and the date formatters throw on. The conversion yields nothing rather than a
     substitute — the current time and the epoch are both plausible-looking lies — and the
     container picks the empty form: "-" in a table cell, or the label dropped along with its
-    separator in an inline line. The domain lives with the formatters, since they are what
-    rejects a value; a display asks them rather than guessing at the test.
+    separator in an inline line. The domain lives with the formatters, since they are what rejects
+    a value; a display asks them rather than guessing at the test. Absence is `undefined`
+    throughout: the epoch is an ordinary instant, so a surface that used to hide a zero now shows
+    1970, which is what the server sending one would mean. No server does — every timestamp these
+    surfaces read is set from a real time or left unset. The container's empty form is a caller's
+    decision, and only absence reaches it: a value the domain rejects leaves the display rendering
+    nothing while its separator stays, which no proto-sourced timestamp can produce, since a
+    `Timestamp` is range-checked to years 1–9999.
   - Guarded by fake-timer tests and a sweep of render-time `Date.now()` over the touched surfaces
     at implementation time — a review pass, not a lint: telling render scope from handlers and
     effects statically would flag most legitimate uses.
