@@ -354,9 +354,24 @@ one replica (`:131`, `:148`, `:158`), so the first replica's rows are `section-�
 and `<replicaId>-…` the moment a second replica's first entry lands; and `groupIndex` shifts for
 every later group when a retry marker splits a section in two. Either renumbering silently drops
 the reader's folds on a dataset that never changed. So an override is keyed by the entry's own
-identity — its replica id, its log time in milliseconds, its type, and for a command the byte
-offset its statement starts at — which no regrouping can alter. Render keys keep their present
-shape; only the override map uses the stable one.
+identity, not by where it currently sits. Render keys keep their present shape; only the override
+map uses the stable one.
+
+That identity needs care, because the obvious tuple is not unique. `task_run_log` has no primary
+key *by design* — "entries for one task run can legitimately share a `created_at` microsecond"
+(`backend/migrator/migration/LATEST.sql:705-706`) — so time alone ties. A statement's byte offset
+cannot break the tie either: `LogCommandExecute` writes `Statement` **or** `Range` and never both
+(`backend/plugin/db/driver.go:297-302`), and SDL sets `LogCommandStatement = true`
+(`database_migrate_executor.go:730`), so in exactly the migrations this design exists for, command
+entries carry no offset at all. Two tied rows would then share one key, and folding either would
+fold both.
+
+The identity is therefore the replica id, the log time at **full precision** — the proto carries
+seconds and nanos, while `getTimestampMs` throws the sub-millisecond part away — the entry type,
+and an ordinal among the entries that match all three. The ordinal comes from the run's entry list
+as the API returns it, which is append-only and chronological, so a tie-group's existing members
+never reorder; and none of the four terms mentions a section, a replica grouping or a render
+position, which is what makes it survive the regrouping above.
 
 Those overrides cannot live in `SectionContent` either, because it is mounted conditionally: collapsing an
 enclosing section unmounts it and reopening builds a fresh one (`TaskRunLogViewer.tsx:195-201`), and
@@ -453,6 +468,9 @@ behavior of this function:
 - `model.test.ts` for the marking edges: a failed command with neither `statement` nor a usable
   `range` is still marked, so D13 renders and scrolls to its error, and no cap change follows
   because it has no block.
+- Override identity (D14): two `COMMAND_EXECUTE` entries from the same replica sharing a timestamp
+  and carrying `statement` rather than `range` — the SDL shape — get distinct override keys, so
+  folding one leaves the other open.
 - Live updates (D14), all on an unchanged `datasetKey`, and including the regrouping case: a run
   that starts with one replica and gains a second keeps a folded row folded, even though its render
   key changes from `section-…` to `<replicaId>-…`; so does a section split in two by a retry marker
