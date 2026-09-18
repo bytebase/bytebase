@@ -42,6 +42,10 @@ export function AccessGrantItem({
 }: Props) {
   const { t } = useTranslation();
 
+  // Two readings, each on its own boundary. The countdown's last step lands on
+  // the deadline, the same instant the status turns expired, so the status
+  // subscription adds no wake today -- it is here so the badge does not depend
+  // on that coincidence holding.
   const deadlineMs = getActiveAccessGrantDeadlineMs(grant);
   const countdown = useTimeReading(countdownReading, deadlineMs);
   const displayStatus = useTimeReading(accessGrantStatusReading, {

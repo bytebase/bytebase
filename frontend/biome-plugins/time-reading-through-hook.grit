@@ -1,0 +1,16 @@
+// A value that changes with time must be read through `useTimeReading`, which
+// pairs it with its own boundary and subscribes it to the shared clock. Reading
+// one directly renders a label that never updates -- the staleness bug
+// docs/design/timestamp-display.md exists to prevent. The readings compose each
+// other inside utils/datetime.ts and utils/accessGrant.ts, which this rule
+// excludes.
+language js
+
+js"$reading.$member($args)" as $call where {
+  $reading <: r"[A-Za-z]+Reading",
+  or { $member <: `read`, $member <: `nextChangeAt` },
+  register_diagnostic(
+    span=$call,
+    message="Read a time-varying value through useTimeReading(reading, input), which subscribes it to the shared clock."
+  )
+}

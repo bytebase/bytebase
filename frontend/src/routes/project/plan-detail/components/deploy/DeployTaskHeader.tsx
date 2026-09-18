@@ -163,8 +163,7 @@ export function DeployTaskHeader({
             <span className="rounded-full border bg-control-bg px-2 py-0.5 text-control-light">
               <HumanizeTs
                 ts={
-                  getTimeForPbTimestampProtoEs(latestTaskRun.createTime, 0) /
-                  1000
+                  getTimeForPbTimestampProtoEs(latestTaskRun.createTime) / 1000
                 }
               />
             </span>
