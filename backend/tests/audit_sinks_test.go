@@ -385,8 +385,6 @@ func TestAuditSinksOnBothChains(t *testing.T) {
 	}
 }
 
-// lineText reads one string attribute off a captured audit line, absent
-// meaning empty.
 func lineText(line map[string]any, key string) string {
 	v, ok := line[key].(string)
 	if !ok {
@@ -395,8 +393,6 @@ func lineText(line map[string]any, key string) string {
 	return v
 }
 
-// auditSinkRows returns the stored rows for the probe's method, caller and
-// chain, newest first.
 func auditSinkRows(ctx context.Context, t *testing.T, ctl *controller, p auditSinkProbe, user string) []*v1pb.AuditLog {
 	t.Helper()
 	resp, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
