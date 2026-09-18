@@ -2,9 +2,42 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (k: string) => k, i18n: { language: "en" } }),
-}));
+// The real datetime module is loaded below for its domain check, and it reads
+// the active locale from here rather than from the react-i18next mock.
+vi.mock("@/lib/i18n", () => ({ default: { language: "en-US" } }));
+
+// Enough of react-i18next to carry the one thing a timestamp depends on: a
+// component that calls useTranslation re-renders when the language changes.
+const language = vi.hoisted(() => {
+  const listeners = new Set<() => void>();
+  const state = {
+    current: "en",
+    listeners,
+    switchTo(next: string) {
+      state.current = next;
+      for (const listener of listeners) {
+        listener();
+      }
+    },
+  };
+  return state;
+});
+
+vi.mock("react-i18next", async () => {
+  const { useEffect, useReducer } = await import("react");
+  return {
+    useTranslation: () => {
+      const [, rerender] = useReducer((count: number) => count + 1, 0);
+      useEffect(() => {
+        language.listeners.add(rerender);
+        return () => {
+          language.listeners.delete(rerender);
+        };
+      }, []);
+      return { t: (k: string) => k, i18n: { language: language.current } };
+    },
+  };
+});
 
 const formatters = vi.hoisted(() => {
   // A reading whose label is its age, so a display that was not re-rendered
@@ -20,7 +53,7 @@ const formatters = vi.hoisted(() => {
   });
   // A rendering that never changes on its own.
   const fixedReading = (prefix: string) => ({
-    read: (ms: number) => `${prefix}:${ms}`,
+    read: (ms: number) => `${prefix}:${ms}:${language.current}`,
     nextChangeAt: () => Number.POSITIVE_INFINITY,
   });
   return {
@@ -30,12 +63,15 @@ const formatters = vi.hoisted(() => {
     compactTimeReading: fixedReading("compact"),
     operationalTimeReading: fixedReading("operational"),
     absoluteTimeReading: fixedReading("absolute"),
-    displayableInstantMs: (ms: number) =>
-      Number.isFinite(ms) && Math.abs(ms) <= 8.64e15 ? ms : undefined,
   };
 });
 
-vi.mock("@/utils/datetime", () => formatters);
+// Only the renderings are faked; what an instant is comes from the module
+// itself, so a test cannot disagree with it about the domain.
+vi.mock("@/utils/datetime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/datetime")>()),
+  ...formatters,
+}));
 
 import { HumanizeTs } from "./HumanizeTs";
 
@@ -75,6 +111,7 @@ const advanceSeconds = (seconds: number) => {
 
 const secondsAgo = (seconds: number) =>
   Math.floor(Date.now() / 1000) - seconds;
+
 
 describe("HumanizeTs", () => {
   beforeEach(() => {
@@ -153,6 +190,18 @@ describe("HumanizeTs", () => {
     // Finite, and still no instant it can name: Intl throws on this too.
     act(() => root.render(<HumanizeTs ts={1e15} />));
     expect(container.textContent).toBe("");
+  });
+
+  test("re-reads every label when the language changes", () => {
+    // The only thing that re-renders a timestamp on a language switch is its
+    // own useTranslation subscription: a reading holds no locale, and a fixed
+    // one holds no subscription to the clock either.
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs ts={1000} mode="compact" />));
+    expect(container.textContent).toContain("compact:1000000:en");
+
+    act(() => language.switchTo("zh-CN"));
+    expect(container.textContent).toContain("compact:1000000:zh-CN");
   });
 
   test("omits the tooltip when tooltip is false", async () => {

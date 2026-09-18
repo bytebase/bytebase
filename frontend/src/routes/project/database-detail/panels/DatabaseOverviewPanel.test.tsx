@@ -143,7 +143,8 @@ vi.mock("@/stores/app/databaseCatalog", () => ({
   getTableCatalog: mocks.getTableCatalog,
 }));
 
-vi.mock("@/utils/datetime", () => ({
+vi.mock("@/utils/datetime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/datetime")>()),
   queueTimeReading: {
     read: mocks.formatRelativeTime,
     nextChangeAt: () => Number.POSITIVE_INFINITY,
@@ -165,8 +166,6 @@ vi.mock("@/utils/datetime", () => ({
     read: mocks.formatAbsoluteDateTime,
     nextChangeAt: () => Number.POSITIVE_INFINITY,
   },
-  displayableInstantMs: (ms: number) =>
-    Number.isFinite(ms) && Math.abs(ms) <= 8.64e15 ? ms : undefined,
 }));
 
 vi.mock("@/utils", () => ({
