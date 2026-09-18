@@ -142,7 +142,7 @@ export function RevisionDetailPanel({
             {createTimeMs !== undefined ? (
               <>
                 <span aria-hidden="true">•</span>
-                <HumanizeTs mode="datetime" ts={createTimeMs / 1000} />
+                <HumanizeTs mode="datetime" tsMs={createTimeMs} />
               </>
             ) : null}
           </div>

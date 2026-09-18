@@ -106,7 +106,7 @@ vi.mock("@/types", () => ({
   dialectOfEngineV1: () => "MYSQL",
   languageOfEngineV1: () => "sql",
   typeToView: (type: string) => type.toUpperCase(),
-  getDateForPbTimestampProtoEs: () => undefined,
+  getTimeForPbTimestampProtoEs: () => undefined,
 }));
 
 vi.mock("@/types/proto-es/v1/common_pb", () => ({

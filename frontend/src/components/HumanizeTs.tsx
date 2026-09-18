@@ -27,8 +27,8 @@ import {
 export type TimeDisplayMode = "queue" | "compact" | "operational" | "datetime";
 
 interface HumanizeTsProps {
-  /** Unix timestamp in seconds. */
-  ts: number;
+  /** The instant to show, in milliseconds. */
+  tsMs: number;
   mode?: TimeDisplayMode;
   className?: string;
   /**
@@ -71,7 +71,7 @@ const MODES: Record<
  * way to display a record timestamp across the app.
  */
 export function HumanizeTs({
-  ts,
+  tsMs: instantMs,
   mode = "queue",
   className,
   tooltip = true,
@@ -80,7 +80,7 @@ export function HumanizeTs({
   useTranslation();
   // A row loses its timestamp rather than the page its subtree: what is not an
   // instant has no rendering, and the formatters throw on it.
-  const tsMs = displayableInstantMs(ts * 1000);
+  const tsMs = displayableInstantMs(instantMs);
   const { label: labelReading, Hidden } = MODES[mode];
   const label = useTimeReading(labelReading, tsMs);
   if (tsMs === undefined) {

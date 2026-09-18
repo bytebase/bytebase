@@ -201,7 +201,7 @@ export function HistoryPane() {
             <HumanizeTs
               className="text-xs text-control-placeholder"
               mode="compact"
-              ts={getTimeForPbTimestampProtoEs(history.createTime) / 1000}
+              tsMs={getTimeForPbTimestampProtoEs(history.createTime)}
             />
           )}
         </div>

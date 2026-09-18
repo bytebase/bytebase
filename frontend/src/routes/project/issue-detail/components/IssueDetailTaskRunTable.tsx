@@ -183,7 +183,7 @@ function IssueDetailTaskRunDateCell({ date }: { date?: Timestamp }) {
   return (
     <HumanizeTs
       mode="compact"
-      ts={getTimeForPbTimestampProtoEs(date) / 1000}
+      tsMs={getTimeForPbTimestampProtoEs(date)}
       className="text-sm text-control"
     />
   );

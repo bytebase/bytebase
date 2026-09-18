@@ -81,7 +81,7 @@ vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
 }));
 
 vi.mock("@/types", () => ({
-  getDateForPbTimestampProtoEs: () => undefined,
+  getTimeForPbTimestampProtoEs: () => undefined,
   isValidDatabaseName: mocks.isValidDatabaseName,
 }));
 

@@ -107,10 +107,7 @@ export function IAMRemindDialog({ project }: IAMRemindDialogProps) {
               <li key={role.name}>
                 {displayRoleTitle(role.name)}:{" "}
                 <span className="text-error">
-                  <HumanizeTs
-                    mode="operational"
-                    ts={expiration.getTime() / 1000}
-                  />
+                  <HumanizeTs mode="operational" tsMs={expiration.getTime()} />
                 </span>
               </li>
             ))}

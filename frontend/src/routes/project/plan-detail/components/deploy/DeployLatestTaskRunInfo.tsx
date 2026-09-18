@@ -66,7 +66,7 @@ export function DeployLatestTaskRunInfo({
           <>
             <span className="text-control-placeholder">·</span>
             <HumanizeTs
-              ts={updateDate.getTime() / 1000}
+              tsMs={updateDate.getTime()}
               className="shrink-0 text-control-light"
             />
           </>

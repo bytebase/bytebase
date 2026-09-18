@@ -762,7 +762,7 @@ function AccessGrantRow({
       </TableCell>
       <TableCell>
         {createdTimeMs !== undefined ? (
-          <HumanizeTs className="block truncate" ts={createdTimeMs / 1000} />
+          <HumanizeTs className="block truncate" tsMs={createdTimeMs} />
         ) : (
           "-"
         )}
@@ -772,7 +772,7 @@ function AccessGrantRow({
           <HumanizeTs
             className="block truncate"
             mode="operational"
-            ts={expireTimeMs / 1000}
+            tsMs={expireTimeMs}
           />
         ) : (
           "-"

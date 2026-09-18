@@ -108,7 +108,7 @@ export function DatabaseRevisionTable({
               {revision.createTime ? (
                 <HumanizeTs
                   mode="compact"
-                  ts={getTimeForPbTimestampProtoEs(revision.createTime) / 1000}
+                  tsMs={getTimeForPbTimestampProtoEs(revision.createTime)}
                 />
               ) : (
                 "-"

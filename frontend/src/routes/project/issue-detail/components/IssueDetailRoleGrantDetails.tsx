@@ -162,7 +162,7 @@ export function IssueDetailRoleGrantDetails() {
             {condition?.expiredTime ? (
               <HumanizeTs
                 mode="operational"
-                ts={new Date(condition.expiredTime).getTime() / 1000}
+                tsMs={new Date(condition.expiredTime).getTime()}
               />
             ) : (
               t("project.members.never-expires")

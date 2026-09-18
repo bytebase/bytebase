@@ -426,12 +426,10 @@ function IssueDescriptionCommentRow({
                     {page.issue?.createTime && (
                       <HumanizeTs
                         className="text-control-light"
-                        ts={
-                          getTimeForPbTimestampProtoEs(
-                            page.issue.createTime,
-                            0
-                          ) / 1000
-                        }
+                        tsMs={getTimeForPbTimestampProtoEs(
+                          page.issue.createTime,
+                          0
+                        )}
                       />
                     )}
                   </div>

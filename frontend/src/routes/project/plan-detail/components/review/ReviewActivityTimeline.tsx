@@ -320,7 +320,7 @@ function SyntheticHeader({
       {source.time && (
         <HumanizeTs
           className="text-xs text-control-light"
-          ts={getTimeForPbTimestampProtoEs(source.time) / 1000}
+          tsMs={getTimeForPbTimestampProtoEs(source.time)}
         />
       )}
     </>

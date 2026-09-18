@@ -170,7 +170,7 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
         {createdTimeMs !== undefined && (
           <HumanizeTs
             className="text-xs text-control-light"
-            ts={createdTimeMs / 1000}
+            tsMs={createdTimeMs}
           />
         )}
       </div>

@@ -293,11 +293,7 @@ function ReleaseRow({ release }: { release: Release }) {
         </div>
       </TableCell>
       <TableCell>
-        {createTimeMs === undefined ? (
-          "-"
-        ) : (
-          <HumanizeTs ts={createTimeMs / 1000} />
-        )}
+        {createTimeMs === undefined ? "-" : <HumanizeTs tsMs={createTimeMs} />}
       </TableCell>
     </TableRow>
   );

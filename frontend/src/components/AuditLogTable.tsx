@@ -445,7 +445,7 @@ function useColumnDefs(): ColumnDef[] {
           log.createTime ? (
             <HumanizeTs
               mode="datetime"
-              ts={getTimeForPbTimestampProtoEs(log.createTime) / 1000}
+              tsMs={getTimeForPbTimestampProtoEs(log.createTime)}
             />
           ) : (
             "-"
