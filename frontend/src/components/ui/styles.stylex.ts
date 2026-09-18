@@ -1,5 +1,11 @@
 import * as stylex from "@stylexjs/stylex";
 
+export const tableStyles = stylex.create({
+  cellContent: {
+    minHeight: 24,
+  },
+});
+
 export const controlSize = {
   xs: {
     height: 24,

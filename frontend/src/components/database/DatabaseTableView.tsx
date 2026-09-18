@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableCellContent } from "@/components/ui/table-cell-content";
 import { useEnvironmentList, usePlanFeature } from "@/hooks/useAppState";
 import { useColumnWidths } from "@/hooks/useColumnWidths";
 import { cn } from "@/lib/utils";
@@ -501,11 +502,13 @@ const DatabaseRowView = memo(function DatabaseRowView({
             onToggleSelection(database.name);
           }}
         >
-          <Checkbox
-            checked={selected}
-            onCheckedChange={() => onToggleSelection(database.name)}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <TableCellContent>
+            <Checkbox
+              checked={selected}
+              onCheckedChange={() => onToggleSelection(database.name)}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </TableCellContent>
         </TableCell>
       )}
       {columns.map((col) => (
@@ -520,7 +523,7 @@ const DatabaseRowView = memo(function DatabaseRowView({
             col.onCellClick ? (e) => col.onCellClick!(database, e) : undefined
           }
         >
-          {col.render(database)}
+          <TableCellContent>{col.render(database)}</TableCellContent>
         </TableCell>
       ))}
     </TableRow>

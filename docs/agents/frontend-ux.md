@@ -421,6 +421,9 @@ A resource table is composed in this order:
 
 - Header rows are 40px high.
 - Default cells use 16px horizontal and 12px vertical padding.
+- Instance and database body cells use `TableCellContent` for a vertically
+  centered, 24px minimum content area: 48px with cell padding, plus row borders.
+  Expanded or multi-line content can increase the row height.
 - Interactive menu/list rows have a 32px compact or 36px default minimum
   height, 14/20px primary text, and an 8px internal gap.
 - Numeric values align right. Selection and icon-only columns remain narrow.
