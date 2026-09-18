@@ -306,7 +306,10 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     absolute, so it survives the step and still gets its own wake, and only a display the clock
     finds due retires its deadline. A woken display that names the same instant again is
     re-checked after a resync interval rather than on every other display's wake, and a short gap
-    after each wake keeps a boundary that keeps naming a past instant from spinning it.
+    after each wake keeps a boundary that keeps naming a past instant from spinning it. The
+    clock's state is the page's — built on first import, never reset — so anything that rewinds
+    the wall clock underneath it hands it the backward step it exists to detect, and it detects
+    it. That is why the tests move time forward only, each starting after the last one ended.
   - **An absent timestamp has no reading**, and neither has a value that is not an instant: a
     number that is not finite, or one beyond the range a time value can occupy, which `Date` holds
     no time for and the date formatters throw on. The conversion yields nothing rather than a
