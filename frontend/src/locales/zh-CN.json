@@ -964,6 +964,7 @@
   },
   "instance": {
     "account-locator": "账户定位符",
+    "account-locator-description": "用于标识要连接的 Snowflake 账户。",
     "add-parameter": "添加参数",
     "advanced-search": {
       "scope": {

@@ -964,6 +964,7 @@
   },
   "instance": {
     "account-locator": "Định vị tài khoản",
+    "account-locator-description": "Xác định tài khoản Snowflake cần kết nối.",
     "add-parameter": "Thêm tham số",
     "advanced-search": {
       "scope": {
