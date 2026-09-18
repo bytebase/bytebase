@@ -480,7 +480,7 @@ const buildDisplayItems = (
     return {
       key: `${idPrefix ?? "section"}-${groupIndex}-${entryIndex}`,
       time: formatTime(entry.logTime),
-      timeMs: entryTime,
+      timeMs: entry.logTime ? entryTime : undefined,
       relativeTime: relativeMs > 0 ? formatRelativeTime(relativeMs) : "",
       levelIndicator: entryHasError ? "\u2717" : "\u2713",
       levelClass: entryHasError ? "text-error" : "text-success",

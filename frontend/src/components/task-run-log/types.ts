@@ -10,8 +10,8 @@ export interface DisplayItem {
   key: string;
   /** Dense time-of-day; the date lives on the run header and in the tooltip. */
   time: string;
-  /** Backs that tooltip. 0 when the entry carries no timestamp. */
-  timeMs: number;
+  /** Backs that tooltip; absent when the entry carries no timestamp. */
+  timeMs: number | undefined;
   relativeTime: string;
   levelIndicator: string;
   levelClass: string;

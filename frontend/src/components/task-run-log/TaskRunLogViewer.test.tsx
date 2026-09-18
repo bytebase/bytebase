@@ -286,6 +286,51 @@ describe("TaskRunLogViewer", () => {
     unmount();
   });
 
+  test("offers the full date only for a line that has an instant", () => {
+    const item = (key: string, time: string, timeMs: number | undefined) => ({
+      key,
+      time,
+      timeMs,
+      relativeTime: "",
+      levelIndicator: "\u2713",
+      levelClass: "text-green-600",
+      detail: `ROW ${key}`,
+      detailClass: "text-gray-600",
+    });
+    const section: Section = {
+      id: "section-0",
+      type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+      label: "Command Execute",
+      status: "success",
+      statusIcon: CheckCircle2,
+      statusClass: "text-green-600",
+      duration: "2s",
+      entryCount: 3,
+      items: [
+        item("timed", "12:00:00.000", Date.UTC(2026, 2, 2, 12)),
+        item("untimed", "--:--:--.---", undefined),
+        item("impossible", "12:00:02.000", 8.64e15 + 1),
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      createElement(SectionContent, { section, datasetKey: "runs/1" })
+    );
+
+    // A tooltip with nothing to say renders its children bare, so the trigger
+    // it wraps them in is what says whether the full date is on offer.
+    const cell = (text: string) =>
+      Array.from(container.querySelectorAll("span")).find(
+        (span) => span.textContent === text
+      );
+    expect(cell("12:00:00.000")?.firstElementChild).not.toBeNull();
+    expect(cell("--:--:--.---")?.firstElementChild).toBeNull();
+    // Finite, and past the last instant there is: no reading, so no tooltip.
+    expect(cell("12:00:02.000")?.firstElementChild).toBeNull();
+
+    unmount();
+  });
+
   test("renders a load more action for large sections", () => {
     const largeSection: Section = {
       id: "section-0",
