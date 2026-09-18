@@ -6,6 +6,12 @@ import { cn } from "@/lib/utils";
 import { formatAbsoluteDateTime } from "@/utils";
 import type { Section } from "./types";
 
+// Mounts only while the tooltip is open, so the rows nobody hovers cost
+// nothing.
+function FullDateTime({ tsMs }: { tsMs: number }) {
+  return <>{formatAbsoluteDateTime(tsMs)}</>;
+}
+
 const ITEM_HEIGHT = 20;
 const MAX_VISIBLE_ITEMS = 10;
 const MAX_RENDERED_ITEMS = 50;
@@ -53,7 +59,7 @@ export function SectionContent({
           </span>
           <Tooltip
             content={
-              item.timeMs > 0 ? formatAbsoluteDateTime(item.timeMs) : undefined
+              item.timeMs > 0 ? <FullDateTime tsMs={item.timeMs} /> : undefined
             }
           >
             <span className="shrink-0 text-control-placeholder tabular-nums">
