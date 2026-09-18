@@ -6,11 +6,29 @@
 // The rule is about the member, not the name it is reached through, so this
 // matches `read` and `nextChangeAt` wherever they are named: under an alias,
 // through a local or a table, via `.call`, passed as a callback, optionally
-// chained, keyed by a literal, or destructured. A key held in a variable is
-// the one spelling left, and nobody reaches for it by accident.
+// chained, keyed by a literal, or destructured one member at a time. It also
+// rejects an object that defines those members, which is what keeps readings
+// in the modules below rather than assembled at a display.
+//
+// Two spellings escape it, both measured rather than assumed: a key held in a
+// variable, and a destructure taking both members at once, which Grit's object
+// snippets match by exact arity. Neither is a spelling anyone reaches for by
+// accident, and the member match catches every ordinary one.
+//
+// `$object?.read` cannot be written as `$object?.$member` -- that snippet
+// matches nothing here, so the two literal forms stay.
 //
 // The modules that define readings compose and build them, so biome.json
-// excludes utils/datetime.ts, utils/accessGrant.ts, and the hook itself.
+// excludes utils/datetime.ts, utils/accessGrant.ts, and the hook itself. It
+// excludes every test file too, which is the larger hole: a test builds a
+// reading and reads it directly, since that is how it checks one at all.
+//
+// Matching the member rather than the receiver reserves these two names across
+// src/: a permission object spelled `{ read: true }`, or a stream reader's
+// `.read()`, would be reported although neither has anything to do with time.
+// Neither exists in src/ today. If one arrives, rename it or exclude the file
+// in biome.json -- the rule cannot tell them apart, and that is the price of
+// catching the spellings a name-based rule missed.
 language js
 
 pattern reached_past_the_hook() {
@@ -18,8 +36,9 @@ pattern reached_past_the_hook() {
     js"$object.$member" where { or { $member <: `read`, $member <: `nextChangeAt` } },
     js"$object?.read",
     js"$object?.nextChangeAt",
-    js"{ read: $binding }",
-    js"{ nextChangeAt: $binding }",
+    js"{ $member: $binding }" where {
+      or { $member <: `read`, $member <: `nextChangeAt` }
+    },
     js"{ $properties }" where { $properties <: contains or { `read`, `nextChangeAt` } },
     js"$object[$key]" where { or { $key <: `"read"`, $key <: `"nextChangeAt"` } }
   }

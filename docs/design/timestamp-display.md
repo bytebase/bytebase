@@ -285,10 +285,14 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     none of them reachable through the hook. What the hook cannot prevent is a display reaching
     past it: a reading's `read` is public so readings can compose, and the hook's parameter is
     structurally typed. A Biome plugin narrows that line rather than closing it: outside the
-    modules that define the readings, it rejects every mention of `read` or `nextChangeAt` as a
-    member or a destructured binding — under an alias, through a local, through a table, through
-    `.call`, passed as a callback, optionally chained, or keyed by a literal. What it cannot see
-    is a key held in a variable, which is not a spelling anyone reaches for by accident. The rule
+    modules that define the readings, it rejects `read` and `nextChangeAt` reached as a member —
+    under an alias, through a local, through a table, through `.call`, passed as a callback,
+    optionally chained, or keyed by a literal — destructured one member at a time, and defined
+    on an object, which is what keeps a display from assembling a reading of its own. Two
+    spellings get past it, both measured: a key held in a variable, and a destructure taking both
+    members at once. Neither is what anyone writes by accident. Test files are excluded, since a
+    test builds a reading and reads it directly, and matching the member reserves both names
+    across the app — a permission object spelled `{ read: true }` would be reported too. The rule
     is the convention; the plugin is what makes drifting off it loud.
   - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip time
     the machine sleeps, so the clock re-checks at least once a minute: a display is at most a
