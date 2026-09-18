@@ -9,7 +9,11 @@ import { useTimeReading } from "./useTimeReading";
 
 const DAY_MS = 86_400_000;
 
-// A boundary that names one instant and never changes again.
+// A boundary that names one instant and never changes again. Retiring to
+// Infinity is the difference from a plain `() => deadlineMs`: it changes the
+// effect's dependency, so the display drops its subscription and, if it was
+// the last one, the clock disarms. Tests that need the clock quiet afterwards
+// use this; tests that need a live subscription use the plain closure.
 const onceAt = (changesAtMs: number) => () =>
   Date.now() < changesAtMs ? changesAtMs : Number.POSITIVE_INFINITY;
 
@@ -71,9 +75,10 @@ const mount = (probes: ProbeSpec[]) => {
 // The clock's state is the page's: it has no reset, so a test that rewound the
 // wall clock would hand the next one a clock stepped backward -- the very
 // condition the clock exists to detect, and it would detect it. Time only
-// moves forward here, as it does on a page. Each test starts a day after the
-// last one *ended*, since a test that waits out the timer ceiling ends weeks
-// after it began.
+// moves forward here, as it does on a page: every test starts later than any
+// clock reading in every test before it. A test that waits out the timer
+// ceiling ends weeks after it began, and one that steps the clock back ends
+// before it began, so the next start is taken from the later of the two.
 let testStartMs = Date.UTC(2026, 2, 2, 12);
 
 describe("useTimeReading", () => {
@@ -87,7 +92,7 @@ describe("useTimeReading", () => {
       act(() => root.unmount());
     }
     // Read while the fake clock still holds where this test reached.
-    testStartMs = Date.now() + 86_400_000;
+    testStartMs = Math.max(testStartMs, Date.now()) + DAY_MS;
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
@@ -344,6 +349,26 @@ describe("useTimeReading", () => {
       vi.advanceTimersByTime(60_000);
     });
     expect(renders).toEqual([1, 2]);
+  });
+
+  test("handles one backward step once, not at every later check", () => {
+    // The step lowers the mark it was detected against. Left standing, every
+    // re-check until the clock climbs back reads as a fresh step, and an hour
+    // of NTP correction becomes an hour of waking every display on the page.
+    const deadlineMs = Date.now() + 5 * 60_000;
+    const { renders } = mount([{ changesAtMs: () => deadlineMs }]);
+
+    vi.setSystemTime(Date.now() - 10 * 60_000);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(renders).toEqual([2]);
+
+    // A second re-check, still below the clock the step was taken from.
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(renders).toEqual([2]);
   });
 
   test("never stretches the wake gap past its bound after a clock step", () => {
