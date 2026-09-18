@@ -41,11 +41,20 @@ type AuditLogWriter interface {
 // RecordOutOfBandAudit writes a row for a refusal no interceptor sees, and
 // mirrors it to stdout when that is enabled.
 //
+// It stamps the severity itself. Every caller records a policy refusal, which
+// the audit interceptor stamps WARNING when it makes the same call inside a
+// connect chain, and a compliance reader filters on that field alone. Setting
+// it here rather than at each door keeps a new door from answering INFO for a
+// refusal the gate calls WARNING. A caller that needs to record something other
+// than a refusal needs its own writer, not an argument here.
+//
 // Best effort by design: an audit row that cannot be written must never turn a
 // refusal into an admission, so the caller gets no error to act on. The stdout
 // mirror does NOT depend on the insert — a metadata-database failure is when
 // losing the row from both surfaces would matter most.
 func RecordOutOfBandAudit(ctx context.Context, writer AuditLogWriter, mirrorToStdout bool, workspace string, row *storepb.AuditLog) {
+	row.Severity = storepb.AuditLog_WARNING
+
 	// WithoutCancel so the row survives a client hanging up on its own refusal,
 	// bounded because WithoutCancel drops the request deadline too. Both
 	// callers write on the synchronous path of a refusal already decided, so an

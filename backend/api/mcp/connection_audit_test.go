@@ -78,6 +78,8 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.Equal(t, "workspaces/ws-test", row.Resource)
 		require.Equal(t, "users/test@example.com", row.User)
 		require.EqualValues(t, 7, row.Status.GetCode(), "PermissionDenied")
+		require.Equal(t, storepb.AuditLog_WARNING, row.Severity,
+			"the door and the per-request gate stamp one ceiling verdict the same way")
 		require.Contains(t, row.Status.GetMessage(), "turned MCP access off")
 		require.Equal(t, "10.0.1.50", row.RequestMetadata.GetCallerIp())
 		require.Equal(t, "TestAgent/1.0", row.RequestMetadata.GetCallerSuppliedUserAgent())

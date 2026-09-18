@@ -95,7 +95,6 @@ func consentRefusalRow(attempt consentAttempt, verdict auth.MCPCeilingVerdict, r
 		Parent:   common.FormatWorkspace(attempt.user.workspaceID),
 		Method:   common.AuditMethodMCPConsentApprove,
 		Resource: common.FormatWorkspace(attempt.user.workspaceID),
-		Severity: storepb.AuditLog_INFO,
 		User:     common.FormatUserEmail(attempt.user.email),
 		Status: &spb.Status{
 			Code:    int32(codes.PermissionDenied),

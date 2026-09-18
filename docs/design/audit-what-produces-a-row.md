@@ -134,16 +134,23 @@ option on its response field.
   assignee may do this".
 - A marked refusal is stamped `WARNING`. Everything else stays `INFO`. The
   compliance reader filters on that, without joining on the status code.
+- The two doors that refuse outside the connect chains, the `/mcp` connection
+  and the OAuth consent page, refuse on the same ceiling verdict the gate
+  uses and record only policy refusals, so their rows are `WARNING` too. The
+  writer they share stamps it, so a third door cannot answer `INFO` for a
+  refusal the gate calls `WARNING`.
 - The validate-only rule stays: a validate-only call is skipped only when it
   succeeded.
 - A failed login is a stored row today; a refused call is a new line in the
   stream. Both are the compliance reader's events, and neither is the
   administrator's.
 
-**Implementation.** No API change. The mark is set at the access-control
-interceptor's three permission-denied verdicts, the MCP ceiling gate, the
-read-only SQL clamp, and the 23 custom-auth handler sites that make the check
-themselves.
+**Implementation.** No API change. The mark is set where the access-control
+interceptor answers permission-denied, at the MCP ceiling gate, at the
+read-only SQL clamp, and at the custom-auth handler sites that make the check
+themselves. Handler sites mark by building the refusal with
+`common.PermissionDeniedError`, so the mark cannot be forgotten separately
+from the error; the two out-of-band doors mark through their shared writer.
 
 ## 4. Interceptor order
 
