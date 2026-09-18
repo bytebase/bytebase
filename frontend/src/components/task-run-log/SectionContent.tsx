@@ -7,10 +7,10 @@ import { cn } from "@/lib/utils";
 import { displayableInstantMs } from "@/utils/datetime";
 import type { Section } from "./types";
 
-// A log line carries 0 for a step that has no time yet, and the full reading
-// is only offered for an instant the formatters can render.
-const fullTime = (timeMs: number) => {
-  const instantMs = timeMs > 0 ? displayableInstantMs(timeMs) : undefined;
+// The full reading is offered only for an instant the formatters can render.
+const fullTime = (timeMs: number | undefined) => {
+  const instantMs =
+    timeMs === undefined ? undefined : displayableInstantMs(timeMs);
   return instantMs === undefined ? undefined : (
     <FullDateTime tsMs={instantMs} />
   );
