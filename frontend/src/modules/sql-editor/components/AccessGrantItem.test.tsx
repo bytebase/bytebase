@@ -64,8 +64,18 @@ vi.mock("@/components/ui/badge", () => ({
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => (
-    <span data-testid="tooltip">{children}</span>
+  // The real Tooltip renders nothing for an absent body, so the stub carries
+  // the body it was given: a row that hides a reading has to offer it back.
+  Tooltip: ({
+    children,
+    content,
+  }: {
+    children: React.ReactNode;
+    content?: React.ReactNode;
+  }) => (
+    <span data-testid="tooltip" data-has-content={content !== undefined}>
+      {children}
+    </span>
   ),
 }));
 
@@ -366,6 +376,14 @@ describe("AccessGrantItem", () => {
     };
 
     expect(container.textContent).toContain("sql-editor.expire-in:3m");
+    // A countdown is the one form that hides the deadline, so the row has to
+    // offer it: a tooltip with nothing to say renders its children bare, and
+    // the trigger it wraps them in is what says the offer is there.
+    const countdownTooltip = Array.from(
+      container.querySelectorAll("[data-testid=tooltip]")
+    ).find((node) => node.textContent === "sql-editor.expire-in:3m");
+    expect(countdownTooltip?.getAttribute("data-has-content")).toBe("true");
+
     advanceSeconds(1);
     expect(container.textContent).toContain("sql-editor.expire-in:2m");
     advanceSeconds(60);

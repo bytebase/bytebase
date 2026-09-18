@@ -20,6 +20,7 @@ const withLocale = (language: string, run: () => void) => {
 };
 
 import {
+  absoluteTimeReading,
   compactTimeReading,
   countdownReading,
   daysLeftReading,
@@ -305,6 +306,11 @@ describe("reading boundaries", () => {
   describe.each([
     ["work-queue", queueTimeReading],
     ["relative", relativeTimeReading],
+    // A constant rendering names no instant at all, which is what keeps every
+    // absolute timestamp in every table off the shared clock.
+    ["absolute", absoluteTimeReading],
+    ["compact", compactTimeReading],
+    ["operational", operationalTimeReading],
   ])("%s", (_name, reading) => {
     test.each(boundaryCases(SAMPLED_AGES_MS))(
       "names the instant the reading changes (age $offset ms from $start, +$fractionMs ms)",
