@@ -113,10 +113,15 @@ deferred.
 **D6 — Full date-time tooltip on every reduced display.**
 Any timestamp that does not show the full form — relative, date-only after the switch, or the
 compact history tier — carries the full absolute date-time with seconds and timezone in its
-tooltip. This is the universal escape hatch that keeps every reduced cell recoverable. The rule
-cuts both ways: a tooltip carries only what its label hides, so a label already showing the full
-instant gets none of it repeated. Corollary: a context that cannot host a tooltip —
-i18n-interpolated strings, exports, titles — carries the full-precision string itself.
+tooltip. This is the escape hatch that keeps a reduced cell recoverable — for a pointer. The
+shared tooltip's trigger is a plain span that takes no focus, so a hidden reading is not reachable
+by keyboard or touch, and a reduced label is all those readers get. Operational times are
+unaffected, since they carry their zone in the visible string, which is what D5's safety rests on;
+what a keyboard reader cannot recover is the seconds and zone behind a queue or compact label.
+Closing that would make every tooltip in the app a tab stop, which is a larger decision than this
+design. The rule cuts both ways: a tooltip carries only what its label hides, so a label already
+showing the full instant gets none of it repeated. Corollary: a context that cannot host a tooltip
+— i18n-interpolated strings, exports, titles — carries the full-precision string itself.
 
 **D7 — History views carry two precision tiers.**
 *A history row orients; a history record testifies.* Full precision (seconds + timezone,
@@ -288,11 +293,11 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     modules that define the readings, it rejects `read` and `nextChangeAt` reached as a member —
     under an alias, through a local, through a table, through `.call`, passed as a callback,
     optionally chained, or keyed by a literal — destructured one member at a time, and defined
-    on an object, which is what keeps a display from assembling a reading of its own. Two
-    spellings get past it, both measured: a key held in a variable, and a destructure taking both
-    members at once. Neither is what anyone writes by accident. Test files are excluded, since a
-    test builds a reading and reads it directly, and matching the member reserves both names
-    across the app — a permission object spelled `{ read: true }` would be reported too. The rule
+    on an object, which is what keeps a display from assembling a reading of its own. What gets
+    past it, measured: a key that is not a plain identifier or quoted string, and a destructure of
+    two or more properties. Neither is what anyone writes by accident. Test files are excluded,
+    since a test builds a reading and reads it directly, and matching the member reserves both
+    names across the app — a permission object spelled `{ read: true }` would be reported too. The rule
     is the convention; the plugin is what makes drifting off it loud.
   - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip time
     the machine sleeps, so the clock re-checks at least once a minute: a display is at most a
@@ -387,6 +392,11 @@ masking-exemption expiry label, the sample-instance expiry alert, and the access
 badge.
 
 The rule governs displays of time. Two kinds of clock read stay outside it: **query membership** —
-the masking-exemption status filter, the role-expiry reminder's "within two days" list — which,
-like the fetched data itself, reflects when the query ran; and the **input side**, the validation
-of an expiration being entered, deferred with the pickers.
+the masking-exemption status filter, the role-expiry reminder's "within two days" list — which
+reflects when the list was last computed, not the passing second; and the **input side**, the
+validation of an expiration being entered, deferred with the pickers. Where that list is computed
+server-side, that is when the query ran. Where it is computed in the browser, as the
+masking-exemption filter is, it is whenever the page last re-rendered for some other reason — so a
+grant already showing its own expiry label, which is on the clock, can still sit under the Active
+filter. Moving the bucket with the label would mean rows leaving a list while someone reads it,
+which is a product call this design does not make.

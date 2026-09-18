@@ -2,9 +2,17 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-// The real datetime module is loaded below for its domain check, and it reads
-// the active locale from here rather than from the react-i18next mock.
-vi.mock("@/lib/i18n", () => ({ default: { language: "en-US" } }));
+// The real datetime module is loaded below for its domain check, and importing
+// it reaches this one. Stubbed so a test does not boot i18next and pull every
+// locale bundle, and backed by the same state as the stub above so the file has
+// one active language rather than two that happen not to meet.
+vi.mock("@/lib/i18n", () => ({
+  default: {
+    get language() {
+      return language.current;
+    },
+  },
+}));
 
 // Enough of react-i18next to carry the one thing a timestamp depends on: a
 // component that calls useTranslation re-renders when the language changes.
@@ -115,6 +123,7 @@ describe("HumanizeTs", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
+    language.current = "en";
     formatters.formatAbsoluteDateTime.mockClear();
   });
 
@@ -190,17 +199,20 @@ describe("HumanizeTs", () => {
     expect(container.textContent).toBe("");
   });
 
-  test("re-reads every label when the language changes", () => {
-    // The only thing that re-renders a timestamp on a language switch is its
-    // own useTranslation subscription: a reading holds no locale, and a fixed
-    // one holds no subscription to the clock either.
-    const { container, root } = mount();
-    act(() => root.render(<HumanizeTs tsMs={1_000_000} mode="compact" />));
-    expect(container.textContent).toContain("compact:1000000:en");
+  test.each(["compact", "operational", "datetime"] as const)(
+    "re-reads a %s label when the language changes",
+    (mode) => {
+      // The only thing that re-renders a timestamp on a language switch is its
+      // own useTranslation subscription: a reading holds no locale, and a fixed
+      // one holds no subscription to the clock either.
+      const { container, root } = mount();
+      act(() => root.render(<HumanizeTs tsMs={1_000_000} mode={mode} />));
+      expect(container.textContent).toContain(":1000000:en");
 
-    act(() => language.switchTo("zh-CN"));
-    expect(container.textContent).toContain("compact:1000000:zh-CN");
-  });
+      act(() => language.switchTo("zh-CN"));
+      expect(container.textContent).toContain(":1000000:zh-CN");
+    }
+  );
 
   test("omits the tooltip when tooltip is false", async () => {
     const { container, root } = mount();
