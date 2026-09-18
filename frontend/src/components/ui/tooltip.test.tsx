@@ -1,4 +1,5 @@
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
+import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -31,6 +32,14 @@ vi.mock("@base-ui/react/tooltip", async (importOriginal) => {
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
+const mount = (ui: ReactElement) => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  act(() => root.render(ui));
+  return { container, root };
+};
+
 describe("Tooltip", () => {
   afterEach(() => {
     recordTooltipProvider.mockClear();
@@ -44,15 +53,10 @@ describe("Tooltip", () => {
   ])("keeps the caller's trigger element %s", (_name, content) => {
     // The element carries the caller's layout, so a row must not gain or lose
     // it with the tooltip's content.
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const root = createRoot(container);
-    act(() =>
-      root.render(
+    const { container, root } = mount(
         <Tooltip content={content} render={<span className="shrink-0" />}>
           12:00
         </Tooltip>
-      )
     );
 
     const trigger = container.querySelector(".shrink-0");
@@ -61,15 +65,48 @@ describe("Tooltip", () => {
     act(() => root.unmount());
   });
 
-  test("blocks keep their block trigger when there is nothing to say", () => {
+  test("blocks trigger a block, and add nothing when silent", () => {
+    // The block wrapper is this component's own default rather than layout a
+    // caller asked for, so a field with no tooltip is left as it was.
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
     act(() =>
-      root.render(<BlockTooltip content={undefined}>a field</BlockTooltip>)
+      root.render(<BlockTooltip content={<span>why</span>}>a field</BlockTooltip>)
+    );
+    expect(container.querySelector(".flex-1")).not.toBeNull();
+
+    act(() => root.render(<BlockTooltip content={undefined}>a field</BlockTooltip>));
+    expect(container.querySelector(".flex-1")).toBeNull();
+    expect(container.textContent).toBe("a field");
+    act(() => root.unmount());
+  });
+
+  test.each([
+    ["an empty string", ""],
+    ["nothing", undefined],
+  ])("opens nothing when its body is %s", async (_name, content) => {
+    // Callers pass strings that can be empty -- a disabled reason, an option's
+    // hint -- and an empty one is a tooltip with nothing to open.
+    vi.useFakeTimers();
+    const { container, root } = mount(
+        <Tooltip content={content}>
+          <button type="button">Trigger</button>
+        </Tooltip>
     );
 
-    expect(container.querySelector(".flex-1")).not.toBeNull();
+    await act(async () => {
+      container
+        .querySelector("button")
+        ?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(100);
+    });
+
+    // Not the text -- an empty body renders an empty popup, which reads the
+    // same. What must not exist is the popup.
+    expect(
+      document.getElementById("bb-react-layer-overlay")?.childElementCount ?? 0
+    ).toBe(0);
     act(() => root.unmount());
   });
 
