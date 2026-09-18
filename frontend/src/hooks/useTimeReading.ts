@@ -73,6 +73,7 @@ function tick(): void {
     clockHighWaterMs = nowMs;
   }
   let nextMs = Number.POSITIVE_INFINITY;
+  let wokeAnyone = false;
   for (const subscriber of subscribers) {
     const isDue = subscriber.changesAtMs <= nowMs;
     if (isDue) {
@@ -82,9 +83,12 @@ function tick(): void {
     // declared: that is absolute, so it survives and still gets its own wake.
     if (isDue || clockSteppedBack) {
       subscriber.wake();
-      lastWakeMs = nowMs;
+      wokeAnyone = true;
     }
     nextMs = Math.min(nextMs, subscriber.changesAtMs);
+  }
+  if (wokeAnyone) {
+    lastWakeMs = nowMs;
   }
   arm(nextMs);
 }

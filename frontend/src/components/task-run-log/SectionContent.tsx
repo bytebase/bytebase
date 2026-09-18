@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FullDateTime } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { formatAbsoluteDateTime } from "@/utils";
 import type { Section } from "./types";
-
-// Mounts only while the tooltip is open, so the rows nobody hovers cost
-// nothing.
-function FullDateTime({ tsMs }: { tsMs: number }) {
-  return <>{formatAbsoluteDateTime(tsMs)}</>;
-}
 
 const ITEM_HEIGHT = 20;
 const MAX_VISIBLE_ITEMS = 10;

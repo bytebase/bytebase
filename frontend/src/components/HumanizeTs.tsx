@@ -40,7 +40,7 @@ interface HumanizeTsProps {
 
 // Tooltip bodies mount only while open, so as components they cost nothing
 // for the rows nobody hovers, and a time-varying one can keep counting.
-function FullDateTime({ tsMs }: { tsMs: number }) {
+export function FullDateTime({ tsMs }: { tsMs: number }) {
   return <>{formatAbsoluteDateTime(tsMs)}</>;
 }
 
@@ -86,15 +86,13 @@ export function HumanizeTs({
 }: HumanizeTsProps) {
   // Subscribe to locale changes so the rendered strings update on a language switch.
   useTranslation();
-  const tsMs = ts * 1000;
-  const { label: labelReading, Hidden } = MODES[mode];
   // An unvalidated string reaching `new Date(...)` gives NaN, which `Intl`
   // throws on; a row loses its timestamp rather than the page its subtree.
-  const label = useTimeReading(
-    labelReading,
-    Number.isFinite(tsMs) ? tsMs : undefined
-  );
-  if (label === undefined) {
+  const instantMs = ts * 1000;
+  const tsMs = Number.isFinite(instantMs) ? instantMs : undefined;
+  const { label: labelReading, Hidden } = MODES[mode];
+  const label = useTimeReading(labelReading, tsMs);
+  if (tsMs === undefined) {
     return null;
   }
   if (!tooltip) {
