@@ -306,6 +306,20 @@ that reopens a folded failure is the flip to the phase where that failure is the
 survive polls, section collapse and the sole-to-multi swap *within* a phase, and a new phase starts
 fresh.
 
+**D15 · The columns before the statement reserve their width.** The relative-time column has none,
+and it is rendered only when it has a value (`SectionContent.tsx:55-59`). So `+0ms`, `+12ms` and
+`+506ms` each push everything after them by a character, and the first row of a section — which has
+no relative time at all — drops the column and jumps a further seven. Measured on the mockups, the
+statement starts at three different x positions inside one section: 228px, 235px and 242px. The log
+has always been ragged this way and nobody noticed, because ragged text still reads as text; a
+column of identical chevrons beside it does not. So the span renders always, with `min-w-[7ch]`,
+right-aligned, keeping its `tabular-nums` — seven characters covers every value below 100 seconds
+and longer ones push as they do today. The index moves from `w-6` to `min-w-6` for the same reason:
+a fixed 24px clips at four digits, which `MAX_RENDERED_ITEMS` and D13 together can reach. The UX
+contract already asks for right-aligned numerics in tables; these are the same columns in a
+different frame. This straightens the statement column too, which is the part of the fix that
+improves the log as it stands today.
+
 ## States
 
 Mockups A–E are in the PR description. Product typography, spacing and semantic colors are taken
@@ -313,8 +327,8 @@ from the live component.
 
 | | State | What it settles |
 |---|---|---|
-| A | Today | The 80-character cut, and a failed row that is error-only |
-| B | Folded, hover | D2, D3, D5, D6, D11 — one meaning per control, reserved slots |
+| A | Today | The 80-character cut, a failed row that is error-only, and the ragged left edge of D15 |
+| B | Folded, hover | D2, D3, D5, D6, D11, D15 — one meaning per control, reserved slots, a straight column |
 | C | Unfolded | D8, D9, D10 — verbatim formatting, copy in the block, raised cap, one scrollbar |
 | D | A failed command | D1, D3, D4, D10 — the error keeps the line, the failed statement and its copy sit beneath it |
 | E | Narrow container | D2 — the same rows in the deploy sheet, clamped by its width |
@@ -329,7 +343,7 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 | `task-run-log/types.ts` | `statement?: string` and `error?: string` on `DisplayItem` |
 | `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section |
 | `task-run-log/useTaskRunLogSections.ts` | The hook owns every builder call — flat, per-replica, release-file and orphan — so it forwards `taskRunStatus` into all of them; nothing else invokes the builders, and a guard that stops here is a guard that never runs |
-| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28 |
+| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28, and the reserved timestamp and index columns (D15) |
 | `task-run-log/TaskRunLogViewer.tsx` | The reader's fold overrides, held above the conditional mount and cleared with `taskRunName` (D14) |
 | `locales/en-US.json` | Two accessible names |
 
