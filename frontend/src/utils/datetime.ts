@@ -5,7 +5,7 @@ const MINUTE_MS = 60 * SECOND_MS;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
-export const RELATIVE_THRESHOLD_MS = 30 * DAY_MS;
+const RELATIVE_THRESHOLD_MS = 30 * DAY_MS;
 const NOW_THRESHOLD_MS = 10 * SECOND_MS;
 
 // The range a time value can occupy. Beyond it `Date` holds no time and the
@@ -26,7 +26,7 @@ export function displayableInstantMs(ms: number): number | undefined {
     : undefined;
 }
 
-export function getActiveLocale(): string {
+function getActiveLocale(): string {
   return i18n.language;
 }
 
@@ -132,7 +132,7 @@ function formatQueueTime(timestampMs: number): string {
   return formatRelativeTime(timestampMs);
 }
 
-export function formatCompactDateTime(timestampMs: number): string {
+function formatCompactDateTime(timestampMs: number): string {
   return dateTimeFormatter("compact", {
     month: "short",
     day: "numeric",
@@ -142,7 +142,7 @@ export function formatCompactDateTime(timestampMs: number): string {
   }).format(timestampMs);
 }
 
-export function formatOperationalDateTime(timestampMs: number): string {
+function formatOperationalDateTime(timestampMs: number): string {
   return dateTimeFormatter("operational", {
     month: "short",
     day: "numeric",
