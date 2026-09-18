@@ -2,7 +2,6 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatTaskRunDuration } from "@/lib/taskRun";
 import { cn } from "@/lib/utils";
-import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
@@ -25,6 +24,7 @@ import {
 import { DeployTaskBody } from "./DeployTaskBody";
 import { DeployTaskHeader } from "./DeployTaskHeader";
 import { DeployTaskRunHistorySheet } from "./DeployTaskRunHistorySheet";
+import { scheduledRunTimeMs } from "./scheduledRunTime";
 import { useDeployTaskActions } from "./taskActions";
 import { useDeployTaskStatement } from "./useDeployTaskStatement";
 
@@ -133,10 +133,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
     latestTaskRun.hasPriorBackup
       ? latestTaskRun
       : undefined;
-  const scheduledTimeMs =
-    task.runTime && task.status === Task_Status.PENDING
-      ? getTimeForPbTimestampProtoEs(task.runTime)
-      : undefined;
+  const scheduledTimeMs = scheduledRunTimeMs(task);
   // Same duration source as the history sheet and the expanded body, so all
   // three render identical strings for the same run.
   const timingDisplay = latestTaskRun
