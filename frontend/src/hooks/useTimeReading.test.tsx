@@ -200,10 +200,14 @@ describe("useTimeReading", () => {
     expect(renders[1]).toBeGreaterThanOrEqual(10);
   });
 
-  test("releases the timer when the last subscriber leaves", () => {
-    const { root } = mount([{ changesAtMs: () => Date.now() + 1_000 }]);
+  test("holds one timer however often it re-arms, and none once empty", () => {
+    const { root } = mount([{ changesAtMs: () => Date.now() + 60_000 }]);
     expect(vi.getTimerCount()).toBe(1);
 
+    const nearer = mount([{ changesAtMs: () => Date.now() + 1_000 }]);
+    expect(vi.getTimerCount()).toBe(1);
+
+    act(() => nearer.root.unmount());
     act(() => root.unmount());
     expect(vi.getTimerCount()).toBe(0);
   });
@@ -302,6 +306,22 @@ describe("useTimeReading", () => {
       vi.advanceTimersByTime(60_000);
     });
     expect(renders[0]).toBe(2);
+  });
+
+  test("leaves a settled display alone when the wall clock steps backward", () => {
+    // A reading settled for good holds no subscription, so the step cannot
+    // reach it -- the price of a settled display costing nothing.
+    const { renders } = mount([
+      { changesAtMs: () => Number.POSITIVE_INFINITY },
+      { changesAtMs: () => Date.now() + 5 * 60_000 },
+    ]);
+
+    vi.setSystemTime(Date.now() - 10 * 60_000);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(renders[1]).toBe(2);
+    expect(renders[0]).toBe(1);
   });
 
   test("never stretches the wake gap past its bound after a clock step", () => {
