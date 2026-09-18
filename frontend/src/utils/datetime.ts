@@ -20,10 +20,12 @@ const MAX_TIME_VALUE_MS = 8.64e15;
  * throws. A display asks here rather than testing a value itself, which is how
  * a guard drifts from the domain it guards.
  */
-export function displayableInstantMs(ms: number): number | undefined {
-  return Number.isFinite(ms) && Math.abs(ms) <= MAX_TIME_VALUE_MS
-    ? ms
-    : undefined;
+export function displayableInstantMs(
+  ms: number | undefined
+): number | undefined {
+  // NaN and the infinities all fail the range test, so this is the whole
+  // domain. Absence passes through it rather than being tested for twice.
+  return ms !== undefined && Math.abs(ms) <= MAX_TIME_VALUE_MS ? ms : undefined;
 }
 
 function getActiveLocale(): string {

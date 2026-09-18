@@ -34,8 +34,8 @@ export function ThreadComment({
   const { t } = useTranslation();
   const creator =
     useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
-  const createdTs = getTimeForPbTimestampProtoEs(comment.createTime, 0);
-  const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime, 0);
+  const createdTs = getTimeForPbTimestampProtoEs(comment.createTime);
+  const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime);
   const isEdited = createdTs !== updatedTs;
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(comment.comment);
@@ -87,12 +87,10 @@ export function ThreadComment({
                 {creator.title || creator.email}
               </span>
             </div>
-            {comment.createTime && (
-              <HumanizeTs
-                className="hidden shrink-0 whitespace-nowrap text-xs text-control-light @2xs/comment:inline"
-                tsMs={createdTs}
-              />
-            )}
+            <HumanizeTs
+              className="hidden shrink-0 whitespace-nowrap text-xs text-control-light @2xs/comment:inline"
+              tsMs={createdTs}
+            />
             {isEdited && (
               <span className="hidden shrink-0 whitespace-nowrap text-xs text-control-light @2xs/comment:inline">
                 ({t("common.edited")})

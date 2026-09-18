@@ -218,8 +218,8 @@ function IssueCommentHeader({
   const { t } = useTranslation();
   const creator =
     useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
-  const createdTs = getTimeForPbTimestampProtoEs(comment.createTime, 0);
-  const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime, 0);
+  const createdTs = getTimeForPbTimestampProtoEs(comment.createTime);
+  const updatedTs = getTimeForPbTimestampProtoEs(comment.updateTime);
   const isEdited =
     createdTs !== updatedTs &&
     getIssueCommentType(comment) === IssueCommentType.USER_COMMENT;
@@ -239,9 +239,7 @@ function IssueCommentHeader({
           {t("activity.n-similar-activities", { count: similarCount })}
         </Badge>
       )}
-      {comment.createTime && (
-        <HumanizeTs className="text-xs text-control-light" tsMs={createdTs} />
-      )}
+      <HumanizeTs className="text-xs text-control-light" tsMs={createdTs} />
       {isEdited && (
         <span className="text-control-light text-xs">
           ({t("common.edited")})

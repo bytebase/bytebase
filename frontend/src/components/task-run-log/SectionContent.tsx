@@ -9,8 +9,7 @@ import type { Section } from "./types";
 
 // The full reading is offered only for an instant the formatters can render.
 const fullTime = (timeMs: number | undefined) => {
-  const instantMs =
-    timeMs === undefined ? undefined : displayableInstantMs(timeMs);
+  const instantMs = displayableInstantMs(timeMs);
   return instantMs === undefined ? undefined : (
     <FullDateTime tsMs={instantMs} />
   );

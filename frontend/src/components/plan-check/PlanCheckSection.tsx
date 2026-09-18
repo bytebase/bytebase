@@ -359,14 +359,12 @@ export function PlanCheckResultsDrawer({
                                 <CircleQuestionMark className="h-4 w-4 text-control-light" />
                               </Tooltip>
                             )}
-                            {group.createTime && (
-                              <HumanizeTs
-                                className="text-xs text-control-light"
-                                tsMs={getTimeForPbTimestampProtoEs(
-                                  group.createTime
-                                )}
-                              />
-                            )}
+                            <HumanizeTs
+                              className="text-xs text-control-light"
+                              tsMs={getTimeForPbTimestampProtoEs(
+                                group.createTime
+                              )}
+                            />
                           </div>
                         </div>
                         {group.target && (

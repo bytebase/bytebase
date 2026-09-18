@@ -197,13 +197,11 @@ export function HistoryPane() {
     >
       <div className="w-full flex flex-row justify-between items-center">
         <div className="flex items-start gap-x-1">
-          {history.createTime && (
-            <HumanizeTs
-              className="text-xs text-control-placeholder"
-              mode="compact"
-              tsMs={getTimeForPbTimestampProtoEs(history.createTime)}
-            />
-          )}
+          <HumanizeTs
+            className="text-xs text-control-placeholder"
+            mode="compact"
+            tsMs={getTimeForPbTimestampProtoEs(history.createTime)}
+          />
         </div>
         <div className="flex items-center gap-x-1">
           <Button

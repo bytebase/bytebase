@@ -1108,7 +1108,8 @@ function ExemptionGrantSection({
             )}
           />
           <span className="font-medium text-sm">{title}</span>
-          {!grant.expirationTimestamp || !daysLeft ? (
+          {/* No reading means no expiry: zero is this API's "never". */}
+          {!daysLeft ? (
             <span className="text-xs font-medium text-amber-600">
               {t("settings.sensitive-data.never-expires")}
             </span>

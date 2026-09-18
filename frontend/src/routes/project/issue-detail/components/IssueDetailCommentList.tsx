@@ -423,15 +423,12 @@ function IssueDescriptionCommentRow({
                     <span className="wrap-break-word min-w-0 text-control">
                       {t("activity.sentence.created-issue")}
                     </span>
-                    {page.issue?.createTime && (
-                      <HumanizeTs
-                        className="text-control-light"
-                        tsMs={getTimeForPbTimestampProtoEs(
-                          page.issue.createTime,
-                          0
-                        )}
-                      />
-                    )}
+                    <HumanizeTs
+                      className="text-control-light"
+                      tsMs={getTimeForPbTimestampProtoEs(
+                        page.issue?.createTime
+                      )}
+                    />
                   </div>
                   {allowEdit && !isEditing && (
                     <Button
