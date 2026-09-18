@@ -306,11 +306,6 @@ describe("reading boundaries", () => {
   describe.each([
     ["work-queue", queueTimeReading],
     ["relative", relativeTimeReading],
-    // A constant rendering names no instant at all, which is what keeps every
-    // absolute timestamp in every table off the shared clock.
-    ["absolute", absoluteTimeReading],
-    ["compact", compactTimeReading],
-    ["operational", operationalTimeReading],
   ])("%s", (_name, reading) => {
     test.each(boundaryCases(SAMPLED_AGES_MS))(
       "names the instant the reading changes (age $offset ms from $start, +$fractionMs ms)",
@@ -319,6 +314,25 @@ describe("reading boundaries", () => {
         expectBoundaryMatchesReading(reading, startMs - offset + fractionMs);
       }
     );
+  });
+
+  // A constant rendering names no instant at all, which is what keeps every
+  // absolute timestamp in every table off the shared clock. Sampled rather
+  // than swept: the ages only matter to a reading that changes with them, and
+  // all of these take the same branch.
+  describe.each([
+    ["absolute", absoluteTimeReading],
+    ["compact", compactTimeReading],
+    ["operational", operationalTimeReading],
+  ])("%s", (_name, reading) => {
+    test.each([
+      ["moments ago", SECOND_MS],
+      ["within the day", 5 * HOUR_MS],
+      ["past the relative threshold", 40 * DAY_MS],
+    ])("never changes, %s", (_label, ageMs) => {
+      const startMs = startAt(BOUNDARY_STARTS[0]);
+      expectBoundaryMatchesReading(reading, startMs - ageMs);
+    });
   });
 });
 
