@@ -4,6 +4,8 @@ package common
 import (
 	"context"
 
+	"connectrpc.com/connect"
+
 	"google.golang.org/protobuf/types/known/anypb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -70,6 +72,16 @@ func SetPermissionDenied(ctx context.Context) {
 	if setter, ok := ctx.Value(PermissionDeniedKey).(func()); ok {
 		setter()
 	}
+}
+
+// PermissionDeniedError is the refusal a handler answers with when its own
+// permission check turns the caller away. It marks the request, so the audit
+// interceptor streams the refusal and stamps it WARNING. A license gate, a
+// workflow state or an ownership rule answers connect.NewError directly: none
+// of them is a verdict about a permission the caller holds.
+func PermissionDeniedError(ctx context.Context, err error) *connect.Error {
+	SetPermissionDenied(ctx)
+	return connect.NewError(connect.CodePermissionDenied, err)
 }
 
 // WithSetHandlerReached registers a callback the ACL interceptor uses to report
