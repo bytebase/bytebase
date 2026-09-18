@@ -1,6 +1,6 @@
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
-import type { ComponentProps, ReactNode } from "react";
-import { cloneElement, isValidElement } from "react";
+import type { ComponentProps, ReactElement, ReactNode } from "react";
+import { cloneElement } from "react";
 import { cn } from "@/lib/utils";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
@@ -14,8 +14,13 @@ interface TooltipProps {
   readonly onOpenChange?: ComponentProps<
     typeof BaseTooltip.Root
   >["onOpenChange"];
-  /** The trigger element; defaults to an inline-flex wrapper around `children`. */
-  readonly render?: ComponentProps<typeof BaseTooltip.Trigger>["render"];
+  /**
+   * The trigger element; defaults to an inline-flex wrapper around `children`.
+   * An element rather than Base UI's wider render type, because this one is
+   * kept even when there is no tooltip, and a render *function* has nothing to
+   * be called with in that state.
+   */
+  readonly render?: ReactElement;
 }
 
 export function Tooltip({
@@ -33,11 +38,7 @@ export function Tooltip({
     // dropping it when there is nothing to say would move their classes onto a
     // grandchild in one state and not the other, which is a layout that breaks
     // only sometimes.
-    return isValidElement(render) ? (
-      cloneElement(render, undefined, children)
-    ) : (
-      <>{children}</>
-    );
+    return render ? cloneElement(render, undefined, children) : <>{children}</>;
   }
 
   return (
@@ -75,7 +76,10 @@ export function Tooltip({
  * form sections.
  */
 export function BlockTooltip({ render, ...props }: TooltipProps) {
-  return (
-    <Tooltip {...props} render={render ?? <div className="flex-1 min-w-0" />} />
-  );
+  // A caller's own element is kept in both states; this default is the
+  // tooltip's, so it comes and goes with the tooltip.
+  const blockTrigger = props.content ? (
+    <div className="flex-1 min-w-0" />
+  ) : undefined;
+  return <Tooltip {...props} render={render ?? blockTrigger} />;
 }
