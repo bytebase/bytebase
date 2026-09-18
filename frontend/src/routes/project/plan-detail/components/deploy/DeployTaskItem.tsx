@@ -133,10 +133,10 @@ export const DeployTaskItem = memo(function DeployTaskItem({
     latestTaskRun.hasPriorBackup
       ? latestTaskRun
       : undefined;
-  const scheduledTimeTs =
+  const scheduledTimeMs =
     task.runTime && task.status === Task_Status.PENDING
-      ? getTimeForPbTimestampProtoEs(task.runTime, 0) / 1000
-      : 0;
+      ? getTimeForPbTimestampProtoEs(task.runTime)
+      : undefined;
   // Same duration source as the history sheet and the expanded body, so all
   // three render identical strings for the same run.
   const timingDisplay = latestTaskRun
@@ -207,7 +207,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
             onRollback={() => setRollbackOpen(true)}
             onToggleExpand={() => onToggleExpand(task)}
             onToggleSelect={() => onToggleSelect(task)}
-            scheduledTimeTs={scheduledTimeTs}
+            scheduledTimeMs={scheduledTimeMs}
             showRollback={Boolean(rollbackableTaskRun)}
             task={task}
             timingDisplay={timingDisplay}

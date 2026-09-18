@@ -156,11 +156,13 @@ export function AccessGrantItem({
           )}
         </div>
         {expiration && (
-          <Tooltip content={expiration.hiddenDeadline}>
-            <span className="text-xs text-control-placeholder shrink-0">
+          // The span stays outside the tooltip: it carries this row's layout,
+          // and a tooltip with nothing to say renders its children bare.
+          <span className="text-xs text-control-placeholder shrink-0">
+            <Tooltip content={expiration.hiddenDeadline}>
               {expiration.text}
-            </span>
-          </Tooltip>
+            </Tooltip>
+          </span>
         )}
       </div>
 
