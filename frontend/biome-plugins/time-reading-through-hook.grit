@@ -1,16 +1,33 @@
 // A value that changes with time must be read through `useTimeReading`, which
 // pairs it with its own boundary and subscribes it to the shared clock. Reading
 // one directly renders a label that never updates -- the staleness bug
-// docs/design/timestamp-display.md exists to prevent. The readings compose each
-// other inside utils/datetime.ts and utils/accessGrant.ts, which this rule
-// excludes.
+// docs/design/timestamp-display.md exists to prevent.
+//
+// The rule is about the member, not the name it is reached through, so this
+// matches `read` and `nextChangeAt` wherever they are named: under an alias,
+// through a local or a table, via `.call`, passed as a callback, optionally
+// chained, keyed by a literal, or destructured. A key held in a variable is
+// the one spelling left, and nobody reaches for it by accident.
+//
+// The modules that define readings compose and build them, so biome.json
+// excludes utils/datetime.ts, utils/accessGrant.ts, and the hook itself.
 language js
 
-js"$reading.$member($args)" as $call where {
-  $reading <: r"[A-Za-z]+Reading",
-  or { $member <: `read`, $member <: `nextChangeAt` },
+pattern reached_past_the_hook() {
+  or {
+    js"$object.$member" where { or { $member <: `read`, $member <: `nextChangeAt` } },
+    js"$object?.read",
+    js"$object?.nextChangeAt",
+    js"{ read: $binding }",
+    js"{ nextChangeAt: $binding }",
+    js"{ $properties }" where { $properties <: contains or { `read`, `nextChangeAt` } },
+    js"$object[$key]" where { or { $key <: `"read"`, $key <: `"nextChangeAt"` } }
+  }
+}
+
+reached_past_the_hook() as $access where {
   register_diagnostic(
-    span=$call,
+    span=$access,
     message="Read a time-varying value through useTimeReading(reading, input), which subscribes it to the shared clock."
   )
 }

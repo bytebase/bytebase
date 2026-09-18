@@ -5,11 +5,13 @@ import type { TimeReading } from "@/utils/datetime";
  * A single clock shared by every time-varying display.
  *
  * Each subscriber declares the instant its rendering next changes, so the clock
- * holds one timeout, set for the earliest of those, and wakes only the
- * subscribers that are due. A due subscriber normally re-renders and declares
- * its next instant; one that names the same instant again -- a boundary held
- * stale, say -- is re-checked after a resync interval rather than on every
- * neighbour's wake.
+ * holds one timeout, set for the earliest of those, and wakes the subscribers
+ * that are due -- and every subscriber when the wall clock has stepped back,
+ * since a step invalidates what they show. Only a due subscriber retires the
+ * instant it declared: that instant is absolute, so a step leaves it standing.
+ * A due subscriber normally re-renders and declares its next instant; one that
+ * names the same instant again -- a boundary held stale, say -- is re-checked
+ * after a resync interval rather than on every neighbour's wake.
  */
 type Subscriber = {
   changesAtMs: number;
@@ -18,7 +20,10 @@ type Subscriber = {
 
 const subscribers = new Set<Subscriber>();
 let timer: ReturnType<typeof setTimeout> | undefined;
-let armedForMs = Number.POSITIVE_INFINITY;
+// The earliest deadline the live timer covers. The timer itself may fire
+// sooner -- a resync, or the gap held after a wake -- so this is what the
+// clock promises to reach, not when it next runs.
+let earliestDeadlineMs = Number.POSITIVE_INFINITY;
 // The latest clock reading the clock has seen, so a later reading below it
 // is proof the wall clock moved backward.
 let clockHighWaterMs = Number.NEGATIVE_INFINITY;
@@ -38,7 +43,7 @@ function disarm(): void {
     clearTimeout(timer);
     timer = undefined;
   }
-  armedForMs = Number.POSITIVE_INFINITY;
+  earliestDeadlineMs = Number.POSITIVE_INFINITY;
 }
 
 function arm(changesAtMs: number): void {
@@ -47,7 +52,7 @@ function arm(changesAtMs: number): void {
     return;
   }
   const nowMs = Date.now();
-  armedForMs = changesAtMs;
+  earliestDeadlineMs = changesAtMs;
   // A high-water mark, not the last reading: arming happens on any commit, and
   // taking the reading as-is after a backward step would erase the evidence of
   // it before the next check looked.
@@ -104,7 +109,7 @@ function useNow(changesAtMs: number | undefined): void {
     }
     const subscriber: Subscriber = { changesAtMs, wake };
     subscribers.add(subscriber);
-    if (changesAtMs < armedForMs) {
+    if (changesAtMs < earliestDeadlineMs) {
       arm(changesAtMs);
     }
     return () => {
