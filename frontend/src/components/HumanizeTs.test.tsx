@@ -135,6 +135,14 @@ describe("HumanizeTs", () => {
     expect(overlayText()).toContain("relative:45100");
   });
 
+  test("shows nothing for a time that is not a time", () => {
+    // An unvalidated string reaching `new Date(...)` gives NaN, and Intl throws
+    // on it; the row should lose its timestamp, not the page its subtree.
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs ts={Number.NaN} />));
+    expect(container.textContent).toBe("");
+  });
+
   test("omits the tooltip when tooltip is false", async () => {
     const { container, root } = mount();
     act(() => root.render(<HumanizeTs ts={1000} tooltip={false} />));
