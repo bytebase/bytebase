@@ -109,9 +109,7 @@ const advanceSeconds = (seconds: number) => {
   }
 };
 
-const secondsAgo = (seconds: number) =>
-  Math.floor(Date.now() / 1000) - seconds;
-
+const secondsAgo = (seconds: number) => Date.now() - seconds * 1000;
 
 describe("HumanizeTs", () => {
   beforeEach(() => {
@@ -136,7 +134,7 @@ describe("HumanizeTs", () => {
     "renders the %s reading and restores the full time on hover",
     async (mode, prefix) => {
       const { container, root } = mount();
-      act(() => root.render(<HumanizeTs mode={mode} ts={1000} />));
+      act(() => root.render(<HumanizeTs mode={mode} tsMs={1_000_000} />));
       expect(container.textContent).toContain(prefix);
 
       await openTooltip(container.firstElementChild);
@@ -146,7 +144,7 @@ describe("HumanizeTs", () => {
 
   test("builds the full time only once the tooltip opens", async () => {
     const { container, root } = mount();
-    act(() => root.render(<HumanizeTs ts={1000} />));
+    act(() => root.render(<HumanizeTs tsMs={1_000_000} />));
     expect(formatters.formatAbsoluteDateTime).not.toHaveBeenCalled();
 
     await openTooltip(container.firstElementChild);
@@ -156,7 +154,7 @@ describe("HumanizeTs", () => {
   test("renders one element, so layout classes reach the box that lays out", () => {
     const { container, root } = mount();
     act(() =>
-      root.render(<HumanizeTs className="block truncate" ts={1000} />)
+      root.render(<HumanizeTs className="block truncate" tsMs={1_000_000} />)
     );
     expect(container.childElementCount).toBe(1);
     expect(container.firstElementChild?.className).toContain("block truncate");
@@ -165,7 +163,7 @@ describe("HumanizeTs", () => {
 
   test("offers the age on a full cell, and keeps it counting while open", async () => {
     const { container, root } = mount();
-    act(() => root.render(<HumanizeTs mode="datetime" ts={secondsAgo(30)} />));
+    act(() => root.render(<HumanizeTs mode="datetime" tsMs={secondsAgo(30)} />));
     expect(container.textContent).toContain("absolute:");
 
     await openTooltip(container.firstElementChild);
@@ -184,11 +182,11 @@ describe("HumanizeTs", () => {
     // An unvalidated string reaching `new Date(...)` gives NaN, and Intl throws
     // on it; the row should lose its timestamp, not the page its subtree.
     const { container, root } = mount();
-    act(() => root.render(<HumanizeTs ts={Number.NaN} />));
+    act(() => root.render(<HumanizeTs tsMs={Number.NaN} />));
     expect(container.textContent).toBe("");
 
-    // Finite, and still no instant it can name: Intl throws on this too.
-    act(() => root.render(<HumanizeTs ts={1e15} />));
+    // Finite, and one millisecond past the last instant there is.
+    act(() => root.render(<HumanizeTs tsMs={8.64e15 + 1} />));
     expect(container.textContent).toBe("");
   });
 
@@ -197,7 +195,7 @@ describe("HumanizeTs", () => {
     // own useTranslation subscription: a reading holds no locale, and a fixed
     // one holds no subscription to the clock either.
     const { container, root } = mount();
-    act(() => root.render(<HumanizeTs ts={1000} mode="compact" />));
+    act(() => root.render(<HumanizeTs tsMs={1_000_000} mode="compact" />));
     expect(container.textContent).toContain("compact:1000000:en");
 
     act(() => language.switchTo("zh-CN"));
@@ -206,7 +204,7 @@ describe("HumanizeTs", () => {
 
   test("omits the tooltip when tooltip is false", async () => {
     const { container, root } = mount();
-    act(() => root.render(<HumanizeTs ts={1000} tooltip={false} />));
+    act(() => root.render(<HumanizeTs tsMs={1_000_000} tooltip={false} />));
     expect(container.textContent).toContain("queue:");
 
     await openTooltip(container.firstElementChild);
@@ -215,7 +213,7 @@ describe("HumanizeTs", () => {
 
   test("keeps a mounted work-queue label up with the clock", () => {
     const { container, root } = mount();
-    act(() => root.render(<HumanizeTs ts={secondsAgo(30)} tooltip={false} />));
+    act(() => root.render(<HumanizeTs tsMs={secondsAgo(30)} tooltip={false} />));
     expect(container.textContent).toBe("queue:30000");
 
     // The work-queue reading's boundary is 60s after the timestamp.
@@ -230,7 +228,7 @@ describe("HumanizeTs", () => {
     (mode) => {
       const { root } = mount();
       act(() =>
-        root.render(<HumanizeTs mode={mode} ts={secondsAgo(30)} tooltip={false} />)
+        root.render(<HumanizeTs mode={mode} tsMs={secondsAgo(30)} tooltip={false} />)
       );
       expect(vi.getTimerCount()).toBe(0);
     }

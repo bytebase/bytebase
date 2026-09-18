@@ -103,9 +103,7 @@ export function DatabaseChangelogTable({
                 {changelog.createTime ? (
                   <HumanizeTs
                     mode="compact"
-                    ts={
-                      getTimeForPbTimestampProtoEs(changelog.createTime) / 1000
-                    }
+                    tsMs={getTimeForPbTimestampProtoEs(changelog.createTime)}
                   />
                 ) : (
                   "-"

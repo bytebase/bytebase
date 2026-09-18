@@ -1887,7 +1887,7 @@ function EditMemberRoleDrawer({
                                   {row.expiration ? (
                                     <HumanizeTs
                                       mode="operational"
-                                      ts={row.expiration.getTime() / 1000}
+                                      tsMs={row.expiration.getTime()}
                                     />
                                   ) : (
                                     t("project.members.never-expires")

@@ -240,10 +240,7 @@ function IssueCommentHeader({
         </Badge>
       )}
       {comment.createTime && (
-        <HumanizeTs
-          className="text-xs text-control-light"
-          ts={createdTs / 1000}
-        />
+        <HumanizeTs className="text-xs text-control-light" tsMs={createdTs} />
       )}
       {isEdited && (
         <span className="text-control-light text-xs">

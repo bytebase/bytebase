@@ -179,11 +179,7 @@ export function ProjectReleaseDetailPage({
       </div>
 
       <ReleaseBasicInfo
-        createTime={
-          release.createTime
-            ? getTimeForPbTimestampProtoEs(release.createTime) / 1000
-            : undefined
-        }
+        createTimeMs={getTimeForPbTimestampProtoEs(release.createTime)}
         vcsType={release.vcsSource?.vcsType}
         vcsUrl={release.vcsSource?.url}
       />
@@ -248,11 +244,11 @@ function beautifyUrl(url: string): string {
 }
 
 function ReleaseBasicInfo({
-  createTime,
+  createTimeMs,
   vcsType,
   vcsUrl,
 }: {
-  createTime: number | undefined;
+  createTimeMs: number | undefined;
   vcsType: VCSType | undefined;
   vcsUrl: string | undefined;
 }) {
@@ -263,8 +259,8 @@ function ReleaseBasicInfo({
     <div className="flex flex-row items-center pl-1 gap-4">
       <div className="flex items-center gap-1">
         <Clock4 className="size-4 text-control-light" />
-        {createTime !== undefined && (
-          <HumanizeTs ts={createTime} className="text-sm text-control" />
+        {createTimeMs !== undefined && (
+          <HumanizeTs tsMs={createTimeMs} className="text-sm text-control" />
         )}
       </div>
       {showVcs && (

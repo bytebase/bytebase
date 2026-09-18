@@ -87,7 +87,7 @@ export function DeployTaskHeader({
             {isExpanded && scheduledTimeMs !== undefined && (
               <span className="flex shrink-0 items-center gap-x-1 rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
                 <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
-                <HumanizeTs mode="operational" ts={scheduledTimeMs / 1000} />
+                <HumanizeTs mode="operational" tsMs={scheduledTimeMs} />
               </span>
             )}
           </div>
@@ -104,10 +104,7 @@ export function DeployTaskHeader({
                 <span className="flex items-center gap-x-1 text-info">
                   <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
                   {scheduledTimeMs !== undefined ? (
-                    <HumanizeTs
-                      mode="operational"
-                      ts={scheduledTimeMs / 1000}
-                    />
+                    <HumanizeTs mode="operational" tsMs={scheduledTimeMs} />
                   ) : (
                     timingDisplay
                   )}
@@ -165,9 +162,7 @@ export function DeployTaskHeader({
           {latestTaskRun?.createTime && (
             <span className="rounded-full border bg-control-bg px-2 py-0.5 text-control-light">
               <HumanizeTs
-                ts={
-                  getTimeForPbTimestampProtoEs(latestTaskRun.createTime) / 1000
-                }
+                tsMs={getTimeForPbTimestampProtoEs(latestTaskRun.createTime)}
               />
             </span>
           )}

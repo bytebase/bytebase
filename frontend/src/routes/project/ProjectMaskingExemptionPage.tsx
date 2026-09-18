@@ -1117,7 +1117,7 @@ function ExemptionGrantSection({
               <HumanizeTs
                 className="text-xs text-control-light line-through"
                 mode="operational"
-                ts={grant.expirationTimestamp / 1000}
+                tsMs={grant.expirationTimestamp}
               />
               <span className="text-xs text-control-light">
                 ({t("sql-editor.expired")})
@@ -1137,7 +1137,7 @@ function ExemptionGrantSection({
                 (
                 <HumanizeTs
                   mode="operational"
-                  ts={grant.expirationTimestamp / 1000}
+                  tsMs={grant.expirationTimestamp}
                 />
                 )
               </span>

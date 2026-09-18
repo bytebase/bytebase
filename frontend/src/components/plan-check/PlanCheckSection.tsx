@@ -362,11 +362,9 @@ export function PlanCheckResultsDrawer({
                             {group.createTime && (
                               <HumanizeTs
                                 className="text-xs text-control-light"
-                                ts={
-                                  getTimeForPbTimestampProtoEs(
-                                    group.createTime
-                                  ) / 1000
-                                }
+                                tsMs={getTimeForPbTimestampProtoEs(
+                                  group.createTime
+                                )}
                               />
                             )}
                           </div>

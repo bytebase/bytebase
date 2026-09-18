@@ -224,7 +224,7 @@ function CollapsedThreadRow({
       {comment.createTime && (
         <HumanizeTs
           className="hidden shrink-0 text-xs text-control-light @xl:inline"
-          ts={getTimeForPbTimestampProtoEs(comment.createTime) / 1000}
+          tsMs={getTimeForPbTimestampProtoEs(comment.createTime)}
         />
       )}
       {resolved && (

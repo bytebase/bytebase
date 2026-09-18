@@ -171,7 +171,7 @@ export function IssueDetailAccessGrantDetails() {
               ) : (
                 <HumanizeTs
                   mode="operational"
-                  ts={expirationInfo.expireTimeMs / 1000}
+                  tsMs={expirationInfo.expireTimeMs}
                 />
               )}
             </div>

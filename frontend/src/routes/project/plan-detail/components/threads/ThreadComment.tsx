@@ -90,7 +90,7 @@ export function ThreadComment({
             {comment.createTime && (
               <HumanizeTs
                 className="hidden shrink-0 whitespace-nowrap text-xs text-control-light @2xs/comment:inline"
-                ts={createdTs / 1000}
+                tsMs={createdTs}
               />
             )}
             {isEdited && (

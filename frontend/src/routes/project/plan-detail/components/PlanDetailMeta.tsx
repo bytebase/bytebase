@@ -87,7 +87,7 @@ export function PlanDetailMeta() {
       {createdTimeMs !== undefined && (
         <>
           <span aria-hidden="true">·</span>
-          <HumanizeTs ts={createdTimeMs / 1000} />
+          <HumanizeTs tsMs={createdTimeMs} />
         </>
       )}
 

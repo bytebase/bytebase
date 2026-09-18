@@ -884,7 +884,7 @@ function ChangelogLabel({ entry }: { entry: ChangelogEntry }) {
     <span className="flex items-center gap-1.5 truncate">
       <span className="text-control-light">
         {entry.date ? (
-          <HumanizeTs ts={entry.date.getTime() / 1000} />
+          <HumanizeTs tsMs={entry.date.getTime()} />
         ) : (
           "Latest version"
         )}
