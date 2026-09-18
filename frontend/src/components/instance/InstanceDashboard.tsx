@@ -67,6 +67,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableCellContent } from "@/components/ui/table-cell-content";
 import {
   WorkspacePageContent,
   WorkspacePageFooter,
@@ -914,7 +915,6 @@ export function InstanceDashboard({
         />
       ),
       defaultWidth: 48,
-      cellClassName: "px-4 py-2",
       onCellClick: (instance, e) => {
         e.stopPropagation();
         toggleSelection(instance.name);
@@ -983,7 +983,7 @@ export function InstanceDashboard({
         const isExpanded = expandedDataSources.has(instance.name);
         const hasMultipleDS = instance.dataSources.length > 1;
         return (
-          <div className="flex items-start gap-x-2">
+          <div className="flex items-center gap-x-2 min-w-0">
             <span className="truncate">
               {isExpanded
                 ? instance.dataSources.map((ds, idx) => (
@@ -1032,7 +1032,10 @@ export function InstanceDashboard({
       title: "",
       defaultWidth: 50,
       render: (instance) => (
-        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex w-full justify-end"
+          onClick={(e) => e.stopPropagation()}
+        >
           <InstanceActionDropdown
             instance={instance}
             project={project}
@@ -1165,7 +1168,9 @@ export function InstanceDashboard({
                           : undefined
                       }
                     >
-                      {col.render(instance)}
+                      <TableCellContent>
+                        {col.render(instance)}
+                      </TableCellContent>
                     </TableCell>
                   ))}
                 </TableRow>
