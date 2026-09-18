@@ -4,7 +4,17 @@ import { FullDateTime } from "@/components/HumanizeTs";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { displayableInstantMs } from "@/utils/datetime";
 import type { Section } from "./types";
+
+// A log line carries 0 for a step that has no time yet, and the full reading
+// is only offered for an instant the formatters can render.
+const fullTime = (timeMs: number) => {
+  const instantMs = timeMs > 0 ? displayableInstantMs(timeMs) : undefined;
+  return instantMs === undefined ? undefined : (
+    <FullDateTime tsMs={instantMs} />
+  );
+};
 
 const ITEM_HEIGHT = 20;
 const MAX_VISIBLE_ITEMS = 10;
@@ -51,15 +61,9 @@ export function SectionContent({
           <span className="w-6 shrink-0 text-right text-control-placeholder tabular-nums">
             {index + 1}
           </span>
-          <Tooltip
-            content={
-              item.timeMs > 0 ? <FullDateTime tsMs={item.timeMs} /> : undefined
-            }
-          >
-            <span className="shrink-0 text-control-placeholder tabular-nums">
-              {item.time}
-            </span>
-          </Tooltip>
+          <span className="shrink-0 text-control-placeholder tabular-nums">
+            <Tooltip content={fullTime(item.timeMs)}>{item.time}</Tooltip>
+          </span>
           {item.relativeTime ? (
             <span className="shrink-0 text-control-placeholder tabular-nums">
               {item.relativeTime}
