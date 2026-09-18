@@ -20,15 +20,14 @@ const withLocale = (language: string, run: () => void) => {
 };
 
 import {
+  compactTimeReading,
   countdownReading,
   daysLeftReading,
   displayableInstantMs,
   formatAbsoluteDateTime,
-  formatCompactDateTime,
-  formatOperationalDateTime,
+  operationalTimeReading,
   passedReading,
   queueTimeReading,
-  RELATIVE_THRESHOLD_MS,
   relativeTimeReading,
   type TimeReading,
 } from "./datetime";
@@ -37,6 +36,9 @@ const SECOND_MS = 1_000;
 const MINUTE_MS = 60_000;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
+// The doc's threshold, spelled out rather than imported: a test that borrows
+// the value it checks cannot catch the value changing.
+const RELATIVE_THRESHOLD_MS = 30 * DAY_MS;
 
 describe("the relative reading", () => {
   beforeEach(() => {
@@ -141,38 +143,38 @@ describe("the work-queue reading", () => {
   });
 });
 
-describe("formatCompactDateTime", () => {
+describe("the compact reading", () => {
   const ts = new Date("2026-08-26T06:03:22Z").getTime();
 
   test("drops the seconds and the timezone a history row does not need", () => {
-    expect(formatCompactDateTime(ts)).toBe("Aug 26, 2026, 2:03 PM");
+    expect(compactTimeReading.read(ts)).toBe("Aug 26, 2026, 2:03 PM");
   });
 
   test("renders in the active locale", () => {
     withLocale("zh-CN", () => {
-      expect(formatCompactDateTime(ts)).toBe("2026年8月26日 14:03");
+      expect(compactTimeReading.read(ts)).toBe("2026年8月26日 14:03");
     });
   });
 });
 
-describe("formatOperationalDateTime", () => {
+describe("the operational reading", () => {
   // The value a reader is about to act on: 9am Shanghai, with a sub-minute
   // tail of the kind a `now() + N days` expiration preset writes.
   const ts = new Date("2026-09-15T01:00:22Z").getTime();
 
   test("names the timezone in the visible string", () => {
-    expect(formatOperationalDateTime(ts)).toBe("Sep 15, 2026, 9:00 AM GMT+8");
+    expect(operationalTimeReading.read(ts)).toBe("Sep 15, 2026, 9:00 AM GMT+8");
   });
 
   test("floors to the minute rather than showing the seconds", () => {
-    expect(formatOperationalDateTime(ts)).toBe(
-      formatOperationalDateTime(new Date("2026-09-15T01:00:00Z").getTime())
+    expect(operationalTimeReading.read(ts)).toBe(
+      operationalTimeReading.read(new Date("2026-09-15T01:00:00Z").getTime())
     );
   });
 
   test("renders in the active locale", () => {
     withLocale("zh-CN", () => {
-      expect(formatOperationalDateTime(ts)).toBe("2026年9月15日 GMT+8 09:00");
+      expect(operationalTimeReading.read(ts)).toBe("2026年9月15日 GMT+8 09:00");
     });
   });
 });
@@ -374,6 +376,13 @@ describe("deadline readings", () => {
     expect(
       countdownReading.read(baseMs + 3 * HOUR_MS + 20 * MINUTE_MS + 59_999)
     ).toEqual({ kind: "within", hours: 3, minutes: 20 });
+    // Past the half hour, where an hour rounded rather than floored reads as
+    // the hour after the one that is left.
+    expect(countdownReading.read(baseMs + HOUR_MS + 30 * MINUTE_MS)).toEqual({
+      kind: "within",
+      hours: 1,
+      minutes: 30,
+    });
     expect(countdownReading.read(baseMs + DAY_MS)).toEqual({
       kind: "beyondDay",
     });
@@ -436,8 +445,8 @@ describe("displayableInstantMs", () => {
       }
       // A value this admits reaches Intl, which throws on one outside the range.
       expect(() => formatAbsoluteDateTime(value)).not.toThrow();
-      expect(() => formatCompactDateTime(value)).not.toThrow();
-      expect(() => formatOperationalDateTime(value)).not.toThrow();
+      expect(() => compactTimeReading.read(value)).not.toThrow();
+      expect(() => operationalTimeReading.read(value)).not.toThrow();
       expect(() => queueTimeReading.read(value)).not.toThrow();
     }
   );
