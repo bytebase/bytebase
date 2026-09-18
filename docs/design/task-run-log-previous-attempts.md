@@ -54,6 +54,13 @@ attempt stays flat.
   counts `RETRY_INFO` entries across the whole run, which is the one retry number
   that stays unambiguous when several scopes each retried a different number of
   times. Per-scope counts live on that scope's umbrella.
+- The chip is always that aggregate, including while a scope is mid-retry.
+  Progress belongs to the scope doing the retrying, not to a run-level summary, so
+  that scope's umbrella is marked retrying and the marker's i of N sits on the
+  attempt rows. A release where an earlier file retried twice and the current file
+  is on its first retry therefore reads "3 retries", with the current file's
+  umbrella marked retrying — one number with one meaning in every state, rather
+  than a chip that changes what it measures when a run happens to be live.
 
 ## States
 
@@ -93,8 +100,8 @@ holding only the retried execution.
 
 **Terminal failure, and a retry in progress.** Left: retries are exhausted, so the
 final attempt's failure is state — red and auto-expanded — while the superseded
-attempts stay folded. Right: the chip reads "retrying 2/3" and the running section
-streams normally.
+attempts stay folded. Right: the run has retried twice, so the chip still reads two
+retries, while the scope that is retrying carries that on its own umbrella.
 
 ![Failed and running](task-run-log-previous-attempts/07-failed-and-running.png)
 
@@ -141,8 +148,8 @@ produces a `RETRY_INFO`, and the gh-ost path never calls `driver.Execute` at all
   file or replica scope.
 - **Marker payload.** `LogRetryInfo(err, i+1)` is written *before* retry i+1 runs,
   so a marker reading i of N means i attempts have already been superseded. A
-  scope showing "retrying i/N" therefore holds exactly i attempts in its umbrella;
-  the count never lags the marker.
+  scope whose latest marker reads i of N therefore holds exactly i attempts in its
+  umbrella; the count never lags the marker.
 - **Empty final segment.** A marker written but the retry's entries not yet
   arrived, or the run died there, renders the umbrella with no final-attempt
   sections. The run status chip carries the state.
@@ -174,7 +181,7 @@ all-green log.
 |---|---|---|
 | An error entry in the final segment | grey, collapsed | that section red, auto-expanded |
 | No error entry in the final segment | grey, collapsed | green, collapsed — reads like a clean run |
-| Scope still streaming | grey, collapsed; chip reads "retrying i/N" | running section spins |
+| Scope still streaming | grey, collapsed, marked retrying; the chip stays the run's retry count | running section spins |
 | A one-time section failed (backup, sync) | unaffected | that section red, auto-expanded, at top level |
 | No `RETRY_INFO` anywhere | absent | unchanged rendering |
 
