@@ -149,8 +149,15 @@ produces a `RETRY_INFO`, and the gh-ost path never calls `driver.Execute` at all
 - **Durations.** An attempt's duration is its span; the umbrella's duration is the
   sum of its attempts' spans. One-time sections keep their own durations and are
   counted in neither.
-- The "N sections · M entries" summary keeps counting everything, superseded
-  attempts included.
+- **Summary counts.** The summary describes rendered rows, so that expanding
+  everything and counting agrees with it. Sections are the leaf sections, across
+  every attempt including superseded ones; grouping rows are not sections, which
+  is already true of the replica and release-file headers that `totalSections`
+  skips today. Entries are the entries inside those sections, so a `RETRY_INFO`
+  consumed as a boundary counts as neither — a one-retry run therefore reports one
+  section and one entry fewer than it does today, with nothing else moved. Start
+  and end pairs such as `DATABASE_SYNC` and `PRIOR_BACKUP` are merged into one
+  entry by the API converter and count once.
 - Frontend-only. Scopes and boundaries derive entirely from entries already in the
   stream, so no proto or backend change is required.
 
