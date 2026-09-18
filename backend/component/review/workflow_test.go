@@ -2,6 +2,7 @@ package review
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"sync"
 	"testing"
@@ -1282,6 +1283,12 @@ func TestPlanMutationMakesPendingApprovalFindingStale(t *testing.T) {
 
 func setupWorkflowStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
+	_, stores := setupWorkflowStoreWithDB(ctx, t)
+	return stores
+}
+
+func setupWorkflowStoreWithDB(ctx context.Context, t *testing.T) (*sql.DB, *store.Store) {
+	t.Helper()
 
 	db, stores, _ := testcontainer.NewMetadataDB(t)
 
@@ -1296,7 +1303,7 @@ func setupWorkflowStore(ctx context.Context, t *testing.T) *store.Store {
 	`)
 	require.NoError(t, err)
 
-	return stores
+	return db, stores
 }
 
 func createPendingDatabaseChangeApproval(ctx context.Context, t *testing.T, stores *store.Store, roles []string) (*store.PlanMessage, *store.IssueMessage) {
@@ -1325,4 +1332,83 @@ func createPendingDatabaseChangeApproval(ctx context.Context, t *testing.T, stor
 	})
 	require.NoError(t, err)
 	return plan, issue
+}
+
+func TestApproverRoleRefusalCarriesItsReason(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		actor      string
+		actorRoles []string
+		wantReason ErrorReason
+	}{
+		{
+			name:       "no approver role",
+			actor:      "reviewer@example.com",
+			wantReason: ReasonApproverRoleRequired,
+		},
+		{
+			name:       "self-approval",
+			actor:      "creator@example.com",
+			actorRoles: []string{"roles/projectOwner"},
+			wantReason: ReasonUnspecified,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			if len(test.actorRoles) > 0 {
+				_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+					Workspace: "default",
+					Member:    common.FormatUserEmail(test.actor),
+					Roles:     test.actorRoles,
+				})
+				require.NoError(t, err)
+			}
+			_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+
+			_, err := NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     &store.UserMessage{Email: test.actor},
+				Action:    ActionApprove,
+			})
+
+			var workflowErr *Error
+			require.ErrorAs(t, err, &workflowErr)
+			require.Equal(t, ErrorPermissionDenied, workflowErr.Code)
+			require.Equal(t, test.wantReason, workflowErr.Reason,
+				"only the IAM verdict is marked for the audit log; the self-approval setting is not")
+		})
+	}
+}
+
+func TestApproverRoleLookupFailureIsNotARefusal(t *testing.T) {
+	ctx := context.Background()
+	db, stores := setupWorkflowStoreWithDB(ctx, t)
+	_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+
+	// A policy the store cannot parse is the cheapest stand-in for any read
+	// that fails: an outage, a permission error on the metadata database, a
+	// payload written by an older release.
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO policy (workspace, resource_type, resource, type, payload)
+		VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '{"bindings": "not a list"}');
+	`)
+	require.NoError(t, err)
+
+	_, err = NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: "reviewer@example.com"},
+		Action:    ActionApprove,
+	})
+
+	var workflowErr *Error
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ErrorInternal, workflowErr.Code,
+		"a policy the store cannot read is an outage, not a verdict about the caller")
+	require.Equal(t, ReasonUnspecified, workflowErr.Reason,
+		"an outage must not be marked as a permission denial in the audit log")
 }

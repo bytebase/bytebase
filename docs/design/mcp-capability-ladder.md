@@ -177,10 +177,9 @@ names the change when the form is dirty: "Read-only → Read-write applies to ev
 session's next request." "MCP policy denials are recorded in the audit log" is a fact about the
 feature, not about the current state, so it joins the section description, which becomes: "The
 most any MCP session may do here. Sessions are also capped by each user's permissions, and policy
-refusals are audited." The word "policy" is load-bearing: the audit interceptor writes a row for a
-refusal only when the RPC opts into auditing or the gate marked a policy denial, so a permission
-denial on an unannotated method is silent, and "every refusal" would promise more than the backend
-records.
+refusals are audited." Since [audit-what-produces-a-row.md](audit-what-produces-a-row.md), a
+refusal is streamed to stdout when audit logging to stdout is enabled, so the shipped sentence
+says "streamed to stdout" rather than "recorded in the audit log".
 
 **D5 — Edit state: icon cards, the selected mode's "Best for", and the pick's ladder.** The
 three mode cards lose their descriptions; they duplicated the ladder. What remains is the shape of

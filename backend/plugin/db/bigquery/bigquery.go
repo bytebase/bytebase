@@ -22,6 +22,10 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	// Register how this engine plans a limit, for base.StatementWithResultLimit below.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 )
 
 var (
@@ -167,7 +171,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
 				if queryContext.Limit > 0 {
-					statement = getStatementWithResultLimit(statement, queryContext.Limit)
+					statement = base.StatementWithResultLimit(storepb.Engine_BIGQUERY, statement, queryContext.Limit, "")
 				}
 				q := d.client.Query(statement)
 				if queryContext.OperatorEmail != "" {
@@ -358,14 +362,6 @@ func encodeOperatorEmail(email string) string {
 		return string(values[:63])
 	}
 	return string(values)
-}
-
-func getStatementWithResultLimit(statement string, limit int) string {
-	limitPart := ""
-	if limit > 0 {
-		limitPart = fmt.Sprintf(" LIMIT %d", limit)
-	}
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", util.TrimStatement(statement), limitPart)
 }
 
 func convertValue(v bigquery.Value, fieldType bigquery.FieldType) *v1pb.RowValue {

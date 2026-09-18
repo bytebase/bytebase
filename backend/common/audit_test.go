@@ -127,3 +127,44 @@ func TestLogAuditToStdoutFormat(t *testing.T) {
 	a.Equal("https://bb.example.com/mcp", delegated["mcp_resource"])
 	a.Equal("client-A", delegated["mcp_client_id"])
 }
+
+// recordingWriter captures the row RecordOutOfBandAudit inserts.
+type recordingWriter struct {
+	rows []*storepb.AuditLog
+}
+
+func (w *recordingWriter) CreateAuditLog(_ context.Context, _ string, row *storepb.AuditLog) error {
+	w.rows = append(w.rows, row)
+	return nil
+}
+
+// TestRecordOutOfBandAuditStampsWarning pins that a door outside the connect
+// chains cannot file a refusal the compliance reader's severity filter misses.
+// The /mcp connection and OAuth consent doors both refuse on the same ceiling
+// verdict the per-request gate does, and the gate's refusal is WARNING.
+func TestRecordOutOfBandAuditStampsWarning(t *testing.T) {
+	a := require.New(t)
+
+	prev := slog.Default()
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	var buf bytes.Buffer
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, nil)))
+
+	writer := &recordingWriter{}
+	row := &storepb.AuditLog{
+		Parent: "workspaces/ws-abc",
+		Method: AuditMethodMCPSessionAuthorize,
+		User:   "users/alice@example.com",
+		Status: &spb.Status{Code: 7, Message: "MCP access is turned off"},
+	}
+
+	RecordOutOfBandAudit(context.Background(), writer, true, "ws-abc", row)
+
+	a.Len(writer.rows, 1)
+	a.Equal(storepb.AuditLog_WARNING, writer.rows[0].Severity, "a refusal is stored as a warning")
+
+	var line map[string]any
+	a.NoError(json.Unmarshal(bytes.TrimSpace(buf.Bytes()), &line))
+	a.Equal(storepb.AuditLog_WARNING.String(), line["severity"],
+		"the stream carries the same severity as the row")
+}

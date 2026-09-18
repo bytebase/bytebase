@@ -26,6 +26,11 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	// Register how these engines plan a statement, for base.ExplainStatement below.
+	// This driver serves both.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/starrocks"
 )
 
 var (
@@ -304,9 +309,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(d.dbType, statement, queryContext.Option.GetExplainFormat())
+			explained, err := base.ExplainStatement(d.dbType, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			statement = explained
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			statement = base.StatementWithResultLimit(d.dbType, statement, queryContext.Limit, "")
 		}
 		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
 

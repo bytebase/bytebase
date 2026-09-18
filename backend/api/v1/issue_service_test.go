@@ -123,7 +123,12 @@ func TestLinkedIssueForCreate(t *testing.T) {
 	}
 }
 
-func TestApproveIssueFailsClosedWhenIAMLookupFails(t *testing.T) {
+// TestApproveIssueRefusesWhenIAMLookupFails pins the fail-closed property
+// itself: no approval is recorded when the server cannot read the IAM policy.
+// The refusal is Internal rather than PermissionDenied, because an unreadable
+// policy is an outage, not a verdict about the caller — and since BYT-10124 a
+// permission verdict also files a WARNING denial in the audit log.
+func TestApproveIssueRefusesWhenIAMLookupFails(t *testing.T) {
 	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
@@ -145,7 +150,14 @@ func TestApproveIssueFailsClosedWhenIAMLookupFails(t *testing.T) {
 	_, err = service.ApproveIssue(reviewerCtx, connect.NewRequest(&v1pb.ApproveIssueRequest{
 		Name: common.FormatIssue(issue.ProjectID, issue.UID),
 	}))
-	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+
+	after, err := stores.GetIssue(ctx, &store.FindIssueMessage{
+		ProjectIDs: []string{issue.ProjectID},
+		UID:        &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Empty(t, after.Payload.GetApproval().GetApprovers(), "no approval may be recorded")
 }
 
 func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequired(t *testing.T) {

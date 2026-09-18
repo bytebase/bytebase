@@ -95,6 +95,12 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:  "SELECT * FROM t LIMIT 123,10;",
 		},
 		{
+			// A literal 0 count is kept, not replaced with the requested cap.
+			stmt:  "SELECT * FROM t LIMIT 5,0;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 5,0;",
+		},
+		{
 			stmt:  "SELECT * FROM t LIMIT 0,\n1000000;",
 			count: 10,
 			want:  "SELECT * FROM t LIMIT 0,\n10;",
@@ -264,7 +270,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got := getStatementWithResultLimit(tc.stmt, tc.count)
+		got := statementWithResultLimit(tc.stmt, tc.count, "")
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
 }

@@ -31,8 +31,9 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// Audited RPCs write their request and response payloads to audit_log, and to
-// stdout when RuntimeEnableAuditLogStdout is set. Anything with
+// Audited RPCs write their request and response payloads to audit_log, and
+// refused calls of any RPC write them to stdout when RuntimeEnableAuditLogStdout
+// is set. Anything with
 // bb.auditLogs.search/export, or read access to the log pipeline, can read
 // them. Redaction therefore owes the row two things, and the first group below
 // is exactly those two:
@@ -168,6 +169,16 @@ func TestAuditRowKeepsItsSubstance(t *testing.T) {
 		{
 			name:     "audit export retains page token",
 			value:    &v1pb.ExportAuditLogsResponse{Content: []byte(secretSentinel), NextPageToken: "next-page-token"},
+			response: true,
+			want:     []string{"next-page-token"},
+		},
+		{
+			// A search's own row must not copy the rows it read.
+			name: "audit search retains page token and drops the results",
+			value: &v1pb.SearchAuditLogsResponse{
+				AuditLogs:     []*v1pb.AuditLog{{Name: secretSentinel, Request: secretSentinel, Response: secretSentinel}},
+				NextPageToken: "next-page-token",
+			},
 			response: true,
 			want:     []string{"next-page-token"},
 		},
@@ -587,8 +598,8 @@ func TestAuditRedactsPackedAny(t *testing.T) {
 // response carries every row of an admin-mode query — and Send builds its own
 // auditEntry and calls createAuditLog directly, so a redaction walk that lived
 // in WrapUnary would silently skip it. Everything else about streaming
-// persistence is exercised through the createAuditLogFunc stub, which bypasses
-// the real path; this one writes a real row and reads it back.
+// persistence is exercised through a fake audit log writer; this one writes a
+// real row through the store and reads it back.
 func TestStreamingAuditRedactsRows(t *testing.T) {
 	t.Parallel()
 	st := newAuditLiveStore(t)

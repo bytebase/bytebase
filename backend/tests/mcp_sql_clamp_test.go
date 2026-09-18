@@ -206,7 +206,7 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	// same human working in the console.
 	// Query is a database-scoped method, so its rows are parented to the
 	// project rather than to the workspace.
-	rows := deniedMCPRows(f.ctx, t, f.ctl, f.ctl.project.Name, "/bytebase.v1.SQLService/Query")
+	rows := mcpAuditRows(f.ctx, t, f.ctl, f.ctl.project.Name, "/bytebase.v1.SQLService/Query")
 	a.NotEmpty(rows, "a clamp denial must be visible to an operator with MCP provenance")
 	var denied *v1pb.AuditLog
 	for _, row := range rows {
@@ -217,6 +217,12 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	}
 	a.NotNil(denied, "the denied query must have produced a row of its own")
 	a.Contains(denied.Status.Message, "READ_ONLY")
+	a.Equal(v1pb.AuditLog_WARNING, denied.Severity, "the clamp marks its refusal")
+	for _, row := range rows {
+		if row.Status == nil {
+			a.Equal(v1pb.AuditLog_INFO, row.Severity, "a served query is not marked")
+		}
+	}
 
 	// The control. Same principal, same credential, same statement; only the
 	// ceiling changed, and the INSERT now lands. It runs on a session opened

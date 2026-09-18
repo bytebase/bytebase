@@ -410,6 +410,22 @@ func TestQueryConnExplainFormat(t *testing.T) {
 	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
 	require.Positive(t, plan[0].Plan.TotalCost)
 	require.Positive(t, plan[0].Plan.PlanRows)
+
+	// A statement that already asks for a plan is planned once: the request's
+	// format replaces the caller's EXPLAIN instead of wrapping it, which the
+	// server would reject as a syntax error.
+	planOfPlan, err := driver.QueryConn(ctx, conn, "EXPLAIN (FORMAT TEXT) "+statement, db.QueryContext{
+		Explain:              true,
+		Limit:                5000,
+		MaximumSQLResultSize: 1 << 30,
+		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, planOfPlan)
+	require.Empty(t, planOfPlan[0].GetError())
+	require.NoError(t, json.Unmarshal([]byte(firstStringValue(t, planOfPlan)), &plan))
+	require.Len(t, plan, 1)
+	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
 }
 
 func firstStringValue(t *testing.T, results []*v1pb.QueryResult) string {

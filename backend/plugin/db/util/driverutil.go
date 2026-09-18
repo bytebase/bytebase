@@ -202,7 +202,7 @@ func ConvertCommonValue(_ string, _ *sql.ColumnType, value any) *v1pb.RowValue {
 	return NullRowValue
 }
 
-// TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
+// TrimStatement trims the unused characters from a statement before running it.
 func TrimStatement(statement string) string {
 	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
 }

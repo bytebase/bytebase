@@ -779,10 +779,10 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\border_by\x18\x02 \x01(\tR\aorderBy\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\"w\n" +
-	"\x17SearchAuditLogsResponse\x124\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\"}\n" +
+	"\x17SearchAuditLogsResponse\x12:\n" +
 	"\n" +
-	"audit_logs\x18\x01 \x03(\v2\x15.bytebase.v1.AuditLogR\tauditLogs\x12&\n" +
+	"audit_logs\x18\x01 \x03(\v2\x15.bytebase.v1.AuditLogB\x04\xd0\xea0\x02R\tauditLogs\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xf1\x01\n" +
 	"\x16ExportAuditLogsRequest\x125\n" +
 	"\x06parent\x18\x04 \x01(\tB\x1d\xe0A\x02\xfaA\x17\x12\x15bytebase.com/AuditLogR\x06parent\x12\x16\n" +
@@ -831,9 +831,9 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\x05scope\x18\x01 \x01(\tR\x05scope\x12\x1a\n" +
 	"\bresource\x18\x02 \x01(\tR\bresource\x12\x1b\n" +
 	"\tclient_id\x18\x03 \x01(\tR\bclientId\x12%\n" +
-	"\x0ecorrelation_id\x18\x04 \x01(\tR\rcorrelationId2\xb9\x03\n" +
-	"\x0fAuditLogService\x12\xcf\x01\n" +
-	"\x0fSearchAuditLogs\x12#.bytebase.v1.SearchAuditLogsRequest\x1a$.bytebase.v1.SearchAuditLogsResponse\"q\x8a\xea0\x13bb.auditLogs.search\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:search\"(/v1/{parent=projects/*}/auditLogs:search\x12\xd3\x01\n" +
+	"\x0ecorrelation_id\x18\x04 \x01(\tR\rcorrelationId2\xbd\x03\n" +
+	"\x0fAuditLogService\x12\xd3\x01\n" +
+	"\x0fSearchAuditLogs\x12#.bytebase.v1.SearchAuditLogsRequest\x1a$.bytebase.v1.SearchAuditLogsResponse\"u\x8a\xea0\x13bb.auditLogs.search\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:search\"(/v1/{parent=projects/*}/auditLogs:search\x12\xd3\x01\n" +
 	"\x0fExportAuditLogs\x12#.bytebase.v1.ExportAuditLogsRequest\x1a$.bytebase.v1.ExportAuditLogsResponse\"u\x8a\xea0\x13bb.auditLogs.export\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02H:\x01*Z\x19:\x01*\"\x14/v1/auditLogs:export\"(/v1/{parent=projects/*}/auditLogs:exportB\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14AuditLogServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 

@@ -155,16 +155,11 @@ func UnwrapExplainAnalyze(node ast.Node, text string) (ast.Node, string) {
 	if !ok || !isExplainAnalyzeOmni(explain) {
 		return node, text
 	}
-	// The statement runs from its WITH clause, which the location of a SELECT leaves out, to the end
-	// of the EXPLAIN, which its location can also leave out, as for ORDER BY.
-	start := ast.NodeLoc(explain.Query).Start
-	if with := getWithClause(explain.Query); with != nil && with.Loc.Start >= 0 && with.Loc.Start < start {
-		start = with.Loc.Start
-	}
-	if start < 0 || start >= explain.Loc.End || explain.Loc.End > len(text) {
+	inner, ok := explainedText(explain, text)
+	if !ok {
 		return explain.Query, text
 	}
-	return explain.Query, text[start:explain.Loc.End]
+	return explain.Query, inner
 }
 
 // classifyExplainedQuery returns the QueryType for the query inside EXPLAIN

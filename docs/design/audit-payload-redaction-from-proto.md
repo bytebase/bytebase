@@ -162,10 +162,10 @@ The hook point is `marshalAuditPayload` (originally two functions, `getRequestSt
 streaming rows reach redaction only through those two: `auditConnectStreamingConn.Send`
 (`audit.go:171-193`) builds its own `auditEntry` and calls `createAuditLog` directly. `AdminExecute`
 is the only streaming RPC, is audited, and its response carries every row of an admin-mode query, so
-moving the walk up into `WrapUnary` — where the `service_data` and `mcpPolicyDenied` plumbing lives
-— silently drops streaming redaction. One end-to-end assertion on the `Send` path is required:
-streaming persistence is otherwise exercised through the `createAuditLogFunc` stub seam
-(`audit.go:49-52`), which bypasses the real path.
+moving the walk up into `WrapUnary` — where the `service_data` and permission-refusal plumbing
+lives — silently drops streaming redaction. One end-to-end assertion on the `Send` path is
+required: streaming persistence is otherwise exercised through a fake `common.AuditLogWriter`,
+which bypasses the real insert.
 
 A **plan** per message type, built from the descriptor on first use and cached by
 `protoreflect.FullName`: the fields to drop, and the submessage fields that lead to one. An
@@ -368,11 +368,12 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   `mcpDenialRequestsUnderReview` (`mcp_gate_test.go:1322`), which it replaces once the population
   matches.
 
-  **That population is wider than the audited RPCs.** `WrapUnary` writes a row on
-  `needAudit(ctx) || mcpPolicyDenied` (`audit.go:102`), so the gate-refused methods carrying no
-  audit annotation — `ListInstanceDatabaseRequest` and `SwitchWorkspaceRequest` among them — are in
-  scope; deriving the inventory from audited methods alone would omit exactly the population
-  `TestLintDenialRequestsAreReviewedForRedaction` exists to cover. Every registered `Any` type is
+  **That population is wider than the audited RPCs.** `WrapUnary` streams every call a permission
+  check refused, whatever its annotation ([audit-what-produces-a-row.md](audit-what-produces-a-row.md)),
+  so the refused methods carrying no audit annotation — `ListInstanceDatabaseRequest` and
+  `SwitchWorkspaceRequest` among them — are in scope; deriving the inventory from audited methods
+  alone would omit exactly the population `TestLintDenialRequestsAreReviewedForRedaction` exists to
+  cover. Every registered `Any` type is
   in scope too, from all three paths in the table above, since those reach the row without passing
   either entry point. That half comes from the registry rather than from a descriptor walk, which
   is why the registry has to be enforced at its call sites for the inventory to mean anything. The

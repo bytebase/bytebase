@@ -250,7 +250,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 
 		if !queryContext.Explain && queryContext.Limit > 0 {
-			statement = addResultLimit(statement, queryContext.Limit, d.connectionCtx.EngineVersion)
+			statement = base.StatementWithResultLimit(storepb.Engine_ORACLE, statement, queryContext.Limit, d.connectionCtx.EngineVersion)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_ORACLE, statement)

@@ -50,6 +50,7 @@ import {
 } from "./data-source-drafts";
 import { useInstanceFormContext } from "./InstanceFormContext";
 import { hasInfoContent, type InfoSection } from "./info-content";
+import { OracleConnectionFields } from "./OracleConnectionFields";
 import { SshConnectionForm } from "./SshConnectionForm";
 import { SslCertificateForm } from "./SslCertificateForm";
 import {
@@ -1868,12 +1869,14 @@ export function DataSourceForm({
 
                 {/* Oracle SID/Service Name */}
                 {basicInfo.engine === Engine.ORACLE && (
-                  <OracleSIDServiceNameInput
+                  <OracleConnectionFields
+                    dataSourceId={dataSource.id}
+                    instanceName={instance?.name}
                     sid={dataSource.sid ?? ""}
                     serviceName={dataSource.serviceName ?? ""}
+                    resetEvent={dataSourceResetEvent}
                     allowEdit={allowEdit}
-                    onSidChange={(val) => update({ sid: val })}
-                    onServiceNameChange={(val) => update({ serviceName: val })}
+                    onChange={update}
                   />
                 )}
 
@@ -1884,15 +1887,6 @@ export function DataSourceForm({
                       validationField="authenticationPrivateKey"
                       title={<>{t("data-source.ssh.private-key")}</>}
                     >
-                      <div className="flex gap-x-2 text-sm">
-                        <span className="textinfolabel">
-                          {t("data-source.snowflake-keypair-tip")}
-                        </span>
-                        <LearnMoreLink
-                          href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
-                          className="text-sm text-accent"
-                        />
-                      </div>
                       <SecretInput
                         resetKey={dataSource.id}
                         aria-label={t("data-source.ssh.private-key")}
@@ -1914,6 +1908,15 @@ export function DataSourceForm({
                           )
                         }
                       />
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                        <span className="text-control-light">
+                          {t("data-source.snowflake-keypair-tip")}
+                        </span>
+                        <LearnMoreLink
+                          href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
+                          className="text-sm text-accent"
+                        />
+                      </div>
                     </FormField>
                     <FormField
                       title={<>{t("data-source.private-key-passphrase")}</>}
@@ -2331,63 +2334,6 @@ export function DataSourceForm({
         )}
       </FormFieldGroup>
     </ValidationProvider>
-  );
-}
-
-function OracleSIDServiceNameInput({
-  sid,
-  serviceName,
-  allowEdit,
-  onSidChange,
-  onServiceNameChange,
-}: {
-  sid: string;
-  serviceName: string;
-  allowEdit: boolean;
-  onSidChange: (val: string) => void;
-  onServiceNameChange: (val: string) => void;
-}) {
-  // Track which mode is selected — default to "serviceName" if both empty
-  const mode = sid ? "sid" : "serviceName";
-
-  const handleModeChange = (newMode: "sid" | "serviceName") => {
-    if (newMode === "sid") {
-      onServiceNameChange("");
-      if (!sid) onSidChange("XE");
-    } else {
-      onSidChange("");
-    }
-  };
-
-  return (
-    <FormField validationField="serviceName">
-      <RadioGroup
-        className="textlabel mb-2 gap-x-4"
-        value={mode}
-        onValueChange={(value) =>
-          handleModeChange(value as "sid" | "serviceName")
-        }
-      >
-        <RadioGroupItem value="sid" disabled={!allowEdit}>
-          SID
-        </RadioGroupItem>
-        <RadioGroupItem value="serviceName" disabled={!allowEdit}>
-          Service Name
-        </RadioGroupItem>
-      </RadioGroup>
-      <Input
-        value={mode === "sid" ? sid : serviceName}
-        className="w-full"
-        disabled={!allowEdit}
-        onChange={(e) => {
-          if (mode === "sid") {
-            onSidChange(e.target.value);
-          } else {
-            onServiceNameChange(e.target.value);
-          }
-        }}
-      />
-    </FormField>
   );
 }
 

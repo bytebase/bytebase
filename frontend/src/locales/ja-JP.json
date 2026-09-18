@@ -964,6 +964,7 @@
   },
   "instance": {
     "account-locator": "アカウントロケーター",
+    "account-locator-description": "接続先の Snowflake アカウントを識別します。",
     "add-parameter": "パラメータを追加",
     "advanced-search": {
       "scope": {
@@ -990,6 +991,7 @@
     },
     "connect-database-to-project": "データベースをプロジェクトに接続",
     "connect-instance": "インスタンスを接続",
+    "connect-using": "接続方式",
     "connecting-database-to-project": "データベースを接続中...",
     "connection-database": "接続先データベース",
     "connection-info": "接続情報",
@@ -1319,7 +1321,11 @@
         "saas": "例: db.example.com | データベース IP"
       }
     },
+    "service-name": "サービス名",
+    "service-name-placeholder": "例: sales.example.com",
     "show-how-to-create": "作成方法",
+    "sid": "SID",
+    "sid-placeholder": "例: ORCL",
     "snowflake-web-console": "スノーフレークウェブコンソール",
     "successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",
     "successfully-connected-instance": "接続に成功しました。",
@@ -1623,7 +1629,7 @@
           "title": "MCP アクセスはオフです"
         },
         "line": {
-          "audit": "監査対象の操作には MCP タグが付き、ポリシーが拒否したものも記録されます",
+          "audit": "監査対象の操作には MCP タグが付き、監査ログの標準出力への出力が有効な場合、ポリシーが拒否したものは標準出力に出力されます",
           "capped": "上限はあなた自身の Bytebase 権限",
           "masking": "あなたのマスキング適用除外はこのセッションには適用されません",
           "no-write": "データやスキーマの変更はできない",
@@ -2682,7 +2688,7 @@
         "title": "最初のプロンプト"
       },
       "policy": {
-        "audit": "MCP ポリシーによる拒否は監査ログに記録されます。",
+        "audit": "監査ログの標準出力への出力が有効な場合、MCP ポリシーによる拒否は標準出力に出力されます。",
         "description": "このワークスペースで MCP セッションが実行できる操作の上限です。各セッションは接続ユーザー自身の権限によってもさらに制限されます。",
         "edit": "ポリシーを編集",
         "in-force": "適用中",

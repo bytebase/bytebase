@@ -28,9 +28,9 @@ import (
 // "what the audit row writes down" and a new credential shows up as one line of
 // diff.
 //
-// The population is wider than the audited RPCs: WrapUnary writes a row on
-// `needAudit(ctx) || mcpPolicyDenied`, so gate-refused methods carrying no
-// audit annotation are in scope. Every registered Any type is in scope too,
+// The population is wider than the audited RPCs: WrapUnary streams every call
+// a permission check refused, so refused methods carrying no audit annotation
+// are in scope. Every registered Any type is in scope too,
 // since those reach the row without passing marshalAuditPayload — which is why
 // the registry is enforced at its call sites for this list to mean anything.
 //
@@ -257,12 +257,6 @@ var auditRecordedFields = []string{
 	"bytebase.v1.ApprovalTemplate.title",
 	"bytebase.v1.ApproveIssueRequest.comment",
 	"bytebase.v1.ApproveIssueRequest.name",
-	"bytebase.v1.AuditLog.method",
-	"bytebase.v1.AuditLog.name",
-	"bytebase.v1.AuditLog.request",
-	"bytebase.v1.AuditLog.resource",
-	"bytebase.v1.AuditLog.response",
-	"bytebase.v1.AuditLog.user",
 	"bytebase.v1.AuthenticationInfo.workspace",
 	"bytebase.v1.AuthorizationRequest.client_id",
 	"bytebase.v1.AuthorizationRequest.endpoint",
@@ -690,10 +684,6 @@ var auditRecordedFields = []string{
 	"bytebase.v1.LoginRequest.email",
 	"bytebase.v1.LoginRequest.idp_name",
 	"bytebase.v1.LoginRequest.workspace",
-	"bytebase.v1.MCPDelegation.client_id",
-	"bytebase.v1.MCPDelegation.correlation_id",
-	"bytebase.v1.MCPDelegation.resource",
-	"bytebase.v1.MCPDelegation.scope",
 	"bytebase.v1.MaskingExemptionPolicy.Exemption.members",
 	"bytebase.v1.MaskingReason.algorithm",
 	"bytebase.v1.MaskingReason.context",
@@ -812,8 +802,6 @@ var auditRecordedFields = []string{
 	"bytebase.v1.RemoveDataSourceRequest.name",
 	"bytebase.v1.RequestIssueRequest.comment",
 	"bytebase.v1.RequestIssueRequest.name",
-	"bytebase.v1.RequestMetadata.caller_ip",
-	"bytebase.v1.RequestMetadata.caller_supplied_user_agent",
 	"bytebase.v1.RequestPasswordResetRequest.email",
 	"bytebase.v1.RequestPasswordResetRequest.workspace",
 	"bytebase.v1.RequestReauthCodeRequest.name",
