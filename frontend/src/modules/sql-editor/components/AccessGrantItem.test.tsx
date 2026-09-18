@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { createRoot } from "react-dom/client";
+import { advanceSeconds } from "@/test-utils/clock";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 (
@@ -64,8 +65,9 @@ vi.mock("@/components/ui/badge", () => ({
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
-  // The real Tooltip renders nothing for an absent body, so the stub carries
-  // the body it was given: a row that hides a reading has to offer it back.
+  // The real Tooltip renders nothing for a body that is falsy -- not merely
+  // absent -- so the stub answers the same question it does. A row that hides
+  // a reading has to offer it back.
   Tooltip: ({
     children,
     content,
@@ -73,7 +75,7 @@ vi.mock("@/components/ui/tooltip", () => ({
     children: React.ReactNode;
     content?: React.ReactNode;
   }) => (
-    <span data-testid="tooltip" data-has-content={content !== undefined}>
+    <span data-testid="tooltip" data-has-content={Boolean(content)}>
       {children}
     </span>
   ),
@@ -367,13 +369,6 @@ describe("AccessGrantItem", () => {
       <AccessGrantItem grant={grant as never} onRun={vi.fn()} onRequest={vi.fn()} />
     );
     render();
-    const advanceSeconds = (seconds: number) => {
-      for (let second = 0; second < seconds; second++) {
-        act(() => {
-          vi.advanceTimersByTime(1_000);
-        });
-      }
-    };
 
     expect(container.textContent).toContain("sql-editor.expire-in:3m");
     // A countdown is the one form that hides the deadline, so the row has to

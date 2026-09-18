@@ -11,7 +11,9 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({ t: (key: string) => key }),
 }));
-vi.mock("@/components/HumanizeTs", () => ({ HumanizeTs: () => <span>17h</span> }));
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
+}));
 vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({ getUserByIdentifier: () => ({ email: "a@example.com", title: "Aurora" }) }),

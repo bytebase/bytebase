@@ -183,8 +183,8 @@ vi.mock("@/components/monaco/sqlFormatter", () => ({
   formatSQL: async (sql: string) => ({ data: sql, error: null }),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: () => <span />,
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 vi.mock("@/components/ui/input", () => ({

@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
@@ -59,8 +60,8 @@ vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
   ),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: () => null,
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 vi.mock("@/components/MarkdownEditor", () => ({
@@ -187,6 +188,41 @@ const reviewSubmission = (name: string) =>
   });
 
 describe("ReviewActivityTimeline", () => {
+  test("times an activity entry in the work-queue form", () => {
+    // A feed is read for what just happened, so its entries age with the
+    // clock rather than naming a date.
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <ReviewActivityTimeline
+          comments={[
+            create(IssueCommentSchema, {
+              name: "comments/timed",
+              creator: "users/submitter@example.com",
+              createTime: timestampFromMs(Date.UTC(2026, 2, 2, 12)),
+              event: {
+                case: "reviewSubmission",
+                value: create(IssueComment_ReviewSubmissionSchema),
+              },
+            }),
+          ]}
+          issue={create(IssueSchema, { name: "projects/p1/issues/1" })}
+          plan={create(PlanSchema, { name: "projects/p1/plans/1" })}
+        />
+      );
+    });
+
+    expect(
+      Array.from(
+        container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
+      ).map((node) => node.dataset.mode)
+    ).toEqual(["queue"]);
+
+    act(() => root.unmount());
+  });
+
   test("renders one persisted Review Submission instead of a fallback duplicate", () => {
     const issue = create(IssueSchema, {
       name: "projects/p1/issues/1",

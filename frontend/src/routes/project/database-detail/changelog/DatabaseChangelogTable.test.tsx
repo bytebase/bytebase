@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -30,8 +31,8 @@ vi.mock("@/types", () => ({
   getTimeForPbTimestampProtoEs: () => new Date("2026-04-15T00:00:00Z").getTime(),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: () => null,
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 import { DatabaseChangelogTable } from "./DatabaseChangelogTable";
@@ -65,6 +66,31 @@ beforeEach(() => {
 });
 
 describe("DatabaseChangelogTable", () => {
+  test("dates each row in the embedded history form", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <DatabaseChangelogTable
+        loading={false}
+        changelogs={[
+          create(ChangelogSchema, {
+            name: "changelogs/1",
+            createTime: timestampFromMs(Date.UTC(2026, 2, 2, 12)),
+          }),
+        ]}
+      />
+    );
+
+    render();
+
+    // A row in a list orients the reader; the changelog's own page testifies.
+    expect(
+      Array.from(
+        container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
+      ).map((node) => node.dataset.mode)
+    ).toEqual(["compact"]);
+
+    unmount();
+  });
+
   test("inherits default zebra striping from shared table primitives", () => {
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseChangelogTable
