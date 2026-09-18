@@ -196,8 +196,15 @@ An earlier draft dropped both tests and gave a chevron to every row that ran a s
 that unfolding a short statement is redundant rather than wrong. It is wrong. A control that
 reveals nothing teaches the reader that the control is decoration, and then they stop reaching for
 it on the rows where it matters — mockup D's row 6 is exactly that, a `COMMENT ON TABLE` that fits
-its line and would unfold to itself. The measurement is one `ResizeObserver` on the section's
-scroll box, not one per row, reading `MAX_RENDERED_ITEMS + 1` rows at most and writing nothing.
+its line and would unfold to itself.
+
+The measurement has two triggers, and the width one is not enough on its own. A `ResizeObserver` on
+the section's scroll box catches the container changing width, but that box is capped: pressing
+*Load more*, or a poll appending entries, grows its scroll height and leaves its border box exactly
+where it was, so the observer never fires and the new rows would render clamped with no control. So
+the measurement also re-runs whenever the rendered set changes — `showAllItems` flipping, `items`
+changing identity, the marked row moving — and each run covers **every row currently rendered**,
+not the first `MAX_RENDERED_ITEMS`. One observer plus one layout effect, reading only.
 
 Two consequences worth stating rather than discovering:
 
@@ -252,7 +259,12 @@ mild, the mode would be permanent.
 `whitespace-pre-wrap break-words` on the verbatim statement, in the row's mono face, on
 `bg-background` inside a `border-block-border` block — the block is a framed content region, and
 `docs/agents/frontend-ux.md:143-144` keeps `border-control-border` for controls — with D3's copy
-button in its top-right
+button in its top-right corner over padding wide enough to hold it, never over the SQL. That
+clearance is not decoration: the contract says text "must not overlap adjacent controls"
+(`frontend-ux.md:113-114`), and the rows D5 newly makes foldable are precisely the ones whose first
+wrapped line runs the full width of the block, so an overlay with no reserved padding would sit on
+top of the statement in the common case rather than a rare one. The block's right padding reserves
+the control's width plus the gap beside it; the text wraps before it
 corner — positioned inside the block's padding so it overlays rather than reflows the SQL, and
 visible for as long as the block is. On a successful row the block replaces the line, so one
 statement is on screen at a time and the cluster's copy button gives way to the block's. On a
@@ -356,9 +368,18 @@ and it is rendered only when it has a value (`SectionContent.tsx:55-59`). So `+0
 no relative time at all — drops the column and jumps a further seven. Measured on the mockups, the
 statement starts at three different x positions inside one section: 228px, 235px and 242px. The log
 has always been ragged this way and nobody noticed, because ragged text still reads as text; a
-column of identical chevrons beside it does not. So the span renders always, with `min-w-[7ch]`,
-right-aligned, keeping its `tabular-nums` — seven characters covers every value below 100 seconds
-and longer ones push as they do today. The index moves from `w-6` to `min-w-6` for the same reason:
+column of identical chevrons beside it does not. So the span renders always, right-aligned, keeping
+its `tabular-nums`, with a minimum width of seven characters — enough for every value below 100
+seconds, and longer ones push as they do today.
+
+That width is a named constant beside `ITEM_HEIGHT` and applied inline, not an arbitrary
+`min-w-[7ch]` class. `SectionContent` already sets its cap that way
+(`style={{ maxHeight: \`${MAX_VISIBLE_ITEMS * ITEM_HEIGHT}px\` }}`), so the measurement sits with
+its neighbours and stays legible next to them. It does not belong in
+`components/ui/styles.stylex.ts`: that file holds the shared control-size scale every primitive
+reads, and `frontend/AGENTS.md` sends *repeated* measurements there — this one has a single
+consumer, and filing a log-viewer column width in the design system would make it look like a token
+other components should reach for. The index moves from `w-6` to `min-w-6` for the same reason:
 a fixed 24px clips at four digits, which `MAX_RENDERED_ITEMS` and D13 together can reach. The UX
 contract already asks for right-aligned numerics in tables; these are the same columns in a
 different frame. This straightens the statement column too, which is the part of the fix that
