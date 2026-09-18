@@ -22,6 +22,7 @@ import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { usePlanFeature, useServerState } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import {
@@ -423,7 +424,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 <FormField
                   title={
                     <span className="flex items-center gap-x-2">
-                      <Checkbox
+                      <Switch
                         checked={toggleState.disallowSignup}
                         disabled={disabled || !hasDisallowSignupFeature}
                         onCheckedChange={(checked) =>
@@ -626,7 +627,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
               <FormField
                 title={
                   <span className="flex items-center gap-x-2">
-                    <Checkbox
+                    <Switch
                       checked={toggleState.requireMfa}
                       disabled={disabled || !has2FAFeature}
                       onCheckedChange={(checked) =>
@@ -650,7 +651,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 <FormField
                   title={
                     <span className="flex items-center gap-x-2">
-                      <Checkbox
+                      <Switch
                         checked={toggleState.disallowPasswordSignin}
                         disabled={
                           disabled ||
@@ -696,7 +697,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 <FormField
                   title={
                     <span className="flex items-center gap-x-2">
-                      <Checkbox
+                      <Switch
                         checked={toggleState.allowEmailCodeSignin}
                         disabled={
                           disabled ||

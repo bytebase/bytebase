@@ -3587,8 +3587,7 @@
     },
     "prior-backup": "Respaldo previo",
     "run-immediately": {
-      "description": "Las tareas comenzarán a ejecutarse en cuanto haga clic en \"Ejecutar\". No requiere demora ni programación.",
-      "self": "Corre inmediatamente"
+      "description": "Las tareas comenzarán a ejecutarse en cuanto haga clic en \"Ejecutar\". No requiere demora ni programación."
     },
     "run-task": "Ejecutar tarea | Ejecutar tareas",
     "schedule-for-later": {

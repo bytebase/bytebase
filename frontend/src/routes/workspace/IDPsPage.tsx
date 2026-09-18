@@ -3,11 +3,7 @@ import { Code, ConnectError } from "@connectrpc/connect";
 import { cva } from "class-variance-authority";
 import {
   ArrowRight,
-  Building,
   Database,
-  GitBranch,
-  GitFork,
-  Globe,
   Info,
   Key,
   Plus,
@@ -26,11 +22,17 @@ import {
   type ResourceIdFieldRef,
 } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { CopyButton } from "@/components/ui/copy-button";
 import { FormField, FormFieldGroup, FormTitle } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetBody,
@@ -40,6 +42,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { StepIndicator } from "@/components/ui/step-indicator";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -396,7 +399,7 @@ function ProviderConfigForm({
 
         <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForOAuth2.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateOAuth2({
@@ -539,7 +542,7 @@ function ProviderConfigForm({
 
         <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForOIDC.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateOIDC({
@@ -744,7 +747,7 @@ function ProviderConfigForm({
 
         <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForLDAP.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateLDAP({
@@ -1013,21 +1016,6 @@ function getProviderIcon(type: IdentityProviderType) {
       return ShieldCheck;
     case IdentityProviderType.LDAP:
       return Database;
-    default:
-      return Key;
-  }
-}
-
-function getTemplateIcon(title: string) {
-  switch (title.toLowerCase()) {
-    case "google":
-      return Globe;
-    case "github":
-      return GitBranch;
-    case "gitlab":
-      return GitFork;
-    case "microsoft entra":
-      return Building;
     default:
       return Key;
   }
@@ -1495,8 +1483,7 @@ function CreateWizardDrawer({
                       {t("settings.sso.form.template-description")}
                     </p>
                   </div>
-                  <RadioGroup
-                    className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4"
+                  <Select
                     value={selectedTemplate?.title ?? ""}
                     onValueChange={(value) => {
                       const template = templateList.find(
@@ -1510,44 +1497,30 @@ function CreateWizardDrawer({
                       }
                     }}
                   >
-                    {templateList.map((tmpl) => {
-                      const Icon = getTemplateIcon(tmpl.title);
-                      const hasFeature = useAppStore
-                        .getState()
-                        .hasFeature(tmpl.feature);
-                      return (
-                        <div
+                    <SelectTrigger className="mx-auto w-full max-w-3xl">
+                      <SelectValue placeholder={t("common.select")}>
+                        {selectedTemplate?.title}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templateList.map((tmpl) => (
+                        <SelectItem
                           key={tmpl.title}
-                          className={selectionCardVariants({
-                            selected: selectedTemplate?.title === tmpl.title,
-                            disabled: !hasFeature,
-                          })}
-                          onClick={() => {
-                            if (hasFeature) {
-                              applyTemplate(tmpl);
-                            }
-                          }}
+                          value={tmpl.title}
+                          disabled={
+                            !useAppStore.getState().hasFeature(tmpl.feature)
+                          }
                         >
-                          <div className="flex items-center gap-x-3">
-                            <RadioGroupItem
-                              value={tmpl.title}
-                              aria-label={tmpl.title}
-                              disabled={!hasFeature}
-                            />
-                            <Icon className="size-8 shrink-0" strokeWidth={1} />
-                            <div className="flex-1">
-                              <span className="font-medium text-base text-main">
-                                {tmpl.title}
-                              </span>
-                              <p className="text-control-light text-sm">
-                                {getTemplateDescription(tmpl.title)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </RadioGroup>
+                          {tmpl.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedTemplate && (
+                    <p className="mx-auto w-full max-w-3xl text-sm text-control-light">
+                      {getTemplateDescription(selectedTemplate.title)}
+                    </p>
+                  )}
                 </div>
               )}
 

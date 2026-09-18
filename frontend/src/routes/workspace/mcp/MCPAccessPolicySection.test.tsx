@@ -116,6 +116,21 @@ const clickText = (container: HTMLElement, text: string) => {
   });
 };
 
+const selectCapability = (container: HTMLElement, value: number) => {
+  const capabilities = [
+    MCPSetting_Capability.DISABLED,
+    MCPSetting_Capability.READ_ONLY,
+    MCPSetting_Capability.READ_WRITE,
+  ];
+  const radio = container.querySelectorAll<HTMLElement>('[role="radio"]')[
+    capabilities.indexOf(value)
+  ];
+  expect(radio).toBeTruthy();
+  act(() => {
+    radio!.click();
+  });
+};
+
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.permissionDisabled.value = false;
@@ -154,7 +169,7 @@ describe("MCPAccessPolicySection", () => {
     expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
 
     // Picking a different ceiling is the unsaved edit that must be guarded.
-    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    selectCapability(container, MCPSetting_Capability.DISABLED);
     await flush();
     expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
 
@@ -223,7 +238,7 @@ describe("MCPAccessPolicySection", () => {
       "settings.mcp.policy.unreadable.pick"
     );
 
-    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    selectCapability(container, MCPSetting_Capability.READ_WRITE);
     await flush();
     clickText(container, "settings.mcp.policy.save");
     await flush();
@@ -287,6 +302,10 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.edit");
     await flush();
 
+    const radios = container.querySelectorAll('[role="radio"]');
+    expect(radios).toHaveLength(3);
+    expect(radios[1]).toHaveAttribute("aria-checked", "true");
+
     const bestForLines = () =>
       [...container.querySelectorAll("p")].filter((line) =>
         line.textContent?.includes(".best-for")
@@ -301,6 +320,21 @@ describe("MCPAccessPolicySection", () => {
     expect(bestForLines()).toHaveLength(1);
     expect(bestForLines()[0]?.textContent).toBe(
       "settings.mcp.policy.mode.read-write.best-for"
+    );
+    unmount();
+  });
+
+  test("keeps the masking switch intrinsic", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    expect(maskingSwitch(container)?.classList.contains("shrink-0")).toBe(
+      true
     );
     unmount();
   });
@@ -459,16 +493,12 @@ describe("MCPAccessPolicySection", () => {
 
     clickText(container, "settings.mcp.policy.mode.disabled.title");
     await flush();
-    expect(
-      maskingSwitch(container)
-    ).toBeNull();
+    expect(maskingSwitch(container)).toBeNull();
 
     // Picking a serving mode again brings the control back.
     clickText(container, "settings.mcp.policy.mode.read-write.title");
     await flush();
-    expect(
-      maskingSwitch(container)
-    ).not.toBeNull();
+    expect(maskingSwitch(container)).not.toBeNull();
     unmount();
   });
 

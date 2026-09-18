@@ -3587,8 +3587,7 @@
     },
     "prior-backup": "Prior backup",
     "run-immediately": {
-      "description": "Tasks will start executing as soon as you click Run. No delay or scheduling required.",
-      "self": "Run immediately"
+      "description": "Tasks will start executing as soon as you click Run. No delay or scheduling required."
     },
     "run-task": "Run task | Run tasks",
     "schedule-for-later": {

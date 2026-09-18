@@ -8,7 +8,6 @@ import { listAllTaskRuns } from "@/api/taskRun";
 import { TaskStatusIcon } from "@/components/TaskStatusIcon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Sheet,
   SheetBody,
@@ -17,6 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
@@ -359,24 +359,17 @@ export function PlanDetailTaskRolloutActionPanel({
                 <h3 className="mb-1 font-medium text-control">
                   {t("task.execution-time")}
                 </h3>
-                <RadioGroup
-                  className="flex! flex-col gap-2 sm:flex-row sm:gap-4"
-                  onValueChange={(value) =>
-                    setRunTimeInMS(
-                      value === "immediate"
-                        ? undefined
-                        : Date.now() + DEFAULT_RUN_DELAY_MS
-                    )
-                  }
-                  value={runTimeInMS === undefined ? "immediate" : "scheduled"}
-                >
-                  <RadioGroupItem value="immediate">
-                    {t("task.run-immediately.self")}
-                  </RadioGroupItem>
-                  <RadioGroupItem value="scheduled">
-                    {t("task.schedule-for-later.self")}
-                  </RadioGroupItem>
-                </RadioGroup>
+                <label className="flex items-center gap-x-2 text-sm">
+                  <Switch
+                    checked={runTimeInMS !== undefined}
+                    onCheckedChange={(checked) =>
+                      setRunTimeInMS(
+                        checked ? Date.now() + DEFAULT_RUN_DELAY_MS : undefined
+                      )
+                    }
+                  />
+                  <span>{t("task.schedule-for-later.self")}</span>
+                </label>
                 <div className="mt-1 text-sm text-control-light">
                   {runTimeInMS === undefined
                     ? t("task.run-immediately.description")

@@ -8,8 +8,8 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import { useAppStore } from "@/stores/app";
 import type { SectionHandle } from "./useSettingSection";
 
@@ -73,7 +73,7 @@ export const ProductImprovementSection = forwardRef<
         <FormField
           title={
             <span className="flex items-start gap-x-3">
-              <Checkbox
+              <Switch
                 checked={state.enableMetricCollection}
                 className="mt-1"
                 disabled={!allowEdit}

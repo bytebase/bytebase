@@ -11,8 +11,8 @@ import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { ResourceLink } from "@/components/sql-review/ResourceLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { SearchInput } from "@/components/ui/search-input";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -122,7 +122,7 @@ function PolicyTable({
                 <TableCell>{policy.ruleList.length}</TableCell>
                 <TableCell>
                   {hasUpdatePermission ? (
-                    <Checkbox
+                    <Switch
                       checked={policy.enforce}
                       onCheckedChange={(checked) =>
                         toggleEnabled(policy, checked)

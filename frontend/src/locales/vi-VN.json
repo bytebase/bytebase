@@ -3587,8 +3587,7 @@
     },
     "prior-backup": "Sao lưu trước",
     "run-immediately": {
-      "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch.",
-      "self": "Chạy ngay lập tức"
+      "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch."
     },
     "run-task": "Chạy tác vụ | Chạy tác vụ",
     "schedule-for-later": {

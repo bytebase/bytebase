@@ -3587,8 +3587,7 @@
     },
     "prior-backup": "预备份受影响数据",
     "run-immediately": {
-      "description": "点击“运行”后，任务将立即开始执行。",
-      "self": "立即运行"
+      "description": "点击“运行”后，任务将立即开始执行。"
     },
     "run-task": "运行任务 | 运行任务",
     "schedule-for-later": {

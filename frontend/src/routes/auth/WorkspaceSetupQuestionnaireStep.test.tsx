@@ -128,6 +128,7 @@ describe("WorkspaceSetupQuestionnaireStep", () => {
     act(() =>
       fireEvent.click(
         labels.find((label) => label.textContent?.includes("My team"))!
+          .querySelector('[role="radio"]')!
       )
     );
 
@@ -140,7 +141,13 @@ describe("WorkspaceSetupQuestionnaireStep", () => {
     const onContinue = vi.fn();
     const page = renderQuestionnaire({ onContinue });
 
-    act(() => fireEvent.click(page.container.querySelector("button")!));
+    act(() =>
+      fireEvent.click(
+        [...page.container.querySelectorAll("button")].find((button) =>
+          button.textContent?.includes("Continue")
+        )!
+      )
+    );
 
     expect(onContinue).toHaveBeenCalledOnce();
     page.unmount();

@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FormLabel } from "@/components/ui/form";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ValidationField, ValidationInput } from "./ValidationField";
 
 type Identifier = { sid: string; serviceName: string };
@@ -80,17 +80,19 @@ export function OracleConnectionFields({
         className="sm:col-span-3 sm:col-start-1"
         title={t("instance.connect-using")}
       >
-        <SegmentedControl
-          size="sm"
-          ariaLabel={t("instance.connect-using")}
+        <RadioGroup
+          className="gap-x-4"
+          aria-label={t("instance.connect-using")}
           value={state.mode}
-          options={[
-            { value: "serviceName", label: t("instance.service-name") },
-            { value: "sid", label: t("instance.sid") },
-          ]}
-          disabled={!allowEdit}
-          onValueChange={(mode) => update(mode, state.drafts)}
-        />
+          onValueChange={(mode) => update(mode as IdentifierMode, state.drafts)}
+        >
+          <RadioGroupItem value="serviceName" disabled={!allowEdit}>
+            {t("instance.service-name")}
+          </RadioGroupItem>
+          <RadioGroupItem value="sid" disabled={!allowEdit}>
+            {t("instance.sid")}
+          </RadioGroupItem>
+        </RadioGroup>
       </ValidationField>
       <ValidationField
         validationField="serviceName"

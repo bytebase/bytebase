@@ -14,7 +14,6 @@ import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard"
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Alert } from "@/components/ui/alert";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useServerState } from "@/hooks/useAppState";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
@@ -296,7 +296,7 @@ export const AIAugmentationSection = forwardRef<
                 <FormField
                   title={
                     <span className="flex items-center gap-x-2">
-                      <Checkbox
+                      <Switch
                         checked={state.enabled}
                         disabled={!canEdit}
                         onCheckedChange={(checked) => toggleEnabled(checked)}
