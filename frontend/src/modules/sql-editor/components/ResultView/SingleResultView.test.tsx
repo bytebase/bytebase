@@ -607,6 +607,24 @@ describe("SingleResultView document view", () => {
   });
 });
 
+const textPlanResult = (statement: string) =>
+  create(QueryResultSchema, {
+    columnNames: ["QUERY PLAN"],
+    statement,
+    queryPlan: create(QueryResult_QueryPlanSchema, {
+      format: QueryOption_ExplainFormat.TEXT,
+    }),
+    rows: [
+      create(QueryRowSchema, {
+        values: [
+          create(RowValueSchema, {
+            kind: { case: "stringValue", value: "Result" },
+          }),
+        ],
+      }),
+    ],
+  });
+
 describe("SingleResultView explain visualizer", () => {
   beforeEach(() => {
     createExplainToken.mockClear();
@@ -697,7 +715,7 @@ describe("SingleResultView explain visualizer", () => {
     openSpy.mockRestore();
   });
 
-  test("re-runs for the tab the user clicked, not the first result", async () => {
+  test("re-runs only the statement for the tab the user clicked", async () => {
     const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
     runQuery.mockImplementation(
       async (_database: unknown, context: { resultSet?: { results: unknown[] } }) => {
@@ -714,14 +732,19 @@ describe("SingleResultView explain visualizer", () => {
               }),
             ],
           });
-        context.resultSet = { results: [plan("first"), plan("second")] };
+        context.resultSet = { results: [plan("second")] };
       }
     );
 
     render(
       <SingleResultView
         disallowCopyingData={false}
-        params={{ ...params, engine: Engine.POSTGRES, explain: true }}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          explain: true,
+          statement: "first; second",
+        }}
         database={databaseForEngine(Engine.POSTGRES)}
         result={create(QueryResultSchema, {
           columnNames: ["QUERY PLAN"],
@@ -748,6 +771,7 @@ describe("SingleResultView explain visualizer", () => {
     fireEvent.click(screen.getByText("visualize-explain"));
 
     await waitFor(() => expect(createExplainToken).toHaveBeenCalled());
+    expect(runQuery.mock.calls[0][1].params.statement).toBe("second");
     expect(createExplainToken).toHaveBeenCalledWith({
       statement: "second",
       explain: "plan of second",
@@ -1007,12 +1031,7 @@ describe("SingleResultView explain visualizer", () => {
 
   test("does not replay after a result that was not a plan", () => {
     const earlier = create(QueryResultSchema, { statement: "SET x = 1" });
-    const current = create(QueryResultSchema, {
-      statement: "EXPLAIN SELECT 1",
-      queryPlan: create(QueryResult_QueryPlanSchema, {
-        format: QueryOption_ExplainFormat.TEXT,
-      }),
-    });
+    const current = textPlanResult("EXPLAIN SELECT 1");
 
     render(
       <SingleResultView
@@ -1027,6 +1046,56 @@ describe("SingleResultView explain visualizer", () => {
     );
 
     expect(screen.queryByText("visualize-explain")).toBeNull();
+  });
+
+  test("ignores later statements when replaying an earlier plan", async () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
+    const current = textPlanResult("EXPLAIN SELECT 1");
+    const later = create(QueryResultSchema, { statement: "SET x = 1" });
+    runQuery.mockImplementation(
+      async (_database: unknown, context: { resultSet?: { results: unknown[] } }) => {
+        context.resultSet = {
+          results: [
+            create(QueryResultSchema, {
+              statement: "EXPLAIN (FORMAT JSON) SELECT 1",
+              rows: [
+                create(QueryRowSchema, {
+                  values: [
+                    create(RowValueSchema, {
+                      kind: { case: "stringValue", value: "[]" },
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        };
+      }
+    );
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          statement: "EXPLAIN SELECT 1; SET x = 1",
+        }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={current}
+        results={[current, later]}
+        resultIndex={0}
+        showExport={false}
+      />
+    );
+
+    fireEvent.click(screen.getByText("visualize-explain"));
+
+    await waitFor(() => expect(openSpy).toHaveBeenCalled());
+    expect(runQuery.mock.calls[0][1].params.statement).toBe(
+      "EXPLAIN SELECT 1"
+    );
+    openSpy.mockRestore();
   });
 
   test("offers no visualizer for an engine it cannot draw", () => {

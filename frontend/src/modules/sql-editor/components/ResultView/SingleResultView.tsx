@@ -94,8 +94,8 @@ export interface SingleResultViewProps {
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
-  // Every result of the run, and which one this view shows. Visualize re-runs
-  // the whole statement and has to pick the same one back out.
+  // Every result of the run, and which one this view shows. Visualize uses
+  // earlier results to decide whether replaying this statement is safe.
   results?: QueryResult[];
   resultIndex?: number;
   showExport: boolean;
@@ -404,8 +404,8 @@ function SingleResultViewInner({
     isVisualizerEngine(engine) &&
     plan?.format ===
       QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
-  // Replaying the whole submission is safe only when every earlier statement
-  // was itself a non-executing plan and could not change session state.
+  // Replaying this statement is safe only when every earlier statement was
+  // itself a non-executing plan and could not change session state.
   const canReplay =
     isVisualizerEngine(engine) &&
     plan?.format === QueryOption_ExplainFormat.TEXT &&
@@ -426,9 +426,9 @@ function SingleResultViewInner({
         : await getExplainToken(
             database,
             params,
+            result.statement,
             runQuery,
-            engine,
-            resultIndex
+            engine
           );
       if (!token) {
         // The plan is fetched by a second query, so a failure here is invisible
@@ -850,25 +850,25 @@ function getExplainTokenFromResult(
 async function getExplainToken(
   database: Database,
   params: SQLEditorQueryParams,
+  statement: string,
   runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
-  engine: VisualizerEngine,
-  resultIndex: number
+  engine: VisualizerEngine
 ): Promise<string | undefined> {
+  if (!statement) return undefined;
   const explainFormat =
     QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
       ...params,
+      statement,
       explain: true,
       queryOption: create(QueryOptionSchema, { explainFormat }),
     },
     status: "PENDING",
   };
   await runQuery(database, context);
-  // The re-run replays every statement the user submitted, so take the one this
-  // view is showing rather than the first.
-  const result = context.resultSet?.results[resultIndex];
+  const result = context.resultSet?.results[0];
   if (!result) return undefined;
   return getExplainTokenFromResult(result, engine);
 }
