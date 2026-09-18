@@ -587,17 +587,17 @@ function SourceOption({
   return (
     <Button
       appearance="secondary"
-      size="xs"
+      size="md"
       type="button"
       role="radio"
       aria-checked={selected}
       className={cn(
-        "w-full rounded-sm border border-control-border p-4 text-left transition-colors",
+        "h-auto w-full items-start justify-start rounded-sm border border-control-border p-4 text-left whitespace-normal transition-colors",
         selected && "border-accent bg-control-bg"
       )}
       onClick={() => onSelect(value)}
     >
-      <div className="flex items-start gap-x-3">
+      <div className="flex w-full min-w-0 items-start gap-x-3">
         <span
           className={cn(
             "mt-1 flex size-4 items-center justify-center rounded-full border border-control-border",
@@ -605,9 +605,13 @@ function SourceOption({
           )}
         />
         {icon}
-        <div className="flex-1">
-          <div className="text-lg font-medium text-control">{title}</div>
-          <p className="mt-1 text-sm text-control-light">{description}</p>
+        <div className="min-w-0 flex-1">
+          <div className="break-words text-lg font-medium text-control">
+            {title}
+          </div>
+          <p className="mt-1 break-words text-sm text-control-light">
+            {description}
+          </p>
         </div>
       </div>
     </Button>

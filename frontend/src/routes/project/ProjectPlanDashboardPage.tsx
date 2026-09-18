@@ -817,7 +817,7 @@ function DatabaseAndGroupSelector({
       <div className="flex border-b border-control-border">
         <Button
           appearance="secondary"
-          size="xs"
+          size="md"
           type="button"
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
@@ -834,7 +834,7 @@ function DatabaseAndGroupSelector({
         </Button>
         <Button
           appearance="secondary"
-          size="xs"
+          size="md"
           type="button"
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",

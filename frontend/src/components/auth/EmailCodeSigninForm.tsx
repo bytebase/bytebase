@@ -139,7 +139,7 @@ export function EmailCodeSigninForm({ loading, onSignin }: Props) {
             <Button
               type="button"
               appearance="link"
-              size="xs"
+              size="md"
               className="h-auto p-0 text-sm disabled:text-control-light"
               disabled={resendCountdown > 0}
               onClick={sendCode}

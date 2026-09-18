@@ -1162,9 +1162,9 @@ function LoadMoreButton({
     <div className="w-full flex items-center justify-start pl-4">
       <Button
         appearance="secondary"
-        size="xs"
+        size="md"
         type="button"
-        className="text-sm text-accent hover:underline disabled:opacity-50"
+        className="h-auto p-0 text-sm text-accent hover:underline disabled:opacity-50"
         disabled={loading}
         onClick={() => void onLoadMore()}
       >

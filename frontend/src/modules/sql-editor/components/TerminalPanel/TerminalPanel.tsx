@@ -248,9 +248,9 @@ export function TerminalPanel() {
                         {query === currentQuery && expired && (
                           <Button
                             appearance="secondary"
-                            size="xs"
+                            size="md"
                             type="button"
-                            className="text-control-placeholder cursor-pointer hover:underline text-sm select-none"
+                            className="h-auto cursor-pointer p-0 text-sm text-control-placeholder hover:underline select-none"
                             onClick={handleCancelQuery}
                           >
                             {t("common.cancel")}

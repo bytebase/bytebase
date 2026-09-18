@@ -81,6 +81,7 @@ export function SchemaChooser() {
       options={options}
       isChosen={isChosen}
       placeholder={t("database.schema.select")}
+      dropdownMinWidth={192}
     />
   );
 }

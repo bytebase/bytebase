@@ -1210,19 +1210,21 @@ export function ProjectSettingsPage() {
               reviewPolicyList.map((policy) => (
                 <Button
                   appearance="secondary"
-                  size="xs"
+                  size="md"
                   key={policy.id}
                   type="button"
-                  className="w-full text-left px-4 py-3 border border-control-border rounded-sm hover:bg-control-bg transition-colors"
+                  className="h-auto w-full flex-col items-start rounded-sm border border-control-border px-4 py-3 text-left whitespace-normal transition-colors hover:bg-control-bg"
                   onClick={() => {
                     setPendingReviewPolicy(policy);
                     setEnforceReview(true);
                     setShowReviewDialog(false);
                   }}
                 >
-                  <div className="font-medium">{policy.name}</div>
+                  <div className="w-full min-w-0 break-words font-medium">
+                    {policy.name}
+                  </div>
                   {policy.resources.length > 0 && (
-                    <div className="text-xs text-control-light mt-1">
+                    <div className="mt-1 w-full min-w-0 break-words text-xs text-control-light">
                       {policy.resources.length}{" "}
                       {t("common.resource", {
                         count: policy.resources.length,

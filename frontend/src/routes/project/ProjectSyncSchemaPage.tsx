@@ -841,11 +841,11 @@ function ChangelogSelector({
             {entries.map((entry) => (
               <Button
                 appearance="secondary"
-                size="xs"
+                size="md"
                 key={entry.name}
                 type="button"
                 className={cn(
-                  "w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors",
+                  "h-auto w-full justify-start px-3 py-2 text-left text-sm transition-colors",
                   "hover:bg-control-bg",
                   entry.name === value && "bg-accent/5"
                 )}
@@ -860,9 +860,9 @@ function ChangelogSelector({
             {nextPageToken && (
               <Button
                 appearance="secondary"
-                size="xs"
+                size="md"
                 type="button"
-                className="w-full text-center px-3 py-2 text-sm text-accent hover:bg-control-bg transition-colors"
+                className="h-auto w-full px-3 py-2 text-center text-sm text-accent hover:bg-control-bg transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   loadMore();
@@ -1075,8 +1075,8 @@ function SourceSchemaInfo({
         <>
           <Button
             appearance="secondary"
-            size="xs"
-            className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg hover:bg-control-bg-hover text-sm transition-colors"
+            size="md"
+            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
             onClick={gotoDatabase}
           >
             <span className="opacity-60">{t("common.database")}</span>
@@ -1090,8 +1090,8 @@ function SourceSchemaInfo({
           </Button>
           <Button
             appearance="secondary"
-            size="xs"
-            className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg hover:bg-control-bg-hover text-sm transition-colors"
+            size="md"
+            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
             onClick={gotoChangelog}
           >
             <span className="opacity-60 mr-1">{t("common.changelog")}</span>
@@ -1597,7 +1597,7 @@ function DiffViewPanel({
       <div className="flex border-b border-control-border gap-x-4">
         <Button
           appearance="secondary"
-          size="xs"
+          size="md"
           className={cn(
             "relative h-auto px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
             tab === "diff"
@@ -1610,7 +1610,7 @@ function DiffViewPanel({
         </Button>
         <Button
           appearance="secondary"
-          size="xs"
+          size="md"
           className={cn(
             "relative h-auto px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
             tab === "ddl"

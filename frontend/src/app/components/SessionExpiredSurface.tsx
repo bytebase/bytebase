@@ -21,7 +21,7 @@ export function SessionExpiredSurface({
       <Button
         type="button"
         appearance="link"
-        size="xs"
+        size="md"
         className="h-auto p-0 text-sm text-control-light"
         onClick={() => useAppStore.getState().logout()}
       >

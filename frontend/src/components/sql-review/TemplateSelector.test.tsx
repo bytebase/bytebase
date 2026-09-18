@@ -146,6 +146,7 @@ describe("TemplateSelector", () => {
     );
 
     expect(reviewButton).toBeTruthy();
+    expect(reviewButton).toHaveClass("whitespace-normal");
 
     act(() => {
       reviewButton?.dispatchEvent(

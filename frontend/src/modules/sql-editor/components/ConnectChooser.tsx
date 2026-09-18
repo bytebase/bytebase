@@ -179,10 +179,10 @@ export function ConnectChooser({
     >
       <SearchInput
         ref={inputRef}
+        size="sm"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         wrapperClassName="m-2"
-        className="h-7"
       />
       <div className="max-h-60 overflow-y-auto">
         {filteredOptions.length === 0 ? (
@@ -195,11 +195,11 @@ export function ConnectChooser({
             return (
               <Button
                 appearance="secondary"
-                size="xs"
+                size="md"
                 key={option.value}
                 type="button"
                 className={cn(
-                  "w-full text-left px-3 py-1.5 text-sm flex items-center gap-x-2 transition-colors",
+                  "h-auto w-full justify-start px-3 py-1.5 text-left text-sm transition-colors",
                   "hover:bg-control-bg",
                   isSelected && "bg-accent/5"
                 )}
@@ -264,8 +264,11 @@ export function ConnectChooser({
         <Button
           ref={triggerRef}
           variant="default"
-          size="sm"
-          className={cn("min-w-[10rem] rounded-r-none", triggerClassName)}
+          size="md"
+          className={cn(
+            "h-auto min-w-[10rem] gap-1 rounded-r-none px-1.5 py-1 text-sm",
+            triggerClassName
+          )}
           aria-label={placeholder}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}

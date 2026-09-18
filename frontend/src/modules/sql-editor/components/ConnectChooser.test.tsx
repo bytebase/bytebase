@@ -30,12 +30,24 @@ vi.mock("@/components/ui/combobox-position", () => ({
 
 vi.mock("@/components/ui/search-input", () => ({
   SearchInput: ({
+    className,
     value,
     onChange,
+    size,
   }: {
+    className?: string;
     value: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  }) => <input data-testid="search" value={value} onChange={onChange} />,
+    size?: string;
+  }) => (
+    <input
+      data-testid="search"
+      data-size={size}
+      data-class-name={className}
+      value={value}
+      onChange={onChange}
+    />
+  ),
 }));
 
 vi.mock("@/components/HighlightLabelText", () => ({
@@ -274,6 +286,25 @@ describe("ConnectChooser", () => {
       (element) => element.textContent === "public"
     );
     expect(highlight?.dataset.keyword).toBe("pub");
+    unmount();
+  });
+
+  test("uses the shared compact search control in the dropdown", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ConnectChooser
+        value=""
+        onChange={vi.fn()}
+        options={defaultOptions}
+        isChosen={false}
+        placeholder="Select schema"
+      />
+    );
+    render();
+    act(() => container.querySelector("button")?.click());
+
+    const search = document.body.querySelector("[data-testid='search']");
+    expect(search?.getAttribute("data-size")).toBe("sm");
+    expect(search?.getAttribute("data-class-name")).toBeNull();
     unmount();
   });
 

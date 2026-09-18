@@ -205,7 +205,7 @@ function MaskingRuleConfig({
           <div className="flex items-center h-9">
             {!readonly ? (
               <Input
-                size="sm"
+                size="md"
                 className="w-64"
                 placeholder={defaultTitle}
                 value={title}

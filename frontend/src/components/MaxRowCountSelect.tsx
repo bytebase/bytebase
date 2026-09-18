@@ -77,9 +77,9 @@ export function MaxRowCountSelect({
               key={n}
               type="button"
               appearance="secondary"
-              size="xs"
+              size="md"
               className={cn(
-                "h-auto px-3 py-1.5 text-left text-sm",
+                "h-auto justify-start px-3 py-1.5 text-left text-sm",
                 "hover:bg-control-bg",
                 n === value && "bg-control-bg font-medium"
               )}

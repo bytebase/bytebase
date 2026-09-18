@@ -96,7 +96,7 @@ export function PlanCheckSection({
           <Button
             disabled={isRunning || runDisabled}
             onClick={() => void onRun()}
-            size="xs"
+            size="md"
             appearance="outline"
           >
             <Play className="h-3.5 w-3.5" />
@@ -111,7 +111,7 @@ export function PlanCheckSection({
             appearance="secondary"
             size="xs"
             aria-label={t("plan.navigator.checks")}
-            className="cursor-pointer text-left"
+            className="h-auto cursor-pointer justify-start p-0 text-left"
             onClick={() => setDrawerOpen(true)}
             type="button"
           >
@@ -389,8 +389,8 @@ export function PlanCheckResultsDrawer({
                 <div className="flex justify-center py-4">
                   <Button
                     appearance="secondary"
-                    size="xs"
-                    className="cursor-pointer text-sm text-accent hover:underline"
+                    size="md"
+                    className="h-auto cursor-pointer p-0 text-sm text-accent hover:underline"
                     onClick={() =>
                       setDisplayCount((count) => count + PAGE_SIZE)
                     }

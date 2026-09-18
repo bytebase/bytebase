@@ -128,9 +128,9 @@ function PermissionTransfer({
         <div className="flex items-center gap-x-2 px-3 py-2 border-b">
           <Button
             appearance="secondary"
-            size="xs"
+            size="md"
             type="button"
-            className="text-sm text-main hover:text-accent disabled:opacity-50"
+            className="h-auto px-1.5 py-0.5 text-sm text-main hover:text-accent disabled:opacity-50"
             disabled={disabled || sourceItems.length === 0}
             onClick={selectAll}
           >
@@ -171,9 +171,9 @@ function PermissionTransfer({
         <div className="flex items-center gap-x-2 px-3 py-2 border-b">
           <Button
             appearance="secondary"
-            size="xs"
+            size="md"
             type="button"
-            className="text-sm text-main hover:text-accent disabled:opacity-50"
+            className="h-auto px-1.5 py-0.5 text-sm text-main hover:text-accent disabled:opacity-50"
             disabled={disabled || value.length === 0}
             onClick={clearAll}
           >

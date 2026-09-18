@@ -700,7 +700,7 @@ export function AgentInput() {
           <div className="mt-2 flex flex-wrap gap-x-2 gap-y-2">
             <Button
               appearance="secondary"
-              size="xs"
+              size="md"
               className="rounded-xs bg-error px-3 py-2 text-sm text-accent-text hover:bg-error/90 disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={retryLastTurn}
@@ -709,7 +709,7 @@ export function AgentInput() {
             </Button>
             <Button
               appearance="secondary"
-              size="xs"
+              size="md"
               className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={dismissInterrupted}
@@ -732,7 +732,7 @@ export function AgentInput() {
         <div className="flex flex-wrap gap-x-2 gap-y-2">
           <Button
             appearance="secondary"
-            size="xs"
+            size="md"
             className="rounded-xs bg-accent px-3 py-2 text-sm text-accent-text hover:bg-accent-hover disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(true)}
@@ -741,7 +741,7 @@ export function AgentInput() {
           </Button>
           <Button
             appearance="secondary"
-            size="xs"
+            size="md"
             className="rounded-xs border px-3 py-2 text-sm text-control hover:bg-control-bg disabled:opacity-50"
             disabled={isCurrentChatRunning}
             onClick={() => submitConfirmation(false)}
@@ -755,15 +755,17 @@ export function AgentInput() {
           {chooseOptions.map((option) => (
             <Button
               appearance="secondary"
-              size="xs"
+              size="md"
               key={option.value}
-              className="rounded-xs border px-3 py-2 text-left text-sm hover:bg-control-bg disabled:opacity-50"
+              className="h-auto w-full flex-col items-start justify-start rounded-xs border px-3 py-2 text-left text-sm whitespace-normal hover:bg-control-bg disabled:opacity-50"
               disabled={isCurrentChatRunning}
               onClick={() => submitChoice(option)}
             >
-              <div className="font-medium text-main">{option.label}</div>
+              <div className="w-full min-w-0 break-words font-medium text-main">
+                {option.label}
+              </div>
               {option.description && (
-                <div className="mt-1 text-xs text-control-light">
+                <div className="mt-1 w-full min-w-0 break-words text-xs text-control-light">
                   {option.description}
                 </div>
               )}

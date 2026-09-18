@@ -211,7 +211,7 @@ export const ResourceIdField = forwardRef<
               <Button
                 type="button"
                 appearance="link"
-                size="xs"
+                size="md"
                 className="ml-1 h-auto p-0 font-medium hover:opacity-80"
                 onClick={() => setManualEdit(true)}
               >

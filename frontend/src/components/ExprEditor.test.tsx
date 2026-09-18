@@ -338,6 +338,15 @@ describe("ExprEditor", () => {
       stylex.props(controlSizeStyle("sm")).className ?? ""
     );
 
+    const valueField = input?.parentElement;
+    expect(valueField?.className).toContain("w-56");
+    expect(valueField?.className).toContain("shrink-0");
+    expect(input?.className).toContain("w-full");
+    const deleteButton = container
+      .querySelector("svg.lucide-trash-2")
+      ?.closest("button");
+    expect(deleteButton?.previousElementSibling).toBe(valueField);
+
     unmount();
   });
 

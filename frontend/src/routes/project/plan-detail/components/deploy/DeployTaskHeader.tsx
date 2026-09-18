@@ -75,9 +75,9 @@ export function DeployTaskHeader({
             out to the caret. */}
         <Button
           appearance="secondary"
-          size="xs"
+          size="md"
           aria-expanded={isExpanded}
-          className="flex min-w-0 cursor-pointer items-center gap-x-2 rounded-sm border-0 bg-transparent p-0 text-left outline-none hover:bg-control-bg/50 focus-visible:ring-2 focus-visible:ring-accent"
+          className="h-auto min-w-0 cursor-pointer items-center justify-start gap-x-2 rounded-sm border-0 bg-transparent p-0 text-left whitespace-normal outline-none hover:bg-control-bg/50 focus-visible:ring-2 focus-visible:ring-accent"
           onClick={onToggleExpand}
           type="button"
         >

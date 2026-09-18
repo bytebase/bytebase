@@ -1037,9 +1037,9 @@ export function DatabaseResourceSelector({
             {nextPageToken && (
               <Button
                 appearance="secondary"
-                size="xs"
+                size="md"
                 type="button"
-                className="w-full px-2 py-1.5 text-sm text-accent hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline"
+                className="h-auto w-full px-2 py-1.5 text-sm text-accent hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline"
                 onClick={loadMore}
                 disabled={loadingMore}
               >
