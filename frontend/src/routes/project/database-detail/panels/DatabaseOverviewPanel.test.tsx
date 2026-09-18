@@ -152,9 +152,21 @@ vi.mock("@/utils/datetime", () => ({
     read: mocks.formatRelativeTime,
     nextChangeAt: () => Number.POSITIVE_INFINITY,
   },
-  formatCompactDateTime: mocks.formatAbsoluteDateTime,
-  formatOperationalDateTime: mocks.formatAbsoluteDateTime,
   formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
+  compactTimeReading: {
+    read: mocks.formatAbsoluteDateTime,
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  },
+  operationalTimeReading: {
+    read: mocks.formatAbsoluteDateTime,
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  },
+  absoluteTimeReading: {
+    read: mocks.formatAbsoluteDateTime,
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  },
+  displayableInstantMs: (ms: number) =>
+    Number.isFinite(ms) && Math.abs(ms) <= 8.64e15 ? ms : undefined,
 }));
 
 vi.mock("@/utils", () => ({

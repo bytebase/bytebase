@@ -18,12 +18,20 @@ const formatters = vi.hoisted(() => {
         ? ms + boundaryOffsetMs
         : Number.POSITIVE_INFINITY,
   });
+  // A rendering that never changes on its own.
+  const fixedReading = (prefix: string) => ({
+    read: (ms: number) => `${prefix}:${ms}`,
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  });
   return {
     queueTimeReading: ageReading("queue", 60_000),
     relativeTimeReading: ageReading("relative", 45_000),
-    formatCompactDateTime: (ms: number) => `compact:${ms}`,
-    formatOperationalDateTime: (ms: number) => `operational:${ms}`,
     formatAbsoluteDateTime: vi.fn((ms: number) => `absolute:${ms}`),
+    compactTimeReading: fixedReading("compact"),
+    operationalTimeReading: fixedReading("operational"),
+    absoluteTimeReading: fixedReading("absolute"),
+    displayableInstantMs: (ms: number) =>
+      Number.isFinite(ms) && Math.abs(ms) <= 8.64e15 ? ms : undefined,
   };
 });
 
@@ -140,6 +148,10 @@ describe("HumanizeTs", () => {
     // on it; the row should lose its timestamp, not the page its subtree.
     const { container, root } = mount();
     act(() => root.render(<HumanizeTs ts={Number.NaN} />));
+    expect(container.textContent).toBe("");
+
+    // Finite, and still no instant it can name: Intl throws on this too.
+    act(() => root.render(<HumanizeTs ts={1e15} />));
     expect(container.textContent).toBe("");
   });
 

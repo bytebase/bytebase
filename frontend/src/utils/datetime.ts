@@ -8,6 +8,24 @@ const DAY_MS = 24 * HOUR_MS;
 export const RELATIVE_THRESHOLD_MS = 30 * DAY_MS;
 const NOW_THRESHOLD_MS = 10 * SECOND_MS;
 
+// The range a time value can occupy. Beyond it `Date` holds no time and the
+// date formatters below throw, so this is their domain.
+const MAX_TIME_VALUE_MS = 8.64e15;
+
+/**
+ * The instant a display can render, or nothing for a number that is not a
+ * time: an unvalidated string through `new Date(...)` arrives as NaN, and a
+ * timestamp can carry a value no instant occupies. The container then shows
+ * its empty form, rather than the page losing a subtree to a formatter that
+ * throws. A display asks here rather than testing a value itself, which is how
+ * a guard drifts from the domain it guards.
+ */
+export function displayableInstantMs(ms: number): number | undefined {
+  return Number.isFinite(ms) && Math.abs(ms) <= MAX_TIME_VALUE_MS
+    ? ms
+    : undefined;
+}
+
 export function getActiveLocale(): string {
   return i18n.language;
 }
@@ -201,6 +219,19 @@ export const queueTimeReading: TimeReading<number, string> = {
   read: formatQueueTime,
   nextChangeAt: nextQueueTimeChangeAt,
 };
+
+// A rendering that says the same thing however long it is on screen: a reading
+// whose boundary never arrives, so a display of one holds no subscription.
+const fixedReading = (
+  format: (timestampMs: number) => string
+): TimeReading<number, string> => ({
+  read: format,
+  nextChangeAt: () => Number.POSITIVE_INFINITY,
+});
+
+export const absoluteTimeReading = fixedReading(formatAbsoluteDateTime);
+export const compactTimeReading = fixedReading(formatCompactDateTime);
+export const operationalTimeReading = fixedReading(formatOperationalDateTime);
 
 // Readings of a deadline.
 

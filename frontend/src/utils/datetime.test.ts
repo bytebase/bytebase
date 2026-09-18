@@ -22,6 +22,7 @@ const withLocale = (language: string, run: () => void) => {
 import {
   countdownReading,
   daysLeftReading,
+  displayableInstantMs,
   formatAbsoluteDateTime,
   formatCompactDateTime,
   formatOperationalDateTime,
@@ -398,4 +399,46 @@ describe("deadline readings", () => {
     });
     expect(daysLeftReading.read(baseMs)).toEqual({ kind: "passed" });
   });
+});
+
+describe("displayableInstantMs", () => {
+  // Every value a display can be handed, at and just past the edge of the
+  // range a time value can occupy.
+  const candidates = [
+    0,
+    -1,
+    1_772_452_800_123,
+    1_772_452_800_123.5,
+    8.64e15,
+    -8.64e15,
+    8.64e15 + 1,
+    -8.64e15 - 1,
+    1e18,
+    -1e18,
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+  ];
+
+  test.each(candidates)(
+    "accepts %p exactly when it is a time at all",
+    (value) => {
+      const isATime = !Number.isNaN(new Date(value).getTime());
+      expect(displayableInstantMs(value)).toBe(isATime ? value : undefined);
+    }
+  );
+
+  test.each(candidates)(
+    "never yields %p to a formatter that throws",
+    (value) => {
+      if (displayableInstantMs(value) === undefined) {
+        return;
+      }
+      // A value this admits reaches Intl, which throws on one outside the range.
+      expect(() => formatAbsoluteDateTime(value)).not.toThrow();
+      expect(() => formatCompactDateTime(value)).not.toThrow();
+      expect(() => formatOperationalDateTime(value)).not.toThrow();
+      expect(() => queueTimeReading.read(value)).not.toThrow();
+    }
+  );
 });
