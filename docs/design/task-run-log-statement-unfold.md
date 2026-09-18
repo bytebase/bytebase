@@ -88,11 +88,16 @@ What follows from it:
 existing `detail: string`:
 
 ```ts
+key: string;          // the entry's identity, not its position — see D14
 detail: string;       // the text the row shows
 statement?: string;   // the statement this row ran, as the sheet stored it
 error?: string;       // the error the command returned
 defaultOpen?: boolean // this is the row D4 picked; the mark D13 and D14 speak of
 ```
+
+`key` is listed because its contents change even though the field does not. It is the only
+identifier `SectionContent` ever sees, so if it stays positional the view has nothing stable to
+report when a reader toggles a row, and D14's persistence cannot be built at all.
 
 `detail` keeps the `trim()` + `\s+ → " "` normalization when it summarizes a statement — for a
 one-line row that is exactly right, and it keeps stray newlines from breaking the row geometry.
@@ -353,9 +358,15 @@ underneath it. `useTaskRunLogSections` sets `idPrefix` to the replica id once a 
 one replica (`:131`, `:148`, `:158`), so the first replica's rows are `section-…` while it is alone
 and `<replicaId>-…` the moment a second replica's first entry lands; and `groupIndex` shifts for
 every later group when a retry marker splits a section in two. Either renumbering silently drops
-the reader's folds on a dataset that never changed. So an override is keyed by the entry's own
-identity, not by where it currently sits. Render keys keep their present shape; only the override
-map uses the stable one.
+the reader's folds on a dataset that never changed. So a row is keyed by the entry's own identity,
+not by where it currently sits.
+
+An earlier draft of this decision kept the positional key for rendering and gave the override map a
+second, stable one. That was a hedge, and it was the wrong call: it leaves two keys on one row and
+makes every future consumer pick correctly, when picking wrong is the entire bug. `DisplayItem.key`
+becomes the identity itself. Nothing reads its shape — `SectionContent` passes it to React and
+that is all (`SectionContent.tsx:42`) — and React gains from the change too, since rows currently
+remount for no reason when a replica appears and every key is rewritten.
 
 That identity needs care, because the obvious tuple is not unique. `task_run_log` has no primary
 key *by design* — "entries for one task run can legitimately share a `created_at` microsecond"
@@ -437,7 +448,7 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 | File | Change |
 |---|---|
 | `task-run-log/types.ts` | `statement?`, `error?` and `defaultOpen?` on `DisplayItem` |
-| `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section |
+| `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all the new fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section; build `key` from the entry's identity instead of `idPrefix-groupIndex-entryIndex` (D14) |
 | `task-run-log/useTaskRunLogSections.ts` | The hook owns every builder call — flat, per-replica, release-file and orphan — so it forwards `taskRunStatus` into all of them; nothing else invokes the builders, and a guard that stops here is a guard that never runs |
 | `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28, the reserved timestamp and index columns (D15), and one `ResizeObserver` on the scroll box deciding which rows are foldable (D5) |
 | `task-run-log/TaskRunLogViewer.tsx` | The reader's fold overrides, held above the conditional mount and cleared with `taskRunName` (D14) |
@@ -468,9 +479,10 @@ behavior of this function:
 - `model.test.ts` for the marking edges: a failed command with neither `statement` nor a usable
   `range` is still marked, so D13 renders and scrolls to its error, and no cap change follows
   because it has no block.
-- Override identity (D14): two `COMMAND_EXECUTE` entries from the same replica sharing a timestamp
-  and carrying `statement` rather than `range` — the SDL shape — get distinct override keys, so
-  folding one leaves the other open.
+- Row identity (D14): two `COMMAND_EXECUTE` entries from the same replica sharing a timestamp and
+  carrying `statement` rather than `range` — the SDL shape — get distinct keys, so folding one
+  leaves the other open; and a row's key is unchanged by a second replica appearing or a retry
+  marker splitting its section.
 - Live updates (D14), all on an unchanged `datasetKey`, and including the regrouping case: a run
   that starts with one replica and gains a second keeps a folded row folded, even though its render
   key changes from `section-…` to `<replicaId>-…`; so does a section split in two by a retry marker
