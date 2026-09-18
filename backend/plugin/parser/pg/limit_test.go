@@ -230,6 +230,12 @@ func TestGetStatementWithResultLimitInline(t *testing.T) {
 			want:      "SELECT * FROM t LIMIT 0",
 		},
 		{
+			name:      "over-max LIMIT preserves separator before OFFSET",
+			statement: "SELECT 1 LIMIT 2000 OFFSET 0;",
+			limit:     1000,
+			want:      "SELECT 1 LIMIT 1000 OFFSET 0;",
+		},
+		{
 			name: "CTE with lateral and ORDER BY",
 			statement: `WITH params AS (
   SELECT 'resource.environment_id in []'::text AS env_condition
