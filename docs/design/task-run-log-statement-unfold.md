@@ -88,16 +88,24 @@ What follows from it:
 existing `detail: string`:
 
 ```ts
-detail: string;      // the text the row shows
-statement?: string;  // the statement this row ran, as the sheet stored it
-error?: string;      // the error the command returned
+detail: string;       // the text the row shows
+statement?: string;   // the statement this row ran, as the sheet stored it
+error?: string;       // the error the command returned
+defaultOpen?: boolean // this is the row D4 picked; the mark D13 and D14 speak of
 ```
 
 `detail` keeps the `trim()` + `\s+ → " "` normalization when it summarizes a statement — for a
 one-line row that is exactly right, and it keeps stray newlines from breaking the row geometry.
-`statement` and `error` are verbatim, untrimmed. `getEntryDetail` returns all three; the entry
+`statement` and `error` are verbatim, untrimmed. `getEntryDetail` returns the first three; the entry
 types that carry status words rather than payloads (`BEGIN`, `Completed`, retry counts) return
-`detail` alone, which is what makes the two new fields the test for both controls below.
+`detail` alone, which is what makes `statement` and `error` the test for both controls below.
+
+`defaultOpen` is the fourth, and it exists because the view cannot work it out. D4's pick is made
+across a whole execution context, and `SectionContent` sees one section at a time; nor can it infer
+the pick from `error`, since every transient failed attempt carries one and opening all of them is
+the thing D4 exists to prevent. So `buildSectionsFromEntries` decides and marks the row it chose,
+and everything downstream — D13's render window, D14's derived open set — reads that flag rather
+than re-deriving a judgement it lacks the inputs for.
 
 **D2 · Truncation moves to CSS.** The row's line renders under `truncate`; the 80-character
 `substring` is deleted. A wide screen shows more of the statement and a narrow sheet shows less,
@@ -311,7 +319,18 @@ for as long as the dataset lasts, so a failure the reader folded stays folded th
 poll, and a mark that moves off a row — a transient failure that turns out to have been retried —
 takes its auto-open with it.
 
-Those overrides cannot live in `SectionContent`, because it is mounted conditionally: collapsing an
+They also cannot be keyed by the row's render key. That key is positional —
+`` `${idPrefix ?? "section"}-${groupIndex}-${entryIndex}` `` (`model.ts:481`) — and both halves move
+underneath it. `useTaskRunLogSections` sets `idPrefix` to the replica id once a run has more than
+one replica (`:131`, `:148`, `:158`), so the first replica's rows are `section-…` while it is alone
+and `<replicaId>-…` the moment a second replica's first entry lands; and `groupIndex` shifts for
+every later group when a retry marker splits a section in two. Either renumbering silently drops
+the reader's folds on a dataset that never changed. So an override is keyed by the entry's own
+identity — its replica id, its log time in milliseconds, its type, and for a command the byte
+offset its statement starts at — which no regrouping can alter. Render keys keep their present
+shape; only the override map uses the stable one.
+
+Those overrides cannot live in `SectionContent` either, because it is mounted conditionally: collapsing an
 enclosing section unmounts it and reopening builds a fresh one (`TaskRunLogViewer.tsx:195-201`), and
 a live run also swaps the sole-section rendering for the multi-section tree the moment a second
 entry type arrives. Either remount would discard the reader's folds and pop a marked failure back
@@ -365,7 +384,7 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 
 | File | Change |
 |---|---|
-| `task-run-log/types.ts` | `statement?: string` and `error?: string` on `DisplayItem` |
+| `task-run-log/types.ts` | `statement?`, `error?` and `defaultOpen?` on `DisplayItem` |
 | `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section |
 | `task-run-log/useTaskRunLogSections.ts` | The hook owns every builder call — flat, per-replica, release-file and orphan — so it forwards `taskRunStatus` into all of them; nothing else invokes the builders, and a guard that stops here is a guard that never runs |
 | `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28, the reserved timestamp and index columns (D15), and one `ResizeObserver` on the scroll box deciding which rows are foldable (D5) |
@@ -393,6 +412,10 @@ behavior of this function:
   statement carries none at all; a single-line statement that fits its width has **no** fold
   control, the same row in a container narrow enough to clamp it has one, and a multi-line
   statement has one at any width (D5).
+- Live updates (D14), all on an unchanged `datasetKey`, and including the regrouping case: a run
+  that starts with one replica and gains a second keeps a folded row folded, even though its render
+  key changes from `section-…` to `<replicaId>-…`; so does a section split in two by a retry marker
+  arriving between polls.
 - Live updates (D14), all on an unchanged `datasetKey`: a section rerendered with a newly marked
   failure opens it without remounting; a row the reader folded stays folded when the next poll
   arrives; a row whose mark moves away folds again if the reader never touched it; a folded row is
