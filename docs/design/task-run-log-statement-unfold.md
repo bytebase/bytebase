@@ -100,6 +100,13 @@ one-line row that is exactly right, and it keeps stray newlines from breaking th
 types that carry status words rather than payloads (`BEGIN`, `Completed`, retry counts) return
 `detail` alone, which is what makes `statement` and `error` the test for both controls below.
 
+A failure whose statement could not be recovered — no `statement`, no usable `range`, or a sheet
+that came back partial — still gets marked, because the mark's first job is to say *this is the row
+that explains the outcome*, and D13 has to render and scroll to it or the error itself stays hidden
+behind *Load more*. What it does not get is a taller section: D8's cap answers to a block actually
+being on screen, not to the mark, and there is no block here. Opening such a row is a no-op, which
+is why D5 gives it no control to open with.
+
 `defaultOpen` is the fourth, and it exists because the view cannot work it out. D4's pick is made
 across a whole execution context, and `SectionContent` sees one section at a time; nor can it infer
 the pick from `error`, since every transient failed attempt carries one and opening all of them is
@@ -182,10 +189,19 @@ way.
 **D5 · A row is foldable when unfolding would show something new.** There are two independent
 reasons it would, and a row needs only one of them:
 
+- the row carries both an `error` and a `statement`, because then the line is the error and the
+  statement is never on it — unfolding is the only way to reach the SQL, however short it is;
 - the verbatim statement differs from the line it was collapsed into, because it had newlines or
   runs of whitespace — a string comparison, free;
 - the line is clamped by the width it was given — `scrollWidth > clientWidth`, which has to be
   measured.
+
+The first is the one an implementation would most easily miss, and missing it sets a trap. A
+terminal failure on something as short as `SELECT 1` satisfies neither of the other two — its
+statement has no newlines and its line, being the error, is never clamped — so the row would open
+by default under D4 and then, once the reader folded it, offer no way back: the statement and the
+copy button that lives with it are both inside the block. Fold once, lose the SQL. A row holding
+two payloads is always foldable.
 
 Neither covers the other. A three-line statement can collapse to a line that fits, and a one-line
 statement can be far too wide; mockup E is the proof, where `SET statement_timeout TO '3600s';`
@@ -234,7 +250,7 @@ mouse-up at the end of a drag. The handler ignores a click when `window.getSelec
 collapsed, and ignores clicks that originate inside a button. Mouse convenience only — assistive
 technology sees D6's controls.
 
-**D8 · The section's cap rises while a row is open.** A 630px statement inside a 280px box is a
+**D8 · The section's cap rises while a block is on screen.** A 630px statement inside a 280px box is a
 keyhole. While any row in a section is unfolded, that section's scroll box is capped at
 `max(280px, 60vh)` instead of `ITEM_HEIGHT * MAX_VISIBLE_ITEMS`, and returns to the collapsed cap
 when the last row folds. Both halves matter: `60vh` is the honest unit for "how much of the screen
@@ -432,7 +448,11 @@ behavior of this function:
   carries no copy button on its error line and one inside its block; a row with no recoverable
   statement carries none at all; a single-line statement that fits its width has **no** fold
   control, the same row in a container narrow enough to clamp it has one, and a multi-line
-  statement has one at any width (D5).
+  statement has one at any width (D5); a failed row whose statement is as short as `SELECT 1` is
+  foldable anyway, and folding then unfolding it brings the statement and its copy button back.
+- `model.test.ts` for the marking edges: a failed command with neither `statement` nor a usable
+  `range` is still marked, so D13 renders and scrolls to its error, and no cap change follows
+  because it has no block.
 - Live updates (D14), all on an unchanged `datasetKey`, and including the regrouping case: a run
   that starts with one replica and gains a second keeps a folded row folded, even though its render
   key changes from `section-…` to `<replicaId>-…`; so does a section split in two by a retry marker
