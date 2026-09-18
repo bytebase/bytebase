@@ -214,6 +214,11 @@ vi.mock("@/utils/v1/project", () => ({
 vi.mock("@/utils/datetime", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/utils/datetime")>()),
   formatAbsoluteDateTime: () => "formatted time",
+  // A label comes from its reading, not from the formatter the reading holds.
+  absoluteTimeReading: {
+    read: () => "formatted time",
+    nextChangeAt: () => Number.POSITIVE_INFINITY,
+  },
 }));
 
 vi.mock("@/utils", () => ({
