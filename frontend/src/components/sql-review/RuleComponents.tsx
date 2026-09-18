@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import i18n from "@/lib/i18n";
 import type { PayloadValueType } from "@/lib/sql-review/rule-config-types";
@@ -248,7 +249,7 @@ export function RuleConfig({
 
           {config.payload.type === "BOOLEAN" && (
             <FormControlRow>
-              <Checkbox
+              <Switch
                 checked={(payload[index] as boolean) ?? false}
                 disabled={disabled}
                 onCheckedChange={(checked) => updatePayload(index, checked)}

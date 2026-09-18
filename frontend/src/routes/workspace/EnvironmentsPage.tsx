@@ -772,7 +772,7 @@ function EnvironmentDetail({
             }
           >
             <label className="inline-flex items-center gap-x-2 cursor-pointer">
-              <Checkbox
+              <Switch
                 checked={editProtected}
                 disabled={!canEdit}
                 onCheckedChange={(checked) => setEditProtected(checked)}
@@ -1077,7 +1077,7 @@ function CreateSheet({
               }
             >
               <label className="inline-flex items-center gap-x-2 cursor-pointer">
-                <Checkbox
+                <Switch
                   checked={isProtected}
                   onCheckedChange={(checked) => setIsProtected(checked)}
                 />

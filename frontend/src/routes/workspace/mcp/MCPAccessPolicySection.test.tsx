@@ -103,6 +103,21 @@ const clickText = (container: HTMLElement, text: string) => {
   });
 };
 
+const selectCapability = (container: HTMLElement, value: number) => {
+  const capabilities = [
+    MCPSetting_Capability.DISABLED,
+    MCPSetting_Capability.READ_ONLY,
+    MCPSetting_Capability.READ_WRITE,
+  ];
+  const radio = container.querySelectorAll<HTMLElement>('[role="radio"]')[
+    capabilities.indexOf(value)
+  ];
+  expect(radio).toBeTruthy();
+  act(() => {
+    radio!.click();
+  });
+};
+
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.permissionDisabled.value = false;
@@ -150,7 +165,7 @@ describe("MCPAccessPolicySection", () => {
     expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
 
     // Picking a different ceiling is the unsaved edit that must be guarded.
-    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    selectCapability(container, MCPSetting_Capability.DISABLED);
     await flush();
     expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
 
@@ -220,7 +235,7 @@ describe("MCPAccessPolicySection", () => {
       "settings.mcp.policy.unreadable.pick"
     );
 
-    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    selectCapability(container, MCPSetting_Capability.READ_WRITE);
     await flush();
     clickText(container, "settings.mcp.policy.save");
     await flush();
@@ -273,7 +288,7 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  test("keeps policy-card content compact", async () => {
+  test("keeps policy ceilings and their guidance visible", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -281,6 +296,10 @@ describe("MCPAccessPolicySection", () => {
     await flush();
     clickText(container, "settings.mcp.policy.edit");
     await flush();
+
+    const radios = container.querySelectorAll('[role="radio"]');
+    expect(radios).toHaveLength(3);
+    expect(radios[1]).toHaveAttribute("aria-checked", "true");
 
     const bestForLines = [...container.querySelectorAll("p")].filter((line) =>
       line.textContent?.includes(".best-for")
@@ -324,21 +343,33 @@ describe("MCPAccessPolicySection", () => {
 
     clickText(container, "settings.mcp.policy.edit");
     await flush();
-    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    selectCapability(container, MCPSetting_Capability.DISABLED);
     await flush();
 
     const controls = () => [
-      ...container.querySelectorAll('input[type="radio"], input[type="checkbox"]'),
-    ] as HTMLInputElement[];
+      ...container.querySelectorAll('[role="radio"], input[type="checkbox"]'),
+    ] as Array<HTMLElement | HTMLInputElement>;
     expect(controls().length).toBeGreaterThan(0);
-    expect(controls().every((c) => !c.disabled)).toBe(true);
+    expect(
+      controls().every(
+        (control) =>
+          control.getAttribute("aria-disabled") !== "true" &&
+          (!("disabled" in control) || !control.disabled)
+      )
+    ).toBe(true);
 
     clickText(container, "settings.mcp.policy.save");
     await flush();
 
     // Still open, still showing the draft — and now untouchable.
     expect(controls().length).toBeGreaterThan(0);
-    expect(controls().every((c) => c.disabled)).toBe(true);
+    expect(
+      controls().every(
+        (control) =>
+          control.getAttribute("aria-disabled") === "true" ||
+          ("disabled" in control && control.disabled)
+      )
+    ).toBe(true);
 
     act(() => inFlight.resolve(undefined));
     await flush();

@@ -255,11 +255,16 @@ const submittedExpression = (): string | undefined => {
   return arg?.policy.policy.value.exemptions[0]?.condition?.expression;
 };
 
-const clickRadio = async (container: HTMLElement, index: number) => {
-  const radios = Array.from(
-    container.querySelectorAll<HTMLElement>('[role="radio"]')
+const selectResourceMode = async (
+  container: HTMLElement,
+  value: "ALL" | "EXPRESSION" | "SELECT"
+) => {
+  const index = { ALL: 0, EXPRESSION: 1, SELECT: 2 }[value];
+  await click(
+    Array.from(container.querySelectorAll<HTMLElement>('[role="radio"]'))[
+      index
+    ]!
   );
-  await click(radios[index]!);
 };
 
 const clickConfirm = async (container: HTMLElement) => {
@@ -290,8 +295,12 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     mocks.getExpressionsForDatabaseResource.mockReset();
   });
 
-  test("keeps badges inside modal-opening radio controls non-clickable", () => {
+  test("keeps resource scope choices visible", () => {
     const { container, unmount } = render();
+
+    const radios = container.querySelectorAll('[role="radio"]');
+    expect(radios).toHaveLength(3);
+    expect(radios[0]).toHaveAttribute("aria-checked", "true");
 
     const badges = container.querySelectorAll('[data-testid="feature-badge"]');
     expect(badges).toHaveLength(2);
@@ -306,7 +315,7 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     const { container, unmount } = render();
     await flush();
 
-    await clickRadio(container, 2); // SELECT
+    await selectResourceMode(container, "SELECT");
     await click(
       container.querySelector<HTMLElement>('[data-testid="set-two-resources"]')!
     );
@@ -333,7 +342,7 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     const { container, unmount } = render();
     await flush();
 
-    await clickRadio(container, 2); // SELECT
+    await selectResourceMode(container, "SELECT");
     await click(
       container.querySelector<HTMLElement>('[data-testid="set-two-resources"]')!
     );
@@ -360,7 +369,7 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     const { container, unmount } = render();
     await flush();
 
-    await clickRadio(container, 1); // EXPRESSION
+    await selectResourceMode(container, "EXPRESSION");
     await click(
       container.querySelector<HTMLElement>('[data-testid="set-expr"]')!
     );

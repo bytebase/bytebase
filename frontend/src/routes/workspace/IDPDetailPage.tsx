@@ -15,9 +15,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import {
   WorkspacePageInfo,
   WorkspacePageLayout,
@@ -286,7 +286,7 @@ function ProviderConfigForm({
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForOAuth2.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateOAuth2({
@@ -426,7 +426,7 @@ function ProviderConfigForm({
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForOIDC.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateOIDC({
@@ -623,7 +623,7 @@ function ProviderConfigForm({
             {t("settings.sso.form.security-options")}
           </label>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForLDAP.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateLDAP({

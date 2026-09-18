@@ -196,15 +196,34 @@ behavior:
 
 ### Choice Controls
 
-- Use the shared `Switch` only for an independent binary behavior: its label
-  names the behavior being enabled, such as "Use SSH tunnel" or "Sync all
-  databases". The off state MUST have a clear, meaningful result.
-- Use `RadioGroup` for two peer values where neither value is an enabled or
-  disabled version of the other, such as `TCP` versus `UDP`. Keep both values
-  visible when users need to compare them or their descriptions.
-- Use the shared `Select` dropdown for more than two mutually exclusive
-  options. It MAY also be used for two peer values when space is constrained
-  and comparison is unnecessary.
+- Choose the control from the decision, not merely the number of options.
+  First ask whether users need to see the alternatives together to understand
+  or compare the choice. If they do, use a visible `RadioGroup`; if they do
+  not, use `Select` to keep the form compact. A small option count alone does
+  not make either control correct.
+- Use the shared `Switch` for one stateful binary setting, regardless of
+  whether the surrounding form saves it immediately or later. Its label names
+  the enabled behavior or state, such as "Use SSH tunnel", "Production
+  environment", or "Sync all databases". The off state MUST have a clear,
+  meaningful result.
+- Use `Checkbox` for selection or acknowledgement: selecting one or more
+  items, including an optional item in a submission, accepting terms, or
+  confirming a destructive action. A grouped set of independent requirements,
+  such as password-character requirements, MAY also use checkboxes. Do not use
+  a single checkbox for a standalone enabled or disabled setting.
+- Use `RadioGroup` for a small set of peer values where users need to compare
+  the alternatives, their descriptions, consequences, or availability. Use
+  choice-card styling when that supporting context matters, such as onboarding
+  goals, cancellation reasons, access scope, and security modes.
+- Do not replace a consequential first-step choice with a dropdown solely
+  because it has a small number of options. For example, identity-provider
+  types need visible descriptions and feature availability so users can choose
+  the integration model before they enter a configuration flow.
+- Use the shared `Select` dropdown for many, familiar, or low-context mutually
+  exclusive options where compactness is more useful than comparison, such as
+  themes, export formats, environments, and webhook destinations. It MAY also
+  be used for two peer values when space is constrained and comparison is
+  unnecessary.
 - Do not use `SegmentedControl` for ordinary form values. Reserve it for
   compact view or mode controls outside forms.
 

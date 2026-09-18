@@ -19,9 +19,9 @@ import {
   usePermissionCheck,
 } from "@/components/PermissionGuard";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { usePlanFeature } from "@/hooks/useAppState";
 import {
   DOMAIN_RESTRICTION_PRODUCT_INTRO,
@@ -305,7 +305,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                 </span>
               </div>
               <label className="flex items-center gap-x-2">
-                <Checkbox
+                <Switch
                   checked={expiration.neverExpire}
                   disabled={!canEdit}
                   onCheckedChange={(checked) =>
@@ -341,7 +341,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
             <FormField
               title={
                 <span className="flex items-center gap-x-2">
-                  <Checkbox
+                  <Switch
                     checked={state.enableWatermark}
                     disabled={!canEdit || !hasWatermarkFeature}
                     onCheckedChange={(checked) =>
@@ -423,12 +423,12 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                   ))}
                 </div>
 
-                {/* Enforce restriction checkbox */}
+                {/* Enforce restriction toggle */}
                 <div className="w-full flex flex-row justify-between items-center">
                   <FormField
                     title={
                       <div className="flex items-start gap-x-2">
-                        <Checkbox
+                        <Switch
                           aria-describedby={membersRestrictionDescriptionId}
                           aria-labelledby={membersRestrictionLabelId}
                           checked={state.enableRestriction}
