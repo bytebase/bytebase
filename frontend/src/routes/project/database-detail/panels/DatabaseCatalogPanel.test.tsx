@@ -3,7 +3,14 @@ import type {
   InputHTMLAttributes,
   ReactNode,
 } from "react";
-import { act, createContext, createElement, useContext } from "react";
+import {
+  act,
+  Children,
+  createContext,
+  createElement,
+  isValidElement,
+  useContext,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -514,6 +521,16 @@ vi.mock("@/components/ui/sheet", () => ({
 }));
 
 vi.mock("@/components/ui/select", () => {
+  // A native <option> may hold only text, and items can render markup — a
+  // semantic type's title over its masking effect — so the mock flattens it.
+  const textOf = (node: ReactNode): string =>
+    Children.toArray(node)
+      .map((child) =>
+        isValidElement<{ children?: ReactNode }>(child)
+          ? textOf(child.props.children)
+          : String(child)
+      )
+      .join("");
   const SelectContext = createContext<{
     value?: string;
     disabled?: boolean;
@@ -570,7 +587,7 @@ vi.mock("@/components/ui/select", () => {
     }: {
       value: string;
       children: ReactNode;
-    }) => <option value={value}>{children}</option>,
+    }) => <option value={value}>{textOf(children)}</option>,
   };
 });
 
