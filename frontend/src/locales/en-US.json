@@ -3404,6 +3404,7 @@
     "view-schema-text": "View schema text",
     "visualize-explain": "Visualize Explain",
     "visualize-explain-blocked": "The query plan tab was blocked. Allow pop-ups for this site and try again.",
+    "visualize-explain-executed": "Visualizing this plan would execute the query again.",
     "visualize-explain-failed": "Failed to load the query plan",
     "web-socket": {
       "connection-status": {

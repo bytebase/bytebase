@@ -348,6 +348,8 @@ func TestValidateExplainFormat(t *testing.T) {
 		{name: "postgres json", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_JSON},
 		{name: "postgres xml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_XML},
 		{name: "postgres text", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_TEXT},
+		{name: "postgres yaml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_YAML},
+		{name: "mssql yaml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_YAML, wantErr: true},
 		{name: "mssql xml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_XML},
 		{name: "mssql json", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_JSON, wantErr: true},
 		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},

@@ -3404,6 +3404,7 @@
     "view-schema-text": "查看文本 Schema",
     "visualize-explain": "可视化 Explain",
     "visualize-explain-blocked": "查询计划标签页被拦截。请允许本站弹出窗口后重试。",
+    "visualize-explain-executed": "可视化此计划会再次执行该查询。",
     "visualize-explain-failed": "加载查询计划失败",
     "web-socket": {
       "connection-status": {

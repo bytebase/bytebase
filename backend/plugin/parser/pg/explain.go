@@ -1,6 +1,8 @@
 package pg
 
 import (
+	"strings"
+
 	"github.com/bytebase/omni/pg/ast"
 	"github.com/pkg/errors"
 
@@ -39,15 +41,49 @@ func explainStatement(statement string, format base.ExplainFormat) (string, erro
 		return "EXPLAIN (FORMAT JSON) " + planned, nil
 	case base.ExplainFormatXML:
 		return "EXPLAIN (FORMAT XML) " + planned, nil
+	case base.ExplainFormatYAML:
+		return "EXPLAIN (FORMAT YAML) " + planned, nil
 	default:
 		return "EXPLAIN " + planned, nil
 	}
 }
 
+// DescribeExplain returns the output format of an EXPLAIN statement and
+// whether it executes the statement it plans.
+func DescribeExplain(statement string) (format string, executed bool, ok bool) {
+	node, err := singleStatement(statement)
+	if err != nil {
+		return "", false, false
+	}
+	explain, ok := node.(*ast.ExplainStmt)
+	if !ok {
+		return "", false, false
+	}
+	return explainFormat(explain), isExplainAnalyzeOmni(explain), true
+}
+
+func explainFormat(explain *ast.ExplainStmt) string {
+	format := "text"
+	if explain.Options == nil {
+		return format
+	}
+	for _, item := range explain.Options.Items {
+		option, ok := item.(*ast.DefElem)
+		if !ok || !strings.EqualFold(option.Defname, "format") {
+			continue
+		}
+		format = ""
+		if arg, ok := option.Arg.(*ast.String); ok {
+			format = strings.ToLower(arg.Str)
+		}
+	}
+	return format
+}
+
 // explainStatementDefaultFormat plans in the engine's default format whatever the
 // request asked for. CockroachDB's EXPLAIN takes its own option list rather than
-// PostgreSQL's FORMAT, so it offers only the default plan (supportedExplainFormats
-// in the API refuses any other format for it before a request gets here).
+// PostgreSQL's FORMAT, so it offers only the default plan (the driver capability
+// table refuses any other format before a request gets here).
 func explainStatementDefaultFormat(statement string, _ base.ExplainFormat) (string, error) {
 	return explainStatement(statement, base.ExplainFormatDefault)
 }

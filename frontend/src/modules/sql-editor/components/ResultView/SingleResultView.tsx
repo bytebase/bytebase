@@ -94,8 +94,9 @@ export interface SingleResultViewProps {
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
-  // Which statement of a multi-statement run this view shows. Visualize re-runs
-  // the whole statement and has to pick the same one back out.
+  // Every result of the run, and which one this view shows. Visualize uses
+  // earlier results to decide whether replaying this statement is safe.
+  results?: QueryResult[];
   resultIndex?: number;
   showExport: boolean;
   // Optional tooltip shown on the export button — used to explain when the
@@ -281,6 +282,7 @@ function SingleResultViewInner({
   params,
   database,
   result,
+  results = [],
   resultIndex = 0,
   showExport,
   exportTooltip,
@@ -397,23 +399,37 @@ function SingleResultViewInner({
     [flattenedTableView, result.masked]
   );
 
-  const showVisualizeButton = isVisualizerEngine(engine) && !!params.explain;
+  const plan = result.queryPlan;
+  const planInRows =
+    isVisualizerEngine(engine) &&
+    plan?.format ===
+      QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
+  // Replaying this statement is safe only when every earlier statement was
+  // itself a non-executing plan and could not change session state.
+  const canReplay =
+    isVisualizerEngine(engine) &&
+    plan?.format === QueryOption_ExplainFormat.TEXT &&
+    results
+      .slice(0, resultIndex)
+      .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);
+  const showVisualizeButton = planInRows || canReplay;
+  const visualizeDisabledReason =
+    !planInRows && plan?.executed
+      ? t("sql-editor.visualize-explain-executed")
+      : undefined;
 
   const visualizeExplain = async () => {
     if (!isVisualizerEngine(engine)) return;
     try {
-      // Spanner explains only as JSON, so the result on screen already is the
-      // plan the visualizer reads; the other engines show a readable plan.
-      const token =
-        engine === Engine.SPANNER
-          ? getExplainTokenFromResult(result, engine)
-          : await getExplainToken(
-              database,
-              params,
-              runQuery,
-              engine,
-              resultIndex
-            );
+      const token = planInRows
+        ? getExplainTokenFromResult(result, engine)
+        : await getExplainToken(
+            database,
+            params,
+            result.statement,
+            runQuery,
+            engine
+          );
       if (!token) {
         // The plan is fetched by a second query, so a failure here is invisible
         // unless we say so — the button would otherwise do nothing.
@@ -755,6 +771,7 @@ function SingleResultViewInner({
             statement={result.statement ?? ""}
             queryTime={queryTime}
             showVisualizeButton={showVisualizeButton}
+            visualizeDisabledReason={visualizeDisabledReason}
             onVisualizeExplain={visualizeExplain}
           />
         </>
@@ -830,30 +847,28 @@ function getExplainTokenFromResult(
   return createExplainToken({ statement, explain, engine });
 }
 
-// getExplainToken re-runs the explain in the format the visualizer reads for
-// the engine, whatever format the grid is showing, so the plan is only fetched
-// when the user asks for it.
 async function getExplainToken(
   database: Database,
   params: SQLEditorQueryParams,
+  statement: string,
   runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
-  engine: VisualizerEngine,
-  resultIndex: number
+  engine: VisualizerEngine
 ): Promise<string | undefined> {
+  if (!statement) return undefined;
   const explainFormat =
     QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
       ...params,
+      statement,
+      explain: true,
       queryOption: create(QueryOptionSchema, { explainFormat }),
     },
     status: "PENDING",
   };
   await runQuery(database, context);
-  // The re-run replays every statement the user submitted, so take the one this
-  // view is showing rather than the first.
-  const result = context.resultSet?.results[resultIndex];
+  const result = context.resultSet?.results[0];
   if (!result) return undefined;
   return getExplainTokenFromResult(result, engine);
 }

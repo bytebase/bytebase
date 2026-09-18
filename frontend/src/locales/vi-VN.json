@@ -3404,6 +3404,7 @@
     "view-schema-text": "Xem văn bản lược đồ",
     "visualize-explain": "Trực quan hóa Giải thích",
     "visualize-explain-blocked": "Tab kế hoạch truy vấn đã bị chặn. Hãy cho phép cửa sổ bật lên cho trang này và thử lại.",
+    "visualize-explain-executed": "Trực quan hóa kế hoạch này sẽ thực thi lại truy vấn.",
     "visualize-explain-failed": "Không tải được kế hoạch truy vấn",
     "web-socket": {
       "connection-status": {
