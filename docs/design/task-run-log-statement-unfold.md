@@ -353,8 +353,9 @@ the marked row, inside a box capped at `max(280px, 60vh)` whose `scrollTop` star
 row would be mounted, expanded and off-screen — the promise kept in the DOM and broken on the
 screen. When a row becomes the marked one, the section sets its own `scrollTop` to bring it into
 view. Its own, not `scrollIntoView`, which would scroll the page under a reader who was looking at
-something else. It fires once, when the mark lands on a row; later polls do not re-scroll, so a
-reader who has scrolled elsewhere stays where they are.
+something else. It fires once, when the mark lands on a row — and on mount, if a
+marked row is already there, which is what a reader expanding a section they had collapsed sees.
+Later polls do not re-scroll, so a reader who has scrolled elsewhere stays where they are.
 
 The window has to carry each item's own index with it. `SectionContent` numbers rows by their
 position in the rendered array (`index + 1` over `visibleItems`, `SectionContent.tsx:40-50`), so a
@@ -423,7 +424,19 @@ conditional mount, keyed by row and cleared when `taskRunName` changes — the s
 `datasetKey` already clears `showAllItems`. `showAllItems` keeps its remount-local behavior;
 re-hiding the tail of a long list on collapse is not a promise anyone made.
 
-The promise stops at the phase boundary, deliberately. Both deploy surfaces key the viewer on the
+It also stops at a collapsed ancestor, deliberately. The viewer already expands a section the
+moment its status turns to error — unless the reader collapsed that section themselves, which
+`userCollapsedSections` records and honours (`useTaskRunLogSections.ts:234-247`), with the same
+treatment for replicas and release files. A mark arriving into a section the reader has shut does
+not reopen it. Doing so would break the precedence this decision just established, where an
+explicit toggle outranks the mark, and it would override the reader at the one moment they have
+most clearly said what they want on screen. Nothing is hidden by this: a collapsed section still
+carries its own status, so the header turns to the error glyph and says a failure is inside. When
+the reader opens it, the marked row is already unfolded and the section is already scrolled to it,
+because D13's scroll fires on mount whenever a marked row is present, not only when a mark lands on
+a row that is already showing.
+
+The promise stops at the phase boundary too, deliberately. Both deploy surfaces key the viewer on the
 run's status (`` key={`logs-${taskRun.name}-${taskRun.status}`} ``), so a `RUNNING` → terminal flip
 remounts the whole viewer and takes the overrides with it. That key is not an accident — the
 comment above it says the remount exists "for a fresh disclosure state on the new phase", and it is
@@ -526,6 +539,9 @@ behavior of this function:
   while it is open, which is what raising the cap does in the product, and assert the control
   survives and still closes the row; a marked failure with no recoverable statement is open yet
   carries no chevron and no row toggle.
+- Collapsed ancestors (D14), same `datasetKey`: a failure arriving into a section the reader
+  collapsed leaves it collapsed, and expanding it afterwards shows the marked row already unfolded
+  and scrolled to.
 - Clicking (D7): a click on the index, the timestamp or the row's empty space toggles; a click on
   the clamped line or inside the unfolded block does not, so a double-click selects a word without
   the row moving under it.
