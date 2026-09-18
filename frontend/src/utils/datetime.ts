@@ -168,14 +168,10 @@ function absoluteDateChangeAt(timestampMs: number, nowMs: number): number {
   );
 }
 
-function nextRelativeTimeChangeAt(timestampMs: number): number {
-  return relativeTimeChangeAt(timestampMs, Date.now());
-}
-
 /** A timestamp's age, as "5 minutes ago" or "in 2 days". */
 export const relativeTimeReading: TimeReading<number, string> = {
   read: formatRelativeTime,
-  nextChangeAt: nextRelativeTimeChangeAt,
+  nextChangeAt: (timestampMs) => relativeTimeChangeAt(timestampMs, Date.now()),
 };
 
 function nextQueueTimeChangeAt(timestampMs: number): number {

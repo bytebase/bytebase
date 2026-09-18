@@ -38,7 +38,8 @@ export const getAccessGrantExpirationText = (
   | { type: "datetime"; expireTimeMs: number }
   | { type: "duration"; value: string }
   | { type: "never" } => {
-  if (grant.expiration.case === "expireTime") {
+  const expireTimeMs = getAccessGrantExpireTimeMs(grant);
+  if (expireTimeMs !== undefined) {
     // Active grants only carry `expireTime` — the originally-requested
     // TTL is `Input only` on the proto and is gone after activation.
     // We deliberately do NOT derive a "duration" from
@@ -48,10 +49,7 @@ export const getAccessGrantExpirationText = (
     // later would render as "1d4h", which misleads reviewers about
     // the actual granted window. Show the absolute expire datetime
     // alone instead. Bot review #3370767734.
-    return {
-      type: "datetime",
-      expireTimeMs: getTimeForPbTimestampProtoEs(grant.expiration.value),
-    };
+    return { type: "datetime", expireTimeMs };
   }
   if (grant.expiration.case === "ttl") {
     // Pending grants still carry the requested TTL — safe to format.

@@ -32,7 +32,7 @@ export function PlanDetailMeta() {
     () => extractUserEmail(page.plan.creator),
     [page.plan.creator]
   );
-  const createdTimeTs = getTimeForPbTimestampProtoEs(page.plan.createTime, 0);
+  const createdTimeMs = getTimeForPbTimestampProtoEs(page.plan.createTime);
   const allowChangeLabels = useMemo(() => {
     if (!project || !page.issue || page.issue.status !== IssueStatus.OPEN) {
       return false;
@@ -84,10 +84,10 @@ export function PlanDetailMeta() {
   return (
     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-control-placeholder">
       <span>{t("plan.meta.created-by", { user: creatorEmail })}</span>
-      {createdTimeTs > 0 && (
+      {createdTimeMs !== undefined && (
         <>
           <span aria-hidden="true">·</span>
-          <HumanizeTs ts={createdTimeTs / 1000} />
+          <HumanizeTs ts={createdTimeMs / 1000} />
         </>
       )}
 

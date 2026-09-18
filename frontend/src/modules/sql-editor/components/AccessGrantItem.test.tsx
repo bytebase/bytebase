@@ -11,7 +11,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   readStatus: vi.fn(),
-  actualReadStatus: undefined as unknown as (input: never) => unknown,
   getAccessGrantDisplayStatusText: vi.fn(),
   getAccessGrantStatusTagType: vi.fn(),
 }));
@@ -38,7 +37,6 @@ vi.mock("react-i18next", () => ({
 // status boundary and the deadline stay real, so the clock wiring is exercised.
 vi.mock("@/utils/accessGrant", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/utils/accessGrant")>();
-  mocks.actualReadStatus = actual.accessGrantStatusReading.read as never;
   return {
     ...actual,
     accessGrantStatusReading: {
@@ -334,10 +332,13 @@ describe("AccessGrantItem", () => {
     unmount();
   });
 
-  test("counts down while mounted, then turns expired at the deadline", () => {
+  test("counts down while mounted, then turns expired at the deadline", async () => {
+    const actual = await vi.importActual<typeof import("@/utils/accessGrant")>(
+      "@/utils/accessGrant"
+    );
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
-    mocks.readStatus.mockImplementation(mocks.actualReadStatus);
+    mocks.readStatus.mockImplementation(actual.accessGrantStatusReading.read);
     mocks.useTranslation.mockReturnValue({
       t: (key: string, options?: { time?: string }) =>
         options?.time && key === "sql-editor.expire-in"
