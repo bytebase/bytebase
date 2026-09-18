@@ -14,7 +14,10 @@ import {
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { databaseForTask } from "@/utils";
-import { isReleaseBasedTask } from "@/utils/v1/issue/rollout";
+import {
+  isReleaseBasedTask,
+  scheduledRunTimeMs,
+} from "@/utils/v1/issue/rollout";
 import { isRerunnableTaskStatus } from "../lifecycle/frontierStage";
 import { PlanDetailRollbackSheet } from "../PlanDetailRollbackSheet";
 import {
@@ -24,7 +27,6 @@ import {
 import { DeployTaskBody } from "./DeployTaskBody";
 import { DeployTaskHeader } from "./DeployTaskHeader";
 import { DeployTaskRunHistorySheet } from "./DeployTaskRunHistorySheet";
-import { scheduledRunTimeMs } from "./scheduledRunTime";
 import { useDeployTaskActions } from "./taskActions";
 import { useDeployTaskStatement } from "./useDeployTaskStatement";
 
