@@ -221,12 +221,10 @@ function CollapsedThreadRow({
           </span>
         </span>
       )}
-      {comment.createTime && (
-        <HumanizeTs
-          className="hidden shrink-0 text-xs text-control-light @xl:inline"
-          tsMs={getTimeForPbTimestampProtoEs(comment.createTime)}
-        />
-      )}
+      <HumanizeTs
+        className="hidden shrink-0 text-xs text-control-light @xl:inline"
+        tsMs={getTimeForPbTimestampProtoEs(comment.createTime)}
+      />
       {resolved && (
         <Badge className="shrink-0 gap-x-1 px-2 text-xs" variant="success">
           <CircleCheck className="size-3" />

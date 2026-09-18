@@ -27,8 +27,8 @@ import {
 export type TimeDisplayMode = "queue" | "compact" | "operational" | "datetime";
 
 interface HumanizeTsProps {
-  /** The instant to show, in milliseconds. */
-  tsMs: number;
+  /** The instant to show, in milliseconds; nothing renders without one. */
+  tsMs: number | undefined;
   mode?: TimeDisplayMode;
   className?: string;
   /**

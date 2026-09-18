@@ -418,12 +418,10 @@ function ThreadSummary({
           {t("plan.review.thread.n-replies", { count: thread.replies.length })}
         </span>
       )}
-      {thread.root.createTime && (
-        <HumanizeTs
-          className="hidden shrink-0 text-xs text-control-light sm:inline"
-          tsMs={getTimeForPbTimestampProtoEs(thread.root.createTime)}
-        />
-      )}
+      <HumanizeTs
+        className="hidden shrink-0 text-xs text-control-light sm:inline"
+        tsMs={getTimeForPbTimestampProtoEs(thread.root.createTime)}
+      />
       <Badge className="shrink-0 gap-x-1 px-2 text-xs" variant="success">
         <CircleCheck className="size-3" />
         {t("plan.review.thread.resolved")}
