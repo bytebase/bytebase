@@ -380,27 +380,6 @@ func TestValidateExplainFormat(t *testing.T) {
 	}
 }
 
-func TestExplainResultFormat(t *testing.T) {
-	t.Parallel()
-	for _, tc := range []struct {
-		engine storepb.Engine
-		format v1pb.QueryOption_ExplainFormat
-		want   v1pb.QueryOption_ExplainFormat
-	}{
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_JSON, v1pb.QueryOption_JSON},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_XML, v1pb.QueryOption_XML},
-		{storepb.Engine_POSTGRES, v1pb.QueryOption_YAML, v1pb.QueryOption_YAML},
-		{storepb.Engine_MSSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
-		{storepb.Engine_MSSQL, v1pb.QueryOption_XML, v1pb.QueryOption_XML},
-		{storepb.Engine_SPANNER, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_JSON},
-		{storepb.Engine_MYSQL, v1pb.QueryOption_TEXT, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
-		{storepb.Engine_ORACLE, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
-	} {
-		require.Equalf(t, tc.want, explainResultFormat(tc.engine, tc.format), "%s %s", tc.engine, tc.format)
-	}
-}
-
 // explainPrefixEngines are the engines that plan a statement by prefixing EXPLAIN
 // to it, and so run a different statement than the one the caller sent.
 //

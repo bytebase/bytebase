@@ -82,8 +82,8 @@ func explainFormat(explain *ast.ExplainStmt) string {
 
 // explainStatementDefaultFormat plans in the engine's default format whatever the
 // request asked for. CockroachDB's EXPLAIN takes its own option list rather than
-// PostgreSQL's FORMAT, so it offers only the default plan (supportedExplainFormats
-// in the API refuses any other format for it before a request gets here).
+// PostgreSQL's FORMAT, so it offers only the default plan (the driver capability
+// table refuses any other format before a request gets here).
 func explainStatementDefaultFormat(statement string, _ base.ExplainFormat) (string, error) {
 	return explainStatement(statement, base.ExplainFormatDefault)
 }
