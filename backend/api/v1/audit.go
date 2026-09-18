@@ -35,23 +35,22 @@ const (
 )
 
 // AuditInterceptor is the v1 audit interceptor for gRPC server.
+//
+// It feeds two sinks from one built row. The database stores a call to an
+// audited method that reached its handler. Stdout, when on, streams every
+// stored row and every call a permission check refused, before the insert.
 type AuditInterceptor struct {
-	store   *store.Store
-	secret  string
-	profile *config.Profile
-
-	// createAuditLogFunc, when set, replaces createAuditLog. Test-only seam
-	// that lets unit tests observe what an audited call writes, and when,
-	// without a database.
-	createAuditLogFunc func(context.Context, *auditEntry) error
+	auditLogWriter common.AuditLogWriter
+	secret         string
+	profile        *config.Profile
 }
 
 // NewAuditInterceptor returns a new v1 API audit interceptor.
 func NewAuditInterceptor(store *store.Store, secret string, profile *config.Profile) *AuditInterceptor {
 	return &AuditInterceptor{
-		store:   store,
-		secret:  secret,
-		profile: profile,
+		auditLogWriter: store,
+		secret:         secret,
+		profile:        profile,
 	}
 }
 
@@ -71,31 +70,17 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			handlerAuditWorkspaceID = workspaceID
 		})
 
-		// The MCP ceiling gate sits inside this interceptor and refuses a call
-		// before it reaches its handler. needAudit reads only the method's own
-		// audit annotation, and 47 of the 121 methods the gate refuses carry
-		// none: the four FORBIDDEN ones that were silent before the gate grew
-		// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting)
-		// plus 43 EXCLUDED ones. Their denials would leave no trace at all.
-		// A policy denial is recorded whatever the annotation says: the
-		// annotation decides whether ordinary use of a method is interesting,
-		// and a refused agent is interesting either way. Only the internal MCP
-		// chain runs the gate, so the public chain is unaffected.
-		//
-		// Recording a request that was never recorded is why redaction has to
-		// cover more than the audited RPCs: a denial must not transcribe the
-		// secret it refused. Since redaction is driven by the field annotation
-		// rather than by a per-RPC redactor, a gate-refused method is covered
-		// the moment its fields are annotated — the population is the one above,
-		// not the four named methods.
-		mcpPolicyDenied := false
-		ctx = common.WithSetMCPPolicyDenied(ctx, func() { mcpPolicyDenied = true })
+		var permissionDenied, handlerReached bool
+		ctx = common.WithSetPermissionDenied(ctx, func() { permissionDenied = true })
+		ctx = common.WithSetHandlerReached(ctx, func() { handlerReached = true })
 
 		startTime := time.Now()
 		response, rerr := next(ctx, req)
 		latency := time.Since(startTime)
 
-		if needAudit(ctx) || mcpPolicyDenied {
+		stored := handlerReached && needAudit(ctx)
+		streamed := (stored || permissionDenied) && in.profile.RuntimeEnableAuditLogStdout.Load()
+		if stored || streamed {
 			var respMsg any
 			if !common.IsNil(response) {
 				respMsg = response.Any()
@@ -110,8 +95,10 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 				headers:                 req.Header(),
 				peerAddr:                req.Peer().Addr,
 				latency:                 latency,
+				permissionDenied:        permissionDenied,
+				store:                   stored,
 			}
-			if err := in.writeAuditLog(ctx, entry); err != nil {
+			if err := in.createAuditLog(ctx, entry); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -176,8 +163,9 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 			headers:  c.RequestHeader(),
 			peerAddr: c.Peer().Addr,
 			latency:  time.Since(c.startTime),
+			store:    true,
 		}
-		if auditErr := c.interceptor.writeAuditLog(c.ctx, entry); auditErr != nil {
+		if auditErr := c.interceptor.createAuditLog(c.ctx, entry); auditErr != nil {
 			return auditErr
 		}
 	}
@@ -202,6 +190,8 @@ type auditEntry struct {
 	headers                 http.Header
 	peerAddr                string
 	latency                 time.Duration
+	permissionDenied        bool
+	store                   bool
 }
 
 // auditRow is one row an audited call leaves: the payload, under the
@@ -211,27 +201,26 @@ type auditRow struct {
 	payload     *storepb.AuditLog
 }
 
-// writeAuditLog records an audited call, through the test seam when one is set.
-func (in *AuditInterceptor) writeAuditLog(ctx context.Context, e *auditEntry) error {
-	if in.createAuditLogFunc != nil {
-		return in.createAuditLogFunc(ctx, e)
-	}
-	return in.createAuditLog(ctx, e)
-}
-
 func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) error {
 	rows, err := in.buildAuditRows(ctx, e)
 	if err != nil {
 		return err
 	}
+	// Every line is written before any insert, so a failed insert loses no
+	// line: the stream is the surface that still works when the metadata
+	// database does not.
+	if in.profile.RuntimeEnableAuditLogStdout.Load() {
+		for _, row := range rows {
+			common.LogAuditToStdout(ctx, row.payload)
+		}
+	}
+	if !e.store {
+		return nil
+	}
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, row := range rows {
-		if err := in.store.CreateAuditLog(createAuditLogCtx, row.workspaceID, row.payload); err != nil {
+		if err := in.auditLogWriter.CreateAuditLog(createAuditLogCtx, row.workspaceID, row.payload); err != nil {
 			return err
-		}
-		// Log audit event to stdout using slog (if enabled)
-		if in.profile.RuntimeEnableAuditLogStdout.Load() {
-			common.LogAuditToStdout(ctx, row.payload)
 		}
 	}
 	return nil
@@ -253,8 +242,8 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 	// flag alone made setting it a switch that turns off the record of being
 	// caught.
 	//
-	// EVERY failure records, not only a policy denial, and that is deliberate
-	// rather than incidental. The instance form runs a validate-only
+	// EVERY failure records, not only a permission refusal, and that is
+	// deliberate rather than incidental. The instance form runs a validate-only
 	// connection test before each save and on each Test Connection click, so
 	// the rows this adds are mostly failed connection tests, not refusals —
 	// a real volume change on a common flow. Keying on a denial code instead
@@ -296,9 +285,9 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 		auditWorkspaceID string
 	}
 	// One row per DISTINCT parent: batch requests repeat the same resource
-	// once per item, and since ACL-denied internal-chain calls are audited
-	// too, an unprivileged caller reaches this fan-out — duplicates would let
-	// one denied batch call naming N items write N identical rows.
+	// once per item, and a refused call is streamed too, so an unprivileged
+	// caller reaches this fan-out — duplicates would let one refused batch
+	// call naming N items write N identical lines.
 	var parents []auditParent
 	seenParent := make(map[string]bool)
 	appendParent := func(ap auditParent) {
@@ -316,11 +305,11 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 	// A request carrying a delegated MCP grant is the one exception, because
 	// its workspace was not named by the caller: the internal MCP interceptor
 	// verified the credential and bound the workspace before the request
-	// reached this chain. Without the exception these three methods are the
-	// last silent denials in the system — the ceiling gate refuses them before
-	// dispatch, so the handler never runs and never announces a workspace —
-	// and they are the flow that mails or consumes the secret a login accepts.
-	// Presence of the grant is the marker, never a field value.
+	// reached this chain. Without the exception the ceiling gate's refusal of
+	// these three methods streams nothing — the gate refuses before dispatch,
+	// so the handler never runs and never announces a workspace — and they are
+	// the flow that mails or consumes the secret a login accepts. Presence of
+	// the grant is the marker, never a field value.
 	handlerValidatedWorkspaceMethod := (e.method == v1connect.AuthServiceRequestPasswordResetProcedure ||
 		e.method == v1connect.AuthServiceResetPasswordProcedure ||
 		e.method == v1connect.AuthServiceSendEmailLoginCodeProcedure) &&
@@ -387,6 +376,12 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 	serviceData := redactAuditServiceData(e.serviceData)
 	auditStatus := redactAuditStatus(convertErrToStatus(e.rerr))
 	mcpDelegation := mcpDelegationFromAuthContext(authContext)
+	// status.code carries every failure, so severity is what separates a
+	// refused caller from other failed calls.
+	severity := storepb.AuditLog_INFO
+	if e.permissionDenied {
+		severity = storepb.AuditLog_WARNING
+	}
 
 	var rows []auditRow
 	for _, ap := range parents {
@@ -419,7 +414,7 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 				Parent:          ap.parent,
 				Method:          e.method,
 				Resource:        resource,
-				Severity:        storepb.AuditLog_INFO,
+				Severity:        severity,
 				User:            user,
 				Request:         requestString,
 				Response:        responseString,

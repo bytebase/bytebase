@@ -1,9 +1,14 @@
 package tests
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"log"
+	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -15,10 +20,12 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// deniedMCPRows returns the audit rows an MCP session produced for one method.
+// mcpAuditRows returns the audit rows an MCP session stored for one method.
 // Filtering on McpDelegation is what makes a row attributable to the agent
 // rather than to the same human working in the console.
-func deniedMCPRows(ctx context.Context, t *testing.T, ctl *controller, workspace, method string) []*v1pb.AuditLog {
+// TestMCPReadOnlyCeilingRefusesAWrite reads a stored row through this, which
+// keeps an empty result meaningful.
+func mcpAuditRows(ctx context.Context, t *testing.T, ctl *controller, workspace, method string) []*v1pb.AuditLog {
 	t.Helper()
 	resp, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent:  workspace,
@@ -215,9 +222,7 @@ func TestMCPCannotMintCredentialsForOtherPrincipals(t *testing.T) {
 	}))
 	a.Error(err, "the address the MCP session tried to rebind to must own no account")
 
-	// All five carry the audit annotation, so all five denials are on the
-	// operator's audit page — a denied credential mint is precisely the event
-	// worth investigating.
+	// All five are refused before their handlers, so none is stored.
 	for method, label := range map[string]string{
 		"/bytebase.v1.ServiceAccountService/CreateServiceAccount": "CreateServiceAccount",
 		"/bytebase.v1.ServiceAccountService/UpdateServiceAccount": "UpdateServiceAccount",
@@ -225,12 +230,7 @@ func TestMCPCannotMintCredentialsForOtherPrincipals(t *testing.T) {
 		"/bytebase.v1.UserService/CreateUser":                     "CreateUser",
 		"/bytebase.v1.UserService/UpdateEmail":                    "UpdateEmail",
 	} {
-		rows := deniedMCPRows(ctx, t, ctl, workspaceName, method)
-		a.Len(rows, 1, "the denied %s must produce exactly one audit row", label)
-		a.Equal(int32(connect.CodePermissionDenied), rows[0].Status.GetCode(),
-			"the %s row must record the denial, not a success", label)
-		a.NotEmpty(rows[0].McpDelegation.GetCorrelationId(),
-			"the %s denial must be correlatable back to the agent session", label)
+		a.Empty(mcpAuditRows(ctx, t, ctl, workspaceName, method), "the refused %s is never stored", label)
 	}
 
 	// The console keeps working. The gate lives on the internal MCP chain, so
@@ -420,13 +420,9 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		a.NotContains(wi.Email, wiID, "the workload identity must never have been written")
 	}
 
-	// All six produce a denial row, and two of them only since 1b-2. Four carry
-	// the audit annotation; TestIdentityProvider and TestEmailSetting carry
-	// none, so until the gate started marking its own refusals they were
-	// refused silently — the two methods in this batch that would have carried
-	// a stored secret to an address the agent chose were the two that left no
-	// trace. This assertion is what tells anyone who touches the marking that
-	// the coverage is load-bearing.
+	// All six are refused before their handlers, so none is stored. The stream
+	// line's redaction of TestIdentityProvider's request is pinned by
+	// TestMCPGateRefusalIsStreamedWithoutAnAuditAnnotation.
 	for method, label := range map[string]string{
 		"/bytebase.v1.IdentityProviderService/CreateIdentityProvider": "CreateIdentityProvider",
 		"/bytebase.v1.IdentityProviderService/UpdateIdentityProvider": "UpdateIdentityProvider",
@@ -435,20 +431,8 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		"/bytebase.v1.IdentityProviderService/TestIdentityProvider":   "TestIdentityProvider (no audit annotation)",
 		"/bytebase.v1.SettingService/TestEmailSetting":                "TestEmailSetting (no audit annotation)",
 	} {
-		rows := deniedMCPRows(ctx, t, ctl, workspaceName, method)
-		a.Len(rows, 1, "the denied %s must produce exactly one audit row", label)
-		a.Equal(int32(connect.CodePermissionDenied), rows[0].Status.GetCode(),
-			"the %s row must record the denial", label)
+		a.Empty(mcpAuditRows(ctx, t, ctl, workspaceName, method), "the refused %s is never stored", label)
 	}
-
-	// What the row must NOT carry: TestIdentityProvider's request names the
-	// stored client secret's destination and supplies a code, and recording a
-	// denial verbatim would put both in a log the denial exists to protect.
-	idpRow := deniedMCPRows(ctx, t, ctl, workspaceName,
-		"/bytebase.v1.IdentityProviderService/TestIdentityProvider")[0]
-	a.NotContains(idpRow.Request, "anything", "the supplied authorization code must be masked in the row")
-	a.Contains(idpRow.Request, "collector.attacker.example.com",
-		"the host the agent named is the point of the row and stays readable")
 }
 
 // TestMCPCannotRetargetADataSource covers the same "carry a stored secret to a
@@ -527,9 +511,7 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 	a.Equal(realHost, after.Msg.DataSources[0].Host,
 		"the data source must still point where the operator put it")
 
-	// The same retarget WITHOUT validate_only, denied identically. The pair is
-	// an A/B on one flag: same method, same session, same refusal — and only
-	// one of them is auditable, which is the point of the assertions below.
+	// The same retarget WITHOUT validate_only, denied identically.
 	persisting := callAPIOnSession(ctx, t, session, "InstanceService/UpdateDataSource", map[string]any{
 		"name":       instance.Msg.Name,
 		"dataSource": map[string]any{"id": dataSourceID, "host": "attacker.example.com"},
@@ -541,27 +523,11 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 		Name: "workspaces/-",
 	}))
 	a.NoError(err)
-	rows := deniedMCPRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.InstanceService/UpdateDataSource")
-	t.Logf("audit rows for the two denied retargets (one validate-only): %d", len(rows))
-
-	// Both denials are on the audit page. UpdateDataSource carries audit = true
-	// and is not carved out of workspace-parent resolution, and createAuditLog
-	// now skips a validate-only request only when the call SUCCEEDED — a dry
-	// run Bytebase accepted changed nothing worth recording, a refused one is
-	// worth exactly as much as any other refusal.
-	//
-	// This is the assertion that discriminates the two. Before, the
-	// validate-only denial returned from createAuditLog's first statement
-	// before the denial was ever considered, so this pair — same method, same
-	// session, same refusal, one flag apart — produced ONE row, and the
-	// validate-only variant is precisely the one that leaves no other trace:
-	// it dials the caller's host and persists nothing.
-	a.Len(rows, 2,
-		"both denials are auditable: setting validate_only must not turn off the record of being refused")
-	for _, row := range rows {
-		a.Equal(int32(connect.CodePermissionDenied), row.GetStatus().GetCode(),
-			"each row must carry the denial, not a blank status")
-	}
+	// Both are refused before the handler, so neither is stored. That the
+	// validate_only flag does not drop the refusal's stream line is pinned by
+	// TestAuditSinks.
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.InstanceService/UpdateDataSource"),
+		"a gate refusal is never stored")
 
 	// The console keeps working — the gate is on the internal MCP chain only.
 	_, err = ctl.instanceServiceClient.UpdateDataSource(ctx, connect.NewRequest(&v1pb.UpdateDataSourceRequest{
@@ -705,16 +671,8 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	a.Equal("https://api.openai.com", ai.Msg.GetValue().GetAi().GetEndpoint(),
 		"the endpoint the stored API key is sent to must not have moved")
 
-	// UpdateSetting is audited and is NOT one of the reset-flow methods carved
-	// out of workspace-parent resolution, so unlike those its denials do reach
-	// the operator's audit page. Three denied attempts, three rows.
-	rows := deniedMCPRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.SettingService/UpdateSetting")
-	a.Len(rows, 3, "each denied settings write must be on the audit page")
-	for _, row := range rows {
-		a.Equal(int32(connect.CodePermissionDenied), row.Status.GetCode())
-		a.NotEmpty(row.McpDelegation.GetCorrelationId(),
-			"the denial must be correlatable back to the agent session")
-	}
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.SettingService/UpdateSetting"),
+		"a gate refusal is never stored")
 
 	// The console keeps working: the gate is on the internal MCP chain only.
 	// An explicit value rather than an echo of ceilingBefore, which the fixture
@@ -729,36 +687,23 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 		"the console write must actually land — otherwise the denial above proves nothing about the gate")
 }
 
-// TestMCPResetFlowDenialsAreSilent pins a gap the audit annotation does NOT
-// close.
+// TestMCPResetFlowRefusalsAreStreamed pins the stream line of a gate refusal
+// on the three allow_without_credential reset-flow methods.
 //
-// #21162 gave RequestPasswordReset and ResetPassword `audit = true`, which
-// looks like it should give their MCP denials a row — needAudit reads that
-// annotation and nothing else. It does not, and the reason is one layer down.
+// An unauthenticated caller of these methods could name any workspace, so the
+// audit interceptor takes their parent only from what the handler validated
+// (handlerValidatedWorkspaceMethod, audit.go). The gate refuses before the
+// handler runs, so no handler ever validates one. A request carrying a
+// delegated grant is the exception: the internal MCP chain already bound a
+// verified workspace, and the line is filed under it.
 //
-// These three RPCs are allow_without_credential, so an unauthenticated caller
-// could name any workspace, and auditing against an unvalidated workspace would
-// let anyone write rows into someone else's. createAuditLog therefore carves
-// them out (handlerValidatedWorkspaceMethod, audit.go): their audit parent
-// comes only from what the HANDLER validated via common.SetAuditWorkspaceID,
-// and the ordinary workspace fallback is explicitly skipped for them.
-//
-// The gate refuses before dispatch, so the handler never runs, so nothing ever
-// calls SetAuditWorkspaceID. That used to mean no parent and no row, which made
-// the silent set seven rather than the four an annotation audit suggests.
-//
-// 1b-2 closed it, and this test now pins the close. The workspace was never
-// actually unknown here: the internal MCP chain put a credential-verified one
-// in the context, and the carve-out simply could not use it. It can now, for
-// requests carrying a delegated grant and only those — an unauthenticated
-// public reset still gets its parent from the handler alone, because there the
-// workspace IS caller-named and auditing against it would let anyone write
-// rows into someone else'"'"'s.
-func TestMCPResetFlowDenialsAreAudited(t *testing.T) {
-	t.Parallel()
+// Not parallel: it captures slog.Default.
+func TestMCPResetFlowRefusalsAreStreamed(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
+	lines := captureAuditStream(t)
 	ctl, ctx := startWorkspace(ctx, t)
+	ctl.profile.RuntimeEnableAuditLogStdout.Store(true)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",
@@ -769,14 +714,13 @@ func TestMCPResetFlowDenialsAreAudited(t *testing.T) {
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
 
-	// The positive control goes first and through the same helper: UpdateUser is
-	// FORBIDDEN, audited, and NOT carved out, so it must produce a row. Without
-	// it the zeroes below would also be satisfied by a query that finds nothing
-	// for an unrelated reason.
+	// The positive control: UpdateUser is FORBIDDEN and not carved out, so its
+	// refusal streams a line whatever the carve-out does.
 	control := callAPIOnSession(ctx, t, session, "UserService/UpdateUser", map[string]any{
 		"user":       map[string]any{"name": "users/demo@example.com", "password": "2048bytebase"},
 		"updateMask": "password",
 	})
+	a.Equal(http.StatusForbidden, control.Status)
 
 	probes := map[string]mcpCallResult{
 		"RequestPasswordReset": callAPIOnSession(ctx, t, session, "AuthService/RequestPasswordReset", map[string]any{
@@ -794,31 +738,80 @@ func TestMCPResetFlowDenialsAreAudited(t *testing.T) {
 		}),
 	}
 	for name, out := range probes {
-		t.Logf("MCP %s → status=%d error=%q", name, out.Status, out.Error)
-	}
-	for name, out := range probes {
 		a.Equal(http.StatusForbidden, out.Status, "%s must be refused", name)
 		a.Contains(out.Error, "not available to MCP sessions", "%s must be refused by the gate", name)
 	}
 
-	a.Equal(http.StatusForbidden, control.Status)
-	a.Len(deniedMCPRows(ctx, t, ctl, workspaceName, "/bytebase.v1.UserService/UpdateUser"), 1,
-		"positive control: a FORBIDDEN, audited, non-carved-out method must produce a denial row")
-
-	for method, label := range map[string]string{
-		"/bytebase.v1.AuthService/RequestPasswordReset": "RequestPasswordReset",
-		"/bytebase.v1.AuthService/ResetPassword":        "ResetPassword",
-		"/bytebase.v1.AuthService/SendEmailLoginCode":   "SendEmailLoginCode",
+	for _, method := range []string{
+		"/bytebase.v1.UserService/UpdateUser",
+		"/bytebase.v1.AuthService/RequestPasswordReset",
+		"/bytebase.v1.AuthService/ResetPassword",
+		"/bytebase.v1.AuthService/SendEmailLoginCode",
 	} {
-		rows := deniedMCPRows(ctx, t, ctl, workspaceName, method)
-		a.Len(rows, 1,
-			"%s is refused before its handler runs, so it announces no workspace — the delegated "+
-				"credential's verified one stands in, and the denial is recorded like every other", label)
-		a.Equal(int32(connect.CodePermissionDenied), rows[0].Status.GetCode(),
-			"the %s row must record the denial", label)
-		a.True(strings.HasPrefix(rows[0].Name, workspaceName+"/auditLogs/"),
-			"the row is parented to the workspace the MCP credential was bound to, not one the caller named")
+		a.Empty(mcpAuditRows(ctx, t, ctl, workspaceName, method), "the refused %s is never stored", method)
+		var matched []map[string]any
+		for _, line := range lines() {
+			if line["method"] == method && lineFlag(line, "mcp") {
+				matched = append(matched, line)
+			}
+		}
+		a.Len(matched, 1, "the refused %s is streamed once", method)
+		a.Equal(workspaceName, matched[0]["parent"],
+			"the line is filed under the workspace the MCP credential was bound to, not one the caller named")
+		a.Equal(v1pb.AuditLog_WARNING.String(), matched[0]["severity"])
+		a.InDelta(float64(connect.CodePermissionDenied), matched[0]["status_code"], 0)
 	}
+}
+
+// captureAuditStream sends slog.Default to a buffer until the test ends and
+// returns a reader for the audit lines written so far. The servers these tests
+// boot run in this process, so their stream lands there too. slog.Default is
+// process-wide, so a test that calls this must not be parallel, and must call
+// it before starting its server so the server stops before the logger is
+// restored.
+func captureAuditStream(t *testing.T) func() []map[string]any {
+	t.Helper()
+	var mu sync.Mutex
+	var buf bytes.Buffer
+	prev, prevWriter, prevFlags := slog.Default(), log.Writer(), log.Flags()
+	// slog.SetDefault also points the log package at the new handler, and
+	// restoring the slog default does not undo that.
+	t.Cleanup(func() {
+		slog.SetDefault(prev)
+		log.SetOutput(prevWriter)
+		log.SetFlags(prevFlags)
+	})
+	slog.SetDefault(slog.New(slog.NewJSONHandler(lockedBuffer{mu: &mu, buf: &buf}, nil)))
+	return func() []map[string]any {
+		mu.Lock()
+		defer mu.Unlock()
+		var lines []map[string]any
+		for _, raw := range bytes.Split(buf.Bytes(), []byte("\n")) {
+			var line map[string]any
+			if json.Unmarshal(raw, &line) == nil && line["log_type"] == "audit" {
+				lines = append(lines, line)
+			}
+		}
+		return lines
+	}
+}
+
+// lineFlag reads one boolean attribute off a captured audit line, absent
+// meaning false.
+func lineFlag(line map[string]any, key string) bool {
+	v, ok := line[key].(bool)
+	return ok && v
+}
+
+type lockedBuffer struct {
+	mu  *sync.Mutex
+	buf *bytes.Buffer
+}
+
+func (l lockedBuffer) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.buf.Write(p)
 }
 
 // TestMCPCredentialMintsLeaveDiscovery pins the other half of the

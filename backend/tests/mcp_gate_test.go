@@ -73,10 +73,11 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 	a.Equal(http.StatusForbidden, forbidden.Status)
 	a.Contains(forbidden.Error, "ends the human's own login session")
 
-	// The EXCLUDED denial is audited, and ListUsers carries no audit
-	// annotation: the record comes from the gate, not from the method.
-	a.Len(deniedMCPRows(ctx, t, ctl, workspaceName, "/bytebase.v1.UserService/ListUsers"), 1,
-		"a policy denial is recorded even where the method asks for no audit row")
+	// A gate refusal is streamed, never stored; the served CreateSheet is stored.
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspaceName, "/bytebase.v1.UserService/ListUsers"),
+		"a gate refusal is never stored")
+	a.Len(mcpAuditRows(ctx, t, ctl, projectName, "/bytebase.v1.SheetService/CreateSheet"), 1,
+		"a served, audited MCP call is stored")
 }
 
 // TestMCPGateRefusesGrantIssues is the one refusal a per-method class cannot

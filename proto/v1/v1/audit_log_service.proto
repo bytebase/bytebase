@@ -30,6 +30,7 @@ service AuditLogService {
     };
     option (bytebase.v1.permission) = "bb.auditLogs.search";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -101,7 +102,7 @@ message SearchAuditLogsRequest {
 
 // Response message for searching audit logs.
 message SearchAuditLogsResponse {
-  repeated AuditLog audit_logs = 1;
+  repeated AuditLog audit_logs = 1 [(bytebase.v1.audit_behavior) = OMIT];
 
   // A token to retrieve next page of log entities.
   // Pass this value in the page_token field in the subsequent call

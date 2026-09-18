@@ -767,9 +767,9 @@ type VerifyCheckoutSessionRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
 	// the other way, so it carries the same classification. VerifyCheckoutSession
-	// is EXCLUDED, and the MCP gate records a row for every method it refuses, so
-	// leaving this unannotated would write the id into a denial row while the
-	// response that produced it was redacted.
+	// is EXCLUDED, and a refusal of it streams its request to the stdout audit
+	// log, so leaving this unannotated would write the id into that line while
+	// the response that produced it was redacted.
 	SessionId     string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

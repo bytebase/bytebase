@@ -1695,6 +1695,14 @@ The server computes expire_time from this value at activation time. </p></td>
                   <td><p>Number of items to skip before starting to return results. </p></td>
                 </tr>
               
+                <tr>
+                  <td>create_time_upper_bound</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Bounds later pages to the rows that existed when the traversal started,
+inclusive. Set by a list whose own reads write rows it would page over. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 

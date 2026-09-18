@@ -19,7 +19,7 @@ import (
 // surface the protos define and where the next reader would go looking for a
 // descriptor. component/recovery already names its rows the same way, under
 // bytebase.cli. The method part names what was ATTEMPTED — the row's status
-// carries the verdict, exactly as for an RPC that ACL refused.
+// carries the verdict.
 const (
 	// AuditMethodMCPSessionAuthorize is a bearer token presented at /mcp and
 	// held against the workspace ceiling. Per REQUEST, not per session: /mcp is
@@ -32,8 +32,8 @@ const (
 	AuditMethodMCPConsentApprove = "/bytebase.mcp.Consent/Approve"
 )
 
-// AuditLogWriter is the one store method a door outside the connect chains
-// needs to record its own denial.
+// AuditLogWriter inserts one audit row. The v1 audit interceptor and the doors
+// outside the connect chains write through it.
 type AuditLogWriter interface {
 	CreateAuditLog(ctx context.Context, workspace string, payload *storepb.AuditLog) error
 }
@@ -41,11 +41,20 @@ type AuditLogWriter interface {
 // RecordOutOfBandAudit writes a row for a refusal no interceptor sees, and
 // mirrors it to stdout when that is enabled.
 //
+// It stamps the severity itself. Every caller records a policy refusal, which
+// the audit interceptor stamps WARNING when it makes the same call inside a
+// connect chain, and a compliance reader filters on that field alone. Setting
+// it here rather than at each door keeps a new door from answering INFO for a
+// refusal the gate calls WARNING. A caller that needs to record something other
+// than a refusal needs its own writer, not an argument here.
+//
 // Best effort by design: an audit row that cannot be written must never turn a
 // refusal into an admission, so the caller gets no error to act on. The stdout
 // mirror does NOT depend on the insert — a metadata-database failure is when
 // losing the row from both surfaces would matter most.
 func RecordOutOfBandAudit(ctx context.Context, writer AuditLogWriter, mirrorToStdout bool, workspace string, row *storepb.AuditLog) {
+	row.Severity = storepb.AuditLog_WARNING
+
 	// WithoutCancel so the row survives a client hanging up on its own refusal,
 	// bounded because WithoutCancel drops the request deadline too. Both
 	// callers write on the synchronous path of a refusal already decided, so an
@@ -78,11 +87,10 @@ const maxAuditPayloadChars = 102400
 // Logs include a "log_type": "audit" field to distinguish from application logs.
 // This is a best-effort operation - errors are not returned to avoid failing the audit flow.
 //
-// Every writer in the server process calls this when stdout audit is enabled:
-// the stream is a mirror of the table, and a row only one of them carries is a
-// row an operator reading the other cannot see. The recovery CLI
-// (component/recovery) is the exception — it writes without a profile to read
-// the flag from.
+// Every writer in the server process calls this when stdout audit is enabled,
+// so the stream carries every stored row. It also carries the v1 calls a
+// permission check refused. The recovery CLI (component/recovery) is the
+// exception — it writes without a profile to read the flag from.
 func LogAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	attrs := []slog.Attr{
 		slog.String("log_type", "audit"),
