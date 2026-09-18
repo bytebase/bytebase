@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
-import { readConsentCeiling } from "@/components/mcp/mcpPolicy";
+import { isServingMode, readConsentCeiling } from "@/components/mcp/mcpPolicy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,10 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
-import {
-  type MCPSetting,
-  MCPSetting_Capability,
-} from "@/types/proto-es/v1/setting_service_pb";
+import type { MCPSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { MCPConsentCeiling } from "./MCPConsentCeiling";
 import { MCPConsentDisabled } from "./MCPConsentDisabled";
@@ -322,7 +319,7 @@ export function OAuth2ConsentPage() {
         />
       );
     }
-    if (ceiling.setting.capability === MCPSetting_Capability.DISABLED) {
+    if (!isServingMode(ceiling.mode)) {
       return (
         <MCPConsentDisabled
           workspaceTitle={
@@ -346,7 +343,8 @@ export function OAuth2ConsentPage() {
         </div>
         {workspaceCard}
         <MCPConsentCeiling
-          setting={ceiling.setting}
+          mode={ceiling.mode}
+          ignoreMaskingExemptions={ceiling.ignoreMaskingExemptions}
           dataMaskingAvailable={dataMaskingAvailable}
         />
         <form method="POST" action={AUTHORIZE_URL}>
