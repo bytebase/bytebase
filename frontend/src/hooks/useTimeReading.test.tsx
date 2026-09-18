@@ -9,8 +9,13 @@ import { useTimeReading } from "./useTimeReading";
 
 const DAY_MS = 86_400_000;
 
+// A boundary that names one instant and never changes again.
+const onceAt = (changesAtMs: number) => () =>
+  Date.now() < changesAtMs ? changesAtMs : Number.POSITIVE_INFINITY;
+
 type ProbeSpec = {
   changesAtMs: () => number;
+  read?: (input: number) => string;
   // An absent input has no reading.
   input?: number;
 };
@@ -23,7 +28,10 @@ function Probe({
   onRender: (value: string | undefined) => void;
 }) {
   const value = useTimeReading(
-    { read: (input: number) => `read:${input}`, nextChangeAt: spec.changesAtMs },
+    {
+      read: spec.read ?? ((input: number) => `read:${input}`),
+      nextChangeAt: spec.changesAtMs,
+    },
     "input" in spec ? spec.input : 0
   );
   onRender(value);
@@ -229,24 +237,20 @@ describe("useTimeReading", () => {
     expect(calls).toEqual(["boundary", "read"]);
   });
 
-  test("returns the reading's current value, and keeps it current", () => {
-    let value = "before";
+  test("returns the value the reading gives now, and keeps it current", () => {
     const deadlineMs = Date.now() + 1_000;
     const { values } = mount([
       {
-        changesAtMs: () => {
-          value = Date.now() < deadlineMs ? "before" : "after";
-          return Date.now() < deadlineMs ? deadlineMs : Number.POSITIVE_INFINITY;
-        },
+        read: () => (Date.now() < deadlineMs ? "before" : "after"),
+        changesAtMs: onceAt(deadlineMs),
       },
     ]);
-    expect(values).toEqual(["read:0"]);
-    expect(value).toBe("before");
+    expect(values).toEqual(["before"]);
 
     act(() => {
       vi.advanceTimersByTime(1_000);
     });
-    expect(value).toBe("after");
+    expect(values).toEqual(["after"]);
   });
 
   test("wakes every display when the wall clock steps backward", () => {
@@ -264,7 +268,7 @@ describe("useTimeReading", () => {
 
   test("never stretches the wake gap past its bound after a clock step", () => {
     const firstMs = Date.now() + 1_000;
-    mount([{ changesAtMs: () => (Date.now() < firstMs ? firstMs : Number.POSITIVE_INFINITY) }]);
+    mount([{ changesAtMs: onceAt(firstMs) }]);
     act(() => {
       vi.advanceTimersByTime(1_000);
     });
@@ -272,7 +276,7 @@ describe("useTimeReading", () => {
     vi.setSystemTime(Date.now() - 3_600_000);
     const secondMs = Date.now() + 100;
     const { renders } = mount([
-      { changesAtMs: () => (Date.now() < secondMs ? secondMs : Number.POSITIVE_INFINITY) },
+      { changesAtMs: onceAt(secondMs) },
     ]);
     act(() => {
       vi.advanceTimersByTime(350);
@@ -289,7 +293,7 @@ describe("useTimeReading", () => {
 
     const soonMs = Date.now() + 10;
     const { renders } = mount([
-      { changesAtMs: () => (Date.now() < soonMs ? soonMs : Number.POSITIVE_INFINITY) },
+      { changesAtMs: onceAt(soonMs) },
     ]);
     act(() => {
       vi.advanceTimersByTime(20);
