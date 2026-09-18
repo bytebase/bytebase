@@ -292,7 +292,11 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     least as late as the one it was computed on, so a clock stepped backward wakes every
     subscribed display at the next check. The evidence of a step is the highest clock reading the
     clock has seen, not the last one taken: arming happens on any commit, so a display mounting
-    between the step and the next check would otherwise erase it. A reading that has settled for
+    between the step and the next check would otherwise erase it. The detector's blind spot is a
+    step smaller than the time since the clock last armed, which is safe because it self-tunes:
+    a display that changes by the second arms often, shrinking exactly the window it needs, and a
+    step too small for that window is also too small to change a reading that counts in minutes
+    or days. A reading that has settled for
     good holds no subscription, so a clock stepped back past its last change leaves it as it was
     until something else renders it — the price of settled displays costing nothing. The clock
     wakes only the subscribers that are due, re-checks a woken display that names the same instant
