@@ -219,6 +219,14 @@ reveals nothing teaches the reader that the control is decoration, and then they
 it on the rows where it matters — mockup D's row 6 is exactly that, a `COMMENT ON TABLE` that fits
 its line and would unfold to itself.
 
+A row that is already open is foldable, full stop — no measurement, no comparison. That sounds like
+a truism and is in fact the subtlest case here. A successful single-line statement qualifies only
+by the clamp, and D10 has the block *replace* the line when it opens, so the thing the clamp was
+measured on no longer exists. Worse, opening raises D8's cap, which resizes the scroll box, which
+fires the very observer that would reclassify it — so the chevron would vanish from a row while it
+sat expanded, and with it the way back, since the row's click target is gated on the same verdict.
+You must always be able to close what you opened; the verdict is recomputed only for closed rows.
+
 The measurement has two triggers, and the width one is not enough on its own. A `ResizeObserver` on
 the section's scroll box catches the container changing width, but that box is capped: pressing
 *Load more*, or a poll appending entries, grows its scroll height and leaves its border box exactly
@@ -499,7 +507,10 @@ behavior of this function:
   statement carries none at all; a single-line statement that fits its width has **no** fold
   control, the same row in a container narrow enough to clamp it has one, and a multi-line
   statement has one at any width (D5); a failed row whose statement is as short as `SELECT 1` is
-  foldable anyway, and folding then unfolding it brings the statement and its copy button back.
+  foldable anyway, and folding then unfolding it brings the statement and its copy button back; and
+  a clamped one-line statement **keeps** its chevron after opening — drive an observer callback
+  while it is open, which is what raising the cap does in the product, and assert the control
+  survives and still closes the row.
 - `model.test.ts` for the marking edges: a failed command with neither `statement` nor a usable
   `range` is still marked, so D13 renders and scrolls to its error, and no cap change follows
   because it has no block.
