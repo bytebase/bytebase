@@ -143,29 +143,21 @@ vi.mock("@/stores/app/databaseCatalog", () => ({
   getTableCatalog: mocks.getTableCatalog,
 }));
 
+// A rendering that never changes on its own, which is every reading this
+// panel shows.
+const fixedReading = (read: (ms: number) => string) => ({
+  read,
+  nextChangeAt: () => Number.POSITIVE_INFINITY,
+});
+
 vi.mock("@/utils/datetime", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/utils/datetime")>()),
-  queueTimeReading: {
-    read: mocks.formatRelativeTime,
-    nextChangeAt: () => Number.POSITIVE_INFINITY,
-  },
-  relativeTimeReading: {
-    read: mocks.formatRelativeTime,
-    nextChangeAt: () => Number.POSITIVE_INFINITY,
-  },
+  queueTimeReading: fixedReading(mocks.formatRelativeTime),
+  relativeTimeReading: fixedReading(mocks.formatRelativeTime),
+  compactTimeReading: fixedReading(mocks.formatAbsoluteDateTime),
+  operationalTimeReading: fixedReading(mocks.formatAbsoluteDateTime),
+  absoluteTimeReading: fixedReading(mocks.formatAbsoluteDateTime),
   formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
-  compactTimeReading: {
-    read: mocks.formatAbsoluteDateTime,
-    nextChangeAt: () => Number.POSITIVE_INFINITY,
-  },
-  operationalTimeReading: {
-    read: mocks.formatAbsoluteDateTime,
-    nextChangeAt: () => Number.POSITIVE_INFINITY,
-  },
-  absoluteTimeReading: {
-    read: mocks.formatAbsoluteDateTime,
-    nextChangeAt: () => Number.POSITIVE_INFINITY,
-  },
 }));
 
 vi.mock("@/utils", () => ({
@@ -173,7 +165,6 @@ vi.mock("@/utils", () => ({
   getDatabaseEngine: mocks.getDatabaseEngine,
   getInstanceResource: mocks.getInstanceResource,
   getDatabaseProject: mocks.getDatabaseProject,
-  formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
   hasIndexSizeProperty: mocks.hasIndexSizeProperty,
   isDev: mocks.isDev,
   hasProjectPermissionV2: mocks.hasProjectPermissionV2,

@@ -235,7 +235,6 @@ vi.mock("@/utils", () => ({
     };
   },
   bytesToString: (size: number) => `${size} B`,
-  formatAbsoluteDateTime: () => "formatted time",
   extractDatabaseResourceName: (name: string) => ({
     instance: "instances/inst1",
     instanceName: "inst1",
