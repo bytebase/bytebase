@@ -199,7 +199,9 @@ The two are easy to conflate, and the labels should carry the difference rather
 than leave it to be inferred: the history button reads "History (3)" today, which
 names no level. Renaming it "Previous runs (3)" pairs it with "Previous attempts"
 so the unit word — run against attempt — states which level each one is. That is a
-locale-only change and is not otherwise part of this work.
+locale-only change — one key, `task-run.history-with-count`, in five locale files,
+with no test or selector bound to the string — and is not otherwise part of this
+work.
 
 ### What the reader sees change
 
@@ -211,6 +213,15 @@ locale-only change and is not otherwise part of this work.
 | Final attempt finishes | sections settle; an error in the final segment auto-expands | decided by entries, not by run status |
 | Run reaches a terminal status | the viewer remounts — its key carries the status — so everything returns to defaults | acceptable, because collapsed *is* the default |
 | Someone clicks Re-run | a new `task_run`; the viewer remounts on the new name with no umbrella; the finished run moves to the history sheet | not a retry, and not this row's business |
+
+Two existing behaviors compose with this without special handling, and are worth
+stating so nobody adds handling they do not need. When a task run moved between
+replicas, every replica group but the last has its still-running sections forced
+to error, modelling work that was abandoned. A superseded attempt is complete by
+construction — a retry followed it — so it has no running sections to force, and
+only an abandoned final segment turns red, which is what the truth table already
+says. And each run listed in the history sheet renders through the same viewer, so
+an older run shows its own umbrella derived from its own entries.
 
 ### What must survive a poll
 
