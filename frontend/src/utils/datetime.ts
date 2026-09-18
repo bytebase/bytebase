@@ -64,7 +64,7 @@ export type TimeReading<Input, Value> = {
   nextChangeAt: (input: Input) => number;
 };
 
-export function formatRelativeTime(timestampMs: number): string {
+function formatRelativeTime(timestampMs: number): string {
   const diffMs = Date.now() - timestampMs;
   const ageMs = Math.abs(diffMs);
   const rtf = cachedFormatter(
@@ -93,7 +93,7 @@ export function formatAbsoluteDateTime(timestampMs: number): string {
   }).format(timestampMs);
 }
 
-export function formatAbsoluteDate(timestampMs: number): string {
+function formatAbsoluteDate(timestampMs: number): string {
   if (new Date(timestampMs).getFullYear() === new Date().getFullYear()) {
     return dateTimeFormatter("date", {
       month: "short",
@@ -107,7 +107,7 @@ export function formatAbsoluteDate(timestampMs: number): string {
   }).format(timestampMs);
 }
 
-export function formatQueueTime(timestampMs: number): string {
+function formatQueueTime(timestampMs: number): string {
   if (Math.abs(Date.now() - timestampMs) >= RELATIVE_THRESHOLD_MS) {
     return formatAbsoluteDate(timestampMs);
   }

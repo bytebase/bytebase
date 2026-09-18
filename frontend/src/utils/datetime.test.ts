@@ -22,12 +22,9 @@ const withLocale = (language: string, run: () => void) => {
 import {
   countdownReading,
   daysLeftReading,
-  formatAbsoluteDate,
   formatAbsoluteDateTime,
   formatCompactDateTime,
   formatOperationalDateTime,
-  formatQueueTime,
-  formatRelativeTime,
   passedReading,
   queueTimeReading,
   RELATIVE_THRESHOLD_MS,
@@ -40,7 +37,7 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 
-describe("formatRelativeTime", () => {
+describe("the relative reading", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
@@ -51,32 +48,32 @@ describe("formatRelativeTime", () => {
   });
 
   test("returns 'now' for timestamps less than 10 seconds ago", () => {
-    const result = formatRelativeTime(Date.now() - 5000);
+    const result = relativeTimeReading.read(Date.now() - 5000);
     expect(result).toBe("now");
   });
 
   test("returns 'X seconds ago' for 10-59 seconds", () => {
-    const result = formatRelativeTime(Date.now() - 30_000);
+    const result = relativeTimeReading.read(Date.now() - 30_000);
     expect(result).toContain("seconds ago");
   });
 
   test("returns 'X minutes ago' for 1-59 minutes", () => {
-    const result = formatRelativeTime(Date.now() - 5 * 60_000);
+    const result = relativeTimeReading.read(Date.now() - 5 * 60_000);
     expect(result).toMatch(/minutes? ago/);
   });
 
   test("returns 'X hours ago' for 1-23 hours", () => {
-    const result = formatRelativeTime(Date.now() - 3 * 3_600_000);
+    const result = relativeTimeReading.read(Date.now() - 3 * 3_600_000);
     expect(result).toMatch(/hours? ago/);
   });
 
   test("returns 'yesterday' for ~24 hours ago", () => {
-    const result = formatRelativeTime(Date.now() - 24 * 3_600_000);
+    const result = relativeTimeReading.read(Date.now() - 24 * 3_600_000);
     expect(result).toBe("yesterday");
   });
 
   test("returns 'X days ago' for 2-30 days", () => {
-    const result = formatRelativeTime(Date.now() - 10 * 86_400_000);
+    const result = relativeTimeReading.read(Date.now() - 10 * 86_400_000);
     expect(result).toContain("days ago");
   });
 });
@@ -92,31 +89,7 @@ describe("formatAbsoluteDateTime", () => {
   });
 });
 
-describe("formatAbsoluteDate", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  test("omits year for same-year dates", () => {
-    const ts = new Date("2026-06-15T00:00:00Z").getTime();
-    const result = formatAbsoluteDate(ts);
-    expect(result).not.toContain("2026");
-    expect(result).toContain("Jun");
-  });
-
-  test("includes year for different-year dates", () => {
-    const ts = new Date("2025-01-15T00:00:00Z").getTime();
-    const result = formatAbsoluteDate(ts);
-    expect(result).toContain("2025");
-  });
-});
-
-describe("formatQueueTime", () => {
+describe("the work-queue reading", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
@@ -127,30 +100,40 @@ describe("formatQueueTime", () => {
   });
 
   test("reads as relative age inside the 30-day window", () => {
-    expect(formatQueueTime(Date.now() - 6 * 86_400_000)).toBe("6 days ago");
+    expect(queueTimeReading.read(Date.now() - 6 * 86_400_000)).toBe(
+      "6 days ago"
+    );
   });
 
   test("still reads as relative age one day short of the threshold", () => {
-    expect(formatQueueTime(Date.now() - 29 * 86_400_000)).toBe("29 days ago");
+    expect(queueTimeReading.read(Date.now() - 29 * 86_400_000)).toBe(
+      "29 days ago"
+    );
   });
 
   test("switches to an absolute date at the threshold", () => {
-    expect(formatQueueTime(Date.now() - RELATIVE_THRESHOLD_MS)).toBe("Jan 31");
+    expect(queueTimeReading.read(Date.now() - RELATIVE_THRESHOLD_MS)).toBe(
+      "Jan 31"
+    );
   });
 
   test("keeps the year on a date from another year", () => {
-    expect(formatQueueTime(Date.now() - 90 * 86_400_000)).toBe("Dec 2, 2025");
+    expect(queueTimeReading.read(Date.now() - 90 * 86_400_000)).toBe(
+      "Dec 2, 2025"
+    );
   });
 
   test("measures a future timestamp by the same threshold", () => {
-    expect(formatQueueTime(Date.now() + 2 * 86_400_000)).toBe("in 2 days");
-    expect(formatQueueTime(Date.now() + 40 * 86_400_000)).toBe("Apr 11");
+    expect(queueTimeReading.read(Date.now() + 2 * 86_400_000)).toBe(
+      "in 2 days"
+    );
+    expect(queueTimeReading.read(Date.now() + 40 * 86_400_000)).toBe("Apr 11");
   });
 
   test("renders both branches in the active locale", () => {
     withLocale("zh-CN", () => {
-      expect(formatQueueTime(Date.now() - 6 * 86_400_000)).toBe("6天前");
-      expect(formatQueueTime(Date.now() - RELATIVE_THRESHOLD_MS)).toBe(
+      expect(queueTimeReading.read(Date.now() - 6 * 86_400_000)).toBe("6天前");
+      expect(queueTimeReading.read(Date.now() - RELATIVE_THRESHOLD_MS)).toBe(
         "1月31日"
       );
     });
@@ -255,12 +238,12 @@ const expectBoundaryMatchesReading = <Value>(
   const { nextChangeAt } = reading;
   for (let link = 0; link < CHAIN_LINKS; link++) {
     const startMs = Date.now();
-    const reading = read(tsMs);
+    const value = read(tsMs);
     const changesAtMs = nextChangeAt(tsMs);
     if (changesAtMs === Number.POSITIVE_INFINITY) {
       for (const laterMs of FINAL_PROBES_MS) {
         vi.setSystemTime(startMs + laterMs);
-        expect(read(tsMs)).toBe(reading);
+        expect(read(tsMs)).toBe(value);
       }
       return;
     }
@@ -271,11 +254,11 @@ const expectBoundaryMatchesReading = <Value>(
       Math.ceil(changesAtMs) - 1,
     ]) {
       vi.setSystemTime(probeMs);
-      expect(read(tsMs)).toBe(reading);
+      expect(read(tsMs)).toBe(value);
       expect(nextChangeAt(tsMs)).toBe(changesAtMs);
     }
     vi.setSystemTime(changesAtMs);
-    expect(read(tsMs)).not.toBe(reading);
+    expect(read(tsMs)).not.toBe(value);
   }
 };
 
@@ -316,27 +299,18 @@ describe("reading boundaries", () => {
     vi.useRealTimers();
   });
 
-  test.each(boundaryCases(SAMPLED_AGES_MS))(
-    "names the instant the work-queue reading changes (age $offset ms from $start, +$fractionMs ms)",
-    ({ start, offset, fractionMs }) => {
-      const startMs = startAt(start);
-      expectBoundaryMatchesReading(
-        queueTimeReading,
-        startMs - offset + fractionMs
-      );
-    }
-  );
-
-  test.each(boundaryCases(SAMPLED_AGES_MS))(
-    "names the instant the relative reading changes (age $offset ms from $start, +$fractionMs ms)",
-    ({ start, offset, fractionMs }) => {
-      const startMs = startAt(start);
-      expectBoundaryMatchesReading(
-        relativeTimeReading,
-        startMs - offset + fractionMs
-      );
-    }
-  );
+  describe.each([
+    ["work-queue", queueTimeReading],
+    ["relative", relativeTimeReading],
+  ])("%s", (_name, reading) => {
+    test.each(boundaryCases(SAMPLED_AGES_MS))(
+      "names the instant the reading changes (age $offset ms from $start, +$fractionMs ms)",
+      ({ start, offset, fractionMs }) => {
+        const startMs = startAt(start);
+        expectBoundaryMatchesReading(reading, startMs - offset + fractionMs);
+      }
+    );
+  });
 });
 
 describe("deadline readings", () => {

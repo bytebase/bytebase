@@ -245,9 +245,7 @@ function ReleaseRow({ release }: { release: Release }) {
 
   const showFiles = release.files.slice(0, MAX_SHOW_FILES_COUNT);
 
-  const createTimeTs = release.createTime
-    ? getTimeForPbTimestampProtoEs(release.createTime) / 1000
-    : undefined;
+  const createTimeMs = getTimeForPbTimestampProtoEs(release.createTime);
 
   const url = `/${release.name}`;
 
@@ -295,7 +293,11 @@ function ReleaseRow({ release }: { release: Release }) {
         </div>
       </TableCell>
       <TableCell>
-        {createTimeTs === undefined ? "-" : <HumanizeTs ts={createTimeTs} />}
+        {createTimeMs === undefined ? (
+          "-"
+        ) : (
+          <HumanizeTs ts={createTimeMs / 1000} />
+        )}
       </TableCell>
     </TableRow>
   );

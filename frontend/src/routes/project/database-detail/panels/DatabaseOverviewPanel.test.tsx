@@ -162,7 +162,6 @@ vi.mock("@/utils", () => ({
   getDatabaseEngine: mocks.getDatabaseEngine,
   getInstanceResource: mocks.getInstanceResource,
   getDatabaseProject: mocks.getDatabaseProject,
-  formatRelativeTime: mocks.formatRelativeTime,
   formatAbsoluteDateTime: mocks.formatAbsoluteDateTime,
   hasIndexSizeProperty: mocks.hasIndexSizeProperty,
   isDev: mocks.isDev,
