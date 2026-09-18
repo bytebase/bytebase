@@ -219,7 +219,11 @@ reveals nothing teaches the reader that the control is decoration, and then they
 it on the rows where it matters — mockup D's row 6 is exactly that, a `COMMENT ON TABLE` that fits
 its line and would unfold to itself.
 
-A row that is already open is foldable, full stop — no measurement, no comparison. That sounds like
+A row that is open **and has a statement** is foldable — no measurement, no comparison. The
+statement clause is not decoration: a failure whose statement could not be recovered is still
+marked (D1) and so is nominally open, but it has no block, and an unqualified rule would hand it
+the chevron that D1 and D5 both promise it will not get. The exception exists to let a reader close
+a block that is on screen, so it reaches exactly as far as a block does. Beyond that it sounds like
 a truism and is in fact the subtlest case here. A successful single-line statement qualifies only
 by the clamp, and D10 has the block *replace* the line when it opens, so the thing the clamp was
 measured on no longer exists. Worse, opening raises D8's cap, which resizes the scroll box, which
@@ -256,12 +260,22 @@ native markup: `no-native-control` in `frontend/scripts/check-ui-guideline.mjs` 
 `pnpm --dir frontend check` on a raw `<button>` in feature code. The chevron's slot is reserved on
 every command row so the text column stays aligned.
 
-**D7 · Clicking the row toggles it, except when a selection ends there.** Click-anywhere is what
-makes the affordance usable at 12px, and it is the convention of every CI log. But an unfolded
-statement is text people select and copy by hand, and a naive handler collapses the row on
-mouse-up at the end of a drag. The handler ignores a click when `window.getSelection()` is not
-collapsed, and ignores clicks that originate inside a button. Mouse convenience only — assistive
-technology sees D6's controls.
+**D7 · Clicking the row toggles it — anywhere but the statement itself.** Click-anywhere is what
+makes the affordance usable at 12px, and it is the convention of every CI log, so the index, the
+timestamps, the glyph and the empty space all toggle. The statement does not, whether it is the
+clamped line or the unfolded block, because text a reader can select must not double as a button.
+
+A selection guard alone cannot carry that. It catches the drag — mouse-up at the end of a sweep,
+where the selection is already non-collapsed — but not the double-click, whose *first* click
+arrives with the selection still collapsed and would toggle the row, replacing the very text the
+second click was aiming at. Nothing observable at that moment distinguishes it from a single click,
+and waiting to find out would put a double-click delay on every toggle. Excluding the text removes
+the question instead of timing it.
+
+So: clicks inside a button are ignored (D6 owns those), clicks on the statement are ignored, a
+click that ends a selection is still ignored as a belt-and-braces guard for a drag that began on
+the metadata and finished over the text, and everything else toggles. Mouse convenience only —
+assistive technology sees D6's controls.
 
 **D8 · The section's cap rises while a block is on screen.** A 630px statement inside a 280px box is a
 keyhole. While any row in a section is unfolded, that section's scroll box is capped at
@@ -510,7 +524,11 @@ behavior of this function:
   foldable anyway, and folding then unfolding it brings the statement and its copy button back; and
   a clamped one-line statement **keeps** its chevron after opening — drive an observer callback
   while it is open, which is what raising the cap does in the product, and assert the control
-  survives and still closes the row.
+  survives and still closes the row; a marked failure with no recoverable statement is open yet
+  carries no chevron and no row toggle.
+- Clicking (D7): a click on the index, the timestamp or the row's empty space toggles; a click on
+  the clamped line or inside the unfolded block does not, so a double-click selects a word without
+  the row moving under it.
 - `model.test.ts` for the marking edges: a failed command with neither `statement` nor a usable
   `range` is still marked, so D13 renders and scrolls to its error, and no cap change follows
   because it has no block.
