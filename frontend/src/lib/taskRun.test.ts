@@ -161,6 +161,27 @@ describe("getTaskRunComment", () => {
     expect(comment).toContain("task-run.status.waiting-max-tasks-per-rollout");
   });
 
+  test("keeps a waiting cause with no report time out of the comment", () => {
+    // The message names the last report, so without one there is nothing to
+    // name; the row falls through to whatever detail it carries.
+    const comment = getTaskRunComment(
+      makeTaskRun({
+        detail: "still waiting",
+        schedulerInfo: {
+          waitingCause: {
+            cause: { case: "parallelTasksLimit", value: true },
+          },
+        },
+        status: TaskRun_Status.RUNNING,
+      }),
+      t
+    );
+    expect(comment).not.toContain(
+      "task-run.status.waiting-max-tasks-per-rollout"
+    );
+    expect(comment).toBe("still waiting");
+  });
+
   test("falls back to detail, then a dash", () => {
     expect(
       getTaskRunComment(

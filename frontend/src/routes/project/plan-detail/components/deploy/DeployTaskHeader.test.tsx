@@ -71,10 +71,12 @@ describe("DeployTaskHeader", () => {
     "names when a scheduled task runs, expanded: %s",
     (isExpanded) => {
       const container = render({ scheduledTimeMs: SCHEDULED_AT_MS, isExpanded });
-      // The operational form: the zone is part of the string, since a rollout
-      // time read in the wrong zone is the mistake this display exists to stop.
-      expect(container.textContent).toContain("Sep 15, 2026");
-      expect(container.textContent).toContain("GMT+8");
+      // The operational form exactly: the zone is part of the string, since a
+      // rollout time read in the wrong zone is the mistake this display exists
+      // to stop, and the seconds are not, since nothing is scheduled to one.
+      // Both halves matter -- the full form carries a zone too, so a test that
+      // only looks for one cannot tell the two apart.
+      expect(container.textContent).toContain("Sep 15, 2026, 9:00 AM GMT+8");
     }
   );
 
