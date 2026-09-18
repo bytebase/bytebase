@@ -352,15 +352,16 @@ type pageSize struct {
 type pageOffset struct {
 	limit  int
 	offset int
-	// snapshot is set by a list whose own reads write rows it would page over.
-	snapshot *timestamppb.Timestamp
+	// createTimeUpperBound is set by a list whose own reads write rows it
+	// would page over. Inclusive.
+	createTimeUpperBound *timestamppb.Timestamp
 }
 
 func (p *pageOffset) getNextPageToken() (string, error) {
 	return marshalPageToken(&storepb.PageToken{
-		Limit:    int32(p.limit),
-		Offset:   int32(p.offset + p.limit),
-		Snapshot: p.snapshot,
+		Limit:                int32(p.limit),
+		Offset:               int32(p.offset + p.limit),
+		CreateTimeUpperBound: p.createTimeUpperBound,
 	})
 }
 
@@ -376,7 +377,7 @@ func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
 		}
 		offset.limit = int(size.limit)
 		offset.offset = int(token.Offset)
-		offset.snapshot = token.Snapshot
+		offset.createTimeUpperBound = token.CreateTimeUpperBound
 	} else {
 		offset.limit = int(size.limit)
 	}

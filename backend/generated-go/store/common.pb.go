@@ -610,10 +610,11 @@ type PageToken struct {
 	Limit int32 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
 	// Number of items to skip before starting to return results.
 	Offset int32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
-	// The newest row the first page saw, for a list its own reads write to.
-	Snapshot      *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=snapshot,proto3" json:"snapshot,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Bounds later pages to the rows that existed when the traversal started,
+	// inclusive. Set by a list whose own reads write rows it would page over.
+	CreateTimeUpperBound *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=create_time_upper_bound,json=createTimeUpperBound,proto3" json:"create_time_upper_bound,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *PageToken) Reset() {
@@ -660,9 +661,9 @@ func (x *PageToken) GetOffset() int32 {
 	return 0
 }
 
-func (x *PageToken) GetSnapshot() *timestamppb.Timestamp {
+func (x *PageToken) GetCreateTimeUpperBound() *timestamppb.Timestamp {
 	if x != nil {
-		return x.Snapshot
+		return x.CreateTimeUpperBound
 	}
 	return nil
 }
@@ -805,11 +806,11 @@ var File_store_common_proto protoreflect.FileDescriptor
 
 const file_store_common_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/common.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"q\n" +
+	"\x12store/common.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8c\x01\n" +
 	"\tPageToken\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x05R\x06offset\x126\n" +
-	"\bsnapshot\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\bsnapshot\"6\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\x12Q\n" +
+	"\x17create_time_upper_bound\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x14createTimeUpperBound\"6\n" +
 	"\bPosition\x12\x12\n" +
 	"\x04line\x18\x01 \x01(\x05R\x04line\x12\x16\n" +
 	"\x06column\x18\x02 \x01(\x05R\x06column\"/\n" +
@@ -963,7 +964,7 @@ var file_store_common_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 }
 var file_store_common_proto_depIdxs = []int32{
-	10, // 0: bytebase.store.PageToken.snapshot:type_name -> google.protobuf.Timestamp
+	10, // 0: bytebase.store.PageToken.create_time_upper_bound:type_name -> google.protobuf.Timestamp
 	1,  // [1:1] is the sub-list for method output_type
 	1,  // [1:1] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name

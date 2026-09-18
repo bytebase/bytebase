@@ -282,17 +282,17 @@ func (s *Store) AuditLogTraversalStart(ctx context.Context) (time.Time, error) {
 	return now, nil
 }
 
-// ApplySnapshotFilter bounds a search to the rows that existed when the
+// ApplyCreateTimeUpperBound bounds a search to the rows that existed when the
 // traversal started. A search writes its own audit row, so without it an
 // offset traversal never reaches the end of the set.
-func ApplySnapshotFilter(userFilterQ *qb.Query, snapshot time.Time) *qb.Query {
-	snapshotQ := qb.Q().Space("created_at <= ?", snapshot)
+func ApplyCreateTimeUpperBound(userFilterQ *qb.Query, upperBound time.Time) *qb.Query {
+	boundQ := qb.Q().Space("created_at <= ?", upperBound)
 	if userFilterQ == nil {
-		return qb.Q().Space("(?)", snapshotQ)
+		return qb.Q().Space("(?)", boundQ)
 	}
 	q := qb.Q()
 	q.Space("?", userFilterQ)
-	q.And("?", snapshotQ)
+	q.And("?", boundQ)
 	return qb.Q().Space("(?)", q)
 }
 
