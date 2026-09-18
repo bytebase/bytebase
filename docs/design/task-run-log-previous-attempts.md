@@ -139,6 +139,10 @@ produces a `RETRY_INFO`, and the gh-ost path never calls `driver.Execute` at all
   group, after those groupings are applied. The driver retry wraps one file's
   execution on one connection, so a marker must never create a boundary across a
   file or replica scope.
+- **Marker payload.** `LogRetryInfo(err, i+1)` is written *before* retry i+1 runs,
+  so a marker reading i of N means i attempts have already been superseded. A
+  scope showing "retrying i/N" therefore holds exactly i attempts in its umbrella;
+  the count never lags the marker.
 - **Empty final segment.** A marker written but the retry's entries not yet
   arrived, or the run died there, renders the umbrella with no final-attempt
   sections. The run status chip carries the state.
@@ -248,9 +252,19 @@ section into the umbrella and renumbers everything after it, in one poll, while
 the run is still streaming.
 
 So this design depends on one fix in the grouping layer: derive a section's id
-from what it is — its scope, attempt ordinal, entry type, and first entry's
-timestamp — rather than from its position. Ids then survive regrouping, and
-expansion follows the section it belongs to.
+from what it is — its scope, its attempt ordinal, the entry type, and its
+occurrence within that attempt — rather than from its position in the whole list.
+
+A timestamp cannot stand in for that last part. `ListTaskRunLogs` orders by
+`created_at, ctid` precisely because entries tie on `created_at`, and an attempt
+routinely holds two sections of one type: a Transaction sits either side of a
+Command Execute. Scope, attempt, and type alone would collide there, giving two
+rows one id — duplicate React keys, and one expansion controlling both.
+
+The occurrence ordinal is safe where a global index is not, because it is scoped
+to a single attempt: a superseded attempt never changes again, and entries
+appended to the final attempt land after the sections already numbered. Ids then
+survive regrouping, and expansion follows the section it belongs to.
 
 ![Expansion follows the section it belongs to](task-run-log-previous-attempts/12-transition-expansion-follows-section.png)
 
