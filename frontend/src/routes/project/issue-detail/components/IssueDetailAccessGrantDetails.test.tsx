@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { IssueDetailAccessGrantDetails } from "./IssueDetailAccessGrantDetails";
 
 const mocks = vi.hoisted(() => ({
+  expiration: { type: "never" } as
+    | { type: "never" }
+    | { type: "duration"; value: string }
+    | { type: "datetime"; expireTimeMs: number },
   accessGrant: undefined as
     | {
         name: string;
@@ -69,8 +73,12 @@ vi.mock("@/utils", () => ({
   hasProjectPermissionV2: () => true,
 }));
 
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
+}));
+
 vi.mock("@/utils/accessGrant", () => ({
-  getAccessGrantExpirationText: () => ({ type: "never" }),
+  getAccessGrantExpirationText: () => mocks.expiration,
 }));
 
 vi.mock("../context/IssueDetailContext", () => ({
@@ -90,9 +98,23 @@ beforeEach(() => {
   };
   mocks.fetchAccessGrant.mockImplementation(async () => mocks.accessGrant);
   mocks.searchMyAccessGrants.mockResolvedValue({ accessGrants: [] });
+  mocks.expiration = { type: "never" };
 });
 
 describe("IssueDetailAccessGrantDetails", () => {
+  test("names a fixed expiry in the operational form", async () => {
+    // An expiry is acted on, not skimmed: it carries its date and its zone,
+    // which is what tells a reader in another zone when access really ends.
+    mocks.expiration = {
+      type: "datetime",
+      expireTimeMs: Date.UTC(2026, 8, 15, 1, 0),
+    };
+    render(<IssueDetailAccessGrantDetails />);
+
+    const timestamp = await screen.findByTestId("humanize-ts");
+    expect(timestamp.dataset.mode).toBe("operational");
+  });
+
   test("renders schema and CosmosDB container for approvers", async () => {
     render(<IssueDetailAccessGrantDetails />);
 

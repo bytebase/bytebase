@@ -48,8 +48,8 @@ vi.mock("@/components/task-run-log", async () => {
   };
 });
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: ({ ts }: { ts: number }) => <span>{ts}</span>,
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 const taskName = "projects/p1/rollouts/r1/stages/s1/tasks/t1";
@@ -90,12 +90,25 @@ const renderSheet = (taskRuns: ReturnType<typeof makeTaskRuns>) => {
   };
 };
 
+const timestampModes = (container: HTMLElement) =>
+  Array.from(
+    container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
+  ).map((node) => node.dataset.mode);
+
 const mountedLogNames = (container: HTMLElement) =>
   Array.from(
     container.querySelectorAll<HTMLElement>("[data-testid=log-viewer]")
   ).map((node) => node.dataset.taskRunName);
 
 describe("DeployTaskRunHistorySheet", () => {
+  test("dates each run in the embedded history form", () => {
+    // A history row orients; the record itself testifies elsewhere. The form
+    // is the decision this surface makes, so it is the thing asserted.
+    const { container, cleanup } = renderSheet(makeTaskRuns(1));
+    expect(timestampModes(container)).toEqual(["compact"]);
+    cleanup();
+  });
+
   test("renders runs newest-first with descending run numbers", () => {
     const { container, cleanup } = renderSheet(makeTaskRuns(3));
     const labels = Array.from(container.querySelectorAll("button")).map(

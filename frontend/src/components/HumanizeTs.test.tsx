@@ -1,5 +1,6 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { advanceSeconds } from "@/test-utils/clock";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // The real datetime module is loaded below for its domain check, and importing
@@ -107,15 +108,6 @@ const openTooltip = async (el: Element | null) => {
 const overlayText = () =>
   document.getElementById("bb-react-layer-overlay")?.textContent ?? "";
 
-// One act per second, as a browser commits between timer turns; a single long
-// act would commit only once, at its end, and hide when the render happened.
-const advanceSeconds = (seconds: number) => {
-  for (let second = 0; second < seconds; second++) {
-    act(() => {
-      vi.advanceTimersByTime(1_000);
-    });
-  }
-};
 
 const secondsAgo = (seconds: number) => Date.now() - seconds * 1000;
 
@@ -192,11 +184,15 @@ describe("HumanizeTs", () => {
     // on it; the row should lose its timestamp, not the page its subtree.
     const { container, root } = mount();
     act(() => root.render(<HumanizeTs tsMs={Number.NaN} />));
-    expect(container.textContent).toBe("");
+    // Nothing at all, not an empty box: a box still occupies the row, and its
+    // tooltip would ask the formatters for a time nobody gave them -- which
+    // renders the current time, the plausible-looking lie this all exists to
+    // avoid.
+    expect(container.innerHTML).toBe("");
 
     // Finite, and one millisecond past the last instant there is.
     act(() => root.render(<HumanizeTs tsMs={8.64e15 + 1} />));
-    expect(container.textContent).toBe("");
+    expect(container.innerHTML).toBe("");
   });
 
   test.each(["compact", "operational", "datetime"] as const)(

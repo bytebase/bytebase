@@ -63,8 +63,8 @@ vi.mock("@/stores/app", () => ({
     }),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: () => null,
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 vi.mock("@/components/monaco", () => ({

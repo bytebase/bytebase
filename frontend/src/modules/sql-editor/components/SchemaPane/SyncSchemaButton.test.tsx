@@ -24,8 +24,8 @@ vi.mock("react-i18next", () => ({
   Trans: ({ i18nKey }: { i18nKey: string }) => <span>{i18nKey}</span>,
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({
-  HumanizeTs: () => <span data-testid="humanize" />,
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({

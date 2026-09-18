@@ -26,7 +26,9 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-vi.mock("@/components/HumanizeTs", () => ({ HumanizeTs: () => null }));
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
+}));
 
 // The activity module drags Monaco into the test; only the edit rule matters.
 vi.mock("@/components/issue-activity/IssueCommentActivity", () => ({
