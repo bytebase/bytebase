@@ -284,29 +284,36 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     its value — which can see a change the value just missed and schedule the one after — are
     none of them reachable through the hook. What the hook cannot prevent is a display reaching
     past it: a reading's `read` is public so readings can compose, and the hook's parameter is
-    structurally typed. A Biome plugin holds that line — `read` and `nextChangeAt` may be called
-    only inside the modules that define the readings.
-  - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip
-    time the machine sleeps, so the clock re-checks at least once a minute: a display is at most
-    a minute behind after sleep or a clock adjustment. A boundary is only valid on a clock at
-    least as late as the one it was computed on, so a clock stepped backward wakes every
-    subscribed display at the next check. The evidence of a step is the highest clock reading the
-    clock has seen, not the last one taken: arming happens on any commit, so a display mounting
-    between the step and the next check would otherwise erase it. The detector's blind spot is a
-    step smaller than the time since the clock last armed, which is safe because it self-tunes:
-    a display that changes by the second arms often, shrinking exactly the window it needs, and a
-    step too small for that window is also too small to change a reading that counts in minutes
-    or days. A reading that has settled for
-    good holds no subscription, so a clock stepped back past its last change leaves it as it was
-    until something else renders it — the price of settled displays costing nothing. The clock
-    wakes only the subscribers that are due, re-checks a woken display that names the same instant
-    again after a resync interval rather than on every other display's wake, and leaves a short
-    gap after each wake so a boundary that keeps naming
-    a past instant cannot spin it.
-  - **An absent timestamp has no reading.** The conversion yields nothing rather than a
+    structurally typed. A Biome plugin narrows that line rather than closing it: outside the
+    modules that define the readings, it rejects every mention of `read` or `nextChangeAt` as a
+    member or a destructured binding — under an alias, through a local, through a table, through
+    `.call`, passed as a callback, optionally chained, or keyed by a literal. What it cannot see
+    is a key held in a variable, which is not a spelling anyone reaches for by accident. The rule
+    is the convention; the plugin is what makes drifting off it loud.
+  - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip time
+    the machine sleeps, so the clock re-checks at least once a minute: a display is at most a
+    minute behind after sleep or a clock adjustment. A boundary is only valid on a clock at least
+    as late as the one it was computed on, so a clock stepped backward wakes every subscribed
+    display at the next check. The evidence of a step is the highest clock reading the clock has
+    seen, not the last one taken: arming happens on any commit, so a display mounting between the
+    step and the next check would otherwise erase it. The detector's blind spot is a step smaller
+    than the time since the clock last armed, which is safe because it self-tunes: a display that
+    changes by the second arms often, shrinking exactly the window it needs, and a step too small
+    for that window is also too small to change a reading that counts in minutes or days. A
+    reading that has settled for good holds no subscription, so a clock stepped back past its last
+    change leaves it as it was until something else renders it — the price of settled displays
+    costing nothing. A step wakes a display without consuming what it declared: the instant is
+    absolute, so it survives the step and still gets its own wake, and only a display the clock
+    finds due retires its deadline. A woken display that names the same instant again is
+    re-checked after a resync interval rather than on every other display's wake, and a short gap
+    after each wake keeps a boundary that keeps naming a past instant from spinning it.
+  - **An absent timestamp has no reading**, and neither has a value that is not an instant: a
+    number that is not finite, or one beyond the range a time value can occupy, which `Date` holds
+    no time for and the date formatters throw on. The conversion yields nothing rather than a
     substitute — the current time and the epoch are both plausible-looking lies — and the
     container picks the empty form: "-" in a table cell, or the label dropped along with its
-    separator in an inline line.
+    separator in an inline line. The domain lives with the formatters, since they are what
+    rejects a value; a display asks them rather than guessing at the test.
   - Guarded by fake-timer tests and a sweep of render-time `Date.now()` over the touched surfaces
     at implementation time — a review pass, not a lint: telling render scope from handlers and
     effects statically would flag most legitimate uses.
