@@ -19,7 +19,9 @@ type Subscriber = {
 const subscribers = new Set<Subscriber>();
 let timer: ReturnType<typeof setTimeout> | undefined;
 let armedForMs = Number.POSITIVE_INFINITY;
-let armedAtMs = Number.NEGATIVE_INFINITY;
+// The latest clock reading the clock has seen, so a later reading below it
+// is proof the wall clock moved backward.
+let clockHighWaterMs = Number.NEGATIVE_INFINITY;
 let lastWakeMs = Number.NEGATIVE_INFINITY;
 
 // Deadlines are wall-clock instants, but timers do not count time the machine
@@ -46,7 +48,10 @@ function arm(changesAtMs: number): void {
   }
   const nowMs = Date.now();
   armedForMs = changesAtMs;
-  armedAtMs = nowMs;
+  // A high-water mark, not the last reading: arming happens on any commit, and
+  // taking the reading as-is after a backward step would erase the evidence of
+  // it before the next check looked.
+  clockHighWaterMs = Math.max(clockHighWaterMs, nowMs);
   // Bounded above too, so a clock stepped backward cannot stretch the gap.
   const gapMs = Math.min(
     Math.max(lastWakeMs + MIN_WAKE_GAP_MS - nowMs, 0),
@@ -58,10 +63,15 @@ function arm(changesAtMs: number): void {
 
 function tick(): void {
   const nowMs = Date.now();
-  // A timer cannot fire before it was armed, so a wall clock reading earlier
-  // than the arm means the clock stepped backward, and every boundary computed
-  // on the later clock may now be wrong in either direction.
-  const clockSteppedBack = nowMs < armedAtMs;
+  // A timer cannot fire before it was armed, so a reading earlier than the
+  // highest one seen means the wall clock stepped backward, and every boundary
+  // computed on the later clock may now be wrong in either direction.
+  const clockSteppedBack = nowMs < clockHighWaterMs;
+  if (clockSteppedBack) {
+    // The step is handled once here; without this the mark would stay ahead
+    // and every later check would wake everything again.
+    clockHighWaterMs = nowMs;
+  }
   let nextMs = Number.POSITIVE_INFINITY;
   for (const subscriber of subscribers) {
     if (clockSteppedBack || subscriber.changesAtMs <= nowMs) {

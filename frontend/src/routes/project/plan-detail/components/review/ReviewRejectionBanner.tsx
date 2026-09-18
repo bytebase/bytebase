@@ -96,9 +96,7 @@ export function ReviewRejectionBanner({
               <span className="text-error/50">·</span>
               <HumanizeTs
                 className="text-xs font-normal text-error/70"
-                ts={
-                  getTimeForPbTimestampProtoEs(rejection.createTime, 0) / 1000
-                }
+                ts={getTimeForPbTimestampProtoEs(rejection.createTime) / 1000}
               />
             </>
           )}

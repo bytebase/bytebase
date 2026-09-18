@@ -279,21 +279,25 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     change otherwise hides.
   - **A display gets a reading only through `useTimeReading`**, which takes the reading object,
     evaluates its boundary before its value, and subscribes to the shared clock. Pairing,
-    subscription and evaluation order therefore hold by construction rather than by convention at
-    each call site: a boundary borrowed from a different reading or re-derived beside one, a
-    display that forgot to subscribe, and a boundary evaluated after its value — which can see a
-    change the value just missed and schedule the one after — are each impossible to write
-    without leaving the hook.
+    subscription and evaluation order come with it: a boundary borrowed from a different reading
+    or re-derived beside one, a display that forgot to subscribe, and a boundary evaluated after
+    its value — which can see a change the value just missed and schedule the one after — are
+    none of them reachable through the hook. What the hook cannot prevent is a display reaching
+    past it: a reading's `read` is public so readings can compose, and the hook's parameter is
+    structurally typed. A Biome plugin holds that line — `read` and `nextChangeAt` may be called
+    only inside the modules that define the readings.
   - **The shared clock accepts any instant.** Deadlines are wall-clock instants but timers skip
     time the machine sleeps, so the clock re-checks at least once a minute: a display is at most
     a minute behind after sleep or a clock adjustment. A boundary is only valid on a clock at
     least as late as the one it was computed on, so a clock stepped backward wakes every
-    subscribed display at the next check. A reading that has settled for good holds no
-    subscription, so a clock stepped back past its last change leaves it as it was until something
-    else renders it — the price of settled displays costing nothing. The clock wakes only the
-    subscribers that are due, re-checks a
-    woken display that names the same instant again after a resync interval rather than on every
-    other display's wake, and leaves a short gap after each wake so a boundary that keeps naming
+    subscribed display at the next check. The evidence of a step is the highest clock reading the
+    clock has seen, not the last one taken: arming happens on any commit, so a display mounting
+    between the step and the next check would otherwise erase it. A reading that has settled for
+    good holds no subscription, so a clock stepped back past its last change leaves it as it was
+    until something else renders it — the price of settled displays costing nothing. The clock
+    wakes only the subscribers that are due, re-checks a woken display that names the same instant
+    again after a resync interval rather than on every other display's wake, and leaves a short
+    gap after each wake so a boundary that keeps naming
     a past instant cannot spin it.
   - **An absent timestamp has no reading.** The conversion yields nothing rather than a
     substitute — the current time and the epoch are both plausible-looking lies — and the
@@ -310,7 +314,9 @@ no seconds per D5. Relative age may accompany it in the tooltip.
 
 - The audit log (already correct).
 - Duration display (`humanizeDurationV1`, "4.2s"): durations are elapsed quantities with no
-  calendar or timezone question.
+  calendar or timezone question. A running task's elapsed time is the one that keeps moving; it
+  advances when its row re-renders rather than on the shared clock, since counting it live would
+  wake every running row once a second for a number nobody reads to that precision.
 - Relative wording under 30 days.
 - No user or workspace preference (GitLab's model is the known shape if a customer ever asks).
 - No backend or proto change.

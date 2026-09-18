@@ -253,6 +253,20 @@ describe("useTimeReading", () => {
     expect(values).toEqual(["after"]);
   });
 
+  test("still wakes a display when another mounts after the clock steps back", () => {
+    // Arming re-reads the clock, so a display mounting in the window between
+    // the step and the next check must not erase the evidence of the step.
+    const deadlineMs = Date.now() + 5 * 60_000;
+    const { renders } = mount([{ changesAtMs: onceAt(deadlineMs) }]);
+
+    vi.setSystemTime(Date.now() - 10 * 60_000);
+    mount([{ changesAtMs: onceAt(Date.now() + 30_000) }]);
+    act(() => {
+      vi.advanceTimersByTime(60_000);
+    });
+    expect(renders[0]).toBe(2);
+  });
+
   test("wakes every display when the wall clock steps backward", () => {
     // Each boundary was computed on the later clock; on the earlier one it can
     // be far off in either direction.
