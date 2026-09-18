@@ -88,7 +88,15 @@ export function HumanizeTs({
   useTranslation();
   const tsMs = ts * 1000;
   const { label: labelReading, Hidden } = MODES[mode];
-  const label = useTimeReading(labelReading, tsMs);
+  // An unvalidated string reaching `new Date(...)` gives NaN, which `Intl`
+  // throws on; a row loses its timestamp rather than the page its subtree.
+  const label = useTimeReading(
+    labelReading,
+    Number.isFinite(tsMs) ? tsMs : undefined
+  );
+  if (label === undefined) {
+    return null;
+  }
   if (!tooltip) {
     return <span className={className}>{label}</span>;
   }

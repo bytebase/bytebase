@@ -6,7 +6,7 @@ import type { TimeReading } from "@/utils/datetime";
  *
  * Each subscriber declares the instant its rendering next changes, so the clock
  * holds one timeout, set for the earliest of those, and wakes only the
- * subscribers that are due. A woken subscriber normally re-renders and declares
+ * subscribers that are due. A due subscriber normally re-renders and declares
  * its next instant; one that names the same instant again -- a boundary held
  * stale, say -- is re-checked after a resync interval rather than on every
  * neighbour's wake.
@@ -74,8 +74,13 @@ function tick(): void {
   }
   let nextMs = Number.POSITIVE_INFINITY;
   for (const subscriber of subscribers) {
-    if (clockSteppedBack || subscriber.changesAtMs <= nowMs) {
+    const isDue = subscriber.changesAtMs <= nowMs;
+    if (isDue) {
       subscriber.changesAtMs = nowMs + RESYNC_MS;
+    }
+    // A step invalidates the value a display is showing, not the instant it
+    // declared: that is absolute, so it survives and still gets its own wake.
+    if (isDue || clockSteppedBack) {
       subscriber.wake();
       lastWakeMs = nowMs;
     }

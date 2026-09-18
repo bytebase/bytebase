@@ -267,6 +267,30 @@ describe("useTimeReading", () => {
     expect(renders[0]).toBe(2);
   });
 
+  test("keeps a display's own deadline through a backward step", () => {
+    // The step invalidates the value, not the boundary: an absolute instant a
+    // display already declared is still when it next changes.
+    const deadlineMs = Date.now() + 30_000;
+    const { renders } = mount([
+      { changesAtMs: onceAt(deadlineMs) },
+      // A neighbour on the second, so a tick lands while the clock is still
+      // below the mark and the step is detected.
+      { changesAtMs: () => Math.floor(Date.now() / 1_000) * 1_000 + 1_000 },
+    ]);
+
+    vi.setSystemTime(Date.now() - 5_000);
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+    const afterStep = renders[0];
+
+    // Advance to the deadline it declared, and no further.
+    act(() => {
+      vi.advanceTimersByTime(deadlineMs - Date.now());
+    });
+    expect(renders[0]).toBe(afterStep + 1);
+  });
+
   test("wakes every display when the wall clock steps backward", () => {
     // Each boundary was computed on the later clock; on the earlier one it can
     // be far off in either direction.
