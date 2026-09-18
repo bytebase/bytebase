@@ -1,5 +1,6 @@
 import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import type { ComponentProps, ReactNode } from "react";
+import { cloneElement, isValidElement } from "react";
 import { cn } from "@/lib/utils";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "./layer";
 
@@ -28,7 +29,15 @@ export function Tooltip({
   render,
 }: TooltipProps) {
   if (!content) {
-    return <>{children}</>;
+    // A caller's `render` element carries that row's layout, not the tooltip's:
+    // dropping it when there is nothing to say would move their classes onto a
+    // grandchild in one state and not the other, which is a layout that breaks
+    // only sometimes.
+    return isValidElement(render) ? (
+      cloneElement(render, undefined, children)
+    ) : (
+      <>{children}</>
+    );
   }
 
   return (

@@ -38,6 +38,41 @@ describe("Tooltip", () => {
     document.body.innerHTML = "";
   });
 
+  test.each([
+    ["with a body", <span key="body">a deadline</span>],
+    ["with nothing to say", undefined],
+  ])("keeps the caller's trigger element %s", (_name, content) => {
+    // The element carries the caller's layout, so a row must not gain or lose
+    // it with the tooltip's content.
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() =>
+      root.render(
+        <Tooltip content={content} render={<span className="shrink-0" />}>
+          12:00
+        </Tooltip>
+      )
+    );
+
+    const trigger = container.querySelector(".shrink-0");
+    expect(trigger).not.toBeNull();
+    expect(trigger?.textContent).toBe("12:00");
+    act(() => root.unmount());
+  });
+
+  test("blocks keep their block trigger when there is nothing to say", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() =>
+      root.render(<BlockTooltip content={undefined}>a field</BlockTooltip>)
+    );
+
+    expect(container.querySelector(".flex-1")).not.toBeNull();
+    act(() => root.unmount());
+  });
+
   test("mounts tooltip content into the overlay layer root", async () => {
     vi.useFakeTimers();
     const container = document.createElement("div");
