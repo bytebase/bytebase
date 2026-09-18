@@ -17,6 +17,8 @@ func ExplainFormat(format v1pb.QueryOption_ExplainFormat) base.ExplainFormat {
 		return base.ExplainFormatJSON
 	case v1pb.QueryOption_XML:
 		return base.ExplainFormatXML
+	case v1pb.QueryOption_YAML:
+		return base.ExplainFormatYAML
 	default:
 		return base.ExplainFormatDefault
 	}

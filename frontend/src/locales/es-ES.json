@@ -3404,6 +3404,7 @@
     "view-schema-text": "Ver texto del esquema",
     "visualize-explain": "Visualizar explicación",
     "visualize-explain-blocked": "Se bloqueó la pestaña del plan de consulta. Permite las ventanas emergentes de este sitio e inténtalo de nuevo.",
+    "visualize-explain-executed": "Visualizar este plan volvería a ejecutar la consulta.",
     "visualize-explain-failed": "No se pudo cargar el plan de consulta",
     "web-socket": {
       "connection-status": {

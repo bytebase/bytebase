@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { act } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { act, cloneElement } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
@@ -29,7 +29,13 @@ vi.mock("@/components/DatabaseTargetDisplay", () => ({
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({
+    children,
+    content,
+  }: {
+    children: React.ReactElement<{ title?: string }>;
+    content?: string;
+  }) => (content ? cloneElement(children, { title: content }) : children),
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -112,6 +118,42 @@ describe("ResultStatusBar", () => {
     expect(formatQueryTime({ seconds: 2n, nanos: 500_000_000 } as never)).toBe(
       "2.50 s"
     );
+  });
+
+  test("disables Visualize with the reason", () => {
+    const onVisualizeExplain = vi.fn();
+    const { rerender } = render(
+      <ResultStatusBar
+        database={database}
+        statement="EXPLAIN SELECT 1"
+        queryTime="3 ms"
+        showVisualizeButton
+        onVisualizeExplain={onVisualizeExplain}
+      />
+    );
+
+    const visualize = screen.getByRole("button", {
+      name: "sql-editor.visualize-explain",
+    });
+    expect(visualize).toBeEnabled();
+    fireEvent.click(visualize);
+    expect(onVisualizeExplain).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <ResultStatusBar
+        database={database}
+        statement="EXPLAIN SELECT 1"
+        queryTime="3 ms"
+        showVisualizeButton
+        visualizeDisabledReason="it would run again"
+        onVisualizeExplain={onVisualizeExplain}
+      />
+    );
+
+    expect(visualize).toBeDisabled();
+    expect(visualize).toHaveAttribute("title", "it would run again");
+    fireEvent.click(visualize);
+    expect(onVisualizeExplain).toHaveBeenCalledTimes(1);
   });
 
   test("lets the database label shrink while the statement truncates", () => {

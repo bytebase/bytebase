@@ -22,6 +22,7 @@ const (
 	ExplainFormatText
 	ExplainFormatJSON
 	ExplainFormatXML
+	ExplainFormatYAML
 )
 
 // ExplainStatementFunc returns the statement that plans the single statement

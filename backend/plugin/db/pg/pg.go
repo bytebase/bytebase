@@ -841,6 +841,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				if err := rows.Err(); err != nil {
 					return nil, err
 				}
+				if !queryContext.Explain {
+					r.QueryPlan = typedExplainPlan(statement)
+				}
 				return r, nil
 			}
 
@@ -872,6 +875,17 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
+}
+
+func typedExplainPlan(statement string) *v1pb.QueryResult_QueryPlan {
+	format, executed, ok := pgparser.DescribeExplain(statement)
+	if !ok {
+		return nil
+	}
+	return &v1pb.QueryResult_QueryPlan{
+		Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(format)]),
+		Executed: executed,
+	}
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {

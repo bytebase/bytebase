@@ -753,6 +753,12 @@ func queryRetry(
 	}
 	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", originalStatement), slog.Duration("duration", duration))
 	if queryContext.Explain {
+		format := explainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat())
+		for _, result := range results {
+			if result.Error == "" {
+				result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
+			}
+		}
 		return results, nil, duration, nil
 	}
 
@@ -1990,7 +1996,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFormat {
 	switch engine {
 	case storepb.Engine_POSTGRES:
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML}
+		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML, v1pb.QueryOption_YAML}
 	case storepb.Engine_MSSQL:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}
 	case storepb.Engine_SPANNER:
@@ -2006,6 +2012,21 @@ func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFo
 	default:
 		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
 	}
+}
+
+func explainResultFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) v1pb.QueryOption_ExplainFormat {
+	if engine == storepb.Engine_MYSQL {
+		// MySQL 8.0.32 and later can take the default from the session's
+		// explain_format, which the driver does not observe.
+		return v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED
+	}
+	if format != v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
+		return format
+	}
+	if engine == storepb.Engine_SPANNER {
+		return v1pb.QueryOption_JSON
+	}
+	return v1pb.QueryOption_TEXT
 }
 
 // validateExplainFormat refuses a format the engine cannot produce. This is the

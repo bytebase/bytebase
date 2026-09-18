@@ -348,6 +348,8 @@ func TestValidateExplainFormat(t *testing.T) {
 		{name: "postgres json", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_JSON},
 		{name: "postgres xml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_XML},
 		{name: "postgres text", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_TEXT},
+		{name: "postgres yaml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_YAML},
+		{name: "mssql yaml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_YAML, wantErr: true},
 		{name: "mssql xml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_XML},
 		{name: "mssql json", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_JSON, wantErr: true},
 		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
@@ -375,6 +377,27 @@ func TestValidateExplainFormat(t *testing.T) {
 			require.Error(t, err)
 			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 		})
+	}
+}
+
+func TestExplainResultFormat(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		engine storepb.Engine
+		format v1pb.QueryOption_ExplainFormat
+		want   v1pb.QueryOption_ExplainFormat
+	}{
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_JSON, v1pb.QueryOption_JSON},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_XML, v1pb.QueryOption_XML},
+		{storepb.Engine_POSTGRES, v1pb.QueryOption_YAML, v1pb.QueryOption_YAML},
+		{storepb.Engine_MSSQL, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
+		{storepb.Engine_MSSQL, v1pb.QueryOption_XML, v1pb.QueryOption_XML},
+		{storepb.Engine_SPANNER, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_JSON},
+		{storepb.Engine_MYSQL, v1pb.QueryOption_TEXT, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED},
+		{storepb.Engine_ORACLE, v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED, v1pb.QueryOption_TEXT},
+	} {
+		require.Equalf(t, tc.want, explainResultFormat(tc.engine, tc.format), "%s %s", tc.engine, tc.format)
 	}
 }
 

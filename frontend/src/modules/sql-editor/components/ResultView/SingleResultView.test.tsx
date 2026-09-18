@@ -7,6 +7,7 @@ import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   QueryOption_ExplainFormat,
+  QueryResult_QueryPlanSchema,
   QueryResultSchema,
   QueryRowSchema,
   RowValueSchema,
@@ -259,14 +260,21 @@ vi.mock("./ResultStatusBar", () => ({
   formatQueryTime: () => "-",
   ResultStatusBar: ({
     showVisualizeButton,
+    visualizeDisabledReason,
     onVisualizeExplain,
   }: {
     showVisualizeButton?: boolean;
+    visualizeDisabledReason?: string;
     onVisualizeExplain?: () => void;
   }) => (
     <div data-testid="result-status">
       {showVisualizeButton ? (
-        <button type="button" onClick={onVisualizeExplain}>
+        <button
+          type="button"
+          disabled={!!visualizeDisabledReason}
+          title={visualizeDisabledReason}
+          onClick={onVisualizeExplain}
+        >
           visualize-explain
         </button>
       ) : null}
@@ -619,7 +627,7 @@ describe("SingleResultView explain visualizer", () => {
         context.resultSet = {
           results: [
             create(QueryResultSchema, {
-              statement: "SELECT 1",
+              statement: "EXPLAIN (FORMAT JSON) SELECT 1",
               rows: [
                 create(QueryRowSchema, {
                   values: [
@@ -638,12 +646,20 @@ describe("SingleResultView explain visualizer", () => {
     render(
       <SingleResultView
         disallowCopyingData={false}
-        params={{ ...params, engine: Engine.POSTGRES, explain: true }}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          explain: false,
+          statement: "EXPLAIN SELECT 1",
+        }}
         database={databaseForEngine(Engine.POSTGRES)}
         result={create(QueryResultSchema, {
           columnNames: ["QUERY PLAN"],
           columnTypeNames: ["TEXT"],
-          statement: "SELECT 1",
+          statement: "EXPLAIN SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
           rows: [
             create(QueryRowSchema, {
               values: [
@@ -665,8 +681,12 @@ describe("SingleResultView explain visualizer", () => {
     expect(
       runQuery.mock.calls[0][1].params.queryOption?.explainFormat
     ).toBe(QueryOption_ExplainFormat.JSON);
+    expect(runQuery.mock.calls[0][1].params.explain).toBe(true);
+    expect(runQuery.mock.calls[0][1].params.statement).toBe(
+      "EXPLAIN SELECT 1"
+    );
     expect(createExplainToken).toHaveBeenCalledWith({
-      statement: "SELECT 1",
+      statement: "EXPLAIN (FORMAT JSON) SELECT 1",
       explain: planJSON,
       engine: Engine.POSTGRES,
     });
@@ -707,6 +727,9 @@ describe("SingleResultView explain visualizer", () => {
           columnNames: ["QUERY PLAN"],
           columnTypeNames: ["TEXT"],
           statement: "second",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
           rows: [
             create(QueryRowSchema, {
               values: [
@@ -765,6 +788,9 @@ describe("SingleResultView explain visualizer", () => {
           columnNames: ["QUERY PLAN"],
           columnTypeNames: ["TEXT"],
           statement: "SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
           rows: [
             create(QueryRowSchema, {
               values: [
@@ -826,6 +852,9 @@ describe("SingleResultView explain visualizer", () => {
           result={create(QueryResultSchema, {
             columnNames: ["QUERY PLAN"],
             statement: "SELECT 1",
+            queryPlan: create(QueryResult_QueryPlanSchema, {
+              format: QueryOption_ExplainFormat.TEXT,
+            }),
             rows: [
               create(QueryRowSchema, {
                 values: [
@@ -869,6 +898,9 @@ describe("SingleResultView explain visualizer", () => {
           columnNames: ["QUERY PLAN"],
           columnTypeNames: ["JSON"],
           statement: "SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.JSON,
+          }),
           rows: [
             create(QueryRowSchema, {
               values: [
@@ -895,6 +927,108 @@ describe("SingleResultView explain visualizer", () => {
     openSpy.mockRestore();
   });
 
+  test("uses a typed structured plan without running another query", async () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue({} as Window);
+    const plan = '[{"Plan":{"Node Type":"Result"}}]';
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          explain: false,
+          statement: "EXPLAIN (FORMAT JSON) SELECT 1",
+        }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={create(QueryResultSchema, {
+          columnNames: ["QUERY PLAN"],
+          statement: "EXPLAIN (FORMAT JSON) SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.JSON,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: plan },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    fireEvent.click(screen.getByText("visualize-explain"));
+
+    await waitFor(() => expect(openSpy).toHaveBeenCalled());
+    expect(runQuery).not.toHaveBeenCalled();
+    expect(createExplainToken).toHaveBeenCalledWith({
+      statement: "EXPLAIN (FORMAT JSON) SELECT 1",
+      explain: plan,
+      engine: Engine.POSTGRES,
+    });
+    openSpy.mockRestore();
+  });
+
+  test("disables Visualize when reformatting would execute the query again", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{
+          ...params,
+          engine: Engine.POSTGRES,
+          explain: false,
+          statement: "EXPLAIN ANALYZE SELECT 1",
+        }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={create(QueryResultSchema, {
+          columnNames: ["QUERY PLAN"],
+          statement: "EXPLAIN ANALYZE SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+            executed: true,
+          }),
+          rows: [],
+        })}
+        showExport={false}
+      />
+    );
+
+    const button = screen.getByText("visualize-explain");
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute(
+      "title",
+      "sql-editor.visualize-explain-executed"
+    );
+  });
+
+  test("does not replay after a result that was not a plan", () => {
+    const earlier = create(QueryResultSchema, { statement: "SET x = 1" });
+    const current = create(QueryResultSchema, {
+      statement: "EXPLAIN SELECT 1",
+      queryPlan: create(QueryResult_QueryPlanSchema, {
+        format: QueryOption_ExplainFormat.TEXT,
+      }),
+    });
+
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.POSTGRES }}
+        database={databaseForEngine(Engine.POSTGRES)}
+        result={current}
+        results={[earlier, current]}
+        resultIndex={1}
+        showExport={false}
+      />
+    );
+
+    expect(screen.queryByText("visualize-explain")).toBeNull();
+  });
+
   test("offers no visualizer for an engine it cannot draw", () => {
     render(
       <SingleResultView
@@ -904,6 +1038,9 @@ describe("SingleResultView explain visualizer", () => {
         result={create(QueryResultSchema, {
           columnNames: ["EXPLAIN"],
           statement: "SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
           rows: [
             create(QueryRowSchema, {
               values: [

@@ -18,6 +18,7 @@ func TestExplainFormat(t *testing.T) {
 		{v1pb.QueryOption_TEXT, base.ExplainFormatText},
 		{v1pb.QueryOption_JSON, base.ExplainFormatJSON},
 		{v1pb.QueryOption_XML, base.ExplainFormatXML},
+		{v1pb.QueryOption_YAML, base.ExplainFormatYAML},
 	}
 	for _, tc := range tests {
 		require.Equalf(t, tc.want, ExplainFormat(tc.format), "%v", tc.format)
