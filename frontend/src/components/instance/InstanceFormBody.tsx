@@ -1665,7 +1665,15 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       </p>
                     )}
                     {basicInfo.engine === Engine.SNOWFLAKE && (
-                      <LearnMoreLink href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier" />
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                        <span className="text-control-light">
+                          {t("instance.account-locator-description")}
+                        </span>
+                        <LearnMoreLink
+                          href="https://docs.snowflake.com/en/user-guide/admin-account-identifier#using-an-account-locator-as-an-identifier"
+                          className="text-sm text-accent"
+                        />
+                      </div>
                     )}
                   </FormField>
                 )}

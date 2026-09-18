@@ -964,6 +964,7 @@
   },
   "instance": {
     "account-locator": "アカウントロケーター",
+    "account-locator-description": "接続先の Snowflake アカウントを識別します。",
     "add-parameter": "パラメータを追加",
     "advanced-search": {
       "scope": {

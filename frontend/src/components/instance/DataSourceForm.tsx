@@ -1887,15 +1887,6 @@ export function DataSourceForm({
                       validationField="authenticationPrivateKey"
                       title={<>{t("data-source.ssh.private-key")}</>}
                     >
-                      <div className="flex gap-x-2 text-sm">
-                        <span className="textinfolabel">
-                          {t("data-source.snowflake-keypair-tip")}
-                        </span>
-                        <LearnMoreLink
-                          href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
-                          className="text-sm text-accent"
-                        />
-                      </div>
                       <SecretInput
                         resetKey={dataSource.id}
                         aria-label={t("data-source.ssh.private-key")}
@@ -1917,6 +1908,15 @@ export function DataSourceForm({
                           )
                         }
                       />
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                        <span className="text-control-light">
+                          {t("data-source.snowflake-keypair-tip")}
+                        </span>
+                        <LearnMoreLink
+                          href="https://docs.snowflake.com/en/user-guide/key-pair-auth"
+                          className="text-sm text-accent"
+                        />
+                      </div>
                     </FormField>
                     <FormField
                       title={<>{t("data-source.private-key-passphrase")}</>}

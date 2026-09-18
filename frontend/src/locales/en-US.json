@@ -964,6 +964,7 @@
   },
   "instance": {
     "account-locator": "Account Locator",
+    "account-locator-description": "Identifies the Snowflake account to connect to.",
     "add-parameter": "Add parameter",
     "advanced-search": {
       "scope": {
