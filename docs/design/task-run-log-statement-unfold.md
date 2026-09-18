@@ -384,6 +384,14 @@ as the API returns it, which is append-only and chronological, so a tie-group's 
 never reorder; and none of the four terms mentions a section, a replica grouping or a render
 position, which is what makes it survive the regrouping above.
 
+Where that ordinal is computed decides whether it works. It has to be assigned **once, over the
+run's whole entry list, before any filtering** — and then travel with the entry. Computing it
+inside `buildSectionsFromEntries` would reset it per call, and `buildReleaseFileGroups` calls that
+builder once per file with only that file's entries (`model.ts:569-606`), so two tied entries in
+different release files would both be ordinal 0 and collide on a key that is supposed to be unique
+across the viewer. Folding a row in one file would fold a row in another. The builders receive
+entries that already know their identity; they never mint one.
+
 Those overrides cannot live in `SectionContent` either, because it is mounted conditionally: collapsing an
 enclosing section unmounts it and reopening builds a fresh one (`TaskRunLogViewer.tsx:195-201`), and
 a live run also swaps the sole-section rendering for the multi-section tree the moment a second
@@ -500,12 +508,14 @@ behavior of this function:
   D13's sparse window where a four-digit index sits under three-digit neighbours.
 - Row identity (D14): two `COMMAND_EXECUTE` entries from the same replica sharing a timestamp and
   carrying `statement` rather than `range` — the SDL shape — get distinct keys, so folding one
-  leaves the other open; and a row's key is unchanged by a second replica appearing or a retry
-  marker splitting its section.
+  leaves the other open; the same holds when the two sit in **different release files**, which is
+  the case an ordinal computed inside the builder would break; and a row's key is unchanged by a
+  second replica appearing or a retry marker splitting its section.
 - Live updates (D14), all on an unchanged `datasetKey`, and including the regrouping case: a run
-  that starts with one replica and gains a second keeps a folded row folded, even though its render
-  key changes from `section-…` to `<replicaId>-…`; so does a section split in two by a retry marker
-  arriving between polls.
+  that starts with one replica and gains a second keeps a folded row folded **and keeps that row's
+  `key` byte-for-byte identical**, so nothing remounts; the same holds when a retry marker splits a
+  section in two between polls. Asserting the key's stability is the point of the test — a version
+  of it that tolerated a changing key would be asserting the bug.
 - Live updates (D14), all on an unchanged `datasetKey`: a section rerendered with a newly marked
   failure opens it without remounting; a row the reader folded stays folded when the next poll
   arrives; a row whose mark moves away folds again if the reader never touched it; a folded row is
