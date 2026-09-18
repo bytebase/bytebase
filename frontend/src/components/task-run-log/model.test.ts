@@ -238,6 +238,32 @@ describe("task-run-log model", () => {
     expect(sections[1]?.status).toBe("error");
   });
 
+  test("gives a line with no log time no instant to show", () => {
+    // The line still reads as a row -- its time column says so -- but there is
+    // no instant behind it, and a zero would have been an instant.
+    const sections = buildSectionsFromEntries(
+      [
+        create(TaskRunLogEntrySchema, {
+          type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+          logTime: ts(10),
+          commandExecute: {},
+        }),
+        create(TaskRunLogEntrySchema, {
+          type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+          commandExecute: {},
+        }),
+      ],
+      { getSectionLabel: (type) => String(type) }
+    );
+
+    const timestamps = sections
+      .flatMap((section) => section.items)
+      .map((item) => item.timeMs);
+    expect(timestamps).toHaveLength(2);
+    expect(timestamps.filter((ms) => ms === undefined)).toHaveLength(1);
+    expect(timestamps.filter((ms) => typeof ms === "number")).toHaveLength(1);
+  });
+
   test("renders gh-ost migration as a timed section", () => {
     const detailText = {
       completed: "Completed",

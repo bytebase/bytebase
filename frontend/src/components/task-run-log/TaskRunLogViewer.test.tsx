@@ -323,12 +323,62 @@ describe("TaskRunLogViewer", () => {
       Array.from(container.querySelectorAll("span")).find(
         (span) => span.textContent === text
       );
-    expect(cell("12:00:00.000")?.firstElementChild).not.toBeNull();
+    const timed = cell("12:00:00.000");
+    expect(timed).toBeDefined();
     expect(cell("--:--:--.---")?.firstElementChild).toBeNull();
     // Finite, and past the last instant there is: no reading, so no tooltip.
     expect(cell("12:00:02.000")?.firstElementChild).toBeNull();
 
     unmount();
+  });
+
+  test("the offered date is the line's own instant", () => {
+    // Which instant, not merely that there is one: a tooltip built from the
+    // wrong time reads as plausibly as the right one. The zone is pinned to
+    // Asia/Shanghai in vitest.config.ts, so noon UTC reads as 8pm.
+    vi.useFakeTimers();
+    const section: Section = {
+      id: "section-0",
+      type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
+      label: "Command Execute",
+      status: "success",
+      statusIcon: CheckCircle2,
+      statusClass: "text-green-600",
+      duration: "2s",
+      entryCount: 1,
+      items: [
+        {
+          key: "timed",
+          time: "20:00:00.000",
+          timeMs: Date.UTC(2026, 2, 2, 12),
+          relativeTime: "",
+          levelIndicator: "\u2713",
+          levelClass: "text-green-600",
+          detail: "ROW",
+          detailClass: "text-gray-600",
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      createElement(SectionContent, { section, datasetKey: "runs/1" })
+    );
+
+    act(() => {
+      Array.from(container.querySelectorAll("span"))
+        .find((span) => span.textContent === "20:00:00.000")
+        ?.firstElementChild?.dispatchEvent(
+          new FocusEvent("focusin", { bubbles: true })
+        );
+      vi.advanceTimersByTime(200);
+    });
+
+    const overlay = document.getElementById("bb-react-layer-overlay");
+    expect(overlay?.textContent).toContain("Mar 2, 2026");
+    expect(overlay?.textContent).toContain("8:00:00");
+
+    unmount();
+    vi.useRealTimers();
   });
 
   test("renders a load more action for large sections", () => {
