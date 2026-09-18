@@ -171,13 +171,38 @@ larger; it does not make it wrong. The converter fix below closes it on all four
 which is why that is where it belongs. Everything else starts folded, and every row toggles either
 way.
 
-**D5 · A row is foldable when it ran a statement.** Nothing more. An earlier draft measured
-`scrollWidth > clientWidth` from a shared `ResizeObserver` so the chevron could be hidden on rows
-where unfolding changed nothing; that bought a cosmetic gain with a layout-measurement subsystem
-across up to 50 rendered rows. Once unfolding means "show me the SQL" rather than "show me the rest
-of this line", unfolding a short statement is redundant rather than wrong, and D11 reserves the
-slot on every row regardless — so the uniform chevron costs ink, not layout, and the measurement
-is deleted.
+**D5 · A row is foldable when unfolding would show something new.** There are two independent
+reasons it would, and a row needs only one of them:
+
+- the verbatim statement differs from the line it was collapsed into, because it had newlines or
+  runs of whitespace — a string comparison, free;
+- the line is clamped by the width it was given — `scrollWidth > clientWidth`, which has to be
+  measured.
+
+Neither covers the other. A three-line statement can collapse to a line that fits, and a one-line
+statement can be far too wide; mockup E is the proof, where `SET statement_timeout TO '3600s';`
+fits whole at 900px and is cut at the deploy sheet's 560px. A rule without the measurement would
+leave that row truncated on screen with no way to open it.
+
+An earlier draft dropped both tests and gave a chevron to every row that ran a statement, arguing
+that unfolding a short statement is redundant rather than wrong. It is wrong. A control that
+reveals nothing teaches the reader that the control is decoration, and then they stop reaching for
+it on the rows where it matters — mockup D's row 6 is exactly that, a `COMMENT ON TABLE` that fits
+its line and would unfold to itself. The measurement is one `ResizeObserver` on the section's
+scroll box, not one per row, reading `MAX_RENDERED_ITEMS + 1` rows at most and writing nothing.
+
+Two consequences worth stating rather than discovering:
+
+- **A narrow container turns most rows foldable.** At the deploy sheet's width a line holds roughly
+  55 characters, so most statements clamp and most rows earn a chevron. That is the honest result,
+  not a defect: at that width, unfolding each of them really does reveal more. Which rows are *cut*
+  is already signalled by the ellipsis the clamp draws — the chevron is the control, not the
+  indicator, and the two carry different news. A chevron with no ellipsis means there is formatting
+  to see; an ellipsis means there is text to see.
+- **Only a row that ran a statement ever gets one.** `BEGIN`, `COMMIT`, `Completed`, retry counts,
+  and a failed row whose statement could not be recovered all carry no `statement` (D1), so they
+  get neither control — while keeping the reserved slot, so the statement column stays straight
+  (D15).
 
 **D6 · Both controls are shared `Button`s.** The fold control is an icon-only `Button` carrying
 `aria-expanded` and a name of its own ("Show full statement" / "Hide full statement"); `CopyButton`
@@ -343,7 +368,7 @@ Frontend only. The viewer is embedded by `DatabaseChangelogDetailPage`, `Revisio
 | `task-run-log/types.ts` | `statement?: string` and `error?: string` on `DisplayItem` |
 | `task-run-log/model.ts` | Delete the `substring`; read the statement for failed commands too; return all three fields; pick the auto-open row in `buildSectionsFromEntries`, over the whole entry sequence rather than per section |
 | `task-run-log/useTaskRunLogSections.ts` | The hook owns every builder call — flat, per-replica, release-file and orphan — so it forwards `taskRunStatus` into all of them; nothing else invokes the builders, and a guard that stops here is a guard that never runs |
-| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28, and the reserved timestamp and index columns (D15) |
+| `task-run-log/SectionContent.tsx` | Fold control, copy button, CSS clamp, default-open failed rows, the marked row rendered and scrolled to past the 50-item window, section cap, `ITEM_HEIGHT` 20 → 28, the reserved timestamp and index columns (D15), and one `ResizeObserver` on the scroll box deciding which rows are foldable (D5) |
 | `task-run-log/TaskRunLogViewer.tsx` | The reader's fold overrides, held above the conditional mount and cleared with `taskRunName` (D14) |
 | `locales/en-US.json` | Two accessible names |
 
@@ -365,7 +390,9 @@ behavior of this function:
   that row without pressing *Load more*, still reports the hidden count, **numbers it 60, not 51**,
   and leaves the section scrolled to it rather than at the top (D13); copy receives the verbatim statement, never the line and never the error; a failed row
   carries no copy button on its error line and one inside its block; a row with no recoverable
-  statement carries none at all.
+  statement carries none at all; a single-line statement that fits its width has **no** fold
+  control, the same row in a container narrow enough to clamp it has one, and a multi-line
+  statement has one at any width (D5).
 - Live updates (D14), all on an unchanged `datasetKey`: a section rerendered with a newly marked
   failure opens it without remounting; a row the reader folded stays folded when the next poll
   arrives; a row whose mark moves away folds again if the reader never touched it; a folded row is
