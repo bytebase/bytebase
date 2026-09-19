@@ -673,7 +673,7 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
 	// This is the reason we loop the slice in reversed order.
 	//
-	// The statement's own FROM is searched first, as in getFieldColumnSource.
+	// The statement's own FROM is searched first, as in candidateTableSources.
 
 	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
@@ -764,6 +764,11 @@ func (q *querySpanExtractor) candidateTableSources(databaseName, tableName strin
 
 	for _, tableSource := range q.tableSourcesFrom {
 		appendIfMatch(tableSource)
+	}
+	// A table name bound in the statement's own FROM shadows the same name in
+	// an enclosing query.
+	if tableName != "" && len(candidates) > 0 {
+		return candidates
 	}
 	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
 		appendIfMatch(q.outerTableSources[i])
