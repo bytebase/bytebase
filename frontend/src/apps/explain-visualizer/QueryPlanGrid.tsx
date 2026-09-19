@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useQueryPlanTranslation } from "./plan-i18n";
 import {
   PLAN_INDENT_STEP,
   planGuideLevels,
@@ -202,6 +203,7 @@ const PlanGridRow = memo(function PlanGridRow({
 });
 
 export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
+  const translate = useQueryPlanTranslation();
   const rows = useMemo(() => planRows(tree.root), [tree]);
 
   // Roving tab stop: Tab reaches the grid once and the arrow keys move within
@@ -254,23 +256,22 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
       className="min-h-0 w-full flex-1 overflow-auto"
     >
       <Table className="table-fixed">
-        <caption className="sr-only">
-          Plan nodes in the order the planner nests them, parents before
-          children.
-        </caption>
+        <caption className="sr-only">{translate("grid.caption")}</caption>
         <TableHeader>
           <TableRow>
             <TableHead className={cn(HEAD_CLASS, "w-12 px-3 text-right")}>
               #
             </TableHead>
-            <TableHead className={HEAD_CLASS}>Node</TableHead>
+            <TableHead className={HEAD_CLASS}>
+              {translate("grid.node")}
+            </TableHead>
             {tree.estimates.cost ? (
               <>
                 <TableHead
                   className={cn(HEAD_CLASS, "w-32 pl-2 text-right sm:w-48")}
-                  title="Cost this node adds on top of its children; some engines also count an input's repeats here, as under a nested loop. The bar is that cost as a share of the plan."
+                  title={translate("grid.added-cost-hint")}
                 >
-                  Added cost
+                  {translate("grid.added-cost")}
                 </TableHead>
                 <TableHead
                   className={cn(
@@ -279,7 +280,7 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
                     "text-right sm:w-28"
                   )}
                 >
-                  Total cost
+                  {translate("grid.total-cost")}
                 </TableHead>
               </>
             ) : null}
@@ -290,9 +291,9 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
                   SECONDARY_COLUMN_CLASS,
                   "text-right sm:w-24"
                 )}
-                title="Estimated rows"
+                title={translate("grid.estimated-rows")}
               >
-                Rows
+                {translate("grid.rows")}
               </TableHead>
             ) : null}
             {tree.estimates.width ? (
@@ -302,9 +303,9 @@ export function QueryPlanGrid({ tree, selectedId, onSelect }: Props) {
                   SECONDARY_COLUMN_CLASS,
                   "text-right sm:w-24"
                 )}
-                title="Estimated row width in bytes"
+                title={translate("grid.width-hint")}
               >
-                Width
+                {translate("grid.width")}
               </TableHead>
             ) : null}
           </TableRow>

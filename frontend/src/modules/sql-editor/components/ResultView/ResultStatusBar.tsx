@@ -1,10 +1,8 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
-import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
-import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { QueryResult } from "@/types/proto-es/v1/sql_service_pb";
@@ -36,18 +34,12 @@ type ResultStatusBarProps = Readonly<{
   database: Database;
   statement: string;
   queryTime: string;
-  showVisualizeButton?: boolean;
-  visualizeDisabledReason?: string;
-  onVisualizeExplain?: () => void;
 }>;
 
 export function ResultStatusBar({
   database,
   statement,
   queryTime,
-  showVisualizeButton = false,
-  visualizeDisabledReason,
-  onVisualizeExplain,
 }: ResultStatusBarProps) {
   const { t } = useTranslation();
   const hasStatement = statement.trim() !== "";
@@ -138,19 +130,6 @@ export function ResultStatusBar({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-x-2">
-        {showVisualizeButton && (
-          <Tooltip content={visualizeDisabledReason}>
-            <Button
-              size="sm"
-              appearance="link"
-              className="h-auto px-0 text-xs"
-              disabled={!!visualizeDisabledReason}
-              onClick={onVisualizeExplain}
-            >
-              {t("sql-editor.visualize-explain")}
-            </Button>
-          </Tooltip>
-        )}
         <span>
           {t("sql-editor.query-time")}: {queryTime}
         </span>

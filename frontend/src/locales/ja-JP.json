@@ -3316,6 +3316,108 @@
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
     "query-history-not-found": "クエリ履歴が見つからないか、アクセスできなくなりました",
+    "query-plan-load-failed": "クエリプランの読み込みに失敗しました",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "コピーしました",
+        "failed": "コピーに失敗しました",
+        "plan": "プランをコピー",
+        "query": "クエリをコピー"
+      },
+      "details": {
+        "select-node": "詳細を表示するノードを選択してください。"
+      },
+      "diagram": {
+        "collapse": "{{node}} 配下の {{count}} ノードを折りたたむ",
+        "cost": "コスト {{cost}}",
+        "estimated-rows": "推定 {{count}} 行",
+        "expand": "{{node}} 配下の {{count}} ノードを展開",
+        "fit": "全体を表示",
+        "nodes-hidden": "{{count}} ノードを非表示",
+        "plan-cost-share": "プランコストの {{share}}",
+        "rows": "行数 {{count}}",
+        "zoom-in": "拡大",
+        "zoom-out": "縮小"
+      },
+      "error": {
+        "mssql-empty": "SQL Server はこのステートメントのクエリプランを返しませんでした。",
+        "mssql-invalid": "クエリプランが有効な XML ではありません。SHOWPLAN_XML の出力が必要です。",
+        "mssql-no-plan": "クエリプラン XML は、1つ以上のステートメントを含む SQL Server showplan ではありません。",
+        "postgres-empty": "PostgreSQL はこのステートメントのクエリプランを返しませんでした。",
+        "postgres-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN (FORMAT JSON) の出力が必要です。",
+        "postgres-no-plan": "クエリプラン JSON に \"Plan\" オブジェクトがありません。",
+        "spanner-empty": "Spanner はこのステートメントのクエリプランを返しませんでした。",
+        "spanner-emulator": "Spanner はこのステートメントのクエリプランを返しませんでした。Spanner エミュレーターはいずれのステートメントにもプランを返さないため、Spanner インスタンスで説明を実行してください。",
+        "spanner-invalid": "クエリプランが有効な JSON ではありません。Spanner クエリプランが必要です。",
+        "spanner-no-plan": "クエリプラン JSON に、ルートがオペレーターである \"planNodes\" リストがありません。",
+        "too-deep": "クエリプランの入れ子が深すぎるため、このビジュアライザーでは描画できません。",
+        "unreadable": "このクエリプランを読み取れませんでした"
+      },
+      "grid": {
+        "added-cost": "追加コスト",
+        "added-cost-hint": "このノードが子ノードに加えて追加するコストです。一部のエンジンでは、ネストループ配下などで入力の反復実行もここに含めます。バーはプラン全体に占めるこのコストの割合です。",
+        "caption": "プランナーが入れ子にする順序で並べたプランノードです。親が子より先に表示されます。",
+        "estimated-rows": "推定行数",
+        "node": "ノード",
+        "rows": "行数",
+        "total-cost": "総コスト",
+        "width": "幅",
+        "width-hint": "推定行幅（バイト）"
+      },
+      "highlight": {
+        "cost": "コスト",
+        "cost-hint": "ノードが子ノードに加えて追加するコストで色付け",
+        "label": "ハイライト",
+        "off": "オフ",
+        "off-hint": "すべてのノードカードを色付けしない",
+        "rows": "行数",
+        "rows-hint": "推定行数で色付け"
+      },
+      "legend": {
+        "cost": "各カードのバーは、そのノードがプランの推定コストに占める割合を示します",
+        "rows": "子ノードが返すと推定される行数に応じてエッジが太くなります"
+      },
+      "metric": {
+        "added-cost": "追加コスト",
+        "bytes": "{{count}} バイト",
+        "estimated-rows": "推定行数",
+        "row-width": "行幅",
+        "startup-cost": "開始コスト",
+        "total-cost": "総コスト"
+      },
+      "query": {
+        "missing": "このプランにはステートメントが保存されていません。"
+      },
+      "summary": {
+        "added-cost": "追加コスト",
+        "cost-by-operation": "操作別コスト",
+        "cost-by-operation-description": "プラン内の各ノード種別と、その総コストです。",
+        "cost-ranges": "コスト範囲",
+        "cost-ranges-description": "各ノードは、最初の行を返す前の開始コストから、その配下のすべてを含む総コストまでを示します。濃い範囲ほどプランコストの割合が高くなります。コストは実行スケジュールではありません。結合の2つの入力はここでは重なりますが、実際には順番に実行されます。",
+        "costliest": "高コストなオペレーター",
+        "costliest-description": "ノードが子ノードに加えて追加するコスト順です。ネストループ配下などで入力が繰り返し実行される場合、一部のエンジンは反復コストを入力自体ではなく、その入力を再実行するノードに計上します。",
+        "count": "件数",
+        "estimate-note": "ステートメントはプランニングされましたが実行されていないため、ここにある数値はすべて測定値ではなくオプティマイザーの推定値です。コスト単位は任意で、このプラン内でのみ比較できます。",
+        "estimated-rows-returned": "推定返却行数",
+        "no-added-cost": "このプランには固有の推定コストを追加するノードがありません。",
+        "nodes": "ノード",
+        "operation": "操作",
+        "share": "割合",
+        "timeline-node": "{{name}}、コスト {{startup}} から {{total}}、プランコストの {{share}}",
+        "total-estimated-cost": "推定総コスト"
+      },
+      "tab": {
+        "diagram": "ダイアグラム",
+        "grid": "グリッド",
+        "query": "クエリ",
+        "summary": "概要",
+        "text": "テキスト"
+      },
+      "totals": {
+        "estimated-cost": "推定コスト {{cost}}",
+        "nodes": "{{count}} ノード"
+      }
+    },
     "query-time": "クエリ時間",
     "re-request": "再申請",
     "recent": "最近",
@@ -3402,10 +3504,6 @@
     "view-detail": "詳細を見る",
     "view-issue": "Issue を表示",
     "view-schema-text": "テキストの表示 スキーマ",
-    "visualize-explain": "視覚化の説明",
-    "visualize-explain-blocked": "クエリプランのタブがブロックされました。このサイトのポップアップを許可して再試行してください。",
-    "visualize-explain-executed": "このプランを視覚化すると、クエリが再度実行されます。",
-    "visualize-explain-failed": "クエリプランの読み込みに失敗しました",
     "web-socket": {
       "connection-status": {
         "connected": "接続済み",

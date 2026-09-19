@@ -12,6 +12,11 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { PlanCopyButton } from "./PlanCopyButton";
 import {
+  type QueryPlanTranslate,
+  type QueryPlanTranslationKey,
+  useQueryPlanTranslation,
+} from "./plan-i18n";
+import {
   findPlanNode,
   formatPlanCost,
   formatPlanCount,
@@ -31,17 +36,21 @@ import { QueryPlanSummary } from "./QueryPlanSummary";
 
 interface Props {
   readonly tree: PlanTree;
-  /** The engine's plan output, shown on the raw tab. */
+  /** The machine-readable plan used to build the viewer. */
   readonly rawPlan: string;
+  /** The plan output shown on the text tab, when it differs from rawPlan. */
+  readonly textPlan?: string;
   readonly query?: string;
+  readonly disallowCopyingData?: boolean;
+  readonly syncSelectionWithHash?: boolean;
 }
 
-type TabValue = "diagram" | "grid" | "summary" | "raw" | "query";
+type TabValue = "diagram" | "grid" | "summary" | "text" | "query";
 
 interface HighlightOption {
   readonly value: PlanHighlightMode;
-  readonly label: string;
-  readonly hint: string;
+  readonly label: QueryPlanTranslationKey;
+  readonly hint: QueryPlanTranslationKey;
   /** Whether a plan carries the estimate the option shades by. */
   readonly available: (estimates: PlanEstimates) => boolean;
 }
@@ -49,22 +58,22 @@ interface HighlightOption {
 const HIGHLIGHT_OPTIONS: readonly HighlightOption[] = [
   {
     value: "off",
-    label: "Off",
-    hint: "Leave every node card unshaded",
+    label: "highlight.off",
+    hint: "highlight.off-hint",
     available: () => true,
   },
   {
     value: "cost",
-    label: "Cost",
+    label: "highlight.cost",
     // Total cost is cumulative, so shading by it would always make the root
     // darkest. Self cost is what the node adds on top of its children.
-    hint: "Shade by the cost a node adds on top of its children",
+    hint: "highlight.cost-hint",
     available: (estimates) => estimates.cost,
   },
   {
     value: "rows",
-    label: "Rows",
-    hint: "Shade by the estimated row count",
+    label: "highlight.rows",
+    hint: "highlight.rows-hint",
     available: (estimates) => estimates.rows,
   },
 ];
@@ -89,16 +98,17 @@ function HighlightControl({
   value: PlanHighlightMode;
   onChange: (next: PlanHighlightMode) => void;
 }) {
+  const translate = useQueryPlanTranslation();
   return (
     <div
       role="group"
-      aria-label="Highlight nodes by"
+      aria-label={translate("highlight.label")}
       className="inline-flex items-center gap-px overflow-hidden rounded-xs border border-control-border bg-control-border"
     >
       {options.map((option) => {
         const selected = option.value === value;
         return (
-          <Tooltip key={option.value} content={option.hint}>
+          <Tooltip key={option.value} content={translate(option.hint)}>
             <Button
               size="sm"
               appearance={selected ? "solid" : "secondary"}
@@ -106,7 +116,7 @@ function HighlightControl({
               className={cn("rounded-none", !selected && "bg-background")}
               onClick={() => onChange(option.value)}
             >
-              {option.label}
+              {translate(option.label)}
             </Button>
           </Tooltip>
         );
@@ -116,12 +126,17 @@ function HighlightControl({
 }
 
 function PlanTotalsLine({ tree }: { tree: PlanTree }) {
+  const translate = useQueryPlanTranslation();
   return (
     <p className="text-xs leading-4 text-control-light">
       {[
-        `${formatPlanCount(tree.nodes.length)} nodes`,
+        translate("totals.nodes", {
+          count: formatPlanCount(tree.nodes.length),
+        }),
         tree.estimates.cost
-          ? `estimated cost ${formatPlanCost(tree.root.totalCost)}`
+          ? translate("totals.estimated-cost", {
+              cost: formatPlanCost(tree.root.totalCost),
+            })
           : undefined,
       ]
         .filter(Boolean)
@@ -131,14 +146,13 @@ function PlanTotalsLine({ tree }: { tree: PlanTree }) {
 }
 
 /** What the diagram's bars and edge widths encode, for the estimates it has. */
-function diagramLegend(estimates: PlanEstimates): string | undefined {
+function diagramLegend(
+  estimates: PlanEstimates,
+  translate: QueryPlanTranslate
+): string | undefined {
   const parts = [
-    estimates.cost
-      ? "each card's bar is that node's share of the plan's estimated cost"
-      : undefined,
-    estimates.rows
-      ? "an edge thickens with the rows its child is estimated to return"
-      : undefined,
+    estimates.cost ? translate("legend.cost") : undefined,
+    estimates.rows ? translate("legend.rows") : undefined,
   ].filter(Boolean);
   if (parts.length === 0) return undefined;
   const sentence = `${parts.join("; ")}.`;
@@ -232,7 +246,7 @@ function indentXml(source: string): string | undefined {
 }
 
 /** The plan indented for reading when it is JSON or XML, else as it came. */
-function formatPlanSource(source: string): string {
+export function formatPlanSource(source: string): string {
   if (source.trimStart().startsWith("<")) {
     return indentXml(source.trim()) ?? source;
   }
@@ -247,17 +261,21 @@ function formatPlanSource(source: string): string {
 function CopyablePanel({
   content,
   label,
+  disallowCopyingData,
   children,
 }: {
   content: string;
   label: string;
+  disallowCopyingData: boolean;
   children: ReactNode;
 }) {
   return (
     <>
-      <div className="flex shrink-0 items-center justify-end px-4 py-2">
-        <PlanCopyButton content={content} label={label} />
-      </div>
+      {disallowCopyingData ? null : (
+        <div className="flex shrink-0 items-center justify-end px-4 py-2">
+          <PlanCopyButton content={content} label={label} />
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">{children}</div>
     </>
   );
@@ -267,13 +285,24 @@ const MONOSPACE_BLOCK_CLASS =
   "font-mono text-xs leading-4 break-words whitespace-pre-wrap text-main";
 
 /**
- * The raw plan tab's content. The tab mounts it only while open, so a large
+ * The text plan tab's content. The tab mounts it only while open, so a large
  * plan is formatted when someone reads it rather than on every page load.
  */
-function RawPlan({ source }: { source: string }) {
+function TextPlan({
+  source,
+  disallowCopyingData,
+}: {
+  source: string;
+  disallowCopyingData: boolean;
+}) {
+  const translate = useQueryPlanTranslation();
   const formatted = useMemo(() => formatPlanSource(source), [source]);
   return (
-    <CopyablePanel content={formatted} label="Copy plan">
+    <CopyablePanel
+      content={formatted}
+      label={translate("copy.plan")}
+      disallowCopyingData={disallowCopyingData}
+    >
       <pre className={MONOSPACE_BLOCK_CLASS}>{formatted}</pre>
     </CopyablePanel>
   );
@@ -288,10 +317,20 @@ function fragmentSelection(tree: PlanTree): string | undefined {
   return findPlanNode(tree, id)?.id;
 }
 
-export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
-  const [tab, setTab] = useState<TabValue>("diagram");
+export function QueryPlanViewer({
+  tree,
+  rawPlan,
+  textPlan = rawPlan,
+  query,
+  disallowCopyingData = false,
+  syncSelectionWithHash = true,
+}: Props) {
+  const translate = useQueryPlanTranslation();
+  const [tab, setTab] = useState<TabValue>("text");
   const [selectedId, setSelectedId] = useState<string>(
-    () => fragmentSelection(tree) ?? tree.root.id
+    () =>
+      (syncSelectionWithHash ? fragmentSelection(tree) : undefined) ??
+      tree.root.id
   );
   const [highlight, setHighlight] = useState<PlanHighlightMode>("off");
   // Collapsed subtrees live here rather than in the diagram so switching tabs
@@ -301,7 +340,7 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
   );
   // A node the diagram should scroll to, rather than merely mark as selected.
   const [revealId, setRevealId] = useState<string | undefined>(() =>
-    fragmentSelection(tree)
+    syncSelectionWithHash ? fragmentSelection(tree) : undefined
   );
 
   const selectedNode = findPlanNode(tree, selectedId);
@@ -309,7 +348,7 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
   const highlightOptions = HIGHLIGHT_OPTIONS.filter((option) =>
     option.available(tree.estimates)
   );
-  const legend = diagramLegend(tree.estimates);
+  const legend = diagramLegend(tree.estimates, translate);
 
   const selectNode = useCallback(
     (id: string) => {
@@ -344,17 +383,19 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
   // and takes the view away from the fit the page opened on.
   const writtenSelection = useRef(selectedId);
   useEffect(() => {
+    if (!syncSelectionWithHash) return;
     if (selectedId === writtenSelection.current) return;
     writtenSelection.current = selectedId;
     const fragment = planNodeFragment(selectedId);
     if (location.hash !== fragment) {
       history.replaceState(null, "", fragment);
     }
-  }, [selectedId]);
+  }, [selectedId, syncSelectionWithHash]);
 
   // Following a second link to the page it is already on changes the fragment
   // without reloading anything.
   useEffect(() => {
+    if (!syncSelectionWithHash) return;
     const onHashChange = () => {
       const id = fragmentSelection(tree);
       if (id === undefined) return;
@@ -363,7 +404,7 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, [tree, selectNode]);
+  }, [tree, selectNode, syncSelectionWithHash]);
 
   const onRevealed = useCallback(() => setRevealId(undefined), []);
 
@@ -371,18 +412,21 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
     <Tabs
       value={tab}
       onValueChange={(value) => setTab(value as TabValue)}
-      className="flex h-full min-h-0 w-full flex-col bg-background text-main"
+      className={cn(
+        "flex h-full min-h-0 w-full flex-col bg-background text-main",
+        disallowCopyingData && "select-none"
+      )}
     >
       <TabsList className="shrink-0 flex-wrap px-4 pt-3">
-        <TabsTrigger value="diagram">Diagram</TabsTrigger>
-        <TabsTrigger value="grid">Grid</TabsTrigger>
+        <TabsTrigger value="text">{translate("tab.text")}</TabsTrigger>
+        <TabsTrigger value="diagram">{translate("tab.diagram")}</TabsTrigger>
+        <TabsTrigger value="grid">{translate("tab.grid")}</TabsTrigger>
         {/* The summary is where the plan's cost goes, which a plan without
             cost estimates cannot say. */}
         {tree.estimates.cost ? (
-          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="summary">{translate("tab.summary")}</TabsTrigger>
         ) : null}
-        <TabsTrigger value="raw">Raw plan</TabsTrigger>
-        <TabsTrigger value="query">Query</TabsTrigger>
+        <TabsTrigger value="query">{translate("tab.query")}</TabsTrigger>
       </TabsList>
 
       <TabsPanel
@@ -402,7 +446,7 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
             {highlightOptions.length > 1 ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs leading-4 text-control-light">
-                  Highlight
+                  {translate("highlight.label")}
                 </span>
                 <HighlightControl
                   options={highlightOptions}
@@ -463,10 +507,10 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
       ) : null}
 
       <TabsPanel
-        value="raw"
+        value="text"
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <RawPlan source={rawPlan} />
+        <TextPlan source={textPlan} disallowCopyingData={disallowCopyingData} />
       </TabsPanel>
 
       <TabsPanel
@@ -474,12 +518,16 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         {query ? (
-          <CopyablePanel content={query} label="Copy query">
+          <CopyablePanel
+            content={query}
+            label={translate("copy.query")}
+            disallowCopyingData={disallowCopyingData}
+          >
             <pre className={MONOSPACE_BLOCK_CLASS}>{query}</pre>
           </CopyablePanel>
         ) : (
           <p className="p-4 text-sm leading-5 text-control-light">
-            The statement was not captured with this plan.
+            {translate("query.missing")}
           </p>
         )}
       </TabsPanel>

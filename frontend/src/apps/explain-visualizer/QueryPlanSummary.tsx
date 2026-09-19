@@ -11,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useQueryPlanTranslation } from "./plan-i18n";
 import { planIndentPixels } from "./plan-layout";
 import {
   formatPlanCost,
@@ -89,28 +90,28 @@ function Section({
 }
 
 function PlanTotals({ tree }: { tree: PlanTree }) {
+  const translate = useQueryPlanTranslation();
   return (
     <div className="flex flex-col gap-3">
       <dl className="flex flex-wrap gap-4">
-        <PlanMetric label="Nodes" value={formatPlanCount(tree.nodes.length)} />
         <PlanMetric
-          label="Total estimated cost"
+          label={translate("summary.nodes")}
+          value={formatPlanCount(tree.nodes.length)}
+        />
+        <PlanMetric
+          label={translate("summary.total-estimated-cost")}
           value={formatPlanCost(tree.root.totalCost)}
         />
         {tree.root.rows === undefined ? null : (
           <PlanMetric
-            label="Estimated rows returned"
+            label={translate("summary.estimated-rows-returned")}
             value={formatPlanCount(tree.root.rows)}
           />
         )}
       </dl>
       <p className="flex items-start gap-2 text-xs leading-4 text-control-light">
         <Info aria-hidden="true" className="mt-px size-3.5 shrink-0" />
-        <span>
-          The statement was planned but not run, so every figure here is an
-          optimizer estimate rather than a measurement. Cost units are arbitrary
-          and comparable only within this plan.
-        </span>
+        <span>{translate("summary.estimate-note")}</span>
       </p>
     </div>
   );
@@ -133,6 +134,7 @@ const TimelineRow = memo(function TimelineRow({
   selected: boolean;
   onSelect: (id: string) => void;
 }) {
+  const translate = useQueryPlanTranslation();
   const { node, depth, start, end, share } = row;
   return (
     <li>
@@ -140,7 +142,12 @@ const TimelineRow = memo(function TimelineRow({
         appearance="secondary"
         data-testid="plan-timeline-row"
         aria-pressed={selected}
-        aria-label={`${[node.nodeType, node.subject].filter(Boolean).join(", ")}, cost ${formatPlanCost(node.startupCost)} to ${formatPlanCost(node.totalCost)}, ${formatPlanShare(share)} of plan cost`}
+        aria-label={translate("summary.timeline-node", {
+          name: [node.nodeType, node.subject].filter(Boolean).join(", "),
+          startup: formatPlanCost(node.startupCost),
+          total: formatPlanCost(node.totalCost),
+          share: formatPlanShare(share),
+        })}
         onClick={() => onSelect(node.id)}
         className={cn(
           ROW_BUTTON_CLASS,
@@ -243,12 +250,13 @@ function CostliestOperators({
   selectedId: string | undefined;
   onSelect: (id: string) => void;
 }) {
+  const translate = useQueryPlanTranslation();
   const nodes = useMemo(() => planCostliestNodes(tree), [tree]);
 
   if (nodes.length === 0) {
     return (
       <p className="text-sm leading-5 text-control-light">
-        No node in this plan adds an estimated cost of its own.
+        {translate("summary.no-added-cost")}
       </p>
     );
   }
@@ -306,14 +314,17 @@ function CostliestOperators({
 }
 
 function CostByOperation({ tree }: { tree: PlanTree }) {
+  const translate = useQueryPlanTranslation();
   const operations = useMemo(() => planCostByOperation(tree), [tree]);
   return (
     <Table className="table-fixed">
       <TableHeader>
         <TableRow>
-          <TableHead className="text-xs leading-4">Operation</TableHead>
+          <TableHead className="text-xs leading-4">
+            {translate("summary.operation")}
+          </TableHead>
           <TableHead className="w-16 text-right text-xs leading-4">
-            Count
+            {translate("summary.count")}
           </TableHead>
           <TableHead
             className={cn(
@@ -321,10 +332,10 @@ function CostByOperation({ tree }: { tree: PlanTree }) {
               "text-right text-xs leading-4 sm:w-28"
             )}
           >
-            Added cost
+            {translate("summary.added-cost")}
           </TableHead>
           <TableHead className="w-28 text-right text-xs leading-4 sm:w-40">
-            Share
+            {translate("summary.share")}
           </TableHead>
         </TableRow>
       </TableHeader>
@@ -368,6 +379,7 @@ function CostByOperation({ tree }: { tree: PlanTree }) {
  * node spans, which nodes own the most of it, and which kinds of operation do.
  */
 export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
+  const translate = useQueryPlanTranslation();
   return (
     <div
       data-testid="plan-summary"
@@ -379,8 +391,8 @@ export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
         {/* A span starts at a startup cost, which not every engine reports. */}
         {tree.estimates.startupCost ? (
           <Section
-            title="Cost ranges"
-            description="Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other."
+            title={translate("summary.cost-ranges")}
+            description={translate("summary.cost-ranges-description")}
           >
             <CostTimeline
               tree={tree}
@@ -391,8 +403,8 @@ export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
         ) : null}
 
         <Section
-          title="Costliest operators"
-          description="Ranked by the cost a node adds on top of its children. Where an input runs repeatedly, as under a nested loop, some engines count the repeats in the node that reruns it rather than in the input itself."
+          title={translate("summary.costliest")}
+          description={translate("summary.costliest-description")}
         >
           <CostliestOperators
             tree={tree}
@@ -402,8 +414,8 @@ export function QueryPlanSummary({ tree, selectedId, onSelect }: Props) {
         </Section>
 
         <Section
-          title="Cost by operation"
-          description="Every node type in the plan and what it costs in total."
+          title={translate("summary.cost-by-operation")}
+          description={translate("summary.cost-by-operation-description")}
         >
           <CostByOperation tree={tree} />
         </Section>

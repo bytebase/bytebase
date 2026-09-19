@@ -3316,6 +3316,108 @@
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
     "query-history-not-found": "Không tìm thấy lịch sử truy vấn hoặc không còn truy cập được",
+    "query-plan-load-failed": "Không tải được kế hoạch truy vấn",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "Đã sao chép",
+        "failed": "Sao chép thất bại",
+        "plan": "Sao chép kế hoạch",
+        "query": "Sao chép truy vấn"
+      },
+      "details": {
+        "select-node": "Chọn một nút để xem chi tiết."
+      },
+      "diagram": {
+        "collapse": "Thu gọn {{count}} nút bên dưới {{node}}",
+        "cost": "chi phí {{cost}}",
+        "estimated-rows": "{{count}} hàng ước tính",
+        "expand": "Mở rộng {{count}} nút bên dưới {{node}}",
+        "fit": "Vừa với khung nhìn",
+        "nodes-hidden": "Đã ẩn {{count}} nút",
+        "plan-cost-share": "{{share}} chi phí kế hoạch",
+        "rows": "hàng {{count}}",
+        "zoom-in": "Phóng to",
+        "zoom-out": "Thu nhỏ"
+      },
+      "error": {
+        "mssql-empty": "SQL Server không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "mssql-invalid": "Kế hoạch truy vấn không phải XML hợp lệ. Cần đầu ra SHOWPLAN_XML.",
+        "mssql-no-plan": "XML của kế hoạch truy vấn không phải showplan SQL Server có ít nhất một câu lệnh.",
+        "postgres-empty": "PostgreSQL không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "postgres-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN (FORMAT JSON).",
+        "postgres-no-plan": "JSON của kế hoạch truy vấn không chứa đối tượng \"Plan\".",
+        "spanner-empty": "Spanner không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "spanner-emulator": "Spanner không trả về kế hoạch truy vấn cho câu lệnh này. Trình giả lập Spanner không trả về kế hoạch cho bất kỳ câu lệnh nào; hãy giải thích câu lệnh trên một phiên bản Spanner để xem kế hoạch.",
+        "spanner-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần một kế hoạch truy vấn Spanner.",
+        "spanner-no-plan": "JSON của kế hoạch truy vấn không chứa danh sách \"planNodes\" có toán tử ở gốc.",
+        "too-deep": "Kế hoạch truy vấn lồng quá sâu để trình trực quan hóa này có thể vẽ.",
+        "unreadable": "Không thể đọc kế hoạch truy vấn này"
+      },
+      "grid": {
+        "added-cost": "Chi phí thêm",
+        "added-cost-hint": "Chi phí mà nút này thêm ngoài các nút con; một số máy cơ sở dữ liệu cũng tính số lần lặp của đầu vào tại đây, chẳng hạn trong vòng lặp lồng nhau. Thanh thể hiện tỷ lệ chi phí này trong kế hoạch.",
+        "caption": "Các nút kế hoạch theo thứ tự lồng nhau của bộ lập kế hoạch, nút cha đứng trước nút con.",
+        "estimated-rows": "Số hàng ước tính",
+        "node": "Nút",
+        "rows": "Hàng",
+        "total-cost": "Tổng chi phí",
+        "width": "Độ rộng",
+        "width-hint": "Độ rộng hàng ước tính theo byte"
+      },
+      "highlight": {
+        "cost": "Chi phí",
+        "cost-hint": "Tô màu theo chi phí mà nút thêm ngoài các nút con",
+        "label": "Làm nổi bật",
+        "off": "Tắt",
+        "off-hint": "Không tô màu các thẻ nút",
+        "rows": "Hàng",
+        "rows-hint": "Tô màu theo số hàng ước tính"
+      },
+      "legend": {
+        "cost": "thanh trên mỗi thẻ thể hiện tỷ lệ chi phí ước tính của nút trong kế hoạch",
+        "rows": "cạnh dày hơn theo số hàng mà nút con dự kiến trả về"
+      },
+      "metric": {
+        "added-cost": "Chi phí thêm",
+        "bytes": "{{count}} byte",
+        "estimated-rows": "Số hàng ước tính",
+        "row-width": "Độ rộng hàng",
+        "startup-cost": "Chi phí khởi động",
+        "total-cost": "Tổng chi phí"
+      },
+      "query": {
+        "missing": "Câu lệnh không được lưu cùng kế hoạch này."
+      },
+      "summary": {
+        "added-cost": "Chi phí thêm",
+        "cost-by-operation": "Chi phí theo thao tác",
+        "cost-by-operation-description": "Mỗi loại nút trong kế hoạch và tổng chi phí của nó.",
+        "cost-ranges": "Khoảng chi phí",
+        "cost-ranges-description": "Mỗi nút trải từ chi phí khởi động — chi phí trước hàng đầu tiên — đến tổng chi phí, cả hai đều bao gồm mọi thứ bên dưới. Khoảng tối hơn chiếm nhiều chi phí kế hoạch hơn. Chi phí không phải lịch thực thi: hai đầu vào của phép nối chồng lên nhau ở đây nhưng chạy lần lượt.",
+        "costliest": "Toán tử tốn kém nhất",
+        "costliest-description": "Xếp hạng theo chi phí mà một nút thêm ngoài các nút con. Khi một đầu vào chạy lặp lại, như trong vòng lặp lồng nhau, một số máy cơ sở dữ liệu tính số lần lặp vào nút chạy lại đầu vào thay vì chính đầu vào.",
+        "count": "Số lượng",
+        "estimate-note": "Câu lệnh đã được lập kế hoạch nhưng chưa chạy, vì vậy mọi số liệu ở đây là ước tính của bộ tối ưu hóa chứ không phải phép đo. Đơn vị chi phí là tùy ý và chỉ có thể so sánh trong kế hoạch này.",
+        "estimated-rows-returned": "Số hàng trả về ước tính",
+        "no-added-cost": "Không có nút nào trong kế hoạch này tự thêm chi phí ước tính.",
+        "nodes": "Nút",
+        "operation": "Thao tác",
+        "share": "Tỷ lệ",
+        "timeline-node": "{{name}}, chi phí từ {{startup}} đến {{total}}, {{share}} chi phí kế hoạch",
+        "total-estimated-cost": "Tổng chi phí ước tính"
+      },
+      "tab": {
+        "diagram": "Sơ đồ",
+        "grid": "Lưới",
+        "query": "Truy vấn",
+        "summary": "Tóm tắt",
+        "text": "Văn bản"
+      },
+      "totals": {
+        "estimated-cost": "chi phí ước tính {{cost}}",
+        "nodes": "{{count}} nút"
+      }
+    },
     "query-time": "Thời gian truy vấn",
     "re-request": "Yêu cầu lại",
     "recent": "Gần đây",
@@ -3402,10 +3504,6 @@
     "view-detail": "Xem chi tiết",
     "view-issue": "Xem Issue",
     "view-schema-text": "Xem văn bản lược đồ",
-    "visualize-explain": "Trực quan hóa Giải thích",
-    "visualize-explain-blocked": "Tab kế hoạch truy vấn đã bị chặn. Hãy cho phép cửa sổ bật lên cho trang này và thử lại.",
-    "visualize-explain-executed": "Trực quan hóa kế hoạch này sẽ thực thi lại truy vấn.",
-    "visualize-explain-failed": "Không tải được kế hoạch truy vấn",
     "web-socket": {
       "connection-status": {
         "connected": "đã kết nối",

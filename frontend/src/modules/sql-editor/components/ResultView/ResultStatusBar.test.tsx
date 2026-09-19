@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { act, cloneElement } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -120,42 +120,6 @@ describe("ResultStatusBar", () => {
     );
   });
 
-  test("disables Visualize with the reason", () => {
-    const onVisualizeExplain = vi.fn();
-    const { rerender } = render(
-      <ResultStatusBar
-        database={database}
-        statement="EXPLAIN SELECT 1"
-        queryTime="3 ms"
-        showVisualizeButton
-        onVisualizeExplain={onVisualizeExplain}
-      />
-    );
-
-    const visualize = screen.getByRole("button", {
-      name: "sql-editor.visualize-explain",
-    });
-    expect(visualize).toBeEnabled();
-    fireEvent.click(visualize);
-    expect(onVisualizeExplain).toHaveBeenCalledTimes(1);
-
-    rerender(
-      <ResultStatusBar
-        database={database}
-        statement="EXPLAIN SELECT 1"
-        queryTime="3 ms"
-        showVisualizeButton
-        visualizeDisabledReason="it would run again"
-        onVisualizeExplain={onVisualizeExplain}
-      />
-    );
-
-    expect(visualize).toBeDisabled();
-    expect(visualize).toHaveAttribute("title", "it would run again");
-    fireEvent.click(visualize);
-    expect(onVisualizeExplain).toHaveBeenCalledTimes(1);
-  });
-
   test("lets the database label shrink while the statement truncates", () => {
     render(
       <ResultStatusBar
@@ -232,7 +196,6 @@ describe("ResultStatusBar", () => {
         database={database}
         statement="EXPLAIN SELECT db.environment as env, db.instance as ins FROM db JOIN project on db.project = project.resource_id WHERE project.resource_id = 'a' AND db.deleted = false"
         queryTime="6 ms"
-        showVisualizeButton
       />
     );
 

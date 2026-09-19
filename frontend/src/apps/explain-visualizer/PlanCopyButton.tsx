@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
+import { useQueryPlanTranslation } from "./plan-i18n";
 
 /**
  * A copy control that reports the result on itself.
@@ -24,12 +25,8 @@ const CONFIRMATION_MS = 2000;
 
 type CopyState = "idle" | "copied" | "failed";
 
-const MESSAGE: Record<Exclude<CopyState, "idle">, string> = {
-  copied: "Copied",
-  failed: "Copy failed",
-};
-
 export function PlanCopyButton({ content, label, disabled }: Props) {
+  const translate = useQueryPlanTranslation();
   const [state, setState] = useState<CopyState>("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -42,7 +39,10 @@ export function PlanCopyButton({ content, label, disabled }: Props) {
     timerRef.current = setTimeout(() => setState("idle"), CONFIRMATION_MS);
   }, [content]);
 
-  const outcome = state === "idle" ? undefined : MESSAGE[state];
+  const outcome =
+    state === "idle"
+      ? undefined
+      : translate(state === "copied" ? "copy.copied" : "copy.failed");
 
   return (
     <span className="inline-flex items-center">

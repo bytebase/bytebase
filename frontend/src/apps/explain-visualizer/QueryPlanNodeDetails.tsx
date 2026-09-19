@@ -1,5 +1,6 @@
 import { Alert } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { type QueryPlanTranslate, useQueryPlanTranslation } from "./plan-i18n";
 import { formatPlanCost, formatPlanCount, type PlanNode } from "./plan-model";
 import { PlanMetric } from "./plan-shared";
 
@@ -8,16 +9,36 @@ interface Props {
 }
 
 /** The node's estimates as labelled values, leaving out any it does not have. */
-function nodeMetrics(node: PlanNode): { label: string; value: string }[] {
+function nodeMetrics(
+  node: PlanNode,
+  translate: QueryPlanTranslate
+): { label: string; value: string }[] {
   return [
-    { label: "Startup cost", value: node.startupCost, format: formatPlanCost },
-    { label: "Total cost", value: node.totalCost, format: formatPlanCost },
-    { label: "Added cost", value: node.selfCost, format: formatPlanCost },
-    { label: "Estimated rows", value: node.rows, format: formatPlanCount },
     {
-      label: "Row width",
+      label: translate("metric.startup-cost"),
+      value: node.startupCost,
+      format: formatPlanCost,
+    },
+    {
+      label: translate("metric.total-cost"),
+      value: node.totalCost,
+      format: formatPlanCost,
+    },
+    {
+      label: translate("metric.added-cost"),
+      value: node.selfCost,
+      format: formatPlanCost,
+    },
+    {
+      label: translate("metric.estimated-rows"),
+      value: node.rows,
+      format: formatPlanCount,
+    },
+    {
+      label: translate("metric.row-width"),
       value: node.width,
-      format: (width: number) => `${formatPlanCount(width)} bytes`,
+      format: (width: number) =>
+        translate("metric.bytes", { count: formatPlanCount(width) }),
     },
   ].flatMap(({ label, value, format }) =>
     value === undefined ? [] : [{ label, value: format(value) }]
@@ -25,17 +46,18 @@ function nodeMetrics(node: PlanNode): { label: string; value: string }[] {
 }
 
 export function QueryPlanNodeDetails({ node }: Props) {
+  const translate = useQueryPlanTranslation();
   if (!node) {
     return (
       <div className="flex h-full items-center justify-center p-4">
         <p className="text-sm leading-5 text-control-light">
-          Select a node to see its details.
+          {translate("details.select-node")}
         </p>
       </div>
     );
   }
 
-  const metrics = nodeMetrics(node);
+  const metrics = nodeMetrics(node, translate);
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-auto p-4 gap-4">
