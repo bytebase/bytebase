@@ -280,6 +280,59 @@ func TestGetQuerySpanNamesAreCaseInsensitive(t *testing.T) {
 	}
 }
 
+func TestGetQuerySpanResolvesNearestScopeFirst(t *testing.T) {
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "pub", Columns: []*metadatapb.ColumnMetadata{{Name: "v"}}},
+					{Name: "sec", Columns: []*metadatapb.ColumnMetadata{{Name: "v"}}},
+					{Name: "d", Columns: []*metadatapb.ColumnMetadata{{Name: "k"}}},
+				},
+			},
+		},
+	}
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
+
+	tests := []struct {
+		statement string
+		wantTable string
+	}{
+		// The subquery's own FROM shadows a same-named column of the enclosing query.
+		{"SELECT (SELECT v FROM sec LIMIT 1) AS r FROM pub", "sec"},
+		{"SELECT (SELECT v FROM sec LIMIT 1) AS r FROM (SELECT 1 AS v) x", "sec"},
+		{"SELECT (SELECT x.v FROM sec x LIMIT 1) AS r FROM pub x", "sec"},
+		{"SELECT (SELECT t.* FROM sec AS t JOIN d AS x ON TRUE LIMIT 1) AS r FROM pub AS t", "sec"},
+		{"SELECT (SELECT t.* FROM sec AS t JOIN d AS x ON TRUE LIMIT 1) AS r FROM pub AS T", "sec"},
+		// A reference the subquery cannot satisfy still binds outward.
+		{"SELECT (SELECT pub.v FROM sec LIMIT 1) AS r FROM pub", "pub"},
+		{"SELECT (SELECT v FROM d LIMIT 1) AS r FROM pub", "pub"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.statement, func(t *testing.T) {
+			span, err := GetQuerySpan(
+				context.TODO(),
+				base.GetQuerySpanContext{
+					GetDatabaseMetadataFunc: databaseMetadataGetter,
+					ListDatabaseNamesFunc:   databaseNamesLister,
+				},
+				base.Statement{Text: tc.statement},
+				"db",
+				"",
+				false,
+			)
+			require.NoError(t, err)
+			require.NoError(t, span.NotFoundError)
+			require.Len(t, span.Results, 1)
+			require.Equal(t, base.SourceColumnSet{
+				{Database: "db", Table: tc.wantTable, Column: "v"}: true,
+			}, span.Results[0].SourceColumns)
+		})
+	}
+}
+
 // TestGetQuerySpanCyclicViewReference pins that a cyclic view reference is
 // reported as an error rather than recursing until the stack overflows.
 // Ported from the MySQL guard (#20153).

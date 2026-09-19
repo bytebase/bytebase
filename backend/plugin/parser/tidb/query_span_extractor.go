@@ -657,15 +657,17 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 	//
 	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
 	// This is the reason we loop the slice in reversed order.
+	//
+	// The statement's own FROM is searched first, as in getFieldColumnSource.
 
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		tableSource := q.outerTableSources[i]
+	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
 		}
 	}
 
-	for _, tableSource := range q.tableSourcesFrom {
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		tableSource := q.outerTableSources[i]
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
 		}
@@ -707,15 +709,19 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 	//
 	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
 	// This is the reason we loop the slice in reversed order.
+	//
+	// The statement's own FROM is closer than any enclosing query, so it is
+	// searched first. Otherwise a column the subquery reads is traced to a
+	// same-named column of an outer table.
 
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		tableSource := q.outerTableSources[i]
+	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
 		}
 	}
 
-	for _, tableSource := range q.tableSourcesFrom {
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		tableSource := q.outerTableSources[i]
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
 		}
