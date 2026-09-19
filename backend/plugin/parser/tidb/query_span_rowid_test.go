@@ -163,11 +163,6 @@ ORDER BY page_num`,
 			want:        []rowIDResult{{"_tidb_rowid", none}, {"phone", []string{"other.logs.phone"}}},
 		},
 		{
-			description: "qualifier bound in the subquery shadows the same alias on an outer view",
-			statement:   "SELECT (SELECT x._tidb_rowid FROM logs x LIMIT 1) AS r FROM v_plain x",
-			want:        []rowIDResult{{"r", none}},
-		},
-		{
 			description: "view that projects the hidden column",
 			statement:   "SELECT rid, phone FROM v_rowid",
 			want:        []rowIDResult{{"rid", none}, {"phone", phone}},
@@ -221,6 +216,13 @@ func TestGetQuerySpanTiDBRowIDRealColumnWins(t *testing.T) {
 			want:        []rowIDResult{{"_tidb_rowid", phone}},
 		},
 		{
+			description: "qualified rowid falls outward to a derived column when the local table lacks it",
+			// TiDB binds x._tidb_rowid to the outer derived x because a clustered
+			// base table has no _tidb_rowid. The outer column is real and masked.
+			statement: "SELECT (SELECT x._tidb_rowid FROM clustered_logs x LIMIT 1) AS r FROM (SELECT phone AS _tidb_rowid FROM logs) x",
+			want:      []rowIDResult{{"r", phone}},
+		},
+		{
 			description: "view column and hidden column side by side",
 			statement:   "SELECT v_shadow._tidb_rowid, logs._tidb_rowid FROM logs, v_shadow",
 			want:        []rowIDResult{{"_tidb_rowid", phone}, {"_tidb_rowid", []string{}}},
@@ -251,6 +253,7 @@ func TestGetQuerySpanTiDBRowIDKeepsNotFound(t *testing.T) {
 		{"unqualified with a derived table in the FROM scope", "SELECT _tidb_rowid FROM logs JOIN (SELECT site_code FROM logs) x ON 1 = 1", "_tidb_rowid"},
 		{"qualifier bound only to an outer view", "SELECT (SELECT x._tidb_rowid FROM logs LIMIT 1) FROM v_plain x", "_tidb_rowid"},
 		{"qualifier shadowed in the subquery by a view", "SELECT (SELECT x._tidb_rowid FROM v_plain x LIMIT 1) FROM logs x", "_tidb_rowid"},
+		{"qualified rowid with the same alias on an outer view", "SELECT (SELECT x._tidb_rowid FROM logs x LIMIT 1) AS r FROM v_plain x", "_tidb_rowid"},
 		{"unqualified with a view in the outer scope", "SELECT (SELECT _tidb_rowid FROM clustered_logs LIMIT 1) FROM v_plain", "_tidb_rowid"},
 		{"no FROM clause", "SELECT _tidb_rowid", "_tidb_rowid"},
 		{"other unknown column on a base table", "SELECT nope FROM logs", "nope"},

@@ -765,11 +765,6 @@ func (q *querySpanExtractor) candidateTableSources(databaseName, tableName strin
 	for _, tableSource := range q.tableSourcesFrom {
 		appendIfMatch(tableSource)
 	}
-	// A table name bound in the statement's own FROM shadows the same name in
-	// an enclosing query.
-	if tableName != "" && len(candidates) > 0 {
-		return candidates
-	}
 	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
 		appendIfMatch(q.outerTableSources[i])
 	}
