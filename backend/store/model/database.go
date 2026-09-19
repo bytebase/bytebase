@@ -23,9 +23,8 @@ type DatabaseMetadata struct {
 	isDetailCaseSensitive bool
 
 	// Metadata fields (formerly in DatabaseMetadata)
-	searchPath     []PGSearchPathItem
-	internal       map[string]*SchemaMetadata
-	linkedDatabase map[string]*metadatapb.LinkedDatabaseMetadata
+	searchPath []PGSearchPathItem
+	internal   map[string]*SchemaMetadata
 }
 
 // SchemaMetadata is the unified metadata for a schema, combining proto metadata and catalog config.
@@ -105,7 +104,6 @@ func NewDatabaseMetadata(
 		isDetailCaseSensitive: isDetailCaseSensitive,
 		searchPath:            ParsePGConfiguredSearchPath(metadata.SearchPath),
 		internal:              make(map[string]*SchemaMetadata),
-		linkedDatabase:        make(map[string]*metadatapb.LinkedDatabaseMetadata),
 	}
 
 	// Build a map of schema catalogs for quick lookup
@@ -192,11 +190,6 @@ func NewDatabaseMetadata(
 		dbMetadata.internal[schemaID] = schemaMetadata
 	}
 
-	for _, dbLink := range metadata.LinkedDatabases {
-		dbLinkID := normalizeNameByCaseSensitivity(dbLink.Name, isObjectCaseSensitive)
-		dbMetadata.linkedDatabase[dbLinkID] = dbLink
-	}
-
 	return dbMetadata
 }
 
@@ -215,7 +208,6 @@ func (d *DatabaseMetadata) ReplaceFrom(other *DatabaseMetadata) {
 	d.isDetailCaseSensitive = other.isDetailCaseSensitive
 	d.searchPath = other.searchPath
 	d.internal = other.internal
-	d.linkedDatabase = other.linkedDatabase
 }
 
 func (d *DatabaseMetadata) GetRawDump() []byte {
@@ -269,11 +261,6 @@ func (d *DatabaseMetadata) ListSchemaNames() []string {
 		result = append(result, schema.GetProto().Name)
 	}
 	return result
-}
-
-func (d *DatabaseMetadata) GetLinkedDatabase(name string) *metadatapb.LinkedDatabaseMetadata {
-	nameID := normalizeNameByCaseSensitivity(name, d.isObjectCaseSensitive)
-	return d.linkedDatabase[nameID]
 }
 
 func (d *DatabaseMetadata) GetIsObjectCaseSensitive() bool {
