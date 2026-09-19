@@ -509,6 +509,7 @@ function SingleResultViewInner({
             )}
           >
             <QueryPlanResultView
+              key={`${database.name}\n${engine}\n${result.statement}`}
               rawPlan={resultPlan?.source ?? ""}
               initialPlan={planInRows ? resultPlan : undefined}
               engine={isVisualizerEngine(engine) ? engine : undefined}
