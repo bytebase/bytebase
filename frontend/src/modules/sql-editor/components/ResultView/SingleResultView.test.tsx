@@ -1028,4 +1028,40 @@ describe("SingleResultView explain visualizer", () => {
     );
     expect(runQuery).not.toHaveBeenCalled();
   });
+
+  test("keeps multi-column explain output in the result table", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.MYSQL, explain: true }}
+        database={databaseForEngine(Engine.MYSQL)}
+        result={create(QueryResultSchema, {
+          columnNames: ["table", "type"],
+          columnTypeNames: ["TEXT", "TEXT"],
+          statement: "EXPLAIN SELECT * FROM t",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "t" },
+                }),
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "ALL" },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(screen.queryByTestId("query-plan-result")).toBeNull();
+    expect(screen.getByTestId("result-table")).toHaveTextContent(
+      "table,typet,ALL"
+    );
+  });
 });

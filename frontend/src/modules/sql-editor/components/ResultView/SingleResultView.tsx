@@ -402,6 +402,7 @@ function SingleResultViewInner({
   );
 
   const plan = result.queryPlan;
+  const showInlinePlan = !!plan && result.columnNames.length === 1;
   const planInRows =
     isVisualizerEngine(engine) &&
     plan?.format ===
@@ -496,7 +497,7 @@ function SingleResultViewInner({
         </>
       )}
 
-      {viewMode === "RESULT" && plan && (
+      {viewMode === "RESULT" && showInlinePlan && (
         <>
           <QueryPlanResultView
             rawPlan={resultPlan?.source ?? ""}
@@ -512,7 +513,7 @@ function SingleResultViewInner({
         </>
       )}
 
-      {viewMode === "RESULT" && !plan && (
+      {viewMode === "RESULT" && !showInlinePlan && (
         <>
           {result.error && (
             <Alert variant="error" className="w-full mb-2">
@@ -761,7 +762,7 @@ function SingleResultViewInner({
         </>
       )}
 
-      {!isJSONView && !plan && (
+      {!isJSONView && !showInlinePlan && (
         <DetailPanel
           rows={rows}
           columns={columns}

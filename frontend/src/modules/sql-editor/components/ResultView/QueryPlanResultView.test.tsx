@@ -11,16 +11,16 @@ vi.mock("@/apps/explain-visualizer/QueryPlanView", () => ({
   QueryPlanView: ({
     planSource,
     textPlanSource,
-    textTabLabel,
     planQuery,
+    translate,
   }: {
     planSource: string;
     textPlanSource?: string;
-    textTabLabel?: string;
     planQuery?: string;
+    translate: (key: "tab.text") => string;
   }) => (
     <div data-testid="inline-query-plan">
-      {planQuery}:{planSource}:{textPlanSource}:{textTabLabel}
+      {planQuery}:{planSource}:{textPlanSource}:{translate("tab.text")}
     </div>
   ),
 }));
@@ -50,7 +50,7 @@ describe("QueryPlanResultView", () => {
     );
 
     expect(screen.getByTestId("inline-query-plan")).toHaveTextContent(
-      "SELECT 1:structured plan:raw plan:sql-editor.query-plan-text"
+      "SELECT 1:structured plan:raw plan:sql-editor.query-plan-viewer.tab.text"
     );
     expect(screen.queryByRole("tab")).toBeNull();
   });
@@ -71,7 +71,7 @@ describe("QueryPlanResultView", () => {
     expect(screen.getByText("common.loading")).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByTestId("inline-query-plan")).toHaveTextContent(
-        "structured plan:text plan:sql-editor.query-plan-text"
+        "structured plan:text plan:sql-editor.query-plan-viewer.tab.text"
       )
     );
     expect(loadPlan).toHaveBeenCalledTimes(1);
@@ -84,9 +84,7 @@ describe("QueryPlanResultView", () => {
       "aria-selected",
       "true"
     );
-    expect(
-      screen.queryByRole("tab", { name: "sql-editor.query-plan-text" })
-    ).toBeNull();
+    expect(screen.queryAllByRole("tab")).toHaveLength(1);
     expect(screen.getByText("formatted:text plan")).toBeInTheDocument();
   });
 

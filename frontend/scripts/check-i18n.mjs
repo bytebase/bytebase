@@ -32,6 +32,7 @@ const DYNAMIC_PREFIXES = [
   "sql-review.level.",
   "sql-review.rule.",
   "sql-review.template.",
+  "sql-editor.query-plan-viewer.",
   "subscription.plan.",
   "subscription.purchase.cancel-dialog.reason.",
   "settings.sensitive-data.algorithms.",

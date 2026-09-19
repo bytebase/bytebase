@@ -3317,7 +3317,107 @@
     },
     "query-history-not-found": "查询历史记录不存在或已无法访问",
     "query-plan-load-failed": "加载查询计划失败",
-    "query-plan-text": "文本",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "已复制",
+        "failed": "复制失败",
+        "plan": "复制计划",
+        "query": "复制查询"
+      },
+      "details": {
+        "select-node": "选择节点以查看详情。"
+      },
+      "diagram": {
+        "collapse": "折叠 {{node}} 下的 {{count}} 个节点",
+        "cost": "成本 {{cost}}",
+        "estimated-rows": "预计 {{count}} 行",
+        "expand": "展开 {{node}} 下的 {{count}} 个节点",
+        "fit": "适应视图",
+        "nodes-hidden": "已隐藏 {{count}} 个节点",
+        "plan-cost-share": "占计划成本的 {{share}}",
+        "rows": "行数 {{count}}",
+        "zoom-in": "放大",
+        "zoom-out": "缩小"
+      },
+      "error": {
+        "mssql-empty": "SQL Server 未返回此语句的查询计划。",
+        "mssql-invalid": "查询计划不是有效的 XML。需要 SHOWPLAN_XML 输出。",
+        "mssql-no-plan": "查询计划 XML 不是至少包含一条语句的 SQL Server showplan。",
+        "postgres-empty": "PostgreSQL 未返回此语句的查询计划。",
+        "postgres-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN (FORMAT JSON) 输出。",
+        "postgres-no-plan": "查询计划 JSON 不包含 \"Plan\" 对象。",
+        "spanner-empty": "Spanner 未返回此语句的查询计划。",
+        "spanner-emulator": "Spanner 未返回此语句的查询计划。Spanner 模拟器不会为任何语句返回计划，请在 Spanner 实例上执行解释以查看计划。",
+        "spanner-invalid": "查询计划不是有效的 JSON。需要 Spanner 查询计划。",
+        "spanner-no-plan": "查询计划 JSON 不包含根节点为操作符的 \"planNodes\" 列表。",
+        "too-deep": "查询计划嵌套过深，此可视化工具无法绘制。",
+        "unreadable": "无法读取此查询计划"
+      },
+      "grid": {
+        "added-cost": "新增成本",
+        "added-cost-hint": "此节点在其子节点之上增加的成本；某些引擎还会在此计入输入重复执行的成本，例如嵌套循环下的输入。条形图表示该成本占计划总成本的比例。",
+        "caption": "按规划器嵌套顺序排列的计划节点，父节点在子节点之前。",
+        "estimated-rows": "预计行数",
+        "node": "节点",
+        "rows": "行数",
+        "total-cost": "总成本",
+        "width": "宽度",
+        "width-hint": "预计行宽（字节）"
+      },
+      "highlight": {
+        "cost": "成本",
+        "cost-hint": "按节点在其子节点之上增加的成本着色",
+        "label": "高亮",
+        "off": "关闭",
+        "off-hint": "不为任何节点卡片着色",
+        "rows": "行数",
+        "rows-hint": "按预计行数着色"
+      },
+      "legend": {
+        "cost": "每张卡片的条形图表示该节点占计划预计成本的比例",
+        "rows": "边的粗细随其子节点预计返回的行数增加"
+      },
+      "metric": {
+        "added-cost": "新增成本",
+        "bytes": "{{count}} 字节",
+        "estimated-rows": "预计行数",
+        "row-width": "行宽",
+        "startup-cost": "启动成本",
+        "total-cost": "总成本"
+      },
+      "query": {
+        "missing": "此计划未记录对应语句。"
+      },
+      "summary": {
+        "added-cost": "新增成本",
+        "cost-by-operation": "按操作统计成本",
+        "cost-by-operation-description": "计划中每种节点类型及其总成本。",
+        "cost-ranges": "成本范围",
+        "cost-ranges-description": "每个节点从启动成本（返回第一行前的成本）延伸到总成本，两者都包含其下所有节点。颜色越深表示承担的计划成本越高。成本并非执行时间表：连接的两个输入会在此重叠，但实际依次执行。",
+        "costliest": "成本最高的操作符",
+        "costliest-description": "按节点在其子节点之上增加的成本排序。当输入重复执行时（如嵌套循环），某些引擎会将重复成本计入重新运行该输入的节点，而不是输入本身。",
+        "count": "数量",
+        "estimate-note": "语句已规划但未执行，因此此处所有数据都是优化器估算值，而非测量值。成本单位是任意的，只能在此计划内比较。",
+        "estimated-rows-returned": "预计返回行数",
+        "no-added-cost": "此计划中没有节点自身增加预计成本。",
+        "nodes": "节点",
+        "operation": "操作",
+        "share": "占比",
+        "timeline-node": "{{name}}，成本 {{startup}} 到 {{total}}，占计划成本的 {{share}}",
+        "total-estimated-cost": "预计总成本"
+      },
+      "tab": {
+        "diagram": "图表",
+        "grid": "网格",
+        "query": "查询",
+        "summary": "摘要",
+        "text": "文本"
+      },
+      "totals": {
+        "estimated-cost": "预计成本 {{cost}}",
+        "nodes": "{{count}} 个节点"
+      }
+    },
     "query-time": "查询时间",
     "re-request": "重新申请",
     "recent": "最近",

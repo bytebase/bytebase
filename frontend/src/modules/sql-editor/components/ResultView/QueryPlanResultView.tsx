@@ -1,6 +1,7 @@
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { QueryPlanTranslate } from "@/apps/explain-visualizer/plan-i18n";
 import { QueryPlanView } from "@/apps/explain-visualizer/QueryPlanView";
 import { formatPlanSource } from "@/apps/explain-visualizer/QueryPlanViewer";
 import { Alert } from "@/components/ui/alert";
@@ -55,6 +56,10 @@ export function QueryPlanResultView({
   );
   const [failed, setFailed] = useState(false);
   const loadRequest = useRef<LoadRequest | undefined>(undefined);
+  const translatePlan = useCallback<QueryPlanTranslate>(
+    (key, values) => t(`sql-editor.query-plan-viewer.${key}`, values),
+    [t]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -99,8 +104,8 @@ export function QueryPlanResultView({
         engine={engine}
         planSource={plan.source}
         textPlanSource={rawPlan}
-        textTabLabel={t("sql-editor.query-plan-text")}
         planQuery={plan.statement}
+        translate={translatePlan}
       />
     );
   }

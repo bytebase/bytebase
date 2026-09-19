@@ -225,11 +225,10 @@ describe("QueryPlanViewer", () => {
         tree={tree()}
         rawPlan={rawPlan}
         textPlan="Seq Scan on orders"
-        textTabLabel="Plan text"
       />
     );
 
-    openTab("Plan text");
+    openTab("Text");
     expect(screen.getByText("Seq Scan on orders")).toBeVisible();
     expect(screen.queryByText(/"Node Type"/)).toBeNull();
   });
@@ -293,7 +292,7 @@ describe("QueryPlanViewer", () => {
     ]);
     openTab("Diagram");
     expect(
-      within(screen.getByRole("group", { name: "Highlight nodes by" }))
+      within(screen.getByRole("group", { name: "Highlight" }))
         .getAllByRole("button")
         .map((option) => option.textContent)
     ).toEqual(["Off", "Cost", "Rows"]);
@@ -306,7 +305,7 @@ describe("QueryPlanViewer", () => {
     // The summary is where the cost goes, and nothing can be shaded.
     expect(tabNames()).toEqual(["Text", "Diagram", "Grid", "Query"]);
     openTab("Diagram");
-    expect(screen.queryByRole("group", { name: "Highlight nodes by" })).toBeNull();
+    expect(screen.queryByRole("group", { name: "Highlight" })).toBeNull();
     expect(screen.getByText("7 nodes")).toBeVisible();
     expect(screen.queryByText(/card's bar/)).toBeNull();
     expect(screen.getAllByTestId("plan-node-card")).toHaveLength(7);
