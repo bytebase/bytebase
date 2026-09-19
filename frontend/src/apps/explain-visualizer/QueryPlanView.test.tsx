@@ -18,4 +18,17 @@ describe("QueryPlanView", () => {
     expect(screen.getByText("localized:error.unreadable")).toBeVisible();
     expect(screen.getByText("localized:error.postgres-invalid")).toBeVisible();
   });
+
+  test("shows the text plan when the structured plan cannot be parsed", () => {
+    render(
+      <QueryPlanView
+        engine={Engine.POSTGRES}
+        planSource="not JSON"
+        textPlanSource="Seq Scan on t"
+      />
+    );
+
+    expect(screen.getByText("Seq Scan on t")).toBeVisible();
+    expect(screen.queryByText("not JSON")).toBeNull();
+  });
 });

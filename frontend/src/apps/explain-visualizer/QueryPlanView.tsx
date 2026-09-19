@@ -80,6 +80,7 @@ function QueryPlanViewContent({
 
   if (!result.ok) {
     const errorKey = PARSE_ERROR_KEYS.get(result.message);
+    const fallbackPlan = textPlanSource?.trim() ? textPlanSource : planSource;
     return (
       <div className={cn(STATUS_CLASS, disallowCopyingData && "select-none")}>
         <Alert
@@ -87,9 +88,9 @@ function QueryPlanViewContent({
           title={translate("error.unreadable")}
           description={errorKey ? translate(errorKey) : result.message}
         />
-        {planSource.trim() ? (
+        {fallbackPlan.trim() ? (
           <pre className="font-mono text-xs leading-4 break-words whitespace-pre-wrap text-control">
-            {planSource}
+            {fallbackPlan}
           </pre>
         ) : null}
       </div>
