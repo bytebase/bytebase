@@ -26,7 +26,6 @@ interface Props {
 }
 
 interface LoadRequest {
-  loader: LoadPlan;
   rawPlan: string;
   promise: ReturnType<LoadPlan>;
 }
@@ -72,6 +71,11 @@ export function QueryPlanResultView({
   );
   const [failed, setFailed] = useState(false);
   const loadRequest = useRef<LoadRequest | undefined>(undefined);
+  // The loader's identity changes with unrelated state (e.g. language); only
+  // the plan inputs decide whether to load again.
+  const loadPlanRef = useRef(loadPlan);
+  loadPlanRef.current = loadPlan;
+  const canLoad = !!loadPlan;
   const translatePlan = useCallback<QueryPlanTranslate>(
     (key, values) => t(`sql-editor.query-plan-viewer.${key}`, values),
     [t]
@@ -81,20 +85,16 @@ export function QueryPlanResultView({
     let cancelled = false;
     setPlan(initialPlan);
     setFailed(false);
-    if (initialPlan || !engine || !loadPlan) {
+    if (initialPlan || !engine || !canLoad) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    if (
-      loadRequest.current?.loader !== loadPlan ||
-      loadRequest.current.rawPlan !== rawPlan
-    ) {
+    if (loadRequest.current?.rawPlan !== rawPlan) {
       loadRequest.current = {
-        loader: loadPlan,
         rawPlan,
-        promise: loadPlan(),
+        promise: loadPlanRef.current!(),
       };
     }
     void loadRequest.current.promise
@@ -112,7 +112,7 @@ export function QueryPlanResultView({
     return () => {
       cancelled = true;
     };
-  }, [engine, initialPlan, loadPlan, rawPlan]);
+  }, [engine, initialPlan, canLoad, rawPlan]);
 
   if (plan && engine) {
     return (

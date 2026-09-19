@@ -502,13 +502,20 @@ function SingleResultViewInner({
 
       {viewMode === "RESULT" && showInlinePlan && (
         <>
-          <QueryPlanResultView
-            rawPlan={resultPlan?.source ?? ""}
-            initialPlan={planInRows ? resultPlan : undefined}
-            engine={isVisualizerEngine(engine) ? engine : undefined}
-            loadPlan={canReplay ? loadPlan : undefined}
-            disallowCopyingData={disallowCopyingData}
-          />
+          <div
+            className={cn(
+              "flex flex-col",
+              compact ? "h-80 overflow-hidden" : "flex-1 min-h-0"
+            )}
+          >
+            <QueryPlanResultView
+              rawPlan={resultPlan?.source ?? ""}
+              initialPlan={planInRows ? resultPlan : undefined}
+              engine={isVisualizerEngine(engine) ? engine : undefined}
+              loadPlan={canReplay ? loadPlan : undefined}
+              disallowCopyingData={disallowCopyingData}
+            />
+          </div>
           <ResultStatusBar
             database={database}
             statement={result.statement ?? ""}
@@ -828,7 +835,11 @@ function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
   const lines = result.rows.map((row) =>
     row.values.map((value) => String(extractSQLRowValuePlain(value)))
   );
-  const source = lines.map((line) => line[0]).join("\n");
+  // Multi-column plans keep every column, tab-separated under a header.
+  const source =
+    result.columnNames.length > 1
+      ? [result.columnNames, ...lines].map((line) => line.join("\t")).join("\n")
+      : lines.map((line) => line[0]).join("\n");
   if (!source) return undefined;
   return { statement, source };
 }

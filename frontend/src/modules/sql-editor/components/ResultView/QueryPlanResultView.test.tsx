@@ -94,6 +94,32 @@ describe("QueryPlanResultView", () => {
     expect(loadPlan).toHaveBeenCalledTimes(1);
   });
 
+  test("does not reload when only the loader identity changes", async () => {
+    const plan = { source: "structured plan", statement: "EXPLAIN SELECT 1" };
+    const first = vi.fn().mockResolvedValue(plan);
+    const second = vi.fn().mockResolvedValue(plan);
+    const { rerender } = render(
+      <QueryPlanResultView
+        engine={Engine.POSTGRES}
+        rawPlan="text plan"
+        loadPlan={first}
+      />
+    );
+    await screen.findByTestId("inline-query-plan");
+
+    rerender(
+      <QueryPlanResultView
+        engine={Engine.POSTGRES}
+        rawPlan="text plan"
+        loadPlan={second}
+      />
+    );
+
+    expect(screen.getByTestId("inline-query-plan")).toBeInTheDocument();
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(second).not.toHaveBeenCalled();
+  });
+
   test("uses a single Plan tab when no picture is available", () => {
     render(<QueryPlanResultView rawPlan="text plan" />);
 
