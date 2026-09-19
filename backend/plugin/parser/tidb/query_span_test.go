@@ -232,6 +232,54 @@ func TestGetQuerySpanMissingTableUnionedWithAccessTables(t *testing.T) {
 	a.True(foundUnknown, "not-found table must be unioned into SourceColumns so the pre-execute ACL check sees it")
 }
 
+func TestGetQuerySpanNamesAreCaseInsensitive(t *testing.T) {
+	metadata := &metadatapb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*metadatapb.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*metadatapb.TableMetadata{
+					{Name: "c", Columns: []*metadatapb.ColumnMetadata{{Name: "s"}}},
+					{Name: "sec", Columns: []*metadatapb.ColumnMetadata{{Name: "secret"}}},
+				},
+			},
+		},
+	}
+	databaseMetadataGetter, databaseNamesLister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{metadata})
+
+	// Base table `c` shares a name with CTE `C`; the CTE must win.
+	for _, statement := range []string{
+		"WITH C AS (SELECT secret AS s FROM sec) SELECT s FROM c",
+		"WITH C AS (SELECT secret AS s FROM sec) SELECT * FROM c",
+		"WITH C AS (SELECT secret AS s FROM sec) SELECT c.* FROM c",
+		"WITH C AS (SELECT secret AS s FROM sec) SELECT C.s FROM c",
+		"WITH RECURSIVE C AS (SELECT secret AS s, 1 AS n FROM sec UNION ALL SELECT s, n + 1 FROM c WHERE n < 2) SELECT s FROM c",
+		"SELECT SEC.* FROM sec",
+		"SELECT DB.sec.* FROM sec",
+		"SELECT DB.SEC.secret FROM sec",
+	} {
+		t.Run(statement, func(t *testing.T) {
+			span, err := GetQuerySpan(
+				context.TODO(),
+				base.GetQuerySpanContext{
+					GetDatabaseMetadataFunc: databaseMetadataGetter,
+					ListDatabaseNamesFunc:   databaseNamesLister,
+				},
+				base.Statement{Text: statement},
+				"db",
+				"",
+				false,
+			)
+			require.NoError(t, err)
+			require.NoError(t, span.NotFoundError)
+			require.Len(t, span.Results, 1)
+			require.Equal(t, base.SourceColumnSet{
+				{Database: "db", Table: "sec", Column: "secret"}: true,
+			}, span.Results[0].SourceColumns)
+		})
+	}
+}
+
 // TestGetQuerySpanCyclicViewReference pins that a cyclic view reference is
 // reported as an error rather than recursing until the stack overflows.
 // Ported from the MySQL guard (#20153).
