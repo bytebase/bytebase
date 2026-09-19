@@ -12,6 +12,11 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
+// rowIDColumnName is TiDB's hidden row handle: readable on a table without a
+// clustered index, listed in no catalog, so never in synced metadata.
+// https://docs.pingcap.com/tidb/stable/tidb-rowid/
+const rowIDColumnName = "_tidb_rowid"
+
 type querySpanExtractor struct {
 	ctx               context.Context
 	defaultDatabase   string
@@ -22,6 +27,10 @@ type querySpanExtractor struct {
 	ctes              []*base.PseudoTable
 	outerTableSources []base.TableSource
 	tableSourcesFrom  []base.TableSource
+
+	// baseTableSources marks the aliases and joins built only from base
+	// tables; base.PseudoTable drops that identity.
+	baseTableSources map[base.TableSource]bool
 
 	// viewResolutionStack tracks the views currently being expanded so a
 	// cyclic view reference (a view that transitively references itself) is
@@ -35,6 +44,7 @@ func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext
 		metaCache:         make(map[string]*model.DatabaseMetadata),
 		lowerTableViewMap: make(map[string]map[string]bool),
 		gCtx:              gCtx,
+		baseTableSources:  make(map[base.TableSource]bool),
 	}
 }
 
@@ -526,15 +536,19 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 	case *tidbast.ColumnNameExpr:
 		database, table, column := node.Name.Schema.O, node.Name.Table.O, node.Name.Name.O
 		sources, ok := q.getFieldColumnSource(database, table, column)
-		if !ok {
-			return base.SourceColumnSet{}, &base.ResourceNotFoundError{
-				Err:      errors.New("cannot find the column ref"),
-				Database: &database,
-				Table:    &table,
-				Column:   &column,
-			}
+		if ok {
+			return sources, nil
 		}
-		return sources, nil
+		// The row handle carries no column data, hence no lineage.
+		if q.isRowIDReference(database, table, column) {
+			return base.SourceColumnSet{}, nil
+		}
+		return base.SourceColumnSet{}, &base.ResourceNotFoundError{
+			Err:      errors.New("cannot find the column ref"),
+			Database: &database,
+			Table:    &table,
+			Column:   &column,
+		}
 	case *tidbast.BinaryOperationExpr:
 		return q.extractSourceColumnSetFromExpressionList([]tidbast.ExprNode{node.L, node.R})
 	case *tidbast.UnaryOperationExpr:
@@ -569,6 +583,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 			ctes:                q.ctes,
 			outerTableSources:   append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:    []base.TableSource{},
+			baseTableSources:    q.baseTableSources,
 			viewResolutionStack: cloneViewResolutionStack(q.viewResolutionStack),
 		}
 		tableSource, err := subqueryExtractor.extractTableSourceFromNode(node.Query)
@@ -677,23 +692,56 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 }
 
 func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, bool) {
-	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
-			return nil, false
-		}
-		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
-			return nil, false
-		}
-		// If the table name is empty, we should check if there are ambiguous fields,
-		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
-
-		querySpanResult := tableSource.GetQuerySpanResult()
-		for _, field := range querySpanResult {
+	// If the table name is empty, we should check if there are ambiguous fields,
+	// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
+	for _, tableSource := range q.candidateTableSources(databaseName, tableName) {
+		for _, field := range tableSource.GetQuerySpanResult() {
 			if strings.EqualFold(field.Name, fieldName) {
 				return field.SourceColumns, true
 			}
 		}
-		return nil, false
+	}
+	return base.SourceColumnSet{}, false
+}
+
+// isRowIDReference reports whether an unresolved column reference is the row
+// handle. Every table source it can bind to must be built from base tables,
+// where TiDB rejects this name for a real column (ERROR 1166). A view or
+// subquery can own one that cached metadata lacks, and only the not-found
+// error triggers the resync that finds it: on TiDB 8.5,
+// `SELECT _tidb_rowid FROM clustered_tbl, such_view` reads the view's column.
+func (q *querySpanExtractor) isRowIDReference(databaseName, tableName, fieldName string) bool {
+	if !strings.EqualFold(fieldName, rowIDColumnName) {
+		return false
+	}
+	candidates := q.candidateTableSources(databaseName, tableName)
+	for _, tableSource := range candidates {
+		if !q.isBaseTableSource(tableSource) {
+			return false
+		}
+	}
+	return len(candidates) > 0
+}
+
+func (q *querySpanExtractor) isBaseTableSource(tableSource base.TableSource) bool {
+	if _, ok := tableSource.(*base.PhysicalTable); ok {
+		return true
+	}
+	return q.baseTableSources[tableSource]
+}
+
+// candidateTableSources returns the table sources a column reference with the
+// given qualifiers can bind to, in resolution order.
+func (q *querySpanExtractor) candidateTableSources(databaseName, tableName string) []base.TableSource {
+	var candidates []base.TableSource
+	appendIfMatch := func(tableSource base.TableSource) {
+		if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
+			return
+		}
+		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
+			return
+		}
+		candidates = append(candidates, tableSource)
 	}
 
 	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
@@ -715,19 +763,12 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 	// same-named column of an outer table.
 
 	for _, tableSource := range q.tableSourcesFrom {
-		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
-			return sourceColumnSet, true
-		}
+		appendIfMatch(tableSource)
 	}
-
 	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		tableSource := q.outerTableSources[i]
-		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
-			return sourceColumnSet, true
-		}
+		appendIfMatch(q.outerTableSources[i])
 	}
-
-	return base.SourceColumnSet{}, false
+	return candidates
 }
 
 func (q *querySpanExtractor) extractJoin(node *tidbast.Join) (base.TableSource, error) {
@@ -746,7 +787,11 @@ func (q *querySpanExtractor) extractJoin(node *tidbast.Join) (base.TableSource, 
 	}
 	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
 	q.tableSourcesFrom = append(q.tableSourcesFrom, rightTableSource)
-	return q.mergeJoinTableSource(node, leftTableSource, rightTableSource), nil
+	joined := q.mergeJoinTableSource(node, leftTableSource, rightTableSource)
+	if q.isBaseTableSource(leftTableSource) && q.isBaseTableSource(rightTableSource) {
+		q.baseTableSources[joined] = true
+	}
+	return joined, nil
 }
 
 func (*querySpanExtractor) mergeJoinTableSource(node *tidbast.Join, leftTableSource, rightTableSource base.TableSource) *base.PseudoTable {
@@ -819,7 +864,11 @@ func (q *querySpanExtractor) extractTableSource(node *tidbast.TableSource) (base
 		return nil, err
 	}
 	if node.AsName.O != "" {
-		return base.NewPseudoTable(node.AsName.O, tableSource.GetQuerySpanResult()), nil
+		aliased := base.NewPseudoTable(node.AsName.O, tableSource.GetQuerySpanResult())
+		if q.isBaseTableSource(tableSource) {
+			q.baseTableSources[aliased] = true
+		}
+		return aliased, nil
 	}
 	return tableSource, nil
 }
