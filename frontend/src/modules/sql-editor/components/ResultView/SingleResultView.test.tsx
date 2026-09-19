@@ -1073,4 +1073,37 @@ describe("SingleResultView explain visualizer", () => {
       "table,typet,ALL"
     );
   });
+
+  test("SQL Server multi-column SHOWPLAN_ALL still opens the visualizer", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData={false}
+        params={{ ...params, engine: Engine.MSSQL, explain: true }}
+        database={databaseForEngine(Engine.MSSQL)}
+        result={create(QueryResultSchema, {
+          columnNames: ["StmtText", "EstimateRows"],
+          columnTypeNames: ["TEXT", "TEXT"],
+          statement: "SELECT 1",
+          queryPlan: create(QueryResult_QueryPlanSchema, {
+            format: QueryOption_ExplainFormat.TEXT,
+          }),
+          rows: [
+            create(QueryRowSchema, {
+              values: [
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "Clustered Index Scan" },
+                }),
+                create(RowValueSchema, {
+                  kind: { case: "stringValue", value: "1" },
+                }),
+              ],
+            }),
+          ],
+        })}
+        showExport={false}
+      />
+    );
+
+    expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+  });
 });

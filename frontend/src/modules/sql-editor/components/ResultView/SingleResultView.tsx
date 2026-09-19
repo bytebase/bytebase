@@ -402,7 +402,6 @@ function SingleResultViewInner({
   );
 
   const plan = result.queryPlan;
-  const showInlinePlan = !!plan && result.columnNames.length === 1;
   const planInRows =
     isVisualizerEngine(engine) &&
     plan?.format ===
@@ -417,6 +416,10 @@ function SingleResultViewInner({
     results
       .slice(0, resultIndex)
       .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);
+  // Multi-column plans (SQL Server SHOWPLAN_ALL) keep their table unless the
+  // XML plan can be loaded for the visualizer.
+  const showInlinePlan =
+    !!plan && (result.columnNames.length === 1 || canReplay);
   const loadPlan = useCallback(
     () =>
       isVisualizerEngine(engine)
