@@ -13,13 +13,21 @@ vi.mock("@/apps/explain-visualizer/QueryPlanView", () => ({
     textPlanSource,
     planQuery,
     translate,
+    disallowCopyingData,
+    syncSelectionWithHash,
   }: {
     planSource: string;
     textPlanSource?: string;
     planQuery?: string;
     translate: (key: "tab.text") => string;
+    disallowCopyingData?: boolean;
+    syncSelectionWithHash?: boolean;
   }) => (
-    <div data-testid="inline-query-plan">
+    <div
+      data-testid="inline-query-plan"
+      data-copy-disabled={disallowCopyingData}
+      data-hash-sync={syncSelectionWithHash}
+    >
       {planQuery}:{planSource}:{textPlanSource}:{translate("tab.text")}
     </div>
   ),
@@ -46,6 +54,7 @@ describe("QueryPlanResultView", () => {
         engine={Engine.POSTGRES}
         rawPlan="raw plan"
         initialPlan={{ source: "structured plan", statement: "SELECT 1" }}
+        disallowCopyingData
       />
     );
 
@@ -53,6 +62,14 @@ describe("QueryPlanResultView", () => {
       "SELECT 1:structured plan:raw plan:sql-editor.query-plan-viewer.tab.text"
     );
     expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.getByTestId("inline-query-plan")).toHaveAttribute(
+      "data-copy-disabled",
+      "true"
+    );
+    expect(screen.getByTestId("inline-query-plan")).toHaveAttribute(
+      "data-hash-sync",
+      "false"
+    );
   });
 
   test("loads a drawable plan immediately and opens on its text tab", async () => {
@@ -86,6 +103,17 @@ describe("QueryPlanResultView", () => {
     );
     expect(screen.queryAllByRole("tab")).toHaveLength(1);
     expect(screen.getByText("formatted:text plan")).toBeInTheDocument();
+  });
+
+  test("hides copying for a protected text plan", () => {
+    render(
+      <QueryPlanResultView rawPlan="text plan" disallowCopyingData />
+    );
+
+    expect(screen.queryByRole("button", { name: "copy" })).toBeNull();
+    expect(screen.getByText("formatted:text plan").parentElement).toHaveClass(
+      "select-none"
+    );
   });
 
   test("keeps the text plan visible when the structured plan fails", async () => {

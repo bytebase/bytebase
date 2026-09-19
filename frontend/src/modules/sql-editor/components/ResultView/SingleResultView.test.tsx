@@ -257,16 +257,21 @@ vi.mock("./QueryPlanResultView", () => ({
     rawPlan,
     initialPlan,
     loadPlan,
+    disallowCopyingData,
   }: {
     rawPlan: string;
     initialPlan?: { source: string; statement: string };
     loadPlan?: () => Promise<
       { source: string; statement: string } | undefined
     >;
+    disallowCopyingData?: boolean;
   }) => {
     const [plan, setPlan] = useState(initialPlan);
     return (
-      <div data-testid="query-plan-result">
+      <div
+        data-testid="query-plan-result"
+        data-copy-disabled={disallowCopyingData}
+      >
         <span data-testid="raw-plan">{rawPlan}</span>
         {plan ? <span data-testid="inline-plan">{plan.source}</span> : null}
         {loadPlan ? (
@@ -999,7 +1004,7 @@ describe("SingleResultView explain visualizer", () => {
   test("shows a text plan inline for an engine it cannot draw", () => {
     render(
       <SingleResultView
-        disallowCopyingData={false}
+        disallowCopyingData
         params={{ ...params, engine: Engine.MYSQL, explain: true }}
         database={databaseForEngine(Engine.MYSQL)}
         result={create(QueryResultSchema, {
@@ -1023,6 +1028,10 @@ describe("SingleResultView explain visualizer", () => {
     );
 
     expect(screen.getByTestId("query-plan-result")).toBeInTheDocument();
+    expect(screen.getByTestId("query-plan-result")).toHaveAttribute(
+      "data-copy-disabled",
+      "true"
+    );
     expect(screen.getByTestId("raw-plan")).toHaveTextContent(
       "-> Table scan on t"
     );

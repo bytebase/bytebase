@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Alert } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { VisualizerEngine } from "@/utils/explainToken";
 import {
@@ -59,6 +60,8 @@ interface Props {
   textPlanSource?: string;
   planQuery?: string;
   translate?: QueryPlanTranslate;
+  disallowCopyingData?: boolean;
+  syncSelectionWithHash?: boolean;
 }
 
 function QueryPlanViewContent({
@@ -66,6 +69,8 @@ function QueryPlanViewContent({
   planSource,
   textPlanSource,
   planQuery,
+  disallowCopyingData = false,
+  syncSelectionWithHash,
 }: Props) {
   const translate = useQueryPlanTranslation();
   const result = useMemo(
@@ -76,7 +81,7 @@ function QueryPlanViewContent({
   if (!result.ok) {
     const errorKey = PARSE_ERROR_KEYS.get(result.message);
     return (
-      <div className={STATUS_CLASS}>
+      <div className={cn(STATUS_CLASS, disallowCopyingData && "select-none")}>
         <Alert
           variant="error"
           title={translate("error.unreadable")}
@@ -97,6 +102,8 @@ function QueryPlanViewContent({
       rawPlan={planSource}
       textPlan={textPlanSource}
       query={planQuery}
+      disallowCopyingData={disallowCopyingData}
+      syncSelectionWithHash={syncSelectionWithHash}
     />
   );
 }

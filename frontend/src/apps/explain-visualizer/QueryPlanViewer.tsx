@@ -41,6 +41,8 @@ interface Props {
   /** The plan output shown on the text tab, when it differs from rawPlan. */
   readonly textPlan?: string;
   readonly query?: string;
+  readonly disallowCopyingData?: boolean;
+  readonly syncSelectionWithHash?: boolean;
 }
 
 type TabValue = "diagram" | "grid" | "summary" | "text" | "query";
@@ -259,17 +261,21 @@ export function formatPlanSource(source: string): string {
 function CopyablePanel({
   content,
   label,
+  disallowCopyingData,
   children,
 }: {
   content: string;
   label: string;
+  disallowCopyingData: boolean;
   children: ReactNode;
 }) {
   return (
     <>
-      <div className="flex shrink-0 items-center justify-end px-4 py-2">
-        <PlanCopyButton content={content} label={label} />
-      </div>
+      {disallowCopyingData ? null : (
+        <div className="flex shrink-0 items-center justify-end px-4 py-2">
+          <PlanCopyButton content={content} label={label} />
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-auto px-4 pb-4">{children}</div>
     </>
   );
@@ -282,11 +288,21 @@ const MONOSPACE_BLOCK_CLASS =
  * The text plan tab's content. The tab mounts it only while open, so a large
  * plan is formatted when someone reads it rather than on every page load.
  */
-function TextPlan({ source }: { source: string }) {
+function TextPlan({
+  source,
+  disallowCopyingData,
+}: {
+  source: string;
+  disallowCopyingData: boolean;
+}) {
   const translate = useQueryPlanTranslation();
   const formatted = useMemo(() => formatPlanSource(source), [source]);
   return (
-    <CopyablePanel content={formatted} label={translate("copy.plan")}>
+    <CopyablePanel
+      content={formatted}
+      label={translate("copy.plan")}
+      disallowCopyingData={disallowCopyingData}
+    >
       <pre className={MONOSPACE_BLOCK_CLASS}>{formatted}</pre>
     </CopyablePanel>
   );
@@ -306,11 +322,15 @@ export function QueryPlanViewer({
   rawPlan,
   textPlan = rawPlan,
   query,
+  disallowCopyingData = false,
+  syncSelectionWithHash = true,
 }: Props) {
   const translate = useQueryPlanTranslation();
   const [tab, setTab] = useState<TabValue>("text");
   const [selectedId, setSelectedId] = useState<string>(
-    () => fragmentSelection(tree) ?? tree.root.id
+    () =>
+      (syncSelectionWithHash ? fragmentSelection(tree) : undefined) ??
+      tree.root.id
   );
   const [highlight, setHighlight] = useState<PlanHighlightMode>("off");
   // Collapsed subtrees live here rather than in the diagram so switching tabs
@@ -320,7 +340,7 @@ export function QueryPlanViewer({
   );
   // A node the diagram should scroll to, rather than merely mark as selected.
   const [revealId, setRevealId] = useState<string | undefined>(() =>
-    fragmentSelection(tree)
+    syncSelectionWithHash ? fragmentSelection(tree) : undefined
   );
 
   const selectedNode = findPlanNode(tree, selectedId);
@@ -363,17 +383,19 @@ export function QueryPlanViewer({
   // and takes the view away from the fit the page opened on.
   const writtenSelection = useRef(selectedId);
   useEffect(() => {
+    if (!syncSelectionWithHash) return;
     if (selectedId === writtenSelection.current) return;
     writtenSelection.current = selectedId;
     const fragment = planNodeFragment(selectedId);
     if (location.hash !== fragment) {
       history.replaceState(null, "", fragment);
     }
-  }, [selectedId]);
+  }, [selectedId, syncSelectionWithHash]);
 
   // Following a second link to the page it is already on changes the fragment
   // without reloading anything.
   useEffect(() => {
+    if (!syncSelectionWithHash) return;
     const onHashChange = () => {
       const id = fragmentSelection(tree);
       if (id === undefined) return;
@@ -382,7 +404,7 @@ export function QueryPlanViewer({
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
-  }, [tree, selectNode]);
+  }, [tree, selectNode, syncSelectionWithHash]);
 
   const onRevealed = useCallback(() => setRevealId(undefined), []);
 
@@ -390,7 +412,10 @@ export function QueryPlanViewer({
     <Tabs
       value={tab}
       onValueChange={(value) => setTab(value as TabValue)}
-      className="flex h-full min-h-0 w-full flex-col bg-background text-main"
+      className={cn(
+        "flex h-full min-h-0 w-full flex-col bg-background text-main",
+        disallowCopyingData && "select-none"
+      )}
     >
       <TabsList className="shrink-0 flex-wrap px-4 pt-3">
         <TabsTrigger value="text">{translate("tab.text")}</TabsTrigger>
@@ -485,7 +510,7 @@ export function QueryPlanViewer({
         value="text"
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <TextPlan source={textPlan} />
+        <TextPlan source={textPlan} disallowCopyingData={disallowCopyingData} />
       </TabsPanel>
 
       <TabsPanel
@@ -493,7 +518,11 @@ export function QueryPlanViewer({
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         {query ? (
-          <CopyablePanel content={query} label={translate("copy.query")}>
+          <CopyablePanel
+            content={query}
+            label={translate("copy.query")}
+            disallowCopyingData={disallowCopyingData}
+          >
             <pre className={MONOSPACE_BLOCK_CLASS}>{query}</pre>
           </CopyablePanel>
         ) : (

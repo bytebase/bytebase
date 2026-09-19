@@ -7,6 +7,7 @@ import { formatPlanSource } from "@/apps/explain-visualizer/QueryPlanViewer";
 import { Alert } from "@/components/ui/alert";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import type { VisualizerEngine } from "@/utils/explainToken";
 
 export interface InlineQueryPlan {
@@ -21,6 +22,7 @@ interface Props {
   initialPlan?: InlineQueryPlan;
   engine?: VisualizerEngine;
   loadPlan?: LoadPlan;
+  disallowCopyingData?: boolean;
 }
 
 interface LoadRequest {
@@ -29,13 +31,26 @@ interface LoadRequest {
   promise: ReturnType<LoadPlan>;
 }
 
-function TextPlan({ source }: { source: string }) {
+function TextPlan({
+  source,
+  disallowCopyingData,
+}: {
+  source: string;
+  disallowCopyingData: boolean;
+}) {
   const formatted = useMemo(() => formatPlanSource(source), [source]);
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 justify-end px-4 py-2">
-        <CopyButton content={formatted} size="sm" appearance="outline" />
-      </div>
+    <div
+      className={cn(
+        "flex h-full min-h-0 flex-col",
+        disallowCopyingData && "select-none"
+      )}
+    >
+      {disallowCopyingData ? null : (
+        <div className="flex shrink-0 justify-end px-4 py-2">
+          <CopyButton content={formatted} size="sm" appearance="outline" />
+        </div>
+      )}
       <pre className="min-h-0 flex-1 overflow-auto px-4 pb-4 font-mono text-xs leading-4 break-words whitespace-pre-wrap text-main">
         {formatted}
       </pre>
@@ -48,6 +63,7 @@ export function QueryPlanResultView({
   initialPlan,
   engine,
   loadPlan,
+  disallowCopyingData = false,
 }: Props) {
   const { t } = useTranslation();
   const [plan, setPlan] = useState(initialPlan);
@@ -106,6 +122,8 @@ export function QueryPlanResultView({
         textPlanSource={rawPlan}
         planQuery={plan.statement}
         translate={translatePlan}
+        disallowCopyingData={disallowCopyingData}
+        syncSelectionWithHash={false}
       />
     );
   }
@@ -123,7 +141,7 @@ export function QueryPlanResultView({
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-4">
         <Alert variant="error" title={t("sql-editor.query-plan-load-failed")} />
-        <TextPlan source={rawPlan} />
+        <TextPlan source={rawPlan} disallowCopyingData={disallowCopyingData} />
       </div>
     );
   }
@@ -138,7 +156,7 @@ export function QueryPlanResultView({
         value="plan"
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <TextPlan source={rawPlan} />
+        <TextPlan source={rawPlan} disallowCopyingData={disallowCopyingData} />
       </TabsPanel>
     </Tabs>
   );

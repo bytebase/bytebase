@@ -504,6 +504,7 @@ function SingleResultViewInner({
             initialPlan={planInRows ? resultPlan : undefined}
             engine={isVisualizerEngine(engine) ? engine : undefined}
             loadPlan={canReplay ? loadPlan : undefined}
+            disallowCopyingData={disallowCopyingData}
           />
           <ResultStatusBar
             database={database}

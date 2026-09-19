@@ -359,6 +359,42 @@ describe("QueryPlanViewer", () => {
     expect(location.hash).toBe("#node-0.0");
   });
 
+  test("does not read or write fragments when hash syncing is disabled", () => {
+    startAtFragment("#somewhere-else");
+    render(
+      <QueryPlanViewer
+        tree={tree()}
+        rawPlan={rawPlan}
+        syncSelectionWithHash={false}
+      />
+    );
+    openTab("Diagram");
+
+    expect(
+      screen.getByRole("heading", { name: "Bitmap Heap Scan" })
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Bitmap Index Scan/ }));
+    expect(location.hash).toBe("#somewhere-else");
+  });
+
+  test("hides copy controls when copying is disabled", () => {
+    render(
+      <QueryPlanViewer
+        tree={tree()}
+        rawPlan={rawPlan}
+        query="SELECT 1"
+        disallowCopyingData
+      />
+    );
+
+    expect(screen.queryByTestId("plan-copy-button")).toBeNull();
+    openTab("Query");
+    expect(screen.queryByTestId("plan-copy-button")).toBeNull();
+    expect(screen.getByRole("tablist").parentElement).toHaveClass(
+      "select-none"
+    );
+  });
+
   test("leaves the URL alone until the reader picks a node", () => {
     renderViewer();
 
