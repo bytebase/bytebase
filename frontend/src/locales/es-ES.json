@@ -3316,6 +3316,8 @@
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
     "query-history-not-found": "Historial de consultas no encontrado o ya no accesible",
+    "query-plan-load-failed": "No se pudo cargar el plan de consulta",
+    "query-plan-text": "Texto",
     "query-time": "Tiempo de consulta",
     "re-request": "Volver a solicitar",
     "recent": "Reciente",
@@ -3402,10 +3404,6 @@
     "view-detail": "Ver detalle",
     "view-issue": "Ver issue",
     "view-schema-text": "Ver texto del esquema",
-    "visualize-explain": "Visualizar explicación",
-    "visualize-explain-blocked": "Se bloqueó la pestaña del plan de consulta. Permite las ventanas emergentes de este sitio e inténtalo de nuevo.",
-    "visualize-explain-executed": "Visualizar este plan volvería a ejecutar la consulta.",
-    "visualize-explain-failed": "No se pudo cargar el plan de consulta",
     "web-socket": {
       "connection-status": {
         "connected": "conectado",

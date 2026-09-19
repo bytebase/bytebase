@@ -31,12 +31,15 @@ import { QueryPlanSummary } from "./QueryPlanSummary";
 
 interface Props {
   readonly tree: PlanTree;
-  /** The engine's plan output, shown on the raw tab. */
+  /** The machine-readable plan used to build the viewer. */
   readonly rawPlan: string;
+  /** The plan output shown on the text tab, when it differs from rawPlan. */
+  readonly textPlan?: string;
+  readonly textTabLabel?: string;
   readonly query?: string;
 }
 
-type TabValue = "diagram" | "grid" | "summary" | "raw" | "query";
+type TabValue = "diagram" | "grid" | "summary" | "text" | "query";
 
 interface HighlightOption {
   readonly value: PlanHighlightMode;
@@ -232,7 +235,7 @@ function indentXml(source: string): string | undefined {
 }
 
 /** The plan indented for reading when it is JSON or XML, else as it came. */
-function formatPlanSource(source: string): string {
+export function formatPlanSource(source: string): string {
   if (source.trimStart().startsWith("<")) {
     return indentXml(source.trim()) ?? source;
   }
@@ -267,10 +270,10 @@ const MONOSPACE_BLOCK_CLASS =
   "font-mono text-xs leading-4 break-words whitespace-pre-wrap text-main";
 
 /**
- * The raw plan tab's content. The tab mounts it only while open, so a large
+ * The text plan tab's content. The tab mounts it only while open, so a large
  * plan is formatted when someone reads it rather than on every page load.
  */
-function RawPlan({ source }: { source: string }) {
+function TextPlan({ source }: { source: string }) {
   const formatted = useMemo(() => formatPlanSource(source), [source]);
   return (
     <CopyablePanel content={formatted} label="Copy plan">
@@ -288,8 +291,14 @@ function fragmentSelection(tree: PlanTree): string | undefined {
   return findPlanNode(tree, id)?.id;
 }
 
-export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
-  const [tab, setTab] = useState<TabValue>("diagram");
+export function QueryPlanViewer({
+  tree,
+  rawPlan,
+  textPlan = rawPlan,
+  textTabLabel = "Text",
+  query,
+}: Props) {
+  const [tab, setTab] = useState<TabValue>("text");
   const [selectedId, setSelectedId] = useState<string>(
     () => fragmentSelection(tree) ?? tree.root.id
   );
@@ -374,6 +383,7 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
       className="flex h-full min-h-0 w-full flex-col bg-background text-main"
     >
       <TabsList className="shrink-0 flex-wrap px-4 pt-3">
+        <TabsTrigger value="text">{textTabLabel}</TabsTrigger>
         <TabsTrigger value="diagram">Diagram</TabsTrigger>
         <TabsTrigger value="grid">Grid</TabsTrigger>
         {/* The summary is where the plan's cost goes, which a plan without
@@ -381,7 +391,6 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
         {tree.estimates.cost ? (
           <TabsTrigger value="summary">Summary</TabsTrigger>
         ) : null}
-        <TabsTrigger value="raw">Raw plan</TabsTrigger>
         <TabsTrigger value="query">Query</TabsTrigger>
       </TabsList>
 
@@ -463,10 +472,10 @@ export function QueryPlanViewer({ tree, rawPlan, query }: Props) {
       ) : null}
 
       <TabsPanel
-        value="raw"
+        value="text"
         className="mt-0 flex min-h-0 flex-1 flex-col overflow-hidden"
       >
-        <RawPlan source={rawPlan} />
+        <TextPlan source={textPlan} />
       </TabsPanel>
 
       <TabsPanel

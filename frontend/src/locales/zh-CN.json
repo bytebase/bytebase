@@ -3316,6 +3316,8 @@
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
     "query-history-not-found": "查询历史记录不存在或已无法访问",
+    "query-plan-load-failed": "加载查询计划失败",
+    "query-plan-text": "文本",
     "query-time": "查询时间",
     "re-request": "重新申请",
     "recent": "最近",
@@ -3402,10 +3404,6 @@
     "view-detail": "查看详情",
     "view-issue": "查看工单",
     "view-schema-text": "查看文本 Schema",
-    "visualize-explain": "可视化 Explain",
-    "visualize-explain-blocked": "查询计划标签页被拦截。请允许本站弹出窗口后重试。",
-    "visualize-explain-executed": "可视化此计划会再次执行该查询。",
-    "visualize-explain-failed": "加载查询计划失败",
     "web-socket": {
       "connection-status": {
         "connected": "已连接",

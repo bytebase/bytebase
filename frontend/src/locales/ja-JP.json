@@ -3316,6 +3316,8 @@
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
     "query-history-not-found": "クエリ履歴が見つからないか、アクセスできなくなりました",
+    "query-plan-load-failed": "クエリプランの読み込みに失敗しました",
+    "query-plan-text": "テキスト",
     "query-time": "クエリ時間",
     "re-request": "再申請",
     "recent": "最近",
@@ -3402,10 +3404,6 @@
     "view-detail": "詳細を見る",
     "view-issue": "Issue を表示",
     "view-schema-text": "テキストの表示 スキーマ",
-    "visualize-explain": "視覚化の説明",
-    "visualize-explain-blocked": "クエリプランのタブがブロックされました。このサイトのポップアップを許可して再試行してください。",
-    "visualize-explain-executed": "このプランを視覚化すると、クエリが再度実行されます。",
-    "visualize-explain-failed": "クエリプランの読み込みに失敗しました",
     "web-socket": {
       "connection-status": {
         "connected": "接続済み",

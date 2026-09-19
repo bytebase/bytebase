@@ -3316,6 +3316,8 @@
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
     "query-history-not-found": "Không tìm thấy lịch sử truy vấn hoặc không còn truy cập được",
+    "query-plan-load-failed": "Không tải được kế hoạch truy vấn",
+    "query-plan-text": "Văn bản",
     "query-time": "Thời gian truy vấn",
     "re-request": "Yêu cầu lại",
     "recent": "Gần đây",
@@ -3402,10 +3404,6 @@
     "view-detail": "Xem chi tiết",
     "view-issue": "Xem Issue",
     "view-schema-text": "Xem văn bản lược đồ",
-    "visualize-explain": "Trực quan hóa Giải thích",
-    "visualize-explain-blocked": "Tab kế hoạch truy vấn đã bị chặn. Hãy cho phép cửa sổ bật lên cho trang này và thử lại.",
-    "visualize-explain-executed": "Trực quan hóa kế hoạch này sẽ thực thi lại truy vấn.",
-    "visualize-explain-failed": "Không tải được kế hoạch truy vấn",
     "web-socket": {
       "connection-status": {
         "connected": "đã kết nối",

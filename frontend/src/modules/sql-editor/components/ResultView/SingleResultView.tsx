@@ -36,7 +36,6 @@ import { cn } from "@/lib/utils";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
-import { useAppStore } from "@/stores/app";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -49,7 +48,6 @@ import {
   type QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
 import {
-  createExplainToken,
   isVisualizerEngine,
   VISUALIZER_EXPLAIN_FORMATS,
   type VisualizerEngine,
@@ -70,6 +68,10 @@ import { DetailPanel } from "./DetailPanel";
 import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
+import {
+  type InlineQueryPlan,
+  QueryPlanResultView,
+} from "./QueryPlanResultView";
 import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
 import { TextSearchControl } from "./TextSearchControl";
@@ -404,60 +406,29 @@ function SingleResultViewInner({
     isVisualizerEngine(engine) &&
     plan?.format ===
       QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
+  const resultPlan = useMemo(() => getInlineQueryPlan(result), [result]);
   // Replaying this statement is safe only when every earlier statement was
   // itself a non-executing plan and could not change session state.
   const canReplay =
     isVisualizerEngine(engine) &&
     plan?.format === QueryOption_ExplainFormat.TEXT &&
+    !plan.executed &&
     results
       .slice(0, resultIndex)
       .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);
-  const showVisualizeButton = planInRows || canReplay;
-  const visualizeDisabledReason =
-    !planInRows && plan?.executed
-      ? t("sql-editor.visualize-explain-executed")
-      : undefined;
-
-  const visualizeExplain = async () => {
-    if (!isVisualizerEngine(engine)) return;
-    try {
-      const token = planInRows
-        ? getExplainTokenFromResult(result, engine)
-        : await getExplainToken(
+  const loadPlan = useCallback(
+    () =>
+      isVisualizerEngine(engine)
+        ? getInlineQueryPlanForStatement(
             database,
             params,
             result.statement,
             runQuery,
             engine
-          );
-      if (!token) {
-        // The plan is fetched by a second query, so a failure here is invisible
-        // unless we say so — the button would otherwise do nothing.
-        useAppStore.getState().notify({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t("sql-editor.visualize-explain-failed"),
-        });
-        return;
-      }
-      // A blocked popup returns null rather than throwing, and the wait for the
-      // plan can outlast the click's user activation, so say so instead of
-      // leaving the button looking dead.
-      if (!window.open(`/explain-visualizer.html?token=${token}`, "_blank")) {
-        useAppStore.getState().notify({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t("sql-editor.visualize-explain-blocked"),
-        });
-      }
-    } catch {
-      useAppStore.getState().notify({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("sql-editor.visualize-explain-failed"),
-      });
-    }
-  };
+          )
+        : Promise.resolve(undefined),
+    [database, engine, params, result.statement, runQuery]
+  );
 
   const queryTime = formatQueryTime(result.latency);
 
@@ -525,7 +496,23 @@ function SingleResultViewInner({
         </>
       )}
 
-      {viewMode === "RESULT" && (
+      {viewMode === "RESULT" && plan && (
+        <>
+          <QueryPlanResultView
+            rawPlan={resultPlan?.source ?? ""}
+            initialPlan={planInRows ? resultPlan : undefined}
+            engine={isVisualizerEngine(engine) ? engine : undefined}
+            loadPlan={canReplay ? loadPlan : undefined}
+          />
+          <ResultStatusBar
+            database={database}
+            statement={result.statement ?? ""}
+            queryTime={queryTime}
+          />
+        </>
+      )}
+
+      {viewMode === "RESULT" && !plan && (
         <>
           {result.error && (
             <Alert variant="error" className="w-full mb-2">
@@ -770,14 +757,11 @@ function SingleResultViewInner({
             database={database}
             statement={result.statement ?? ""}
             queryTime={queryTime}
-            showVisualizeButton={showVisualizeButton}
-            visualizeDisabledReason={visualizeDisabledReason}
-            onVisualizeExplain={visualizeExplain}
           />
         </>
       )}
 
-      {!isJSONView && (
+      {!isJSONView && !plan && (
         <DetailPanel
           rows={rows}
           columns={columns}
@@ -833,27 +817,24 @@ function DatabaseInfo({ database }: { database: Database }) {
   );
 }
 
-function getExplainTokenFromResult(
-  result: QueryResult,
-  engine: Engine
-): string | undefined {
+function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
   const { statement } = result;
   if (!statement) return undefined;
   const lines = result.rows.map((row) =>
     row.values.map((value) => String(extractSQLRowValuePlain(value)))
   );
-  const explain = lines.map((line) => line[0]).join("\n");
-  if (!explain) return undefined;
-  return createExplainToken({ statement, explain, engine });
+  const source = lines.map((line) => line[0]).join("\n");
+  if (!source) return undefined;
+  return { statement, source };
 }
 
-async function getExplainToken(
+async function getInlineQueryPlanForStatement(
   database: Database,
   params: SQLEditorQueryParams,
   statement: string,
   runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
   engine: VisualizerEngine
-): Promise<string | undefined> {
+): Promise<InlineQueryPlan | undefined> {
   if (!statement) return undefined;
   const explainFormat =
     QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
@@ -870,5 +851,5 @@ async function getExplainToken(
   await runQuery(database, context);
   const result = context.resultSet?.results[0];
   if (!result) return undefined;
-  return getExplainTokenFromResult(result, engine);
+  return getInlineQueryPlan(result);
 }

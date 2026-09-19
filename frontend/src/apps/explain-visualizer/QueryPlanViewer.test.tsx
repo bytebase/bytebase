@@ -65,6 +65,12 @@ const renderParsed = (
 const openTab = (name: string) =>
   fireEvent.click(screen.getByRole("tab", { name }));
 
+const renderDiagramViewer = (query?: string) => {
+  const result = renderViewer(query);
+  openTab("Diagram");
+  return result;
+};
+
 const tabNames = () =>
   screen.getAllByRole("tab").map((entry) => entry.textContent);
 
@@ -83,8 +89,15 @@ describe("QueryPlanViewer", () => {
     startAtFragment("");
   });
 
-  test("opens on the diagram with the root node already selected", () => {
+  test("opens on the text plan", () => {
     renderViewer();
+
+    expect(screen.getByText(/"Node Type": "Bitmap Heap Scan"/)).toBeVisible();
+    expect(screen.getByTestId("plan-diagram-viewport")).not.toBeVisible();
+  });
+
+  test("opens the diagram with the root node already selected", () => {
+    renderDiagramViewer();
 
     expect(screen.getByTestId("plan-diagram-viewport")).toBeInTheDocument();
     expect(
@@ -94,7 +107,7 @@ describe("QueryPlanViewer", () => {
   });
 
   test("moves the detail pane to whichever node is clicked", () => {
-    renderViewer();
+    renderDiagramViewer();
 
     fireEvent.click(
       screen.getByRole("button", { name: /Bitmap Index Scan/ })
@@ -195,15 +208,30 @@ describe("QueryPlanViewer", () => {
     );
   });
 
-  test("switches to the raw plan and back to the diagram", () => {
+  test("switches to the text plan and back to the diagram", () => {
     renderViewer();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Raw plan" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Text" }));
     expect(screen.getByText(/"Node Type": "Bitmap Heap Scan"/)).toBeVisible();
     expect(screen.getByTestId("plan-diagram-viewport")).not.toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: "Diagram" }));
     expect(screen.getByTestId("plan-diagram-viewport")).toBeVisible();
+  });
+
+  test("shows a separate text plan in the same tab row", () => {
+    render(
+      <QueryPlanViewer
+        tree={tree()}
+        rawPlan={rawPlan}
+        textPlan="Seq Scan on orders"
+        textTabLabel="Plan text"
+      />
+    );
+
+    openTab("Plan text");
+    expect(screen.getByText("Seq Scan on orders")).toBeVisible();
+    expect(screen.queryByText(/"Node Type"/)).toBeNull();
   });
 
   test("shows the statement on the query tab", () => {
@@ -218,7 +246,7 @@ describe("QueryPlanViewer", () => {
   test("offers a copy of whichever text a tab is showing", () => {
     renderViewer("SELECT * FROM orders WHERE customer_id = 42;");
 
-    openTab("Raw plan");
+    openTab("Text");
     expect(screen.getByTestId("plan-copy-button")).toHaveTextContent(
       "Copy plan"
     );
@@ -246,7 +274,7 @@ describe("QueryPlanViewer", () => {
   });
 
   test("shades the diagram once a highlight mode is chosen", () => {
-    renderViewer();
+    renderDiagramViewer();
     expect(screen.queryAllByTestId("plan-node-tint")).toHaveLength(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Cost" }));
@@ -257,12 +285,13 @@ describe("QueryPlanViewer", () => {
     renderParsed(parseMssqlPlan, procedureTwoStatements);
 
     expect(tabNames()).toEqual([
+      "Text",
       "Diagram",
       "Grid",
       "Summary",
-      "Raw plan",
       "Query",
     ]);
+    openTab("Diagram");
     expect(
       within(screen.getByRole("group", { name: "Highlight nodes by" }))
         .getAllByRole("button")
@@ -275,17 +304,18 @@ describe("QueryPlanViewer", () => {
     renderParsed(parseSpannerPlan, JSON.stringify(spannerHashJoin));
 
     // The summary is where the cost goes, and nothing can be shaded.
-    expect(tabNames()).toEqual(["Diagram", "Grid", "Raw plan", "Query"]);
+    expect(tabNames()).toEqual(["Text", "Diagram", "Grid", "Query"]);
+    openTab("Diagram");
     expect(screen.queryByRole("group", { name: "Highlight nodes by" })).toBeNull();
     expect(screen.getByText("7 nodes")).toBeVisible();
     expect(screen.queryByText(/card's bar/)).toBeNull();
     expect(screen.getAllByTestId("plan-node-card")).toHaveLength(7);
   });
 
-  test("indents an XML plan one element per line on the raw tab", () => {
+  test("indents an XML plan one element per line on the text tab", () => {
     renderParsed(parseMssqlPlan, procedureTwoStatements);
 
-    openTab("Raw plan");
+    openTab("Text");
     const raw = within(screen.getByRole("tabpanel")).getByText(
       /^<ShowPlanXML/
     ).textContent;
@@ -324,7 +354,7 @@ describe("QueryPlanViewer", () => {
   });
 
   test("names the selected node in the URL, which is what shares it", () => {
-    renderViewer();
+    renderDiagramViewer();
 
     fireEvent.click(screen.getByRole("button", { name: /Bitmap Index Scan/ }));
     expect(location.hash).toBe("#node-0.0");
@@ -340,7 +370,7 @@ describe("QueryPlanViewer", () => {
 
   test("opens on the node a fragment names", () => {
     startAtFragment("#node-0.0");
-    renderViewer();
+    renderDiagramViewer();
 
     expect(
       screen.getByRole("heading", { name: "Bitmap Index Scan" })
@@ -352,7 +382,7 @@ describe("QueryPlanViewer", () => {
 
   test("falls back to the root when a fragment names no node in this plan", () => {
     startAtFragment("#node-9.9.9");
-    renderViewer();
+    renderDiagramViewer();
 
     expect(
       screen.getByRole("heading", { name: "Bitmap Heap Scan" })
@@ -363,7 +393,7 @@ describe("QueryPlanViewer", () => {
 
   test("ignores a fragment that is not about a node at all", () => {
     startAtFragment("#somewhere-else");
-    renderViewer();
+    renderDiagramViewer();
 
     expect(
       screen.getByRole("heading", { name: "Bitmap Heap Scan" })
@@ -371,7 +401,7 @@ describe("QueryPlanViewer", () => {
   });
 
   test("follows a fragment that changes without a reload", () => {
-    renderViewer();
+    renderDiagramViewer();
 
     startAtFragment("#node-0.0");
     fireEvent(window, new Event("hashchange"));
@@ -382,7 +412,7 @@ describe("QueryPlanViewer", () => {
   });
 
   test("keeps the diagram's zoom while the reader moves between tabs", () => {
-    renderViewer();
+    renderDiagramViewer();
     const canvas = () => screen.getByTestId("plan-diagram-canvas").style.transform;
 
     fireEvent.click(screen.getByRole("button", { name: "Zoom in" }));
@@ -396,7 +426,7 @@ describe("QueryPlanViewer", () => {
   });
 
   test("keeps a subtree folded while the reader moves between tabs", () => {
-    renderViewer();
+    renderDiagramViewer();
     expect(cards()).toHaveLength(2);
 
     fireEvent.click(collapseToggle());
@@ -409,7 +439,7 @@ describe("QueryPlanViewer", () => {
   });
 
   test("moves the selection out of a subtree it folds away", () => {
-    renderViewer();
+    renderDiagramViewer();
 
     fireEvent.click(screen.getByRole("button", { name: /Bitmap Index Scan/ }));
     expect(
@@ -427,7 +457,7 @@ describe("QueryPlanViewer", () => {
   });
 
   test("unfolds a subtree when a node inside it is selected elsewhere", () => {
-    renderViewer();
+    renderDiagramViewer();
     fireEvent.click(collapseToggle());
 
     openTab("Grid");
