@@ -3316,6 +3316,108 @@
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
     "query-history-not-found": "Query history not found or no longer accessible",
+    "query-plan-load-failed": "Failed to load the query plan",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "Copied",
+        "failed": "Copy failed",
+        "plan": "Copy plan",
+        "query": "Copy query"
+      },
+      "details": {
+        "select-node": "Select a node to see its details."
+      },
+      "diagram": {
+        "collapse": "Collapse {{count}} nodes under {{node}}",
+        "cost": "cost {{cost}}",
+        "estimated-rows": "{{count}} estimated rows",
+        "expand": "Expand {{count}} nodes under {{node}}",
+        "fit": "Fit to view",
+        "nodes-hidden": "{{count}} nodes hidden",
+        "plan-cost-share": "{{share}} of plan cost",
+        "rows": "rows {{count}}",
+        "zoom-in": "Zoom in",
+        "zoom-out": "Zoom out"
+      },
+      "error": {
+        "mssql-empty": "SQL Server returned no query plan for this statement.",
+        "mssql-invalid": "The query plan is not valid XML. SHOWPLAN_XML output is expected.",
+        "mssql-no-plan": "The query plan XML is not a SQL Server showplan with at least one statement.",
+        "postgres-empty": "PostgreSQL returned no query plan for this statement.",
+        "postgres-invalid": "The query plan is not valid JSON. EXPLAIN (FORMAT JSON) output is expected.",
+        "postgres-no-plan": "The query plan JSON does not contain a \"Plan\" object.",
+        "spanner-empty": "Spanner returned no query plan for this statement.",
+        "spanner-emulator": "Spanner returned no query plan for this statement. The Spanner emulator returns none for any statement, so explain it on a Spanner instance to see one.",
+        "spanner-invalid": "The query plan is not valid JSON. A Spanner query plan is expected.",
+        "spanner-no-plan": "The query plan JSON does not contain a \"planNodes\" list with an operator at its root.",
+        "too-deep": "The query plan is nested too deeply for this visualizer to draw.",
+        "unreadable": "This query plan could not be read"
+      },
+      "grid": {
+        "added-cost": "Added cost",
+        "added-cost-hint": "Cost this node adds on top of its children; some engines also count an input's repeats here, as under a nested loop. The bar is that cost as a share of the plan.",
+        "caption": "Plan nodes in the order the planner nests them, parents before children.",
+        "estimated-rows": "Estimated rows",
+        "node": "Node",
+        "rows": "Rows",
+        "total-cost": "Total cost",
+        "width": "Width",
+        "width-hint": "Estimated row width in bytes"
+      },
+      "highlight": {
+        "cost": "Cost",
+        "cost-hint": "Shade by the cost a node adds on top of its children",
+        "label": "Highlight",
+        "off": "Off",
+        "off-hint": "Leave every node card unshaded",
+        "rows": "Rows",
+        "rows-hint": "Shade by the estimated row count"
+      },
+      "legend": {
+        "cost": "each card's bar is that node's share of the plan's estimated cost",
+        "rows": "an edge thickens with the rows its child is estimated to return"
+      },
+      "metric": {
+        "added-cost": "Added cost",
+        "bytes": "{{count}} bytes",
+        "estimated-rows": "Estimated rows",
+        "row-width": "Row width",
+        "startup-cost": "Startup cost",
+        "total-cost": "Total cost"
+      },
+      "query": {
+        "missing": "The statement was not captured with this plan."
+      },
+      "summary": {
+        "added-cost": "Added cost",
+        "cost-by-operation": "Cost by operation",
+        "cost-by-operation-description": "Every node type in the plan and what it costs in total.",
+        "cost-ranges": "Cost ranges",
+        "cost-ranges-description": "Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other.",
+        "costliest": "Costliest operators",
+        "costliest-description": "Ranked by the cost a node adds on top of its children. Where an input runs repeatedly, as under a nested loop, some engines count the repeats in the node that reruns it rather than in the input itself.",
+        "count": "Count",
+        "estimate-note": "The statement was planned but not run, so every figure here is an optimizer estimate rather than a measurement. Cost units are arbitrary and comparable only within this plan.",
+        "estimated-rows-returned": "Estimated rows returned",
+        "no-added-cost": "No node in this plan adds an estimated cost of its own.",
+        "nodes": "Nodes",
+        "operation": "Operation",
+        "share": "Share",
+        "timeline-node": "{{name}}, cost {{startup}} to {{total}}, {{share}} of plan cost",
+        "total-estimated-cost": "Total estimated cost"
+      },
+      "tab": {
+        "diagram": "Diagram",
+        "grid": "Grid",
+        "query": "Query",
+        "summary": "Summary",
+        "text": "Text"
+      },
+      "totals": {
+        "estimated-cost": "estimated cost {{cost}}",
+        "nodes": "{{count}} nodes"
+      }
+    },
     "query-time": "Query time",
     "re-request": "Re-request",
     "recent": "Recent",
@@ -3402,9 +3504,6 @@
     "view-detail": "View detail",
     "view-issue": "View issue",
     "view-schema-text": "View schema text",
-    "visualize-explain": "Visualize Explain",
-    "visualize-explain-blocked": "The query plan tab was blocked. Allow pop-ups for this site and try again.",
-    "visualize-explain-failed": "Failed to load the query plan",
     "web-socket": {
       "connection-status": {
         "connected": "connected",

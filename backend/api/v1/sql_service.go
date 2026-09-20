@@ -753,6 +753,13 @@ func queryRetry(
 	}
 	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", originalStatement), slog.Duration("duration", duration))
 	if queryContext.Explain {
+		if format, ok := db.ExplainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat()); ok {
+			for _, result := range results {
+				if result.Error == "" {
+					result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
+				}
+			}
+		}
 		return results, nil, duration, nil
 	}
 
@@ -1983,37 +1990,11 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	return user, instance, database, nil
 }
 
-// supportedExplainFormats lists the explain formats an engine's driver actually
-// produces. TEXT is the human-readable plan every engine returns by default,
-// which is why only the engines with a machine-readable plan, or without a
-// readable one, need a case here.
-func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFormat {
-	switch engine {
-	case storepb.Engine_POSTGRES:
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML}
-	case storepb.Engine_MSSQL:
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}
-	case storepb.Engine_SPANNER:
-		// Spanner returns its plan as JSON and has no text form.
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}
-	case storepb.Engine_MONGODB, storepb.Engine_REDIS, storepb.Engine_DYNAMODB,
-		storepb.Engine_CASSANDRA, storepb.Engine_COSMOSDB, storepb.Engine_DATABRICKS,
-		storepb.Engine_ELASTICSEARCH:
-		// No driver here implements explain: the first three refuse it, the rest
-		// ignore the flag and would run the statement itself. Saying TEXT would
-		// send a caller down a path that never produces a plan.
-		return nil
-	default:
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
-	}
-}
-
-// validateExplainFormat refuses a format the engine cannot produce. This is the
-// one place the engine-to-format support is decided: drivers below map whatever
-// reaches them onto their own syntax, so a request that slipped through would
-// silently come back in a format the caller cannot parse.
+// validateExplainFormat refuses a format the driver cannot produce. Drivers
+// map whatever reaches them onto their own syntax, so a request that slipped
+// through would silently come back in a format the caller cannot parse.
 func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) error {
-	supported := supportedExplainFormats(engine)
+	supported := db.SupportedExplainFormats(engine)
 	// An engine with no explain at all is refused whatever the caller asked for,
 	// including nothing. Its driver would otherwise run the statement as an
 	// ordinary query — and an explain request skips the read-only validation

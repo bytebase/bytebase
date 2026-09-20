@@ -16,8 +16,8 @@ func init() {
 
 // explainStatement implements base.ExplainStatement. TiDB returns one plan format
 // here whatever the caller asked for: its other FORMAT values are plans of their
-// own shape that nothing downstream reads (supportedExplainFormats in the API
-// offers this engine the default plan only).
+// own shape that nothing downstream reads (the driver capability table offers
+// this engine the default plan only).
 func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 	node, err := singleStatement(statement)
 	if err != nil {

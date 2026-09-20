@@ -19,6 +19,7 @@ func TestExplainStatement(t *testing.T) {
 		{"SELECT 1", base.ExplainFormatText, "EXPLAIN SELECT 1"},
 		{"SELECT 1", base.ExplainFormatJSON, "EXPLAIN (FORMAT JSON) SELECT 1"},
 		{"SELECT 1", base.ExplainFormatXML, "EXPLAIN (FORMAT XML) SELECT 1"},
+		{"SELECT 1", base.ExplainFormatYAML, "EXPLAIN (FORMAT YAML) SELECT 1"},
 		{"SELECT 1;", base.ExplainFormatDefault, "EXPLAIN SELECT 1;"},
 		{"DELETE FROM t", base.ExplainFormatDefault, "EXPLAIN DELETE FROM t"},
 		{"WITH x AS (SELECT 1) SELECT * FROM x", base.ExplainFormatDefault, "EXPLAIN WITH x AS (SELECT 1) SELECT * FROM x"},
@@ -37,6 +38,26 @@ func TestExplainStatement(t *testing.T) {
 		got, err := explainStatement(tc.statement, tc.format)
 		require.NoErrorf(t, err, "%q", tc.statement)
 		require.Equalf(t, tc.want, got, "%q", tc.statement)
+	}
+}
+
+func TestDescribeExplain(t *testing.T) {
+	for _, tc := range []struct {
+		statement string
+		format    string
+		executed  bool
+		ok        bool
+	}{
+		{statement: "SELECT 1"},
+		{statement: "EXPLAIN SELECT 1", format: "text", ok: true},
+		{statement: "EXPLAIN (FORMAT JSON) SELECT 1", format: "json", ok: true},
+		{statement: "EXPLAIN (FORMAT XML, ANALYZE) SELECT 1", format: "xml", executed: true, ok: true},
+		{statement: "EXPLAIN (ANALYZE false, FORMAT YAML) SELECT 1", format: "yaml", ok: true},
+	} {
+		format, executed, ok := DescribeExplain(tc.statement)
+		require.Equal(t, tc.format, format, tc.statement)
+		require.Equal(t, tc.executed, executed, tc.statement)
+		require.Equal(t, tc.ok, ok, tc.statement)
 	}
 }
 

@@ -14,8 +14,7 @@ func init() {
 
 // explainStatement implements base.ExplainStatement. Redshift returns one plan
 // format here whatever the caller asked for: its EXPLAIN has no machine-readable
-// form (supportedExplainFormats in the API offers this engine the default plan
-// only).
+// form (the driver capability table offers this engine the default plan only).
 func explainStatement(statement string, _ base.ExplainFormat) (string, error) {
 	node, err := singleStatement(statement)
 	if err != nil {

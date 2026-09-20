@@ -3316,6 +3316,108 @@
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
     "query-history-not-found": "Historial de consultas no encontrado o ya no accesible",
+    "query-plan-load-failed": "No se pudo cargar el plan de consulta",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "Copiado",
+        "failed": "Error al copiar",
+        "plan": "Copiar plan",
+        "query": "Copiar consulta"
+      },
+      "details": {
+        "select-node": "Selecciona un nodo para ver sus detalles."
+      },
+      "diagram": {
+        "collapse": "Contraer {{count}} nodos bajo {{node}}",
+        "cost": "coste {{cost}}",
+        "estimated-rows": "{{count}} filas estimadas",
+        "expand": "Expandir {{count}} nodos bajo {{node}}",
+        "fit": "Ajustar a la vista",
+        "nodes-hidden": "{{count}} nodos ocultos",
+        "plan-cost-share": "{{share}} del coste del plan",
+        "rows": "filas {{count}}",
+        "zoom-in": "Acercar",
+        "zoom-out": "Alejar"
+      },
+      "error": {
+        "mssql-empty": "SQL Server no devolvió ningún plan de consulta para esta sentencia.",
+        "mssql-invalid": "El plan de consulta no es XML válido. Se espera la salida de SHOWPLAN_XML.",
+        "mssql-no-plan": "El XML del plan de consulta no es un showplan de SQL Server con al menos una sentencia.",
+        "postgres-empty": "PostgreSQL no devolvió ningún plan de consulta para esta sentencia.",
+        "postgres-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON).",
+        "postgres-no-plan": "El JSON del plan de consulta no contiene un objeto \"Plan\".",
+        "spanner-empty": "Spanner no devolvió ningún plan de consulta para esta sentencia.",
+        "spanner-emulator": "Spanner no devolvió ningún plan de consulta para esta sentencia. El emulador de Spanner no devuelve ninguno para ninguna sentencia; explíquela en una instancia de Spanner para ver uno.",
+        "spanner-invalid": "El plan de consulta no es JSON válido. Se espera un plan de consulta de Spanner.",
+        "spanner-no-plan": "El JSON del plan de consulta no contiene una lista \"planNodes\" con un operador en la raíz.",
+        "too-deep": "El plan de consulta está demasiado anidado para que este visualizador pueda dibujarlo.",
+        "unreadable": "No se pudo leer este plan de consulta"
+      },
+      "grid": {
+        "added-cost": "Coste añadido",
+        "added-cost-hint": "Coste que este nodo añade sobre sus hijos; algunos motores también cuentan aquí las repeticiones de una entrada, como bajo un bucle anidado. La barra muestra este coste como parte del plan.",
+        "caption": "Nodos del plan en el orden en que el planificador los anida, con los padres antes que los hijos.",
+        "estimated-rows": "Filas estimadas",
+        "node": "Nodo",
+        "rows": "Filas",
+        "total-cost": "Coste total",
+        "width": "Anchura",
+        "width-hint": "Anchura estimada de la fila en bytes"
+      },
+      "highlight": {
+        "cost": "Coste",
+        "cost-hint": "Sombrear según el coste que un nodo añade sobre sus hijos",
+        "label": "Resaltar",
+        "off": "Desactivado",
+        "off-hint": "Dejar todas las tarjetas de nodo sin sombrear",
+        "rows": "Filas",
+        "rows-hint": "Sombrear según el número estimado de filas"
+      },
+      "legend": {
+        "cost": "la barra de cada tarjeta indica la parte del coste estimado del plan correspondiente a ese nodo",
+        "rows": "una arista se hace más gruesa según las filas que se estima que devolverá su nodo hijo"
+      },
+      "metric": {
+        "added-cost": "Coste añadido",
+        "bytes": "{{count}} bytes",
+        "estimated-rows": "Filas estimadas",
+        "row-width": "Anchura de fila",
+        "startup-cost": "Coste inicial",
+        "total-cost": "Coste total"
+      },
+      "query": {
+        "missing": "La sentencia no se guardó con este plan."
+      },
+      "summary": {
+        "added-cost": "Coste añadido",
+        "cost-by-operation": "Coste por operación",
+        "cost-by-operation-description": "Cada tipo de nodo del plan y su coste total.",
+        "cost-ranges": "Rangos de coste",
+        "cost-ranges-description": "Cada nodo abarca desde su coste inicial —el coste antes de su primera fila— hasta su coste total; ambos incluyen todo lo que hay debajo. Los intervalos más oscuros contienen más coste del plan. Los costes no son un calendario: dos entradas de una unión se solapan aquí, pero se ejecutan una tras otra.",
+        "costliest": "Operadores más costosos",
+        "costliest-description": "Ordenados por el coste que un nodo añade sobre sus hijos. Cuando una entrada se ejecuta repetidamente, como bajo un bucle anidado, algunos motores cuentan las repeticiones en el nodo que la vuelve a ejecutar y no en la propia entrada.",
+        "count": "Cantidad",
+        "estimate-note": "La sentencia se planificó, pero no se ejecutó, por lo que todas las cifras son estimaciones del optimizador y no mediciones. Las unidades de coste son arbitrarias y solo comparables dentro de este plan.",
+        "estimated-rows-returned": "Filas devueltas estimadas",
+        "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio.",
+        "nodes": "Nodos",
+        "operation": "Operación",
+        "share": "Proporción",
+        "timeline-node": "{{name}}, coste de {{startup}} a {{total}}, {{share}} del coste del plan",
+        "total-estimated-cost": "Coste total estimado"
+      },
+      "tab": {
+        "diagram": "Diagrama",
+        "grid": "Cuadrícula",
+        "query": "Consulta",
+        "summary": "Resumen",
+        "text": "Texto"
+      },
+      "totals": {
+        "estimated-cost": "coste estimado {{cost}}",
+        "nodes": "{{count}} nodos"
+      }
+    },
     "query-time": "Tiempo de consulta",
     "re-request": "Volver a solicitar",
     "recent": "Reciente",
@@ -3402,9 +3504,6 @@
     "view-detail": "Ver detalle",
     "view-issue": "Ver issue",
     "view-schema-text": "Ver texto del esquema",
-    "visualize-explain": "Visualizar explicación",
-    "visualize-explain-blocked": "Se bloqueó la pestaña del plan de consulta. Permite las ventanas emergentes de este sitio e inténtalo de nuevo.",
-    "visualize-explain-failed": "No se pudo cargar el plan de consulta",
     "web-socket": {
       "connection-status": {
         "connected": "conectado",

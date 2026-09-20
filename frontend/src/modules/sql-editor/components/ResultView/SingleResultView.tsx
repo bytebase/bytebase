@@ -36,7 +36,6 @@ import { cn } from "@/lib/utils";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
-import { useAppStore } from "@/stores/app";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -49,7 +48,6 @@ import {
   type QueryResult,
 } from "@/types/proto-es/v1/sql_service_pb";
 import {
-  createExplainToken,
   isVisualizerEngine,
   VISUALIZER_EXPLAIN_FORMATS,
   type VisualizerEngine,
@@ -70,6 +68,10 @@ import { DetailPanel } from "./DetailPanel";
 import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
+import {
+  type InlineQueryPlan,
+  QueryPlanResultView,
+} from "./QueryPlanResultView";
 import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
 import { TextSearchControl } from "./TextSearchControl";
@@ -94,8 +96,9 @@ export interface SingleResultViewProps {
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
-  // Which statement of a multi-statement run this view shows. Visualize re-runs
-  // the whole statement and has to pick the same one back out.
+  // Every result of the run, and which one this view shows. Visualize uses
+  // earlier results to decide whether replaying this statement is safe.
+  results?: QueryResult[];
   resultIndex?: number;
   showExport: boolean;
   // Optional tooltip shown on the export button — used to explain when the
@@ -281,6 +284,7 @@ function SingleResultViewInner({
   params,
   database,
   result,
+  results = [],
   resultIndex = 0,
   showExport,
   exportTooltip,
@@ -397,51 +401,38 @@ function SingleResultViewInner({
     [flattenedTableView, result.masked]
   );
 
-  const showVisualizeButton = isVisualizerEngine(engine) && !!params.explain;
-
-  const visualizeExplain = async () => {
-    if (!isVisualizerEngine(engine)) return;
-    try {
-      // Spanner explains only as JSON, so the result on screen already is the
-      // plan the visualizer reads; the other engines show a readable plan.
-      const token =
-        engine === Engine.SPANNER
-          ? getExplainTokenFromResult(result, engine)
-          : await getExplainToken(
-              database,
-              params,
-              runQuery,
-              engine,
-              resultIndex
-            );
-      if (!token) {
-        // The plan is fetched by a second query, so a failure here is invisible
-        // unless we say so — the button would otherwise do nothing.
-        useAppStore.getState().notify({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t("sql-editor.visualize-explain-failed"),
-        });
-        return;
-      }
-      // A blocked popup returns null rather than throwing, and the wait for the
-      // plan can outlast the click's user activation, so say so instead of
-      // leaving the button looking dead.
-      if (!window.open(`/explain-visualizer.html?token=${token}`, "_blank")) {
-        useAppStore.getState().notify({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: t("sql-editor.visualize-explain-blocked"),
-        });
-      }
-    } catch {
-      useAppStore.getState().notify({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t("sql-editor.visualize-explain-failed"),
-      });
-    }
-  };
+  const plan = result.queryPlan;
+  const planInRows =
+    isVisualizerEngine(engine) &&
+    plan?.format ===
+      QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
+  const resultPlan = useMemo(() => getInlineQueryPlan(result), [result]);
+  // Replaying this statement is safe only when every earlier statement was
+  // itself a non-executing plan and could not change session state.
+  const canReplay =
+    isVisualizerEngine(engine) &&
+    plan?.format === QueryOption_ExplainFormat.TEXT &&
+    !plan.executed &&
+    results
+      .slice(0, resultIndex)
+      .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);
+  // Multi-column plans (SQL Server SHOWPLAN_ALL) keep their table unless the
+  // XML plan can be loaded for the visualizer.
+  const showInlinePlan =
+    !!plan && (result.columnNames.length === 1 || canReplay);
+  const loadPlan = useCallback(
+    () =>
+      isVisualizerEngine(engine)
+        ? getInlineQueryPlanForStatement(
+            database,
+            params,
+            result.statement,
+            runQuery,
+            engine
+          )
+        : Promise.resolve(undefined),
+    [database, engine, params, result.statement, runQuery]
+  );
 
   const queryTime = formatQueryTime(result.latency);
 
@@ -509,7 +500,32 @@ function SingleResultViewInner({
         </>
       )}
 
-      {viewMode === "RESULT" && (
+      {viewMode === "RESULT" && showInlinePlan && (
+        <>
+          <div
+            className={cn(
+              "flex flex-col",
+              compact ? "h-80 overflow-hidden" : "flex-1 min-h-0"
+            )}
+          >
+            <QueryPlanResultView
+              key={`${database.name}\n${engine}\n${result.statement}`}
+              rawPlan={resultPlan?.source ?? ""}
+              initialPlan={planInRows ? resultPlan : undefined}
+              engine={isVisualizerEngine(engine) ? engine : undefined}
+              loadPlan={canReplay ? loadPlan : undefined}
+              disallowCopyingData={disallowCopyingData}
+            />
+          </div>
+          <ResultStatusBar
+            database={database}
+            statement={result.statement ?? ""}
+            queryTime={queryTime}
+          />
+        </>
+      )}
+
+      {viewMode === "RESULT" && !showInlinePlan && (
         <>
           {result.error && (
             <Alert variant="error" className="w-full mb-2">
@@ -754,13 +770,11 @@ function SingleResultViewInner({
             database={database}
             statement={result.statement ?? ""}
             queryTime={queryTime}
-            showVisualizeButton={showVisualizeButton}
-            onVisualizeExplain={visualizeExplain}
           />
         </>
       )}
 
-      {!isJSONView && (
+      {!isJSONView && !showInlinePlan && (
         <DetailPanel
           rows={rows}
           columns={columns}
@@ -816,44 +830,43 @@ function DatabaseInfo({ database }: { database: Database }) {
   );
 }
 
-function getExplainTokenFromResult(
-  result: QueryResult,
-  engine: Engine
-): string | undefined {
+function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
   const { statement } = result;
   if (!statement) return undefined;
   const lines = result.rows.map((row) =>
     row.values.map((value) => String(extractSQLRowValuePlain(value)))
   );
-  const explain = lines.map((line) => line[0]).join("\n");
-  if (!explain) return undefined;
-  return createExplainToken({ statement, explain, engine });
+  // Multi-column plans keep every column, tab-separated under a header.
+  const source =
+    result.columnNames.length > 1
+      ? [result.columnNames, ...lines].map((line) => line.join("\t")).join("\n")
+      : lines.map((line) => line[0]).join("\n");
+  if (!source) return undefined;
+  return { statement, source };
 }
 
-// getExplainToken re-runs the explain in the format the visualizer reads for
-// the engine, whatever format the grid is showing, so the plan is only fetched
-// when the user asks for it.
-async function getExplainToken(
+async function getInlineQueryPlanForStatement(
   database: Database,
   params: SQLEditorQueryParams,
+  statement: string,
   runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
-  engine: VisualizerEngine,
-  resultIndex: number
-): Promise<string | undefined> {
+  engine: VisualizerEngine
+): Promise<InlineQueryPlan | undefined> {
+  if (!statement) return undefined;
   const explainFormat =
     QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
       ...params,
+      statement,
+      explain: true,
       queryOption: create(QueryOptionSchema, { explainFormat }),
     },
     status: "PENDING",
   };
   await runQuery(database, context);
-  // The re-run replays every statement the user submitted, so take the one this
-  // view is showing rather than the first.
-  const result = context.resultSet?.results[resultIndex];
+  const result = context.resultSet?.results[0];
   if (!result) return undefined;
-  return getExplainTokenFromResult(result, engine);
+  return getInlineQueryPlan(result);
 }

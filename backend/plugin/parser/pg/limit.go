@@ -64,8 +64,10 @@ func rewriteSelectLimit(sql string, sel *ast.SelectStmt, limitCount int) (string
 		if isInteger && existingLimit >= 0 && existingLimit <= limitCount {
 			return sql, nil // existing limit is already lower or equal, keep it
 		}
-		if isInteger && loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
-			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
+		if isInteger {
+			if end, ok := integerLiteralEnd(sql, loc); ok {
+				return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[end:], nil
+			}
 		}
 		// ALL/NULL and non-constant limits lack reliable replacement spans.
 		// Cap them with the outer query instead of rewriting their text.
@@ -133,4 +135,15 @@ func nodeLocOf(node ast.Node) ast.Loc {
 	default:
 		return ast.Loc{Start: -1, End: -1}
 	}
+}
+
+// integerLiteralEnd returns the exclusive end byte offset of the integer
+// literal. The AST span may include whitespace before the next token, which
+// must remain when replacing the literal.
+func integerLiteralEnd(sql string, loc ast.Loc) (int, bool) {
+	if loc.Start < 0 || loc.End <= loc.Start || loc.End > len(sql) {
+		return 0, false
+	}
+	literal := strings.TrimRight(sql[loc.Start:loc.End], " \t\r\n\f\v")
+	return loc.Start + len(literal), true
 }

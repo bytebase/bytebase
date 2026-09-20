@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { act } from "react";
+import { act, cloneElement } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
@@ -29,7 +29,13 @@ vi.mock("@/components/DatabaseTargetDisplay", () => ({
 }));
 
 vi.mock("@/components/ui/tooltip", () => ({
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({
+    children,
+    content,
+  }: {
+    children: React.ReactElement<{ title?: string }>;
+    content?: string;
+  }) => (content ? cloneElement(children, { title: content }) : children),
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -190,7 +196,6 @@ describe("ResultStatusBar", () => {
         database={database}
         statement="EXPLAIN SELECT db.environment as env, db.instance as ins FROM db JOIN project on db.project = project.resource_id WHERE project.resource_id = 'a' AND db.deleted = false"
         queryTime="6 ms"
-        showVisualizeButton
       />
     );
 
