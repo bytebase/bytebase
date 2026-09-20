@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import type { MessageInitShape } from "@bufbuild/protobuf";
-import { TimestampSchema, timestampFromMs } from "@bufbuild/protobuf/wkt";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";

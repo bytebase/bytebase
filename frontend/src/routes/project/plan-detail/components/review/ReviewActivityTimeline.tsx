@@ -317,12 +317,10 @@ function SyntheticHeader({
       ) : (
         <ReviewSubmissionSentence />
       )}
-      {source.time && (
-        <HumanizeTs
-          className="text-xs text-control-light"
-          tsMs={getTimeForPbTimestampProtoEs(source.time)}
-        />
-      )}
+      <HumanizeTs
+        className="text-xs text-control-light"
+        tsMs={getTimeForPbTimestampProtoEs(source.time)}
+      />
     </>
   );
 }
