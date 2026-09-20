@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { TimestampSchema } from "@bufbuild/protobuf/wkt";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
@@ -118,14 +118,20 @@ const project = { name: "projects/p" } as Project;
 const comment = (
   id: string,
   text: string,
-  extra: { root?: string; resolved?: boolean; creator?: string } = {}
+  extra: {
+    root?: string;
+    resolved?: boolean;
+    creator?: string;
+    writtenMs?: number;
+    editedMs?: number;
+  } = {}
 ) =>
   create(IssueCommentSchema, {
     name: `${ISSUE}/issueComments/${id}`,
     comment: text,
     creator: extra.creator ?? "users/alice@example.com",
-    createTime: create(TimestampSchema, { seconds: BigInt(1) }),
-    updateTime: create(TimestampSchema, { seconds: BigInt(1) }),
+    createTime: timestampFromMs(extra.writtenMs ?? 1_000),
+    updateTime: timestampFromMs(extra.editedMs ?? extra.writtenMs ?? 1_000),
     root: extra.root,
     threadState:
       extra.root !== undefined
@@ -228,13 +234,11 @@ describe("CommentThreadCard", () => {
   test("times a reply by when it was written, not when it was edited", () => {
     // The two instants sit beside each other in ThreadComment and feed the
     // same "edited" marker, so the row has to say which one it shows.
-    const reply = create(IssueCommentSchema, {
-      name: `${ISSUE}/issueComments/edited`,
-      comment: "Reply",
-      creator: "users/alice@example.com",
+    const writtenMs = Date.UTC(2026, 2, 2, 12);
+    const reply = comment("edited", "Reply", {
       root: `${ISSUE}/issueComments/root`,
-      createTime: create(TimestampSchema, { seconds: BigInt(1_000) }),
-      updateTime: create(TimestampSchema, { seconds: BigInt(2_000) }),
+      writtenMs,
+      editedMs: writtenMs + 60_000,
     });
     const [thread] = groupThreads([comment("root", "Root question"), reply]);
     render(
@@ -244,8 +248,8 @@ describe("CommentThreadCard", () => {
     const shown = Array.from(
       container.querySelectorAll("[data-testid='humanize-ts']")
     ).map((node) => node.textContent);
-    expect(shown).toContain("1000000");
-    expect(shown).not.toContain("2000000");
+    expect(shown).toContain(String(writtenMs));
+    expect(shown).not.toContain(String(writtenMs + 60_000));
   });
 
   test("renders the root and replies oldest first with the thread footer", () => {
