@@ -11,7 +11,7 @@ import { formatAbsoluteDateTime, humanizeDurationV1 } from "@/utils";
 // Millisecond resolution so two runs created in the same wall-clock second
 // (e.g. a quick double rerun) still sort by their real order.
 const createTimeMs = (taskRun: TaskRun): number =>
-  taskRun.createTime ? getTimeForPbTimestampProtoEs(taskRun.createTime) : 0;
+  getTimeForPbTimestampProtoEs(taskRun.createTime, 0);
 
 export const sortTaskRunsNewestFirst = (taskRuns: TaskRun[]): TaskRun[] =>
   [...taskRuns].sort((left, right) => createTimeMs(right) - createTimeMs(left));
@@ -62,10 +62,8 @@ export const getTaskRunWaitingMessage = (
   t: TFunction
 ): string | undefined => {
   if (taskRun.status === TaskRun_Status.PENDING) {
-    const earliestAllowedTime = taskRun.runTime
-      ? getTimeForPbTimestampProtoEs(taskRun.runTime)
-      : null;
-    if (earliestAllowedTime) {
+    const earliestAllowedTime = getTimeForPbTimestampProtoEs(taskRun.runTime);
+    if (earliestAllowedTime !== undefined) {
       return t("task-run.status.enqueued-with-rollout-time", {
         time: formatAbsoluteDateTime(earliestAllowedTime),
       });

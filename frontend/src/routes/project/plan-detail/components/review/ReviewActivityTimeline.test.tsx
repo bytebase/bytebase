@@ -3,6 +3,7 @@ import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
+import { shownTimestampModes } from "@/test-utils/humanizeTs";
 import {
   IssueComment_ReviewSubmissionSchema,
   IssueComment_ThreadState,
@@ -215,9 +216,7 @@ describe("ReviewActivityTimeline", () => {
     });
 
     expect(
-      Array.from(
-        container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
-      ).map((node) => node.dataset.mode)
+      shownTimestampModes(container)
     ).toEqual(["queue"]);
 
     act(() => root.unmount());
