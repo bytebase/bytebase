@@ -21,7 +21,7 @@ func StartMetadataInstance(ctx context.Context, pgDataDir string, port int, mode
 		return nil, err
 	}
 	slog.Info("-----Embedded Postgres END-----")
-	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%d user=bb database=postgres", common.GetPostgresSocketDir(), port))
+	db, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%d user=bb database=postgres", GetPostgresSocketDir(), port))
 	if err != nil {
 		return nil, err
 	}

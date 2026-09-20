@@ -10,10 +10,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -182,6 +182,6 @@ func (checker *disallowOfflineDdlChecker) advice(line int, operation string) {
 		Code:          code.StatementOfflineDDL.Int32(),
 		Title:         checker.title,
 		Content:       fmt.Sprintf("%s is an offline DDL operation.", operation),
-		StartPosition: common.ConvertANTLRLineToPosition(line),
+		StartPosition: base.ConvertANTLRLineToPosition(line),
 	})
 }

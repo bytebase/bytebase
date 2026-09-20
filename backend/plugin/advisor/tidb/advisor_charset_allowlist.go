@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -54,7 +54,7 @@ func (*CharsetAllowlistAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 			Code:          advisorcode.DisabledCharset.Int32(),
 			Title:         title,
 			Content:       fmt.Sprintf("\"%s\" used disabled charset '%s'", text, charset),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	}
 

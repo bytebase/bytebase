@@ -170,6 +170,9 @@
   
     - [PlanService](#bytebase-v1-PlanService)
   
+- [v1/review_rule.proto](#v1_review_rule-proto)
+    - [ReviewRuleType](#bytebase-v1-ReviewRuleType)
+  
 - [v1/issue_service.proto](#v1_issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
@@ -185,6 +188,7 @@
     - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
     - [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate)
+    - [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata)
     - [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
@@ -205,6 +209,7 @@
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
+    - [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority)
     - [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState)
     - [ReviewRun.Status](#bytebase-v1-ReviewRun-Status)
     - [ReviewRun.Type](#bytebase-v1-ReviewRun-Type)
@@ -595,6 +600,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
+    - [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
@@ -3345,6 +3351,51 @@ PlanService manages deployment plans for database changes.
 
 
 
+<a name="v1_review_rule-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/review_rule.proto
+
+
+ 
+
+
+<a name="bytebase-v1-ReviewRuleType"></a>
+
+### ReviewRuleType
+ReviewRuleType is the standard review rule set. The rules are fixed:
+every project gets them without configuration, and the only setting is a
+switch (see ReviewRulePolicy).
+
+A rule id names what the rule examines. An execution check is named for
+what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
+the id says which way it cuts. DISALLOW on a P1 rule means the operation
+needs a person&#39;s acceptance, not that it is forbidden.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REVIEW_RULE_TYPE_UNSPECIFIED | 0 |  |
+| SYNTAX | 1 | P0: the statements do not parse for the target engine. |
+| WALK_THROUGH | 2 | P0: applying the statements to the synced schema fails: a missing table or column, a duplicate object, or an invalid reference. |
+| ONLINE_MIGRATION | 3 | P0: the change requests online migration but is not eligible. |
+| PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
+| REQUIRE_IS_NULL | 5 | P0: = NULL or &lt;&gt; NULL in a predicate, which is always false. Test for NULL with IS NULL or IS NOT NULL. |
+| REQUIRE_WHERE | 6 | P1: UPDATE or DELETE without WHERE. |
+| DISALLOW_DROP_OBJECT | 7 | P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE. |
+| DISALLOW_TRUNCATE | 8 | P1: TRUNCATE. |
+| DISALLOW_DROP_CONSTRAINT | 9 | P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint. |
+| DISALLOW_RENAME | 10 | P1: renaming a table or column. |
+| REQUIRE_PRIMARY_KEY | 11 | P1: the change creates a table without a primary key, or drops a primary key without adding one back. A table that already lacked a primary key before the change is not reported. |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v1_issue_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3540,6 +3591,7 @@ A comment on an issue.
 | root | [string](#string) | optional | The thread root&#39;s name, set only on replies. Immutable after creation. Format: projects/{project}/issues/{issue}/issueComments/{issueComment} Must name a thread root in the same issue, never a general comment or reply. |
 | thread_state | [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState) | optional | Present only on thread roots. Set OPEN on create to start a thread; an anchored root starts one without it. Omit root, thread_state, and statement_anchor to create a general comment. Update through the thread_state field mask to resolve or reopen. Adding a reply does not reopen a resolved thread. |
 | statement_anchor | [StatementAnchor](#bytebase-v1-StatementAnchor) |  | Optional source context on a root or reply. A reply&#39;s anchor must share the root&#39;s spec and sheet_sha256; it may narrow the range. Cannot be set on events. Immutable after creation. |
+| review_metadata | [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata) |  | Present on review results, the comments the review executor posts. Never accepted on create or update. |
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
@@ -3598,6 +3650,24 @@ and after a PlanService.UpdatePlan call that mutated specs).
 | ----- | ---- | ----- | ----------- |
 | from_specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
 | to_specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-ReviewMetadata"></a>
+
+### IssueComment.ReviewMetadata
+What a review result carries beyond its text.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that posted the result. |
+| rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
+| priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
+| targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -3928,6 +3998,21 @@ Approval status values.
 | PENDING | 1 | Approval pending. |
 | APPROVED | 2 | Approved. |
 | REJECTED | 3 | Rejected. |
+
+
+
+<a name="bytebase-v1-IssueComment-ReviewMetadata-Priority"></a>
+
+### IssueComment.ReviewMetadata.Priority
+Priority says what resolving the thread means. It has no bearing on
+blocking, which thread_state alone decides.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PRIORITY_UNSPECIFIED | 0 |  |
+| P0 | 1 | The SQL is wrong and must change. |
+| P1 | 2 | Dangerous but legitimate; a person must accept it. |
+| P2 | 3 | Advisory. |
 
 
 
@@ -9892,6 +9977,7 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 | masking_exemption_policy | [MaskingExemptionPolicy](#bytebase-v1-MaskingExemptionPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
+| review_rule_policy | [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy) |  |  |
 | enforce | [bool](#bool) |  | Whether the policy is enforced. |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 
@@ -9912,6 +9998,27 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
+
+
+
+
+
+
+<a name="bytebase-v1-ReviewRulePolicy"></a>
+
+### ReviewRulePolicy
+Standard review rule policy: the rules switched on. The nearest policy
+wins: a project&#39;s own policy applies as is; a project without one uses
+the workspace policy; with neither, every rule is on.
+
+A saved list is explicit, so a rule added to the standard set in a later
+release is appended to every saved policy by a data migration in that
+release.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [ReviewRuleType](#bytebase-v1-ReviewRuleType) | repeated | The rules switched on. Unknown or unspecified values are rejected. |
 
 
 
@@ -10013,6 +10120,7 @@ The type of organizational policy.
 | ROLLOUT_POLICY | 3 | Rollout deployment policy. |
 | TAG | 4 | Resource tag policy. |
 | DATA_QUERY | 6 | Query data access policy. |
+| REVIEW_RULE | 7 | Standard review rule switch. Allowed on WORKSPACE and PROJECT. |
 
 
  

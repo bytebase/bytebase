@@ -335,7 +335,7 @@ func newRecordingAuditInterceptor() (*AuditInterceptor, *recordingAuditLogWriter
 // runs the audit interceptor around a handler with no ACL between them.
 func admitted(handler connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		common.SetHandlerReached(ctx)
+		setHandlerReached(ctx)
 		return handler(ctx, req)
 	}
 }
@@ -586,7 +586,7 @@ func TestAuditSinks(t *testing.T) {
 		return func(ctx context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
 			switch outcome {
 			case outcomeRefusedInHandler:
-				common.SetPermissionDenied(ctx)
+				setPermissionDenied(ctx)
 				return nil, connect.NewError(connect.CodePermissionDenied, errors.New("permission denied"))
 			case outcomeFailedInHandler:
 				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("setting is locked"))

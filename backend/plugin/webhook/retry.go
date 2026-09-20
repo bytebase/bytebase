@@ -1,5 +1,4 @@
-//nolint:revive
-package common
+package webhook
 
 import (
 	"context"

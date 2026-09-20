@@ -159,7 +159,7 @@ func (s *AuthService) resolveAuthenticationWorkspaceID(ctx context.Context, work
 		}
 	}
 	if workspaceID != "" {
-		common.SetAuditWorkspaceID(ctx, workspaceID)
+		setAuditWorkspaceID(ctx, workspaceID)
 	}
 	return workspaceID, nil
 }
@@ -268,7 +268,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 		}
 	}
-	common.SetAuditWorkspaceID(ctx, workspaceID)
+	setAuditWorkspaceID(ctx, workspaceID)
 
 	// 4. Post-auth checks (deleted, domain, license). The fetched restriction
 	// is reused by needResetPassword below to spare a duplicate settings read.
@@ -387,7 +387,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
 	// Announce it on every exit path so denied signups still produce audit entries.
-	common.SetAuditWorkspaceID(ctx, workspaceID)
+	setAuditWorkspaceID(ctx, workspaceID)
 
 	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
 	if err != nil {
@@ -959,7 +959,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspace"))
 	}
 	if ws == nil {
-		return nil, common.PermissionDeniedError(ctx, errors.Errorf("not a member of workspace %q", workspaceID))
+		return nil, permissionDeniedError(ctx, errors.Errorf("not a member of workspace %q", workspaceID))
 	}
 
 	// Validate the target workspace's sign-in policies.
@@ -1204,7 +1204,7 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	// Announce the workspace as soon as we know it (from the WI record) so
 	// that a deactivated-WI attempt — which compliance wants to see — still
 	// lands in the audit log.
-	common.SetAuditWorkspaceID(ctx, wi.Workspace)
+	setAuditWorkspaceID(ctx, wi.Workspace)
 	if wi.MemberDeleted {
 		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.New("workload identity has been deactivated"))

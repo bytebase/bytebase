@@ -285,7 +285,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	if !hasPermission {
-		return nil, common.PermissionDeniedError(ctx, errors.New("permission denied to create rollout"))
+		return nil, permissionDeniedError(ctx, errors.New("permission denied to create rollout"))
 	}
 
 	if err := rejectMCPOriginatedIssuelessRollout(ctx, project, issue, "create a rollout"); err != nil {
@@ -864,7 +864,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the user can run tasks"))
 	}
 	if !ok {
-		return nil, common.PermissionDeniedError(ctx, errors.New("Not allowed to run tasks"))
+		return nil, permissionDeniedError(ctx, errors.New("Not allowed to run tasks"))
 	}
 
 	if err := rejectMCPOriginatedIssuelessRollout(ctx, project, issueN, "run tasks"); err != nil {
@@ -1026,7 +1026,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the user can skip tasks"))
 		}
 		if !ok {
-			return nil, common.PermissionDeniedError(ctx, errors.Errorf("not allowed to skip tasks in environment %q", environment))
+			return nil, permissionDeniedError(ctx, errors.Errorf("not allowed to skip tasks in environment %q", environment))
 		}
 	}
 
@@ -1140,7 +1140,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check if the user can run tasks"))
 	}
 	if !ok {
-		return nil, common.PermissionDeniedError(ctx, errors.New("Not allowed to cancel tasks"))
+		return nil, permissionDeniedError(ctx, errors.New("Not allowed to cancel tasks"))
 	}
 
 	// Confine the lookup to the plan and environment just authorized: the stage in

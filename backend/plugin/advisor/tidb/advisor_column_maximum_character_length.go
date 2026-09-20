@@ -7,10 +7,10 @@ import (
 	"github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -140,6 +140,6 @@ func buildCharLengthAdvice(level storepb.Advice_Status, title, _, columnName str
 		Code:          code.CharLengthExceedsLimit.Int32(),
 		Title:         title,
 		Content:       fmt.Sprintf("The length of the CHAR column `%s` is %d, bigger than %d, please use VARCHAR instead", columnName, charLength, maximum),
-		StartPosition: common.ConvertANTLRLineToPosition(line),
+		StartPosition: base.ConvertANTLRLineToPosition(line),
 	}
 }

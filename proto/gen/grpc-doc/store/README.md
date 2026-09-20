@@ -122,13 +122,26 @@
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
+- [store/review_rule.proto](#store_review_rule-proto)
+    - [ReviewRuleType](#bytebase-store-ReviewRuleType)
+  
+- [store/review_run.proto](#store_review_run-proto)
+    - [ReviewRun](#bytebase-store-ReviewRun)
+    - [ReviewRunPayload](#bytebase-store-ReviewRunPayload)
+  
+    - [ReviewRun.Status](#bytebase-store-ReviewRun-Status)
+    - [ReviewRun.Type](#bytebase-store-ReviewRun-Type)
+  
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
     - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
     - [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate)
+    - [IssueCommentPayload.ReviewMetadata](#bytebase-store-IssueCommentPayload-ReviewMetadata)
     - [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission)
     - [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor)
+  
+    - [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority)
   
 - [store/oauth2.proto](#store_oauth2-proto)
     - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
@@ -156,6 +169,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
+    - [ReviewRulePolicy](#bytebase-store-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
@@ -195,12 +209,6 @@
   
     - [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level)
     - [SQLReviewRule.Type](#bytebase-store-SQLReviewRule-Type)
-  
-- [store/review_run.proto](#store_review_run-proto)
-    - [ReviewRun](#bytebase-store-ReviewRun)
-    - [ReviewRunPayload](#bytebase-store-ReviewRunPayload)
-  
-    - [ReviewRun.Status](#bytebase-store-ReviewRun-Status)
   
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
@@ -2084,6 +2092,122 @@ Type represents the category of issue.
 
 
 
+<a name="store_review_rule-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_rule.proto
+
+
+ 
+
+
+<a name="bytebase-store-ReviewRuleType"></a>
+
+### ReviewRuleType
+ReviewRuleType mirrors bytebase.v1.ReviewRuleType. The values are shared by
+ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.
+
+A value is never removed, only marked deprecated: both payloads are jsonb,
+protojson stores the enum name, and the store&#39;s unmarshaler discards an
+unknown name into REVIEW_RULE_TYPE_UNSPECIFIED, which would blank the rule
+on every stored comment that used it.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REVIEW_RULE_TYPE_UNSPECIFIED | 0 |  |
+| SYNTAX | 1 |  |
+| WALK_THROUGH | 2 |  |
+| ONLINE_MIGRATION | 3 |  |
+| PRIOR_BACKUP | 4 |  |
+| REQUIRE_IS_NULL | 5 |  |
+| REQUIRE_WHERE | 6 |  |
+| DISALLOW_DROP_OBJECT | 7 |  |
+| DISALLOW_TRUNCATE | 8 |  |
+| DISALLOW_DROP_CONSTRAINT | 9 |  |
+| DISALLOW_RENAME | 10 |  |
+| REQUIRE_PRIMARY_KEY | 11 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_review_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_run.proto
+
+
+
+<a name="bytebase-store-ReviewRun"></a>
+
+### ReviewRun
+ReviewRun is the status slot of one reviewer (rule engine or AI) on one
+issue. Results live in issue comments; the run carries none.
+
+
+
+
+
+
+<a name="bytebase-store-ReviewRunPayload"></a>
+
+### ReviewRunPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ReviewRun-Status"></a>
+
+### ReviewRun.Status
+Strictly 1:1 with the status CHECK constraint — no unpersisted values.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| AVAILABLE | 1 |  |
+| RUNNING | 2 |  |
+| DONE | 3 |  |
+| FAILED | 4 |  |
+
+
+
+<a name="bytebase-store-ReviewRun-Type"></a>
+
+### ReviewRun.Type
+The reviewer. Stored by name in review_run.type, which has no CHECK:
+like Issue.Type and Task.Type, the enum is the source of truth and a
+new reviewer is a new value, not a migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| RULE | 1 | Review against the standard rules. |
+| GUIDELINE | 2 | Review against natural-language guidelines, performed by AI. |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_issue_comment-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2105,6 +2229,7 @@ Type represents the category of issue.
 | plan_update | [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate) |  |  |
 | review_submission | [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission) |  |  |
 | statement_anchor | [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor) |  | The statement context an inline comment references. Set at creation and immutable afterward; never set together with an event. |
+| review_metadata | [IssueCommentPayload.ReviewMetadata](#bytebase-store-IssueCommentPayload-ReviewMetadata) |  | Present on review results only, beside the text and never together with an event. Written by the review executor; CreateIssueComment rejects it. The anchor is statement_anchor; a result without one addresses the whole change. |
 
 
 
@@ -2167,6 +2292,28 @@ add/remove/update from the snapshot pair.
 
 
 
+<a name="bytebase-store-IssueCommentPayload-ReviewMetadata"></a>
+
+### IssueCommentPayload.ReviewMetadata
+ReviewMetadata is what a review result carries beyond its text: which
+reviewer posted it, what it was judged against, its priority, and the
+databases it applies to. Results from the same reviewer are superseded
+together: when a run completes, it resolves every OPEN root of its type
+in the transaction that posts the new results.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | The reviewer slot that posted the result; review_run.type stores the same enum by name. |
+| rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
+| priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
+| targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
 <a name="bytebase-store-IssueCommentPayload-ReviewSubmission"></a>
 
 ### IssueCommentPayload.ReviewSubmission
@@ -2197,6 +2344,22 @@ read against the anchored sheet and the current plan, not stored.
 
 
  
+
+
+<a name="bytebase-store-IssueCommentPayload-ReviewMetadata-Priority"></a>
+
+### IssueCommentPayload.ReviewMetadata.Priority
+Priority says what resolving the thread means. It has no bearing on
+blocking: an OPEN root thread blocks whatever its priority, and a
+result with no thread state never does.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PRIORITY_UNSPECIFIED | 0 |  |
+| P0 | 1 | The SQL is wrong and must change. Resolving without changing the SQL is a claim of false positive. |
+| P1 | 2 | Dangerous but legitimate; a person must accept it. |
+| P2 | 3 | Advisory. |
+
 
  
 
@@ -2582,6 +2745,22 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 
 
+<a name="bytebase-store-ReviewRulePolicy"></a>
+
+### ReviewRulePolicy
+ReviewRulePolicy is the standard review rule switch. The nearest policy
+wins: the project&#39;s if it has one, else the workspace&#39;s, else every rule.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [ReviewRuleType](#bytebase-store-ReviewRuleType) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-store-RolloutPolicy"></a>
 
 ### RolloutPolicy
@@ -2659,6 +2838,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | MASKING_RULE | 4 |  |
 | IAM | 5 |  |
 | TAG | 6 |  |
+| REVIEW_RULE | 7 |  |
 
 
  
@@ -3188,63 +3368,6 @@ The severity level for SQL review rules.
 | BUILTIN_WALK_THROUGH_CHECK | 110 |  |
 | STATEMENT_DISALLOW_TRUNCATE | 111 |  |
 | BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE | 112 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_review_run-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/review_run.proto
-
-
-
-<a name="bytebase-store-ReviewRun"></a>
-
-### ReviewRun
-ReviewRun is the status slot of one reviewer (rule engine or AI) on one
-issue. Results live in issue comments; the run carries none.
-
-
-
-
-
-
-<a name="bytebase-store-ReviewRunPayload"></a>
-
-### ReviewRunPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-ReviewRun-Status"></a>
-
-### ReviewRun.Status
-Strictly 1:1 with the status CHECK constraint — no unpersisted values.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| AVAILABLE | 1 |  |
-| RUNNING | 2 |  |
-| DONE | 3 |  |
-| FAILED | 4 |  |
 
 
  

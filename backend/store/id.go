@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // idMinValue is the minimum ID value for per-project auto-increment.

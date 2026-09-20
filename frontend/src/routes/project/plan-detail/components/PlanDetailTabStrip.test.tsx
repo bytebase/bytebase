@@ -38,7 +38,10 @@ describe("PlanDetailTabItem", () => {
 
     const tab = container.firstElementChild;
     const button = tab?.querySelector("button");
-    expect(tab).toHaveClass("min-w-40", "max-w-64");
+    expect(tab).toHaveClass(
+      "min-w-[min(10rem,100%)]",
+      "max-w-[min(16rem,100%)]"
+    );
     expect(button).toHaveClass("min-w-0", "flex-1");
     expect(button).not.toHaveClass("w-full");
   });

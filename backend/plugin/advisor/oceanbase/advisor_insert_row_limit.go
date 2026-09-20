@@ -9,10 +9,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -87,7 +87,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 	if checker.driver == nil {
 		return
 	}
-	if !checker.explains.Spend(common.ConvertANTLRLineToPosition(line)) {
+	if !checker.explains.Spend(base.ConvertANTLRLineToPosition(line)) {
 		return
 	}
 
@@ -98,7 +98,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 		return
 	}
@@ -109,7 +109,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 			Code:          code.Internal.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	} else if rowCount > int64(checker.maxRow) {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -117,7 +117,7 @@ func (checker *insertRowLimitChecker) handleInsertQueryExpression(text string, l
 			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", text, rowCount, checker.maxRow),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	}
 }
@@ -129,7 +129,7 @@ func (checker *insertRowLimitChecker) handleNoInsertQueryExpression(text string,
 			Code:          code.InsertTooManyRows.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" inserts %d rows. The count exceeds %d.", text, len(stmt.Values), checker.maxRow),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	}
 }

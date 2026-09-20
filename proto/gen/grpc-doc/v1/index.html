@@ -816,6 +816,21 @@
         
           
           <li>
+            <a href="#v1%2freview_rule.proto">v1/review_rule.proto</a>
+            <ul>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.ReviewRuleType"><span class="badge">E</span>ReviewRuleType</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fissue_service.proto">v1/issue_service.proto</a>
             <ul>
               
@@ -873,6 +888,10 @@
               
                 <li>
                   <a href="#bytebase.v1.IssueComment.PlanUpdate"><span class="badge">M</span>IssueComment.PlanUpdate</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.ReviewMetadata"><span class="badge">M</span>IssueComment.ReviewMetadata</a>
                 </li>
               
                 <li>
@@ -950,6 +969,10 @@
               
                 <li>
                   <a href="#bytebase.v1.IssueComment.Approval.Status"><span class="badge">E</span>IssueComment.Approval.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.ReviewMetadata.Priority"><span class="badge">E</span>IssueComment.ReviewMetadata.Priority</a>
                 </li>
               
                 <li>
@@ -2452,6 +2475,10 @@
               
                 <li>
                   <a href="#bytebase.v1.QueryDataPolicy"><span class="badge">M</span>QueryDataPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ReviewRulePolicy"><span class="badge">M</span>ReviewRulePolicy</a>
                 </li>
               
                 <li>
@@ -10296,6 +10323,107 @@ Permissions required: bb.planCheckRuns.run</p></td>
     
       
       <div class="file-heading">
+        <h2 id="v1/review_rule.proto">v1/review_rule.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+
+      
+        <h3 id="bytebase.v1.ReviewRuleType">ReviewRuleType</h3>
+        <p>ReviewRuleType is the standard review rule set. The rules are fixed:</p><p>every project gets them without configuration, and the only setting is a</p><p>switch (see ReviewRulePolicy).</p><p>A rule id names what the rule examines. An execution check is named for</p><p>what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so</p><p>the id says which way it cuts. DISALLOW on a P1 rule means the operation</p><p>needs a person's acceptance, not that it is forbidden.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>REVIEW_RULE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SYNTAX</td>
+                <td>1</td>
+                <td><p>P0: the statements do not parse for the target engine.</p></td>
+              </tr>
+            
+              <tr>
+                <td>WALK_THROUGH</td>
+                <td>2</td>
+                <td><p>P0: applying the statements to the synced schema fails: a missing
+table or column, a duplicate object, or an invalid reference.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ONLINE_MIGRATION</td>
+                <td>3</td>
+                <td><p>P0: the change requests online migration but is not eligible.</p></td>
+              </tr>
+            
+              <tr>
+                <td>PRIOR_BACKUP</td>
+                <td>4</td>
+                <td><p>P0: the change enables prior backup but the backup cannot be taken.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_IS_NULL</td>
+                <td>5</td>
+                <td><p>P0: = NULL or &lt;&gt; NULL in a predicate, which is always false. Test for
+NULL with IS NULL or IS NOT NULL.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_WHERE</td>
+                <td>6</td>
+                <td><p>P1: UPDATE or DELETE without WHERE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_DROP_OBJECT</td>
+                <td>7</td>
+                <td><p>P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_TRUNCATE</td>
+                <td>8</td>
+                <td><p>P1: TRUNCATE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_DROP_CONSTRAINT</td>
+                <td>9</td>
+                <td><p>P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_RENAME</td>
+                <td>10</td>
+                <td><p>P1: renaming a table or column.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_PRIMARY_KEY</td>
+                <td>11</td>
+                <td><p>P1: the change creates a table without a primary key, or drops a
+primary key without adding one back. A table that already lacked a
+primary key before the change is not reported.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="v1/issue_service.proto">v1/issue_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -10800,6 +10928,14 @@ Cannot be set on events. Immutable after creation. </p></td>
                 </tr>
               
                 <tr>
+                  <td>review_metadata</td>
+                  <td><a href="#bytebase.v1.IssueComment.ReviewMetadata">IssueComment.ReviewMetadata</a></td>
+                  <td></td>
+                  <td><p>Present on review results, the comments the review executor posts.
+Never accepted on create or update. </p></td>
+                </tr>
+              
+                <tr>
                   <td>approval</td>
                   <td><a href="#bytebase.v1.IssueComment.Approval">IssueComment.Approval</a></td>
                   <td></td>
@@ -10953,6 +11089,52 @@ Cannot be set on events. Immutable after creation. </p></td>
                   <td><a href="#bytebase.v1.Plan.Spec">Plan.Spec</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.IssueComment.ReviewMetadata">IssueComment.ReviewMetadata</h3>
+        <p>What a review result carries beyond its text.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>run_type</td>
+                  <td><a href="#bytebase.v1.ReviewRun.Type">ReviewRun.Type</a></td>
+                  <td></td>
+                  <td><p>The reviewer that posted the result. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rule_type</td>
+                  <td><a href="#bytebase.v1.ReviewRuleType">ReviewRuleType</a></td>
+                  <td></td>
+                  <td><p>The rule judged against. Set if and only if run_type is RULE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>priority</td>
+                  <td><a href="#bytebase.v1.IssueComment.ReviewMetadata.Priority">IssueComment.ReviewMetadata.Priority</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>targets</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Every database the result applies to, sorted.
+Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
             </tbody>
@@ -11753,6 +11935,41 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>REJECTED</td>
                 <td>3</td>
                 <td><p>Rejected.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.IssueComment.ReviewMetadata.Priority">IssueComment.ReviewMetadata.Priority</h3>
+        <p>Priority says what resolving the thread means. It has no bearing on</p><p>blocking, which thread_state alone decides.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PRIORITY_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>P0</td>
+                <td>1</td>
+                <td><p>The SQL is wrong and must change.</p></td>
+              </tr>
+            
+              <tr>
+                <td>P1</td>
+                <td>2</td>
+                <td><p>Dangerous but legitimate; a person must accept it.</p></td>
+              </tr>
+            
+              <tr>
+                <td>P2</td>
+                <td>3</td>
+                <td><p>Advisory.</p></td>
               </tr>
             
           </tbody>
@@ -28205,6 +28422,13 @@ Environment resource name: environments/environment-id. </p></td>
                 </tr>
               
                 <tr>
+                  <td>review_rule_policy</td>
+                  <td><a href="#bytebase.v1.ReviewRulePolicy">ReviewRulePolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -28270,6 +28494,30 @@ If true, users can select the admin data source or read-only data source
 If false,
 1. when read-only data source is configured, users&#39;re force to use the read-only data source
 2. otherwise fallback to use the admin data source. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ReviewRulePolicy">ReviewRulePolicy</h3>
+        <p>Standard review rule policy: the rules switched on. The nearest policy</p><p>wins: a project's own policy applies as is; a project without one uses</p><p>the workspace policy; with neither, every rule is on.</p><p>A saved list is explicit, so a rule added to the standard set in a later</p><p>release is appended to every saved policy by a data migration in that</p><p>release.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.v1.ReviewRuleType">ReviewRuleType</a></td>
+                  <td>repeated</td>
+                  <td><p>The rules switched on. Unknown or unspecified values are rejected. </p></td>
                 </tr>
               
             </tbody>
@@ -28489,6 +28737,12 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>DATA_QUERY</td>
                 <td>6</td>
                 <td><p>Query data access policy.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REVIEW_RULE</td>
+                <td>7</td>
+                <td><p>Standard review rule switch. Allowed on WORKSPACE and PROJECT.</p></td>
               </tr>
             
           </tbody>

@@ -149,7 +149,7 @@ option on its response field.
 interceptor answers permission-denied, at the MCP ceiling gate, at the
 read-only SQL clamp, and at the custom-auth handler sites that make the check
 themselves. Handler sites mark by building the refusal with
-`common.PermissionDeniedError`, so the mark cannot be forgotten separately
+`permissionDeniedError` in `backend/api/v1`, so the mark cannot be forgotten separately
 from the error; the two out-of-band doors mark through their shared writer.
 
 ## 4. Interceptor order

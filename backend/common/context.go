@@ -4,10 +4,6 @@ package common
 import (
 	"context"
 
-	"connectrpc.com/connect"
-
-	"google.golang.org/protobuf/types/known/anypb"
-
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -18,86 +14,8 @@ const (
 	// UserContextKey is the key name used to store user message in the context.
 	UserContextKey ContextKey = iota
 	AuthContextKey
-	ServiceDataKey
 	WorkspaceIDContextKey
-	AuditWorkspaceIDKey
-	PermissionDeniedKey
-	HandlerReachedKey
 )
-
-func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
-	return context.WithValue(ctx, ServiceDataKey, setServiceData)
-}
-
-func GetSetServiceDataFromContext(ctx context.Context) (func(a *anypb.Any), bool) {
-	setServiceData, ok := ctx.Value(ServiceDataKey).(func(*anypb.Any))
-	return setServiceData, ok
-}
-
-// WithSetAuditWorkspaceID registers a callback handlers can use to tell the
-// audit interceptor which workspace a request should be audited against. This
-// is needed for methods that run with allow_without_credential=true (e.g.
-// Login/Signup/ExchangeToken): the workspace is unknown when the interceptor
-// chain starts, but the handler learns it before returning.
-func WithSetAuditWorkspaceID(ctx context.Context, setAuditWorkspaceID func(workspaceID string)) context.Context {
-	return context.WithValue(ctx, AuditWorkspaceIDKey, setAuditWorkspaceID)
-}
-
-// SetAuditWorkspaceID records the workspace that the current request should be
-// audited against, if the audit interceptor registered a setter on the context.
-// Safe to call even when auditing is disabled for the current method.
-func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
-	if workspaceID == "" {
-		return
-	}
-	setter, ok := ctx.Value(AuditWorkspaceIDKey).(func(string))
-	if !ok {
-		return
-	}
-	setter(workspaceID)
-}
-
-// WithSetPermissionDenied registers a callback that a permission check inside
-// the audit interceptor uses to report that it refused the request. The check
-// runs inside the interceptor, so a value it puts on the context cannot travel
-// back out; WithSetAuditWorkspaceID has the same shape for the same reason.
-func WithSetPermissionDenied(ctx context.Context, setPermissionDenied func()) context.Context {
-	return context.WithValue(ctx, PermissionDeniedKey, setPermissionDenied)
-}
-
-// SetPermissionDenied reports that a permission check refused the current
-// request. Mark only a verdict about the caller's permission, not an outage, a
-// license gate, a workflow state or an ownership rule.
-func SetPermissionDenied(ctx context.Context) {
-	if setter, ok := ctx.Value(PermissionDeniedKey).(func()); ok {
-		setter()
-	}
-}
-
-// PermissionDeniedError is the refusal a handler answers with when its own
-// permission check turns the caller away. It marks the request, so the audit
-// interceptor streams the refusal and stamps it WARNING. A license gate, a
-// workflow state or an ownership rule answers connect.NewError directly: none
-// of them is a verdict about a permission the caller holds.
-func PermissionDeniedError(ctx context.Context, err error) *connect.Error {
-	SetPermissionDenied(ctx)
-	return connect.NewError(connect.CodePermissionDenied, err)
-}
-
-// WithSetHandlerReached registers a callback the ACL interceptor uses to report
-// that it admitted the request to its handler.
-func WithSetHandlerReached(ctx context.Context, setHandlerReached func()) context.Context {
-	return context.WithValue(ctx, HandlerReachedKey, setHandlerReached)
-}
-
-// SetHandlerReached reports that the current request passed every interceptor
-// check and is about to run its handler. The audit interceptor stores a row
-// only for such a call.
-func SetHandlerReached(ctx context.Context) {
-	if setter, ok := ctx.Value(HandlerReachedKey).(func()); ok {
-		setter()
-	}
-}
 
 // GetWorkspaceIDFromContext returns the workspace ID from the request context.
 func GetWorkspaceIDFromContext(ctx context.Context) string {

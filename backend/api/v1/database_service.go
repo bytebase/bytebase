@@ -203,7 +203,7 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 			// Same code and message as a missing database: a different one would
 			// tell the caller a database exists in a project they cannot see. The
 			// mark records the refusal the caller is not told about.
-			common.SetPermissionDenied(ctx)
+			setPermissionDenied(ctx)
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 		}
 		database, err := s.convertToDatabase(ctx, databaseMessage)
@@ -301,7 +301,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, common.PermissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent))
 		}
 		find.InstanceID = &instanceID
 	} else if projectID, err := common.GetProjectID(req.Msg.Parent); err == nil {
@@ -320,7 +320,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, common.PermissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
 		}
 		find.ProjectID = &projectID
 	} else if _, err := common.GetWorkspaceID(req.Msg.Parent); err == nil {
@@ -329,7 +329,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, common.PermissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.DatabasesList))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.DatabasesList))
 		}
 	} else if instanceID, err := common.GetInstanceID(req.Msg.Parent); err == nil {
 		if _, err := s.getInstanceForDatabaseResource(ctx, nil, instanceID); err != nil {
@@ -340,7 +340,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, common.PermissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.InstancesGet))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.InstancesGet))
 		}
 		find.InstanceID = &instanceID
 	} else {

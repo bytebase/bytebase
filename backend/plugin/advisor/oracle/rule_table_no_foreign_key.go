@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -108,7 +108,7 @@ func (r *TableNoForeignKeyRule) GetAdviceList() ([]*storepb.Advice, error) {
 				r.level,
 				code.TableHasFK.Int32(),
 				fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeIdentifierName(tableName)),
-				common.ConvertANTLRLineToPosition(r.tableLine[tableName]),
+				base.ConvertANTLRLineToPosition(r.tableLine[tableName]),
 			)
 		}
 	}

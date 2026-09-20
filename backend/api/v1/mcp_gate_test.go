@@ -851,7 +851,7 @@ func invokeMCPGate(t *testing.T, stores mcpSettingsReader, authCtx *common.AuthC
 		ctx = context.WithValue(ctx, common.AuthContextKey, authCtx)
 	}
 	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, auditTestWorkspace)
-	ctx = common.WithSetPermissionDenied(ctx, func() { out.auditMarked = true })
+	ctx = withSetPermissionDenied(ctx, func() { out.auditMarked = true })
 	_, out.err = NewInternalMCPGateInterceptor(stores).WrapUnary(next)(ctx,
 		&specRequest{AnyRequest: req, procedure: procedure})
 	return out

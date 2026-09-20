@@ -21,6 +21,60 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// The reviewer. Stored by name in review_run.type, which has no CHECK:
+// like Issue.Type and Task.Type, the enum is the source of truth and a
+// new reviewer is a new value, not a migration.
+type ReviewRun_Type int32
+
+const (
+	ReviewRun_TYPE_UNSPECIFIED ReviewRun_Type = 0
+	// Review against the standard rules.
+	ReviewRun_RULE ReviewRun_Type = 1
+	// Review against natural-language guidelines, performed by AI.
+	ReviewRun_GUIDELINE ReviewRun_Type = 2
+)
+
+// Enum value maps for ReviewRun_Type.
+var (
+	ReviewRun_Type_name = map[int32]string{
+		0: "TYPE_UNSPECIFIED",
+		1: "RULE",
+		2: "GUIDELINE",
+	}
+	ReviewRun_Type_value = map[string]int32{
+		"TYPE_UNSPECIFIED": 0,
+		"RULE":             1,
+		"GUIDELINE":        2,
+	}
+)
+
+func (x ReviewRun_Type) Enum() *ReviewRun_Type {
+	p := new(ReviewRun_Type)
+	*p = x
+	return p
+}
+
+func (x ReviewRun_Type) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ReviewRun_Type) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_review_run_proto_enumTypes[0].Descriptor()
+}
+
+func (ReviewRun_Type) Type() protoreflect.EnumType {
+	return &file_store_review_run_proto_enumTypes[0]
+}
+
+func (x ReviewRun_Type) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ReviewRun_Type.Descriptor instead.
+func (ReviewRun_Type) EnumDescriptor() ([]byte, []int) {
+	return file_store_review_run_proto_rawDescGZIP(), []int{0, 0}
+}
+
 // Strictly 1:1 with the status CHECK constraint — no unpersisted values.
 type ReviewRun_Status int32
 
@@ -61,11 +115,11 @@ func (x ReviewRun_Status) String() string {
 }
 
 func (ReviewRun_Status) Descriptor() protoreflect.EnumDescriptor {
-	return file_store_review_run_proto_enumTypes[0].Descriptor()
+	return file_store_review_run_proto_enumTypes[1].Descriptor()
 }
 
 func (ReviewRun_Status) Type() protoreflect.EnumType {
-	return &file_store_review_run_proto_enumTypes[0]
+	return &file_store_review_run_proto_enumTypes[1]
 }
 
 func (x ReviewRun_Status) Number() protoreflect.EnumNumber {
@@ -74,7 +128,7 @@ func (x ReviewRun_Status) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ReviewRun_Status.Descriptor instead.
 func (ReviewRun_Status) EnumDescriptor() ([]byte, []int) {
-	return file_store_review_run_proto_rawDescGZIP(), []int{0, 0}
+	return file_store_review_run_proto_rawDescGZIP(), []int{0, 1}
 }
 
 // ReviewRun is the status slot of one reviewer (rule engine or AI) on one
@@ -166,8 +220,12 @@ var File_store_review_run_proto protoreflect.FileDescriptor
 
 const file_store_review_run_proto_rawDesc = "" +
 	"\n" +
-	"\x16store/review_run.proto\x12\x0ebytebase.store\"_\n" +
-	"\tReviewRun\"R\n" +
+	"\x16store/review_run.proto\x12\x0ebytebase.store\"\x96\x01\n" +
+	"\tReviewRun\"5\n" +
+	"\x04Type\x12\x14\n" +
+	"\x10TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
+	"\x04RULE\x10\x01\x12\r\n" +
+	"\tGUIDELINE\x10\x02\"R\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tAVAILABLE\x10\x01\x12\v\n" +
@@ -191,12 +249,13 @@ func file_store_review_run_proto_rawDescGZIP() []byte {
 	return file_store_review_run_proto_rawDescData
 }
 
-var file_store_review_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_review_run_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_review_run_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_store_review_run_proto_goTypes = []any{
-	(ReviewRun_Status)(0),    // 0: bytebase.store.ReviewRun.Status
-	(*ReviewRun)(nil),        // 1: bytebase.store.ReviewRun
-	(*ReviewRunPayload)(nil), // 2: bytebase.store.ReviewRunPayload
+	(ReviewRun_Type)(0),      // 0: bytebase.store.ReviewRun.Type
+	(ReviewRun_Status)(0),    // 1: bytebase.store.ReviewRun.Status
+	(*ReviewRun)(nil),        // 2: bytebase.store.ReviewRun
+	(*ReviewRunPayload)(nil), // 3: bytebase.store.ReviewRunPayload
 }
 var file_store_review_run_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -216,7 +275,7 @@ func file_store_review_run_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_review_run_proto_rawDesc), len(file_store_review_run_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,

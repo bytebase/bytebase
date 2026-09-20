@@ -8,10 +8,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -91,7 +91,7 @@ func (r *functionDisallowedListOmniRule) checkExpr(expr ast.ExprNode) {
 				Code:          code.DisabledFunction.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("Function \"%s\" is disallowed, but \"%s\" uses", fn.Name, r.QueryText()),
-				StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(fn.Loc))),
+				StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(fn.Loc))),
 			})
 		}
 		return true

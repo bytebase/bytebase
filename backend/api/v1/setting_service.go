@@ -173,7 +173,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// audit log.
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && existedSetting != nil {
 		v1pbSetting, err := convertToSettingMessage(existedSetting)
 		if err != nil {
 			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
@@ -582,7 +582,7 @@ func (s *SettingService) updateAppIMSetting(ctx context.Context, request *connec
 
 	// Re-capture the audit before-image from the locked row the merge ran
 	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
 		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
 			Name:      storepb.SettingName_APP_IM,
 			Workspace: workspaceID,
@@ -805,7 +805,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 
 	// Re-capture the audit before-image from the locked row the merge ran
 	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+	if setServiceData, ok := getSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
 		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
 			Name:      storepb.SettingName_WORKSPACE_PROFILE,
 			Workspace: workspaceID,
@@ -1108,7 +1108,7 @@ func (s *SettingService) checkSettingPermission(ctx context.Context, req connect
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		err := common.PermissionDeniedError(ctx, errors.Errorf("user does not have permission %q", perm))
+		err := permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", perm))
 		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
 			Method:              req.Spec().Procedure,
 			RequiredPermissions: []string{string(perm)},

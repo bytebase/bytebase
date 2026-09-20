@@ -10,6 +10,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/type/expr.proto";
 import "v1/annotation.proto";
+import "v1/review_rule.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -214,6 +215,7 @@ message Policy {
     MaskingExemptionPolicy masking_exemption_policy = 6;
     TagPolicy tag_policy = 7;
     QueryDataPolicy query_data_policy = 9;
+    ReviewRulePolicy review_rule_policy = 12;
   }
 
   // Whether the policy is enforced.
@@ -238,6 +240,8 @@ enum PolicyType {
   TAG = 4;
   // Query data access policy.
   DATA_QUERY = 6;
+  // Standard review rule switch. Allowed on WORKSPACE and PROJECT.
+  REVIEW_RULE = 7;
 }
 
 // The resource type that a policy can be attached to.
@@ -250,6 +254,18 @@ enum PolicyResourceType {
   ENVIRONMENT = 2;
   // Project-level policy.
   PROJECT = 3;
+}
+
+// Standard review rule policy: the rules switched on. The nearest policy
+// wins: a project's own policy applies as is; a project without one uses
+// the workspace policy; with neither, every rule is on.
+//
+// A saved list is explicit, so a rule added to the standard set in a later
+// release is appended to every saved policy by a data migration in that
+// release.
+message ReviewRulePolicy {
+  // The rules switched on. Unknown or unspecified values are rejected.
+  repeated ReviewRuleType rules = 1;
 }
 
 // Rollout policy configuration.

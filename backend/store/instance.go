@@ -15,9 +15,9 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // InstanceMessage is the message for instance.
@@ -600,55 +600,55 @@ func (s *Store) obfuscateInstance(ctx context.Context, instance *storepb.Instanc
 
 	redacted := proto.CloneOf(instance)
 	for _, ds := range redacted.GetDataSources() {
-		ds.ObfuscatedPassword = common.Obfuscate(ds.GetPassword(), secret)
+		ds.ObfuscatedPassword = obfuscate(ds.GetPassword(), secret)
 		ds.Password = ""
-		ds.ObfuscatedSslCa = common.Obfuscate(ds.GetSslCa(), secret)
+		ds.ObfuscatedSslCa = obfuscate(ds.GetSslCa(), secret)
 		ds.SslCa = ""
-		ds.ObfuscatedSslCaPath = common.Obfuscate(ds.GetSslCaPath(), secret)
+		ds.ObfuscatedSslCaPath = obfuscate(ds.GetSslCaPath(), secret)
 		ds.SslCaPath = ""
-		ds.ObfuscatedSslCert = common.Obfuscate(ds.GetSslCert(), secret)
+		ds.ObfuscatedSslCert = obfuscate(ds.GetSslCert(), secret)
 		ds.SslCert = ""
-		ds.ObfuscatedSslCertPath = common.Obfuscate(ds.GetSslCertPath(), secret)
+		ds.ObfuscatedSslCertPath = obfuscate(ds.GetSslCertPath(), secret)
 		ds.SslCertPath = ""
-		ds.ObfuscatedSslKey = common.Obfuscate(ds.GetSslKey(), secret)
+		ds.ObfuscatedSslKey = obfuscate(ds.GetSslKey(), secret)
 		ds.SslKey = ""
-		ds.ObfuscatedSslKeyPath = common.Obfuscate(ds.GetSslKeyPath(), secret)
+		ds.ObfuscatedSslKeyPath = obfuscate(ds.GetSslKeyPath(), secret)
 		ds.SslKeyPath = ""
-		ds.ObfuscatedSshPassword = common.Obfuscate(ds.GetSshPassword(), secret)
+		ds.ObfuscatedSshPassword = obfuscate(ds.GetSshPassword(), secret)
 		ds.SshPassword = ""
-		ds.ObfuscatedSshPrivateKey = common.Obfuscate(ds.GetSshPrivateKey(), secret)
+		ds.ObfuscatedSshPrivateKey = obfuscate(ds.GetSshPrivateKey(), secret)
 		ds.SshPrivateKey = ""
-		ds.ObfuscatedAuthenticationPrivateKey = common.Obfuscate(ds.GetAuthenticationPrivateKey(), secret)
+		ds.ObfuscatedAuthenticationPrivateKey = obfuscate(ds.GetAuthenticationPrivateKey(), secret)
 		ds.AuthenticationPrivateKey = ""
-		ds.ObfuscatedAuthenticationPrivateKeyPassphrase = common.Obfuscate(ds.GetAuthenticationPrivateKeyPassphrase(), secret)
+		ds.ObfuscatedAuthenticationPrivateKeyPassphrase = obfuscate(ds.GetAuthenticationPrivateKeyPassphrase(), secret)
 		ds.AuthenticationPrivateKeyPassphrase = ""
-		ds.ObfuscatedMasterPassword = common.Obfuscate(ds.GetMasterPassword(), secret)
+		ds.ObfuscatedMasterPassword = obfuscate(ds.GetMasterPassword(), secret)
 		ds.MasterPassword = ""
 
 		if azureCredential := ds.GetAzureCredential(); azureCredential != nil {
-			azureCredential.ObfuscatedClientSecret = common.Obfuscate(azureCredential.ClientSecret, secret)
+			azureCredential.ObfuscatedClientSecret = obfuscate(azureCredential.ClientSecret, secret)
 			azureCredential.ClientSecret = ""
 		}
 		if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
-			awsCredential.ObfuscatedAccessKeyId = common.Obfuscate(awsCredential.AccessKeyId, secret)
+			awsCredential.ObfuscatedAccessKeyId = obfuscate(awsCredential.AccessKeyId, secret)
 			awsCredential.AccessKeyId = ""
 
-			awsCredential.ObfuscatedSecretAccessKey = common.Obfuscate(awsCredential.SecretAccessKey, secret)
+			awsCredential.ObfuscatedSecretAccessKey = obfuscate(awsCredential.SecretAccessKey, secret)
 			awsCredential.SecretAccessKey = ""
 
-			awsCredential.ObfuscatedSessionToken = common.Obfuscate(awsCredential.SessionToken, secret)
+			awsCredential.ObfuscatedSessionToken = obfuscate(awsCredential.SessionToken, secret)
 			awsCredential.SessionToken = ""
 		}
 		if gcpCredential := ds.GetGcpCredential(); gcpCredential != nil {
-			gcpCredential.ObfuscatedContent = common.Obfuscate(gcpCredential.Content, secret)
+			gcpCredential.ObfuscatedContent = obfuscate(gcpCredential.Content, secret)
 			gcpCredential.Content = ""
 		}
 		if externalSecret := ds.GetExternalSecret(); externalSecret != nil {
-			externalSecret.ObfuscatedVaultSslCa = common.Obfuscate(externalSecret.GetVaultSslCa(), secret)
+			externalSecret.ObfuscatedVaultSslCa = obfuscate(externalSecret.GetVaultSslCa(), secret)
 			externalSecret.VaultSslCa = ""
-			externalSecret.ObfuscatedVaultSslCert = common.Obfuscate(externalSecret.GetVaultSslCert(), secret)
+			externalSecret.ObfuscatedVaultSslCert = obfuscate(externalSecret.GetVaultSslCert(), secret)
 			externalSecret.VaultSslCert = ""
-			externalSecret.ObfuscatedVaultSslKey = common.Obfuscate(externalSecret.GetVaultSslKey(), secret)
+			externalSecret.ObfuscatedVaultSslKey = obfuscate(externalSecret.GetVaultSslKey(), secret)
 			externalSecret.VaultSslKey = ""
 		}
 	}
@@ -664,77 +664,77 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 
 	for _, instance := range instances {
 		for _, ds := range instance.Metadata.GetDataSources() {
-			password, err := common.Unobfuscate(ds.GetObfuscatedPassword(), secret)
+			password, err := unobfuscate(ds.GetObfuscatedPassword(), secret)
 			if err != nil {
 				return err
 			}
 			ds.Password = password
 
-			sslCa, err := common.Unobfuscate(ds.GetObfuscatedSslCa(), secret)
+			sslCa, err := unobfuscate(ds.GetObfuscatedSslCa(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCa = sslCa
-			sslCaPath, err := common.Unobfuscate(ds.GetObfuscatedSslCaPath(), secret)
+			sslCaPath, err := unobfuscate(ds.GetObfuscatedSslCaPath(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCaPath = sslCaPath
 
-			sslCert, err := common.Unobfuscate(ds.GetObfuscatedSslCert(), secret)
+			sslCert, err := unobfuscate(ds.GetObfuscatedSslCert(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCert = sslCert
-			sslCertPath, err := common.Unobfuscate(ds.GetObfuscatedSslCertPath(), secret)
+			sslCertPath, err := unobfuscate(ds.GetObfuscatedSslCertPath(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslCertPath = sslCertPath
 
-			sslKey, err := common.Unobfuscate(ds.GetObfuscatedSslKey(), secret)
+			sslKey, err := unobfuscate(ds.GetObfuscatedSslKey(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslKey = sslKey
-			sslKeyPath, err := common.Unobfuscate(ds.GetObfuscatedSslKeyPath(), secret)
+			sslKeyPath, err := unobfuscate(ds.GetObfuscatedSslKeyPath(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SslKeyPath = sslKeyPath
 
-			sshPassword, err := common.Unobfuscate(ds.GetObfuscatedSshPassword(), secret)
+			sshPassword, err := unobfuscate(ds.GetObfuscatedSshPassword(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SshPassword = sshPassword
 
-			sshPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedSshPrivateKey(), secret)
+			sshPrivateKey, err := unobfuscate(ds.GetObfuscatedSshPrivateKey(), secret)
 			if err != nil {
 				return err
 			}
 			ds.SshPrivateKey = sshPrivateKey
 
-			authenticationPrivateKey, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKey(), secret)
+			authenticationPrivateKey, err := unobfuscate(ds.GetObfuscatedAuthenticationPrivateKey(), secret)
 			if err != nil {
 				return err
 			}
 			ds.AuthenticationPrivateKey = authenticationPrivateKey
 
-			authenticationPrivateKeyPassphrase, err := common.Unobfuscate(ds.GetObfuscatedAuthenticationPrivateKeyPassphrase(), secret)
+			authenticationPrivateKeyPassphrase, err := unobfuscate(ds.GetObfuscatedAuthenticationPrivateKeyPassphrase(), secret)
 			if err != nil {
 				return err
 			}
 			ds.AuthenticationPrivateKeyPassphrase = authenticationPrivateKeyPassphrase
 
-			masterPassword, err := common.Unobfuscate(ds.GetObfuscatedMasterPassword(), secret)
+			masterPassword, err := unobfuscate(ds.GetObfuscatedMasterPassword(), secret)
 			if err != nil {
 				return err
 			}
 			ds.MasterPassword = masterPassword
 
 			if azureCredential := ds.GetAzureCredential(); azureCredential != nil {
-				clientSecret, err := common.Unobfuscate(azureCredential.ObfuscatedClientSecret, secret)
+				clientSecret, err := unobfuscate(azureCredential.ObfuscatedClientSecret, secret)
 				if err != nil {
 					return err
 				}
@@ -742,19 +742,19 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 			}
 
 			if awsCredential := ds.GetAwsCredential(); awsCredential != nil {
-				accessKeyID, err := common.Unobfuscate(awsCredential.ObfuscatedAccessKeyId, secret)
+				accessKeyID, err := unobfuscate(awsCredential.ObfuscatedAccessKeyId, secret)
 				if err != nil {
 					return err
 				}
 				awsCredential.AccessKeyId = accessKeyID
 
-				secretAccessKey, err := common.Unobfuscate(awsCredential.ObfuscatedSecretAccessKey, secret)
+				secretAccessKey, err := unobfuscate(awsCredential.ObfuscatedSecretAccessKey, secret)
 				if err != nil {
 					return err
 				}
 				awsCredential.SecretAccessKey = secretAccessKey
 
-				sessionToken, err := common.Unobfuscate(awsCredential.ObfuscatedSessionToken, secret)
+				sessionToken, err := unobfuscate(awsCredential.ObfuscatedSessionToken, secret)
 				if err != nil {
 					return err
 				}
@@ -762,7 +762,7 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 			}
 
 			if gcpCredential := ds.GetGcpCredential(); gcpCredential != nil {
-				content, err := common.Unobfuscate(gcpCredential.ObfuscatedContent, secret)
+				content, err := unobfuscate(gcpCredential.ObfuscatedContent, secret)
 				if err != nil {
 					return err
 				}
@@ -770,19 +770,19 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 			}
 
 			if externalSecret := ds.GetExternalSecret(); externalSecret != nil {
-				sslCa, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCa(), secret)
+				sslCa, err := unobfuscate(externalSecret.GetObfuscatedVaultSslCa(), secret)
 				if err != nil {
 					return err
 				}
 				externalSecret.VaultSslCa = sslCa
 
-				sslCert, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslCert(), secret)
+				sslCert, err := unobfuscate(externalSecret.GetObfuscatedVaultSslCert(), secret)
 				if err != nil {
 					return err
 				}
 				externalSecret.VaultSslCert = sslCert
 
-				sslKey, err := common.Unobfuscate(externalSecret.GetObfuscatedVaultSslKey(), secret)
+				sslKey, err := unobfuscate(externalSecret.GetObfuscatedVaultSslKey(), secret)
 				if err != nil {
 					return err
 				}

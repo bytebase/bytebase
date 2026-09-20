@@ -14838,6 +14838,13 @@ components:
             Optional source context on a root or reply. A reply's anchor must share
              the root's spec and sheet_sha256; it may narrow the range.
              Cannot be set on events. Immutable after creation.
+        reviewMetadata:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewMetadata'
+          title: review_metadata
+          description: |-
+            Present on review results, the comments the review executor posts.
+             Never accepted on create or update.
       title: IssueComment
       description: A comment on an issue.
     bytebase.v1.IssueComment.Approval:
@@ -14924,6 +14931,45 @@ components:
       description: |-
         Plan update event information (snapshot of plan.config.specs before
          and after a PlanService.UpdatePlan call that mutated specs).
+    bytebase.v1.IssueComment.ReviewMetadata:
+      type: object
+      properties:
+        runType:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Type'
+          title: run_type
+          description: The reviewer that posted the result.
+        ruleType:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.ReviewRuleType'
+          title: rule_type
+          description: The rule judged against. Set if and only if run_type is RULE.
+        priority:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewMetadata.Priority'
+          title: priority
+        targets:
+          type: array
+          items:
+            type: string
+          title: targets
+          description: |-
+            Every database the result applies to, sorted.
+             Format: instances/{instance}/databases/{database}
+      title: ReviewMetadata
+      additionalProperties: false
+      description: What a review result carries beyond its text.
+    bytebase.v1.IssueComment.ReviewMetadata.Priority:
+      type: string
+      title: Priority
+      enum:
+        - PRIORITY_UNSPECIFIED
+        - P0
+        - P1
+        - P2
+      description: |-
+        Priority says what resolving the thread means. It has no bearing on
+         blocking, which thread_state alone decides.
     bytebase.v1.IssueComment.ReviewSubmission:
       type: object
       title: ReviewSubmission
@@ -17861,6 +17907,13 @@ components:
           title: query_data_policy
         - type: object
           properties:
+            reviewRulePolicy:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.ReviewRulePolicy'
+              title: review_rule_policy
+          title: review_rule_policy
+        - type: object
+          properties:
             rolloutPolicy:
               allOf:
                 - $ref: '#/components/schemas/bytebase.v1.RolloutPolicy'
@@ -17884,6 +17937,8 @@ components:
               - required:
                   - queryDataPolicy
               - required:
+                  - reviewRulePolicy
+              - required:
                   - rolloutPolicy
               - required:
                   - tagPolicy
@@ -17895,6 +17950,8 @@ components:
                     - maskingRulePolicy
                 - required:
                     - queryDataPolicy
+                - required:
+                    - reviewRulePolicy
                 - required:
                     - rolloutPolicy
                 - required:
@@ -17958,6 +18015,7 @@ components:
         - ROLLOUT_POLICY
         - TAG
         - DATA_QUERY
+        - REVIEW_RULE
       description: The type of organizational policy.
     bytebase.v1.Position:
       type: object
@@ -19087,6 +19145,50 @@ components:
              Format: {resource}/{resource id}, e.g., environments/test.
       title: ReviewConfig
       additionalProperties: false
+    bytebase.v1.ReviewRulePolicy:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.ReviewRuleType'
+          title: rules
+          description: The rules switched on. Unknown or unspecified values are rejected.
+      title: ReviewRulePolicy
+      additionalProperties: false
+      description: |-
+        Standard review rule policy: the rules switched on. The nearest policy
+         wins: a project's own policy applies as is; a project without one uses
+         the workspace policy; with neither, every rule is on.
+
+         A saved list is explicit, so a rule added to the standard set in a later
+         release is appended to every saved policy by a data migration in that
+         release.
+    bytebase.v1.ReviewRuleType:
+      type: string
+      title: ReviewRuleType
+      enum:
+        - REVIEW_RULE_TYPE_UNSPECIFIED
+        - SYNTAX
+        - WALK_THROUGH
+        - ONLINE_MIGRATION
+        - PRIOR_BACKUP
+        - REQUIRE_IS_NULL
+        - REQUIRE_WHERE
+        - DISALLOW_DROP_OBJECT
+        - DISALLOW_TRUNCATE
+        - DISALLOW_DROP_CONSTRAINT
+        - DISALLOW_RENAME
+        - REQUIRE_PRIMARY_KEY
+      description: |-
+        ReviewRuleType is the standard review rule set. The rules are fixed:
+         every project gets them without configuration, and the only setting is a
+         switch (see ReviewRulePolicy).
+
+         A rule id names what the rule examines. An execution check is named for
+         what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
+         the id says which way it cuts. DISALLOW on a P1 rule means the operation
+         needs a person's acceptance, not that it is forbidden.
     bytebase.v1.ReviewRun:
       type: object
       properties:
@@ -24575,10 +24677,15 @@ components:
       enum:
         - NULL_VALUE
       description: |-
-        `NullValue` is a singleton enumeration to represent the null value for the
-         `Value` type union.
+        Represents a JSON `null`.
 
-         The JSON representation for `NullValue` is JSON `null`.
+         `NullValue` is a sentinel, using an enum with only one value to represent
+         the null value for the `Value` type union.
+
+         A field of type `NullValue` with any value other than `0` is considered
+         invalid. Most ProtoJSON serializers will emit a Value with a `null_value` set
+         as a JSON `null` regardless of the integer value, and so will round trip to
+         a `0` value.
     google.protobuf.Struct:
       type: object
       additionalProperties:

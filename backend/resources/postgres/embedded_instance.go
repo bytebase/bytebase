@@ -11,7 +11,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 )
 
@@ -66,7 +65,7 @@ func RemoveEmbeddedInstance(dataDir string) error {
 }
 
 func setupEmbeddedInstance(ctx context.Context, config EmbeddedInstanceConfig) error {
-	defaultDB, err := sql.Open("pgx", fmt.Sprintf("user=%s host=%s port=%d database=postgres", config.User, common.GetPostgresSocketDir(), config.Port))
+	defaultDB, err := sql.Open("pgx", fmt.Sprintf("user=%s host=%s port=%d database=postgres", config.User, GetPostgresSocketDir(), config.Port))
 	if err != nil {
 		return err
 	}
@@ -83,7 +82,7 @@ func setupEmbeddedInstance(ctx context.Context, config EmbeddedInstanceConfig) e
 		return errors.Wrap(err, "failed to create embedded PostgreSQL database")
 	}
 
-	database, err := sql.Open("pgx", fmt.Sprintf("user=%s host=%s port=%d database=%s", config.User, common.GetPostgresSocketDir(), config.Port, config.DatabaseName))
+	database, err := sql.Open("pgx", fmt.Sprintf("user=%s host=%s port=%d database=%s", config.User, GetPostgresSocketDir(), config.Port, config.DatabaseName))
 	if err != nil {
 		return err
 	}

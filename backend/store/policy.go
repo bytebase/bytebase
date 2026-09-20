@@ -14,8 +14,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 type IamPolicyMessage struct {
@@ -458,6 +458,70 @@ func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, reso
 	p := &storepb.QueryDataPolicy{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal query data policy")
+	}
+	return p, nil
+}
+
+// GetDefaultReviewRulePolicy returns the review rule policy in force when
+// neither the project nor the workspace has one: every standard rule on. A
+// rule added to ReviewRuleType is added here in the same release.
+func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
+	return &storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{
+		storepb.ReviewRuleType_SYNTAX,
+		storepb.ReviewRuleType_WALK_THROUGH,
+		storepb.ReviewRuleType_ONLINE_MIGRATION,
+		storepb.ReviewRuleType_PRIOR_BACKUP,
+		storepb.ReviewRuleType_REQUIRE_IS_NULL,
+		storepb.ReviewRuleType_REQUIRE_WHERE,
+		storepb.ReviewRuleType_DISALLOW_DROP_OBJECT,
+		storepb.ReviewRuleType_DISALLOW_TRUNCATE,
+		storepb.ReviewRuleType_DISALLOW_DROP_CONSTRAINT,
+		storepb.ReviewRuleType_DISALLOW_RENAME,
+		storepb.ReviewRuleType_REQUIRE_PRIMARY_KEY,
+	}}
+}
+
+// GetEffectiveReviewRulePolicy returns the standard review rules on for a
+// project. The nearest policy wins: the project's own policy applies as is, a
+// project without one uses the workspace policy, and with neither every rule
+// is on. A policy that is not enforced counts as absent.
+func (s *Store) GetEffectiveReviewRulePolicy(ctx context.Context, workspaceID string, projectID string) (*storepb.ReviewRulePolicy, error) {
+	for _, level := range []struct {
+		resourceType storepb.Policy_Resource
+		resource     string
+	}{
+		{storepb.Policy_PROJECT, common.FormatProject(projectID)},
+		{storepb.Policy_WORKSPACE, common.FormatWorkspace(workspaceID)},
+	} {
+		policy, err := s.getReviewRulePolicy(ctx, workspaceID, level.resourceType, level.resource)
+		if err != nil {
+			return nil, err
+		}
+		if policy != nil {
+			return policy, nil
+		}
+	}
+	return GetDefaultReviewRulePolicy(), nil
+}
+
+// getReviewRulePolicy returns nil when the resource has no enforced review
+// rule policy.
+func (s *Store) getReviewRulePolicy(ctx context.Context, workspaceID string, resourceType storepb.Policy_Resource, resource string) (*storepb.ReviewRulePolicy, error) {
+	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
+		ResourceType: &resourceType,
+		Resource:     &resource,
+		Type:         new(storepb.Policy_REVIEW_RULE),
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get review rule policy for %s", resource)
+	}
+	if policy == nil || !policy.Enforce {
+		return nil, nil
+	}
+	p := &storepb.ReviewRulePolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal review rule policy for %s", resource)
 	}
 	return p, nil
 }

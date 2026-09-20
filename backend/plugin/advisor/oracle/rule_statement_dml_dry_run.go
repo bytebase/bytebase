@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -91,7 +92,7 @@ func (r *StatementDmlDryRunRule) handleStmt(text string, lineNumber int) {
 			r.level,
 			code.StatementDMLDryRunFailed.Int32(),
 			fmt.Sprintf("Failed to dry run statement at line %d: %v", lineNumber, err),
-			common.ConvertANTLRLineToPosition(lineNumber),
+			base.ConvertANTLRLineToPosition(lineNumber),
 		)
 	}
 }

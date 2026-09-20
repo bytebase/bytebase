@@ -161,12 +161,6 @@ const DEFAULT_VISIBLE_TARGETS = 20;
 const DATABASE_GROUP_VISIBLE_DATABASES = 3;
 const EMPTY_SELECT_VALUE = "__empty__";
 
-// Shared hover/focus recipe for the square icon buttons on the tab strip
-// (the per-tab actions menu and the add-change button). Callers append their
-// own size and corner radius.
-const ICON_ACTION_CLASS =
-  "inline-flex cursor-pointer items-center justify-center text-control-light outline-hidden transition-colors hover:bg-control-bg hover:text-control focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50";
-
 const pushSpecDetailRoute = (
   projectId: string,
   planId: string,
@@ -315,6 +309,10 @@ export function PlanDetailChangesBranch({
 
   const selectSpec = useCallback(
     (specId: string) => {
+      if (specId === pendingNewSpec?.id) {
+        setIsPendingSelected(true);
+        return;
+      }
       if (page.isCreating) {
         // No URL drives the selection during plan creation.
         onSelectedSpecIdChange(specId);
@@ -325,7 +323,13 @@ export function PlanDetailChangesBranch({
       // confirm dialog when the navigation is cancelled.
       void pushSpecDetailRoute(page.projectId, page.planId, specId);
     },
-    [onSelectedSpecIdChange, page.isCreating, page.planId, page.projectId]
+    [
+      onSelectedSpecIdChange,
+      page.isCreating,
+      page.planId,
+      page.projectId,
+      pendingNewSpec?.id,
+    ]
   );
 
   const handleSpecCreate = async (targets: string[]) => {
@@ -587,10 +591,7 @@ export function PlanDetailChangesBranch({
             >
               <Button
                 aria-label={t("plan.add-spec")}
-                className={cn(
-                  ICON_ACTION_CLASS,
-                  "rounded-xs [touch-action:manipulation]"
-                )}
+                className="text-control-light hover:text-control [touch-action:manipulation]"
                 disabled={Boolean(pendingNewSpec)}
                 onClick={() => setShowAddSpecSheet(true)}
                 size="sm"
@@ -621,9 +622,7 @@ export function PlanDetailChangesBranch({
               action={
                 canModifySpecs && visibleSpecs.length > 1 ? (
                   <DropdownMenu>
-                    <DropdownMenuTrigger
-                      className={cn(ICON_ACTION_CLASS, "size-6 rounded-xs")}
-                    >
+                    <DropdownMenuTrigger className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-xs text-control-light outline-hidden transition-colors hover:bg-control-bg hover:text-control focus-visible:ring-2 focus-visible:ring-accent">
                       <EllipsisVertical className="size-3.5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
@@ -646,26 +645,12 @@ export function PlanDetailChangesBranch({
                   </DropdownMenu>
                 ) : undefined
               }
-              onSelect={() => {
-                if (isPending) {
-                  // Draft has no backend URL — only update local selection.
-                  setIsPendingSelected(true);
-                  return;
-                }
-                // Don't clear isPendingSelected here — if a leave-confirm
-                // dialog intercepts the navigation, we want the draft to
-                // stay visible behind the dialog. The URL-sync effect
-                // below clears it once selectedSpecId actually changes.
-                selectSpec(spec.id);
-              }}
+              onSelect={() => selectSpec(spec.id)}
               selected={isSelected}
             >
               <PlanChangeReference
                 ariaHidden
-                className={cn(
-                  "text-sm font-medium transition-colors",
-                  isSelected ? "" : "text-control-light hover:text-control"
-                )}
+                className={isSelected ? undefined : "text-control-light"}
                 density="tab"
                 reference={reference}
               />
