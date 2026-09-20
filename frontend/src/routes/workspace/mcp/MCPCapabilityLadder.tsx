@@ -156,9 +156,7 @@ function LadderRow({
       <span
         className={cn(
           "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
-          served
-            ? "bg-success/10 text-success"
-            : "bg-error/10 text-error"
+          served ? "bg-success/10 text-success" : "bg-error/10 text-error"
         )}
       >
         {served ? (
@@ -177,9 +175,7 @@ function LadderRow({
       </span>
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span
-            className="text-sm text-control-light"
-          >
+          <span className="text-sm text-control-light">
             {t(mcpRowKey(row, "title"))}
           </span>
           {served && (
@@ -192,9 +188,7 @@ function LadderRow({
           )}
         </div>
         {details && (
-          <p
-            className="text-xs leading-5 text-control-light"
-          >
+          <p className="text-xs leading-5 text-control-light">
             {t(mcpRowKey(row, "details"))}
           </p>
         )}
