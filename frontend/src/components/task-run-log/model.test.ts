@@ -256,12 +256,19 @@ describe("task-run-log model", () => {
       { getSectionLabel: (type) => String(type) }
     );
 
-    const timestamps = sections
-      .flatMap((section) => section.items)
-      .map((item) => item.timeMs);
-    expect(timestamps).toHaveLength(2);
-    expect(timestamps.filter((ms) => ms === undefined)).toHaveLength(1);
-    expect(timestamps.filter((ms) => typeof ms === "number")).toHaveLength(1);
+    // Which line got which instant, not how many of each: one undefined and
+    // one number is also what swapping them produces.
+    // The column a reader sees, paired with the instant behind it: both come
+    // from one entry, and one undefined plus one number is also what swapping
+    // them produces.
+    expect(
+      sections
+        .flatMap((section) => section.items)
+        .map((item) => [item.time, item.timeMs])
+    ).toEqual([
+      ["--:--:--.---", undefined],
+      ["08:00:10.000", 10_000],
+    ]);
   });
 
   test("renders gh-ost migration as a timed section", () => {
