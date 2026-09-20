@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/type/expr.proto";
+import "store/review_rule.proto";
 
 option go_package = "generated-go/store";
 
@@ -15,6 +16,7 @@ message Policy {
     MASKING_RULE = 4;
     IAM = 5;
     TAG = 6;
+    REVIEW_RULE = 7;
   }
 
   enum Resource {
@@ -23,6 +25,14 @@ message Policy {
     ENVIRONMENT = 2;
     PROJECT = 3;
   }
+}
+
+// ReviewRulePolicy is the standard review rule switch.
+// Project: the rules on there; absent policy means every rule.
+// Workspace: the rules on in every project, which projects cannot switch
+// off; absent policy means none. The effective set is the union.
+message ReviewRulePolicy {
+  repeated ReviewRule.Type rules = 1;
 }
 
 message RolloutPolicy {

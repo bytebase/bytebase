@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// ReviewRule mirrors bytebase.v1.ReviewRule. The values are shared by
+// ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.
+//
+// A value is never removed, only marked deprecated: both payloads are jsonb,
+// protojson stores the enum name, and the store's unmarshaler discards an
+// unknown name into TYPE_UNSPECIFIED, which would blank the rule on every
+// stored comment that used it.
+message ReviewRule {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    SYNTAX = 1;
+    WALK_THROUGH = 2;
+    ONLINE_MIGRATION = 3;
+    PRIOR_BACKUP = 4;
+    REQUIRE_IS_NULL = 5;
+    REQUIRE_WHERE = 6;
+    DISALLOW_DROP_OBJECT = 7;
+    DISALLOW_TRUNCATE = 8;
+    DISALLOW_DROP_CONSTRAINT = 9;
+    DISALLOW_RENAME = 10;
+    REQUIRE_PRIMARY_KEY = 11;
+  }
+}

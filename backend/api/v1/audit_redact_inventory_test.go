@@ -576,6 +576,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.IssueComment.IssueUpdate.to_description",
 	"bytebase.v1.IssueComment.IssueUpdate.to_labels",
 	"bytebase.v1.IssueComment.IssueUpdate.to_title",
+	"bytebase.v1.IssueComment.ReviewMetadata.targets",
 	"bytebase.v1.IssueComment.comment",
 	"bytebase.v1.IssueComment.creator",
 	"bytebase.v1.IssueComment.name",

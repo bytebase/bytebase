@@ -14,6 +14,7 @@ import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/plan_service.proto";
+import "v1/review_rule.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -688,6 +689,33 @@ message IssueComment {
   // the root's spec and sheet_sha256; it may narrow the range.
   // Cannot be set on events. Immutable after creation.
   StatementAnchor statement_anchor = 16 [(google.api.field_behavior) = IMMUTABLE];
+
+  // Present on review results, the comments the review executor posts.
+  // Never accepted on create or update.
+  ReviewMetadata review_metadata = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // What a review result carries beyond its text.
+  message ReviewMetadata {
+    enum Priority {
+      // Blocks like any other open thread.
+      PRIORITY_UNSPECIFIED = 0;
+      // The SQL is wrong and must change.
+      P0 = 1;
+      // Dangerous but legitimate; a person must accept it.
+      P1 = 2;
+      // Advisory. Posted without thread state, so it never blocks.
+      P2 = 3;
+    }
+
+    // The reviewer that posted the result.
+    ReviewRun.Type type = 1;
+    // The rule judged against. Set if and only if type is RULE.
+    ReviewRule.Type rule = 2;
+    Priority priority = 3;
+    // Every database the result applies to, sorted.
+    // Format: instances/{instance}/databases/{database}
+    repeated string targets = 4;
+  }
 
   enum ThreadState {
     THREAD_STATE_UNSPECIFIED = 0;

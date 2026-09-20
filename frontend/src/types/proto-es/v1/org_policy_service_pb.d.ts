@@ -5,6 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
+import type { ReviewRule_Type } from "./review_rule_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -238,6 +239,12 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
      */
     value: QueryDataPolicy;
     case: "queryDataPolicy";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.ReviewRulePolicy review_rule_policy = 12;
+     */
+    value: ReviewRulePolicy;
+    case: "reviewRulePolicy";
   } | { case: undefined; value?: undefined };
 
   /**
@@ -260,6 +267,35 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
  * Use `create(PolicySchema)` to create a new message.
  */
 export declare const PolicySchema: GenMessage<Policy>;
+
+/**
+ * Standard review rule policy: the rules switched on, at two levels.
+ *
+ * On a project it is the project's switch: the rules on there. Absent policy
+ * means every rule. On the workspace it is a lock: the rules on in every
+ * project, which projects cannot switch off. Absent policy means none. The
+ * effective set for a project is the union of the two.
+ *
+ * A saved project list is explicit, so a rule added to the standard set in a
+ * later release is appended to every saved project policy by a data
+ * migration in that release.
+ *
+ * @generated from message bytebase.v1.ReviewRulePolicy
+ */
+export declare type ReviewRulePolicy = Message<"bytebase.v1.ReviewRulePolicy"> & {
+  /**
+   * The rules switched on. Unknown or unspecified values are rejected.
+   *
+   * @generated from field: repeated bytebase.v1.ReviewRule.Type rules = 1;
+   */
+  rules: ReviewRule_Type[];
+};
+
+/**
+ * Describes the message bytebase.v1.ReviewRulePolicy.
+ * Use `create(ReviewRulePolicySchema)` to create a new message.
+ */
+export declare const ReviewRulePolicySchema: GenMessage<ReviewRulePolicy>;
 
 /**
  * Rollout policy configuration.
@@ -545,6 +581,13 @@ export enum PolicyType {
    * @generated from enum value: DATA_QUERY = 6;
    */
   DATA_QUERY = 6,
+
+  /**
+   * Standard review rule switch. Allowed on WORKSPACE and PROJECT.
+   *
+   * @generated from enum value: REVIEW_RULE = 7;
+   */
+  REVIEW_RULE = 7,
 }
 
 /**
