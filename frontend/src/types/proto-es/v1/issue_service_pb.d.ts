@@ -1100,12 +1100,13 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
 export declare const IssueComment_ReviewMetadataSchema: GenMessage<IssueComment_ReviewMetadata>;
 
 /**
+ * Priority says what resolving the thread means. It has no bearing on
+ * blocking, which thread_state alone decides.
+ *
  * @generated from enum bytebase.v1.IssueComment.ReviewMetadata.Priority
  */
 export enum IssueComment_ReviewMetadata_Priority {
   /**
-   * Blocks like any other open thread.
-   *
    * @generated from enum value: PRIORITY_UNSPECIFIED = 0;
    */
   PRIORITY_UNSPECIFIED = 0,
@@ -1125,7 +1126,7 @@ export enum IssueComment_ReviewMetadata_Priority {
   P1 = 2,
 
   /**
-   * Advisory. Posted without thread state, so it never blocks.
+   * Advisory.
    *
    * @generated from enum value: P2 = 3;
    */

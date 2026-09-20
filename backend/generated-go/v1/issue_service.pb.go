@@ -190,16 +190,17 @@ func (IssueComment_ThreadState) EnumDescriptor() ([]byte, []int) {
 	return file_v1_issue_service_proto_rawDescGZIP(), []int{21, 0}
 }
 
+// Priority says what resolving the thread means. It has no bearing on
+// blocking, which thread_state alone decides.
 type IssueComment_ReviewMetadata_Priority int32
 
 const (
-	// Blocks like any other open thread.
 	IssueComment_ReviewMetadata_PRIORITY_UNSPECIFIED IssueComment_ReviewMetadata_Priority = 0
 	// The SQL is wrong and must change.
 	IssueComment_ReviewMetadata_P0 IssueComment_ReviewMetadata_Priority = 1
 	// Dangerous but legitimate; a person must accept it.
 	IssueComment_ReviewMetadata_P1 IssueComment_ReviewMetadata_Priority = 2
-	// Advisory. Posted without thread state, so it never blocks.
+	// Advisory.
 	IssueComment_ReviewMetadata_P2 IssueComment_ReviewMetadata_Priority = 3
 )
 

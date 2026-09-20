@@ -2236,8 +2236,7 @@ ReviewMetadata is what a review result carries beyond its text: which
 reviewer posted it, what it was judged against, its priority, and the
 databases it applies to. Results from the same reviewer are superseded
 together: when a run completes, it resolves every OPEN root of its type
-and deletes every P2 of its type, in the transaction that posts the new
-results.
+in the transaction that posts the new results.
 
 
 | Field | Type | Label | Description |
@@ -2287,14 +2286,16 @@ read against the anchored sheet and the current plan, not stored.
 <a name="bytebase-store-IssueCommentPayload-ReviewMetadata-Priority"></a>
 
 ### IssueCommentPayload.ReviewMetadata.Priority
-
+Priority says what resolving the thread means. It has no bearing on
+blocking: an OPEN root thread blocks whatever its priority, and a
+result with no thread state never does.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PRIORITY_UNSPECIFIED | 0 | Blocks like any other open thread. |
+| PRIORITY_UNSPECIFIED | 0 |  |
 | P0 | 1 | The SQL is wrong and must change. Resolving without changing the SQL is a claim of false positive. |
 | P1 | 2 | Dangerous but legitimate; a person must accept it. |
-| P2 | 3 | Advisory. Posted without thread state, so it never blocks. |
+| P2 | 3 | Advisory. |
 
 
  

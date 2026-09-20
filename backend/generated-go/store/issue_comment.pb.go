@@ -21,17 +21,19 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Priority says what resolving the thread means. It has no bearing on
+// blocking: an OPEN root thread blocks whatever its priority, and a
+// result with no thread state never does.
 type IssueCommentPayload_ReviewMetadata_Priority int32
 
 const (
-	// Blocks like any other open thread.
 	IssueCommentPayload_ReviewMetadata_PRIORITY_UNSPECIFIED IssueCommentPayload_ReviewMetadata_Priority = 0
 	// The SQL is wrong and must change. Resolving without changing the SQL
 	// is a claim of false positive.
 	IssueCommentPayload_ReviewMetadata_P0 IssueCommentPayload_ReviewMetadata_Priority = 1
 	// Dangerous but legitimate; a person must accept it.
 	IssueCommentPayload_ReviewMetadata_P1 IssueCommentPayload_ReviewMetadata_Priority = 2
-	// Advisory. Posted without thread state, so it never blocks.
+	// Advisory.
 	IssueCommentPayload_ReviewMetadata_P2 IssueCommentPayload_ReviewMetadata_Priority = 3
 )
 
@@ -463,8 +465,7 @@ func (x *IssueCommentPayload_PlanUpdate) GetToSpecs() []*PlanConfig_Spec {
 // reviewer posted it, what it was judged against, its priority, and the
 // databases it applies to. Results from the same reviewer are superseded
 // together: when a run completes, it resolves every OPEN root of its type
-// and deletes every P2 of its type, in the transaction that posts the new
-// results.
+// in the transaction that posts the new results.
 type IssueCommentPayload_ReviewMetadata struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The reviewer slot that posted the result, same value domain as

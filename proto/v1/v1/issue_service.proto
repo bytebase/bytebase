@@ -696,14 +696,15 @@ message IssueComment {
 
   // What a review result carries beyond its text.
   message ReviewMetadata {
+    // Priority says what resolving the thread means. It has no bearing on
+    // blocking, which thread_state alone decides.
     enum Priority {
-      // Blocks like any other open thread.
       PRIORITY_UNSPECIFIED = 0;
       // The SQL is wrong and must change.
       P0 = 1;
       // Dangerous but legitimate; a person must accept it.
       P1 = 2;
-      // Advisory. Posted without thread state, so it never blocks.
+      // Advisory.
       P2 = 3;
     }
 
