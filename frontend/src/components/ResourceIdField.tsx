@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   forwardRef,
   useCallback,
   useEffect,
@@ -29,6 +30,7 @@ interface ResourceIdFieldProps {
   // messages — NOT the user-entered title/name of the resource.
   resourceName: string;
   resourceTitle?: string;
+  autoComplete?: ComponentProps<"input">["autoComplete"];
   suffix?: boolean;
   readonly?: boolean;
   validate?: (resourceId: string) => Promise<ValidatedMessage[]>;
@@ -65,6 +67,7 @@ export const ResourceIdField = forwardRef<
     value,
     resourceName,
     resourceTitle,
+    autoComplete,
     suffix = false,
     readonly = false,
     validate,
@@ -231,6 +234,7 @@ export const ResourceIdField = forwardRef<
           </p>
           <Input
             value={value}
+            autoComplete={autoComplete}
             onChange={(e) => handleManualInput(e.target.value)}
             placeholder={t("resource-id.self", { resource: resourceName })}
             className={
