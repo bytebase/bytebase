@@ -57,6 +57,9 @@ vi.mock("@/components/HumanizeTs", async () => ({
 const taskName = "projects/p1/rollouts/r1/stages/s1/tasks/t1";
 
 const CREATED_AT_MS = 1_000_000;
+// Runs are a step apart, so "newest first" is a claim about order that the
+// fixture can actually be wrong about.
+const STEP_MS = 60_000;
 
 const makeTaskRun = (
   overrides: MessageInitShape<typeof TaskRunSchema> = {}
@@ -73,7 +76,7 @@ const makeTaskRuns = (count: number) =>
   // Newest first, matching the component contract.
   Array.from({ length: count }, (_, index) =>
     makeTaskRun({
-      createTime: timestampFromMs(CREATED_AT_MS * (count - index)),
+      createTime: timestampFromMs(CREATED_AT_MS + STEP_MS * (count - index)),
       name: `${taskName}/taskRuns/${count - index}`,
     })
   );
@@ -113,7 +116,9 @@ describe("DeployTaskRunHistorySheet", () => {
     // from the wrong one reads as plausibly as the right one.
     const { container, cleanup } = renderSheet(makeTaskRuns(1));
     expect(shownTimestampModes(container)).toEqual(["compact"]);
-    expect(shownTimestampInstants(container)).toEqual([String(CREATED_AT_MS)]);
+    expect(shownTimestampInstants(container)).toEqual([
+      String(CREATED_AT_MS + STEP_MS),
+    ]);
     cleanup();
   });
 
