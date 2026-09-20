@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { render, screen } from "@testing-library/react";
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import { describe, expect, test, vi } from "vitest";
@@ -153,6 +154,31 @@ describe("canEditIssueComment", () => {
 });
 
 describe("IssueCommentRow", () => {
+  test("times a comment by when it was written, not when it was edited", () => {
+    // The two instants sit beside each other and feed the same "edited"
+    // marker, so the row has to say which one the timestamp is.
+    const writtenMs = Date.UTC(2026, 2, 2, 12);
+    render(
+      <IssueCommentRow
+        comment={create(IssueCommentSchema, {
+          creator: "users/alice@example.com",
+          comment: "a remark",
+          createTime: timestampFromMs(writtenMs),
+          updateTime: timestampFromMs(writtenMs + 60_000),
+        })}
+        isLast
+        issue={create(IssueSchema, { type: Issue_Type.DATABASE_CHANGE })}
+        linkless
+        plan={create(PlanSchema, {})}
+      />
+    );
+
+    expect(screen.getByTestId("humanize-ts").textContent).toBe(
+      String(writtenMs)
+    );
+    expect(screen.getByText("(common.edited)")).toBeInTheDocument();
+  });
+
   test("shows who bypassed review and created the rollout", () => {
     const issue = create(IssueSchema, {
       type: Issue_Type.DATABASE_CHANGE,
