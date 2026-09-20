@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -206,7 +206,7 @@ func (r *namingIndexOmniRule) handleIndexList(indexDataList []*indexMetaData) {
 				Code:          code.NamingIndexConventionMismatch.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("Index in table `%s` mismatches the naming convention, expect %q but found `%s`", indexData.tableName, regex, indexData.indexName),
-				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
+				StartPosition: base.ConvertANTLRLineToPosition(indexData.line),
 			})
 		}
 		if r.maxLength > 0 && len(indexData.indexName) > r.maxLength {
@@ -215,7 +215,7 @@ func (r *namingIndexOmniRule) handleIndexList(indexDataList []*indexMetaData) {
 				Code:          code.NamingIndexConventionMismatch.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("Index `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", indexData.indexName, indexData.tableName, r.maxLength),
-				StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
+				StartPosition: base.ConvertANTLRLineToPosition(indexData.line),
 			})
 		}
 	}

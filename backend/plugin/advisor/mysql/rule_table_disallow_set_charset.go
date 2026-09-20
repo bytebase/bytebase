@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -66,7 +66,7 @@ func (r *tableDisallowSetCharsetOmniRule) checkCreateTable(n *ast.CreateTableStm
 				Code:          code.DisallowSetCharset.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.QueryText()),
-				StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+				StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 			})
 		}
 	}
@@ -83,7 +83,7 @@ func (r *tableDisallowSetCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt)
 				Code:          code.DisallowSetCharset.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("Set charset on tables is disallowed, but \"%s\" uses", r.QueryText()),
-				StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+				StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 			})
 		}
 	}

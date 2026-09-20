@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -140,7 +140,7 @@ func (r *columnDisallowChangingTypeOmniRule) checkColumnType(tableName, columnNa
 			Code:          code.ChangeColumnType.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("\"%s\" changes column type", r.QueryText()),
-			StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(loc))),
+			StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(loc))),
 		})
 	}
 }

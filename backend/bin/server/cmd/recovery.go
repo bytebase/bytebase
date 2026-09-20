@@ -106,7 +106,7 @@ func openRecoveryBackend(ctx context.Context) (*recoveryBackend, error) {
 		return newRecoveryBackend(stores, nil), nil
 	}
 
-	pgURL := fmt.Sprintf("host=%s port=%d user=bb database=bb", common.GetPostgresSocketDir(), profile.DatastorePort)
+	pgURL := fmt.Sprintf("host=%s port=%d user=bb database=bb", postgres.GetPostgresSocketDir(), profile.DatastorePort)
 	if stores, err := store.New(ctx, pgURL, false); err == nil {
 		return newRecoveryBackend(stores, nil), nil
 	}

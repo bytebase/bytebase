@@ -8,11 +8,11 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -62,7 +62,7 @@ func (*InsertRowLimitAdvisor) Check(ctx context.Context, checkCtx advisor.Contex
 
 		baseLine := stmt.BaseLine()
 		text := strings.TrimRight(strings.TrimSpace(stmt.Text), ";") + ";"
-		position := common.ConvertANTLRLineToPosition(baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line))
+		position := base.ConvertANTLRLineToPosition(baseLine + int(mysqlparser.ByteOffsetToRunePosition(stmt.Text, contentStartIndex(stmt.Text)).Line))
 
 		// INSERT ... SELECT and INSERT ... TABLE: use EXPLAIN to count rows.
 		if ins.Select != nil || ins.TableSource != nil {

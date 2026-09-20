@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -66,7 +66,7 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 					Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
 					Title:         title,
 					Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", col.table, col.column, format),
-					StartPosition: common.ConvertANTLRLineToPosition(col.line),
+					StartPosition: base.ConvertANTLRLineToPosition(col.line),
 				})
 			}
 			if maxLength > 0 && len(col.column) > maxLength {
@@ -75,7 +75,7 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 					Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
 					Title:         title,
 					Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", col.table, col.column, maxLength),
-					StartPosition: common.ConvertANTLRLineToPosition(col.line),
+					StartPosition: base.ConvertANTLRLineToPosition(col.line),
 				})
 			}
 		}

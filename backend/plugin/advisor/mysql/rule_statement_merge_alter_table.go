@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -116,7 +116,7 @@ func (r *mergeAlterTableOmniRule) generateAdvice() {
 				Code:          code.StatementRedundantAlterTable.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("There are %d statements to modify table `%s`", table.count, table.name),
-				StartPosition: common.ConvertANTLRLineToPosition(table.lastLine),
+				StartPosition: base.ConvertANTLRLineToPosition(table.lastLine),
 			})
 		}
 	}

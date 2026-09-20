@@ -8,10 +8,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
@@ -124,7 +124,7 @@ func (r *ColumnMaximumVarcharLengthRule) checkTypeName(typeName *omniast.TypeNam
 			Code:          code.VarcharLengthExceedsLimit.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("The maximum varchar length is %d.", r.maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + r.line(typeName.Loc.Start)),
+			StartPosition: base.ConvertANTLRLineToPosition(r.baseLine + r.line(typeName.Loc.Start)),
 		})
 	}
 }

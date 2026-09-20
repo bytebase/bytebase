@@ -13,7 +13,6 @@ import (
 	// The packege parser_driver has to be imported.
 	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
@@ -144,7 +143,7 @@ func convertParserError(parserErr error) error {
 		return parserErr
 	}
 	return &base.SyntaxError{
-		Position: common.ConvertTiDBParserErrorPositionToPosition(int32(line), int32(column)),
+		Position: convertParserErrorPositionToPosition(int32(line), int32(column)),
 		Message:  parserErr.Error(),
 	}
 }
@@ -221,5 +220,12 @@ func TypeString(tp byte) string {
 		return "geometry"
 	default:
 		return "unknown"
+	}
+}
+
+func convertParserErrorPositionToPosition(line, column int32) *storepb.Position {
+	return &storepb.Position{
+		Line:   max(line, 1),
+		Column: max(column, 1),
 	}
 }
