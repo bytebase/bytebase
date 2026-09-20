@@ -472,7 +472,7 @@ type IssueCommentPayload_ReviewMetadata struct {
 	// same enum by name.
 	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.store.ReviewRun_Type" json:"run_type,omitempty"`
 	// The rule judged against. Set if and only if run_type is RULE.
-	RuleType ReviewRule_Type `protobuf:"varint,2,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.store.ReviewRule_Type" json:"rule_type,omitempty"`
+	RuleType ReviewRuleType `protobuf:"varint,2,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.store.ReviewRuleType" json:"rule_type,omitempty"`
 	// A result merged across databases carries the highest priority among
 	// them.
 	Priority IssueCommentPayload_ReviewMetadata_Priority `protobuf:"varint,3,opt,name=priority,proto3,enum=bytebase.store.IssueCommentPayload_ReviewMetadata_Priority" json:"priority,omitempty"`
@@ -521,11 +521,11 @@ func (x *IssueCommentPayload_ReviewMetadata) GetRunType() ReviewRun_Type {
 	return ReviewRun_TYPE_UNSPECIFIED
 }
 
-func (x *IssueCommentPayload_ReviewMetadata) GetRuleType() ReviewRule_Type {
+func (x *IssueCommentPayload_ReviewMetadata) GetRuleType() ReviewRuleType {
 	if x != nil {
 		return x.RuleType
 	}
-	return ReviewRule_TYPE_UNSPECIFIED
+	return ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED
 }
 
 func (x *IssueCommentPayload_ReviewMetadata) GetPriority() IssueCommentPayload_ReviewMetadata_Priority {
@@ -626,7 +626,7 @@ var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\x1a\x16store/review_run.proto\"\xad\x0e\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\x1a\x17store/review_rule.proto\x1a\x16store/review_run.proto\"\xac\x0e\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
@@ -663,10 +663,10 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"PlanUpdate\x12>\n" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\tfromSpecs\x12:\n" +
-	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\xba\x02\n" +
+	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\xb9\x02\n" +
 	"\x0eReviewMetadata\x129\n" +
-	"\brun_type\x18\x01 \x01(\x0e2\x1e.bytebase.store.ReviewRun.TypeR\arunType\x12<\n" +
-	"\trule_type\x18\x02 \x01(\x0e2\x1f.bytebase.store.ReviewRule.TypeR\bruleType\x12W\n" +
+	"\brun_type\x18\x01 \x01(\x0e2\x1e.bytebase.store.ReviewRun.TypeR\arunType\x12;\n" +
+	"\trule_type\x18\x02 \x01(\x0e2\x1e.bytebase.store.ReviewRuleTypeR\bruleType\x12W\n" +
 	"\bpriority\x18\x03 \x01(\x0e2;.bytebase.store.IssueCommentPayload.ReviewMetadata.PriorityR\bpriority\x12\x18\n" +
 	"\atargets\x18\x04 \x03(\tR\atargets\"<\n" +
 	"\bPriority\x12\x18\n" +
@@ -709,7 +709,7 @@ var file_store_issue_comment_proto_goTypes = []any{
 	(Issue_Status)(0),                                // 9: bytebase.store.Issue.Status
 	(*PlanConfig_Spec)(nil),                          // 10: bytebase.store.PlanConfig.Spec
 	(ReviewRun_Type)(0),                              // 11: bytebase.store.ReviewRun.Type
-	(ReviewRule_Type)(0),                             // 12: bytebase.store.ReviewRule.Type
+	(ReviewRuleType)(0),                              // 12: bytebase.store.ReviewRuleType
 	(*Position)(nil),                                 // 13: bytebase.store.Position
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
@@ -725,7 +725,7 @@ var file_store_issue_comment_proto_depIdxs = []int32{
 	10, // 9: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
 	10, // 10: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
 	11, // 11: bytebase.store.IssueCommentPayload.ReviewMetadata.run_type:type_name -> bytebase.store.ReviewRun.Type
-	12, // 12: bytebase.store.IssueCommentPayload.ReviewMetadata.rule_type:type_name -> bytebase.store.ReviewRule.Type
+	12, // 12: bytebase.store.IssueCommentPayload.ReviewMetadata.rule_type:type_name -> bytebase.store.ReviewRuleType
 	0,  // 13: bytebase.store.IssueCommentPayload.ReviewMetadata.priority:type_name -> bytebase.store.IssueCommentPayload.ReviewMetadata.Priority
 	13, // 14: bytebase.store.IssueCommentPayload.StatementAnchor.start_position:type_name -> bytebase.store.Position
 	13, // 15: bytebase.store.IssueCommentPayload.StatementAnchor.end_position:type_name -> bytebase.store.Position

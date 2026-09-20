@@ -178,7 +178,7 @@ func (*Policy) Descriptor() ([]byte, []int) {
 // wins: the project's if it has one, else the workspace's, else every rule.
 type ReviewRulePolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Rules         []ReviewRule_Type      `protobuf:"varint,1,rep,packed,name=rules,proto3,enum=bytebase.store.ReviewRule_Type" json:"rules,omitempty"`
+	Rules         []ReviewRuleType       `protobuf:"varint,1,rep,packed,name=rules,proto3,enum=bytebase.store.ReviewRuleType" json:"rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -213,7 +213,7 @@ func (*ReviewRulePolicy) Descriptor() ([]byte, []int) {
 	return file_store_policy_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ReviewRulePolicy) GetRules() []ReviewRule_Type {
+func (x *ReviewRulePolicy) GetRules() []ReviewRuleType {
 	if x != nil {
 		return x.Rules
 	}
@@ -771,9 +771,9 @@ const file_store_policy_proto_rawDesc = "" +
 	"\x14RESOURCE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tWORKSPACE\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\v\n" +
-	"\aPROJECT\x10\x03\"I\n" +
-	"\x10ReviewRulePolicy\x125\n" +
-	"\x05rules\x18\x01 \x03(\x0e2\x1f.bytebase.store.ReviewRule.TypeR\x05rules\"C\n" +
+	"\aPROJECT\x10\x03\"H\n" +
+	"\x10ReviewRulePolicy\x124\n" +
+	"\x05rules\x18\x01 \x03(\x0e2\x1e.bytebase.store.ReviewRuleTypeR\x05rules\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
 	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xc2\x01\n" +
@@ -839,11 +839,11 @@ var file_store_policy_proto_goTypes = []any{
 	(*MaskingExemptionPolicy_Exemption)(nil), // 11: bytebase.store.MaskingExemptionPolicy.Exemption
 	(*MaskingRulePolicy_MaskingRule)(nil),    // 12: bytebase.store.MaskingRulePolicy.MaskingRule
 	nil,                                      // 13: bytebase.store.TagPolicy.TagsEntry
-	(ReviewRule_Type)(0),                     // 14: bytebase.store.ReviewRule.Type
+	(ReviewRuleType)(0),                      // 14: bytebase.store.ReviewRuleType
 	(*expr.Expr)(nil),                        // 15: google.type.Expr
 }
 var file_store_policy_proto_depIdxs = []int32{
-	14, // 0: bytebase.store.ReviewRulePolicy.rules:type_name -> bytebase.store.ReviewRule.Type
+	14, // 0: bytebase.store.ReviewRulePolicy.rules:type_name -> bytebase.store.ReviewRuleType
 	11, // 1: bytebase.store.MaskingExemptionPolicy.exemptions:type_name -> bytebase.store.MaskingExemptionPolicy.Exemption
 	12, // 2: bytebase.store.MaskingRulePolicy.rules:type_name -> bytebase.store.MaskingRulePolicy.MaskingRule
 	13, // 3: bytebase.store.TagPolicy.tags:type_name -> bytebase.store.TagPolicy.TagsEntry

@@ -2,30 +2,32 @@
 // @generated from file v1/review_rule.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import { enumDesc, fileDesc, messageDesc, tsEnum } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, tsEnum } from "@bufbuild/protobuf/codegenv2";
 
 /**
  * Describes the file v1/review_rule.proto.
  */
 export const file_v1_review_rule = /*@__PURE__*/
-  fileDesc("ChR2MS9yZXZpZXdfcnVsZS5wcm90bxILYnl0ZWJhc2UudjEilgIKClJldmlld1J1bGUihwIKBFR5cGUSFAoQVFlQRV9VTlNQRUNJRklFRBAAEgoKBlNZTlRBWBABEhAKDFdBTEtfVEhST1VHSBACEhQKEE9OTElORV9NSUdSQVRJT04QAxIQCgxQUklPUl9CQUNLVVAQBBITCg9SRVFVSVJFX0lTX05VTEwQBRIRCg1SRVFVSVJFX1dIRVJFEAYSGAoURElTQUxMT1dfRFJPUF9PQkpFQ1QQBxIVChFESVNBTExPV19UUlVOQ0FURRAIEhwKGERJU0FMTE9XX0RST1BfQ09OU1RSQUlOVBAJEhMKD0RJU0FMTE9XX1JFTkFNRRAKEhcKE1JFUVVJUkVfUFJJTUFSWV9LRVkQC0KlAQoPY29tLmJ5dGViYXNlLnYxQg9SZXZpZXdSdWxlUHJvdG9QAVo0Z2l0aHViLmNvbS9ieXRlYmFzZS9ieXRlYmFzZS9iYWNrZW5kL2dlbmVyYXRlZC1nby92MaICA0JYWKoCC0J5dGViYXNlLlYxygILQnl0ZWJhc2VcVjHiAhdCeXRlYmFzZVxWMVxHUEJNZXRhZGF0YeoCDEJ5dGViYXNlOjpWMWIGcHJvdG8z");
+  fileDesc("ChR2MS9yZXZpZXdfcnVsZS5wcm90bxILYnl0ZWJhc2UudjEqnQIKDlJldmlld1J1bGVUeXBlEiAKHFJFVklFV19SVUxFX1RZUEVfVU5TUEVDSUZJRUQQABIKCgZTWU5UQVgQARIQCgxXQUxLX1RIUk9VR0gQAhIUChBPTkxJTkVfTUlHUkFUSU9OEAMSEAoMUFJJT1JfQkFDS1VQEAQSEwoPUkVRVUlSRV9JU19OVUxMEAUSEQoNUkVRVUlSRV9XSEVSRRAGEhgKFERJU0FMTE9XX0RST1BfT0JKRUNUEAcSFQoRRElTQUxMT1dfVFJVTkNBVEUQCBIcChhESVNBTExPV19EUk9QX0NPTlNUUkFJTlQQCRITCg9ESVNBTExPV19SRU5BTUUQChIXChNSRVFVSVJFX1BSSU1BUllfS0VZEAtCpQEKD2NvbS5ieXRlYmFzZS52MUIPUmV2aWV3UnVsZVByb3RvUAFaNGdpdGh1Yi5jb20vYnl0ZWJhc2UvYnl0ZWJhc2UvYmFja2VuZC9nZW5lcmF0ZWQtZ28vdjGiAgNCWFiqAgtCeXRlYmFzZS5WMcoCC0J5dGViYXNlXFYx4gIXQnl0ZWJhc2VcVjFcR1BCTWV0YWRhdGHqAgxCeXRlYmFzZTo6VjFiBnByb3RvMw");
 
 /**
- * Describes the message bytebase.v1.ReviewRule.
- * Use `create(ReviewRuleSchema)` to create a new message.
+ * Describes the enum bytebase.v1.ReviewRuleType.
  */
-export const ReviewRuleSchema = /*@__PURE__*/
-  messageDesc(file_v1_review_rule, 0);
+export const ReviewRuleTypeSchema = /*@__PURE__*/
+  enumDesc(file_v1_review_rule, 0);
 
 /**
- * Describes the enum bytebase.v1.ReviewRule.Type.
+ * ReviewRuleType is the standard review rule set. The rules are fixed:
+ * every project gets them without configuration, and the only setting is a
+ * switch (see ReviewRulePolicy).
+ *
+ * A rule id names what the rule examines. An execution check is named for
+ * what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
+ * the id says which way it cuts. DISALLOW on a P1 rule means the operation
+ * needs a person's acceptance, not that it is forbidden.
+ *
+ * @generated from enum bytebase.v1.ReviewRuleType
  */
-export const ReviewRule_TypeSchema = /*@__PURE__*/
-  enumDesc(file_v1_review_rule, 0, 0);
-
-/**
- * @generated from enum bytebase.v1.ReviewRule.Type
- */
-export const ReviewRule_Type = /*@__PURE__*/
-  tsEnum(ReviewRule_TypeSchema);
+export const ReviewRuleType = /*@__PURE__*/
+  tsEnum(ReviewRuleTypeSchema);
 

@@ -819,13 +819,9 @@
             <a href="#v1%2freview_rule.proto">v1/review_rule.proto</a>
             <ul>
               
-                <li>
-                  <a href="#bytebase.v1.ReviewRule"><span class="badge">M</span>ReviewRule</a>
-                </li>
-              
               
                 <li>
-                  <a href="#bytebase.v1.ReviewRule.Type"><span class="badge">E</span>ReviewRule.Type</a>
+                  <a href="#bytebase.v1.ReviewRuleType"><span class="badge">E</span>ReviewRuleType</a>
                 </li>
               
               
@@ -10332,17 +10328,10 @@ Permissions required: bb.planCheckRuns.run</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.ReviewRule">ReviewRule</h3>
-        <p>ReviewRule holds the standard review rule set. The rules are fixed: every</p><p>project gets them without configuration, and the only setting is a switch</p><p>(see ReviewRulePolicy).</p><p>A rule id names what the rule examines. An execution check is named for</p><p>what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so</p><p>the id says which way it cuts. DISALLOW on a P1 rule means the operation</p><p>needs a person's acceptance, not that it is forbidden.</p><p>The enum is nested so its values stay flat: bytebase.v1 already has</p><p>top-level TRUNCATE and RENAME values.</p>
-
-        
-
-        
-      
 
       
-        <h3 id="bytebase.v1.ReviewRule.Type">ReviewRule.Type</h3>
-        <p></p>
+        <h3 id="bytebase.v1.ReviewRuleType">ReviewRuleType</h3>
+        <p>ReviewRuleType is the standard review rule set. The rules are fixed:</p><p>every project gets them without configuration, and the only setting is a</p><p>switch (see ReviewRulePolicy).</p><p>A rule id names what the rule examines. An execution check is named for</p><p>what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so</p><p>the id says which way it cuts. DISALLOW on a P1 rule means the operation</p><p>needs a person's acceptance, not that it is forbidden.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -10350,7 +10339,7 @@ Permissions required: bb.planCheckRuns.run</p></td>
           <tbody>
             
               <tr>
-                <td>TYPE_UNSPECIFIED</td>
+                <td>REVIEW_RULE_TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -11128,7 +11117,7 @@ Never accepted on create or update. </p></td>
               
                 <tr>
                   <td>rule_type</td>
-                  <td><a href="#bytebase.v1.ReviewRule.Type">ReviewRule.Type</a></td>
+                  <td><a href="#bytebase.v1.ReviewRuleType">ReviewRuleType</a></td>
                   <td></td>
                   <td><p>The rule judged against. Set if and only if run_type is RULE. </p></td>
                 </tr>
@@ -28525,7 +28514,7 @@ If false,
               
                 <tr>
                   <td>rules</td>
-                  <td><a href="#bytebase.v1.ReviewRule.Type">ReviewRule.Type</a></td>
+                  <td><a href="#bytebase.v1.ReviewRuleType">ReviewRuleType</a></td>
                   <td>repeated</td>
                   <td><p>The rules switched on. Unknown or unspecified values are rejected. </p></td>
                 </tr>

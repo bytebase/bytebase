@@ -171,9 +171,7 @@
     - [PlanService](#bytebase-v1-PlanService)
   
 - [v1/review_rule.proto](#v1_review_rule-proto)
-    - [ReviewRule](#bytebase-v1-ReviewRule)
-  
-    - [ReviewRule.Type](#bytebase-v1-ReviewRule-Type)
+    - [ReviewRuleType](#bytebase-v1-ReviewRuleType)
   
 - [v1/issue_service.proto](#v1_issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
@@ -3359,37 +3357,24 @@ PlanService manages deployment plans for database changes.
 ## v1/review_rule.proto
 
 
+ 
 
-<a name="bytebase-v1-ReviewRule"></a>
 
-### ReviewRule
-ReviewRule holds the standard review rule set. The rules are fixed: every
-project gets them without configuration, and the only setting is a switch
-(see ReviewRulePolicy).
+<a name="bytebase-v1-ReviewRuleType"></a>
+
+### ReviewRuleType
+ReviewRuleType is the standard review rule set. The rules are fixed:
+every project gets them without configuration, and the only setting is a
+switch (see ReviewRulePolicy).
 
 A rule id names what the rule examines. An execution check is named for
 what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
 the id says which way it cuts. DISALLOW on a P1 rule means the operation
 needs a person&#39;s acceptance, not that it is forbidden.
 
-The enum is nested so its values stay flat: bytebase.v1 already has
-top-level TRUNCATE and RENAME values.
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-ReviewRule-Type"></a>
-
-### ReviewRule.Type
-
-
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
+| REVIEW_RULE_TYPE_UNSPECIFIED | 0 |  |
 | SYNTAX | 1 | P0: the statements do not parse for the target engine. |
 | WALK_THROUGH | 2 | P0: applying the statements to the synced schema fails: a missing table or column, a duplicate object, or an invalid reference. |
 | ONLINE_MIGRATION | 3 | P0: the change requests online migration but is not eligible. |
@@ -3680,7 +3665,7 @@ What a review result carries beyond its text.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that posted the result. |
-| rule_type | [ReviewRule.Type](#bytebase-v1-ReviewRule-Type) |  | The rule judged against. Set if and only if run_type is RULE. |
+| rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
 
@@ -10033,7 +10018,7 @@ release.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| rules | [ReviewRule.Type](#bytebase-v1-ReviewRule-Type) | repeated | The rules switched on. Unknown or unspecified values are rejected. |
+| rules | [ReviewRuleType](#bytebase-v1-ReviewRuleType) | repeated | The rules switched on. Unknown or unspecified values are rejected. |
 
 
 

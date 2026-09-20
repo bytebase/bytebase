@@ -2391,7 +2391,7 @@ type IssueComment_ReviewMetadata struct {
 	// The reviewer that posted the result.
 	RunType ReviewRun_Type `protobuf:"varint,1,opt,name=run_type,json=runType,proto3,enum=bytebase.v1.ReviewRun_Type" json:"run_type,omitempty"`
 	// The rule judged against. Set if and only if run_type is RULE.
-	RuleType ReviewRule_Type                      `protobuf:"varint,2,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.v1.ReviewRule_Type" json:"rule_type,omitempty"`
+	RuleType ReviewRuleType                       `protobuf:"varint,2,opt,name=rule_type,json=ruleType,proto3,enum=bytebase.v1.ReviewRuleType" json:"rule_type,omitempty"`
 	Priority IssueComment_ReviewMetadata_Priority `protobuf:"varint,3,opt,name=priority,proto3,enum=bytebase.v1.IssueComment_ReviewMetadata_Priority" json:"priority,omitempty"`
 	// Every database the result applies to, sorted.
 	// Format: instances/{instance}/databases/{database}
@@ -2437,11 +2437,11 @@ func (x *IssueComment_ReviewMetadata) GetRunType() ReviewRun_Type {
 	return ReviewRun_TYPE_UNSPECIFIED
 }
 
-func (x *IssueComment_ReviewMetadata) GetRuleType() ReviewRule_Type {
+func (x *IssueComment_ReviewMetadata) GetRuleType() ReviewRuleType {
 	if x != nil {
 		return x.RuleType
 	}
-	return ReviewRule_TYPE_UNSPECIFIED
+	return ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED
 }
 
 func (x *IssueComment_ReviewMetadata) GetPriority() IssueComment_ReviewMetadata_Priority {
@@ -2832,7 +2832,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\rissue_comment\x18\x02 \x01(\v2\x19.bytebase.v1.IssueCommentR\fissueComment\x12@\n" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xd7\x0f\n" +
+	"\rallow_missing\x18\x04 \x01(\bR\fallowMissing\"\xd6\x0f\n" +
 	"\fIssueComment\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12#\n" +
 	"\acomment\x18\x02 \x01(\tB\t\xbaH\x06r\x04\x18\x80\x80\x04R\acomment\x12\x18\n" +
@@ -2850,10 +2850,10 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\fissue_update\x18\b \x01(\v2%.bytebase.v1.IssueComment.IssueUpdateH\x00R\vissueUpdate\x12G\n" +
 	"\vplan_update\x18\f \x01(\v2$.bytebase.v1.IssueComment.PlanUpdateH\x00R\n" +
 	"planUpdate\x12Y\n" +
-	"\x11review_submission\x18\r \x01(\v2*.bytebase.v1.IssueComment.ReviewSubmissionH\x00R\x10reviewSubmission\x1a\xaa\x02\n" +
+	"\x11review_submission\x18\r \x01(\v2*.bytebase.v1.IssueComment.ReviewSubmissionH\x00R\x10reviewSubmission\x1a\xa9\x02\n" +
 	"\x0eReviewMetadata\x126\n" +
-	"\brun_type\x18\x01 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeR\arunType\x129\n" +
-	"\trule_type\x18\x02 \x01(\x0e2\x1c.bytebase.v1.ReviewRule.TypeR\bruleType\x12M\n" +
+	"\brun_type\x18\x01 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeR\arunType\x128\n" +
+	"\trule_type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.ReviewRuleTypeR\bruleType\x12M\n" +
 	"\bpriority\x18\x03 \x01(\x0e21.bytebase.v1.IssueComment.ReviewMetadata.PriorityR\bpriority\x12\x18\n" +
 	"\atargets\x18\x04 \x03(\tR\atargets\"<\n" +
 	"\bPriority\x12\x18\n" +
@@ -3007,7 +3007,7 @@ var file_v1_issue_service_proto_goTypes = []any{
 	(*expr.Expr)(nil),                         // 43: google.type.Expr
 	(*durationpb.Duration)(nil),               // 44: google.protobuf.Duration
 	(*Position)(nil),                          // 45: bytebase.v1.Position
-	(ReviewRule_Type)(0),                      // 46: bytebase.v1.ReviewRule.Type
+	(ReviewRuleType)(0),                       // 46: bytebase.v1.ReviewRuleType
 	(*Plan_Spec)(nil),                         // 47: bytebase.v1.Plan.Spec
 }
 var file_v1_issue_service_proto_depIdxs = []int32{
@@ -3050,7 +3050,7 @@ var file_v1_issue_service_proto_depIdxs = []int32{
 	40, // 36: bytebase.v1.ReviewRun.end_time:type_name -> google.protobuf.Timestamp
 	1,  // 37: bytebase.v1.Issue.Approver.status:type_name -> bytebase.v1.Issue.Approver.Status
 	5,  // 38: bytebase.v1.IssueComment.ReviewMetadata.run_type:type_name -> bytebase.v1.ReviewRun.Type
-	46, // 39: bytebase.v1.IssueComment.ReviewMetadata.rule_type:type_name -> bytebase.v1.ReviewRule.Type
+	46, // 39: bytebase.v1.IssueComment.ReviewMetadata.rule_type:type_name -> bytebase.v1.ReviewRuleType
 	3,  // 40: bytebase.v1.IssueComment.ReviewMetadata.priority:type_name -> bytebase.v1.IssueComment.ReviewMetadata.Priority
 	4,  // 41: bytebase.v1.IssueComment.Approval.status:type_name -> bytebase.v1.IssueComment.Approval.Status
 	39, // 42: bytebase.v1.IssueComment.IssueUpdate.from_status:type_name -> bytebase.v1.IssueStatus

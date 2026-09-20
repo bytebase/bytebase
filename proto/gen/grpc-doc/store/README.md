@@ -123,9 +123,7 @@
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
 - [store/review_rule.proto](#store_review_rule-proto)
-    - [ReviewRule](#bytebase-store-ReviewRule)
-  
-    - [ReviewRule.Type](#bytebase-store-ReviewRule-Type)
+    - [ReviewRuleType](#bytebase-store-ReviewRuleType)
   
 - [store/review_run.proto](#store_review_run-proto)
     - [ReviewRun](#bytebase-store-ReviewRun)
@@ -2098,33 +2096,23 @@ Type represents the category of issue.
 ## store/review_rule.proto
 
 
+ 
 
-<a name="bytebase-store-ReviewRule"></a>
 
-### ReviewRule
-ReviewRule mirrors bytebase.v1.ReviewRule. The values are shared by
+<a name="bytebase-store-ReviewRuleType"></a>
+
+### ReviewRuleType
+ReviewRuleType mirrors bytebase.v1.ReviewRuleType. The values are shared by
 ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.
 
 A value is never removed, only marked deprecated: both payloads are jsonb,
 protojson stores the enum name, and the store&#39;s unmarshaler discards an
-unknown name into TYPE_UNSPECIFIED, which would blank the rule on every
-stored comment that used it.
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-ReviewRule-Type"></a>
-
-### ReviewRule.Type
-
+unknown name into REVIEW_RULE_TYPE_UNSPECIFIED, which would blank the rule
+on every stored comment that used it.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
+| REVIEW_RULE_TYPE_UNSPECIFIED | 0 |  |
 | SYNTAX | 1 |  |
 | WALK_THROUGH | 2 |  |
 | ONLINE_MIGRATION | 3 |  |
@@ -2315,7 +2303,7 @@ in the transaction that posts the new results.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | The reviewer slot that posted the result; review_run.type stores the same enum by name. |
-| rule_type | [ReviewRule.Type](#bytebase-store-ReviewRule-Type) |  | The rule judged against. Set if and only if run_type is RULE. |
+| rule_type | [ReviewRuleType](#bytebase-store-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
 
@@ -2764,7 +2752,7 @@ wins: the project&#39;s if it has one, else the workspace&#39;s, else every rule
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| rules | [ReviewRule.Type](#bytebase-store-ReviewRule-Type) | repeated |  |
+| rules | [ReviewRuleType](#bytebase-store-ReviewRuleType) | repeated |  |
 
 
 

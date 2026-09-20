@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { EmptySchema, FieldMask } from "@bufbuild/protobuf/wkt";
-import type { ReviewRule_Type } from "./review_rule_pb";
+import type { ReviewRuleType } from "./review_rule_pb";
 import type { Expr } from "../google/type/expr_pb";
 
 /**
@@ -283,9 +283,9 @@ export declare type ReviewRulePolicy = Message<"bytebase.v1.ReviewRulePolicy"> &
   /**
    * The rules switched on. Unknown or unspecified values are rejected.
    *
-   * @generated from field: repeated bytebase.v1.ReviewRule.Type rules = 1;
+   * @generated from field: repeated bytebase.v1.ReviewRuleType rules = 1;
    */
-  rules: ReviewRule_Type[];
+  rules: ReviewRuleType[];
 };
 
 /**

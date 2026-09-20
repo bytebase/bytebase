@@ -7,7 +7,7 @@ import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { ApprovalStatus, IssueStatus, Position, RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
-import type { ReviewRule_Type } from "./review_rule_pb";
+import type { ReviewRuleType } from "./review_rule_pb";
 import type { Plan_Spec } from "./plan_service_pb";
 
 /**
@@ -1075,9 +1075,9 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
   /**
    * The rule judged against. Set if and only if run_type is RULE.
    *
-   * @generated from field: bytebase.v1.ReviewRule.Type rule_type = 2;
+   * @generated from field: bytebase.v1.ReviewRuleType rule_type = 2;
    */
-  ruleType: ReviewRule_Type;
+  ruleType: ReviewRuleType;
 
   /**
    * @generated from field: bytebase.v1.IssueComment.ReviewMetadata.Priority priority = 3;
