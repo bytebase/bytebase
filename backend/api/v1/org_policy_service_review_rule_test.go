@@ -3,9 +3,13 @@ package v1
 import (
 	"testing"
 
+	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/iam"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
@@ -120,4 +124,128 @@ func TestDefaultReviewRulePolicy(t *testing.T) {
 	require.Len(t, got, len(v1pb.ReviewRuleType_name)-1)
 	require.NotContains(t, got, v1pb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
 	require.Equal(t, len(store.GetDefaultReviewRulePolicy().Rules), len(got))
+}
+
+// TestReviewRulePolicyService walks the REVIEW_RULE policy through
+// OrgPolicyService at both levels against PostgreSQL: the all-rules default
+// on a missing row, create, get, list, update, validation, delete, and the
+// nearest-wins resolution the store exposes to the executor.
+func TestReviewRulePolicyService(t *testing.T) {
+	t.Parallel()
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	iamManager, err := iam.NewManager(stores, nil, false)
+	require.NoError(t, err)
+	service := NewOrgPolicyService(stores, nil, iamManager)
+
+	const (
+		workspaceID = "default"
+		projectID   = "project-a"
+	)
+	projectPolicyName := common.FormatProject(projectID) + "/policies/review_rule"
+	workspacePolicyName := common.FormatWorkspace(workspaceID) + "/policies/review_rule"
+	everyRule := len(v1pb.ReviewRuleType_name) - 1
+
+	rules := func(policy *v1pb.Policy) []v1pb.ReviewRuleType {
+		return policy.GetReviewRulePolicy().GetRules()
+	}
+	reviewRule := func(list ...v1pb.ReviewRuleType) *v1pb.Policy {
+		return &v1pb.Policy{
+			Type:   v1pb.PolicyType_REVIEW_RULE,
+			Policy: &v1pb.Policy_ReviewRulePolicy{ReviewRulePolicy: &v1pb.ReviewRulePolicy{Rules: list}},
+		}
+	}
+	get := func(name string) *v1pb.Policy {
+		t.Helper()
+		resp, err := service.GetPolicy(ctx, connect.NewRequest(&v1pb.GetPolicyRequest{Name: name}))
+		require.NoError(t, err)
+		return resp.Msg
+	}
+	create := func(parent string, policy *v1pb.Policy) (*v1pb.Policy, error) {
+		resp, err := service.CreatePolicy(ctx, connect.NewRequest(&v1pb.CreatePolicyRequest{Parent: parent, Policy: policy}))
+		if err != nil {
+			return nil, err
+		}
+		return resp.Msg, nil
+	}
+	update := func(name string, policy *v1pb.Policy) (*v1pb.Policy, error) {
+		policy.Name = name
+		resp, err := service.UpdatePolicy(ctx, connect.NewRequest(&v1pb.UpdatePolicyRequest{
+			Policy:     policy,
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"review_rule_policy"}},
+		}))
+		if err != nil {
+			return nil, err
+		}
+		return resp.Msg, nil
+	}
+	effective := func() []string {
+		t.Helper()
+		p, err := stores.GetEffectiveReviewRulePolicy(ctx, workspaceID, projectID)
+		require.NoError(t, err)
+		names := make([]string, 0, len(p.Rules))
+		for _, r := range p.Rules {
+			names = append(names, r.String())
+		}
+		return names
+	}
+
+	// No row at either level: every rule, not NotFound.
+	got := get(projectPolicyName)
+	require.Equal(t, projectPolicyName, got.Name)
+	require.Equal(t, v1pb.PolicyType_REVIEW_RULE, got.Type)
+	require.Equal(t, v1pb.PolicyResourceType_PROJECT, got.ResourceType)
+	require.Len(t, rules(got), everyRule)
+	got = get(workspacePolicyName)
+	require.Equal(t, v1pb.PolicyResourceType_WORKSPACE, got.ResourceType)
+	require.Len(t, rules(got), everyRule)
+	require.Len(t, effective(), everyRule)
+
+	// Create on the project and read it back.
+	created, err := create(common.FormatProject(projectID), reviewRule(v1pb.ReviewRuleType_SYNTAX, v1pb.ReviewRuleType_DISALLOW_DROP_OBJECT))
+	require.NoError(t, err)
+	require.Equal(t, projectPolicyName, created.Name)
+	require.Equal(t, []v1pb.ReviewRuleType{v1pb.ReviewRuleType_SYNTAX, v1pb.ReviewRuleType_DISALLOW_DROP_OBJECT}, rules(created))
+	require.Equal(t, rules(created), rules(get(projectPolicyName)))
+	require.Equal(t, []string{"SYNTAX", "DISALLOW_DROP_OBJECT"}, effective())
+
+	// List with the type filter finds it.
+	listed, err := service.ListPolicies(ctx, connect.NewRequest(&v1pb.ListPoliciesRequest{
+		Parent:     common.FormatProject(projectID),
+		PolicyType: v1pb.PolicyType_REVIEW_RULE.Enum(),
+	}))
+	require.NoError(t, err)
+	require.Len(t, listed.Msg.Policies, 1)
+	require.Equal(t, projectPolicyName, listed.Msg.Policies[0].Name)
+
+	// Update through the review_rule_policy mask path.
+	updated, err := update(projectPolicyName, reviewRule(v1pb.ReviewRuleType_REQUIRE_WHERE))
+	require.NoError(t, err)
+	require.Equal(t, []v1pb.ReviewRuleType{v1pb.ReviewRuleType_REQUIRE_WHERE}, rules(updated))
+	require.Equal(t, []string{"REQUIRE_WHERE"}, effective())
+
+	// Unspecified and repeated rules are refused.
+	for _, bad := range [][]v1pb.ReviewRuleType{
+		{v1pb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED},
+		{v1pb.ReviewRuleType_SYNTAX, v1pb.ReviewRuleType_SYNTAX},
+	} {
+		_, err = update(projectPolicyName, reviewRule(bad...))
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	}
+
+	// The policy does not attach to an environment.
+	_, err = create("environments/prod", reviewRule(v1pb.ReviewRuleType_SYNTAX))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	// Workspace level, and nearest wins: the project's policy while it has
+	// one, the workspace's after the project's is deleted.
+	created, err = create(common.FormatWorkspace(workspaceID), reviewRule(v1pb.ReviewRuleType_DISALLOW_TRUNCATE))
+	require.NoError(t, err)
+	require.Equal(t, workspacePolicyName, created.Name)
+	require.Equal(t, []string{"REQUIRE_WHERE"}, effective())
+
+	_, err = service.DeletePolicy(ctx, connect.NewRequest(&v1pb.DeletePolicyRequest{Name: projectPolicyName}))
+	require.NoError(t, err)
+	require.Equal(t, []string{"DISALLOW_TRUNCATE"}, effective())
+	require.Len(t, rules(get(projectPolicyName)), everyRule)
 }

@@ -76,17 +76,28 @@ func TestGetEffectiveReviewRulePolicy(t *testing.T) {
 	upsert(storepb.Policy_WORKSPACE, common.FormatWorkspace("ws"), false, storepb.ReviewRuleType_SYNTAX)
 	require.Equal(t, every, effective())
 
-	// Another workspace's policy never leaks in.
+	// The same resource under another workspace is a colliding local key: the
+	// policy primary key is (workspace, resource_type, resource, type). Each
+	// workspace resolves to its own row and neither sees the other's.
 	_, err = db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('other');`)
 	require.NoError(t, err)
 	_, err = stores.CreatePolicy(ctx, &store.PolicyMessage{
 		Workspace:    "other",
-		ResourceType: storepb.Policy_WORKSPACE,
-		Resource:     common.FormatWorkspace("other"),
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject("p"),
 		Type:         storepb.Policy_REVIEW_RULE,
-		Payload:      payload(storepb.ReviewRuleType_SYNTAX),
+		Payload:      payload(storepb.ReviewRuleType_REQUIRE_IS_NULL),
 		Enforce:      true,
 	})
 	require.NoError(t, err)
+	otherEffective, err := stores.GetEffectiveReviewRulePolicy(ctx, "other", "p")
+	require.NoError(t, err)
+	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_REQUIRE_IS_NULL}, otherEffective.Rules)
 	require.Equal(t, every, effective())
+
+	upsert(storepb.Policy_PROJECT, common.FormatProject("p"), true, storepb.ReviewRuleType_DISALLOW_RENAME)
+	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_DISALLOW_RENAME}, effective())
+	otherEffective, err = stores.GetEffectiveReviewRulePolicy(ctx, "other", "p")
+	require.NoError(t, err)
+	require.Equal(t, []storepb.ReviewRuleType{storepb.ReviewRuleType_REQUIRE_IS_NULL}, otherEffective.Rules)
 }
