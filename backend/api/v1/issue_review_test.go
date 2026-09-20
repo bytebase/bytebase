@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/review"
 )
 
@@ -41,7 +40,7 @@ func TestMapReviewErrorMarksOnlyTheApproverRoleVerdict(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			marked := false
-			ctx := common.WithSetPermissionDenied(context.Background(), func() { marked = true })
+			ctx := withSetPermissionDenied(context.Background(), func() { marked = true })
 
 			err := mapReviewError(ctx, test.err, review.ActionApprove)
 

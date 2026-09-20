@@ -107,7 +107,7 @@ func (q *Query) toRawSQL() (string, []any, error) {
 			// Return the first error encountered
 			return "", nil, part.Errs[0]
 		}
-		sqlBuilder.WriteString(part.Text)
+		_, _ = sqlBuilder.WriteString(part.Text)
 		params = append(params, part.Params...)
 	}
 
@@ -168,7 +168,7 @@ func (q *Query) ToSQL() (string, []any, error) {
 			// Return the first error encountered
 			return "", nil, part.Errs[0]
 		}
-		sqlBuilder.WriteString(part.Text)
+		_, _ = sqlBuilder.WriteString(part.Text)
 		params = append(params, part.Params...)
 	}
 
@@ -190,11 +190,11 @@ func (q *Query) ToSQL() (string, []any, error) {
 	// Build final SQL with $1, $2, etc.
 	var builder strings.Builder
 	for i := range params {
-		builder.WriteString(parts[i])
-		builder.WriteString("$")
-		builder.WriteString(strconv.Itoa(i + 1))
+		_, _ = builder.WriteString(parts[i])
+		_, _ = builder.WriteString("$")
+		_, _ = builder.WriteString(strconv.Itoa(i + 1))
 	}
-	builder.WriteString(parts[len(parts)-1])
+	_, _ = builder.WriteString(parts[len(parts)-1])
 
 	// Replace delimiter back to ?
 	finalSQL := strings.ReplaceAll(builder.String(), delimiter, "?")

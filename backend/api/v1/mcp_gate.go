@@ -312,7 +312,7 @@ func mcpSettingsForCurrentWorkspace(ctx context.Context, reader mcpSettingsReade
 // row). An admin tightening the ceiling binds the next request of a session
 // already open; work already admitted finishes.
 //
-// A policy denial is marked (common.SetPermissionDenied), so the audit
+// A policy denial is marked (setPermissionDenied), so the audit
 // interceptor streams it whatever the method's audit annotation says. That is
 // why redaction covers every refused request, not only the audited RPCs.
 //
@@ -362,7 +362,7 @@ func (in *internalMCPGateInterceptor) WrapUnary(next connect.UnaryFunc) connect.
 			// The audit interceptor wraps this one and reads the mark when the
 			// request comes back out. Only a verdict about the caller is marked —
 			// an unreadable ceiling and a broken chain are not policy denials.
-			common.SetPermissionDenied(ctx)
+			setPermissionDenied(ctx)
 		}
 		return nil, err
 	}

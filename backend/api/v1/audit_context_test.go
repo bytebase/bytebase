@@ -1,5 +1,4 @@
-//nolint:revive
-package common
+package v1
 
 import (
 	"context"
@@ -14,8 +13,8 @@ func TestPermissionDeniedErrorMarksTheRequest(t *testing.T) {
 	t.Parallel()
 
 	marked := false
-	ctx := WithSetPermissionDenied(context.Background(), func() { marked = true })
-	err := PermissionDeniedError(ctx, errors.New("user does not have permission"))
+	ctx := withSetPermissionDenied(context.Background(), func() { marked = true })
+	err := permissionDeniedError(ctx, errors.New("user does not have permission"))
 
 	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
 	require.ErrorContains(t, err, "user does not have permission")
@@ -24,5 +23,5 @@ func TestPermissionDeniedErrorMarksTheRequest(t *testing.T) {
 	// A handler built outside the interceptor chain, and every test that calls
 	// one, reaches this with no setter registered.
 	require.Equal(t, connect.CodePermissionDenied,
-		connect.CodeOf(PermissionDeniedError(context.Background(), errors.New("no setter"))))
+		connect.CodeOf(permissionDeniedError(context.Background(), errors.New("no setter"))))
 }

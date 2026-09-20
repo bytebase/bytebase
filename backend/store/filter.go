@@ -8,7 +8,7 @@ import (
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 func getVariableAndValueFromExpr(expr celast.Expr) (string, any) {

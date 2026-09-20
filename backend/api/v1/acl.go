@@ -49,14 +49,14 @@ func (in *ACLInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 			// Keyed on the code because inside doACLCheck only a permission
 			// verdict answers PermissionDenied.
 			if connect.CodeOf(err) == connect.CodePermissionDenied {
-				common.SetPermissionDenied(ctx)
+				setPermissionDenied(ctx)
 			}
 			return nil, err
 		}
 		// ACL is the last interceptor on both chains, so admission here is the
 		// call reaching its handler. It is set here, not in doACLCheck, because
 		// the skipped-authentication return admits too.
-		common.SetHandlerReached(ctx)
+		setHandlerReached(ctx)
 		return next(ctx, req)
 	}
 }

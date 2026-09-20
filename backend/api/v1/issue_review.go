@@ -131,7 +131,7 @@ func mapReviewError(ctx context.Context, err error, action review.Action) error 
 		// two refusals with this code are a project self-approval setting and
 		// an issue-ownership rule, which the design leaves unmarked.
 		if workflowErr.Reason == review.ReasonApproverRoleRequired {
-			return common.PermissionDeniedError(ctx, workflowErr)
+			return permissionDeniedError(ctx, workflowErr)
 		}
 		return connect.NewError(connect.CodePermissionDenied, workflowErr)
 	case review.ErrorConflict:

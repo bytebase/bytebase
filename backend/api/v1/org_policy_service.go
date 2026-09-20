@@ -475,7 +475,7 @@ func (s *OrgPolicyService) checkPolicyPermission(ctx context.Context, req connec
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		err := common.PermissionDeniedError(ctx, errors.Errorf("user does not have permission %q", perm))
+		err := permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", perm))
 		if detail, detailErr := connect.NewErrorDetail(&v1pb.PermissionDeniedDetail{
 			Method:              req.Spec().Procedure,
 			RequiredPermissions: []string{string(perm)},
