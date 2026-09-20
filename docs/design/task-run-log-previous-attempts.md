@@ -10,8 +10,6 @@ auto-expanded. A run that failed once and then passed on a retry therefore keeps
 red, auto-expanded failure section forever (BYT-9993; the customer's read: the UI
 is correct, but the failed step should not stay red once it passed).
 
-![Today](task-run-log-previous-attempts/01-today.png)
-
 Task-level re-run is not the problem and does not change: re-running a FAILED or
 CANCELED task creates a new `task_run` row, and `task_run_log` is keyed by
 `(project, task_run_id)`, so entries never cross runs.
@@ -67,43 +65,30 @@ attempt stays flat.
 **No retry.** No `RETRY_INFO` in the stream, so there is no umbrella row and the
 rendering is exactly what it is today. Most runs look like this and are untouched.
 
-![No retry](task-run-log-previous-attempts/02-no-retry.png)
-
 **One previous attempt, collapsed.** The default view after a single retry: one
 grey row noting "1 attempt", then the final attempt's sections flat and green.
-
-![One previous attempt, collapsed](task-run-log-previous-attempts/03-one-attempt-collapsed.png)
 
 **One previous attempt, expanded.** With a single previous attempt the umbrella
 expands straight to that attempt's sections — no middle level for a list of one.
 The failed section is pre-expanded and its red error entry is unchanged.
 
-![One previous attempt, expanded](task-run-log-previous-attempts/04-one-attempt-expanded.png)
-
 **Several previous attempts, collapsed.** Still one row; only the count changes.
 The default view does not grow with the retry count.
-
-![Several previous attempts, collapsed](task-run-log-previous-attempts/05-multiple-attempts-collapsed.png)
 
 **Several previous attempts, expanded.** The umbrella opens to one nested row per
 attempt, each carrying its own reason and duration. Opening an attempt reveals its
 sections.
-
-![Several previous attempts, expanded](task-run-log-previous-attempts/06-multiple-attempts-expanded.png)
 
 **One-time sections stay outside.** Prior backup runs once, before the retried
 call, and the schema sync once after it. Neither belongs to an attempt, so both
 stay at top level and keep their own durations — the umbrella sits between them,
 holding only the retried execution.
 
-![One-time sections outside the attempts](task-run-log-previous-attempts/10-one-time-sections-outside.png)
+**Terminal failure.** Retries are exhausted, so the final attempt's failure is
+state — red and auto-expanded — while the superseded attempts stay folded.
 
-**Terminal failure, and a retry in progress.** Left: retries are exhausted, so the
-final attempt's failure is state — red and auto-expanded — while the superseded
-attempts stay folded. Right: the run has retried twice, so the chip still reads two
+**A retry in progress.** The run has retried twice, so the chip still reads two
 retries, while the scope that is retrying carries that on its own umbrella.
-
-![Failed and running](task-run-log-previous-attempts/07-failed-and-running.png)
 
 ## What the log stream contains
 
@@ -213,8 +198,6 @@ Re-running a failed task therefore does **not** put the old run into Previous
 attempts; it starts a new run whose log begins empty, and the failed run moves
 into the history sheet with its own log intact.
 
-![A retry and a re-run](task-run-log-previous-attempts/13-transition-retry-vs-rerun.png)
-
 The two are easy to conflate, and the labels should carry the difference rather
 than leave it to be inferred: the history button reads "History (3)" today, which
 names no level. Renaming it "Previous runs (3)" pairs it with "Previous attempts"
@@ -233,8 +216,6 @@ work.
 | Final attempt finishes | sections settle; an error in the final segment auto-expands | decided by entries, not by run status |
 | Run reaches a terminal status | the viewer remounts — its key carries the status — so everything returns to defaults | acceptable, because collapsed *is* the default |
 | Someone clicks Re-run | a new `task_run`; the viewer remounts on the new name with no umbrella; the finished run moves to the history sheet | not a retry, and not this row's business |
-
-![The first retry arriving](task-run-log-previous-attempts/11-transition-first-retry.png)
 
 Two existing behaviors compose with this without special handling, and are worth
 stating so nobody adds handling they do not need. When a task run moved between
@@ -280,25 +261,19 @@ to a single attempt: a superseded attempt never changes again, and entries
 appended to the final attempt land after the sections already numbered. Ids then
 survive regrouping, and expansion follows the section it belongs to.
 
-![Expansion follows the section it belongs to](task-run-log-previous-attempts/12-transition-expansion-follows-section.png)
-
 ## Alternatives rejected
 
-**Flat attempt rows** (left), one grey row per attempt at top level: failure
+**Flat attempt rows**, one grey row per attempt at top level: failure
 reasons read without a click, but the default view then varies with the retry
 count, and for lock-timeout retries every attempt carries the same reason, which
-is most of what the extra rows would show. **Attempt lanes** (right), every attempt
+is most of what the extra rows would show. **Attempt lanes**, every attempt
 a labeled group in the GitHub Actions style: the clearest symmetry, but it puts a
 permanent nesting level on the common success path and its final lane header
 restates the run's own status chip.
 
-![Flat rows and attempt lanes](task-run-log-previous-attempts/08-alternatives-rows-and-lanes.png)
-
 **Status softening only**, keeping the flat list and marking superseded sections
 grey: the smallest change, but the interleaved Transaction rows of two attempts
 stay cryptic and the standalone "Retry" pseudo-section survives.
-
-![Status softening only](task-run-log-previous-attempts/09-alternative-status-only.png)
 
 **Amber for history** was rejected everywhere, including row fills. See the color
 rule above.
