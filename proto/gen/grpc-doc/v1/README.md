@@ -3400,7 +3400,7 @@ top-level TRUNCATE and RENAME values.
 | DISALLOW_TRUNCATE | 8 | P1: TRUNCATE. |
 | DISALLOW_DROP_CONSTRAINT | 9 | P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint. |
 | DISALLOW_RENAME | 10 | P1: renaming a table or column. |
-| REQUIRE_PRIMARY_KEY | 11 | P1: a table still has no primary key at the end of the change. |
+| REQUIRE_PRIMARY_KEY | 11 | P1: the change creates a table without a primary key, or drops a primary key without adding one back. A table that already lacked a primary key before the change is not reported. |
 
 
  

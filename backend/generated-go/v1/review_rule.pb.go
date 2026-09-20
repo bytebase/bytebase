@@ -47,7 +47,9 @@ const (
 	ReviewRule_DISALLOW_DROP_CONSTRAINT ReviewRule_Type = 9
 	// P1: renaming a table or column.
 	ReviewRule_DISALLOW_RENAME ReviewRule_Type = 10
-	// P1: a table still has no primary key at the end of the change.
+	// P1: the change creates a table without a primary key, or drops a
+	// primary key without adding one back. A table that already lacked a
+	// primary key before the change is not reported.
 	ReviewRule_REQUIRE_PRIMARY_KEY ReviewRule_Type = 11
 )
 
