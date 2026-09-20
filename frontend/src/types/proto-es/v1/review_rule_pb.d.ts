@@ -116,7 +116,9 @@ export enum ReviewRule_Type {
   DISALLOW_RENAME = 10,
 
   /**
-   * P1: a table still has no primary key at the end of the change.
+   * P1: the change creates a table without a primary key, or drops a
+   * primary key without adding one back. A table that already lacked a
+   * primary key before the change is not reported.
    *
    * @generated from enum value: REQUIRE_PRIMARY_KEY = 11;
    */
