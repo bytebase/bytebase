@@ -153,6 +153,7 @@
       "continue-with-email": "メールで続行",
       "continue-with-idp": "{{idp}} で続行",
       "email-code-tab": "メール認証コード",
+      "failed": "サインインに失敗しました",
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{{email}} でログインしてください",

@@ -153,6 +153,7 @@
       "continue-with-email": "使用邮箱继续",
       "continue-with-idp": "使用 {{idp}} 继续",
       "email-code-tab": "邮箱验证码",
+      "failed": "登录失败",
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {{email}} 登录",

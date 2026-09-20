@@ -153,6 +153,7 @@
       "continue-with-email": "Continue with email",
       "continue-with-idp": "Continue with {{idp}}",
       "email-code-tab": "Email Code",
+      "failed": "Sign-in failed",
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
       "invited-email": "You've been invited. Please sign in with {{email}}",

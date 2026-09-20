@@ -153,6 +153,7 @@
       "continue-with-email": "Tiếp tục bằng email",
       "continue-with-idp": "Tiếp tục bằng {{idp}}",
       "email-code-tab": "Mã qua email",
+      "failed": "Đăng nhập thất bại",
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
