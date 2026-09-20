@@ -2766,7 +2766,7 @@
             "title": "Disabled"
           },
           "read-only": {
-            "best-for": "Best for: querying and exploring data, including by people who do not write SQL.",
+            "best-for": "Best for: querying and exploring data, using natural language.",
             "caption": "Explore and query",
             "title": "Read-only"
           },

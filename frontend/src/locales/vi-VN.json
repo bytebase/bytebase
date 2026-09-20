@@ -2766,7 +2766,7 @@
             "title": "Tắt"
           },
           "read-only": {
-            "best-for": "Phù hợp khi: truy vấn và khám phá dữ liệu, kể cả với người không viết SQL.",
+            "best-for": "Phù hợp khi: truy vấn và khám phá dữ liệu bằng ngôn ngữ tự nhiên.",
             "caption": "Khám phá và truy vấn",
             "title": "Chỉ đọc"
           },
