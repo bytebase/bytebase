@@ -725,6 +725,9 @@ describe("useAppStore", () => {
     expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
       query: { redirect: "/" },
     });
+    expect(
+      localStorage.getItem("bb.workspace-setup.finished.workspaces/default")
+    ).toBe("false");
   });
 
   test("invited self-host user leaves root navigation to the router on first login", async () => {
@@ -934,6 +937,9 @@ describe("useAppStore", () => {
     expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
       replace: true,
     });
+    expect(
+      localStorage.getItem("bb.workspace-setup.finished.workspaces/default")
+    ).toBe("false");
   });
 
   test("invited SaaS signup skips workspace setup and opens the workspace landing page", async () => {

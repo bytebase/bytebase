@@ -17,6 +17,7 @@ type WorkspaceSetupQuestionnaireStepProps = {
   onScenarioChange: (value: GuideScenarioId) => void;
   onWorkspaceUsageChange: (value: GuideWorkspaceUsage) => void;
   onContinue: () => void;
+  required?: boolean;
 };
 
 const SCENARIO_OPTIONS: Array<{
@@ -76,6 +77,7 @@ export function WorkspaceSetupQuestionnaireStep({
   onScenarioChange,
   onWorkspaceUsageChange,
   onContinue,
+  required = false,
 }: WorkspaceSetupQuestionnaireStepProps) {
   const { t } = useTranslation();
 
@@ -84,9 +86,19 @@ export function WorkspaceSetupQuestionnaireStep({
       <div className="flex flex-col gap-y-3">
         <h1 className="font-medium text-main">
           {t("settings.profile.setup-scenario.outcome-title")}
+          {required && (
+            <span
+              aria-hidden="true"
+              className="ml-1 text-error"
+              data-testid="required-indicator"
+            >
+              *
+            </span>
+          )}
         </h1>
         <RadioGroup
           aria-label={t("settings.profile.setup-scenario.outcome-title")}
+          aria-required={required}
           value={scenarioValue ?? ""}
           onValueChange={(nextValue) => {
             if (isGuideScenarioId(nextValue)) onScenarioChange(nextValue);
@@ -113,11 +125,21 @@ export function WorkspaceSetupQuestionnaireStep({
       <div className="flex flex-col gap-y-3">
         <h2 className="font-medium text-main">
           {t("settings.profile.setup-scenario.workspace-usage.title")}
+          {required && (
+            <span
+              aria-hidden="true"
+              className="ml-1 text-error"
+              data-testid="required-indicator"
+            >
+              *
+            </span>
+          )}
         </h2>
         <RadioGroup
           aria-label={t(
             "settings.profile.setup-scenario.workspace-usage.title"
           )}
+          aria-required={required}
           value={workspaceUsageValue ?? ""}
           onValueChange={(nextValue) => {
             if (isGuideWorkspaceUsage(nextValue)) {
@@ -144,7 +166,10 @@ export function WorkspaceSetupQuestionnaireStep({
       </div>
 
       <div className="flex items-center justify-end gap-x-2 border-t border-block-border pt-4">
-        <Button onClick={onContinue}>
+        <Button
+          onClick={onContinue}
+          disabled={required && (!scenarioValue || !workspaceUsageValue)}
+        >
           {t("settings.profile.setup-scenario.continue")}
         </Button>
       </div>
