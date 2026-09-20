@@ -18,8 +18,13 @@ import (
 // Gemini chat types with tool-calling support.
 
 type chatGeminiRequest struct {
-	Contents []chatGeminiContent `json:"contents"`
-	Tools    []chatGeminiTool    `json:"tools,omitempty"`
+	SystemInstruction *chatGeminiSystemInstruction `json:"systemInstruction,omitempty"`
+	Contents          []chatGeminiContent          `json:"contents"`
+	Tools             []chatGeminiTool             `json:"tools,omitempty"`
+}
+
+type chatGeminiSystemInstruction struct {
+	Parts []chatGeminiPart `json:"parts"`
 }
 
 type chatGeminiContent struct {
@@ -77,17 +82,29 @@ func newGeminiToolCallID(name string) string {
 	return fmt.Sprintf("call_%s_%s", name, uuid.NewString())
 }
 
+// geminiFunctionResponse shapes a tool result for Gemini, which accepts a JSON
+// object only and rejects an array or a scalar with a 400.
+func geminiFunctionResponse(content string) map[string]any {
+	var parsed any
+	if err := json.Unmarshal([]byte(content), &parsed); err != nil {
+		return map[string]any{"result": content}
+	}
+	if object, ok := parsed.(map[string]any); ok {
+		return object
+	}
+	return map[string]any{"result": parsed}
+}
+
 func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	payload := chatGeminiRequest{}
 
+	var systemParts []chatGeminiPart
 	for _, m := range request.Messages {
 		switch m.Role {
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM:
-			// Gemini handles system messages as the first user message.
-			payload.Contents = append(payload.Contents, chatGeminiContent{
-				Role:  "user",
-				Parts: []chatGeminiPart{{Text: m.GetContent()}},
-			})
+			if m.GetContent() != "" {
+				systemParts = append(systemParts, chatGeminiPart{Text: m.GetContent()})
+			}
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER:
 			payload.Contents = append(payload.Contents, chatGeminiContent{
 				Role:  "user",
@@ -122,10 +139,7 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 			// Gemini uses functionResponse parts in a "user" role message.
 			// We need the tool name; get it from the tool call ID by searching prior messages.
 			toolName := getToolNameFromMessages(request.Messages, m.GetToolCallId())
-			var resultData any
-			if err := json.Unmarshal([]byte(m.GetContent()), &resultData); err != nil {
-				resultData = map[string]string{"result": m.GetContent()}
-			}
+			resultData := geminiFunctionResponse(m.GetContent())
 			payload.Contents = append(payload.Contents, chatGeminiContent{
 				Role: "user",
 				Parts: []chatGeminiPart{
@@ -138,6 +152,14 @@ func chatGemini(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 				},
 			})
 		default:
+		}
+	}
+	if len(systemParts) > 0 {
+		if len(payload.Contents) == 0 {
+			// Gemini rejects a request with empty contents.
+			payload.Contents = []chatGeminiContent{{Role: "user", Parts: systemParts}}
+		} else {
+			payload.SystemInstruction = &chatGeminiSystemInstruction{Parts: systemParts}
 		}
 	}
 

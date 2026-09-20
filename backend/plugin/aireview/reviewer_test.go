@@ -1,0 +1,328 @@
+package aireview
+
+import (
+	"context"
+	"slices"
+	"testing"
+	"time"
+
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
+)
+
+const threeLineStatement = "ALTER TABLE orders ADD COLUMN note text;\n\nDELETE FROM order_events;\n"
+
+const validReply = `{"findings": [{"title": "Add a WHERE clause", "severity": "P0", "line": 3, "rule": "an UPDATE or DELETE that touches more rows than the author means", "evidence": "order_events has 9000000 rows", "fix": "Delete in batches by id range"}]}`
+
+type modelStep struct {
+	response *ChatResponse
+	err      error
+	// block makes the step wait until the context ends.
+	block bool
+	// cancelParent is called when the step starts, before it blocks.
+	cancelParent context.CancelFunc
+}
+
+// scriptedModel replays steps in order and repeats the last one.
+type scriptedModel struct {
+	steps    []modelStep
+	requests []*ChatRequest
+}
+
+func (m *scriptedModel) Chat(ctx context.Context, request *ChatRequest) (*ChatResponse, error) {
+	// The loop appends to the same slice after the call, so keep a copy.
+	m.requests = append(m.requests, &ChatRequest{Messages: slices.Clone(request.Messages), Tools: request.Tools})
+	step := m.steps[min(len(m.requests), len(m.steps))-1]
+	if step.cancelParent != nil {
+		step.cancelParent()
+	}
+	if step.block {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}
+	return step.response, step.err
+}
+
+type fakeTools struct {
+	outputs map[string]string
+	err     error
+	calls   []string
+}
+
+func (*fakeTools) Definitions() []ToolDefinition {
+	return []ToolDefinition{{Name: "read"}, {Name: "search"}}
+}
+
+func (f *fakeTools) Call(_ context.Context, name string, _ string) (string, error) {
+	f.calls = append(f.calls, name)
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.outputs[name], nil
+}
+
+func finalReply(content string) modelStep {
+	return modelStep{response: &ChatResponse{Message: Message{Content: content}, Usage: Usage{TotalTokens: 100}}}
+}
+
+func toolCallReply(calls ...ToolCall) modelStep {
+	return modelStep{response: &ChatResponse{Message: Message{ToolCalls: calls}, Usage: Usage{TotalTokens: 100}}}
+}
+
+func TestReviewReturnsFindings(t *testing.T) {
+	t.Parallel()
+
+	model := &scriptedModel{steps: []modelStep{finalReply(validReply)}}
+	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+	require.NoError(t, err)
+	require.Equal(t, 1, result.Calls)
+	require.Equal(t, 100, result.Usage.TotalTokens)
+	require.Equal(t, []Finding{{
+		Title:    "Add a WHERE clause",
+		Severity: SeverityP0,
+		Line:     3,
+		Rule:     "an UPDATE or DELETE that touches more rows than the author means",
+		Evidence: "order_events has 9000000 rows",
+		Fix:      "Delete in batches by id range",
+	}}, result.Findings)
+
+	require.Len(t, model.requests, 1)
+	require.Equal(t, []Role{RoleSystem, RoleUser}, roles(model.requests[0].Messages))
+	require.Len(t, model.requests[0].Tools, 2)
+}
+
+func TestReviewAnswersEveryToolCallAndKeepsReplay(t *testing.T) {
+	t.Parallel()
+
+	calls := []ToolCall{
+		{ID: "call-1", Name: "search", Arguments: `{"text": "orders"}`, Replay: "thought-signature"},
+		{ID: "call-2", Name: "read", Arguments: `{"objects": [{"name": "orders"}]}`},
+	}
+	model := &scriptedModel{steps: []modelStep{toolCallReply(calls...), finalReply(`{"findings": []}`)}}
+	tools := &fakeTools{outputs: map[string]string{"search": "orders_summary", "read": "CREATE TABLE orders"}}
+
+	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, tools)
+	require.NoError(t, err)
+	require.Empty(t, result.Findings)
+	require.Equal(t, 2, result.Calls)
+	require.Equal(t, 200, result.Usage.TotalTokens)
+	require.Equal(t, []string{"search", "read"}, tools.calls)
+
+	history := model.requests[1].Messages
+	require.Equal(t, []Role{RoleSystem, RoleUser, RoleAssistant, RoleTool, RoleTool}, roles(history))
+	require.Equal(t, calls, history[2].ToolCalls)
+	require.Equal(t, Message{Role: RoleTool, Content: "orders_summary", ToolCallID: "call-1"}, history[3])
+	require.Equal(t, Message{Role: RoleTool, Content: "CREATE TABLE orders", ToolCallID: "call-2"}, history[4])
+}
+
+func TestReviewExitPaths(t *testing.T) {
+	t.Parallel()
+
+	toolFailure := errors.New("metadata store timed out")
+	tests := []struct {
+		name          string
+		steps         []modelStep
+		tools         *fakeTools
+		maxModelCalls int
+		wantErr       error
+		wantErrText   string
+		wantFindings  int
+		wantCalls     int
+		// wantRequests is checked when it is not zero.
+		wantRequests int
+		// wantLastUserText must appear in the last user message the model saw.
+		wantLastUserText string
+		wantToolCalls    []string
+	}{
+		{
+			name:         "reply in code fences",
+			steps:        []modelStep{finalReply("```json\n" + validReply + "\n```")},
+			wantFindings: 1,
+			wantCalls:    1,
+		},
+		{
+			name:             "invalid reply is corrected once",
+			steps:            []modelStep{finalReply(`{"findings": [{"title": "t", "severity": "critical", "line": 3, "rule": "r", "evidence": "e", "fix": "f"}]}`), finalReply(validReply)},
+			wantFindings:     1,
+			wantCalls:        2,
+			wantLastUserText: `findings[0].severity: "critical" is not one of P0, P1, P2`,
+		},
+		{
+			name:        "invalid reply twice fails",
+			steps:       []modelStep{finalReply("not json"), finalReply("still not json")},
+			wantErr:     ErrInvalidReply,
+			wantErrText: "the reply is not a JSON object",
+		},
+		{
+			name: "announcing a lookup is sent back to call the tool",
+			steps: []modelStep{
+				finalReply("Let me check the orders table first."),
+				toolCallReply(ToolCall{ID: "call-1", Name: "read"}),
+				finalReply(validReply),
+			},
+			wantFindings:  1,
+			wantCalls:     3,
+			wantToolCalls: []string{"read"},
+		},
+		{
+			name:         "truncated reply fails without a correction round",
+			steps:        []modelStep{{response: &ChatResponse{Message: Message{Content: `{"findings": [`}, StopReason: StopReasonLength}}},
+			wantErr:      ErrReplyTruncated,
+			wantRequests: 1,
+		},
+		{
+			name:    "filtered reply fails",
+			steps:   []modelStep{{response: &ChatResponse{StopReason: StopReasonContentFilter}}},
+			wantErr: ErrReplyFiltered,
+		},
+		{
+			name:        "model error fails",
+			steps:       []modelStep{{err: errors.New("Gemini API returned status 401")}},
+			wantErrText: "model call 1 failed: Gemini API returned status 401",
+		},
+		{
+			name:          "tool error fails instead of reaching the model as text",
+			steps:         []modelStep{toolCallReply(ToolCall{ID: "call-1", Name: "read"}), finalReply(`{"findings": []}`)},
+			tools:         &fakeTools{err: toolFailure},
+			wantErr:       toolFailure,
+			wantToolCalls: []string{"read"},
+		},
+		{
+			name:      "unknown tool goes back to the model as text",
+			steps:     []modelStep{toolCallReply(ToolCall{ID: "call-1", Name: "get_table"}), finalReply(`{"findings": []}`)},
+			wantCalls: 2,
+		},
+		{
+			// The tools of the last permitted call do not run: no call is left to carry their results.
+			name:          "call limit",
+			steps:         []modelStep{toolCallReply(ToolCall{ID: "call-1", Name: "search"})},
+			maxModelCalls: 3,
+			wantErr:       ErrCallLimit,
+			wantRequests:  3,
+			wantToolCalls: []string{"search", "search"},
+		},
+		{
+			name:          "invalid reply on the last permitted call reports the problems",
+			steps:         []modelStep{finalReply("not json")},
+			maxModelCalls: 1,
+			wantErr:       ErrInvalidReply,
+			wantErrText:   "the reply is not a JSON object",
+			wantRequests:  1,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			model := &scriptedModel{steps: tc.steps}
+			tools := tc.tools
+			if tools == nil {
+				tools = &fakeTools{}
+			}
+			reviewer := NewReviewer(model)
+			if tc.maxModelCalls > 0 {
+				reviewer.maxModelCalls = tc.maxModelCalls
+			}
+
+			result, err := reviewer.Review(context.Background(), &Request{Statement: threeLineStatement}, tools)
+			require.Equal(t, tc.wantToolCalls, tools.calls)
+			if tc.wantRequests > 0 {
+				require.Len(t, model.requests, tc.wantRequests)
+			}
+			if tc.wantErr != nil || tc.wantErrText != "" {
+				require.Nil(t, result)
+				if tc.wantErr != nil {
+					require.ErrorIs(t, err, tc.wantErr)
+				}
+				require.ErrorContains(t, err, tc.wantErrText)
+				return
+			}
+			require.NoError(t, err)
+			require.Len(t, result.Findings, tc.wantFindings)
+			require.Equal(t, tc.wantCalls, result.Calls)
+			if tc.wantLastUserText != "" {
+				last := model.requests[len(model.requests)-1].Messages
+				require.Equal(t, RoleUser, last[len(last)-1].Role)
+				require.Contains(t, last[len(last)-1].Content, tc.wantLastUserText)
+			}
+		})
+	}
+}
+
+func TestReviewUnknownToolNamesTheRealTools(t *testing.T) {
+	t.Parallel()
+
+	model := &scriptedModel{steps: []modelStep{toolCallReply(ToolCall{ID: "call-1", Name: "get_table"}), finalReply(`{"findings": []}`)}}
+	_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+	require.NoError(t, err)
+
+	history := model.requests[1].Messages
+	require.Equal(t, Message{Role: RoleTool, Content: `unknown tool "get_table"; the tools are: read, search`, ToolCallID: "call-1"}, history[len(history)-1])
+}
+
+func TestReviewRejectsEmptyStatement(t *testing.T) {
+	t.Parallel()
+
+	model := &scriptedModel{steps: []modelStep{finalReply(`{"findings": []}`)}}
+	_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: " \n"}, &fakeTools{})
+	require.ErrorContains(t, err, "the statement is empty")
+	require.Empty(t, model.requests)
+}
+
+func TestReviewDeadline(t *testing.T) {
+	t.Parallel()
+
+	reviewer := NewReviewer(&scriptedModel{steps: []modelStep{{block: true}}})
+	reviewer.timeout = 20 * time.Millisecond
+	_, err := reviewer.Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+	require.ErrorIs(t, err, ErrDeadline)
+}
+
+func TestReviewCanceledParentIsNotADeadline(t *testing.T) {
+	t.Parallel()
+
+	t.Run("before the first call", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		model := &scriptedModel{steps: []modelStep{{block: true}}}
+		_, err := NewReviewer(model).Review(ctx, &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorIs(t, err, context.Canceled)
+		require.NotErrorIs(t, err, ErrDeadline)
+		require.Empty(t, model.requests)
+	})
+
+	t.Run("during a model call", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		model := &scriptedModel{steps: []modelStep{{block: true, cancelParent: cancel}}}
+		_, err := NewReviewer(model).Review(ctx, &Request{Statement: threeLineStatement}, &fakeTools{})
+		require.ErrorIs(t, err, context.Canceled)
+		require.NotErrorIs(t, err, ErrDeadline)
+		require.Len(t, model.requests, 1)
+	})
+}
+
+func TestReviewKeepsAnEmptyReplyOutOfTheHistory(t *testing.T) {
+	t.Parallel()
+
+	model := &scriptedModel{steps: []modelStep{finalReply(" \n"), finalReply(validReply)}}
+	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
+	require.NoError(t, err)
+	require.Len(t, result.Findings, 1)
+
+	history := model.requests[1].Messages
+	require.Equal(t, []Role{RoleSystem, RoleUser, RoleUser}, roles(history))
+	require.Contains(t, history[2].Content, "the reply is empty")
+}
+
+func roles(messages []Message) []Role {
+	result := make([]Role, 0, len(messages))
+	for _, message := range messages {
+		result = append(result, message.Role)
+	}
+	return result
+}
