@@ -463,19 +463,22 @@ func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, reso
 }
 
 // GetDefaultReviewRulePolicy returns the review rule policy in force when
-// neither the project nor the workspace has one: every standard rule on, in
-// declaration order.
+// neither the project nor the workspace has one: every standard rule on. A
+// rule added to ReviewRuleType is added here in the same release.
 func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
-	values := storepb.ReviewRuleType(0).Descriptor().Values()
-	rules := make([]storepb.ReviewRuleType, 0, values.Len())
-	for i := 0; i < values.Len(); i++ {
-		rule := storepb.ReviewRuleType(values.Get(i).Number())
-		if rule == storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED {
-			continue
-		}
-		rules = append(rules, rule)
-	}
-	return &storepb.ReviewRulePolicy{Rules: rules}
+	return &storepb.ReviewRulePolicy{Rules: []storepb.ReviewRuleType{
+		storepb.ReviewRuleType_SYNTAX,
+		storepb.ReviewRuleType_WALK_THROUGH,
+		storepb.ReviewRuleType_ONLINE_MIGRATION,
+		storepb.ReviewRuleType_PRIOR_BACKUP,
+		storepb.ReviewRuleType_REQUIRE_IS_NULL,
+		storepb.ReviewRuleType_REQUIRE_WHERE,
+		storepb.ReviewRuleType_DISALLOW_DROP_OBJECT,
+		storepb.ReviewRuleType_DISALLOW_TRUNCATE,
+		storepb.ReviewRuleType_DISALLOW_DROP_CONSTRAINT,
+		storepb.ReviewRuleType_DISALLOW_RENAME,
+		storepb.ReviewRuleType_REQUIRE_PRIMARY_KEY,
+	}}
 }
 
 // GetEffectiveReviewRulePolicy returns the standard review rules on for a
