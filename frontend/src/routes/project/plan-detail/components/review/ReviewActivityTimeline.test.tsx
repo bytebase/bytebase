@@ -215,9 +215,7 @@ describe("ReviewActivityTimeline", () => {
       );
     });
 
-    expect(
-      shownTimestampModes(container)
-    ).toEqual(["queue"]);
+    expect(shownTimestampModes(container)).toEqual(["queue"]);
 
     act(() => root.unmount());
   });

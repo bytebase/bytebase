@@ -5,7 +5,10 @@ import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
-import { shownTimestampInstants, shownTimestampModes } from "@/test-utils/humanizeTs";
+import {
+  shownTimestampInstants,
+  shownTimestampModes,
+} from "@/test-utils/humanizeTs";
 import {
   TaskRun_Status,
   TaskRunSchema,
@@ -57,8 +60,8 @@ vi.mock("@/components/HumanizeTs", async () => ({
 const taskName = "projects/p1/rollouts/r1/stages/s1/tasks/t1";
 
 const CREATED_AT_MS = 1_000_000;
-// Runs are a step apart, so "newest first" is a claim about order that the
-// fixture can actually be wrong about.
+// Older runs step back from it, so the newest run is the named instant and
+// no assertion has to re-derive the fixture's arithmetic.
 const STEP_MS = 60_000;
 
 const makeTaskRun = (
@@ -76,7 +79,7 @@ const makeTaskRuns = (count: number) =>
   // Newest first, matching the component contract.
   Array.from({ length: count }, (_, index) =>
     makeTaskRun({
-      createTime: timestampFromMs(CREATED_AT_MS + STEP_MS * (count - index)),
+      createTime: timestampFromMs(CREATED_AT_MS - STEP_MS * index),
       name: `${taskName}/taskRuns/${count - index}`,
     })
   );
@@ -116,9 +119,7 @@ describe("DeployTaskRunHistorySheet", () => {
     // from the wrong one reads as plausibly as the right one.
     const { container, cleanup } = renderSheet(makeTaskRuns(1));
     expect(shownTimestampModes(container)).toEqual(["compact"]);
-    expect(shownTimestampInstants(container)).toEqual([
-      String(CREATED_AT_MS + STEP_MS),
-    ]);
+    expect(shownTimestampInstants(container)).toEqual([String(CREATED_AT_MS)]);
     cleanup();
   });
 

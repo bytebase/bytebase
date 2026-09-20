@@ -83,9 +83,7 @@ describe("DatabaseChangelogTable", () => {
     render();
 
     // A row in a list orients the reader; the changelog's own page testifies.
-    expect(
-      shownTimestampModes(container)
-    ).toEqual(["compact"]);
+    expect(shownTimestampModes(container)).toEqual(["compact"]);
 
     unmount();
   });
