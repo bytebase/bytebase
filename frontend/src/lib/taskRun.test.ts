@@ -196,6 +196,19 @@ describe("getTaskRunComment", () => {
 });
 
 describe("getTaskRunWaitingMessage", () => {
+  test("names a run scheduled for the epoch rather than hiding it", () => {
+    // A time that is there is a time to name, even this one: the reading that
+    // treated it as absent could only ever be wrong about it.
+    expect(
+      getTaskRunWaitingMessage(
+        makeTaskRun({ runTime: ts(0), status: TaskRun_Status.PENDING }),
+        t
+      )
+    ).toBe(
+      'task-run.status.enqueued-with-rollout-time:{"time":"Jan 1, 1970, 8:00:00 AM GMT+8"}'
+    );
+  });
+
   test("reports waiting states and stays silent otherwise", () => {
     expect(
       getTaskRunWaitingMessage(
