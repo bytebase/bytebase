@@ -462,6 +462,67 @@ func (s *Store) getQueryDataPolicy(ctx context.Context, workspaceID string, reso
 	return p, nil
 }
 
+// GetDefaultReviewRulePolicy returns the review rule policy in force when
+// neither the project nor the workspace has one: every standard rule on, in
+// declaration order.
+func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
+	values := storepb.ReviewRuleType(0).Descriptor().Values()
+	rules := make([]storepb.ReviewRuleType, 0, values.Len())
+	for i := 0; i < values.Len(); i++ {
+		rule := storepb.ReviewRuleType(values.Get(i).Number())
+		if rule == storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED {
+			continue
+		}
+		rules = append(rules, rule)
+	}
+	return &storepb.ReviewRulePolicy{Rules: rules}
+}
+
+// GetEffectiveReviewRulePolicy returns the standard review rules on for a
+// project. The nearest policy wins: the project's own policy applies as is, a
+// project without one uses the workspace policy, and with neither every rule
+// is on. A policy that is not enforced counts as absent.
+func (s *Store) GetEffectiveReviewRulePolicy(ctx context.Context, workspaceID string, projectID string) (*storepb.ReviewRulePolicy, error) {
+	for _, level := range []struct {
+		resourceType storepb.Policy_Resource
+		resource     string
+	}{
+		{storepb.Policy_PROJECT, common.FormatProject(projectID)},
+		{storepb.Policy_WORKSPACE, common.FormatWorkspace(workspaceID)},
+	} {
+		policy, err := s.getReviewRulePolicy(ctx, workspaceID, level.resourceType, level.resource)
+		if err != nil {
+			return nil, err
+		}
+		if policy != nil {
+			return policy, nil
+		}
+	}
+	return GetDefaultReviewRulePolicy(), nil
+}
+
+// getReviewRulePolicy returns nil when the resource has no enforced review
+// rule policy.
+func (s *Store) getReviewRulePolicy(ctx context.Context, workspaceID string, resourceType storepb.Policy_Resource, resource string) (*storepb.ReviewRulePolicy, error) {
+	policy, err := s.GetPolicy(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
+		ResourceType: &resourceType,
+		Resource:     &resource,
+		Type:         new(storepb.Policy_REVIEW_RULE),
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get review rule policy for %s", resource)
+	}
+	if policy == nil || !policy.Enforce {
+		return nil, nil
+	}
+	p := &storepb.ReviewRulePolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal review rule policy for %s", resource)
+	}
+	return p, nil
+}
+
 type reviewConfigResource struct {
 	resourceType storepb.Policy_Resource
 	resource     string

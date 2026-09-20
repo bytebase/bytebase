@@ -187,6 +187,30 @@ func convertToQueryDataPolicyPayload(policy *v1pb.QueryDataPolicy) *storepb.Quer
 	}
 }
 
+func convertToV1PBReviewRulePolicy(payloadStr string) (*v1pb.Policy_ReviewRulePolicy, error) {
+	payload := &storepb.ReviewRulePolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal review rule policy payload")
+	}
+	rules := make([]v1pb.ReviewRuleType, 0, len(payload.Rules))
+	for _, rule := range payload.Rules {
+		rules = append(rules, v1pb.ReviewRuleType(rule))
+	}
+	return &v1pb.Policy_ReviewRulePolicy{
+		ReviewRulePolicy: &v1pb.ReviewRulePolicy{Rules: rules},
+	}, nil
+}
+
+// convertToStorePBReviewRulePolicy casts each rule across the two mirrored
+// enums; TestReviewRuleTypeEnumsMirror holds their numbering together.
+func convertToStorePBReviewRulePolicy(policy *v1pb.ReviewRulePolicy) *storepb.ReviewRulePolicy {
+	rules := make([]storepb.ReviewRuleType, 0, len(policy.GetRules()))
+	for _, rule := range policy.GetRules() {
+		rules = append(rules, storepb.ReviewRuleType(rule))
+	}
+	return &storepb.ReviewRulePolicy{Rules: rules}
+}
+
 func convertToStorePBMskingRulePolicy(policy *v1pb.MaskingRulePolicy) *storepb.MaskingRulePolicy {
 	var rules []*storepb.MaskingRulePolicy_MaskingRule
 	for _, rule := range policy.Rules {
@@ -298,6 +322,8 @@ func convertV1PBToStorePBPolicyType(pType v1pb.PolicyType) (storepb.Policy_Type,
 		return storepb.Policy_MASKING_EXEMPTION, nil
 	case v1pb.PolicyType_DATA_QUERY:
 		return storepb.Policy_QUERY_DATA, nil
+	case v1pb.PolicyType_REVIEW_RULE:
+		return storepb.Policy_REVIEW_RULE, nil
 	default:
 	}
 	return storepb.Policy_TYPE_UNSPECIFIED, errors.Errorf("invalid policy type %v", pType)
@@ -315,6 +341,8 @@ func convertStorePBToV1PBPolicyType(pType storepb.Policy_Type) v1pb.PolicyType {
 		return v1pb.PolicyType_MASKING_EXEMPTION
 	case storepb.Policy_QUERY_DATA:
 		return v1pb.PolicyType_DATA_QUERY
+	case storepb.Policy_REVIEW_RULE:
+		return v1pb.PolicyType_REVIEW_RULE
 	default:
 	}
 	return v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED
