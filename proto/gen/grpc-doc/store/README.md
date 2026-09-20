@@ -2758,10 +2758,8 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 <a name="bytebase-store-ReviewRulePolicy"></a>
 
 ### ReviewRulePolicy
-ReviewRulePolicy is the standard review rule switch.
-Project: the rules on there; absent policy means every rule.
-Workspace: the rules on in every project, which projects cannot switch
-off; absent policy means none. The effective set is the union.
+ReviewRulePolicy is the standard review rule switch. The nearest policy
+wins: the project&#39;s if it has one, else the workspace&#39;s, else every rule.
 
 
 | Field | Type | Label | Description |

@@ -269,16 +269,13 @@ export declare type Policy = Message<"bytebase.v1.Policy"> & {
 export declare const PolicySchema: GenMessage<Policy>;
 
 /**
- * Standard review rule policy: the rules switched on, at two levels.
+ * Standard review rule policy: the rules switched on. The nearest policy
+ * wins: a project's own policy applies as is; a project without one uses
+ * the workspace policy; with neither, every rule is on.
  *
- * On a project it is the project's switch: the rules on there. Absent policy
- * means every rule. On the workspace it is a lock: the rules on in every
- * project, which projects cannot switch off. Absent policy means none. The
- * effective set for a project is the union of the two.
- *
- * A saved project list is explicit, so a rule added to the standard set in a
- * later release is appended to every saved project policy by a data
- * migration in that release.
+ * A saved list is explicit, so a rule added to the standard set in a later
+ * release is appended to every saved policy by a data migration in that
+ * release.
  *
  * @generated from message bytebase.v1.ReviewRulePolicy
  */

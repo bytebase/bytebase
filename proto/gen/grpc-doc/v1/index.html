@@ -28514,7 +28514,7 @@ If false,
         
       
         <h3 id="bytebase.v1.ReviewRulePolicy">ReviewRulePolicy</h3>
-        <p>Standard review rule policy: the rules switched on, at two levels.</p><p>On a project it is the project's switch: the rules on there. Absent policy</p><p>means every rule. On the workspace it is a lock: the rules on in every</p><p>project, which projects cannot switch off. Absent policy means none. The</p><p>effective set for a project is the union of the two.</p><p>A saved project list is explicit, so a rule added to the standard set in a</p><p>later release is appended to every saved project policy by a data</p><p>migration in that release.</p>
+        <p>Standard review rule policy: the rules switched on. The nearest policy</p><p>wins: a project's own policy applies as is; a project without one uses</p><p>the workspace policy; with neither, every rule is on.</p><p>A saved list is explicit, so a rule added to the standard set in a later</p><p>release is appended to every saved policy by a data migration in that</p><p>release.</p>
 
         
           <table class="field-table">

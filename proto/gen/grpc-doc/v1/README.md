@@ -10022,16 +10022,13 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 <a name="bytebase-v1-ReviewRulePolicy"></a>
 
 ### ReviewRulePolicy
-Standard review rule policy: the rules switched on, at two levels.
+Standard review rule policy: the rules switched on. The nearest policy
+wins: a project&#39;s own policy applies as is; a project without one uses
+the workspace policy; with neither, every rule is on.
 
-On a project it is the project&#39;s switch: the rules on there. Absent policy
-means every rule. On the workspace it is a lock: the rules on in every
-project, which projects cannot switch off. Absent policy means none. The
-effective set for a project is the union of the two.
-
-A saved project list is explicit, so a rule added to the standard set in a
-later release is appended to every saved project policy by a data
-migration in that release.
+A saved list is explicit, so a rule added to the standard set in a later
+release is appended to every saved policy by a data migration in that
+release.
 
 
 | Field | Type | Label | Description |
