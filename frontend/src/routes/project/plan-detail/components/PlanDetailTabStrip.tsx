@@ -1,5 +1,5 @@
-import { Button as BaseButton } from "@base-ui/react/button";
 import type { ReactNode } from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function PlanDetailTabStrip({
@@ -60,17 +60,19 @@ export function PlanDetailTabItem({
           : "border-b-block-border border-transparent hover:bg-control-bg"
       )}
     >
-      <BaseButton
+      <Button
+        appearance="secondary"
+        size="md"
         aria-label={accessibleLabel}
         className={cn(
-          "flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-t-sm py-2 text-left text-sm font-medium leading-5 text-control focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
-          action ? "pl-3" : "px-3"
+          "min-w-0 flex-1 justify-start rounded-t-sm text-left hover:bg-transparent focus-visible:ring-inset focus-visible:ring-offset-0",
+          action && "pr-0"
         )}
         onClick={onSelect}
         type="button"
       >
         {children}
-      </BaseButton>
+      </Button>
       {action}
     </div>
   );
