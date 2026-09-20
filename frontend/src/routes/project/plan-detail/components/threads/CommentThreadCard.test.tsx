@@ -225,6 +225,29 @@ describe("CommentThreadCard", () => {
     );
   });
 
+  test("times a reply by when it was written, not when it was edited", () => {
+    // The two instants sit beside each other in ThreadComment and feed the
+    // same "edited" marker, so the row has to say which one it shows.
+    const reply = create(IssueCommentSchema, {
+      name: `${ISSUE}/issueComments/edited`,
+      comment: "Reply",
+      creator: "users/alice@example.com",
+      root: `${ISSUE}/issueComments/root`,
+      createTime: create(TimestampSchema, { seconds: BigInt(1_000) }),
+      updateTime: create(TimestampSchema, { seconds: BigInt(2_000) }),
+    });
+    const [thread] = groupThreads([comment("root", "Root question"), reply]);
+    render(
+      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+    );
+
+    const shown = Array.from(
+      container.querySelectorAll("[data-testid='humanize-ts']")
+    ).map((node) => node.textContent);
+    expect(shown).toContain("1000000");
+    expect(shown).not.toContain("2000000");
+  });
+
   test("renders the root and replies oldest first with the thread footer", () => {
     const [thread] = groupThreads([
       comment("root", "Root question"),

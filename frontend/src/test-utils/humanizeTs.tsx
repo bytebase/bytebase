@@ -11,9 +11,12 @@ export const humanizeTsStub = () => ({
   }: {
     tsMs: number | undefined;
     mode?: string;
-  }) => (
-    <span data-testid="humanize-ts" data-mode={mode}>
-      {tsMs ?? ""}
-    </span>
-  ),
+  }) =>
+    // Nothing at all without an instant, as the component does: a stub that
+    // left an empty box behind would hide a row that kept its separator.
+    tsMs === undefined ? null : (
+      <span data-testid="humanize-ts" data-mode={mode}>
+        {tsMs}
+      </span>
+    ),
 });
