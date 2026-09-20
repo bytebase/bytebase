@@ -187,7 +187,6 @@ CREATE INDEX idx_audit_log_workspace_created_at ON audit_log(workspace, created_
 CREATE INDEX idx_audit_log_payload_parent ON audit_log((payload->>'parent'));
 CREATE INDEX idx_audit_log_payload_method ON audit_log((payload->>'method'));
 CREATE INDEX idx_audit_log_payload_resource ON audit_log((payload->>'resource'));
--- AuditLog.actor retains the legacy ProtoJSON key to avoid rewriting audit history.
 CREATE INDEX idx_audit_log_payload_user ON audit_log((payload->>'user'));
 
 -----------------------

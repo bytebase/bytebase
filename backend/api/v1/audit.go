@@ -415,7 +415,7 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 				Method:          e.method,
 				Resource:        resource,
 				Severity:        severity,
-				Actor:           user,
+				User:            user,
 				Request:         requestString,
 				Response:        responseString,
 				Status:          auditStatus,

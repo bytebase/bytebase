@@ -37,7 +37,7 @@ func TestLogAuditToStdoutFormat(t *testing.T) {
 		Method:   "/bytebase.v1.AuthService/Login",
 		Resource: "alice@example.com",
 		Severity: storepb.AuditLog_INFO,
-		Actor:    "users/alice@example.com",
+		User:     "users/alice@example.com",
 		Request:  `{"email":"alice@example.com","web":true}`,
 		Response: `{"user":{"name":"users/alice@example.com","email":"alice@example.com"}}`,
 		Status:   &spb.Status{Code: 0, Message: ""},
@@ -65,7 +65,7 @@ func TestLogAuditToStdoutFormat(t *testing.T) {
 	a.Equal("workspaces/ws-abc", got["parent"])
 	a.Equal("/bytebase.v1.AuthService/Login", got["method"])
 	a.Equal("alice@example.com", got["resource"])
-	a.Equal("users/alice@example.com", got["actor"])
+	a.Equal("users/alice@example.com", got["user"])
 	a.Equal("INFO", got["severity"])
 	a.Equal("10.0.1.50", got["client_ip"])
 	a.Equal("TestAgent/1.0", got["user_agent"])
@@ -154,7 +154,7 @@ func TestRecordOutOfBandAuditStampsWarning(t *testing.T) {
 	row := &storepb.AuditLog{
 		Parent: "workspaces/ws-abc",
 		Method: AuditMethodMCPSessionAuthorize,
-		Actor:  "users/alice@example.com",
+		User:   "users/alice@example.com",
 		Status: &spb.Status{Code: 7, Message: "MCP access is turned off"},
 	}
 

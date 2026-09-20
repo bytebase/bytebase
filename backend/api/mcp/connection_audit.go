@@ -47,7 +47,7 @@ func (s *Server) refuseConnection(c *echo.Context, delegated auth.DelegatedMCPCr
 		Parent:   common.FormatWorkspace(delegated.WorkspaceID),
 		Method:   common.AuditMethodMCPSessionAuthorize,
 		Resource: common.FormatWorkspace(delegated.WorkspaceID),
-		Actor:    common.FormatUserEmail(delegated.Principal),
+		User:     common.FormatUserEmail(delegated.Principal),
 		Status: &spb.Status{
 			Code:    int32(codes.PermissionDenied),
 			Message: reason,

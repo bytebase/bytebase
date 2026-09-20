@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -185,18 +186,18 @@ func TestGetSearchAuditLogsFilter(t *testing.T) {
 	}
 }
 
-func TestAuditLogActorUsesLegacyProtoJSONName(t *testing.T) {
+func TestAuditLogUserUsesProtoJSONName(t *testing.T) {
 	t.Parallel()
 
 	payload, err := protojson.Marshal(&storepb.AuditLog{
-		Actor: "serviceAccounts/deploy@service.bytebase.com",
+		User: "serviceAccounts/deploy@service.bytebase.com",
 	})
 	require.NoError(t, err)
 	require.JSONEq(t, `{"user":"serviceAccounts/deploy@service.bytebase.com"}`, string(payload))
 
 	var auditLog storepb.AuditLog
-	require.NoError(t, protojson.Unmarshal(payload, &auditLog))
-	require.Equal(t, "serviceAccounts/deploy@service.bytebase.com", auditLog.Actor)
+	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(payload, &auditLog))
+	require.Equal(t, "serviceAccounts/deploy@service.bytebase.com", auditLog.User)
 }
 
 func TestGetSearchAuditLogsFilter_EdgeCases(t *testing.T) {

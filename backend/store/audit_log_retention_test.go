@@ -180,7 +180,7 @@ func seedAuditLog(ctx context.Context, t *testing.T, stores *store.Store, resour
 		Parent:   testAuditLogParent,
 		Method:   "/bytebase.v1.ProjectService/GetProject",
 		Resource: testAuditLogParent,
-		Actor:    "users/alice@example.com",
+		User:     "users/alice@example.com",
 		Severity: storepb.AuditLog_INFO,
 		Request:  `{"name":"projects/project-a"}`,
 		Response: `{"name":"projects/project-a"}`,

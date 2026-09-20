@@ -21,7 +21,11 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   pushNotification: vi.fn(),
   usePlanFeature: vi.fn(() => true),
-  listUsers: vi.fn(async () => ({ users: [] })),
+  listUsers: vi.fn(
+    async (): Promise<{
+      users: Array<{ name: string; email: string; title: string }>;
+    }> => ({ users: [] })
+  ),
   listServiceAccounts: vi.fn(
     async (): Promise<{
       serviceAccounts: Array<{ name: string; email: string; title: string }>;

@@ -105,10 +105,7 @@ type AuditLog struct {
 	Resource string `protobuf:"bytes,3,opt,name=resource,proto3" json:"resource,omitempty"`
 	// The principal who performed the action.
 	// Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}.
-	//
-	// Keep the persisted ProtoJSON spelling as "user". Audit logs are append-only
-	// and can be too large to rewrite; this preserves existing rows and indexes.
-	Actor    string            `protobuf:"bytes,4,opt,name=actor,json=user,proto3" json:"actor,omitempty"`
+	User     string            `protobuf:"bytes,4,opt,name=user,proto3" json:"user,omitempty"`
 	Severity AuditLog_Severity `protobuf:"varint,5,opt,name=severity,proto3,enum=bytebase.store.AuditLog_Severity" json:"severity,omitempty"`
 	// Marshalled request.
 	Request string `protobuf:"bytes,6,opt,name=request,proto3" json:"request,omitempty"`
@@ -184,9 +181,9 @@ func (x *AuditLog) GetResource() string {
 	return ""
 }
 
-func (x *AuditLog) GetActor() string {
+func (x *AuditLog) GetUser() string {
 	if x != nil {
-		return x.Actor
+		return x.User
 	}
 	return ""
 }
@@ -395,12 +392,12 @@ var File_store_audit_log_proto protoreflect.FileDescriptor
 
 const file_store_audit_log_proto_rawDesc = "" +
 	"\n" +
-	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\x94\x05\n" +
+	"\x15store/audit_log.proto\x12\x0ebytebase.store\x1a\x19google/protobuf/any.proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x17google/rpc/status.proto\"\x93\x05\n" +
 	"\bAuditLog\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12\x16\n" +
 	"\x06method\x18\x02 \x01(\tR\x06method\x12\x1a\n" +
-	"\bresource\x18\x03 \x01(\tR\bresource\x12\x13\n" +
-	"\x05actor\x18\x04 \x01(\tR\x04user\x12=\n" +
+	"\bresource\x18\x03 \x01(\tR\bresource\x12\x12\n" +
+	"\x04user\x18\x04 \x01(\tR\x04user\x12=\n" +
 	"\bseverity\x18\x05 \x01(\x0e2!.bytebase.store.AuditLog.SeverityR\bseverity\x12\x18\n" +
 	"\arequest\x18\x06 \x01(\tR\arequest\x12\x1a\n" +
 	"\bresponse\x18\a \x01(\tR\bresponse\x12*\n" +

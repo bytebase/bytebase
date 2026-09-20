@@ -101,8 +101,8 @@ func LogAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	if p.Resource != "" {
 		attrs = append(attrs, slog.String("resource", p.Resource))
 	}
-	if p.Actor != "" {
-		attrs = append(attrs, slog.String("actor", p.Actor))
+	if p.User != "" {
+		attrs = append(attrs, slog.String("user", p.User))
 	}
 
 	if p.Status != nil {

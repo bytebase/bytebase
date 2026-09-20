@@ -101,6 +101,8 @@ func TestAuditRowsPreserveAuthenticatedPrincipalType(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctx := newAuditTestContext(&common.AuthContext{
 				Audit: true,
 				Resources: []*common.Resource{{
@@ -116,7 +118,7 @@ func TestAuditRowsPreserveAuthenticatedPrincipalType(t *testing.T) {
 			})
 			require.NoError(t, err)
 			require.Len(t, rows, 1)
-			require.Equal(t, common.FormatPrincipalMember(tc.user.Email, tc.user.Type), rows[0].payload.GetActor())
+			require.Equal(t, common.FormatPrincipalMember(tc.user.Email, tc.user.Type), rows[0].payload.GetUser())
 		})
 	}
 }
@@ -661,7 +663,7 @@ func TestAuditSinks(t *testing.T) {
 					require.Equal(t, procedure, line["method"])
 					require.Equal(t, "workspaces/"+auditTestWorkspace, line["parent"],
 						"a refused call is filed under the caller's workspace, never the one it named")
-					require.Equal(t, common.FormatUserEmail(auditTestUser().Email), line["actor"])
+					require.Equal(t, common.FormatUserEmail(auditTestUser().Email), line["user"])
 					wantSeverity := storepb.AuditLog_INFO
 					if tc.wantWarning {
 						wantSeverity = storepb.AuditLog_WARNING

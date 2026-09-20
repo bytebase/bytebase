@@ -179,7 +179,7 @@ func convertToAuditLog(l *store.AuditLog) *v1pb.AuditLog {
 	return &v1pb.AuditLog{
 		Name:          fmt.Sprintf("%s/%s%s", l.Payload.Parent, common.AuditLogPrefix, l.ResourceID),
 		CreateTime:    timestamppb.New(l.CreatedAt),
-		Actor:         l.Payload.Actor,
+		Actor:         l.Payload.User,
 		Method:        l.Payload.Method,
 		Severity:      convertToAuditLogSeverity(l.Payload.Severity),
 		Resource:      l.Payload.Resource,

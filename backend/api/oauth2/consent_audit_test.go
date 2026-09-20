@@ -51,7 +51,7 @@ func TestConsentRefusal(t *testing.T) {
 			row := consentRefusalRow(attempt, verdict, &storepb.RequestMetadata{CallerIp: "10.0.1.50"})
 			require.Equal(t, common.AuditMethodMCPConsentApprove, row.Method)
 			require.Equal(t, "workspaces/ws-disabled", row.Parent)
-			require.Equal(t, "users/demo@example.com", row.Actor)
+			require.Equal(t, "users/demo@example.com", row.User)
 			require.EqualValues(t, 7, row.GetStatus().GetCode(), "PermissionDenied")
 			require.Contains(t, row.GetStatus().GetMessage(), tc.message)
 			require.Equal(t, "10.0.1.50", row.GetRequestMetadata().GetCallerIp())

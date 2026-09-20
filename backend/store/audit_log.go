@@ -172,8 +172,6 @@ func auditLogEqualsFilter(variable string, rawValue any) (*qb.Query, error) {
 			return qb.Q().Space("payload->'mcpDelegation'->>'correlationId' = ?", value), nil
 		}
 		if variable == "actor" {
-			// The store message calls this Actor, but its ProtoJSON spelling stays
-			// `user` to avoid rewriting the append-only audit_log table.
 			return qb.Q().Space("payload->>'user' = ?", value), nil
 		}
 		return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
