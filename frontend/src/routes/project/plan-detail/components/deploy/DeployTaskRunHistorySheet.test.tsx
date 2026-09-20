@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { TimestampSchema } from "@bufbuild/protobuf/wkt";
+import { TimestampSchema, timestampFromMs } from "@bufbuild/protobuf/wkt";
 import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -90,6 +90,11 @@ const renderSheet = (taskRuns: ReturnType<typeof makeTaskRuns>) => {
   };
 };
 
+const shownInstants = (container: HTMLElement) =>
+  Array.from(
+    container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
+  ).map((node) => node.textContent);
+
 const timestampModes = (container: HTMLElement) =>
   Array.from(
     container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
@@ -101,11 +106,29 @@ const mountedLogNames = (container: HTMLElement) =>
   ).map((node) => node.dataset.taskRunName);
 
 describe("DeployTaskRunHistorySheet", () => {
-  test("dates each run in the embedded history form", () => {
-    // A history row orients; the record itself testifies elsewhere. The form
-    // is the decision this surface makes, so it is the thing asserted.
+  test("dates each run by when it ran, in the embedded history form", () => {
+    // A history row orients; the record itself testifies elsewhere. Both the
+    // form and the instant are decisions this surface makes, and a run dated
+    // from the wrong one reads as plausibly as the right one.
     const { container, cleanup } = renderSheet(makeTaskRuns(1));
     expect(timestampModes(container)).toEqual(["compact"]);
+    expect(shownInstants(container)).toEqual([String(1000 * 1000)]);
+    cleanup();
+  });
+
+  test("dates a run that started by its start, not by its creation", () => {
+    // A run is created when it is queued and starts when it is picked up, so
+    // the queue time would date it earlier than it ran.
+    const startedMs = 5_000_000;
+    const [queued] = makeTaskRuns(1);
+    const { container, cleanup } = renderSheet([
+      create(TaskRunSchema, {
+        ...queued,
+        startTime: timestampFromMs(startedMs),
+      }),
+    ]);
+
+    expect(shownInstants(container)).toEqual([String(startedMs)]);
     cleanup();
   });
 
