@@ -669,6 +669,33 @@
         
           
           <li>
+            <a href="#store%2freview_run.proto">store/review_run.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun"><span class="badge">M</span>ReviewRun</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRunPayload"><span class="badge">M</span>ReviewRunPayload</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun.Type"><span class="badge">E</span>ReviewRun.Type</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fissue_comment.proto">store/issue_comment.proto</a>
             <ul>
               
@@ -979,29 +1006,6 @@
               
                 <li>
                   <a href="#bytebase.store.SQLReviewRule.Type"><span class="badge">E</span>SQLReviewRule.Type</a>
-                </li>
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2freview_run.proto">store/review_run.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRun"><span class="badge">M</span>ReviewRun</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRunPayload"><span class="badge">M</span>ReviewRunPayload</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
                 </li>
               
               
@@ -6217,6 +6221,123 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/review_run.proto">store/review_run.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.ReviewRun">ReviewRun</h3>
+        <p>ReviewRun is the status slot of one reviewer (rule engine or AI) on one</p><p>issue. Results live in issue comments; the run carries none.</p>
+
+        
+
+        
+      
+        <h3 id="bytebase.store.ReviewRunPayload">ReviewRunPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Fatal execution error for the FAILED status, e.g. &#34;metadata not synced:
+instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
+executor or by the reaper. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.ReviewRun.Status">ReviewRun.Status</h3>
+        <p>Strictly 1:1 with the status CHECK constraint — no unpersisted values.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AVAILABLE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.ReviewRun.Type">ReviewRun.Type</h3>
+        <p>The reviewer. Stored by name in review_run.type, which has no CHECK:</p><p>like Issue.Type and Task.Type, the enum is the source of truth and a</p><p>new reviewer is a new value, not a migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RULE</td>
+                <td>1</td>
+                <td><p>Review against the standard rules.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GUIDELINE</td>
+                <td>2</td>
+                <td><p>Review against natural-language guidelines, performed by AI.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/issue_comment.proto">store/issue_comment.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -6432,17 +6553,17 @@ change. </p></td>
               
                 <tr>
                   <td>type</td>
-                  <td><a href="#string">string</a></td>
+                  <td><a href="#bytebase.store.ReviewRun.Type">ReviewRun.Type</a></td>
                   <td></td>
-                  <td><p>The reviewer slot that posted the result, same value domain as
-review_run.type: &#34;RULE&#34; or &#34;GUIDELINE&#34;. </p></td>
+                  <td><p>The reviewer slot that posted the result; review_run.type stores the
+same enum by name. </p></td>
                 </tr>
               
                 <tr>
                   <td>rule</td>
                   <td><a href="#bytebase.store.ReviewRule.Type">ReviewRule.Type</a></td>
                   <td></td>
-                  <td><p>The rule judged against. Set if and only if type is &#34;RULE&#34;. </p></td>
+                  <td><p>The rule judged against. Set if and only if type is RULE. </p></td>
                 </tr>
               
                 <tr>
@@ -9042,94 +9163,6 @@ IM integration setting should be set for this function to work. </p></td>
               <tr>
                 <td>BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE</td>
                 <td>112</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/review_run.proto">store/review_run.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.ReviewRun">ReviewRun</h3>
-        <p>ReviewRun is the status slot of one reviewer (rule engine or AI) on one</p><p>issue. Results live in issue comments; the run carries none.</p>
-
-        
-
-        
-      
-        <h3 id="bytebase.store.ReviewRunPayload">ReviewRunPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Fatal execution error for the FAILED status, e.g. &#34;metadata not synced:
-instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
-executor or by the reaper. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.ReviewRun.Status">ReviewRun.Status</h3>
-        <p>Strictly 1:1 with the status CHECK constraint — no unpersisted values.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AVAILABLE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>4</td>
                 <td><p></p></td>
               </tr>
             

@@ -7,6 +7,7 @@ import "store/common.proto";
 import "store/issue.proto";
 import "store/plan.proto";
 import "store/review_rule.proto";
+import "store/review_run.proto";
 
 option go_package = "generated-go/store";
 
@@ -78,10 +79,10 @@ message IssueCommentPayload {
       P2 = 3;
     }
 
-    // The reviewer slot that posted the result, same value domain as
-    // review_run.type: "RULE" or "GUIDELINE".
-    string type = 1;
-    // The rule judged against. Set if and only if type is "RULE".
+    // The reviewer slot that posted the result; review_run.type stores the
+    // same enum by name.
+    ReviewRun.Type type = 1;
+    // The rule judged against. Set if and only if type is RULE.
     ReviewRule.Type rule = 2;
     // A result merged across databases carries the highest priority among
     // them.

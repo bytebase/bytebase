@@ -127,6 +127,13 @@
   
     - [ReviewRule.Type](#bytebase-store-ReviewRule-Type)
   
+- [store/review_run.proto](#store_review_run-proto)
+    - [ReviewRun](#bytebase-store-ReviewRun)
+    - [ReviewRunPayload](#bytebase-store-ReviewRunPayload)
+  
+    - [ReviewRun.Status](#bytebase-store-ReviewRun-Status)
+    - [ReviewRun.Type](#bytebase-store-ReviewRun-Type)
+  
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
@@ -204,12 +211,6 @@
   
     - [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level)
     - [SQLReviewRule.Type](#bytebase-store-SQLReviewRule-Type)
-  
-- [store/review_run.proto](#store_review_run-proto)
-    - [ReviewRun](#bytebase-store-ReviewRun)
-    - [ReviewRunPayload](#bytebase-store-ReviewRunPayload)
-  
-    - [ReviewRun.Status](#bytebase-store-ReviewRun-Status)
   
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
@@ -2145,6 +2146,78 @@ stored comment that used it.
 
 
 
+<a name="store_review_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_run.proto
+
+
+
+<a name="bytebase-store-ReviewRun"></a>
+
+### ReviewRun
+ReviewRun is the status slot of one reviewer (rule engine or AI) on one
+issue. Results live in issue comments; the run carries none.
+
+
+
+
+
+
+<a name="bytebase-store-ReviewRunPayload"></a>
+
+### ReviewRunPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ReviewRun-Status"></a>
+
+### ReviewRun.Status
+Strictly 1:1 with the status CHECK constraint — no unpersisted values.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| AVAILABLE | 1 |  |
+| RUNNING | 2 |  |
+| DONE | 3 |  |
+| FAILED | 4 |  |
+
+
+
+<a name="bytebase-store-ReviewRun-Type"></a>
+
+### ReviewRun.Type
+The reviewer. Stored by name in review_run.type, which has no CHECK:
+like Issue.Type and Task.Type, the enum is the source of truth and a
+new reviewer is a new value, not a migration.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| RULE | 1 | Review against the standard rules. |
+| GUIDELINE | 2 | Review against natural-language guidelines, performed by AI. |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_issue_comment-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2241,8 +2314,8 @@ in the transaction that posts the new results.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [string](#string) |  | The reviewer slot that posted the result, same value domain as review_run.type: &#34;RULE&#34; or &#34;GUIDELINE&#34;. |
-| rule | [ReviewRule.Type](#bytebase-store-ReviewRule-Type) |  | The rule judged against. Set if and only if type is &#34;RULE&#34;. |
+| type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | The reviewer slot that posted the result; review_run.type stores the same enum by name. |
+| rule | [ReviewRule.Type](#bytebase-store-ReviewRule-Type) |  | The rule judged against. Set if and only if type is RULE. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
 
@@ -3307,63 +3380,6 @@ The severity level for SQL review rules.
 | BUILTIN_WALK_THROUGH_CHECK | 110 |  |
 | STATEMENT_DISALLOW_TRUNCATE | 111 |  |
 | BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE | 112 |  |
-
-
- 
-
- 
-
- 
-
-
-
-<a name="store_review_run-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/review_run.proto
-
-
-
-<a name="bytebase-store-ReviewRun"></a>
-
-### ReviewRun
-ReviewRun is the status slot of one reviewer (rule engine or AI) on one
-issue. Results live in issue comments; the run carries none.
-
-
-
-
-
-
-<a name="bytebase-store-ReviewRunPayload"></a>
-
-### ReviewRunPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-ReviewRun-Status"></a>
-
-### ReviewRun.Status
-Strictly 1:1 with the status CHECK constraint — no unpersisted values.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| STATUS_UNSPECIFIED | 0 |  |
-| AVAILABLE | 1 |  |
-| RUNNING | 2 |  |
-| DONE | 3 |  |
-| FAILED | 4 |  |
 
 
  
