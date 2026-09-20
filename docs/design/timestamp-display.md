@@ -333,7 +333,11 @@ no seconds per D5. Relative age may accompany it in the tooltip.
     surfaces read is set from a real time or left unset. The container's empty form is a caller's
     decision, and only absence reaches it: a value the domain rejects leaves the display rendering
     nothing while its separator stays, which no proto-sourced timestamp can produce, since a
-    `Timestamp` is range-checked to years 1–9999.
+    `Timestamp` is range-checked to years 1–9999. A caller guards a timestamp only to gate
+    something besides the display — a separator, a label, a pill, a "-" of its own. The display
+    renders nothing without an instant, so a guard that only repeats that is a second place for
+    the rule to live, and the second place is where it drifts: three rounds of this review each
+    found another spelling of it.
   - Guarded by fake-timer tests and a sweep of render-time `Date.now()` over the touched surfaces
     at implementation time — a review pass, not a lint: telling render scope from handlers and
     effects statically would flag most legitimate uses.

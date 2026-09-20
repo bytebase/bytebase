@@ -20,3 +20,14 @@ export const humanizeTsStub = () => ({
       </span>
     ),
 });
+
+const shown = (root: ParentNode) =>
+  Array.from(root.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]"));
+
+/** The form each timestamp was asked for, in document order. */
+export const shownTimestampModes = (root: ParentNode) =>
+  shown(root).map((node) => node.dataset.mode);
+
+/** The instant each timestamp was given, in document order. */
+export const shownTimestampInstants = (root: ParentNode) =>
+  shown(root).map((node) => node.textContent);

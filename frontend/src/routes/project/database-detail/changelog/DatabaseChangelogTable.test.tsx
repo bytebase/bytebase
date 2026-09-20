@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { shownTimestampModes } from "@/test-utils/humanizeTs";
 import { ChangelogSchema } from "@/types/proto-es/v1/changelog_service_pb";
 
 (
@@ -83,9 +84,7 @@ describe("DatabaseChangelogTable", () => {
 
     // A row in a list orients the reader; the changelog's own page testifies.
     expect(
-      Array.from(
-        container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
-      ).map((node) => node.dataset.mode)
+      shownTimestampModes(container)
     ).toEqual(["compact"]);
 
     unmount();

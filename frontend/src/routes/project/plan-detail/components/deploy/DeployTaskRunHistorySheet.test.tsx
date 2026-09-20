@@ -1,9 +1,11 @@
 import { create } from "@bufbuild/protobuf";
+import type { MessageInitShape } from "@bufbuild/protobuf";
 import { TimestampSchema, timestampFromMs } from "@bufbuild/protobuf/wkt";
 import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test, vi } from "vitest";
+import { shownTimestampInstants, shownTimestampModes } from "@/test-utils/humanizeTs";
 import {
   TaskRun_Status,
   TaskRunSchema,
@@ -54,16 +56,25 @@ vi.mock("@/components/HumanizeTs", async () => ({
 
 const taskName = "projects/p1/rollouts/r1/stages/s1/tasks/t1";
 
+const CREATED_AT_MS = 1_000_000;
+
+const makeTaskRun = (
+  overrides: MessageInitShape<typeof TaskRunSchema> = {}
+) =>
+  create(TaskRunSchema, {
+    createTime: timestampFromMs(CREATED_AT_MS),
+    creator: "users/runner@example.com",
+    name: `${taskName}/taskRuns/1`,
+    status: TaskRun_Status.FAILED,
+    ...overrides,
+  });
+
 const makeTaskRuns = (count: number) =>
   // Newest first, matching the component contract.
   Array.from({ length: count }, (_, index) =>
-    create(TaskRunSchema, {
-      createTime: create(TimestampSchema, {
-        seconds: BigInt(1000 * (count - index)),
-      }),
-      creator: "users/runner@example.com",
+    makeTaskRun({
+      createTime: timestampFromMs(CREATED_AT_MS * (count - index)),
       name: `${taskName}/taskRuns/${count - index}`,
-      status: TaskRun_Status.FAILED,
     })
   );
 
@@ -90,16 +101,6 @@ const renderSheet = (taskRuns: ReturnType<typeof makeTaskRuns>) => {
   };
 };
 
-const shownInstants = (container: HTMLElement) =>
-  Array.from(
-    container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
-  ).map((node) => node.textContent);
-
-const timestampModes = (container: HTMLElement) =>
-  Array.from(
-    container.querySelectorAll<HTMLElement>("[data-testid=humanize-ts]")
-  ).map((node) => node.dataset.mode);
-
 const mountedLogNames = (container: HTMLElement) =>
   Array.from(
     container.querySelectorAll<HTMLElement>("[data-testid=log-viewer]")
@@ -111,8 +112,8 @@ describe("DeployTaskRunHistorySheet", () => {
     // form and the instant are decisions this surface makes, and a run dated
     // from the wrong one reads as plausibly as the right one.
     const { container, cleanup } = renderSheet(makeTaskRuns(1));
-    expect(timestampModes(container)).toEqual(["compact"]);
-    expect(shownInstants(container)).toEqual([String(1000 * 1000)]);
+    expect(shownTimestampModes(container)).toEqual(["compact"]);
+    expect(shownTimestampInstants(container)).toEqual([String(CREATED_AT_MS)]);
     cleanup();
   });
 
@@ -120,15 +121,11 @@ describe("DeployTaskRunHistorySheet", () => {
     // A run is created when it is queued and starts when it is picked up, so
     // the queue time would date it earlier than it ran.
     const startedMs = 5_000_000;
-    const [queued] = makeTaskRuns(1);
     const { container, cleanup } = renderSheet([
-      create(TaskRunSchema, {
-        ...queued,
-        startTime: timestampFromMs(startedMs),
-      }),
+      makeTaskRun({ startTime: timestampFromMs(startedMs) }),
     ]);
 
-    expect(shownInstants(container)).toEqual([String(startedMs)]);
+    expect(shownTimestampInstants(container)).toEqual([String(startedMs)]);
     cleanup();
   });
 
@@ -154,13 +151,7 @@ describe("DeployTaskRunHistorySheet", () => {
 
   test("remounts the log viewer when a run flips RUNNING -> DONE", () => {
     viewerMounts.count = 0;
-    const run = (status: TaskRun_Status) =>
-      create(TaskRunSchema, {
-        createTime: create(TimestampSchema, { seconds: 1000n }),
-        creator: "users/runner@example.com",
-        name: `${taskName}/taskRuns/1`,
-        status,
-      });
+    const run = (status: TaskRun_Status) => makeTaskRun({ status });
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);

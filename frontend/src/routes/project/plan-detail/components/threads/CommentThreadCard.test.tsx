@@ -4,6 +4,7 @@ import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MonacoViewZoneRevealContext } from "@/components/monaco/MonacoViewZone";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { shownTimestampInstants } from "@/test-utils/humanizeTs";
 import {
   IssueComment_ThreadState,
   IssueCommentSchema,
@@ -245,9 +246,7 @@ describe("CommentThreadCard", () => {
       <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
     );
 
-    const shown = Array.from(
-      container.querySelectorAll("[data-testid='humanize-ts']")
-    ).map((node) => node.textContent);
+    const shown = shownTimestampInstants(container);
     expect(shown).toContain(String(writtenMs));
     expect(shown).not.toContain(String(writtenMs + 60_000));
   });
