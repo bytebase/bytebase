@@ -349,17 +349,21 @@ export function MCPAccessPolicySection() {
             )}
 
             {maskingApplies && (
-              <div className="flex items-start gap-x-3">
-                <Switch
-                  checked={ignoreMasking}
-                  onCheckedChange={setIgnoreMasking}
-                  disabled={saving}
-                  aria-label={t("settings.mcp.policy.masking.title")}
-                  className="mt-0.5 shrink-0"
-                />
+              <>
+                <Separator />
+
                 <div className="flex flex-col gap-1">
-                  <div className="textinfo font-semibold">
-                    {t("settings.mcp.policy.masking.title")}
+                  <div className="flex items-center gap-x-2">
+                    <Switch
+                      checked={ignoreMasking}
+                      onCheckedChange={setIgnoreMasking}
+                      disabled={saving}
+                      aria-label={t("settings.mcp.policy.masking.title")}
+                      className="shrink-0"
+                    />
+                    <div className="textinfo font-semibold">
+                      {t("settings.mcp.policy.masking.title")}
+                    </div>
                   </div>
                   <div className="textinfolabel">
                     {t("settings.mcp.policy.masking.description")}
@@ -370,7 +374,7 @@ export function MCPAccessPolicySection() {
                     </div>
                   )}
                 </div>
-              </div>
+              </>
             )}
 
             <Separator />

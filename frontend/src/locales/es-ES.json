@@ -2766,7 +2766,7 @@
             "title": "Desactivado"
           },
           "read-only": {
-            "best-for": "Ideal para: consultar y explorar datos, incluso por personas que no escriben SQL.",
+            "best-for": "Ideal para: consultar y explorar datos mediante lenguaje natural.",
             "caption": "Explorar y consultar",
             "title": "Solo lectura"
           },

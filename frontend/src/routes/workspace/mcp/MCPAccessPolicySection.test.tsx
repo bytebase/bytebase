@@ -339,6 +339,24 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
+  test("keeps the masking switch aligned with its title", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    const title = [...container.querySelectorAll("div")].find(
+      (node) =>
+        node.classList.contains("textinfo") &&
+        node.textContent === "settings.mcp.policy.masking.title"
+    );
+    expect(maskingSwitch(container)?.parentElement).toBe(title?.parentElement);
+    unmount();
+  });
+
   test("the policy inputs are locked while a save is in flight", async () => {
     const inFlight = Promise.withResolvers<undefined>();
     mocks.upsertSetting.mockReturnValue(inFlight.promise);

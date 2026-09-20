@@ -146,6 +146,22 @@ describe("MCPCapabilityLadder", () => {
     unmount();
   });
 
+  test("keeps the details action beside the open list heading", () => {
+    const { container, unmount } = renderIntoContainer(ladder({}));
+    const trigger = container.querySelector(
+      '[data-testid="mcp-ladder-trigger"]'
+    );
+    const detailsAction = [...container.querySelectorAll("button")].find(
+      (button) =>
+        button.textContent?.includes("settings.mcp.ladder.show-details")
+    );
+
+    expect(trigger?.parentElement).toHaveClass("gap-x-2");
+    expect(trigger?.parentElement).not.toHaveClass("border-b");
+    expect(trigger?.nextElementSibling).toBe(detailsAction);
+    unmount();
+  });
+
   // One second-level control rather than eight: the toggle reveals the
   // sub-item line on every row at once.
   test("the details toggle reveals sub-items on every row at once", () => {
@@ -164,6 +180,16 @@ describe("MCPCapabilityLadder", () => {
       );
     }
     expect(container.textContent).toContain("settings.mcp.ladder.hide-details");
+    unmount();
+  });
+
+  test("details remain visually subordinate to their scope title", () => {
+    const { container, unmount } = renderIntoContainer(ladder({ details: true }));
+    const detail = [...container.querySelectorAll("p")].find((node) =>
+      node.textContent?.includes("settings.mcp.ladder.row.read-schemas.details")
+    );
+
+    expect(detail).toHaveClass("text-xs", "leading-5", "text-control-light");
     unmount();
   });
 
@@ -222,6 +248,22 @@ describe("MCPCapabilityLadder", () => {
     expect(readStop).toBeLessThan(
       text.indexOf("settings.mcp.ladder.row.propose.title")
     );
+    unmount();
+  });
+
+  test("uses spacing rather than row borders to separate capabilities", () => {
+    const { container, unmount } = renderIntoContainer(ladder({}));
+    const list = container.querySelector("ul");
+    const divider = [...container.querySelectorAll("li")].find((node) =>
+      node.textContent?.includes("settings.mcp.ladder.stops.read")
+    );
+
+    expect(list).toHaveClass("gap-y-2");
+    for (const row of rowItems(container)) {
+      expect(row).not.toHaveClass("border-b");
+    }
+    expect(divider).toHaveClass("py-2", "text-sm");
+    expect(divider?.querySelector("span")).toHaveClass("font-medium");
     unmount();
   });
 
