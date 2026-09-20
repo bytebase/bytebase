@@ -61,9 +61,12 @@ export function MCPCapabilityLadder({
 
   return (
     <Collapsible open={expanded} onOpenChange={onExpandedChange}>
-      <div className="flex items-center justify-between gap-x-2 border-b border-block-border py-2">
+      <div className="flex items-center gap-x-2 py-2">
         <CollapsibleTrigger
-          className="min-w-0 flex-1 rounded-xs"
+          className={cn(
+            "min-w-0 rounded-xs",
+            expanded ? "w-auto shrink-0" : "flex-1"
+          )}
           data-testid="mcp-ladder-trigger"
         >
           <ChevronRight
@@ -110,7 +113,7 @@ export function MCPCapabilityLadder({
         {/* Tailwind's preflight removes the marker from every `ul`, and Safari
             drops list semantics from an unstyled list — so the position
             announcement this list depends on needs the role stated. */}
-        <ul role="list" className="flex flex-col">
+        <ul role="list" className="flex flex-col gap-y-2">
           {MCP_CAPABILITY_TIERS.map((tier) => (
             <Fragment key={tier}>
               {rowsInTier(tier).map((row) => (
@@ -127,7 +130,7 @@ export function MCPCapabilityLadder({
         </ul>
         {/* The floor is one line rather than a row: it is what no mode serves,
             so it has no mark and belongs to no tier. */}
-        <p className="bg-error/5 px-3 py-2 text-sm text-error">
+        <p className="bg-error/5 px-3 py-2 text-sm text-error my-2">
           <span className="font-medium">
             {t("settings.mcp.ladder.floor.label")}
           </span>{" "}
@@ -149,13 +152,13 @@ function LadderRow({
 }) {
   const { t } = useTranslation();
   return (
-    <li className="flex items-start gap-x-2 border-b border-block-border px-1 py-2">
+    <li className="flex items-start gap-x-2 px-1 py-1">
       <span
         className={cn(
           "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
           served
             ? "bg-success/10 text-success"
-            : "bg-control-bg text-control-light"
+            : "bg-error/10 text-error"
         )}
       >
         {served ? (
@@ -175,10 +178,7 @@ function LadderRow({
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={cn(
-              "text-sm",
-              served ? "font-medium text-main" : "text-control-light"
-            )}
+            className="text-sm text-control-light"
           >
             {t(mcpRowKey(row, "title"))}
           </span>
@@ -193,10 +193,7 @@ function LadderRow({
         </div>
         {details && (
           <p
-            className={cn(
-              "text-xs leading-4",
-              served ? "text-control" : "text-control-light"
-            )}
+            className="text-xs leading-5 text-control-light"
           >
             {t(mcpRowKey(row, "details"))}
           </p>
@@ -211,10 +208,10 @@ function TierDivider({ tier }: { tier: MCPCapabilityTier }) {
   return (
     <li
       role="presentation"
-      className="flex items-center gap-x-2 border-b border-block-border py-2 text-xs text-control-light"
+      className="flex items-center gap-x-2 py-2 text-sm text-control-light"
     >
       <Separator className="flex-1" />
-      <span className="uppercase tracking-wide">
+      <span className="uppercase font-medium text-main tracking-wide">
         {t(mcpTierKey(tier, "stops"))}
       </span>
       <Separator className="flex-1" />
