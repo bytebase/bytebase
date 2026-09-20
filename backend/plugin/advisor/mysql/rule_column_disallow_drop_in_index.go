@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -119,7 +119,7 @@ func (r *columnDisallowDropInIndexOmniRule) checkAlterTable(n *ast.AlterTableStm
 				Code:          code.DropIndexColumn.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, columnName),
-				StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
+				StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
 			})
 		}
 	}

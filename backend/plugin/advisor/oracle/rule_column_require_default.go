@@ -8,10 +8,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -120,7 +120,7 @@ func (r *ColumnRequireDefaultRule) GetAdviceList() ([]*storepb.Advice, error) {
 			r.level,
 			code.NoDefault.Int32(),
 			fmt.Sprintf("Column %q doesn't have default value", lastIdentifier(columnID)),
-			common.ConvertANTLRLineToPosition(line),
+			base.ConvertANTLRLineToPosition(line),
 		)
 	}
 	return r.BaseRule.GetAdviceList()

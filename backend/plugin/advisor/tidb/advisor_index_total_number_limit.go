@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -150,7 +150,7 @@ func (*IndexTotalNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.C
 				Code:          code.IndexCountExceedsLimit.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("The count of index in table `%s` should be no more than %d, but found %d", t.name, maximum, count),
-				StartPosition: common.ConvertANTLRLineToPosition(t.line),
+				StartPosition: base.ConvertANTLRLineToPosition(t.line),
 			})
 		}
 	}

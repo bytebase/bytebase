@@ -77,21 +77,6 @@ func RandomString(n int) (string, error) {
 	return sb.String(), nil
 }
 
-// HasPrefixes returns true if the string s has any of the given prefixes.
-func HasPrefixes(src string, prefixes ...string) bool {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(src, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-// GetPostgresSocketDir returns the postgres socket directory of Bytebase.
-func GetPostgresSocketDir() string {
-	return "/tmp"
-}
-
 // TruncateString truncates the string to have a maximum length of `limit` characters.
 func TruncateString(str string, limit int) (string, bool) {
 	chars := 0

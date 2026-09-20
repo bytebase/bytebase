@@ -10,10 +10,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
@@ -179,7 +179,7 @@ func (r *ColumnRequireRule) addMissingColumnAdvice(missingColumns map[string]any
 			Code:          code.NoRequiredColumn.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Table %s missing required column %q", originalTableName, column),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + line),
+			StartPosition: base.ConvertANTLRLineToPosition(r.baseLine + line),
 		})
 	}
 }

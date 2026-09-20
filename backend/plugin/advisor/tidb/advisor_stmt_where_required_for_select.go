@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -96,7 +96,7 @@ func (v *whereRequireSelectVisitor) Visit(node ast.Node) ast.Visitor {
 			Code:          advisorcode.StatementNoWhere.Int32(),
 			Title:         v.title,
 			Content:       fmt.Sprintf("\"%s\" requires WHERE clause", v.text),
-			StartPosition: common.ConvertANTLRLineToPosition(v.line),
+			StartPosition: base.ConvertANTLRLineToPosition(v.line),
 		})
 	}
 	return v

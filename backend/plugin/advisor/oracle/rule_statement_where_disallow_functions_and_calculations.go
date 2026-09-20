@@ -9,10 +9,10 @@ import (
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -565,7 +565,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) addOmniFunctionAdvice(funcNa
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         r.title,
 		Content:       content,
-		StartPosition: common.ConvertANTLRLineToPosition(line),
+		StartPosition: base.ConvertANTLRLineToPosition(line),
 	})
 }
 
@@ -580,7 +580,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) addOmniCalculationAdvice(col
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         r.title,
 		Content:       content,
-		StartPosition: common.ConvertANTLRLineToPosition(line),
+		StartPosition: base.ConvertANTLRLineToPosition(line),
 	})
 }
 

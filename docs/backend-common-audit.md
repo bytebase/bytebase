@@ -3,7 +3,10 @@
 Audit scope: `backend/common`, including its subpackages, and their in-repository
 Go callers. The first migration implements `store/qb`, webhook retry and notification
 truncation, private store credential helpers, and private v1 audit callbacks.
-The remaining entries are proposals.
+The second migration moves the PostgreSQL socket-directory helper to
+`resources/postgres`, prefix matching to a private server helper, ANTLR line
+conversion to `plugin/parser/base`, and TiDB error-position conversion to a
+private TiDB parser helper. The remaining entries are proposals.
 
 The root package mixes unrelated ownership: resource names, identity, request
 context, audit transport, policy expressions, SQL execution, and generic helpers.

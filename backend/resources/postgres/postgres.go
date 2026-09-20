@@ -13,8 +13,6 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/common"
 )
 
 // start starts a postgres database instance.
@@ -25,7 +23,7 @@ func start(port int, dataDir string, serverLog bool) (err error) {
 	// We also set max_connections to 500 for tests.
 	p := exec.Command("pg_ctl", "start", "-w",
 		"-D", dataDir,
-		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h "" -c log_checkpoints=off`, port, common.GetPostgresSocketDir()))
+		"-o", fmt.Sprintf(`-p %d -k %s -N 500 -h "" -c log_checkpoints=off`, port, GetPostgresSocketDir()))
 
 	uid, _, sameUser, err := shouldSwitchUser()
 	if err != nil {
@@ -178,4 +176,9 @@ func shouldSwitchUser() (uint32, uint32, bool, error) {
 		return 0, 0, false, err
 	}
 	return uint32(uid), uint32(gid), sameUser, nil
+}
+
+// GetPostgresSocketDir returns the postgres socket directory of Bytebase.
+func GetPostgresSocketDir() string {
+	return "/tmp"
 }

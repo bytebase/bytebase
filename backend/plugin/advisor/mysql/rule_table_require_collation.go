@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -79,7 +79,7 @@ func (r *tableRequireCollationOmniRule) checkCreateTable(n *ast.CreateTableStmt)
 			Code:          code.NoCollation.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("Table %s does not have a collation specified", tableName),
-			StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+			StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 		})
 	}
 }

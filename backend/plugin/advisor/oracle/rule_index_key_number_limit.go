@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/oracle/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -77,7 +77,7 @@ func (r *IndexKeyNumberLimitRule) OnStatement(node ast.Node) {
 				r.level,
 				code.IndexKeyNumberExceedsLimit.Int32(),
 				fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
-				common.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
+				base.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
 			)
 		}
 	case *ast.CreateTableStmt:
@@ -103,7 +103,7 @@ func (r *IndexKeyNumberLimitRule) checkConstraint(c *ast.TableConstraint) {
 			r.level,
 			code.IndexKeyNumberExceedsLimit.Int32(),
 			fmt.Sprintf("Index key number should be less than or equal to %d", r.max),
-			common.ConvertANTLRLineToPosition(r.locLine(c.Loc)),
+			base.ConvertANTLRLineToPosition(r.locLine(c.Loc)),
 		)
 	}
 }

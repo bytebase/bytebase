@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -113,7 +113,7 @@ func (*StatementMergeAlterTableAdvisor) Check(_ context.Context, checkCtx adviso
 				Code:          code.StatementRedundantAlterTable.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("There are %d statements to modify table `%s`", t.count, t.name),
-				StartPosition: common.ConvertANTLRLineToPosition(t.lastLine),
+				StartPosition: base.ConvertANTLRLineToPosition(t.lastLine),
 			})
 		}
 	}
