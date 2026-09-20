@@ -142,9 +142,7 @@ function TaskRunHistoryItem({
           )}
         </span>
         <span className="flex shrink-0 items-center gap-x-3 text-xs text-control-light">
-          {startMs !== undefined && (
-            <HumanizeTs mode="compact" tsMs={startMs} />
-          )}
+          <HumanizeTs mode="compact" tsMs={startMs} />
           {duration && (
             <span className="flex items-center gap-x-1">
               <Clock3 className="size-3" />

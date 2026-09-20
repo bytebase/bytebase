@@ -167,12 +167,10 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
           </div>
         )}
 
-        {createdTimeMs !== undefined && (
-          <HumanizeTs
-            className="text-xs text-control-light"
-            tsMs={createdTimeMs}
-          />
-        )}
+        <HumanizeTs
+          className="text-xs text-control-light"
+          tsMs={createdTimeMs}
+        />
       </div>
     </div>
   );

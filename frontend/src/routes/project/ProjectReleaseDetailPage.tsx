@@ -259,9 +259,7 @@ function ReleaseBasicInfo({
     <div className="flex flex-row items-center pl-1 gap-4">
       <div className="flex items-center gap-1">
         <Clock4 className="size-4 text-control-light" />
-        {createTimeMs !== undefined && (
-          <HumanizeTs tsMs={createTimeMs} className="text-sm text-control" />
-        )}
+        <HumanizeTs tsMs={createTimeMs} className="text-sm text-control" />
       </div>
       {showVcs && (
         <div className="flex flex-row items-center gap-1">
