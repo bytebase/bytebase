@@ -265,7 +265,7 @@ enum PolicyResourceType {
 // release.
 message ReviewRulePolicy {
   // The rules switched on. Unknown or unspecified values are rejected.
-  repeated ReviewRule.Type rules = 1;
+  repeated ReviewRuleType rules = 1;
 }
 
 // Rollout policy configuration.

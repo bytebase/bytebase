@@ -2,8 +2,7 @@
 // @generated from file v1/review_rule.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import type { Message } from "@bufbuild/protobuf";
+import type { GenEnum, GenFile } from "@bufbuild/protobuf/codegenv2";
 
 /**
  * Describes the file v1/review_rule.proto.
@@ -11,37 +10,22 @@ import type { Message } from "@bufbuild/protobuf";
 export declare const file_v1_review_rule: GenFile;
 
 /**
- * ReviewRule holds the standard review rule set. The rules are fixed: every
- * project gets them without configuration, and the only setting is a switch
- * (see ReviewRulePolicy).
+ * ReviewRuleType is the standard review rule set. The rules are fixed:
+ * every project gets them without configuration, and the only setting is a
+ * switch (see ReviewRulePolicy).
  *
  * A rule id names what the rule examines. An execution check is named for
  * what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
  * the id says which way it cuts. DISALLOW on a P1 rule means the operation
  * needs a person's acceptance, not that it is forbidden.
  *
- * The enum is nested so its values stay flat: bytebase.v1 already has
- * top-level TRUNCATE and RENAME values.
- *
- * @generated from message bytebase.v1.ReviewRule
+ * @generated from enum bytebase.v1.ReviewRuleType
  */
-export declare type ReviewRule = Message<"bytebase.v1.ReviewRule"> & {
-};
-
-/**
- * Describes the message bytebase.v1.ReviewRule.
- * Use `create(ReviewRuleSchema)` to create a new message.
- */
-export declare const ReviewRuleSchema: GenMessage<ReviewRule>;
-
-/**
- * @generated from enum bytebase.v1.ReviewRule.Type
- */
-export enum ReviewRule_Type {
+export enum ReviewRuleType {
   /**
-   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   * @generated from enum value: REVIEW_RULE_TYPE_UNSPECIFIED = 0;
    */
-  TYPE_UNSPECIFIED = 0,
+  REVIEW_RULE_TYPE_UNSPECIFIED = 0,
 
   /**
    * P0: the statements do not parse for the target engine.
@@ -126,7 +110,7 @@ export enum ReviewRule_Type {
 }
 
 /**
- * Describes the enum bytebase.v1.ReviewRule.Type.
+ * Describes the enum bytebase.v1.ReviewRuleType.
  */
-export declare const ReviewRule_TypeSchema: GenEnum<ReviewRule_Type>;
+export declare const ReviewRuleTypeSchema: GenEnum<ReviewRuleType>;
 

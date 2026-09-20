@@ -2,13 +2,3 @@
 // source: v1/review_rule.proto
 
 package v1
-
-func (x *ReviewRule) Equal(y *ReviewRule) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	return true
-}

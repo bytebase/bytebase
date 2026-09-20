@@ -653,13 +653,9 @@
             <a href="#store%2freview_rule.proto">store/review_rule.proto</a>
             <ul>
               
-                <li>
-                  <a href="#bytebase.store.ReviewRule"><span class="badge">M</span>ReviewRule</a>
-                </li>
-              
               
                 <li>
-                  <a href="#bytebase.store.ReviewRule.Type"><span class="badge">E</span>ReviewRule.Type</a>
+                  <a href="#bytebase.store.ReviewRuleType"><span class="badge">E</span>ReviewRuleType</a>
                 </li>
               
               
@@ -6122,17 +6118,10 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
       <p></p>
 
       
-        <h3 id="bytebase.store.ReviewRule">ReviewRule</h3>
-        <p>ReviewRule mirrors bytebase.v1.ReviewRule. The values are shared by</p><p>ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.</p><p>A value is never removed, only marked deprecated: both payloads are jsonb,</p><p>protojson stores the enum name, and the store's unmarshaler discards an</p><p>unknown name into TYPE_UNSPECIFIED, which would blank the rule on every</p><p>stored comment that used it.</p>
-
-        
-
-        
-      
 
       
-        <h3 id="bytebase.store.ReviewRule.Type">ReviewRule.Type</h3>
-        <p></p>
+        <h3 id="bytebase.store.ReviewRuleType">ReviewRuleType</h3>
+        <p>ReviewRuleType mirrors bytebase.v1.ReviewRuleType. The values are shared by</p><p>ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.</p><p>A value is never removed, only marked deprecated: both payloads are jsonb,</p><p>protojson stores the enum name, and the store's unmarshaler discards an</p><p>unknown name into REVIEW_RULE_TYPE_UNSPECIFIED, which would blank the rule</p><p>on every stored comment that used it.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -6140,7 +6129,7 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
           <tbody>
             
               <tr>
-                <td>TYPE_UNSPECIFIED</td>
+                <td>REVIEW_RULE_TYPE_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
@@ -6561,7 +6550,7 @@ same enum by name. </p></td>
               
                 <tr>
                   <td>rule_type</td>
-                  <td><a href="#bytebase.store.ReviewRule.Type">ReviewRule.Type</a></td>
+                  <td><a href="#bytebase.store.ReviewRuleType">ReviewRuleType</a></td>
                   <td></td>
                   <td><p>The rule judged against. Set if and only if run_type is RULE. </p></td>
                 </tr>
@@ -7488,7 +7477,7 @@ Disallow running DDL statements in the SQL editor. </p></td>
               
                 <tr>
                   <td>rules</td>
-                  <td><a href="#bytebase.store.ReviewRule.Type">ReviewRule.Type</a></td>
+                  <td><a href="#bytebase.store.ReviewRuleType">ReviewRuleType</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>

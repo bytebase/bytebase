@@ -694,7 +694,7 @@ func (*Policy_ReviewRulePolicy) isPolicy_Policy() {}
 type ReviewRulePolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The rules switched on. Unknown or unspecified values are rejected.
-	Rules         []ReviewRule_Type `protobuf:"varint,1,rep,packed,name=rules,proto3,enum=bytebase.v1.ReviewRule_Type" json:"rules,omitempty"`
+	Rules         []ReviewRuleType `protobuf:"varint,1,rep,packed,name=rules,proto3,enum=bytebase.v1.ReviewRuleType" json:"rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -729,7 +729,7 @@ func (*ReviewRulePolicy) Descriptor() ([]byte, []int) {
 	return file_v1_org_policy_service_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *ReviewRulePolicy) GetRules() []ReviewRule_Type {
+func (x *ReviewRulePolicy) GetRules() []ReviewRuleType {
 	if x != nil {
 		return x.Rules
 	}
@@ -1214,9 +1214,9 @@ const file_v1_org_policy_service_proto_rawDesc = "" +
 	" \x01(\bR\aenforce\x12I\n" +
 	"\rresource_type\x18\v \x01(\x0e2\x1f.bytebase.v1.PolicyResourceTypeB\x03\xe0A\x03R\fresourceType:\x97\x01\xeaA\x93\x01\n" +
 	"\x13bytebase.com/Policy\x12(workspaces/{workspace}/policies/{policy}\x12$projects/{project}/policies/{policy}\x12,environments/{environment}/policies/{policy}B\b\n" +
-	"\x06policyJ\x04\b\b\x10\t\"F\n" +
-	"\x10ReviewRulePolicy\x122\n" +
-	"\x05rules\x18\x01 \x03(\x0e2\x1c.bytebase.v1.ReviewRule.TypeR\x05rules\"C\n" +
+	"\x06policyJ\x04\b\b\x10\t\"E\n" +
+	"\x10ReviewRulePolicy\x121\n" +
+	"\x05rules\x18\x01 \x03(\x0e2\x1b.bytebase.v1.ReviewRuleTypeR\x05rules\"C\n" +
 	"\rRolloutPolicy\x12\x1c\n" +
 	"\tautomatic\x18\x01 \x01(\bR\tautomatic\x12\x14\n" +
 	"\x05roles\x18\x02 \x03(\tR\x05roles\"\xcb\x01\n" +
@@ -1301,7 +1301,7 @@ var file_v1_org_policy_service_proto_goTypes = []any{
 	(*MaskingRulePolicy_MaskingRule)(nil),    // 16: bytebase.v1.MaskingRulePolicy.MaskingRule
 	nil,                                      // 17: bytebase.v1.TagPolicy.TagsEntry
 	(*fieldmaskpb.FieldMask)(nil),            // 18: google.protobuf.FieldMask
-	(ReviewRule_Type)(0),                     // 19: bytebase.v1.ReviewRule.Type
+	(ReviewRuleType)(0),                      // 19: bytebase.v1.ReviewRuleType
 	(*expr.Expr)(nil),                        // 20: google.type.Expr
 	(*emptypb.Empty)(nil),                    // 21: google.protobuf.Empty
 }
@@ -1320,7 +1320,7 @@ var file_v1_org_policy_service_proto_depIdxs = []int32{
 	11, // 11: bytebase.v1.Policy.query_data_policy:type_name -> bytebase.v1.QueryDataPolicy
 	9,  // 12: bytebase.v1.Policy.review_rule_policy:type_name -> bytebase.v1.ReviewRulePolicy
 	1,  // 13: bytebase.v1.Policy.resource_type:type_name -> bytebase.v1.PolicyResourceType
-	19, // 14: bytebase.v1.ReviewRulePolicy.rules:type_name -> bytebase.v1.ReviewRule.Type
+	19, // 14: bytebase.v1.ReviewRulePolicy.rules:type_name -> bytebase.v1.ReviewRuleType
 	15, // 15: bytebase.v1.MaskingExemptionPolicy.exemptions:type_name -> bytebase.v1.MaskingExemptionPolicy.Exemption
 	16, // 16: bytebase.v1.MaskingRulePolicy.rules:type_name -> bytebase.v1.MaskingRulePolicy.MaskingRule
 	17, // 17: bytebase.v1.TagPolicy.tags:type_name -> bytebase.v1.TagPolicy.TagsEntry

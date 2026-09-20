@@ -83,7 +83,7 @@ message IssueCommentPayload {
     // same enum by name.
     ReviewRun.Type run_type = 1;
     // The rule judged against. Set if and only if run_type is RULE.
-    ReviewRule.Type rule_type = 2;
+    ReviewRuleType rule_type = 2;
     // A result merged across databases carries the highest priority among
     // them.
     Priority priority = 3;

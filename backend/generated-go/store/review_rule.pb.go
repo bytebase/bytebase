@@ -21,27 +21,34 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type ReviewRule_Type int32
+// ReviewRuleType mirrors bytebase.v1.ReviewRuleType. The values are shared by
+// ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.
+//
+// A value is never removed, only marked deprecated: both payloads are jsonb,
+// protojson stores the enum name, and the store's unmarshaler discards an
+// unknown name into REVIEW_RULE_TYPE_UNSPECIFIED, which would blank the rule
+// on every stored comment that used it.
+type ReviewRuleType int32
 
 const (
-	ReviewRule_TYPE_UNSPECIFIED         ReviewRule_Type = 0
-	ReviewRule_SYNTAX                   ReviewRule_Type = 1
-	ReviewRule_WALK_THROUGH             ReviewRule_Type = 2
-	ReviewRule_ONLINE_MIGRATION         ReviewRule_Type = 3
-	ReviewRule_PRIOR_BACKUP             ReviewRule_Type = 4
-	ReviewRule_REQUIRE_IS_NULL          ReviewRule_Type = 5
-	ReviewRule_REQUIRE_WHERE            ReviewRule_Type = 6
-	ReviewRule_DISALLOW_DROP_OBJECT     ReviewRule_Type = 7
-	ReviewRule_DISALLOW_TRUNCATE        ReviewRule_Type = 8
-	ReviewRule_DISALLOW_DROP_CONSTRAINT ReviewRule_Type = 9
-	ReviewRule_DISALLOW_RENAME          ReviewRule_Type = 10
-	ReviewRule_REQUIRE_PRIMARY_KEY      ReviewRule_Type = 11
+	ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED ReviewRuleType = 0
+	ReviewRuleType_SYNTAX                       ReviewRuleType = 1
+	ReviewRuleType_WALK_THROUGH                 ReviewRuleType = 2
+	ReviewRuleType_ONLINE_MIGRATION             ReviewRuleType = 3
+	ReviewRuleType_PRIOR_BACKUP                 ReviewRuleType = 4
+	ReviewRuleType_REQUIRE_IS_NULL              ReviewRuleType = 5
+	ReviewRuleType_REQUIRE_WHERE                ReviewRuleType = 6
+	ReviewRuleType_DISALLOW_DROP_OBJECT         ReviewRuleType = 7
+	ReviewRuleType_DISALLOW_TRUNCATE            ReviewRuleType = 8
+	ReviewRuleType_DISALLOW_DROP_CONSTRAINT     ReviewRuleType = 9
+	ReviewRuleType_DISALLOW_RENAME              ReviewRuleType = 10
+	ReviewRuleType_REQUIRE_PRIMARY_KEY          ReviewRuleType = 11
 )
 
-// Enum value maps for ReviewRule_Type.
+// Enum value maps for ReviewRuleType.
 var (
-	ReviewRule_Type_name = map[int32]string{
-		0:  "TYPE_UNSPECIFIED",
+	ReviewRuleType_name = map[int32]string{
+		0:  "REVIEW_RULE_TYPE_UNSPECIFIED",
 		1:  "SYNTAX",
 		2:  "WALK_THROUGH",
 		3:  "ONLINE_MIGRATION",
@@ -54,89 +61,46 @@ var (
 		10: "DISALLOW_RENAME",
 		11: "REQUIRE_PRIMARY_KEY",
 	}
-	ReviewRule_Type_value = map[string]int32{
-		"TYPE_UNSPECIFIED":         0,
-		"SYNTAX":                   1,
-		"WALK_THROUGH":             2,
-		"ONLINE_MIGRATION":         3,
-		"PRIOR_BACKUP":             4,
-		"REQUIRE_IS_NULL":          5,
-		"REQUIRE_WHERE":            6,
-		"DISALLOW_DROP_OBJECT":     7,
-		"DISALLOW_TRUNCATE":        8,
-		"DISALLOW_DROP_CONSTRAINT": 9,
-		"DISALLOW_RENAME":          10,
-		"REQUIRE_PRIMARY_KEY":      11,
+	ReviewRuleType_value = map[string]int32{
+		"REVIEW_RULE_TYPE_UNSPECIFIED": 0,
+		"SYNTAX":                       1,
+		"WALK_THROUGH":                 2,
+		"ONLINE_MIGRATION":             3,
+		"PRIOR_BACKUP":                 4,
+		"REQUIRE_IS_NULL":              5,
+		"REQUIRE_WHERE":                6,
+		"DISALLOW_DROP_OBJECT":         7,
+		"DISALLOW_TRUNCATE":            8,
+		"DISALLOW_DROP_CONSTRAINT":     9,
+		"DISALLOW_RENAME":              10,
+		"REQUIRE_PRIMARY_KEY":          11,
 	}
 )
 
-func (x ReviewRule_Type) Enum() *ReviewRule_Type {
-	p := new(ReviewRule_Type)
+func (x ReviewRuleType) Enum() *ReviewRuleType {
+	p := new(ReviewRuleType)
 	*p = x
 	return p
 }
 
-func (x ReviewRule_Type) String() string {
+func (x ReviewRuleType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
-func (ReviewRule_Type) Descriptor() protoreflect.EnumDescriptor {
+func (ReviewRuleType) Descriptor() protoreflect.EnumDescriptor {
 	return file_store_review_rule_proto_enumTypes[0].Descriptor()
 }
 
-func (ReviewRule_Type) Type() protoreflect.EnumType {
+func (ReviewRuleType) Type() protoreflect.EnumType {
 	return &file_store_review_rule_proto_enumTypes[0]
 }
 
-func (x ReviewRule_Type) Number() protoreflect.EnumNumber {
+func (x ReviewRuleType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use ReviewRule_Type.Descriptor instead.
-func (ReviewRule_Type) EnumDescriptor() ([]byte, []int) {
-	return file_store_review_rule_proto_rawDescGZIP(), []int{0, 0}
-}
-
-// ReviewRule mirrors bytebase.v1.ReviewRule. The values are shared by
-// ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.
-//
-// A value is never removed, only marked deprecated: both payloads are jsonb,
-// protojson stores the enum name, and the store's unmarshaler discards an
-// unknown name into TYPE_UNSPECIFIED, which would blank the rule on every
-// stored comment that used it.
-type ReviewRule struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ReviewRule) Reset() {
-	*x = ReviewRule{}
-	mi := &file_store_review_rule_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ReviewRule) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ReviewRule) ProtoMessage() {}
-
-func (x *ReviewRule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_review_rule_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ReviewRule.ProtoReflect.Descriptor instead.
-func (*ReviewRule) Descriptor() ([]byte, []int) {
+// Deprecated: Use ReviewRuleType.Descriptor instead.
+func (ReviewRuleType) EnumDescriptor() ([]byte, []int) {
 	return file_store_review_rule_proto_rawDescGZIP(), []int{0}
 }
 
@@ -144,11 +108,9 @@ var File_store_review_rule_proto protoreflect.FileDescriptor
 
 const file_store_review_rule_proto_rawDesc = "" +
 	"\n" +
-	"\x17store/review_rule.proto\x12\x0ebytebase.store\"\x96\x02\n" +
-	"\n" +
-	"ReviewRule\"\x87\x02\n" +
-	"\x04Type\x12\x14\n" +
-	"\x10TYPE_UNSPECIFIED\x10\x00\x12\n" +
+	"\x17store/review_rule.proto\x12\x0ebytebase.store*\x9d\x02\n" +
+	"\x0eReviewRuleType\x12 \n" +
+	"\x1cREVIEW_RULE_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06SYNTAX\x10\x01\x12\x10\n" +
 	"\fWALK_THROUGH\x10\x02\x12\x14\n" +
@@ -177,10 +139,8 @@ func file_store_review_rule_proto_rawDescGZIP() []byte {
 }
 
 var file_store_review_rule_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_store_review_rule_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_store_review_rule_proto_goTypes = []any{
-	(ReviewRule_Type)(0), // 0: bytebase.store.ReviewRule.Type
-	(*ReviewRule)(nil),   // 1: bytebase.store.ReviewRule
+	(ReviewRuleType)(0), // 0: bytebase.store.ReviewRuleType
 }
 var file_store_review_rule_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -201,14 +161,13 @@ func file_store_review_rule_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_review_rule_proto_rawDesc), len(file_store_review_rule_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   1,
+			NumMessages:   0,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_store_review_rule_proto_goTypes,
 		DependencyIndexes: file_store_review_rule_proto_depIdxs,
 		EnumInfos:         file_store_review_rule_proto_enumTypes,
-		MessageInfos:      file_store_review_rule_proto_msgTypes,
 	}.Build()
 	File_store_review_rule_proto = out.File
 	file_store_review_rule_proto_goTypes = nil

@@ -30,7 +30,7 @@ message Policy {
 // ReviewRulePolicy is the standard review rule switch. The nearest policy
 // wins: the project's if it has one, else the workspace's, else every rule.
 message ReviewRulePolicy {
-  repeated ReviewRule.Type rules = 1;
+  repeated ReviewRuleType rules = 1;
 }
 
 message RolloutPolicy {

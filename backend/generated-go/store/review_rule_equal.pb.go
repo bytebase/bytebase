@@ -2,13 +2,3 @@
 // source: store/review_rule.proto
 
 package store
-
-func (x *ReviewRule) Equal(y *ReviewRule) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	return true
-}
