@@ -7,6 +7,7 @@ import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
 import type { ApprovalStatus, IssueStatus, Position, RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
+import type { ReviewRule_Type } from "./review_rule_pb";
 import type { Plan_Spec } from "./plan_service_pb";
 
 /**
@@ -1005,6 +1006,14 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
   statementAnchor?: StatementAnchor | undefined;
 
   /**
+   * Present on review results, the comments the review executor posts.
+   * Never accepted on create or update.
+   *
+   * @generated from field: bytebase.v1.IssueComment.ReviewMetadata review_metadata = 17;
+   */
+  reviewMetadata?: IssueComment_ReviewMetadata | undefined;
+
+  /**
    * The event associated with this comment.
    *
    * @generated from oneof bytebase.v1.IssueComment.event
@@ -1049,6 +1058,84 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
  * Use `create(IssueCommentSchema)` to create a new message.
  */
 export declare const IssueCommentSchema: GenMessage<IssueComment>;
+
+/**
+ * What a review result carries beyond its text.
+ *
+ * @generated from message bytebase.v1.IssueComment.ReviewMetadata
+ */
+export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComment.ReviewMetadata"> & {
+  /**
+   * The reviewer that posted the result.
+   *
+   * @generated from field: bytebase.v1.ReviewRun.Type type = 1;
+   */
+  type: ReviewRun_Type;
+
+  /**
+   * The rule judged against. Set if and only if type is RULE.
+   *
+   * @generated from field: bytebase.v1.ReviewRule.Type rule = 2;
+   */
+  rule: ReviewRule_Type;
+
+  /**
+   * @generated from field: bytebase.v1.IssueComment.ReviewMetadata.Priority priority = 3;
+   */
+  priority: IssueComment_ReviewMetadata_Priority;
+
+  /**
+   * Every database the result applies to, sorted.
+   * Format: instances/{instance}/databases/{database}
+   *
+   * @generated from field: repeated string targets = 4;
+   */
+  targets: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.IssueComment.ReviewMetadata.
+ * Use `create(IssueComment_ReviewMetadataSchema)` to create a new message.
+ */
+export declare const IssueComment_ReviewMetadataSchema: GenMessage<IssueComment_ReviewMetadata>;
+
+/**
+ * @generated from enum bytebase.v1.IssueComment.ReviewMetadata.Priority
+ */
+export enum IssueComment_ReviewMetadata_Priority {
+  /**
+   * Blocks like any other open thread.
+   *
+   * @generated from enum value: PRIORITY_UNSPECIFIED = 0;
+   */
+  PRIORITY_UNSPECIFIED = 0,
+
+  /**
+   * The SQL is wrong and must change.
+   *
+   * @generated from enum value: P0 = 1;
+   */
+  P0 = 1,
+
+  /**
+   * Dangerous but legitimate; a person must accept it.
+   *
+   * @generated from enum value: P1 = 2;
+   */
+  P1 = 2,
+
+  /**
+   * Advisory. Posted without thread state, so it never blocks.
+   *
+   * @generated from enum value: P2 = 3;
+   */
+  P2 = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.IssueComment.ReviewMetadata.Priority.
+ */
+export declare const IssueComment_ReviewMetadata_PrioritySchema: GenEnum<IssueComment_ReviewMetadata_Priority>;
 
 /**
  * Approval event information.

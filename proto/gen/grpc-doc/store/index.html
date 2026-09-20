@@ -650,6 +650,25 @@
         
           
           <li>
+            <a href="#store%2freview_rule.proto">store/review_rule.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRule"><span class="badge">M</span>ReviewRule</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRule.Type"><span class="badge">E</span>ReviewRule.Type</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fissue_comment.proto">store/issue_comment.proto</a>
             <ul>
               
@@ -670,6 +689,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.IssueCommentPayload.ReviewMetadata"><span class="badge">M</span>IssueCommentPayload.ReviewMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.IssueCommentPayload.ReviewSubmission"><span class="badge">M</span>IssueCommentPayload.ReviewSubmission</a>
                 </li>
               
@@ -677,6 +700,10 @@
                   <a href="#bytebase.store.IssueCommentPayload.StatementAnchor"><span class="badge">M</span>IssueCommentPayload.StatementAnchor</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.IssueCommentPayload.ReviewMetadata.Priority"><span class="badge">E</span>IssueCommentPayload.ReviewMetadata.Priority</a>
+                </li>
               
               
               
@@ -788,6 +815,10 @@
               
                 <li>
                   <a href="#bytebase.store.QueryDataPolicy"><span class="badge">M</span>QueryDataPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRulePolicy"><span class="badge">M</span>ReviewRulePolicy</a>
                 </li>
               
                 <li>
@@ -6082,6 +6113,110 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/review_rule.proto">store/review_rule.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.ReviewRule">ReviewRule</h3>
+        <p>ReviewRule mirrors bytebase.v1.ReviewRule. The values are shared by</p><p>ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.</p><p>A value is never removed, only marked deprecated: both payloads are jsonb,</p><p>protojson stores the enum name, and the store's unmarshaler discards an</p><p>unknown name into TYPE_UNSPECIFIED, which would blank the rule on every</p><p>stored comment that used it.</p>
+
+        
+
+        
+      
+
+      
+        <h3 id="bytebase.store.ReviewRule.Type">ReviewRule.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SYNTAX</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WALK_THROUGH</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ONLINE_MIGRATION</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PRIOR_BACKUP</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_IS_NULL</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_WHERE</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_DROP_OBJECT</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_TRUNCATE</td>
+                <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_DROP_CONSTRAINT</td>
+                <td>9</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_RENAME</td>
+                <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_PRIMARY_KEY</td>
+                <td>11</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/issue_comment.proto">store/issue_comment.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -6138,6 +6273,16 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td></td>
                   <td><p>The statement context an inline comment references. Set at creation and
 immutable afterward; never set together with an event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>review_metadata</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</a></td>
+                  <td></td>
+                  <td><p>Present on review results only, beside the text and never together with
+an event. Written by the review executor; CreateIssueComment rejects it.
+The anchor is statement_anchor; a result without one addresses the whole
+change. </p></td>
                 </tr>
               
             </tbody>
@@ -6275,6 +6420,55 @@ immutable afterward; never set together with an event. </p></td>
 
         
       
+        <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>and deletes every P2 of its type, in the transaction that posts the new</p><p>results.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The reviewer slot that posted the result, same value domain as
+review_run.type: &#34;RULE&#34; or &#34;GUIDELINE&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rule</td>
+                  <td><a href="#bytebase.store.ReviewRule.Type">ReviewRule.Type</a></td>
+                  <td></td>
+                  <td><p>The rule judged against. Set if and only if type is &#34;RULE&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>priority</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.ReviewMetadata.Priority">IssueCommentPayload.ReviewMetadata.Priority</a></td>
+                  <td></td>
+                  <td><p>A result merged across databases carries the highest priority among
+them. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>targets</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Every database the result applies to, sorted. Always complete; the
+renderer collapses it when it equals the spec&#39;s target set.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.IssueCommentPayload.ReviewSubmission">IssueCommentPayload.ReviewSubmission</h3>
         <p>ReviewSubmission records that an issue entered review.</p>
 
@@ -6334,6 +6528,42 @@ Setting exactly one column to 0 is invalid. </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata.Priority">IssueCommentPayload.ReviewMetadata.Priority</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PRIORITY_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Blocks like any other open thread.</p></td>
+              </tr>
+            
+              <tr>
+                <td>P0</td>
+                <td>1</td>
+                <td><p>The SQL is wrong and must change. Resolving without changing the SQL
+is a claim of false positive.</p></td>
+              </tr>
+            
+              <tr>
+                <td>P1</td>
+                <td>2</td>
+                <td><p>Dangerous but legitimate; a person must accept it.</p></td>
+              </tr>
+            
+              <tr>
+                <td>P2</td>
+                <td>3</td>
+                <td><p>Advisory. Posted without thread state, so it never blocks.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
@@ -7125,6 +7355,30 @@ Disallow running DDL statements in the SQL editor. </p></td>
 
         
       
+        <h3 id="bytebase.store.ReviewRulePolicy">ReviewRulePolicy</h3>
+        <p>ReviewRulePolicy is the standard review rule switch.</p><p>Project: the rules on there; absent policy means every rule.</p><p>Workspace: the rules on in every project, which projects cannot switch</p><p>off; absent policy means none. The effective set is the union.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.store.ReviewRule.Type">ReviewRule.Type</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.RolloutPolicy">RolloutPolicy</h3>
         <p></p>
 
@@ -7296,6 +7550,12 @@ For example, the environment resource can have the SQL review config tag, such a
               <tr>
                 <td>TAG</td>
                 <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REVIEW_RULE</td>
+                <td>7</td>
                 <td><p></p></td>
               </tr>
             

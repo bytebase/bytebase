@@ -493,6 +493,33 @@ func (x *UpdateIssueCommentRequest) Equal(y *UpdateIssueCommentRequest) bool {
 	return true
 }
 
+func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.Rule != y.Rule {
+		return false
+	}
+	if x.Priority != y.Priority {
+		return false
+	}
+	if len(x.Targets) != len(y.Targets) {
+		return false
+	}
+	for i := 0; i < len(x.Targets); i++ {
+		if x.Targets[i] != y.Targets[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func (x *IssueComment_Approval) Equal(y *IssueComment_Approval) bool {
 	if x == y {
 		return true
@@ -618,6 +645,9 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 		return false
 	}
 	if !x.StatementAnchor.Equal(y.StatementAnchor) {
+		return false
+	}
+	if !x.ReviewMetadata.Equal(y.ReviewMetadata) {
 		return false
 	}
 	if !x.GetApproval().Equal(y.GetApproval()) {

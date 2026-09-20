@@ -122,13 +122,21 @@
     - [PlanConfig.CreateDatabaseConfig](#bytebase-store-PlanConfig-CreateDatabaseConfig)
     - [PlanConfig.Spec](#bytebase-store-PlanConfig-Spec)
   
+- [store/review_rule.proto](#store_review_rule-proto)
+    - [ReviewRule](#bytebase-store-ReviewRule)
+  
+    - [ReviewRule.Type](#bytebase-store-ReviewRule-Type)
+  
 - [store/issue_comment.proto](#store_issue_comment-proto)
     - [IssueCommentPayload](#bytebase-store-IssueCommentPayload)
     - [IssueCommentPayload.Approval](#bytebase-store-IssueCommentPayload-Approval)
     - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
     - [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate)
+    - [IssueCommentPayload.ReviewMetadata](#bytebase-store-IssueCommentPayload-ReviewMetadata)
     - [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission)
     - [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor)
+  
+    - [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority)
   
 - [store/oauth2.proto](#store_oauth2-proto)
     - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
@@ -156,6 +164,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
+    - [ReviewRulePolicy](#bytebase-store-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-store-TagPolicy-TagsEntry)
@@ -2082,6 +2091,60 @@ Type represents the category of issue.
 
 
 
+<a name="store_review_rule-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_rule.proto
+
+
+
+<a name="bytebase-store-ReviewRule"></a>
+
+### ReviewRule
+ReviewRule mirrors bytebase.v1.ReviewRule. The values are shared by
+ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.
+
+A value is never removed, only marked deprecated: both payloads are jsonb,
+protojson stores the enum name, and the store&#39;s unmarshaler discards an
+unknown name into TYPE_UNSPECIFIED, which would blank the rule on every
+stored comment that used it.
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ReviewRule-Type"></a>
+
+### ReviewRule.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| SYNTAX | 1 |  |
+| WALK_THROUGH | 2 |  |
+| ONLINE_MIGRATION | 3 |  |
+| PRIOR_BACKUP | 4 |  |
+| REQUIRE_IS_NULL | 5 |  |
+| REQUIRE_WHERE | 6 |  |
+| DISALLOW_DROP_OBJECT | 7 |  |
+| DISALLOW_TRUNCATE | 8 |  |
+| DISALLOW_DROP_CONSTRAINT | 9 |  |
+| DISALLOW_RENAME | 10 |  |
+| REQUIRE_PRIMARY_KEY | 11 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_issue_comment-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2103,6 +2166,7 @@ Type represents the category of issue.
 | plan_update | [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate) |  |  |
 | review_submission | [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission) |  |  |
 | statement_anchor | [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor) |  | The statement context an inline comment references. Set at creation and immutable afterward; never set together with an event. |
+| review_metadata | [IssueCommentPayload.ReviewMetadata](#bytebase-store-IssueCommentPayload-ReviewMetadata) |  | Present on review results only, beside the text and never together with an event. Written by the review executor; CreateIssueComment rejects it. The anchor is statement_anchor; a result without one addresses the whole change. |
 
 
 
@@ -2165,6 +2229,29 @@ add/remove/update from the snapshot pair.
 
 
 
+<a name="bytebase-store-IssueCommentPayload-ReviewMetadata"></a>
+
+### IssueCommentPayload.ReviewMetadata
+ReviewMetadata is what a review result carries beyond its text: which
+reviewer posted it, what it was judged against, its priority, and the
+databases it applies to. Results from the same reviewer are superseded
+together: when a run completes, it resolves every OPEN root of its type
+and deletes every P2 of its type, in the transaction that posts the new
+results.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [string](#string) |  | The reviewer slot that posted the result, same value domain as review_run.type: &#34;RULE&#34; or &#34;GUIDELINE&#34;. |
+| rule | [ReviewRule.Type](#bytebase-store-ReviewRule-Type) |  | The rule judged against. Set if and only if type is &#34;RULE&#34;. |
+| priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
+| targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
+
+
+
+
+
+
 <a name="bytebase-store-IssueCommentPayload-ReviewSubmission"></a>
 
 ### IssueCommentPayload.ReviewSubmission
@@ -2195,6 +2282,20 @@ read against the anchored sheet and the current plan, not stored.
 
 
  
+
+
+<a name="bytebase-store-IssueCommentPayload-ReviewMetadata-Priority"></a>
+
+### IssueCommentPayload.ReviewMetadata.Priority
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PRIORITY_UNSPECIFIED | 0 | Blocks like any other open thread. |
+| P0 | 1 | The SQL is wrong and must change. Resolving without changing the SQL is a claim of false positive. |
+| P1 | 2 | Dangerous but legitimate; a person must accept it. |
+| P2 | 3 | Advisory. Posted without thread state, so it never blocks. |
+
 
  
 
@@ -2580,6 +2681,24 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 
 
+<a name="bytebase-store-ReviewRulePolicy"></a>
+
+### ReviewRulePolicy
+ReviewRulePolicy is the standard review rule switch.
+Project: the rules on there; absent policy means every rule.
+Workspace: the rules on in every project, which projects cannot switch
+off; absent policy means none. The effective set is the union.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [ReviewRule.Type](#bytebase-store-ReviewRule-Type) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-store-RolloutPolicy"></a>
 
 ### RolloutPolicy
@@ -2657,6 +2776,7 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | MASKING_RULE | 4 |  |
 | IAM | 5 |  |
 | TAG | 6 |  |
+| REVIEW_RULE | 7 |  |
 
 
  

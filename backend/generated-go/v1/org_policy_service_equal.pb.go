@@ -145,11 +145,32 @@ func (x *Policy) Equal(y *Policy) bool {
 	if !x.GetQueryDataPolicy().Equal(y.GetQueryDataPolicy()) {
 		return false
 	}
+	if !x.GetReviewRulePolicy().Equal(y.GetReviewRulePolicy()) {
+		return false
+	}
 	if x.Enforce != y.Enforce {
 		return false
 	}
 	if x.ResourceType != y.ResourceType {
 		return false
+	}
+	return true
+}
+
+func (x *ReviewRulePolicy) Equal(y *ReviewRulePolicy) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.Rules) != len(y.Rules) {
+		return false
+	}
+	for i := 0; i < len(x.Rules); i++ {
+		if x.Rules[i] != y.Rules[i] {
+			return false
+		}
 	}
 	return true
 }

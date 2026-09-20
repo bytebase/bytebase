@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package bytebase.v1;
+
+option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
+
+// ReviewRule holds the standard review rule set. The rules are fixed: every
+// project gets them without configuration, and the only setting is a switch
+// (see ReviewRulePolicy).
+//
+// A rule id names what the rule examines. An execution check is named for
+// what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
+// the id says which way it cuts. DISALLOW on a P1 rule means the operation
+// needs a person's acceptance, not that it is forbidden.
+//
+// The enum is nested so its values stay flat: bytebase.v1 already has
+// top-level TRUNCATE and RENAME values.
+message ReviewRule {
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+
+    // P0: the statements do not parse for the target engine.
+    SYNTAX = 1;
+    // P0: applying the statements to the synced schema fails: a missing
+    // table or column, a duplicate object, or an invalid reference.
+    WALK_THROUGH = 2;
+    // P0: the change requests online migration but is not eligible.
+    ONLINE_MIGRATION = 3;
+    // P0: the change enables prior backup but the backup cannot be taken.
+    PRIOR_BACKUP = 4;
+    // P0: = NULL or <> NULL in a predicate, which is always false. Test for
+    // NULL with IS NULL or IS NOT NULL.
+    REQUIRE_IS_NULL = 5;
+
+    // P1: UPDATE or DELETE without WHERE.
+    REQUIRE_WHERE = 6;
+    // P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE.
+    DISALLOW_DROP_OBJECT = 7;
+    // P1: TRUNCATE.
+    DISALLOW_TRUNCATE = 8;
+    // P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint.
+    DISALLOW_DROP_CONSTRAINT = 9;
+    // P1: renaming a table or column.
+    DISALLOW_RENAME = 10;
+    // P1: a table still has no primary key at the end of the change.
+    REQUIRE_PRIMARY_KEY = 11;
+  }
+}
