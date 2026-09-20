@@ -81,9 +81,9 @@ message IssueCommentPayload {
 
     // The reviewer slot that posted the result; review_run.type stores the
     // same enum by name.
-    ReviewRun.Type type = 1;
-    // The rule judged against. Set if and only if type is RULE.
-    ReviewRule.Type rule = 2;
+    ReviewRun.Type run_type = 1;
+    // The rule judged against. Set if and only if run_type is RULE.
+    ReviewRule.Type rule_type = 2;
     // A result merged across databases carries the highest priority among
     // them.
     Priority priority = 3;

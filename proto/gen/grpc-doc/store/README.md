@@ -2314,8 +2314,8 @@ in the transaction that posts the new results.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | The reviewer slot that posted the result; review_run.type stores the same enum by name. |
-| rule | [ReviewRule.Type](#bytebase-store-ReviewRule-Type) |  | The rule judged against. Set if and only if type is RULE. |
+| run_type | [ReviewRun.Type](#bytebase-store-ReviewRun-Type) |  | The reviewer slot that posted the result; review_run.type stores the same enum by name. |
+| rule_type | [ReviewRule.Type](#bytebase-store-ReviewRule-Type) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueCommentPayload.ReviewMetadata.Priority](#bytebase-store-IssueCommentPayload-ReviewMetadata-Priority) |  | A result merged across databases carries the highest priority among them. |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Always complete; the renderer collapses it when it equals the spec&#39;s target set. Format: instances/{instance}/databases/{database} |
 

@@ -1068,16 +1068,16 @@ export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComm
   /**
    * The reviewer that posted the result.
    *
-   * @generated from field: bytebase.v1.ReviewRun.Type type = 1;
+   * @generated from field: bytebase.v1.ReviewRun.Type run_type = 1;
    */
-  type: ReviewRun_Type;
+  runType: ReviewRun_Type;
 
   /**
-   * The rule judged against. Set if and only if type is RULE.
+   * The rule judged against. Set if and only if run_type is RULE.
    *
-   * @generated from field: bytebase.v1.ReviewRule.Type rule = 2;
+   * @generated from field: bytebase.v1.ReviewRule.Type rule_type = 2;
    */
-  rule: ReviewRule_Type;
+  ruleType: ReviewRule_Type;
 
   /**
    * @generated from field: bytebase.v1.IssueComment.ReviewMetadata.Priority priority = 3;

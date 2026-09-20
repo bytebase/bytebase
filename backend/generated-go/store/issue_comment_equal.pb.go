@@ -103,10 +103,10 @@ func (x *IssueCommentPayload_ReviewMetadata) Equal(y *IssueCommentPayload_Review
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Type != y.Type {
+	if x.RunType != y.RunType {
 		return false
 	}
-	if x.Rule != y.Rule {
+	if x.RuleType != y.RuleType {
 		return false
 	}
 	if x.Priority != y.Priority {
