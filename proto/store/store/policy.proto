@@ -27,10 +27,8 @@ message Policy {
   }
 }
 
-// ReviewRulePolicy is the standard review rule switch.
-// Project: the rules on there; absent policy means every rule.
-// Workspace: the rules on in every project, which projects cannot switch
-// off; absent policy means none. The effective set is the union.
+// ReviewRulePolicy is the standard review rule switch. The nearest policy
+// wins: the project's if it has one, else the workspace's, else every rule.
 message ReviewRulePolicy {
   repeated ReviewRule.Type rules = 1;
 }

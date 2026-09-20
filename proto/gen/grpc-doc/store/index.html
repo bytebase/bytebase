@@ -7477,7 +7477,7 @@ Disallow running DDL statements in the SQL editor. </p></td>
         
       
         <h3 id="bytebase.store.ReviewRulePolicy">ReviewRulePolicy</h3>
-        <p>ReviewRulePolicy is the standard review rule switch.</p><p>Project: the rules on there; absent policy means every rule.</p><p>Workspace: the rules on in every project, which projects cannot switch</p><p>off; absent policy means none. The effective set is the union.</p>
+        <p>ReviewRulePolicy is the standard review rule switch. The nearest policy</p><p>wins: the project's if it has one, else the workspace's, else every rule.</p>
 
         
           <table class="field-table">

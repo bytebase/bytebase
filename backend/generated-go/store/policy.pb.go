@@ -174,10 +174,8 @@ func (*Policy) Descriptor() ([]byte, []int) {
 	return file_store_policy_proto_rawDescGZIP(), []int{0}
 }
 
-// ReviewRulePolicy is the standard review rule switch.
-// Project: the rules on there; absent policy means every rule.
-// Workspace: the rules on in every project, which projects cannot switch
-// off; absent policy means none. The effective set is the union.
+// ReviewRulePolicy is the standard review rule switch. The nearest policy
+// wins: the project's if it has one, else the workspace's, else every rule.
 type ReviewRulePolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Rules         []ReviewRule_Type      `protobuf:"varint,1,rep,packed,name=rules,proto3,enum=bytebase.store.ReviewRule_Type" json:"rules,omitempty"`
