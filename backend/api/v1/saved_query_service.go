@@ -637,7 +637,7 @@ func (s *SavedQueryService) checkProjectWide(ctx context.Context, user *store.Us
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 	}
 	if !ok {
-		return common.PermissionDeniedError(ctx, errors.Errorf("permission denied: %s", p))
+		return permissionDeniedError(ctx, errors.Errorf("permission denied: %s", p))
 	}
 	return nil
 }
@@ -1004,7 +1004,7 @@ func (s *SavedQueryService) hasSavedQueryPermission(ctx context.Context, user *s
 	if !ok {
 		// Callers answer NotFound to hide the saved query's existence, so the
 		// mark is the only record that a permission check refused the caller.
-		common.SetPermissionDenied(ctx)
+		setPermissionDenied(ctx)
 	}
 	return ok, nil
 }

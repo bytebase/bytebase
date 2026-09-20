@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // GetProjectByResourceID gets a project by its globally unique resource ID without workspace filter.

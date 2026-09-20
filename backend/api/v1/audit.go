@@ -58,7 +58,7 @@ func NewAuditInterceptor(store *store.Store, secret string, profile *config.Prof
 func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		var serviceData *anypb.Any
-		ctx = common.WithSetServiceData(ctx, func(a *anypb.Any) {
+		ctx = withSetServiceData(ctx, func(a *anypb.Any) {
 			serviceData = a
 		})
 
@@ -66,13 +66,13 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 		// against. Needed for allow_without_credential methods (Login/Signup/
 		// ExchangeToken) where the workspace is resolved inside the handler.
 		var handlerAuditWorkspaceID string
-		ctx = common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+		ctx = withSetAuditWorkspaceID(ctx, func(workspaceID string) {
 			handlerAuditWorkspaceID = workspaceID
 		})
 
 		var permissionDenied, handlerReached bool
-		ctx = common.WithSetPermissionDenied(ctx, func() { permissionDenied = true })
-		ctx = common.WithSetHandlerReached(ctx, func() { handlerReached = true })
+		ctx = withSetPermissionDenied(ctx, func() { permissionDenied = true })
+		ctx = withSetHandlerReached(ctx, func() { handlerReached = true })
 
 		startTime := time.Now()
 		response, rerr := next(ctx, req)
@@ -179,10 +179,10 @@ type auditEntry struct {
 	request  any
 	response any
 	method   string
-	// serviceData is populated by handlers via common.WithSetServiceData.
+	// serviceData is populated by handlers via withSetServiceData.
 	serviceData *anypb.Any
 	// handlerAuditWorkspaceID is populated by handlers via
-	// common.SetAuditWorkspaceID. Used as the validated audit parent for
+	// setAuditWorkspaceID. Used as the validated audit parent for
 	// allow_without_credential methods where authContext.Resources is empty
 	// because no workspace is in the context.
 	handlerAuditWorkspaceID string

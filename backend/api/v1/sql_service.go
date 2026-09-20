@@ -350,7 +350,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 			// one point that can see the request's argument. Query is audited
 			// and this runs in its handler, so the row is stored either way;
 			// the mark stamps it WARNING.
-			common.SetPermissionDenied(ctx)
+			setPermissionDenied(ctx)
 			return nil, err
 		}
 	}
@@ -1445,7 +1445,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			// inside its response rather than as an RPC error, so connect.CodeOf
 			// cannot see this verdict. The mark is the only way it reaches the
 			// audit interceptor.
-			common.SetPermissionDenied(ctx)
+			setPermissionDenied(ctx)
 			return &queryError{
 				err: connect.NewError(
 					connect.CodePermissionDenied,
@@ -1539,7 +1539,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				return err
 			}
 			if len(deniedResources) > 0 {
-				common.SetPermissionDenied(ctx)
+				setPermissionDenied(ctx)
 				return &queryError{
 					err: connect.NewError(
 						connect.CodePermissionDenied,
@@ -1607,7 +1607,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			}
 		}
 		if len(deniedResources) > 0 {
-			common.SetPermissionDenied(ctx)
+			setPermissionDenied(ctx)
 			return &queryError{
 				err: connect.NewError(
 					connect.CodePermissionDenied,

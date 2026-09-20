@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 func TestEscapeLikePattern(t *testing.T) {

@@ -3,7 +3,6 @@ package common
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"math"
 	"math/big"
@@ -104,38 +103,6 @@ func TruncateString(str string, limit int) (string, bool) {
 		chars++
 	}
 	return str, false
-}
-
-// TruncateStringWithDescription tries to truncate the string and append "... (view details in Bytebase)" if truncated.
-func TruncateStringWithDescription(str string) string {
-	const limit = 450
-	if truncatedStr, truncated := TruncateString(str, limit); truncated {
-		return fmt.Sprintf("%s... (view details in Bytebase)", truncatedStr)
-	}
-	return str
-}
-
-// Obfuscate obfuscates a string with a seed string.
-func Obfuscate(src, seed string) string {
-	srcBytes, seedBytes := []byte(src), []byte(seed)
-	obfuscated := make([]byte, len(srcBytes))
-	for i, b := range srcBytes {
-		obfuscated[i] = b ^ seedBytes[i%len(seedBytes)]
-	}
-	return base64.StdEncoding.EncodeToString(obfuscated)
-}
-
-// Unobfuscate unobfuscates a string with a seed string.
-func Unobfuscate(dst, seed string) (string, error) {
-	obfuscated, err := base64.StdEncoding.DecodeString(dst)
-	if err != nil {
-		return "", err
-	}
-	unobfuscated, seedBytes := make([]byte, len(obfuscated)), []byte(seed)
-	for i, b := range obfuscated {
-		unobfuscated[i] = b ^ seedBytes[i%len(seedBytes)]
-	}
-	return string(unobfuscated), nil
 }
 
 // NormalizeExternalURL will format the external url.

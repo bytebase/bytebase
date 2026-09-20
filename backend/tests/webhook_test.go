@@ -147,7 +147,7 @@ func TestWebhookIntegration(t *testing.T) {
 	//
 	// Body MUST be the literal "ok" — the Slack plugin's postMessage
 	// (backend/plugin/webhook/slack/slack.go:247-249) treats any other body as
-	// a delivery failure and triggers common.Retry (up to 3 attempts, 5s
+	// a delivery failure and triggers webhook.Retry (up to 3 attempts, 5s
 	// exponential backoff). Without an "ok" response, every webhook event
 	// would be delivered 1-3 times depending on test timing, causing
 	// nondeterministic counts in the requireWebhookCount assertions across
