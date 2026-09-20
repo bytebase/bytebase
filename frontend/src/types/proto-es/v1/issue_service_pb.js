@@ -224,6 +224,9 @@ export const IssueComment_ReviewMetadata_PrioritySchema = /*@__PURE__*/
   enumDesc(file_v1_issue_service, 21, 0, 0);
 
 /**
+ * Priority says what resolving the thread means. It has no bearing on
+ * blocking, which thread_state alone decides.
+ *
  * @generated from enum bytebase.v1.IssueComment.ReviewMetadata.Priority
  */
 export const IssueComment_ReviewMetadata_Priority = /*@__PURE__*/

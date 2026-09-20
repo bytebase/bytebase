@@ -6421,7 +6421,7 @@ change. </p></td>
         
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
-        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>and deletes every P2 of its type, in the transaction that posts the new</p><p>results.</p>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>in the transaction that posts the new results.</p>
 
         
           <table class="field-table">
@@ -6530,7 +6530,7 @@ Setting exactly one column to 0 is invalid. </p></td>
 
       
         <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata.Priority">IssueCommentPayload.ReviewMetadata.Priority</h3>
-        <p></p>
+        <p>Priority says what resolving the thread means. It has no bearing on</p><p>blocking: an OPEN root thread blocks whatever its priority, and a</p><p>result with no thread state never does.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -6540,7 +6540,7 @@ Setting exactly one column to 0 is invalid. </p></td>
               <tr>
                 <td>PRIORITY_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>Blocks like any other open thread.</p></td>
+                <td><p></p></td>
               </tr>
             
               <tr>
@@ -6559,7 +6559,7 @@ is a claim of false positive.</p></td>
               <tr>
                 <td>P2</td>
                 <td>3</td>
-                <td><p>Advisory. Posted without thread state, so it never blocks.</p></td>
+                <td><p>Advisory.</p></td>
               </tr>
             
           </tbody>

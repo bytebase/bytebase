@@ -4019,14 +4019,15 @@ Approval status values.
 <a name="bytebase-v1-IssueComment-ReviewMetadata-Priority"></a>
 
 ### IssueComment.ReviewMetadata.Priority
-
+Priority says what resolving the thread means. It has no bearing on
+blocking, which thread_state alone decides.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PRIORITY_UNSPECIFIED | 0 | Blocks like any other open thread. |
+| PRIORITY_UNSPECIFIED | 0 |  |
 | P0 | 1 | The SQL is wrong and must change. |
 | P1 | 2 | Dangerous but legitimate; a person must accept it. |
-| P2 | 3 | Advisory. Posted without thread state, so it never blocks. |
+| P2 | 3 | Advisory. |
 
 
 
