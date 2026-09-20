@@ -1,5 +1,5 @@
+import { Button as BaseButton } from "@base-ui/react/button";
 import type { ReactNode } from "react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export function PlanDetailTabStrip({
@@ -14,25 +14,19 @@ export function PlanDetailTabStrip({
   return (
     <div className="relative bg-background pt-3">
       <div className="absolute bottom-0 w-full border-b border-b-block-border leading-0" />
-      <div className="flex items-center justify-between gap-x-4">
+      <div className="flex min-w-0 items-center gap-x-2">
         <div
           className={cn(
             "flex min-w-0 items-center overflow-x-auto",
-            // With a trailing slot the container shrinks to its tabs so the
-            // sticky button sits right after the last tab (and pins to the
-            // edge on overflow); the occluder below supplies the right
-            // padding. Otherwise fill the row with symmetric padding.
             trailing ? "pl-4" : "flex-1 px-4"
           )}
         >
           {children}
-          {trailing && (
-            <div className="sticky right-0 ml-1 flex shrink-0 items-center self-stretch border-b border-b-block-border bg-background pr-4 pl-2">
-              {trailing}
-            </div>
-          )}
         </div>
-        {action && <div className="shrink-0 px-4">{action}</div>}
+        {trailing && (
+          <div className="flex shrink-0 items-center pr-4">{trailing}</div>
+        )}
+        {action && <div className="ml-auto shrink-0 px-4">{action}</div>}
       </div>
     </div>
   );
@@ -59,29 +53,25 @@ export function PlanDetailTabItem({
         // No transition here: the tab body swaps in the same commit, so a
         // color fade makes the highlight lag the content and read as flicker.
         "relative flex shrink-0 items-center rounded-t-sm border",
-        boundedWidth && "min-w-40 max-w-64",
+        action && "gap-1 pr-1",
+        boundedWidth && "min-w-[min(10rem,100%)] max-w-[min(16rem,100%)]",
         selected
           ? "border-block-border border-b-transparent bg-background"
-          : "border-b-block-border border-transparent hover:opacity-80"
+          : "border-b-block-border border-transparent hover:bg-control-bg"
       )}
     >
-      <Button
-        appearance="secondary"
-        size="md"
+      <BaseButton
         aria-label={accessibleLabel}
         className={cn(
-          "flex min-h-9 min-w-0 items-center justify-start gap-2 px-4 py-2 text-left",
-          boundedWidth ? "flex-1" : "shrink-0"
+          "flex min-h-9 min-w-0 flex-1 cursor-pointer items-center gap-1.5 rounded-t-sm py-2 text-left text-sm font-medium leading-5 text-control focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent",
+          action ? "pl-3" : "px-3"
         )}
         onClick={onSelect}
         type="button"
       >
         {children}
-      </Button>
-      {action && (
-        // Pulled into the label's right padding so it sits close to the text.
-        <div className="-ml-3 mr-2 flex shrink-0 items-center">{action}</div>
-      )}
+      </BaseButton>
+      {action}
     </div>
   );
 }
