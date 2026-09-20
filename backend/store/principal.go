@@ -982,8 +982,8 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	rows.Close()
 
 	// 5. Update Audit Logs
-	// Update audit_log.payload to replace old user reference with new one.
-	// User is stored in the 'user' field in "users/{email}" format.
+	// Update the legacy persisted Actor key in audit_log.payload.
+	// It remains named 'user' to preserve existing rows and indexes.
 	query = qb.Q().Space(`
 		UPDATE audit_log
 		SET payload = jsonb_set(payload, '{user}', to_jsonb(?::text))

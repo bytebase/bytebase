@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -139,6 +140,49 @@ func TestLoginAuthMethodRequiresPasswordReset(t *testing.T) {
 			t.Parallel()
 			got := loginAuthMethodFromRequest(test.request).requiresPasswordReset()
 			require.Equal(t, test.want, got)
+		})
+	}
+}
+
+func TestRejectWebLoginForNonEndUser(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name      string
+		principal storepb.PrincipalType
+		web       bool
+		wantCode  connect.Code
+	}{
+		{
+			name:      "service account web login",
+			principal: storepb.PrincipalType_SERVICE_ACCOUNT,
+			web:       true,
+			wantCode:  connect.CodePermissionDenied,
+		},
+		{
+			name:      "workload identity web login",
+			principal: storepb.PrincipalType_WORKLOAD_IDENTITY,
+			web:       true,
+			wantCode:  connect.CodePermissionDenied,
+		},
+		{
+			name:      "service account API login",
+			principal: storepb.PrincipalType_SERVICE_ACCOUNT,
+			web:       false,
+			wantCode:  connect.CodeUnknown,
+		},
+		{
+			name:      "end user web login",
+			principal: storepb.PrincipalType_END_USER,
+			web:       true,
+			wantCode:  connect.CodeUnknown,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := rejectWebLoginForNonEndUser(test.web, test.principal)
+			require.Equal(t, test.wantCode, connect.CodeOf(err))
 		})
 	}
 }

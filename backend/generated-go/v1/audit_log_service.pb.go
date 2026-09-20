@@ -111,18 +111,19 @@ type SearchAuditLogsRequest struct {
 	// The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 	//
 	// Supported filter:
-	// - method: the API name, can be found in the docs. Usually "/bytebase.v1.…", for example "/bytebase.v1.UserService/CreateUser"; entries written outside the v1 API carry their own prefix, such as "/bytebase.mcp.Session/Authorize" or "/bytebase.cli.Recovery/ResetUserPassword". Support "==" operator.
-	// - resource: the resource the entry is about, support "==" operator.
-	// - severity: support "==" operator, check Severity enum in AuditLog message for values.
-	// - user: the actor, should in "users/{email}" format, support "==" operator.
-	// - create_time: support ">=" and "<=" operator.
-	// - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
-	// - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
+	//   - method: the API name, can be found in the docs. Usually "/bytebase.v1.…", for example "/bytebase.v1.UserService/CreateUser"; entries written outside the v1 API carry their own prefix, such as "/bytebase.mcp.Session/Authorize" or "/bytebase.cli.Recovery/ResetUserPassword". Support "==" operator.
+	//   - resource: the resource the entry is about, support "==" operator.
+	//   - severity: support "==" operator, check Severity enum in AuditLog message for values.
+	//   - actor: the actor, in users/{email}, serviceAccounts/{email}, or
+	//     workloadIdentities/{email} format. Support "==" operator.
+	//   - create_time: support ">=" and "<=" operator.
+	//   - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
+	//   - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
 	//
 	// For example:
 	//   - filter = "method == '/bytebase.v1.SQLService/Query'"
 	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && actor == 'users/bb@bytebase.com'"
 	//   - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
 	//   - filter = "mcp == true"
 	//   - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
@@ -432,9 +433,9 @@ type AuditLog struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The timestamp when the audit log was created.
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	// The user who performed the action.
-	// Format: users/{email}
-	User string `protobuf:"bytes,3,opt,name=user,proto3" json:"user,omitempty"`
+	// The principal who performed the action.
+	// Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}
+	Actor string `protobuf:"bytes,3,opt,name=actor,proto3" json:"actor,omitempty"`
 	// The method or action being audited.
 	// For example: /bytebase.v1.SQLService/Query or bb.project.repository.push
 	Method string `protobuf:"bytes,4,opt,name=method,proto3" json:"method,omitempty"`
@@ -507,9 +508,9 @@ func (x *AuditLog) GetCreateTime() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *AuditLog) GetUser() string {
+func (x *AuditLog) GetActor() string {
 	if x != nil {
-		return x.User
+		return x.Actor
 	}
 	return ""
 }
@@ -794,12 +795,12 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"page_token\x18\x06 \x01(\tR\tpageToken\"a\n" +
 	"\x17ExportAuditLogsResponse\x12\x1e\n" +
 	"\acontent\x18\x01 \x01(\fB\x04\xd0\xea0\x02R\acontent\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xd8\x05\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xda\x05\n" +
 	"\bAuditLog\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12@\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12\x12\n" +
-	"\x04user\x18\x03 \x01(\tR\x04user\x12\x16\n" +
+	"createTime\x12\x14\n" +
+	"\x05actor\x18\x03 \x01(\tR\x05actor\x12\x16\n" +
 	"\x06method\x18\x04 \x01(\tR\x06method\x12:\n" +
 	"\bseverity\x18\x05 \x01(\x0e2\x1e.bytebase.v1.AuditLog.SeverityR\bseverity\x12\x1a\n" +
 	"\bresource\x18\x06 \x01(\tR\bresource\x12\x18\n" +

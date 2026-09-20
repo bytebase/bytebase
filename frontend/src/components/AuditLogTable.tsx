@@ -32,8 +32,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tooltip } from "@/components/ui/tooltip";
-import { usePlanFeature } from "@/hooks/useAppState";
+import { BlockTooltip, Tooltip } from "@/components/ui/tooltip";
+import { usePlanFeature, useWorkspaceResourceName } from "@/hooks/useAppState";
 import { useColumnWidths } from "@/hooks/useColumnWidths";
 import { PagedTableFooter } from "@/hooks/usePagedData";
 import {
@@ -43,11 +43,12 @@ import {
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
-  extractUserEmail,
   getProjectIdPlanUidStageUidFromRolloutName,
   planNamePrefix,
   projectNamePrefix,
+  serviceAccountNamePrefix,
   userNamePrefix,
+  workloadIdentityNamePrefix,
 } from "@/stores/modules/v1/common";
 import { getDateForPbTimestampProtoEs } from "@/types";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
@@ -83,9 +84,13 @@ dayjs.extend(utc);
 interface AuditLogFilter {
   method?: string;
   level?: AuditLog_Severity;
-  userEmail?: string;
+  actor?: string;
   createdTsAfter?: number;
   createdTsBefore?: number;
+}
+
+function uniqueValueOptions(options: ValueOption[]): ValueOption[] {
+  return [...new Map(options.map((option) => [option.value, option])).values()];
 }
 
 function buildFilterString(filter: AuditLogFilter): string {
@@ -93,8 +98,23 @@ function buildFilterString(filter: AuditLogFilter): string {
   if (filter.method) parts.push(`method == ${celString(filter.method)}`);
   if (filter.level !== undefined)
     parts.push(`severity == ${celString(AuditLog_Severity[filter.level])}`);
-  if (filter.userEmail)
-    parts.push(`user == ${celString(`${userNamePrefix}${filter.userEmail}`)}`);
+  if (filter.actor) {
+    const legacyUser = `${userNamePrefix}${filter.actor.slice(
+      filter.actor.indexOf("/") + 1
+    )}`;
+    const matchesLegacyUser =
+      filter.actor.startsWith(serviceAccountNamePrefix) ||
+      filter.actor.startsWith(workloadIdentityNamePrefix);
+    parts.push(
+      matchesLegacyUser
+        ? `(actor == ${celString(filter.actor)} || actor == ${celString(legacyUser)})`
+        : `actor == ${celString(
+            filter.actor.startsWith(userNamePrefix)
+              ? filter.actor
+              : `${userNamePrefix}${filter.actor}`
+          )}`
+    );
+  }
   if (filter.createdTsAfter)
     parts.push(
       `create_time >= ${celString(dayjs(filter.createdTsAfter).utc().format())}`
@@ -111,7 +131,7 @@ function buildAuditLogFilter(params: SearchParams): AuditLogFilter {
   const method = params.scopes.find((s) => s.id === "method")?.value;
   if (method) filter.method = method;
   const actor = params.scopes.find((s) => s.id === "actor")?.value;
-  if (actor) filter.userEmail = actor;
+  if (actor) filter.actor = actor;
   const level = params.scopes.find((s) => s.id === "level")?.value;
   if (level)
     filter.level = AuditLog_Severity[level as keyof typeof AuditLog_Severity];
@@ -266,20 +286,16 @@ function McpProvenanceDetail({
 // none.
 function AuditLogActorCell({ log }: Readonly<{ log: AuditLog }>) {
   const { t } = useTranslation();
-  const email = extractUserEmail(log.user);
   return (
     <div className="flex items-center gap-x-1.5">
-      {email ? (
-        // As a flex item the anchor is blockified, so `truncate` now ellipses
-        // where the bare inline anchor used to hard-clip; `title` keeps the
-        // full address reachable.
-        <a
-          href={`mailto:${email}`}
-          title={email}
-          className="text-accent hover:underline truncate min-w-0"
+      {log.actor ? (
+        <BlockTooltip
+          content={log.actor}
+          popupClassName="break-all"
+          render={<span className="min-w-0" />}
         >
-          {email}
-        </a>
+          <span className="block truncate">{log.actor}</span>
+        </BlockTooltip>
       ) : (
         <span>-</span>
       )}
@@ -580,6 +596,36 @@ export function AuditLogTable({
 }: AuditLogTableProps) {
   const { t } = useTranslation();
   const hasAuditLogFeature = usePlanFeature(PlanFeature.FEATURE_AUDIT_LOG);
+  const workspaceResourceName = useWorkspaceResourceName();
+  const projectAccountParent =
+    parent !== `${projectNamePrefix}-` && parent.startsWith(projectNamePrefix)
+      ? parent
+      : "";
+  const project = useAppStore((state) =>
+    projectAccountParent
+      ? state.projectsByName[projectAccountParent]
+      : undefined
+  );
+  const canListWorkspaceServiceAccounts = useAppStore((state) =>
+    workspaceResourceName
+      ? state.hasWorkspacePermission("bb.serviceAccounts.list")
+      : false
+  );
+  const canListWorkspaceWorkloadIdentities = useAppStore((state) =>
+    workspaceResourceName
+      ? state.hasWorkspacePermission("bb.workloadIdentities.list")
+      : false
+  );
+  const canListProjectServiceAccounts = useAppStore((state) =>
+    project
+      ? state.hasProjectPermission(project, "bb.serviceAccounts.list")
+      : false
+  );
+  const canListProjectWorkloadIdentities = useAppStore((state) =>
+    project
+      ? state.hasProjectPermission(project, "bb.workloadIdentities.list")
+      : false
+  );
   const columns = useColumnDefs();
   const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
@@ -752,18 +798,98 @@ export function AuditLogTable({
     return "";
   }, [filter, t]);
   const listUsers = useAppStore((state) => state.listUsers);
-  const searchUsers = useCallback(
+  const listServiceAccounts = useAppStore((state) => state.listServiceAccounts);
+  const listWorkloadIdentities = useAppStore(
+    (state) => state.listWorkloadIdentities
+  );
+  const searchActors = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const { users } = await listUsers({
-        pageSize: getDefaultPagination(),
-        filter: keyword.trim() ? { query: keyword } : undefined,
+      const query = keyword.trim();
+      const pageSize = getDefaultPagination();
+      const accountParams = (parent: string, filter: string) => ({
+        parent,
+        pageSize,
+        showDeleted: false,
+        filter: { query: filter },
+        skipCache: true,
       });
-      return users.map((u) => ({
-        value: u.email,
-        keywords: [u.email, u.title],
+
+      if (query.startsWith(serviceAccountNamePrefix)) {
+        const accountQuery = query.slice(serviceAccountNamePrefix.length);
+        const serviceAccounts = await Promise.all([
+          ...(workspaceResourceName && canListWorkspaceServiceAccounts
+            ? [
+                listServiceAccounts(
+                  accountParams(workspaceResourceName, accountQuery)
+                ),
+              ]
+            : []),
+          ...(projectAccountParent && canListProjectServiceAccounts
+            ? [
+                listServiceAccounts(
+                  accountParams(projectAccountParent, accountQuery)
+                ),
+              ]
+            : []),
+        ]);
+        return uniqueValueOptions(
+          serviceAccounts.flatMap((result) =>
+            result.serviceAccounts.map((account) => ({
+              value: account.name,
+              keywords: [account.email, account.title],
+            }))
+          )
+        );
+      }
+
+      if (query.startsWith(workloadIdentityNamePrefix)) {
+        const identityQuery = query.slice(workloadIdentityNamePrefix.length);
+        const workloadIdentities = await Promise.all([
+          ...(workspaceResourceName && canListWorkspaceWorkloadIdentities
+            ? [
+                listWorkloadIdentities(
+                  accountParams(workspaceResourceName, identityQuery)
+                ),
+              ]
+            : []),
+          ...(projectAccountParent && canListProjectWorkloadIdentities
+            ? [
+                listWorkloadIdentities(
+                  accountParams(projectAccountParent, identityQuery)
+                ),
+              ]
+            : []),
+        ]);
+        return uniqueValueOptions(
+          workloadIdentities.flatMap((result) =>
+            result.workloadIdentities.map((identity) => ({
+              value: identity.name,
+              keywords: [identity.email, identity.title],
+            }))
+          )
+        );
+      }
+
+      const { users } = await listUsers({
+        pageSize,
+        filter: query ? { query } : undefined,
+      });
+      return users.map((user) => ({
+        value: user.name,
+        keywords: [user.email, user.title],
       }));
     },
-    [listUsers]
+    [
+      listUsers,
+      listServiceAccounts,
+      listWorkloadIdentities,
+      workspaceResourceName,
+      projectAccountParent,
+      canListWorkspaceServiceAccounts,
+      canListWorkspaceWorkloadIdentities,
+      canListProjectServiceAccounts,
+      canListProjectWorkloadIdentities,
+    ]
   );
 
   const scopeOptions = useMemo((): ScopeOption[] => {
@@ -772,7 +898,7 @@ export function AuditLogTable({
         id: "actor",
         title: t("audit-log.advanced-search.scope.actor.title"),
         description: t("audit-log.advanced-search.scope.actor.description"),
-        onSearch: searchUsers,
+        onSearch: searchActors,
       },
       {
         id: "method",
@@ -795,7 +921,7 @@ export function AuditLogTable({
           })),
       },
     ];
-  }, [t, searchUsers]);
+  }, [t, searchActors]);
 
   const pageSizeOptions = getPageSizeOptions();
 

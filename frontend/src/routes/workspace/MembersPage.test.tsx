@@ -24,7 +24,7 @@ const {
   mockUpdateProjectIamPolicy: vi.fn(),
   maximumRoleExpirationSeconds: { value: undefined as number | undefined },
   maximumRequestExpirationSeconds: { value: undefined as number | undefined },
-  accountSelectProps: { value: undefined as { accountParents?: string[] } | undefined },
+  accountSelectProps: { value: undefined as { accountParents: string[] } | undefined },
 }));
 
 vi.mock("@/components/AccountMultiSelect", () => ({
@@ -33,7 +33,7 @@ vi.mock("@/components/AccountMultiSelect", () => ({
     accountParents,
   }: {
     onChange: (members: string[]) => void;
-    accountParents?: string[];
+    accountParents: string[];
   }) => {
     accountSelectProps.value = { accountParents };
     return createElement(

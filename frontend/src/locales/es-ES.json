@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Buscar por el actor del registro de auditoría",
+          "description": "Busca usuarios por correo electrónico. Usa el prefijo serviceAccounts/ o workloadIdentities/ para buscar esos actores.",
           "title": "Actor"
         },
         "level": {
@@ -2880,7 +2880,7 @@
       "select-role_other": "Seleccionar roles",
       "service-account": "Cuenta de Servicio",
       "service-accounts": "Cuentas de Servicio",
-      "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
+      "service-key-reset-and-copied": "Clave de servicio restablecida y copiada",
       "show-inactive": "Mostrar cuentas inactivas",
       "table": {
         "account": "Cuenta",

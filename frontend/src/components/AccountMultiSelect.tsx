@@ -180,6 +180,7 @@ export function AccountMultiSelect({
   includeAllUsers,
   excludeAccounts,
   accountParents,
+  includeSpecialAccounts = true,
   placeholder,
 }: {
   value: string[];
@@ -196,7 +197,9 @@ export function AccountMultiSelect({
    */
   excludeAccounts?: string[];
   /** Resource parents whose special accounts may be discovered. */
-  accountParents?: string[];
+  accountParents: string[];
+  /** Whether this resource can grant service accounts and workload identities. */
+  includeSpecialAccounts?: boolean;
 }) {
   const { t } = useTranslation();
   const listUsers = useAppStore((state) => state.listUsers);
@@ -214,7 +217,7 @@ export function AccountMultiSelect({
   const [specialAccounts, setSpecialAccounts] = useState<SpecialAccount[]>([]);
 
   const uniqueAccountParents = useMemo(
-    () => [...new Set(accountParents?.filter(Boolean) ?? [])],
+    () => [...new Set(accountParents.filter(Boolean))],
     [accountParents]
   );
   const workspaceAccountParent = useMemo(
@@ -310,7 +313,7 @@ export function AccountMultiSelect({
   }, [search, listUsers, listGroups, excludeAccounts]);
 
   useEffect(() => {
-    if (permittedAccountParents.length === 0) {
+    if (!includeSpecialAccounts || permittedAccountParents.length === 0) {
       setSpecialAccounts([]);
       return;
     }
@@ -368,6 +371,7 @@ export function AccountMultiSelect({
     };
   }, [
     search,
+    includeSpecialAccounts,
     permittedAccountParents,
     listServiceAccounts,
     listWorkloadIdentities,
@@ -464,6 +468,7 @@ export function AccountMultiSelect({
 
   // Detect service account / workload identity typed in search
   const specialAccountMatch = useMemo((): SpecialAccount | null => {
+    if (!includeSpecialAccounts) return null;
     const match = detectSpecialAccount(search);
     if (!match || !match.email) return null;
     const prefix =
@@ -471,7 +476,7 @@ export function AccountMultiSelect({
         ? serviceAccountNamePrefix
         : workloadIdentityNamePrefix;
     return { ...match, fullname: `${prefix}${match.email}` };
-  }, [search]);
+  }, [search, includeSpecialAccounts]);
 
   // Allow selecting arbitrary user emails typed in the search box
   // (for SaaS where admins grant access to emails before signup, or when
@@ -479,12 +484,13 @@ export function AccountMultiSelect({
   const arbitraryEmailMatch = useMemo((): string | null => {
     const trimmed = search.trim();
     if (!trimmed || !isValidEmail(trimmed)) return null;
-    // Don't show if it's a service account or workload identity
-    if (specialAccountMatch) return null;
+    // Service accounts and workload identities must keep their IAM member
+    // kind; they cannot fall back to an inert user binding.
+    if (getSpecialAccountByEmail(trimmed)) return null;
     // Don't show if it already matches a fetched user
     if (users.some((u) => u.email === trimmed)) return null;
     return trimmed;
-  }, [search, specialAccountMatch, users]);
+  }, [search, users]);
 
   const visibleSpecialAccountMatch =
     specialAccountMatch &&

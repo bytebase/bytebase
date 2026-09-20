@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "監査ログの操作者で検索",
+          "description": "メールアドレスでユーザーを検索します。サービスアカウントまたはワークロード ID を検索するには、serviceAccounts/ または workloadIdentities/ を付けます。",
           "title": "操作者"
         },
         "level": {
@@ -2880,7 +2880,7 @@
       "select-role_other": "ロールを選択",
       "service-account": "サービスアカウント",
       "service-accounts": "サービスアカウント",
-      "service-key-copied": "サービスキーはコピーされています。公開しないでください",
+      "service-key-reset-and-copied": "サービスキーをリセットしてコピーしました",
       "show-inactive": "非アクティブなアカウントを表示",
       "table": {
         "account": "アカウント",

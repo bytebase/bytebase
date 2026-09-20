@@ -22,8 +22,12 @@ message AuditLog {
   // Example: projects/{project}
   string resource = 3;
 
-  // Format: users/{email}.
-  string user = 4;
+  // The principal who performed the action.
+  // Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}.
+  //
+  // Keep the persisted ProtoJSON spelling as "user". Audit logs are append-only
+  // and can be too large to rewrite; this preserves existing rows and indexes.
+  string actor = 4 [json_name = "user"];
 
   Severity severity = 5;
 

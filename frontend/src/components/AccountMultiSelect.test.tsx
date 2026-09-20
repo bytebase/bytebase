@@ -142,7 +142,13 @@ describe("AccountMultiSelect", () => {
     document.body.appendChild(container);
     const root = createRoot(container);
     act(() => {
-      root.render(<AccountMultiSelect value={[]} onChange={() => {}} />);
+      root.render(
+        <AccountMultiSelect
+          value={[]}
+          onChange={() => {}}
+          accountParents={[]}
+        />
+      );
     });
     act(() => {
       container.firstElementChild?.firstElementChild?.dispatchEvent(
@@ -215,6 +221,7 @@ describe("AccountMultiSelect", () => {
         <AccountMultiSelect
           value={[]}
           onChange={() => {}}
+          accountParents={[]}
           excludeAccounts={["user:alice@example.com", "group:g1@example.com"]}
         />
       );
@@ -255,6 +262,7 @@ describe("AccountMultiSelect", () => {
         <AccountMultiSelect
           value={[]}
           onChange={() => {}}
+          accountParents={[]}
           excludeAccounts={["user:alice@example.com"]}
         />
       );
@@ -281,7 +289,13 @@ describe("AccountMultiSelect", () => {
     const outerKeydown = vi.fn();
     document.addEventListener("keydown", outerKeydown);
     await act(async () => {
-      root.render(<AccountMultiSelect value={[]} onChange={() => {}} />);
+      root.render(
+        <AccountMultiSelect
+          value={[]}
+          onChange={() => {}}
+          accountParents={[]}
+        />
+      );
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -314,6 +328,7 @@ describe("AccountMultiSelect", () => {
         <AccountMultiSelect
           value={[]}
           onChange={() => {}}
+          accountParents={[]}
           placeholder="Add users or groups"
         />
       );
@@ -332,6 +347,7 @@ describe("AccountMultiSelect", () => {
         <AccountMultiSelect
           value={[]}
           onChange={() => {}}
+          accountParents={[]}
           includeAllUsers
         />
       );
@@ -374,6 +390,7 @@ describe("AccountMultiSelect", () => {
             "workloadIdentity:ci@workload.bytebase.com",
           ]}
           onChange={() => {}}
+          accountParents={[]}
         />
       );
     });
@@ -388,7 +405,13 @@ describe("AccountMultiSelect", () => {
     document.body.appendChild(container);
     const root = createRoot(container);
     await act(async () => {
-      root.render(<AccountMultiSelect value={[]} onChange={() => {}} />);
+      root.render(
+        <AccountMultiSelect
+          value={[]}
+          onChange={() => {}}
+          accountParents={[]}
+        />
+      );
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -423,7 +446,13 @@ describe("AccountMultiSelect", () => {
     document.body.appendChild(container);
     const root = createRoot(container);
     await act(async () => {
-      root.render(<AccountMultiSelect value={[]} onChange={() => {}} />);
+      root.render(
+        <AccountMultiSelect
+          value={[]}
+          onChange={() => {}}
+          accountParents={[]}
+        />
+      );
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -450,6 +479,49 @@ describe("AccountMultiSelect", () => {
     expect(container.textContent).not.toContain(
       "settings.members.service-account"
     );
+    act(() => root.unmount());
+  });
+
+  test("does not offer special accounts to resources that cannot grant them", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <AccountMultiSelect
+          value={[]}
+          onChange={() => {}}
+          accountParents={["workspaces/default", "projects/project-1"]}
+          includeSpecialAccounts={false}
+        />
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.firstElementChild?.firstElementChild?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
+    });
+
+    const input = container.querySelector(
+      '[data-testid="search"]'
+    ) as HTMLInputElement;
+    await act(async () => {
+      const valueSetter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      )?.set;
+      valueSetter?.call(input, "deploy@service.bytebase.com");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.listServiceAccounts).not.toHaveBeenCalled();
+    expect(mocks.listWorkloadIdentities).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("deploy@service.bytebase.com");
+
     act(() => root.unmount());
   });
 

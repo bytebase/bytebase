@@ -241,6 +241,9 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	if err != nil {
 		return nil, err
 	}
+	if err := rejectWebLoginForNonEndUser(request.Web, loginUser.Type); err != nil {
+		return nil, err
+	}
 
 	// 2. Reject deactivated users before any workspace provisioning.
 	if loginUser.MemberDeleted {
@@ -290,6 +293,13 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	// 7. Build response and finalize
 	requireResetPassword := loginMethod.requiresPasswordReset() && s.needResetPassword(ctx, loginUser, workspaceID, restriction)
 	return s.finalizeLogin(ctx, req.Header(), request.Web, loginUser, token, workspaceID, requireResetPassword)
+}
+
+func rejectWebLoginForNonEndUser(web bool, principalType storepb.PrincipalType) error {
+	if web && principalType != storepb.PrincipalType_END_USER {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
+	}
+	return nil
 }
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage, workspaceID string, restriction *v1pb.Restriction) bool {
@@ -1112,9 +1122,6 @@ func (s *AuthService) finalizeLogin(ctx context.Context, header http.Header, web
 	resp := connect.NewResponse(response)
 
 	if web {
-		if user.Type != storepb.PrincipalType_END_USER {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
-		}
 		// A fresh session: the refresh token gets the full refresh duration.
 		d := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 		if err := s.issueSessionCookies(ctx, resp.Header(), header.Get("Origin"), user.Email, workspaceID, token, time.Now().Add(d)); err != nil {

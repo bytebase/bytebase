@@ -24,7 +24,7 @@ func (x *AuditLog) Equal(y *AuditLog) bool {
 	if x.Resource != y.Resource {
 		return false
 	}
-	if x.User != y.User {
+	if x.Actor != y.Actor {
 		return false
 	}
 	if x.Severity != y.Severity {

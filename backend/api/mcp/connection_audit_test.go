@@ -76,7 +76,7 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.Equal(t, common.AuditMethodMCPSessionAuthorize, row.Method)
 		require.Equal(t, "workspaces/ws-test", row.Parent)
 		require.Equal(t, "workspaces/ws-test", row.Resource)
-		require.Equal(t, "users/test@example.com", row.User)
+		require.Equal(t, "users/test@example.com", row.Actor)
 		require.EqualValues(t, 7, row.Status.GetCode(), "PermissionDenied")
 		require.Equal(t, storepb.AuditLog_WARNING, row.Severity,
 			"the door and the per-request gate stamp one ceiling verdict the same way")

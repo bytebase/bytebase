@@ -15,7 +15,7 @@ import (
 func TestConvertToAuditLogsNamesRowsByPayloadParent(t *testing.T) {
 	t.Parallel()
 	logs := convertToAuditLogs([]*store.AuditLog{
-		{ResourceID: "after-cutoff", CreatedAt: time.Unix(2, 0), Payload: &storepb.AuditLog{Parent: "projects/project-a"}},
+		{ResourceID: "after-cutoff", CreatedAt: time.Unix(2, 0), Payload: &storepb.AuditLog{Parent: "projects/project-a", Actor: "serviceAccounts/deploy@service.bytebase.com"}},
 		{ResourceID: "at-cutoff", CreatedAt: time.Unix(1, 0), Payload: &storepb.AuditLog{Parent: "projects/project-a"}},
 	})
 
@@ -27,4 +27,5 @@ func TestConvertToAuditLogsNamesRowsByPayloadParent(t *testing.T) {
 		"projects/project-a/auditLogs/after-cutoff",
 		"projects/project-a/auditLogs/at-cutoff",
 	}, names)
+	require.Equal(t, "serviceAccounts/deploy@service.bytebase.com", logs[0].Actor)
 }

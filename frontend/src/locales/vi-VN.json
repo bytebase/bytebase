@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Tìm kiếm theo người thực hiện",
+          "description": "Tìm người dùng theo email. Thêm tiền tố serviceAccounts/ hoặc workloadIdentities/ để tìm các tác nhân đó.",
           "title": "Người thực hiện"
         },
         "level": {
@@ -2880,7 +2880,7 @@
       "select-role_other": "Chọn vai trò",
       "service-account": "Tài khoản dịch vụ",
       "service-accounts": "Tài khoản dịch vụ",
-      "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
+      "service-key-reset-and-copied": "Đã đặt lại và sao chép khóa dịch vụ",
       "show-inactive": "Hiển thị tài khoản không hoạt động",
       "table": {
         "account": "Tài khoản",

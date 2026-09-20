@@ -157,7 +157,7 @@ func TestMCPAuditProvenance(t *testing.T) {
 		a.NoError(err)
 		var rows []*v1pb.AuditLog
 		for _, l := range resp.Msg.AuditLogs {
-			if l.User == "users/"+memberEmail {
+			if l.Actor == "users/"+memberEmail {
 				rows = append(rows, l)
 			}
 		}
@@ -217,7 +217,7 @@ func TestMCPAuditProvenance(t *testing.T) {
 	a.NoError(err)
 	var adminCreates int
 	for _, row := range adminRows.Msg.AuditLogs {
-		if row.User == ctl.principalName {
+		if row.Actor == ctl.principalName {
 			adminCreates++
 			a.Nil(row.McpDelegation, "a public-chain row must never carry MCP provenance")
 		}
