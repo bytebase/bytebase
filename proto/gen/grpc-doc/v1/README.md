@@ -3679,8 +3679,8 @@ What a review result carries beyond its text.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that posted the result. |
-| rule | [ReviewRule.Type](#bytebase-v1-ReviewRule-Type) |  | The rule judged against. Set if and only if type is RULE. |
+| run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that posted the result. |
+| rule_type | [ReviewRule.Type](#bytebase-v1-ReviewRule-Type) |  | The rule judged against. Set if and only if run_type is RULE. |
 | priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
 | targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
 

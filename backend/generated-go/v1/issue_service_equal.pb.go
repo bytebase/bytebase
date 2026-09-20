@@ -500,10 +500,10 @@ func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Type != y.Type {
+	if x.RunType != y.RunType {
 		return false
 	}
-	if x.Rule != y.Rule {
+	if x.RuleType != y.RuleType {
 		return false
 	}
 	if x.Priority != y.Priority {
