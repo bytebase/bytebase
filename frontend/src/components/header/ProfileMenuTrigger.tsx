@@ -144,7 +144,7 @@ export function ProfileMenuTrigger({
               appearance="secondary"
               size="xs"
               type="button"
-              className="cursor-pointer rounded-full"
+              className="h-auto rounded-full p-0"
             />
           }
         >
