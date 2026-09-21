@@ -129,7 +129,11 @@ func TestSelectLinkDefinition(t *testing.T) {
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("OTHER", "h1:1521/s", "U1")}, nil, false},
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("REMOTEX", "h1:1521/s", "U1")}, nil, false},
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE.WORLD", "h1:1521/s", "U1")}, link("REMOTE.WORLD", "h1:1521/s", "U1"), true},
-		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE.WORLD", "h2:1521/s", "U2"), remote}, remote, true},
+		// Oracle follows REMOTE when its global name has no domain and REMOTE.WORLD when the
+		// domain is WORLD, so the two resolve only when they reach the same target.
+		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE.WORLD", "h2:1521/s", "U2"), remote}, nil, true},
+		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{remote, link("REMOTE.WORLD", "h1:1521/s", "U1")}, remote, true},
+		{"REMOTE@Q", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE@Q", "h1:1521/s", "U1"), link("REMOTE.WORLD@Q", "h2:1521/s", "U2")}, nil, true},
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{remote, link("REMOTE", "h1:1521/s", "u1")}, remote, true},
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE.WORLD", "h1:1521/s", "U1"), link("REMOTE.CORP", "h1:1521/s", "U1")}, link("REMOTE.WORLD", "h1:1521/s", "U1"), true},
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{remote, link("REMOTE", "h2:1521/s", "U1")}, nil, true},
