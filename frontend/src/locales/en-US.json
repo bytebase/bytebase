@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "Active only",
+    "active-only-chats": "View active chats",
     "ai-not-configured": {
       "configure": "Configure",
       "contact-admin": "Contact your workspace admin to configure AI.",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "Archive all chats",
     "archive-chat": "Archive chat",
-    "archived-only-chats": "Archived only",
+    "archived-only-chats": "View archived chats",
     "args": "Args",
     "assistant-title": "AI Assistant",
     "cancel": "Cancel",

@@ -366,6 +366,8 @@ describe("AgentInput", () => {
     expect(placeholder?.textContent).toBe("agent.input-placeholder");
     expect(placeholder?.className).toContain("truncate");
     expect(placeholder?.className).toContain("pointer-events-none");
+    expect(placeholder?.className).toContain("inset-y-0");
+    expect(placeholder?.className).toContain("items-center");
 
     const textarea = container.querySelector("textarea");
     expect(textarea).toBeInstanceOf(HTMLTextAreaElement);
@@ -389,6 +391,9 @@ describe("AgentInput", () => {
 
     const row = container.querySelector("[data-agent-input-row]");
     expect(row?.className).toContain("items-end");
+    expect(container.querySelector("textarea")?.className).toContain(
+      "h-9"
+    );
     expect(container.querySelector("textarea")?.className).toContain(
       "min-h-9"
     );

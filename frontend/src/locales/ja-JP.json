@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "アクティブのみ",
+    "active-only-chats": "アクティブなチャットを表示",
     "ai-not-configured": {
       "configure": "設定",
       "contact-admin": "ワークスペース管理者に AI の設定を依頼してください。",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "すべてのチャットをアーカイブ",
     "archive-chat": "チャットをアーカイブ",
-    "archived-only-chats": "アーカイブ済みのみ",
+    "archived-only-chats": "アーカイブ済みのチャットを表示",
     "args": "引数",
     "assistant-title": "AI アシスタント",
     "cancel": "キャンセル",

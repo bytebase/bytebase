@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "仅活跃",
+    "active-only-chats": "查看活跃对话",
     "ai-not-configured": {
       "configure": "配置",
       "contact-admin": "请联系工作区管理员配置 AI。",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "归档所有对话",
     "archive-chat": "归档对话",
-    "archived-only-chats": "仅已归档",
+    "archived-only-chats": "查看已归档对话",
     "args": "参数",
     "assistant-title": "AI 助手",
     "cancel": "取消",

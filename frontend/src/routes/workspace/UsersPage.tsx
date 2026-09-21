@@ -300,7 +300,7 @@ function UserGroupsCell({
           <Badge
             key={groupName}
             variant="secondary"
-            className="text-xs px-1.5 py-0 cursor-pointer"
+            className="text-xs cursor-pointer"
             // The parent TableRow is a row-click button — stop propagation so
             // clicking a group badge navigates to the group without also
             // opening the user detail sheet.

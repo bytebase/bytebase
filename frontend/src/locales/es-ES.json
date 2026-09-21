@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "Solo activos",
+    "active-only-chats": "Ver chats activos",
     "ai-not-configured": {
       "configure": "Configurar",
       "contact-admin": "Contacte al administrador de su espacio de trabajo para configurar la IA.",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "Archivar todos los chats",
     "archive-chat": "Archivar chat",
-    "archived-only-chats": "Solo archivados",
+    "archived-only-chats": "Ver chats archivados",
     "args": "Argumentos",
     "assistant-title": "Asistente de IA",
     "cancel": "Cancelar",

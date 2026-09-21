@@ -70,7 +70,7 @@ export const EnvironmentBadge = memo(function EnvironmentBadge({
   const badge = (
     <span
       className={cn(
-        "inline-flex items-center gap-x-1 px-1.5 rounded-xs truncate",
+        "inline-flex items-center gap-x-1 px-1.5 rounded truncate",
         className
       )}
       style={badgeStyle}

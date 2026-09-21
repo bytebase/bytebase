@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "Chỉ hoạt động",
+    "active-only-chats": "Xem các cuộc trò chuyện đang hoạt động",
     "ai-not-configured": {
       "configure": "Cấu hình",
       "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI.",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "Lưu trữ tất cả cuộc trò chuyện",
     "archive-chat": "Lưu trữ cuộc trò chuyện",
-    "archived-only-chats": "Chỉ đã lưu trữ",
+    "archived-only-chats": "Xem các cuộc trò chuyện đã lưu trữ",
     "args": "Tham số",
     "assistant-title": "Trợ lý AI",
     "cancel": "Hủy",
