@@ -243,6 +243,13 @@ supplies. The reset then fires on a marker — rare and meaningful — and never
 ordinary append. Nothing is expanded at the transition, so nothing opens by
 itself, and positional ids can stay as they are.
 
+The reset must land in the render that shows the regrouped list. The hook clears
+expansion in a passive effect today, which runs after that list has painted, so
+for one frame the stale set opens the wrong section. The reset moves into render
+instead — clear the sets when the key differs from the one they were built for —
+which removes an effect rather than adding one. A remount key would work too, but
+only the viewer sees the entries, so its parent cannot supply the marker count.
+
 The cost is bounded. Retries usually arrive faster than the five-second poll, so
 several land in one step and the intermediate state is never rendered; a reader
 has to be watching a live run whose `lock_timeout` is long enough to space markers
@@ -279,17 +286,18 @@ Implementation follows in a separate PR.
 - `useTaskRunLogSections.ts`: a third grouping layer alongside the replica and
   release-file layers, and auto-expand restricted to error sections outside the
   superseded attempts. Also the marker count folded into the `datasetKey` the
-  viewer passes, so expansion clears when a marker regroups the list and no
-  section opens on its own.
+  viewer passes, with the reset moved from its passive effect into render, so
+  expansion clears in the same render as the regrouping and no section opens on
+  its own.
 - `TaskRunLogViewer.tsx` and `SectionHeader.tsx`: the umbrella and nested-attempt
   rows, plus locale keys for the labels.
 - Tests mirror the truth table and the cutting cases: no marker, one marker,
   several markers, a marker inside a release-file group, several release-file
   groups retrying different numbers of times, replica-grouped entries, an empty
   final segment, and a prior-backup section that must stay outside attempt 1.
-  Transition coverage asserts that no section renders expanded after a marker
-  regroups the list, and that the marker folds the earlier sections without
-  disturbing the streaming segment.
+  Transition coverage asserts that no section renders expanded on the render
+  that regroups the list — not merely once effects settle — and that the marker
+  folds the earlier sections without disturbing the streaming segment.
 
 ### Building on #21417
 
