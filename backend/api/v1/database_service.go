@@ -1245,7 +1245,26 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	if err != nil {
 		return storepb.Engine_ENGINE_UNSPECIFIED, err
 	}
-	return common.ConvertToParserEngine(rawEngine)
+	return convertToParserEngine(rawEngine)
+}
+
+func convertToParserEngine(e storepb.Engine) (storepb.Engine, error) {
+	switch e {
+	case storepb.Engine_POSTGRES:
+		return storepb.Engine_POSTGRES, nil
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		return storepb.Engine_MYSQL, nil
+	case storepb.Engine_TIDB:
+		return storepb.Engine_TIDB, nil
+	case storepb.Engine_ORACLE:
+		return storepb.Engine_ORACLE, nil
+	case storepb.Engine_MSSQL:
+		return storepb.Engine_MSSQL, nil
+	case storepb.Engine_COCKROACHDB:
+		return storepb.Engine_COCKROACHDB, nil
+	default:
+		return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid engine type %v", e))
+	}
 }
 
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {
