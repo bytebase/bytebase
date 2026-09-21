@@ -588,7 +588,7 @@ describe("GroupsPage create group sheet", () => {
 });
 
 describe("GroupsPage group table", () => {
-  it("renders a copy action for an email group", async () => {
+  it("renders a copy action for a group name", async () => {
     mocks.pagedGroups = [
       {
         email: "developers+dba@bytebase.com",
@@ -603,10 +603,10 @@ describe("GroupsPage group table", () => {
 
     expect(
       container.querySelector("[data-testid='copy-group-email']")
-    ).toHaveAttribute("data-content", "developers+dba@bytebase.com");
+    ).toHaveAttribute("data-content", "groups/developers+dba@bytebase.com");
   });
 
-  it("does not render a copy action for a non-email group", async () => {
+  it("renders a copy action for a non-email group", async () => {
     mocks.pagedGroups = [
       {
         email: "",
@@ -621,6 +621,9 @@ describe("GroupsPage group table", () => {
 
     expect(
       container.querySelector("[data-testid='copy-group-email']")
-    ).toBeNull();
+    ).toHaveAttribute(
+      "data-content",
+      "groups/0b354368-73b8-439f-b207-d4df282d3cc7"
+    );
   });
 });

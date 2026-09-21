@@ -385,9 +385,9 @@ function GroupRow({
                 <span className="textinfolabel text-xs truncate">
                   <HighlightLabelText text={group.name} keyword={searchText} />
                 </span>
-                {group.email && (
+                {group.name && (
                   <div onClick={(event) => event.stopPropagation()}>
-                    <CopyButton content={group.email} />
+                    <CopyButton content={group.name} />
                   </div>
                 )}
               </div>
