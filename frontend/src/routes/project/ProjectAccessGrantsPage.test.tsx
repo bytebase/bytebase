@@ -1,5 +1,9 @@
 import { describe, expect, test, vi } from "vitest";
-import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
+import { distributeColumnWidths } from "@/hooks/useColumnWidths";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -9,17 +13,19 @@ vi.mock("react-i18next", () => ({
 import { grantColumns } from "./ProjectAccessGrantsPage";
 
 describe("grantColumns", () => {
-  test("shows the expiry's zone by default, and lets the reader trade it", () => {
-    // An operational time carries its zone so a reader elsewhere knows when
-    // access really ends, and the zone is the end of the string -- the first
-    // thing a narrow column cuts. So the column opens wide enough for all of
-    // it; narrower is the reader's call, not a floor set by the widest zone.
-    const expiration = grantColumns((key) => key).find(
-      (column) => column.key === "expiration"
-    );
-    expect(expiration?.defaultWidth).toBe(TIMESTAMP_COLUMN.operational.width);
-    expect(expiration?.minWidth).toBeLessThan(
-      TIMESTAMP_COLUMN.operational.width
-    );
+  const columns = grantColumns((key) => key);
+  const expiry = columns.findIndex((column) => column.key === "expiration");
+
+  test.each([1100, 1300, 1500, 1800])(
+    "opens the expiry whole, zone included, in a %ipx table",
+    (containerWidth) => {
+      expect(distributeColumnWidths(columns, containerWidth)[expiry]).toBe(
+        TIMESTAMP_COLUMN_WIDTH.operational
+      );
+    }
+  );
+
+  test("lets a reader narrow the expiry to the date", () => {
+    expect(columns[expiry].minWidth).toBe(TIMESTAMP_COLUMN_MIN_WIDTH);
   });
 });

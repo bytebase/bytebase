@@ -36,7 +36,7 @@ vi.mock("@/components/HumanizeTs", async () => ({
   ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
-import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
+import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
 import { DatabaseChangelogTable } from "./DatabaseChangelogTable";
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -78,17 +78,18 @@ describe("DatabaseChangelogTable", () => {
 
     render();
 
-    // A fixed-layout table spreads spare width across every sized column, so
-    // the title is left unsized to take it: the date keeps exactly its form's
-    // width at any viewport, which is what keeps it on one line without
-    // letting it grow. Only the date is draggable -- widening it is how the
-    // reader trades room with the title.
     const [, created, rollout] = Array.from(container.querySelectorAll("col"));
-    expect(created.style.width).toBe(`${TIMESTAMP_COLUMN.compact.width}px`);
+    expect(created.style.width).toBe(`${TIMESTAMP_COLUMN_WIDTH.compact}px`);
     expect(rollout.style.width).toBe("");
     expect(
       container.querySelectorAll("[class*=cursor-col-resize]")
     ).toHaveLength(1);
+    expect(
+      container.querySelector("tbody tr td:nth-child(2)")?.className
+    ).toContain("truncate");
+    // A widened date pushes the table past its box, and the title -- and the
+    // handle that would undo it -- have to stay reachable.
+    expect(container.firstElementChild?.className).toContain("overflow-x-auto");
 
     unmount();
   });

@@ -19,7 +19,10 @@ import {
 } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
-import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -68,17 +71,14 @@ import { extractDatabaseResourceName } from "@/utils/v1/database";
 type SortKey = "creator" | "create_time" | "expire_time";
 type SortDir = "asc" | "desc";
 
-// Column descriptor for the access-grants table. The column array is
-// built inside the component (so titles resolve via `t()` and react
-// to language switches); only the shape lives at module scope.
-//
-// Position in the array is the `<colgroup>` order — keep this in sync
-// with the cell order inside `<AccessGrantRow>` (`useColumnWidths`
-// indexes positionally).
+// Column descriptor for the access-grants table. Position in the array is
+// the `<colgroup>` order — keep this in sync with the cell order inside
+// `<AccessGrantRow>` (`useColumnWidths` indexes positionally).
 //
 // - `title`        — header label; omit for a blank header (actions col).
-// - `defaultWidth` — initial render width; user-resizable from there.
-// - `minWidth`     — drag floor so a column can't collapse to a sliver.
+// - `defaultWidth` — the width it opens at, before fitting to the container.
+// - `minWidth`     — drag floor, and the fitting floor unless `grow` is false.
+// - `grow`         — false to open at `defaultWidth` however wide the table.
 // - `sortKey`      — present iff the column participates in server sort.
 // - `resizable`    — defaults true; set false for purely action columns
 //                    where a too-narrow width clips the button row.
@@ -87,6 +87,7 @@ type GrantColumn = {
   title?: string;
   defaultWidth: number;
   minWidth: number;
+  grow?: boolean;
   sortKey?: SortKey;
   resizable?: boolean;
 };
@@ -116,8 +117,9 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
   {
     key: "expiration",
     title: t("common.expiration"),
-    defaultWidth: TIMESTAMP_COLUMN.operational.width,
-    minWidth: TIMESTAMP_COLUMN.operational.minWidth,
+    defaultWidth: TIMESTAMP_COLUMN_WIDTH.operational,
+    minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
+    grow: false,
     sortKey: "expire_time",
   },
   {

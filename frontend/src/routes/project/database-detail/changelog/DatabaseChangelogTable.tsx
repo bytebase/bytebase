@@ -3,7 +3,10 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
 import {
   Table,
   TableBody,
@@ -69,8 +72,8 @@ export function DatabaseChangelogTable({
       {
         key: "created",
         title: t("common.created-at"),
-        defaultWidth: TIMESTAMP_COLUMN.compact.width,
-        minWidth: TIMESTAMP_COLUMN.compact.minWidth,
+        defaultWidth: TIMESTAMP_COLUMN_WIDTH.compact,
+        minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
         resizable: true,
       },
       {
@@ -104,15 +107,13 @@ export function DatabaseChangelogTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-sm border border-block-border">
+    <div className="overflow-x-auto rounded-sm border border-block-border">
       <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
         <colgroup>
-          {widths.map((w, index) => (
+          {columns.map((column, index) => (
             <col
-              key={columns[index].key}
-              style={{
-                width: "fills" in columns[index] ? undefined : `${w}px`,
-              }}
+              key={column.key}
+              style={column.fills ? undefined : { width: `${widths[index]}px` }}
             />
           ))}
         </colgroup>

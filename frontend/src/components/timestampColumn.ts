@@ -2,22 +2,20 @@
 // test that stubs the component still has the real widths to lay out with.
 
 /**
- * The default width of a table column that holds a form on one line: the
- * widest rendering (a two-digit hour, a zone as long as GMT-3:30) at a
- * table's 14px, plus a cell's 32px of padding. Measured in every locale the
- * app ships; en-US is the widest in all three forms. The default shows the
- * whole value, so nothing is cut unless the reader chooses it.
- *
- * The minimum is one floor for every form -- room for the date -- rather than
- * the form's width. A reader who narrows a column past the seconds or the
- * zone has traded them for another column's room, and one drag undoes it;
- * a floor at the widest case would take that choice away from everyone to
- * serve a half-hour zone.
+ * The width a table column opens at to hold a form on one line: the widest
+ * rendering across every time zone and shipped locale at a table's 14px, plus
+ * a cell's 32px of padding. en-US in Chatham, GMT+12:45, is the widest in all
+ * three forms. Measured with the macOS system font; Segoe UI is not.
  */
-const MIN_WIDTH = 120;
-
-export const TIMESTAMP_COLUMN = {
-  compact: { width: 190, minWidth: MIN_WIDTH },
-  operational: { width: 260, minWidth: MIN_WIDTH },
-  datetime: { width: 280, minWidth: MIN_WIDTH },
+export const TIMESTAMP_COLUMN_WIDTH = {
+  compact: 192,
+  operational: 270,
+  datetime: 292,
 } as const;
+
+/**
+ * How far a reader may narrow any timestamp column: room for the date,
+ * measured the same way; ja-JP writes it widest. Past the date the cell
+ * ellipsizes, and one drag gives the rest back.
+ */
+export const TIMESTAMP_COLUMN_MIN_WIDTH = 140;

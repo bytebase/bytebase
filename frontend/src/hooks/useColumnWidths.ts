@@ -9,28 +9,35 @@ import {
 export interface ColumnWithWidth {
   defaultWidth: number;
   minWidth?: number;
+  /**
+   * False for a column whose content has a width of its own, such as a date:
+   * it opens at `defaultWidth` however wide the table is, and `minWidth` only
+   * floors a drag. Otherwise `minWidth` floors both.
+   */
+  grow?: boolean;
 }
 
 /**
  * Distributes `containerWidth` across columns so the table fills its container
  * on first render instead of overflowing at the sum of `defaultWidth`s.
- * Columns with `resizable === false` keep their `defaultWidth`; the rest share
- * the remaining space proportionally to their `defaultWidth` (each clamped to
- * `minWidth`). Falls back to the raw default widths when the container is too
- * narrow to honor the minimums (the table then scrolls).
+ * Columns that are not resizable, or do not grow, keep their `defaultWidth`;
+ * the rest share the remaining space proportionally to their `defaultWidth`
+ * (each clamped to `minWidth`). Falls back to the raw default widths when the
+ * container is too narrow to honor the minimums (the table then scrolls).
  */
 export function distributeColumnWidths<
   T extends ColumnWithWidth & { resizable?: boolean },
 >(columns: T[], containerWidth: number): number[] {
+  const keepsWidth = (c: T) => c.resizable === false || c.grow === false;
   const fixedTotal = columns
-    .filter((c) => c.resizable === false)
+    .filter(keepsWidth)
     .reduce((sum, c) => sum + c.defaultWidth, 0);
   const flexBaseTotal = columns
-    .filter((c) => c.resizable !== false)
+    .filter((c) => !keepsWidth(c))
     .reduce((sum, c) => sum + c.defaultWidth, 0);
   const available = Math.max(0, containerWidth - fixedTotal);
   return columns.map((c) => {
-    if (c.resizable === false) return c.defaultWidth;
+    if (keepsWidth(c)) return c.defaultWidth;
     const proportional =
       flexBaseTotal > 0
         ? Math.round(available * (c.defaultWidth / flexBaseTotal))

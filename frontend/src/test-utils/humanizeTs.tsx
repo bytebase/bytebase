@@ -8,14 +8,18 @@ export const humanizeTsStub = () => ({
   HumanizeTs: ({
     tsMs,
     mode = "queue",
+    className,
   }: {
     tsMs: number | undefined;
     mode?: string;
+    className?: string;
   }) =>
     // Nothing at all without an instant, as the component does: a stub that
-    // left an empty box behind would hide a row that kept its separator.
+    // left an empty box behind would hide a row that kept its separator. The
+    // class lands on the same span it does in the component, since that is
+    // where a caller asks a narrowed date to ellipsize rather than wrap.
     tsMs === undefined ? null : (
-      <span data-testid="humanize-ts" data-mode={mode}>
+      <span data-testid="humanize-ts" data-mode={mode} className={className}>
         {tsMs}
       </span>
     ),

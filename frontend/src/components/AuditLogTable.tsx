@@ -16,7 +16,10 @@ import {
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
-import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
+import {
+  TIMESTAMP_COLUMN_MIN_WIDTH,
+  TIMESTAMP_COLUMN_WIDTH,
+} from "@/components/timestampColumn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -438,8 +441,8 @@ function useColumnDefs(): ColumnDef[] {
       {
         key: "create_time",
         title: t("audit-log.table.created-ts"),
-        defaultWidth: TIMESTAMP_COLUMN.datetime.width,
-        minWidth: TIMESTAMP_COLUMN.datetime.minWidth,
+        defaultWidth: TIMESTAMP_COLUMN_WIDTH.datetime,
+        minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
         resizable: true,
         sortable: true,
         render: (log: AuditLog) =>

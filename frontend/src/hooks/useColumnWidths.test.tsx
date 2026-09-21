@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { useColumnWidths } from "./useColumnWidths";
+import { distributeColumnWidths, useColumnWidths } from "./useColumnWidths";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -363,5 +363,35 @@ describe("useColumnWidths", () => {
     releaseMouse();
     expect(handle.current!.widths).toEqual([170, 200]);
     expect(handle.current!.onResizeStart).toBe(originalOnResizeStart);
+  });
+});
+
+describe("distributeColumnWidths", () => {
+  test("a column that does not grow keeps its width at any container width", () => {
+    const columns = [
+      { key: "date", defaultWidth: 260, minWidth: 140, grow: false },
+      { key: "title", defaultWidth: 400, minWidth: 180 },
+      { key: "actions", defaultWidth: 100, resizable: false },
+    ];
+    for (const containerWidth of [700, 1100, 1800]) {
+      const [date, title, actions] = distributeColumnWidths(
+        columns,
+        containerWidth
+      );
+      expect(date).toBe(260);
+      expect(actions).toBe(100);
+      expect(title).toBe(Math.max(180, containerWidth - 360));
+    }
+  });
+
+  test("its minimum floors a drag, not the width it opens at", () => {
+    const [date] = distributeColumnWidths(
+      [
+        { key: "date", defaultWidth: 260, minWidth: 140, grow: false },
+        { key: "title", defaultWidth: 400 },
+      ],
+      500
+    );
+    expect(date).toBe(260);
   });
 });

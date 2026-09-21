@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
-import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
+import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import {
   Table,
@@ -108,17 +108,17 @@ export function IssueDetailTaskRunTable({
               <TableHead className="sticky top-0 z-10 bg-control-bg/50">
                 {t("common.detail")}
               </TableHead>
-              {/* Sized to the form, since the detail column is the one
-                  that fills; a narrower column breaks a date in two. */}
+              {/* Sized to the form; the detail column is the one left to
+                  take the rest. */}
               <TableHead
                 className="sticky top-0 z-10 bg-control-bg/50"
-                style={{ width: TIMESTAMP_COLUMN.compact.width }}
+                style={{ width: TIMESTAMP_COLUMN_WIDTH.compact }}
               >
                 {t("task.created")}
               </TableHead>
               <TableHead
                 className="sticky top-0 z-10 bg-control-bg/50"
-                style={{ width: TIMESTAMP_COLUMN.compact.width }}
+                style={{ width: TIMESTAMP_COLUMN_WIDTH.compact }}
               >
                 {t("task.started")}
               </TableHead>

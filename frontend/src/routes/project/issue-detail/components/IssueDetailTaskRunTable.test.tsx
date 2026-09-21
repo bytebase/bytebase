@@ -3,7 +3,7 @@ import { timestampFromMs } from "@bufbuild/protobuf/wkt";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
+import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
 import { shownTimestampModes } from "@/test-utils/humanizeTs";
 import {
   TaskRun_Status,
@@ -76,13 +76,14 @@ describe("IssueDetailTaskRunTable", () => {
       )
     );
 
-    // The detail column is the one left unsized, so it takes the spare width
-    // and the dates keep theirs: narrower, a compact date breaks in two.
     const headers = Array.from(container.querySelectorAll("th"));
     const widthOf = (label: string) =>
       headers.find((th) => th.textContent === label)?.style.width;
-    expect(widthOf("task.created")).toBe(`${TIMESTAMP_COLUMN.compact.width}px`);
-    expect(widthOf("task.started")).toBe(`${TIMESTAMP_COLUMN.compact.width}px`);
+    expect(widthOf("task.created")).toBe(`${TIMESTAMP_COLUMN_WIDTH.compact}px`);
+    expect(widthOf("task.started")).toBe(`${TIMESTAMP_COLUMN_WIDTH.compact}px`);
     expect(shownTimestampModes(container)).toEqual(["compact", "compact"]);
+    for (const date of container.querySelectorAll("[data-testid=humanize-ts]")) {
+      expect(date.className).toContain("truncate");
+    }
   });
 });
