@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/review"
 	"github.com/pkg/errors"
 
@@ -172,14 +173,9 @@ func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.P
 	}
 	schema := dbSchema.GetProto()
 
-	backupDatabaseName := common.BackupDatabaseNameOfEngine(engine)
-	backupDatabase, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{
-		Workspace:    instance.Workspace,
-		InstanceID:   &instance.ResourceID,
-		DatabaseName: &backupDatabaseName,
-	})
+	backupDatabaseExists, err := e.backupDatabaseExists(ctx, instance, schema)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to look up backup database %q", backupDatabaseName)
+		return nil, err
 	}
 
 	return &reviewTarget{
@@ -187,11 +183,40 @@ func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.P
 		Engine: engine,
 		Input: review.Target{
 			Schema:               schema,
-			BackupDatabaseExists: backupDatabase != nil,
+			BackupDatabaseExists: backupDatabaseExists,
 			SessionUser:          sessionUser(project, instance, schema.GetOwner()),
 			LowerCaseTableNames:  int(instance.Metadata.GetMysqlLowerCaseTableNames()),
 		},
 	}, nil
+}
+
+// backupDatabaseExists reports whether the engine's backup location is in
+// place, as the schema syncer decides it: PostgreSQL keeps the archive as a
+// schema inside the database, the other engines with prior backup as a
+// database on the instance.
+func (e *RuleExecutor) backupDatabaseExists(ctx context.Context, instance *store.InstanceMessage, schema *metadatapb.DatabaseSchemaMetadata) (bool, error) {
+	engine := instance.Metadata.GetEngine()
+	if !common.EngineSupportPriorBackup(engine) {
+		return false, nil
+	}
+	name := common.BackupDatabaseNameOfEngine(engine)
+	if engine == storepb.Engine_POSTGRES {
+		for _, s := range schema.GetSchemas() {
+			if s.GetName() == name {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	backupDatabase, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    instance.Workspace,
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &name,
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to look up backup database %q", name)
+	}
+	return backupDatabase != nil, nil
 }
 
 // sessionUser is the role the change runs as: the database owner when the
