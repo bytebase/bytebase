@@ -2680,7 +2680,7 @@
       "first-prompt": {
         "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
         "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi",
-        "title": "Prompt đầu tiên của bạn"
+        "title": "Lời nhắc đầu tiên của bạn"
       },
       "ladder": {
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
@@ -2696,7 +2696,7 @@
         },
         "row": {
           "export": {
-            "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase",
+            "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
             "title": "Xuất kết quả truy vấn"
           },
           "manage": {
@@ -2762,7 +2762,7 @@
         "mode": {
           "disabled": {
             "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",
-            "caption": "Không phiên nào kết nối",
+            "caption": "Không phiên MCP nào có thể kết nối",
             "description": "Không phiên MCP nào có thể kết nối tới không gian làm việc này.",
             "title": "Tắt"
           },
@@ -2792,8 +2792,8 @@
           "title": "Không đọc được chính sách truy cập đã lưu"
         },
         "unserved": {
-          "description": "Không gian làm việc này lưu {{stored}}, không phải mức trần mà bản dựng này phục vụ. Mọi kết nối MCP đang bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
-          "title": "Chính sách truy cập đã lưu không phải loại bản dựng này phục vụ"
+          "description": "Không gian làm việc này lưu {{stored}}, nhưng bản dựng này không hỗ trợ giá trị đó. Mọi kết nối MCP đều bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
+          "title": "Bản dựng này không hỗ trợ chính sách truy cập đã lưu"
         }
       },
       "title": "Tích hợp MCP"

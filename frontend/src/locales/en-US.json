@@ -2680,7 +2680,7 @@
       "first-prompt": {
         "description": "Once connected, try asking your AI assistant:",
         "example": "List all projects in my Bytebase instance",
-        "title": "Your First Prompt"
+        "title": "Your first prompt"
       },
       "ladder": {
         "disabled": "Nothing is allowed; no MCP session can connect.",
@@ -2696,7 +2696,7 @@
         },
         "row": {
           "export": {
-            "details": "Download results as a file. Data leaves Bytebase",
+            "details": "Download results as a file. Data leaves Bytebase.",
             "title": "Export query results"
           },
           "manage": {
@@ -2704,7 +2704,7 @@
             "title": "Manage database housekeeping"
           },
           "propose": {
-            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must",
+            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must approve it.",
             "title": "Propose changes"
           },
           "read-data": {
@@ -2744,7 +2744,7 @@
       },
       "policy": {
         "current": "Current policy: {{mode}}",
-        "description": "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled.",
+        "description": "This is the maximum any MCP session may do in this workspace. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled.",
         "edit": "Edit policy",
         "loading": "Reading the access policy…",
         "masking": {
@@ -2762,7 +2762,7 @@
         "mode": {
           "disabled": {
             "best-for": "Best for: keeping MCP off until you are ready to turn it on.",
-            "caption": "No sessions connect",
+            "caption": "No sessions can connect",
             "description": "No MCP session can connect to this workspace.",
             "title": "Disabled"
           },
@@ -2778,7 +2778,7 @@
           }
         },
         "read-failed": {
-          "description": "Reload to try again. If it keeps failing, the stored policy is one Bytebase cannot parse and an operator has to repair the row directly. Until it can be read, every MCP connection is refused.",
+          "description": "Reload to try again. If it keeps failing, Bytebase cannot parse the stored policy and an operator must repair the row directly. Until then, every MCP connection is refused.",
           "title": "The access policy could not be read"
         },
         "save": "Save policy",
@@ -2792,8 +2792,8 @@
           "title": "The stored access policy cannot be read"
         },
         "unserved": {
-          "description": "This workspace stores {{stored}}, which is not a ceiling this build serves. Every MCP connection is being refused. Pick a mode and save to set it right.",
-          "title": "The stored access policy is not one this build serves"
+          "description": "This workspace stores {{stored}}, which this build does not support. Every MCP connection is being refused. Pick a mode and save to correct it.",
+          "title": "The stored access policy is not supported by this build"
         }
       },
       "title": "MCP Integration"

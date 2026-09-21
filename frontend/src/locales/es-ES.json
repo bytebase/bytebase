@@ -2679,8 +2679,8 @@
       "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
       "first-prompt": {
         "description": "Una vez conectado, intente preguntar a su asistente de IA:",
-        "example": "Listar todos los proyectos en mi instancia de Bytebase",
-        "title": "Tu primer prompt"
+        "example": "Enumera todos los proyectos de mi instancia de Bytebase",
+        "title": "Su primer prompt"
       },
       "ladder": {
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
@@ -2696,7 +2696,7 @@
         },
         "row": {
           "export": {
-            "details": "Descargar resultados como archivo. Los datos salen de Bytebase",
+            "details": "Descargar resultados como archivo. Los datos salen de Bytebase.",
             "title": "Exportar resultados de consulta"
           },
           "manage": {
@@ -2762,7 +2762,7 @@
         "mode": {
           "disabled": {
             "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",
-            "caption": "Ninguna sesión conecta",
+            "caption": "Ninguna sesión puede conectarse",
             "description": "Ninguna sesión MCP puede conectarse a este espacio de trabajo.",
             "title": "Desactivado"
           },
@@ -2792,8 +2792,8 @@
           "title": "No se puede leer la política de acceso almacenada"
         },
         "unserved": {
-          "description": "Este espacio de trabajo almacena {{stored}}, que no es un techo que esta versión ofrezca. Se está rechazando cada conexión MCP. Elija un modo y guarde para corregirlo.",
-          "title": "La política de acceso almacenada no es una que esta versión ofrezca"
+          "description": "Este espacio de trabajo almacena {{stored}}, que esta versión no admite. Se rechaza toda conexión MCP. Elija un modo y guarde para corregirlo.",
+          "title": "La política de acceso almacenada no es compatible con esta versión"
         }
       },
       "title": "Integración MCP"
