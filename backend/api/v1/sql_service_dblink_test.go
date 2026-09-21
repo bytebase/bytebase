@@ -13,8 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// Query reports these refusals inside an OK response, so the mark is the only field that
-// separates them from a successful query in the audit log.
 const wantAuditMark = "the audit interceptor stamps a refusal WARNING only when the request is marked"
 
 func TestRemoteColumnRefusal(t *testing.T) {

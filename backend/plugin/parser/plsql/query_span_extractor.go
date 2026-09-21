@@ -543,8 +543,8 @@ func omniDualTable() base.TableSource {
 
 // omniTableLink is the database link a table reference names, as Oracle identifies it. A
 // connection qualifier is part of the name: `t@link@q` reaches the link LINK@Q, which omni
-// splits between ObjectName.DBLink and TableRef.Dblink. omni also fills TableRef.Dblink
-// alone for `t PARTITION (p)@link`, a form Oracle rejects (ORA-03048).
+// splits between ObjectName.DBLink and TableRef.Dblink. TableRef.Dblink alone names no
+// link: omni fills it for a link after a partition clause, which Oracle rejects (ORA-03048).
 func omniTableLink(ref *oracleast.TableRef) string {
 	if ref.Name == nil {
 		return ""

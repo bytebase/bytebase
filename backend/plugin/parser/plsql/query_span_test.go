@@ -358,8 +358,17 @@ func TestGetAccessTables(t *testing.T) {
 				},
 			},
 		},
-		// A connection qualifier is part of the link's name: Oracle resolves `t@remote@q` to
-		// the link REMOTE@Q, a different object from REMOTE.
+		// Oracle rejects a link after a partition clause (ORA-03048), so it names none.
+		{
+			statement: "SELECT * FROM t1 PARTITION (p1)@remote;",
+			expected: []base.SchemaResource{
+				{
+					Database: "DB",
+					Table:    "T1",
+				},
+			},
+		},
+		// `t@remote@q` names the link REMOTE@Q.
 		{
 			statement: "SELECT * FROM s.t@remote@q;",
 			linked: []base.SchemaResource{

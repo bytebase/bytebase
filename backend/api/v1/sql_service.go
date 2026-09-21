@@ -725,15 +725,8 @@ func privateLinkRefusal(ctx context.Context, linked []parserbase.ColumnResource,
 // refused. Runs after remoteColumnRefusal, so every linked column is on the connected
 // instance. SUP-222 / BYT-9698, BYT-10226.
 func (s *SQLService) refuseLinkedTargetsOutsideProject(ctx context.Context, columns parserbase.SourceColumnSet, instance *store.InstanceMessage, database *store.DatabaseMessage, perm permission.Permission) (*queryError, error) {
-	var linked []parserbase.ColumnResource
-	for column := range columns {
-		if column.Instance != "" {
-			linked = append(linked, column)
-		}
-	}
-	slices.SortFunc(linked, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
 	targets := map[string]*store.DatabaseMessage{}
-	for _, column := range linked {
+	for _, column := range linkedColumns([]*parserbase.QuerySpan{{SourceColumns: columns}}) {
 		target, seen := targets[column.Database]
 		if !seen {
 			databaseName := column.Database
@@ -1724,9 +1717,9 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			continue
 		}
 
-		// Oracle database links. A statement that selects through a link is a Select span, never
-		// SelectInfoSchema (plsql getOmniQuerySpan), so it reaches this block. A DML or DDL span
-		// carries no source columns, so a link it reads through is not checked here (BYT-10238).
+		// Oracle database links. Only a Select span carries linked columns, and a link never
+		// makes it SelectInfoSchema (plsql getOmniQuerySpan). A DML, DDL or EXPLAIN PLAN span has
+		// no source columns, so a link it reads through is not checked here.
 		// Before the JIT-grant skip below: an unresolved link can carry a local
 		// database name (ALLOWED_S.T@REMOTE2), which a grant on that database would otherwise
 		// authorize. A SQL Server linked-server reference keeps its pre-existing path (BYT-10235).
