@@ -48,17 +48,11 @@ attempt stays flat.
 - The umbrella sits inside the retried execution scope, not at the top of the run.
   A run can hold several such scopes — a versioned release executes each file
   separately — so each gets its own umbrella in place.
-- The summary bar gains an "N retries" chip whenever the run retried at all. It
-  counts `RETRY_INFO` entries across the whole run, which is the one retry number
-  that stays unambiguous when several scopes each retried a different number of
-  times. Per-scope counts live on that scope's umbrella.
-- The chip is always that aggregate, including while a scope is mid-retry.
-  Progress belongs to the scope doing the retrying, not to a run-level summary, so
-  that scope's umbrella is marked retrying and the marker's i of N sits on the
-  attempt rows. A release where an earlier file retried twice and the current file
-  is on its first retry therefore reads "3 retries", with the current file's
-  umbrella marked retrying — one number with one meaning in every state, rather
-  than a chip that changes what it measures when a run happens to be live.
+- No run-level retry chip. The umbrella row is always visible and already names
+  the count for the scope it belongs to, so a second number in a second unit —
+  retries against attempts — would restate it and then need its own rule for
+  several scopes retrying different amounts. A scope that is mid-retry says so on
+  its own umbrella; the marker's i of N sits on the attempt rows.
 
 ## States
 
@@ -87,8 +81,8 @@ holding only the retried execution.
 **Terminal failure.** Retries are exhausted, so the final attempt's failure is
 state — red and auto-expanded — while the superseded attempts stay folded.
 
-**A retry in progress.** The run has retried twice, so the chip still reads two
-retries, while the scope that is retrying carries that on its own umbrella.
+**A retry in progress.** Two attempts are already folded away, and the scope that
+is still retrying says so on its own umbrella.
 
 ## What the log stream contains
 
@@ -166,7 +160,7 @@ all-green log.
 |---|---|---|
 | An error entry in the final segment | grey, collapsed | that section red, auto-expanded |
 | No error entry in the final segment | grey, collapsed | green, collapsed — reads like a clean run |
-| Scope still streaming | grey, collapsed, marked retrying; the chip stays the run's retry count | running section spins |
+| Scope still streaming | grey, collapsed, marked retrying | running section spins |
 | A one-time section failed (backup, sync) | unaffected | that section red, auto-expanded, at top level |
 | No `RETRY_INFO` anywhere | absent | unchanged rendering |
 
@@ -231,35 +225,31 @@ an older run shows its own umbrella derived from its own entries.
 Expansion state already survives one. `TaskRunLogViewer` passes
 `datasetKey: taskRunName` into `useTaskRunLogSections`, and `resolvedDatasetKey`
 returns that before it considers the entries, so the reset fires when the viewer
-shows a different task run and not when entries are appended. The entry-derived
-fallback in that hook is dead code for this consumer. Nothing about the reset
-needs changing.
+shows a different task run and not when entries are appended.
 
-What does not survive is the **identity of a section**. Ids are positional —
-`section-${index}` — while expansion is a set of those ids. Inserting an attempt
-boundary regroups the list, so a section's index changes while the set still holds
-the old one. The expansion then lands on whichever section now occupies that
-index: the row the reader opened closes, and an unrelated row opens in its place.
+Section ids are positional — `section-${index}` — while expansion is a set of
+those ids, so the regrouping a marker causes shifts indices out from under that
+set. What the reader then sees is not their section staying open but an unrelated
+one opening in its place.
 
-That is worse than it sounds, because the regrouping happens at exactly the moment
-a reader has a reason to be reading. The first `RETRY_INFO` folds every earlier
-section into the umbrella and renumbers everything after it, in one poll, while
-the run is still streaming.
+Only that is worth preventing. At the instant a marker lands, the section the
+reader had open is folding into a collapsed umbrella, so whether its expansion
+survived is invisible either way — preserving it buys nothing anyone can see,
+while the row that opens on its own is plainly wrong.
 
-So this design depends on one fix in the grouping layer: derive a section's id
-from what it is — its scope, its attempt ordinal, the entry type, and its
-occurrence within that attempt — rather than from its position in the whole list.
+So the rule is to clear expansion when the set of scopes changes: pass
+`` `${taskRunName}:${markerCount}` `` as the `datasetKey` the viewer already
+supplies. The reset then fires on a marker — rare and meaningful — and never on an
+ordinary append. Nothing is expanded at the transition, so nothing opens by
+itself, and positional ids can stay as they are.
 
-A timestamp cannot stand in for that last part. `ListTaskRunLogs` orders by
-`created_at, ctid` precisely because entries tie on `created_at`, and an attempt
-routinely holds two sections of one type: a Transaction sits either side of a
-Command Execute. Scope, attempt, and type alone would collide there, giving two
-rows one id — duplicate React keys, and one expansion controlling both.
-
-The occurrence ordinal is safe where a global index is not, because it is scoped
-to a single attempt: a superseded attempt never changes again, and entries
-appended to the final attempt land after the sections already numbered. Ids then
-survive regrouping, and expansion follows the section it belongs to.
+The cost is bounded. Retries usually arrive faster than the five-second poll, so
+several land in one step and the intermediate state is never rendered; a reader
+has to be watching a live run whose `lock_timeout` is long enough to space markers
+beyond a poll, with the umbrella already open, to notice it collapse — one click
+to reopen, content unchanged. The viewer already resets harder than this on its
+own: its key carries the run status, so reaching a terminal state remounts it and
+clears everything regardless.
 
 ## Alternatives rejected
 
@@ -280,7 +270,7 @@ rule above.
 
 ## Implementation outline
 
-Implementation follows in a separate PR, after #21417 lands.
+Implementation follows in a separate PR.
 
 - `model.ts`: classify each entry as attempt material or one-time per the
   inventory above, cut scopes and attempts from that classification, and add an
@@ -288,24 +278,24 @@ Implementation follows in a separate PR, after #21417 lands.
   contains, with the entries themselves untouched.
 - `useTaskRunLogSections.ts`: a third grouping layer alongside the replica and
   release-file layers, and auto-expand restricted to error sections outside the
-  superseded attempts. Also content-derived section ids in place of positional
-  ones, without which regrouping at the first marker moves a reader's expansion
-  onto a different section.
+  superseded attempts. Also the marker count folded into the `datasetKey` the
+  viewer passes, so expansion clears when a marker regroups the list and no
+  section opens on its own.
 - `TaskRunLogViewer.tsx` and `SectionHeader.tsx`: the umbrella and nested-attempt
   rows, plus locale keys for the labels.
 - Tests mirror the truth table and the cutting cases: no marker, one marker,
   several markers, a marker inside a release-file group, several release-file
   groups retrying different numbers of times, replica-grouped entries, an empty
   final segment, and a prior-backup section that must stay outside attempt 1.
-  Transition coverage asserts that a section keeps its id across the regrouping
-  the first marker causes, so an expanded section stays the expanded one, and that
-  the marker folds the earlier sections without disturbing the streaming segment.
+  Transition coverage asserts that no section renders expanded after a marker
+  regroups the list, and that the marker folds the earlier sections without
+  disturbing the streaming segment.
 
 ### Building on #21417
 
-That PR adds `Collapsible` / `CollapsibleTrigger` / `CollapsiblePanel` in
-`frontend/src/components/ui/collapsible.tsx`, wrapping Base UI, and uses them for
-the MCP capability ladder. The attempt rows should be built on the same primitive
+That PR, now merged, added `Collapsible` / `CollapsibleTrigger` /
+`CollapsiblePanel` in `frontend/src/components/ui/collapsible.tsx`, wrapping Base
+UI, and uses them for the MCP capability ladder. The attempt rows should be built on the same primitive
 and follow the same conventions it establishes:
 
 - Base UI owns `aria-expanded` and `aria-controls`; the consumer supplies the
