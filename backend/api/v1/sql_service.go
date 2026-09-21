@@ -1719,7 +1719,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 
 		// Oracle database links. Only a Select span carries linked columns, and a link never
 		// makes it SelectInfoSchema (plsql getOmniQuerySpan). A DML, DDL or EXPLAIN PLAN span has
-		// no source columns, so a link it reads through is not checked here.
+		// no source columns, so a link it reads through is not checked here (BOT-133).
 		// Before the JIT-grant skip below: an unresolved link can carry a local
 		// database name (ALLOWED_S.T@REMOTE2), which a grant on that database would otherwise
 		// authorize. A SQL Server linked-server reference keeps its pre-existing path (BYT-10235).
