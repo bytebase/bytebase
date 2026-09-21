@@ -94,7 +94,7 @@ export function StatementThreadsLayer({
     placementsForSheet(s, spec.id, sheetSha256)
   );
   const actions = useThreadActions(issue.name);
-  const canCreate = !issue.draft && canReplyToThread(project);
+  const canCreate = canReplyToThread(project, issue);
 
   const threads = useMemo(() => groupThreads(comments), [comments]);
   const editorThreads = useMemo(
@@ -643,7 +643,7 @@ export function StatementThreadsLayer({
               expandedThreadRef={expandedThreadRef}
               flashRoot={flashRoot}
               onFlashEnd={() => setFlashRoot(undefined)}
-              issueName={issue.name}
+              issue={issue}
               onCollapse={(rootName) =>
                 openThreads(
                   openLine,

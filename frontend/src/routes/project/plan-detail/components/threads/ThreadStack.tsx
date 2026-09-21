@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useUserByIdentifier } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
-import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
+import type { Issue, IssueComment } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { CommentThreadCard } from "./CommentThreadCard";
 import {
@@ -54,7 +54,7 @@ export function ThreadStack({
   expandedThreadRef,
   flashRoot,
   onFlashEnd,
-  issueName,
+  issue,
   onCollapse,
   onExpand,
   replyDrafts,
@@ -67,7 +67,7 @@ export function ThreadStack({
   // The thread the walker just landed on; its card flashes once.
   flashRoot?: string;
   onFlashEnd?: () => void;
-  issueName: string;
+  issue: Issue;
   onCollapse: (rootName: string) => void;
   onExpand: (rootName: string) => void;
   replyDrafts: Readonly<Record<string, string>>;
@@ -139,7 +139,7 @@ export function ThreadStack({
             <CommentThreadCard
               className="shadow-sm"
               collapsible={false}
-              issueName={issueName}
+              issue={issue}
               label={rangeLabel(entry)}
               onClose={() => onCollapse(entry.thread.root.name)}
               onThreadStateChanged={(resolved) =>

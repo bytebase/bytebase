@@ -28,6 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCurrentUser, useUserByIdentifier } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
+import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { ThreadComment } from "./ThreadComment";
 import type { CommentThread } from "./threadModel";
@@ -50,7 +51,7 @@ export function CommentThreadCard({
   className,
   collapsible = true,
   context,
-  issueName,
+  issue,
   label,
   onClose,
   onThreadStateChanged,
@@ -64,7 +65,7 @@ export function CommentThreadCard({
   collapsible?: boolean;
   // Full-width statement context above the root author and discussion.
   context?: ReactNode;
-  issueName: string;
+  issue: Issue;
   // Extra header text after the timestamp (the anchored line range).
   label?: ReactNode;
   // Editor placement: closes the expanded thread back to its marker.
@@ -78,7 +79,7 @@ export function CommentThreadCard({
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const actions = useThreadActions(issueName);
+  const actions = useThreadActions(issue.name);
   const [collapsed, setCollapsed] = useState(collapsible && thread.resolved);
   const [showAllReplies, setShowAllReplies] = useState(
     () => thread.replies.length <= FOLD_REPLIES_ABOVE
@@ -128,7 +129,7 @@ export function CommentThreadCard({
     setCollapsed(thread.resolved);
   }, [collapsible, thread.resolved]);
 
-  const allowReply = canReplyToThread(project);
+  const allowReply = canReplyToThread(project, issue);
   const allowSettle = canSettleThread(project);
   // The reply composer's checkbox names the action for the thread's current
   // state and, when checked, performs it after the reply is posted:
