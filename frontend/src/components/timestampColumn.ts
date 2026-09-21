@@ -4,10 +4,12 @@
 /**
  * The width a table column opens at to hold a form on one line: the widest
  * rendering across every time zone and shipped locale at a table's 14px, plus
- * a cell's 32px of padding. en-US in Chatham, GMT+12:45, is the widest in all
- * three forms. Measured with the macOS system font; Segoe UI is not.
+ * a cell's 32px of padding. For the absolute forms that is en-US in Chatham,
+ * GMT+12:45; for the work-queue form, es-ES in the future tense. Measured
+ * with the macOS system font; Segoe UI is not.
  */
 export const TIMESTAMP_COLUMN_WIDTH = {
+  queue: 184,
   compact: 192,
   operational: 270,
   datetime: 292,

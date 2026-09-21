@@ -10,9 +10,10 @@ export interface ColumnWithWidth {
   defaultWidth: number;
   minWidth?: number;
   /**
-   * False for a column whose content has a width of its own, such as a date:
-   * it opens at `defaultWidth` however wide the table is, and `minWidth` only
-   * floors a drag. Otherwise `minWidth` floors both.
+   * False for a column whose content has a width of its own, such as a date.
+   * `distributeColumnWidths` then opens it at `defaultWidth` however wide the
+   * table is, and `minWidth` only floors a drag; otherwise `minWidth` floors
+   * both. Tables that leave spare width to the browser do not read it.
    */
   grow?: boolean;
 }
@@ -21,9 +22,9 @@ export interface ColumnWithWidth {
  * Distributes `containerWidth` across columns so the table fills its container
  * on first render instead of overflowing at the sum of `defaultWidth`s.
  * Columns that are not resizable, or do not grow, keep their `defaultWidth`;
- * the rest share the remaining space proportionally to their `defaultWidth`
- * (each clamped to `minWidth`). Falls back to the raw default widths when the
- * container is too narrow to honor the minimums (the table then scrolls).
+ * the rest share the remaining space proportionally to their `defaultWidth`,
+ * each clamped to its `minWidth`. When the container is too narrow for those
+ * minimums the widths add up past it, and the table scrolls.
  */
 export function distributeColumnWidths<
   T extends ColumnWithWidth & { resizable?: boolean },

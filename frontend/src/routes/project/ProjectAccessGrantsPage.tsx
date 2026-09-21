@@ -38,6 +38,7 @@ import {
 import { BlockTooltip, Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import {
+  type ColumnWithWidth,
   distributeColumnWidths,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
@@ -73,21 +74,17 @@ type SortDir = "asc" | "desc";
 
 // Column descriptor for the access-grants table. Position in the array is
 // the `<colgroup>` order — keep this in sync with the cell order inside
-// `<AccessGrantRow>` (`useColumnWidths` indexes positionally).
+// `<AccessGrantRow>` (`useColumnWidths` indexes positionally). The width
+// fields are `ColumnWithWidth`'s.
 //
-// - `title`        — header label; omit for a blank header (actions col).
-// - `defaultWidth` — the width it opens at, before fitting to the container.
-// - `minWidth`     — drag floor, and the fitting floor unless `grow` is false.
-// - `grow`         — false to open at `defaultWidth` however wide the table.
-// - `sortKey`      — present iff the column participates in server sort.
-// - `resizable`    — defaults true; set false for purely action columns
-//                    where a too-narrow width clips the button row.
-type GrantColumn = {
+// - `title`     — header label; omit for a blank header (actions col).
+// - `sortKey`   — present iff the column participates in server sort.
+// - `resizable` — defaults true; set false for purely action columns where a
+//                 too-narrow width clips the button row.
+type GrantColumn = ColumnWithWidth & {
   key: string;
   title?: string;
-  defaultWidth: number;
   minWidth: number;
-  grow?: boolean;
   sortKey?: SortKey;
   resizable?: boolean;
 };
@@ -110,8 +107,9 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
   {
     key: "created",
     title: t("common.created-at"),
-    defaultWidth: 200,
-    minWidth: 132,
+    defaultWidth: TIMESTAMP_COLUMN_WIDTH.queue,
+    minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
+    grow: false,
     sortKey: "create_time",
   },
   {
@@ -729,7 +727,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 // AccessGrantRow
 // ---------------------------------------------------------------------------
 
-function AccessGrantRow({
+export function AccessGrantRow({
   grant,
   issue,
   canActivate,

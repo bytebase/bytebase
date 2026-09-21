@@ -134,18 +134,19 @@ history: the embedded lists, where width is contended and D6 keeps full precisio
 Objective divider: **exportable-as-evidence or a detail view → full; scannable embedded list →
 compact.**
 
-**Column width follows the form.** Moving a surface off relative wording lengthens its value — "3
-months ago" is about 125px in a table cell, the compact form 192, the operational 270, the full
-date-time 292 — so a column sized for the old wording breaks the new one across two lines or cuts
-it off. Each form has a width (`TIMESTAMP_COLUMN_WIDTH`) measured over every time zone and shipped
-locale, and a column holding it never opens narrower, so nothing is cut unless the reader chooses
-it. How it is kept there depends on the table. Where the browser spreads spare width across every
-sized column, the open-ended column — a title, a statement — is left unsized to take it, so the
-date neither wraps nor swells; the audit log does not do this yet, and its date grows with the
-rest. Where a table fits its columns to the container itself, the date column does not grow, so
-its minimum floors a drag without also flooring the width it opens at. That minimum is one value
-for every form, room for the date; narrower than its form a cell ellipsizes, and one drag gives
-the rest back.
+**Column width follows the form.** Every form has a width it needs on one line
+(`TIMESTAMP_COLUMN_WIDTH`), measured over every time zone and shipped locale: 184 for the
+work-queue form, whose widest is Spanish in the future tense, and 192, 270 and 292 for the
+compact, operational and full date-time forms. Moving a surface off relative wording lengthens its
+value, so a column sized for the old wording breaks the new one across two lines or cuts it off. A
+column holding a form never opens narrower than that width, so nothing is cut unless the reader
+chooses it. How it is kept there depends on the table. Where the browser spreads spare width
+across every sized column, the open-ended title column is left unsized to take it, so the date
+neither wraps nor swells; the audit log does not do this yet, and its date grows with the rest.
+Where a table fits its columns to the container itself, a date column does not grow, so its
+minimum floors a drag without also flooring the width it opens at. That minimum is one value for
+every form, room for the date; narrower than its form a cell ellipsizes, and one drag gives the
+rest back.
 
 ## Surface classification
 
