@@ -24,13 +24,13 @@ const maxBackupSize = common.MaxSheetCheckSize
 // call per (spec, engine), the caller resolving every input that needs the
 // store and the engine deriving the findings.
 type RuleExecutor struct {
-	store     *store.Store
-	reviewers map[storepb.Engine]review.ReviewFunc
+	store       *store.Store
+	reviewFuncs map[storepb.Engine]review.ReviewFunc
 }
 
 // NewRuleExecutor creates the standard-rule review executor.
 func NewRuleExecutor(s *store.Store) *RuleExecutor {
-	return &RuleExecutor{store: s, reviewers: reviewers}
+	return &RuleExecutor{store: s, reviewFuncs: reviewFuncs}
 }
 
 // RunOnce implements Executor. Collect-all, no fail-fast: every unit is
@@ -97,7 +97,7 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		reviewer, ok := e.reviewers[unit.Engine]
+		reviewFunc, ok := e.reviewFuncs[unit.Engine]
 		if !ok {
 			unitErrs = append(unitErrs, unit.failures(errors.Errorf("engine %s has no standard rule reviewer", unit.Engine))...)
 			continue
@@ -120,7 +120,7 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 		for _, target := range unit.Targets {
 			inputs = append(inputs, target.Input)
 		}
-		result, err := reviewer(ctx, sql, unit.Options, inputs)
+		result, err := reviewFunc(ctx, sql, unit.Options, inputs)
 		if err != nil {
 			unitErrs = append(unitErrs, unit.failures(err)...)
 			continue
