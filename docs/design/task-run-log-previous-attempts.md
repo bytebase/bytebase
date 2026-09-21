@@ -18,7 +18,7 @@ CANCELED task creates a new `task_run` row, and `task_run_log` is keyed by
 
 Only the final attempt's failure is state. An attempt followed by a `RETRY_INFO`
 marker is superseded — its failure is the reason the retry ran — so it renders as
-history: grey, collapsed, never auto-expanded, one click from the full record.
+history: gray, collapsed, never auto-expanded, one click from the full record.
 
 ## Decision
 
@@ -32,7 +32,7 @@ attempt stays flat.
 - The umbrella's right-side note is the **count** ("2 attempts"). One failure
   reason cannot summarize several attempts, and the count is the first fact a
   reader wants; per-attempt reasons sit on the nested rows.
-- Grey, not amber, and no fill color. The row is set apart only by a rotate icon
+- Gray, not amber, and no fill color. The row is set apart only by a rotate icon
   and muted text. Amber is still a warning hue, and history should not catch the
   eye. Red appears only on the error entries inside the expanded record, which
   stays faithful — nothing is rewritten.
@@ -60,7 +60,7 @@ attempt stays flat.
 rendering is exactly what it is today. Most runs look like this and are untouched.
 
 **One previous attempt, collapsed.** The default view after a single retry: one
-grey row noting "1 attempt", then the final attempt's sections flat and green.
+gray row noting "1 attempt", then the final attempt's sections flat and green.
 
 **One previous attempt, expanded.** With a single previous attempt the umbrella
 expands straight to that attempt's sections — no middle level for a list of one.
@@ -158,9 +158,9 @@ all-green log.
 
 | Condition | Previous attempts row | Sections outside it |
 |---|---|---|
-| An error entry in the final segment | grey, collapsed | that section red, auto-expanded |
-| No error entry in the final segment | grey, collapsed | green, collapsed — reads like a clean run |
-| Scope still streaming | grey, collapsed, marked retrying | running section spins |
+| An error entry in the final segment | gray, collapsed | that section red, auto-expanded |
+| No error entry in the final segment | gray, collapsed | green, collapsed — reads like a clean run |
+| Scope still streaming | gray, collapsed, marked retrying | running section spins |
 | A one-time section failed (backup, sync) | unaffected | that section red, auto-expanded, at top level |
 | No `RETRY_INFO` anywhere | absent | unchanged rendering |
 
@@ -214,7 +214,7 @@ work.
 Two existing behaviors compose with this without special handling, and are worth
 stating so nobody adds handling they do not need. When a task run moved between
 replicas, every replica group but the last has its still-running sections forced
-to error, modelling work that was abandoned. A superseded attempt is complete by
+to error, modeling work that was abandoned. A superseded attempt is complete by
 construction — a retry followed it — so it has no running sections to force, and
 only an abandoned final segment turns red, which is what the truth table already
 says. And each run listed in the history sheet renders through the same viewer, so
@@ -253,7 +253,7 @@ clears everything regardless.
 
 ## Alternatives rejected
 
-**Flat attempt rows**, one grey row per attempt at top level: failure
+**Flat attempt rows**, one gray row per attempt at top level: failure
 reasons read without a click, but the default view then varies with the retry
 count, and for lock-timeout retries every attempt carries the same reason, which
 is most of what the extra rows would show. **Attempt lanes**, every attempt
@@ -262,7 +262,7 @@ permanent nesting level on the common success path and its final lane header
 restates the run's own status chip.
 
 **Status softening only**, keeping the flat list and marking superseded sections
-grey: the smallest change, but the interleaved Transaction rows of two attempts
+gray: the smallest change, but the interleaved Transaction rows of two attempts
 stay cryptic and the standalone "Retry" pseudo-section survives.
 
 **Amber for history** was rejected everywhere, including row fills. See the color
