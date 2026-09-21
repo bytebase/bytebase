@@ -1,9 +1,11 @@
 package reviewrun
 
 import (
+	"context"
 	"errors"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/review"
 	"github.com/stretchr/testify/require"
 
@@ -143,6 +145,28 @@ func TestReviewResultComments(t *testing.T) {
 	require.Equal(t, []string{"instances/pg/databases/b"}, line.Payload.ReviewMetadata.Targets, "an out-of-range target index is dropped")
 	require.Equal(t, &storepb.Position{Line: 3}, line.Payload.StatementAnchor.StartPosition)
 	require.Equal(t, &storepb.Position{Line: 3}, line.Payload.StatementAnchor.EndPosition)
+}
+
+// TestBackupDatabaseExistsPostgres reads the PostgreSQL archive schema from
+// the synced metadata; no store lookup is involved, so the executor has none.
+func TestBackupDatabaseExistsPostgres(t *testing.T) {
+	t.Parallel()
+	e := &RuleExecutor{}
+	pg := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_POSTGRES}}
+	withArchive := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}, {Name: "bbdataarchive"}}}
+	withoutArchive := &metadatapb.DatabaseSchemaMetadata{Schemas: []*metadatapb.SchemaMetadata{{Name: "public"}}}
+
+	exists, err := e.backupDatabaseExists(context.Background(), pg, withArchive)
+	require.NoError(t, err)
+	require.True(t, exists)
+	exists, err = e.backupDatabaseExists(context.Background(), pg, withoutArchive)
+	require.NoError(t, err)
+	require.False(t, exists)
+
+	// An engine without prior backup never has a backup location.
+	exists, err = e.backupDatabaseExists(context.Background(), &store.InstanceMessage{Metadata: &storepb.Instance{Engine: storepb.Engine_SNOWFLAKE}}, withArchive)
+	require.NoError(t, err)
+	require.False(t, exists)
 }
 
 func TestSessionUser(t *testing.T) {
