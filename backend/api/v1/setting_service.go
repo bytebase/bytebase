@@ -862,7 +862,7 @@ func (s *SettingService) preflightWorkspaceProfilePaths(ctx context.Context, wor
 				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("external URL is managed via --external-url command-line flag and cannot be changed through the UI"))
 			}
 			if payload.ExternalUrl != "" {
-				externalURL, err := common.NormalizeExternalURL(payload.ExternalUrl)
+				externalURL, err := config.NormalizeExternalURL(payload.ExternalUrl)
 				if err != nil {
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid external url: %v", err))
 				}

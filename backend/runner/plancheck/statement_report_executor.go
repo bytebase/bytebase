@@ -63,7 +63,7 @@ func (e *StatementReportExecutor) RunForTarget(ctx context.Context, target *Chec
 		}, nil
 	}
 
-	instance, database, err := resolveDatabaseTarget(ctx, e.store, target.Target)
+	instance, database, err := ResolveDatabaseTarget(ctx, e.store, target.Target)
 	if err != nil {
 		return nil, err
 	}

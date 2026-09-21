@@ -26,6 +26,47 @@ func TestReviewRuleTypeEnumsMirror(t *testing.T) {
 	}
 }
 
+// TestReviewMetadataPriorityEnumsMirror holds the v1 and store review result
+// priorities to the same numbering for convertToIssueCommentReviewMetadata.
+func TestReviewMetadataPriorityEnumsMirror(t *testing.T) {
+	t.Parallel()
+	require.Equal(t, len(v1pb.IssueComment_ReviewMetadata_Priority_name), len(storepb.IssueCommentPayload_ReviewMetadata_Priority_name))
+	for number, name := range v1pb.IssueComment_ReviewMetadata_Priority_name {
+		require.Equal(t, name, storepb.IssueCommentPayload_ReviewMetadata_Priority_name[number], "value %d", number)
+	}
+}
+
+func TestConvertToIssueCommentReviewResult(t *testing.T) {
+	t.Parallel()
+	got := convertToIssueComment("projects/p/issues/101", &store.IssueCommentMessage{
+		ResourceID: "c1",
+		Payload: &storepb.IssueCommentPayload{
+			Comment: "UPDATE without WHERE",
+			ReviewMetadata: &storepb.IssueCommentPayload_ReviewMetadata{
+				RunType:  storepb.ReviewRun_RULE,
+				RuleType: storepb.ReviewRuleType_REQUIRE_WHERE,
+				Priority: storepb.IssueCommentPayload_ReviewMetadata_P1,
+				Targets:  []string{"instances/i/databases/a", "instances/i/databases/b"},
+			},
+		},
+	})
+	require.Empty(t, got.Creator, "a review result has no creator")
+	require.Equal(t, &v1pb.IssueComment_ReviewMetadata{
+		RunType:  v1pb.ReviewRun_RULE,
+		RuleType: v1pb.ReviewRuleType_REQUIRE_WHERE,
+		Priority: v1pb.IssueComment_ReviewMetadata_P1,
+		Targets:  []string{"instances/i/databases/a", "instances/i/databases/b"},
+	}, got.ReviewMetadata)
+
+	person := convertToIssueComment("projects/p/issues/101", &store.IssueCommentMessage{
+		ResourceID:   "c2",
+		CreatorEmail: "dev@example.com",
+		Payload:      &storepb.IssueCommentPayload{Comment: "looks fine"},
+	})
+	require.Equal(t, "users/dev@example.com", person.Creator)
+	require.Nil(t, person.ReviewMetadata)
+}
+
 func TestReviewRulePolicyConverterRoundTrip(t *testing.T) {
 	t.Parallel()
 	in := &v1pb.ReviewRulePolicy{Rules: []v1pb.ReviewRuleType{

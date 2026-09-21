@@ -15,7 +15,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/utils"
 )
@@ -136,7 +135,7 @@ func RowsToLimitedQueryResult(rows *sql.Rows, valueMaker func(string, *sql.Colum
 			result.Rows = append(result.Rows, row)
 			n := len(result.Rows)
 			if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
-				result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
+				result.Error = FormatMaximumSQLResultSizeMessage(limit)
 				break
 			}
 		}
@@ -241,4 +240,8 @@ func GetColumnIndex(columns []string, name string) (int, bool) {
 		}
 	}
 	return 0, false
+}
+
+func FormatMaximumSQLResultSizeMessage(limit int64) string {
+	return fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", limit/1024/1024)
 }

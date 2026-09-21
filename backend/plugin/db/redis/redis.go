@@ -20,7 +20,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -347,7 +346,7 @@ func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd, limit int64) {
 			result.Rows = append(result.Rows, getResultRow(i+1, v))
 			n := len(result.Rows)
 			if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
-				result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
+				result.Error = util.FormatMaximumSQLResultSizeMessage(limit)
 				return
 			}
 		}

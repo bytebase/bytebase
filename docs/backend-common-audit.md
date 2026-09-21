@@ -9,9 +9,12 @@ conversion to `plugin/parser/base`, and TiDB error-position conversion to a
 private TiDB parser helper. A subsequent migration moves the Connect-specific
 parser-engine conversion into a private v1 helper. This migration moves
 transaction configuration and SQL isolation conversion to `plugin/db/transaction`, and audit recording,
-stdout formatting, and HTTP metadata helpers to `component/audit`. Protobuf
-sanitization remains unchanged pending a separate ownership decision. The
-remaining entries are proposals.
+stdout formatting, and HTTP metadata helpers to `component/audit`.
+The latest migration moves query/export factors and risk classification to
+`component/review`, external-URL normalization to `component/config`, and the SQL
+result-size message to `plugin/db/util`. Protobuf sanitization remains shared in
+`common/proto.go`, with its tests in `common/proto_test.go`. The unused ANTLR
+position helpers are removed. The remaining entries are proposals.
 
 The root package mixes unrelated ownership: resource names, identity, request
 context, audit transport, policy expressions, SQL execution, and generic helpers.
@@ -41,8 +44,8 @@ necessarily existing files or packages.
 | Transaction types and default mode in `common/engine.go` | `plugin/db/transaction` (implemented) | Execution settings and SQL isolation conversion are driver-owned. The directive parser imports this leaf package without depending on the full driver package. |
 | `ConvertToParserEngine` (completed) | Private helper in `api/v1` | Only v1 calls it, and it returns a Connect error. The move preserves the mapping and error behavior. |
 | Audit callback keys, setters, getters, `PermissionDeniedError` | Private helpers in `api/v1` | These coordinate v1 interceptors and handlers; no production callers outside v1 were found. |
-| `GetQueryExportFactors` and its traversal | Private helpers in `component/review` | The only production caller is review evaluation. It should consume the shared IAM expression definitions described below. |
-| `SanitizeUTF8Message` and reflection traversal | Deferred | Oracle metadata sync is the current caller, but the implementation handles arbitrary protobuf messages and can serve other engines. Decide shared ownership separately. |
+| Query/export factors and their traversal (implemented) | Private helpers in `component/review/query_export_factors.go` | The only production caller is review evaluation. It should consume the shared IAM expression definitions described below. |
+| `SanitizeUTF8Message` and reflection traversal (implemented) | `common/proto.go` | Oracle metadata sync is the current caller, but the implementation handles arbitrary protobuf messages and remains shared. |
 | `GetPostgresSocketDir` | `resources/postgres` | Callers are embedded PostgreSQL setup, server startup, and the self-hosted sample manager. |
 | `ReleaseMode` | `component/config` | `Profile.Mode` is the central configuration field; the package currently imports common only for this type. |
 | Build-tagged `IsDev` | Local build-tagged files in `plugin/db/cosmosdb` | Cosmos DB is its only production consumer. Keep build-time mode distinct from runtime `Profile.Mode`. |
@@ -56,7 +59,7 @@ necessarily existing files or packages.
 | `AuthContext`, `DelegatedGrant`, authorization resource types | `api/auth` | They describe transport authentication and authorization. These can live with the existing auth implementation, unlike the cross-component workspace context. |
 | Workspace/user context keys and workspace accessor | A leaf `common/requestcontext` package | Review and parser-context components also consume request identity. Keep it independent of `api/auth`, store, and Connect. Use typed accessors and private keys as a separate interface cleanup. |
 | `audit.go` | `component/audit` (implemented) | Shared by v1, MCP, and OAuth2. Preserves the narrow writer interface, detached bounded write, denial severity, stdout behavior, and caller-IP semantics. HTTP metadata helpers remain with the audit module. |
-| Approval CEL definitions/validation and `risk.go` | `component/review` | This is review policy. Keep validation and runtime evaluation on the same definitions; map validation errors to Connect at the v1 caller. |
+| Approval CEL definitions/validation; risk classification already moved | `component/review` | This is review policy. Keep validation and runtime evaluation on the same definitions; map validation errors to Connect at the v1 caller. |
 | IAM CEL definitions, member validation, `EvalBindingCondition` | A leaf `component/iam/condition` package | Store and utils call the evaluator. Moving it into the parent IAM package creates a cycle because IAM imports store and utils. Preserve partial-evaluation behavior. |
 | Masking CEL definitions/validation | Initially private files in `api/v1` | All current external consumers are v1. The existing `component/masker` implements value masking, which is a different responsibility from policy-expression evaluation. |
 | Database-group CEL definitions/validation | A leaf `component/databasegroup` package | Shared by v1 and the group evaluation in `utils`; move that evaluation into this owner too. Keep the expression core independent of store. |
@@ -77,12 +80,13 @@ not imply shared ownership. Split their tests along the same lines.
 | --- | --- |
 | `RoundRows`, `AddRows` | `plugin/parser/base`, alongside row-estimate handling; retain saturation tests. |
 | `RandomString` | The shared identity leaf, alongside its credential consumers; retain cryptographic randomness. |
-| `NormalizeExternalURL` | `component/config`, shared by startup and API configuration validation. |
+| `NormalizeExternalURL` (implemented) | `component/config/url.go`, shared by startup, API configuration validation, and OAuth resource validation. |
 | `TruncateString`, `SanitizeUTF8String` | A focused `common/text` package; preserve rune-count and invalid-byte behavior. |
 | `ProtojsonUnmarshaler` | `common/protoutil`; it is used beyond store. Preserve `DiscardUnknown` for persisted protobuf JSON compatibility. |
 | `Uniq` | A focused collection helper if retained; preserve order. `slices.Compact` is not an equivalent replacement. |
 | `IsNil` | Inspect its v1 and T-SQL callers for typed nil checks before retaining a shared reflection helper. |
-| `MaximumCommands`, default SQL result size and result-size message | `plugin/db`, which owns the execution interface and is already consumed by the relevant drivers. |
+| `MaximumCommands`, default SQL result size | `plugin/db`, which owns the execution interface and is already consumed by the relevant drivers. |
+| Result-size message (implemented) | `plugin/db/util`, shared by database drivers. |
 | `MaximumAdvicePerStatus`, `MaximumLintExplainSize` | `plugin/advisor`, alongside review and EXPLAIN-budget enforcement. |
 | `MaxSheetSize`, `MaxSheetCheckSize` | A leaf `component/sheet/limits` package; the current sheet component and driver dependencies need to remain separate. Revisit whether display, parsing, and prior-backup limits truly share one policy in a separate behavior change. |
 
@@ -95,8 +99,8 @@ test infrastructure, not a production foundation.
 
 ## Delete before relocating
 
+The unused ANTLR position helpers and their tests have been removed.
 Repository-wide Go searches found no production callers for
-`ConvertANTLRPositionToPosition`, `ConvertANTLRTokenToExclusiveEndPosition`,
 `TrimSuffixAndGetInstanceDatabaseID`, `GetProjectIDPlanIDPlanCheckRunID`,
 `FormatRevision`, `FormatProjectRevision`, or `FormatSpec`.
 Some have tests only. The default test/prod environment constants also have no

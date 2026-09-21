@@ -245,7 +245,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService, productMetrics)
 
 	s.reviewRunScheduler = reviewrun.NewScheduler(stores, s.bus, profile, s.licenseService, productMetrics)
-	s.reviewRunScheduler.Register(store.ReviewRunTypeRule, reviewrun.NewRuleExecutor(stores, sheetManager, s.dbFactory))
+	s.reviewRunScheduler.Register(store.ReviewRunTypeRule, reviewrun.NewRuleExecutor(stores))
 	s.reviewRunScheduler.Register(store.ReviewRunTypeGuideline, reviewrun.NewGuidelineExecutor())
 	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 

@@ -52,7 +52,7 @@ func (e *StatementAdviseExecutor) RunForTarget(ctx context.Context, target *Chec
 	enablePriorBackup := target.EnablePriorBackup
 	enableGhost := target.EnableGhost
 
-	instance, database, err := resolveDatabaseTarget(ctx, e.store, target.Target)
+	instance, database, err := ResolveDatabaseTarget(ctx, e.store, target.Target)
 	if err != nil {
 		return nil, err
 	}

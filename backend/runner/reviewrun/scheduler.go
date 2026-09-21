@@ -32,11 +32,11 @@ const reviewRunSchedulerInterval = 5 * time.Second
 // Executor executes one review run for one reviewer type.
 type Executor interface {
 	// RunOnce evaluates every (spec, target) unit of the issue's plan
-	// (collect-all, no fail-fast). A nil error marks the run DONE; a non-nil
-	// error marks it FAILED with the aggregated message. Findings will
-	// surface as issue comments once the comment integration lands; until
-	// then executors only report status.
-	RunOnce(ctx context.Context, projectID string, issueUID int64) error
+	// (collect-all, no fail-fast) and returns the results to post as issue
+	// comments. A nil error marks the run DONE and posts the results; a
+	// non-nil error marks it FAILED with the aggregated message and posts
+	// nothing.
+	RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error)
 }
 
 // NewScheduler creates a new review run scheduler.
@@ -138,7 +138,7 @@ func (s *Scheduler) scheduleReviewRuns(ctx context.Context) (retErr error) {
 func (s *Scheduler) dispatchReviewRun(ctx context.Context, claimed *store.ClaimedReviewRun) {
 	executor, ok := s.executorMap[claimed.Type]
 	if !ok {
-		s.completeReviewRun(ctx, claimed, errors.Errorf("no executor registered for reviewer type %q", claimed.Type))
+		s.completeReviewRun(ctx, claimed, nil, errors.Errorf("no executor registered for reviewer type %q", claimed.Type))
 		return
 	}
 	s.runs.Go(func() { s.runReviewRunOnce(ctx, claimed, executor) })
@@ -155,7 +155,7 @@ func (s *Scheduler) runReviewRunOnce(ctx context.Context, claimed *store.Claimed
 		}
 	}()
 
-	err := runExecutorOnce(ctx, executor, claimed)
+	results, err := runExecutorOnce(ctx, executor, claimed)
 	if err != nil && errors.Is(err, context.Canceled) {
 		// Shutdown: the completion write would fail on the same canceled
 		// context. The replica's heartbeat stops with the process, so the
@@ -166,20 +166,22 @@ func (s *Scheduler) runReviewRunOnce(ctx context.Context, claimed *store.Claimed
 			slog.String("type", claimed.Type))
 		return
 	}
-	s.completeReviewRun(ctx, claimed, err)
+	s.completeReviewRun(ctx, claimed, results, err)
 }
 
-// completeReviewRun writes the terminal status: DONE on a nil error, FAILED
-// with the aggregated message otherwise. Zero rows means the run was
-// superseded or reaped since the claim; the result is discarded.
-func (s *Scheduler) completeReviewRun(ctx context.Context, claimed *store.ClaimedReviewRun, execErr error) {
+// completeReviewRun writes the terminal status: DONE with the results posted
+// on a nil error, FAILED with the aggregated message otherwise. Zero rows
+// means the run was superseded or reaped since the claim; the results are
+// discarded.
+func (s *Scheduler) completeReviewRun(ctx context.Context, claimed *store.ClaimedReviewRun, results []*store.IssueCommentMessage, execErr error) {
 	status := storepb.ReviewRun_DONE
 	payload := &storepb.ReviewRunPayload{}
 	if execErr != nil {
 		status = storepb.ReviewRun_FAILED
 		payload.Error = execErr.Error()
+		results = nil
 	}
-	updated, err := s.store.CompleteReviewRun(ctx, claimed, s.profile.ReplicaID, status, payload)
+	updated, err := s.store.CompleteReviewRun(ctx, claimed, s.profile.ReplicaID, status, payload, results)
 	if err != nil {
 		slog.Error("failed to complete review run",
 			slog.String("project", claimed.ProjectID),
@@ -199,7 +201,7 @@ func (s *Scheduler) completeReviewRun(ctx context.Context, claimed *store.Claime
 
 // runExecutorOnce wraps Executor.RunOnce with panic recovery so a panicking
 // executor fails its run instead of crashing the process.
-func runExecutorOnce(ctx context.Context, executor Executor, claimed *store.ClaimedReviewRun) (err error) {
+func runExecutorOnce(ctx context.Context, executor Executor, claimed *store.ClaimedReviewRun) (results []*store.IssueCommentMessage, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
@@ -207,6 +209,7 @@ func runExecutorOnce(ctx context.Context, executor Executor, claimed *store.Clai
 				panicErr = errors.Errorf("%v", r)
 			}
 			slog.Error("Review run executor PANIC RECOVER", log.BBError(panicErr), log.BBStack("panic-stack"))
+			results = nil
 			err = errors.Errorf("review run executor panic: %v", panicErr)
 		}
 	}()
