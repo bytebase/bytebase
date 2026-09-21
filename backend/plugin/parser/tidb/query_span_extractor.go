@@ -327,7 +327,7 @@ func (q *querySpanExtractor) extractRecursiveCTE(node *tidbast.CommonTableExpres
 
 			for i := previousCteOuterLength; i < len(q.ctes); i++ {
 				cteTableSource := q.ctes[i]
-				if cteTableSource.Name == node.Name.O {
+				if strings.EqualFold(cteTableSource.Name, node.Name.O) {
 					// It means this recursive CTE will be hidden by the inner CTE with the same name.
 					// In other words, this recursive CTE will be not references by itself sub-query.
 					// So, we can build it as non-recursive CTE
@@ -464,8 +464,8 @@ func (q *querySpanExtractor) extractSelect(node *tidbast.SelectStmt) (base.Table
 					result.Columns = append(result.Columns, columns...)
 				} else {
 					for _, tableSource := range fromFieldList {
-						sameDatabase := (field.WildCard.Schema.O == tableSource.GetDatabaseName() || (field.WildCard.Schema.O == "" && tableSource.GetDatabaseName() == q.defaultDatabase))
-						sameTable := field.WildCard.Table.O == tableSource.GetTableName()
+						sameDatabase := (strings.EqualFold(field.WildCard.Schema.O, tableSource.GetDatabaseName()) || (field.WildCard.Schema.O == "" && strings.EqualFold(tableSource.GetDatabaseName(), q.defaultDatabase)))
+						sameTable := strings.EqualFold(field.WildCard.Table.O, tableSource.GetTableName())
 						find := false
 						if sameDatabase && sameTable {
 							result.Columns = append(result.Columns, tableSource.GetQuerySpanResult()...)
@@ -629,13 +629,13 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 
 func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName string) ([]base.QuerySpanResult, bool) {
 	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
-		if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
+		if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
 			return nil, false
 		}
-		if databaseName == "" && tableSource.GetDatabaseName() != "" && tableSource.GetDatabaseName() != q.defaultDatabase {
+		if databaseName == "" && tableSource.GetDatabaseName() != "" && !strings.EqualFold(tableSource.GetDatabaseName(), q.defaultDatabase) {
 			return nil, false
 		}
-		if tableName != "" && tableName != tableSource.GetTableName() {
+		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
 			return nil, false
 		}
 		// If the table name is empty, we should check if there are ambiguous fields,
@@ -657,15 +657,17 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 	//
 	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
 	// This is the reason we loop the slice in reversed order.
+	//
+	// The statement's own FROM is searched first, as in getFieldColumnSource.
 
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		tableSource := q.outerTableSources[i]
+	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
 		}
 	}
 
-	for _, tableSource := range q.tableSourcesFrom {
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		tableSource := q.outerTableSources[i]
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
 		}
@@ -707,15 +709,19 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 	//
 	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
 	// This is the reason we loop the slice in reversed order.
+	//
+	// The statement's own FROM is closer than any enclosing query, so it is
+	// searched first. Otherwise a column the subquery reads is traced to a
+	// same-named column of an outer table.
 
-	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
-		tableSource := q.outerTableSources[i]
+	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
 		}
 	}
 
-	for _, tableSource := range q.tableSourcesFrom {
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		tableSource := q.outerTableSources[i]
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
 		}
@@ -831,7 +837,10 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 	if databaseName == "" {
 		for i := len(q.ctes) - 1; i >= 0; i-- {
 			cte := q.ctes[i]
-			if cte.Name == tableName {
+			// TiDB fixes lower_case_table_names at 2, so `FROM c` reads CTE `C`
+			// even when a base table `c` exists. Matching by case would trace
+			// the CTE's columns to that table and apply its masking policy.
+			if strings.EqualFold(cte.Name, tableName) {
 				return cte, nil
 			}
 		}
