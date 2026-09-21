@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
     (_resource: { table?: string }): string[] => []
   ),
   routerBack: vi.fn(),
+  accountSelectProps: { value: undefined as { accountParents: string[] } | undefined },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -52,16 +53,21 @@ vi.mock("@/components/AccountMultiSelect", () => ({
   AccountMultiSelect: ({
     value,
     onChange,
+    accountParents,
   }: {
     value: string[];
     onChange: (value: string[]) => void;
-  }) => (
-    <button
-      data-testid="account-multi-select"
-      onClick={() => onChange([...value, "users/alice"])}
-      type="button"
-    />
-  ),
+    accountParents: string[];
+  }) => {
+    mocks.accountSelectProps.value = { accountParents };
+    return (
+      <button
+        data-testid="account-multi-select"
+        onClick={() => onChange([...value, "users/alice"])}
+        type="button"
+      />
+    );
+  },
 }));
 
 vi.mock("@/components/DatabaseResourceSelector", () => ({
@@ -175,12 +181,14 @@ vi.mock("@/stores/app", () => ({
         projectsByName: Record<string, unknown>;
         settingsByName: Record<string, unknown>;
         hasFeature: () => boolean;
+        workspaceResourceName: () => string;
       }) => unknown
     ) =>
       selector({
         projectsByName: {},
         settingsByName: {},
         hasFeature: () => true,
+        workspaceResourceName: () => "workspaces/default",
       }),
     {
       getState: () => ({
@@ -307,6 +315,17 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     for (const badge of badges) {
       expect(badge.getAttribute("data-clickable")).toBe("false");
     }
+
+    unmount();
+  });
+
+  test("discovers special accounts in the workspace and project scopes", () => {
+    const { unmount } = render();
+
+    expect(mocks.accountSelectProps.value?.accountParents).toEqual([
+      "workspaces/default",
+      "projects/proj1",
+    ]);
 
     unmount();
   });

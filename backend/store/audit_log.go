@@ -163,13 +163,16 @@ func auditLogEqualsFilter(variable string, rawValue any) (*qb.Query, error) {
 		}
 		return qb.Q().Space("NOT (payload ?? 'mcpDelegation')"), nil
 
-	case "resource", "method", "user", "severity", "mcp_correlation_id":
+	case "resource", "method", "actor", "severity", "mcp_correlation_id":
 		value, ok := rawValue.(string)
 		if !ok {
 			return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
 		}
 		if variable == "mcp_correlation_id" {
 			return qb.Q().Space("payload->'mcpDelegation'->>'correlationId' = ?", value), nil
+		}
+		if variable == "actor" {
+			return qb.Q().Space("payload->>'user' = ?", value), nil
 		}
 		return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
 

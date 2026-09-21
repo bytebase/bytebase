@@ -624,7 +624,7 @@ func TestUpdateUserEmail(t *testing.T) {
 	// Search for audit logs related to the project (audit logs were created when user created issue/comment)
 	auditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent: "projects/" + projectID,
-		Filter: fmt.Sprintf(`user == "%s"`, common.FormatUserEmail(newEmail)),
+		Filter: fmt.Sprintf(`actor == "%s"`, common.FormatUserEmail(newEmail)),
 	}))
 	a.NoError(err)
 	// We should have at least some audit logs from the issue/comment creation
@@ -632,7 +632,7 @@ func TestUpdateUserEmail(t *testing.T) {
 	// Verify no audit logs have the old email
 	oldEmailAuditLogs, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent: "projects/" + projectID,
-		Filter: fmt.Sprintf(`user == "%s"`, common.FormatUserEmail(originalEmail)),
+		Filter: fmt.Sprintf(`actor == "%s"`, common.FormatUserEmail(originalEmail)),
 	}))
 	a.NoError(err)
 	a.Empty(oldEmailAuditLogs.Msg.AuditLogs, "Should not have audit logs with old email")

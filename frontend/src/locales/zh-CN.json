@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "按审计日志操作者搜索",
+          "description": "按邮箱搜索用户。使用 serviceAccounts/ 或 workloadIdentities/ 前缀搜索这些操作者。",
           "title": "操作者"
         },
         "level": {
@@ -153,6 +153,7 @@
       "continue-with-email": "使用邮箱继续",
       "continue-with-idp": "使用 {{idp}} 继续",
       "email-code-tab": "邮箱验证码",
+      "failed": "登录失败",
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {{email}} 登录",
@@ -2880,7 +2881,7 @@
       "select-role_other": "选择角色",
       "service-account": "服务账号",
       "service-accounts": "服务账号",
-      "service-key-copied": "Service Key 已复制，请勿泄漏",
+      "service-key-reset-and-copied": "Service Key 已重置并复制",
       "show-inactive": "显示已停用账户",
       "table": {
         "account": "账户",

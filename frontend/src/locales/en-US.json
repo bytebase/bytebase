@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Search by the audit log actor",
+          "description": "Search users by email. Prefix with serviceAccounts/ or workloadIdentities/ to search those actors.",
           "title": "Actor"
         },
         "level": {
@@ -153,6 +153,7 @@
       "continue-with-email": "Continue with email",
       "continue-with-idp": "Continue with {{idp}}",
       "email-code-tab": "Email Code",
+      "failed": "Sign-in failed",
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
       "invited-email": "You've been invited. Please sign in with {{email}}",
@@ -2880,7 +2881,7 @@
       "select-role_other": "Select roles",
       "service-account": "Service Account",
       "service-accounts": "Service Accounts",
-      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
+      "service-key-reset-and-copied": "Service key reset and copied",
       "show-inactive": "Show inactive accounts",
       "table": {
         "account": "Account",

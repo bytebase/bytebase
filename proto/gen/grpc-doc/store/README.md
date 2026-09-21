@@ -818,7 +818,7 @@ Status represents the approver&#39;s decision state.
 | parent | [string](#string) |  | The project or workspace the audit log belongs to. Formats: - projects/{project} - workspaces/{workspace} |
 | method | [string](#string) |  | Example: /bytebase.v1.SQLService/Query |
 | resource | [string](#string) |  | The resource name. Example: projects/{project} |
-| user | [string](#string) |  | Format: users/{email}. |
+| user | [string](#string) |  | The principal who performed the action. Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}. |
 | severity | [AuditLog.Severity](#bytebase-store-AuditLog-Severity) |  |  |
 | request | [string](#string) |  | Marshalled request. |
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |

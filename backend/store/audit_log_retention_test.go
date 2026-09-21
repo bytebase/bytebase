@@ -78,7 +78,7 @@ func TestAuditLogRetentionFilteringEndToEnd(t *testing.T) {
 		require.Equal(t, fmt.Sprintf("%s/%s%s", testAuditLogParent, common.AuditLogPrefix, "new-log"), log.Name)
 		require.Equal(t, testAuditLogParent, log.Resource)
 		require.Equal(t, "/bytebase.v1.ProjectService/GetProject", log.Method)
-		require.Equal(t, "users/alice@example.com", log.User)
+		require.Equal(t, "users/alice@example.com", log.Actor)
 		require.Equal(t, v1pb.AuditLog_INFO, log.Severity)
 		require.Equal(t, newLogTime.UnixNano(), log.CreateTime.AsTime().UnixNano())
 	})

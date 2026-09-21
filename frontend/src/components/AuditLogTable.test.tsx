@@ -21,7 +21,23 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   pushNotification: vi.fn(),
   usePlanFeature: vi.fn(() => true),
-  listUsers: vi.fn(async () => ({ users: [] })),
+  listUsers: vi.fn(
+    async (): Promise<{
+      users: Array<{ name: string; email: string; title: string }>;
+    }> => ({ users: [] })
+  ),
+  listServiceAccounts: vi.fn(
+    async (): Promise<{
+      serviceAccounts: Array<{ name: string; email: string; title: string }>;
+    }> => ({ serviceAccounts: [] })
+  ),
+  listWorkloadIdentities: vi.fn(
+    async (): Promise<{
+      workloadIdentities: Array<{ name: string; email: string; title: string }>;
+    }> => ({ workloadIdentities: [] })
+  ),
+  scopeOptions: { value: undefined as unknown },
+  onSearchParamsChange: { value: undefined as unknown },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -43,11 +59,17 @@ vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
       listUsers: mocks.listUsers,
+      listServiceAccounts: mocks.listServiceAccounts,
+      listWorkloadIdentities: mocks.listWorkloadIdentities,
+      projectsByName: { "projects/project-a": {} },
+      hasWorkspacePermission: () => true,
+      hasProjectPermission: () => true,
     }),
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
   usePlanFeature: mocks.usePlanFeature,
+  useWorkspaceResourceName: () => "workspaces/default",
 }));
 
 vi.mock("@/stores/modules/v1/common", () => ({
@@ -59,11 +81,23 @@ vi.mock("@/stores/modules/v1/common", () => ({
   ],
   planNamePrefix: "plans/",
   projectNamePrefix: "projects/",
+  serviceAccountNamePrefix: "serviceAccounts/",
   userNamePrefix: "users/",
+  workloadIdentityNamePrefix: "workloadIdentities/",
 }));
 
 vi.mock("@/components/AdvancedSearch", () => ({
-  AdvancedSearch: () => <div data-testid="advanced-search" />,
+  AdvancedSearch: ({
+    scopeOptions,
+    onParamsChange,
+  }: {
+    scopeOptions: unknown;
+    onParamsChange: unknown;
+  }) => {
+    mocks.scopeOptions.value = scopeOptions;
+    mocks.onSearchParamsChange.value = onParamsChange;
+    return <div data-testid="advanced-search" />;
+  },
 }));
 
 vi.mock("@/components/TimeRangePicker", () => ({
@@ -138,6 +172,187 @@ afterEach(() => {
 });
 
 describe("AuditLogTable", () => {
+  test("searches only the matching special-account kind for a prefixed actor", async () => {
+    mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
+    mocks.listServiceAccounts.mockResolvedValue({
+      serviceAccounts: [
+        {
+          name: "serviceAccounts/deploy@service.bytebase.com",
+          email: "deploy@service.bytebase.com",
+          title: "Deploy",
+        },
+      ],
+    });
+    mocks.listWorkloadIdentities.mockResolvedValue({
+      workloadIdentities: [
+        {
+          name: "workloadIdentities/ci@workload.bytebase.com",
+          email: "ci@workload.bytebase.com",
+          title: "CI",
+        },
+      ],
+    });
+
+    const { render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/project-a" canExport={false} />
+    );
+    await render();
+
+    const actorScope = (
+      mocks.scopeOptions.value as Array<{
+        id: string;
+        onSearch?: (keyword: string) => Promise<Array<{ value: string }>>;
+      }>
+    ).find((scope) => scope.id === "actor");
+    const serviceAccounts = await actorScope?.onSearch?.(
+      "serviceAccounts/deploy"
+    );
+
+    expect(serviceAccounts).toEqual([
+      expect.objectContaining({
+        value: "serviceAccounts/deploy@service.bytebase.com",
+      }),
+    ]);
+    expect(mocks.listUsers).not.toHaveBeenCalled();
+    expect(mocks.listWorkloadIdentities).not.toHaveBeenCalled();
+
+    const workloadIdentities = await actorScope?.onSearch?.(
+      "workloadIdentities/ci"
+    );
+    expect(workloadIdentities).toEqual([
+      expect.objectContaining({
+        value: "workloadIdentities/ci@workload.bytebase.com",
+      }),
+    ]);
+    expect(mocks.listUsers).not.toHaveBeenCalled();
+
+    await act(async () => {
+      (
+        mocks.onSearchParamsChange.value as
+          | ((params: {
+              query: string;
+              scopes: Array<{ id: string; value: string }>;
+            }) => void)
+          | undefined
+      )?.({
+        query: "",
+        scopes: [
+          {
+            id: "actor",
+            value: "serviceAccounts/deploy@service.bytebase.com",
+          },
+        ],
+      });
+      await Promise.resolve();
+    });
+    expect(mocks.searchAuditLogs).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        filter:
+          '(actor == "serviceAccounts/deploy@service.bytebase.com" || actor == "users/deploy@service.bytebase.com")',
+      })
+    );
+
+    unmount();
+  });
+
+  test("falls back to users for an unprefixed actor", async () => {
+    mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
+    mocks.listUsers.mockResolvedValue({
+      users: [
+        {
+          name: "users/alice@example.com",
+          email: "alice@example.com",
+          title: "Alice",
+        },
+      ],
+    });
+
+    const { render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/project-a" canExport={false} />
+    );
+    await render();
+
+    const actorScope = (
+      mocks.scopeOptions.value as Array<{
+        id: string;
+        onSearch?: (keyword: string) => Promise<Array<{ value: string }>>;
+      }>
+    ).find((scope) => scope.id === "actor");
+    const users = await actorScope?.onSearch?.("alice");
+
+    expect(users).toEqual([
+      expect.objectContaining({ value: "users/alice@example.com" }),
+    ]);
+    expect(mocks.listServiceAccounts).not.toHaveBeenCalled();
+    expect(mocks.listWorkloadIdentities).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("renders a special-account actor as its full principal name", async () => {
+    mocks.searchAuditLogs.mockResolvedValue({
+      auditLogs: [
+        create(AuditLogSchema, {
+          name: "auditLogs/1",
+          method: "/bytebase.v1.SQLService/Query",
+          actor: "serviceAccounts/deploy@service.bytebase.com",
+        }),
+      ],
+      nextPageToken: "",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/-" canExport={false} />
+    );
+    await render();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain(
+      "serviceAccounts/deploy@service.bytebase.com"
+    );
+    expect(container.querySelector("a")).toBeNull();
+
+    unmount();
+  });
+
+  test("shows the full actor value on hover", async () => {
+    vi.useFakeTimers();
+    const actor = "serviceAccounts/terraform@example.com";
+    mocks.searchAuditLogs.mockResolvedValue({
+      auditLogs: [
+        create(AuditLogSchema, {
+          name: "auditLogs/1",
+          method: "/bytebase.v1.SQLService/Query",
+          actor,
+        }),
+      ],
+      nextPageToken: "",
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/-" canExport={false} />
+    );
+    await render();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const trigger = [...container.querySelectorAll("span")].find(
+      (element) => element.textContent === actor
+    );
+    expect(trigger).toBeInstanceOf(HTMLSpanElement);
+    await act(async () => {
+      trigger?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(document.getElementById("bb-react-layer-overlay")?.textContent).toContain(actor);
+
+    unmount();
+  });
+
   test("renders status details with PermissionDeniedDetail", async () => {
     const permissionDeniedDetail = create(PermissionDeniedDetailSchema, {
       method: "/bytebase.v1.SQLService/Query",
@@ -153,7 +368,7 @@ describe("AuditLogTable", () => {
       name: "auditLogs/1",
       severity: AuditLog_Severity.ERROR,
       method: "/bytebase.v1.SQLService/Query",
-      user: "users/user@example.com",
+      actor: "users/user@example.com",
       status,
     });
     mocks.searchAuditLogs.mockResolvedValue({
@@ -182,13 +397,13 @@ describe("AuditLogTable", () => {
         create(AuditLogSchema, {
           name: "auditLogs/1",
           method: "/bytebase.v1.SQLService/Query",
-          user: "users/agent@example.com",
+          actor: "users/agent@example.com",
           mcpDelegation: { correlationId: "corr-1" },
         }),
         create(AuditLogSchema, {
           name: "auditLogs/2",
           method: "/bytebase.v1.SQLService/Query",
-          user: "users/human@example.com",
+          actor: "users/human@example.com",
         }),
       ],
       nextPageToken: "",
@@ -221,7 +436,7 @@ describe("AuditLogTable", () => {
         create(AuditLogSchema, {
           name: "auditLogs/1",
           method: "/bytebase.v1.SQLService/Query",
-          user: "users/agent@example.com",
+          actor: "users/agent@example.com",
           mcpDelegation: {},
         }),
       ],
@@ -277,7 +492,7 @@ describe("AuditLogTable", () => {
         create(AuditLogSchema, {
           name: "auditLogs/1",
           method: "/bytebase.v1.SQLService/Query",
-          user: "users/agent@example.com",
+          actor: "users/agent@example.com",
           mcpDelegation: {
             clientId: "bb_oauth_client",
             correlationId: "8b1f0a1e-corr",
@@ -319,7 +534,7 @@ describe("AuditLogTable", () => {
         create(AuditLogSchema, {
           name: "auditLogs/1",
           method: "/bytebase.v1.SQLService/Query",
-          user: "users/agent@example.com",
+          actor: "users/agent@example.com",
           mcpDelegation: {
             correlationId: "8b1f0a1e-corr",
             resource: "https://example.com/mcp",

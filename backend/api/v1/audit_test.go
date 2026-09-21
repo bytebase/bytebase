@@ -70,6 +70,59 @@ func TestFailedLoginWithHandlerWorkspaceCreatesSingleAuditRow(t *testing.T) {
 	require.Equal(t, "member@example.com", rows[0].payload.GetResource())
 }
 
+func TestAuditRowsPreserveAuthenticatedPrincipalType(t *testing.T) {
+	t.Parallel()
+	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
+
+	for _, tc := range []struct {
+		name string
+		user *store.UserMessage
+	}{
+		{
+			name: "end user",
+			user: &store.UserMessage{
+				Email: "alice@example.com",
+				Type:  storepb.PrincipalType_END_USER,
+			},
+		},
+		{
+			name: "service account",
+			user: &store.UserMessage{
+				Email: "deploy@service.bytebase.com",
+				Type:  storepb.PrincipalType_SERVICE_ACCOUNT,
+			},
+		},
+		{
+			name: "workload identity",
+			user: &store.UserMessage{
+				Email: "ci@workload.bytebase.com",
+				Type:  storepb.PrincipalType_WORKLOAD_IDENTITY,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := newAuditTestContext(&common.AuthContext{
+				Audit: true,
+				Resources: []*common.Resource{{
+					Type: common.ResourceTypeWorkspace,
+					ID:   auditTestWorkspace,
+				}},
+			})
+			ctx = context.WithValue(ctx, common.UserContextKey, tc.user)
+
+			rows, err := in.buildAuditRows(ctx, &auditEntry{
+				request: &v1pb.QueryRequest{Name: "instances/instance-a/databases/database-a"},
+				method:  v1connect.SQLServiceQueryProcedure,
+			})
+			require.NoError(t, err)
+			require.Len(t, rows, 1)
+			require.Equal(t, common.FormatPrincipalMember(tc.user.Email, tc.user.Type), rows[0].payload.GetUser())
+		})
+	}
+}
+
 // TestStreamingAuditPersistedBeforeSend pins the streaming audit contract: a
 // client must not observe a successful streaming response before the
 // corresponding audit entry is durably persisted. Regression test for the

@@ -406,7 +406,7 @@ func auditSinkRows(ctx context.Context, t *testing.T, ctl *controller, p auditSi
 	require.NoError(t, err)
 	var rows []*v1pb.AuditLog
 	for _, row := range resp.Msg.AuditLogs {
-		if row.User == user && (row.McpDelegation != nil) == p.mcp && (p.match == nil || p.match(row.Request)) {
+		if row.Actor == user && (row.McpDelegation != nil) == p.mcp && (p.match == nil || p.match(row.Request)) {
 			rows = append(rows, row)
 		}
 	}

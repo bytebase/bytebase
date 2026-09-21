@@ -260,7 +260,7 @@ func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) (
 
 	var user string
 	if u, ok := GetUserFromContext(ctx); ok {
-		user = common.FormatUserEmail(u.Email)
+		user = common.FormatPrincipalMember(u.Email, u.Type)
 	} else {
 		// Try to get user from successful login response.
 		if loginResponse, ok := e.response.(*v1pb.LoginResponse); ok {

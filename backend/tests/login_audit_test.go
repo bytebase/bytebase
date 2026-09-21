@@ -347,7 +347,7 @@ func TestAuditLogFormat(t *testing.T) {
 	a.True(strings.HasPrefix(entry.Name, workspace+"/auditLogs/"),
 		"audit log must be parented under the login workspace")
 	a.NotNil(entry.CreateTime, "CreateTime must be set")
-	a.Equal("users/demo@example.com", entry.User, "User must be users/{email}")
+	a.Equal("users/demo@example.com", entry.Actor, "Actor must be users/{email}")
 	a.Equal("/bytebase.v1.AuthService/Login", entry.Method,
 		"Method is part of the filter API contract and must be the full procedure name")
 	a.Equal(v1pb.AuditLog_INFO, entry.Severity, "successful Login is INFO severity")
@@ -974,7 +974,7 @@ func TestAuditLogFormat(t *testing.T) {
 	a.True(strings.HasPrefix(projEntry.Name, projectResource+"/auditLogs/"),
 		"audit entry must be parented under the target project, not the workspace")
 	a.Equal("/bytebase.v1.ProjectService/SetIamPolicy", projEntry.Method)
-	a.Equal("users/demo@example.com", projEntry.User)
+	a.Equal("users/demo@example.com", projEntry.Actor)
 	a.Equal(v1pb.AuditLog_INFO, projEntry.Severity)
 	a.Equal(projectResource, projEntry.Resource,
 		"SetIamPolicy's Resource is the target project name")
