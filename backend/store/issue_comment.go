@@ -27,12 +27,14 @@ const (
 )
 
 type IssueCommentMessage struct {
-	ProjectID    string
-	ResourceID   string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	IssueUID     int64
-	Payload      *storepb.IssueCommentPayload
+	ProjectID  string
+	ResourceID string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	IssueUID   int64
+	Payload    *storepb.IssueCommentPayload
+	// CreatorEmail is empty on a review result, which a reviewer posts;
+	// Payload.ReviewMetadata names it.
 	CreatorEmail string
 	// ParentID names the thread's root comment on a reply; nil on root
 	// comments and events.
@@ -202,11 +204,11 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			Payload: &storepb.IssueCommentPayload{},
 		}
 		var p []byte
-		var parentID, threadState sql.NullString
+		var creator, parentID, threadState sql.NullString
 		if err := rows.Scan(
 			&ic.ProjectID,
 			&ic.ResourceID,
-			&ic.CreatorEmail,
+			&creator,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
 			&ic.IssueUID,
@@ -216,6 +218,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
+		ic.CreatorEmail = creator.String
 		if parentID.Valid {
 			ic.ParentID = &parentID.String
 		}
