@@ -42,9 +42,14 @@ attempt stays flat.
 - With exactly one previous attempt, expanding the umbrella goes straight to that
   attempt's sections — no middle level for a list of one. The note still reads
   "1 attempt".
-- The `RETRY_INFO` marker stops rendering as a standalone green "Retry" section.
-  Its payload (error, `retryCount`, `maximumRetries`) feeds the umbrella and
-  nested-row labels instead.
+- The `RETRY_INFO` marker stops rendering as a standalone green "Retry" section
+  and becomes a boundary only; its payload is not re-homed. An attempt's reason
+  comes from its own failed entry, which always exists: a retry fires only on a
+  lock timeout, and every statement in the retried call that can time out on a
+  lock is logged with its error — the one unlogged statement, the tenant-mode
+  `SET LOCAL ROLE`, takes no lock that `lock_timeout` governs. `retryCount` is
+  already the attempt's position, and `maximumRetries` is a project setting that
+  says nothing about what happened.
 - The umbrella sits inside the retried execution scope, not at the top of the run.
   A run can hold several such scopes — a versioned release executes each file
   separately — so each gets its own umbrella in place.
@@ -52,7 +57,7 @@ attempt stays flat.
   the count for the scope it belongs to, so a second number in a second unit —
   retries against attempts — would restate it and then need its own rule for
   several scopes retrying different amounts. A scope that is mid-retry says so on
-  its own umbrella; the marker's i of N sits on the attempt rows.
+  its own umbrella.
 
 ## States
 
