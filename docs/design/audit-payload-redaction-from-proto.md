@@ -164,7 +164,7 @@ streaming rows reach redaction only through those two: `auditConnectStreamingCon
 is the only streaming RPC, is audited, and its response carries every row of an admin-mode query, so
 moving the walk up into `WrapUnary` — where the `service_data` and permission-refusal plumbing
 lives — silently drops streaming redaction. One end-to-end assertion on the `Send` path is
-required: streaming persistence is otherwise exercised through a fake `common.AuditLogWriter`,
+required: streaming persistence is otherwise exercised through a fake `audit.LogWriter`,
 which bypasses the real insert.
 
 A **plan** per message type, built from the descriptor on first use and cached by

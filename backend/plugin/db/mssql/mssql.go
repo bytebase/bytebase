@@ -24,11 +24,11 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
@@ -172,12 +172,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, statement, opts)
 	}
 	return d.executeInTransactionMode(ctx, statement, opts)

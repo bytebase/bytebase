@@ -28,6 +28,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -394,8 +395,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	owner, err := d.GetCurrentDatabaseOwner(ctx)
@@ -447,7 +448,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	// Execute based on transaction mode
 	var affectedRows int64
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 	} else {
 		affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
@@ -470,7 +471,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		opts.LogRetryInfo(err, i+1)
 
 		// Do retry.
-		if transactionMode == common.TransactionModeOff {
+		if transactionMode == transaction.ModeOff {
 			affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 		} else {
 			affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
