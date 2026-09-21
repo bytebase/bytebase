@@ -8,7 +8,12 @@ import {
 // jsdom has no font metrics, so these were measured in a browser: every IANA
 // zone, the five shipped locales, and every month and local hour of a year,
 // at 14px in the macOS system font, plus 32px of cell padding.
-const MEASURED_FORM = { compact: 191, operational: 269, datetime: 291 };
+const MEASURED_FORM = {
+  queue: 183,
+  compact: 191,
+  operational: 269,
+  datetime: 291,
+};
 const MEASURED_DATE = 140;
 
 const forms = Object.keys(MEASURED_FORM) as (keyof typeof MEASURED_FORM)[];

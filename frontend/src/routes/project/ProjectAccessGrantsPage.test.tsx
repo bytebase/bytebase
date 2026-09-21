@@ -1,31 +1,94 @@
-import { describe, expect, test, vi } from "vitest";
+import { create } from "@bufbuild/protobuf";
+import { timestampFromMs } from "@bufbuild/protobuf/wkt";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   TIMESTAMP_COLUMN_MIN_WIDTH,
   TIMESTAMP_COLUMN_WIDTH,
 } from "@/components/timestampColumn";
 import { distributeColumnWidths } from "@/hooks/useColumnWidths";
+import { shownTimestampModes } from "@/test-utils/humanizeTs";
+import {
+  AccessGrant_Status,
+  AccessGrantSchema,
+} from "@/types/proto-es/v1/access_grant_service_pb";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
-import { grantColumns } from "./ProjectAccessGrantsPage";
+vi.mock("@/components/HumanizeTs", async () => ({
+  ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
+}));
+
+import { AccessGrantRow, grantColumns } from "./ProjectAccessGrantsPage";
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("grantColumns", () => {
   const columns = grantColumns((key) => key);
-  const expiry = columns.findIndex((column) => column.key === "expiration");
+  const at = (key: string) => columns.findIndex((column) => column.key === key);
 
   test.each([1100, 1300, 1500, 1800])(
-    "opens the expiry whole, zone included, in a %ipx table",
+    "opens both dates whole in a %ipx table",
     (containerWidth) => {
-      expect(distributeColumnWidths(columns, containerWidth)[expiry]).toBe(
-        TIMESTAMP_COLUMN_WIDTH.operational
-      );
+      const widths = distributeColumnWidths(columns, containerWidth);
+      expect(widths[at("created")]).toBe(TIMESTAMP_COLUMN_WIDTH.queue);
+      expect(widths[at("expiration")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
     }
   );
 
-  test("lets a reader narrow the expiry to the date", () => {
-    expect(columns[expiry].minWidth).toBe(TIMESTAMP_COLUMN_MIN_WIDTH);
+  test("lets a reader narrow either date to the date alone", () => {
+    expect(columns[at("created")].minWidth).toBe(TIMESTAMP_COLUMN_MIN_WIDTH);
+    expect(columns[at("expiration")].minWidth).toBe(TIMESTAMP_COLUMN_MIN_WIDTH);
+  });
+});
+
+describe("AccessGrantRow", () => {
+  const roots: ReturnType<typeof createRoot>[] = [];
+  afterEach(() => {
+    for (const root of roots.splice(0)) {
+      act(() => root.unmount());
+    }
+  });
+
+  test("dates a grant in its forms, each ellipsizing when narrowed", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    roots.push(root);
+    const nowMs = Date.now();
+    act(() =>
+      root.render(
+        <table>
+          <tbody>
+            <AccessGrantRow
+              grant={create(AccessGrantSchema, {
+                name: "projects/p1/accessGrants/1",
+                creator: "users/alice@example.com",
+                status: AccessGrant_Status.ACTIVE,
+                createTime: timestampFromMs(nowMs - 60_000),
+                expiration: {
+                  case: "expireTime",
+                  value: timestampFromMs(nowMs + 86_400_000),
+                },
+              })}
+              canActivate={false}
+              canRevoke={false}
+              onActivate={() => {}}
+              onRevoke={() => {}}
+            />
+          </tbody>
+        </table>
+      )
+    );
+
+    expect(shownTimestampModes(container)).toEqual(["queue", "operational"]);
+    for (const date of container.querySelectorAll("[data-testid=humanize-ts]")) {
+      expect(date.className).toContain("truncate");
+    }
   });
 });

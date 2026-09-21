@@ -81,9 +81,11 @@ describe("DatabaseChangelogTable", () => {
     const [, created, rollout] = Array.from(container.querySelectorAll("col"));
     expect(created.style.width).toBe(`${TIMESTAMP_COLUMN_WIDTH.compact}px`);
     expect(rollout.style.width).toBe("");
-    expect(
-      container.querySelectorAll("[class*=cursor-col-resize]")
-    ).toHaveLength(1);
+    const [, createdHeader, rolloutHeader] = Array.from(
+      container.querySelectorAll("th")
+    );
+    expect(createdHeader.querySelector("[class*=cursor-col-resize]")).not.toBeNull();
+    expect(rolloutHeader.querySelector("[class*=cursor-col-resize]")).toBeNull();
     expect(
       container.querySelector("tbody tr td:nth-child(2)")?.className
     ).toContain("truncate");

@@ -385,13 +385,16 @@ describe("distributeColumnWidths", () => {
   });
 
   test("its minimum floors a drag, not the width it opens at", () => {
-    const [date] = distributeColumnWidths(
-      [
-        { key: "date", defaultWidth: 260, minWidth: 140, grow: false },
-        { key: "title", defaultWidth: 400 },
-      ],
-      500
-    );
-    expect(date).toBe(260);
+    const columns = [
+      { key: "date", defaultWidth: 260, minWidth: 140, grow: false },
+      { key: "title", defaultWidth: 400 },
+    ];
+    expect(distributeColumnWidths(columns, 500)[0]).toBe(260);
+    mount(columns);
+    startDrag(0, 400);
+    moveMouse(0);
+    expect(handle.current!.widths[0]).toBe(140);
+    releaseMouse();
+    unmount();
   });
 });
