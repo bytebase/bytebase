@@ -173,6 +173,35 @@ afterEach(() => {
 });
 
 describe("AuditLogTable", () => {
+  test("lets the reader narrow the date column for room elsewhere", async () => {
+    // The default shows the whole value; how much of it to keep is the
+    // reader's trade against four other columns, and one drag undoes it.
+    mocks.searchAuditLogs.mockResolvedValue({
+      auditLogs: [create(AuditLogSchema, { name: "auditLogs/1" })],
+      nextPageToken: "",
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/-" canExport={false} />
+    );
+    await render();
+
+    const handle = container.querySelector("th [class*=cursor-col-resize]");
+    expect(handle).not.toBeNull();
+    const [created] = Array.from(container.querySelectorAll("col"));
+    act(() => {
+      handle?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, clientX: 400 })
+      );
+      document.dispatchEvent(new MouseEvent("mousemove", { clientX: 300 }));
+      document.dispatchEvent(new MouseEvent("mouseup"));
+    });
+    expect(created.style.width).toBe(
+      `${TIMESTAMP_COLUMN.datetime.width - 100}px`
+    );
+
+    unmount();
+  });
+
   test("keeps the full date-time on one line at any width", async () => {
     // The evidence tier's tooltip is the age, which cannot give the value
     // back, so its column never narrows past the form: sized to it, and the

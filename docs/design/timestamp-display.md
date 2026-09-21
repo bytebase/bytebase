@@ -138,12 +138,13 @@ compact.**
 months ago" is about 125px in a table cell, the compact form 190, the operational 260, the full
 date-time 280 — so a column sized for the old wording breaks the new one across two lines or
 truncates it. Each form has a measured width (`TIMESTAMP_COLUMN`, the widest rendering across
-every shipped locale), and a column holding it gets that width. In a fixed-layout table the
-open-ended column — a title, a statement — is the one left unsized: the browser spreads spare
-width across every sized column, so sizing them all lets the timestamp swell on a wide screen. A
-column narrows below its form only where the tooltip restores what truncation hides: compact may,
-operational may not, since its zone has to stay visible, and the full date-time may not, since its
-tooltip is the age.
+every shipped locale), and a column holding it opens at that width, so nothing is cut unless the
+reader chooses it. In a fixed-layout table the open-ended column — a title, a statement — is the
+one left unsized: the browser spreads spare width across every sized column, so sizing them all
+lets the timestamp swell on a wide screen. The minimum is one floor for every form, room for the
+date, and a column narrower than its form ellipsizes rather than wraps. A reader who drags past
+the seconds or the zone has traded them for another column's room, and one drag undoes it; a floor
+at the widest case would take that trade away from everyone to serve a half-hour zone.
 
 ## Surface classification
 
