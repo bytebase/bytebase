@@ -235,16 +235,16 @@ func (r *specRequest) Spec() connect.Spec {
 	return connect.Spec{Procedure: r.procedure}
 }
 
-// auditLogWriterFunc adapts a function to common.AuditLogWriter.
+// auditLogWriterFunc adapts a function to audit.LogWriter.
 type auditLogWriterFunc func(context.Context, string, *storepb.AuditLog) error
 
 func (f auditLogWriterFunc) CreateAuditLog(ctx context.Context, workspace string, payload *storepb.AuditLog) error {
 	return f(ctx, workspace, payload)
 }
 
-// recordingAuditLogWriter stands in for the store's insert. It keeps every row
+// recordingLogWriter stands in for the store's insert. It keeps every row
 // the interceptor tried to store, and fails each insert with err when set.
-type recordingAuditLogWriter struct {
+type recordingLogWriter struct {
 	mu   sync.Mutex
 	rows []auditRow
 	err  error
@@ -253,7 +253,7 @@ type recordingAuditLogWriter struct {
 	onInsert func()
 }
 
-func (w *recordingAuditLogWriter) CreateAuditLog(_ context.Context, workspace string, payload *storepb.AuditLog) error {
+func (w *recordingLogWriter) CreateAuditLog(_ context.Context, workspace string, payload *storepb.AuditLog) error {
 	if w.onInsert != nil {
 		w.onInsert()
 	}
@@ -263,7 +263,7 @@ func (w *recordingAuditLogWriter) CreateAuditLog(_ context.Context, workspace st
 	return w.err
 }
 
-func (w *recordingAuditLogWriter) stored() []auditRow {
+func (w *recordingLogWriter) stored() []auditRow {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return slices.Clone(w.rows)
@@ -273,9 +273,9 @@ func (w *recordingAuditLogWriter) stored() []auditRow {
 // writer that keeps the rows each call stored, so a test asserts on what the
 // interceptor decided rather than on a database. TestStreamingAuditRedactsRows
 // writes through the real store.
-func newRecordingAuditInterceptor() (*AuditInterceptor, *recordingAuditLogWriter) {
+func newRecordingAuditInterceptor() (*AuditInterceptor, *recordingLogWriter) {
 	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
-	writer := &recordingAuditLogWriter{}
+	writer := &recordingLogWriter{}
 	in.auditLogWriter = writer
 	return in, writer
 }

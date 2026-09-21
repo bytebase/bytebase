@@ -17,6 +17,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -52,7 +53,7 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("User-Agent", "TestAgent/1.0")
-		req.Header.Set(common.HeaderRealIP, "10.0.1.50")
+		req.Header.Set(audit.HeaderRealIP, "10.0.1.50")
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		handler := srv.authMiddleware(func(c *echo.Context) error {
@@ -73,7 +74,7 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 
 		require.Len(t, st.auditRows, 1)
 		row := st.auditRows[0]
-		require.Equal(t, common.AuditMethodMCPSessionAuthorize, row.Method)
+		require.Equal(t, audit.AuditMethodMCPSessionAuthorize, row.Method)
 		require.Equal(t, "workspaces/ws-test", row.Parent)
 		require.Equal(t, "workspaces/ws-test", row.Resource)
 		require.Equal(t, "users/test@example.com", row.User)
@@ -235,7 +236,7 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.Equal(t, http.StatusForbidden, connect(t, srv, mcpToken(t, secret, tokenOptions{})))
 		require.Contains(t, buf.String(), `"log_type":"audit"`,
 			"a database failure is exactly when the stream is the surface that still works")
-		require.Contains(t, buf.String(), common.AuditMethodMCPSessionAuthorize)
+		require.Contains(t, buf.String(), audit.AuditMethodMCPSessionAuthorize)
 	})
 
 	t.Run("a failed write does not admit the connection", func(t *testing.T) {

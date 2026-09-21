@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -49,7 +49,7 @@ func TestConsentRefusal(t *testing.T) {
 			require.True(t, verdict.IsPolicy())
 
 			row := consentRefusalRow(attempt, verdict, &storepb.RequestMetadata{CallerIp: "10.0.1.50"})
-			require.Equal(t, common.AuditMethodMCPConsentApprove, row.Method)
+			require.Equal(t, audit.AuditMethodMCPConsentApprove, row.Method)
 			require.Equal(t, "workspaces/ws-disabled", row.Parent)
 			require.Equal(t, "users/demo@example.com", row.User)
 			require.EqualValues(t, 7, row.GetStatus().GetCode(), "PermissionDenied")

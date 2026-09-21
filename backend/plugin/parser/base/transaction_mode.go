@@ -1,11 +1,10 @@
 package base
 
 import (
-	"database/sql"
 	"regexp"
 	"strings"
 
-	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 )
 
 // Directive regex patterns
@@ -30,10 +29,10 @@ var (
 // Directives can appear in any order within the top comment lines.
 // Scanning stops at the first non-comment, non-empty line.
 // Returns the transaction configuration and the SQL script without the directives.
-func ParseTransactionConfig(script string) (common.TransactionConfig, string) {
-	config := common.TransactionConfig{
-		Mode:      common.TransactionModeUnspecified,
-		Isolation: common.IsolationLevelDefault,
+func ParseTransactionConfig(script string) (transaction.Config, string) {
+	config := transaction.Config{
+		Mode:      transaction.ModeUnspecified,
+		Isolation: transaction.IsolationLevelDefault,
 	}
 
 	lines := strings.Split(script, "\n")
@@ -60,7 +59,7 @@ func ParseTransactionConfig(script string) (common.TransactionConfig, string) {
 		// Check for transaction mode directive
 		if matches := txnModeDirectiveRegex.FindStringSubmatch(line); len(matches) == 2 {
 			mode := strings.ToLower(matches[1])
-			config.Mode = common.TransactionMode(mode)
+			config.Mode = transaction.Mode(mode)
 			directiveLines[i] = true
 			continue
 		}
@@ -73,7 +72,7 @@ func ParseTransactionConfig(script string) (common.TransactionConfig, string) {
 			// Note: We set the value as-is here. Invalid values will be caught
 			// by the specific database driver during execution, allowing each
 			// database to validate according to its supported levels.
-			config.Isolation = common.IsolationLevel(isolation)
+			config.Isolation = transaction.IsolationLevel(isolation)
 			directiveLines[i] = true
 			continue
 		}
@@ -91,22 +90,6 @@ func ParseTransactionConfig(script string) (common.TransactionConfig, string) {
 	}
 
 	return config, script
-}
-
-// ConvertToSQLIsolation converts our IsolationLevel to database/sql.IsolationLevel
-func ConvertToSQLIsolation(level common.IsolationLevel) sql.IsolationLevel {
-	switch level {
-	case common.IsolationLevelReadUncommitted:
-		return sql.LevelReadUncommitted
-	case common.IsolationLevelReadCommitted:
-		return sql.LevelReadCommitted
-	case common.IsolationLevelRepeatableRead:
-		return sql.LevelRepeatableRead
-	case common.IsolationLevelSerializable:
-		return sql.LevelSerializable
-	default:
-		return sql.LevelDefault
-	}
 }
 
 // CleanDirectives removes all Bytebase directive comments from a SQL statement.

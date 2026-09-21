@@ -31,6 +31,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -410,8 +411,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	statement = cleanedStatement
 
 	// Apply default when transaction mode is not specified
-	if transactionConfig.Mode == common.TransactionModeUnspecified {
-		transactionConfig.Mode = common.GetDefaultTransactionMode()
+	if transactionConfig.Mode == transaction.ModeUnspecified {
+		transactionConfig.Mode = transaction.DefaultMode()
 	}
 
 	conn, err := d.db.Conn(ctx)
@@ -435,12 +436,12 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	// Validate isolation level for MySQL if specified
-	if transactionConfig.Isolation != common.IsolationLevelDefault {
-		validLevels := map[common.IsolationLevel]bool{
-			common.IsolationLevelReadUncommitted: true,
-			common.IsolationLevelReadCommitted:   true,
-			common.IsolationLevelRepeatableRead:  true,
-			common.IsolationLevelSerializable:    true,
+	if transactionConfig.Isolation != transaction.IsolationLevelDefault {
+		validLevels := map[transaction.IsolationLevel]bool{
+			transaction.IsolationLevelReadUncommitted: true,
+			transaction.IsolationLevelReadCommitted:   true,
+			transaction.IsolationLevelRepeatableRead:  true,
+			transaction.IsolationLevelSerializable:    true,
 		}
 		if !validLevels[transactionConfig.Isolation] {
 			return 0, errors.Errorf("invalid isolation level for MySQL: %s. Supported levels: READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, SERIALIZABLE", transactionConfig.Isolation)
@@ -448,14 +449,14 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	// Execute based on transaction mode
-	if transactionConfig.Mode == common.TransactionModeOff {
+	if transactionConfig.Mode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, conn, commands, opts, connectionID)
 	}
 	return d.executeInTransactionMode(ctx, conn, commands, opts, connectionID, transactionConfig.Isolation)
 }
 
 // executeInTransactionMode executes statements within a single transaction
-func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions, connectionID string, isolationLevel common.IsolationLevel) (int64, error) {
+func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, commands []base.Statement, opts db.ExecuteOptions, connectionID string, isolationLevel transaction.IsolationLevel) (int64, error) {
 	var totalRowsAffected int64
 
 	if err := conn.Raw(func(driverConn any) error {
@@ -466,8 +467,8 @@ func (d *Driver) executeInTransactionMode(ctx context.Context, conn *sql.Conn, c
 
 		// Set isolation level if specified
 		txOptions := driver.TxOptions{}
-		if isolationLevel != common.IsolationLevelDefault {
-			txOptions.Isolation = driver.IsolationLevel(base.ConvertToSQLIsolation(isolationLevel))
+		if isolationLevel != transaction.IsolationLevelDefault {
+			txOptions.Isolation = driver.IsolationLevel(transaction.ToSQLIsolation(isolationLevel))
 		}
 
 		tx, err := txer.BeginTx(ctx, txOptions)

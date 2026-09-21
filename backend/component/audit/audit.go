@@ -1,5 +1,5 @@
-//nolint:revive
-package common
+// Package audit records audit events and their request metadata.
+package audit
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
@@ -32,9 +33,9 @@ const (
 	AuditMethodMCPConsentApprove = "/bytebase.mcp.Consent/Approve"
 )
 
-// AuditLogWriter inserts one audit row. The v1 audit interceptor and the doors
+// LogWriter inserts one audit row. The v1 audit interceptor and the doors
 // outside the connect chains write through it.
-type AuditLogWriter interface {
+type LogWriter interface {
 	CreateAuditLog(ctx context.Context, workspace string, payload *storepb.AuditLog) error
 }
 
@@ -52,7 +53,7 @@ type AuditLogWriter interface {
 // refusal into an admission, so the caller gets no error to act on. The stdout
 // mirror does NOT depend on the insert — a metadata-database failure is when
 // losing the row from both surfaces would matter most.
-func RecordOutOfBandAudit(ctx context.Context, writer AuditLogWriter, mirrorToStdout bool, workspace string, row *storepb.AuditLog) {
+func RecordOutOfBandAudit(ctx context.Context, writer LogWriter, mirrorToStdout bool, workspace string, row *storepb.AuditLog) {
 	row.Severity = storepb.AuditLog_WARNING
 
 	// WithoutCancel so the row survives a client hanging up on its own refusal,
@@ -140,7 +141,7 @@ func LogAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	// Request is already redacted for sensitive data by getRequestString()
 	if p.Request != "" {
 		request := p.Request
-		if truncated, wasTruncated := TruncateString(p.Request, maxAuditPayloadChars); wasTruncated {
+		if truncated, wasTruncated := common.TruncateString(p.Request, maxAuditPayloadChars); wasTruncated {
 			request = truncated + "...[truncated]"
 		}
 		attrs = append(attrs, slog.String("request", request))
@@ -150,7 +151,7 @@ func LogAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
 	// Response is already redacted for sensitive data by getResponseString()
 	if p.Response != "" {
 		response := p.Response
-		if truncated, wasTruncated := TruncateString(p.Response, maxAuditPayloadChars); wasTruncated {
+		if truncated, wasTruncated := common.TruncateString(p.Response, maxAuditPayloadChars); wasTruncated {
 			response = truncated + "...[truncated]"
 		}
 		attrs = append(attrs, slog.String("response", response))

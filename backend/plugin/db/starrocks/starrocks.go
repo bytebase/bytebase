@@ -24,6 +24,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
@@ -169,8 +170,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	// Only preprocess when DELIMITER directives are present; normal
@@ -190,7 +191,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// Note: StarRocks is an OLAP database with limited transaction support.
 	// For DDL operations, transactions are not supported. For DML operations,
 	// StarRocks supports transactions within certain limitations.
-	if transactionMode == common.TransactionModeOff || opts.CreateDatabase {
+	if transactionMode == transaction.ModeOff || opts.CreateDatabase {
 		return d.executeInAutoCommitMode(ctx, statement)
 	}
 	return d.executeInTransactionMode(ctx, statement, opts)

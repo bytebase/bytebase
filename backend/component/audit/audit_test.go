@@ -1,5 +1,4 @@
-//nolint:revive
-package common
+package audit
 
 import (
 	"bytes"

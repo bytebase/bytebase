@@ -11,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -45,14 +46,14 @@ func (s *Server) refuseByCeiling(c *echo.Context, delegated auth.DelegatedMCPCre
 func (s *Server) refuseConnection(c *echo.Context, delegated auth.DelegatedMCPCredential, reason string) error {
 	row := &storepb.AuditLog{
 		Parent:   common.FormatWorkspace(delegated.WorkspaceID),
-		Method:   common.AuditMethodMCPSessionAuthorize,
+		Method:   audit.AuditMethodMCPSessionAuthorize,
 		Resource: common.FormatWorkspace(delegated.WorkspaceID),
 		User:     common.FormatUserEmail(delegated.Principal),
 		Status: &spb.Status{
 			Code:    int32(codes.PermissionDenied),
 			Message: reason,
 		},
-		RequestMetadata: common.RequestMetadataFromHTTP(c.Request()),
+		RequestMetadata: audit.RequestMetadataFromHTTP(c.Request()),
 		// The grant this token carries, and no correlation ID. That field is
 		// session-scoped, and this refusal is decided before the SDK resolves a
 		// session: an initial connection has none, and a mid-session refusal
@@ -65,7 +66,7 @@ func (s *Server) refuseConnection(c *echo.Context, delegated auth.DelegatedMCPCr
 			ClientId: delegated.ClientID,
 		},
 	}
-	common.RecordOutOfBandAudit(c.Request().Context(), s.store,
+	audit.RecordOutOfBandAudit(c.Request().Context(), s.store,
 		s.profile.RuntimeEnableAuditLogStdout.Load(), delegated.WorkspaceID, row)
 	return echo.NewHTTPError(http.StatusForbidden, reason)
 }

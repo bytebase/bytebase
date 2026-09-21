@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -40,7 +41,7 @@ const (
 // audited method that reached its handler. Stdout, when on, streams every
 // stored row and every call a permission check refused, before the insert.
 type AuditInterceptor struct {
-	auditLogWriter common.AuditLogWriter
+	auditLogWriter audit.LogWriter
 	secret         string
 	profile        *config.Profile
 }
@@ -211,7 +212,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	// database does not.
 	if in.profile.RuntimeEnableAuditLogStdout.Load() {
 		for _, row := range rows {
-			common.LogAuditToStdout(ctx, row.payload)
+			audit.LogAuditToStdout(ctx, row.payload)
 		}
 	}
 	if !e.store {
@@ -547,9 +548,9 @@ func needAudit(ctx context.Context) bool {
 func getRequestMetadataFromHeaders(headers http.Header, peerAddr string) *storepb.RequestMetadata {
 	// The forwarding headers first, then the peer address ConnectRPC reports
 	// for a direct connection.
-	callerIP := common.CallerIPFromHeaders(headers)
+	callerIP := audit.CallerIPFromHeaders(headers)
 	if callerIP == "" {
-		callerIP = common.StripPort(peerAddr)
+		callerIP = audit.StripPort(peerAddr)
 	}
 	return &storepb.RequestMetadata{
 		CallerIp:                callerIP,
