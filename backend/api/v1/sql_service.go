@@ -685,10 +685,10 @@ func refuseLinkedReadsShadowedByPrivateLinks(ctx context.Context, driver db.Driv
 	}
 	owner, ok := driver.(privateDatabaseLinkOwner)
 	if !ok || conn == nil {
-		return privateLinkRefusal(linked, false, errors.New("the driver exposes no session connection"))
+		return privateLinkRefusal(ctx, linked, false, errors.New("the driver exposes no session connection"))
 	}
 	owns, err := owner.OwnsPrivateDatabaseLink(ctx, conn)
-	return privateLinkRefusal(linked, owns, err)
+	return privateLinkRefusal(ctx, linked, owns, err)
 }
 
 // linkedColumns lists the columns reached through a resolved database link, in a stable order.
@@ -710,12 +710,12 @@ func linkedColumns(spans []*parserbase.QuerySpan) []parserbase.ColumnResource {
 
 // privateLinkRefusal is the verdict of refuseLinkedReadsShadowedByPrivateLinks: nil only when
 // the check ran and found no private link.
-func privateLinkRefusal(linked []parserbase.ColumnResource, owns bool, err error) error {
+func privateLinkRefusal(ctx context.Context, linked []parserbase.ColumnResource, owns bool, err error) error {
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check the executing account's private database links; %s", linkedTableRefusal(linked[0], "is not executed")))
 	}
 	if owns {
-		return connect.NewError(connect.CodePermissionDenied, errors.New(linkedTableRefusal(linked[0], "cannot be authorized: the executing account owns private database links, which Oracle resolves before the public links Bytebase synced. Run the query under the admin data source, or remove the private links from the account behind the read-only data source (BYT-10239)")))
+		return permissionDeniedError(ctx, errors.New(linkedTableRefusal(linked[0], "cannot be authorized: the executing account owns private database links, which Oracle resolves before the public links Bytebase synced. Run the query under the admin data source, or remove the private links from the account behind the read-only data source (BYT-10239)")))
 	}
 	return nil
 }
@@ -748,11 +748,8 @@ func (s *SQLService) refuseLinkedTargetsOutsideProject(ctx context.Context, colu
 			}
 			targets[column.Database] = target
 		}
-		if message := linkedTargetProjectRefusal(column, target, database.ProjectID); message != "" {
-			return &queryError{
-				err:        connect.NewError(connect.CodePermissionDenied, errors.New(message)),
-				permission: perm,
-			}, nil
+		if qe := linkedTargetProjectRefusal(ctx, column, target, database.ProjectID, perm); qe != nil {
+			return qe, nil
 		}
 	}
 	return nil, nil
@@ -760,14 +757,20 @@ func (s *SQLService) refuseLinkedTargetsOutsideProject(ctx context.Context, colu
 
 // linkedTargetProjectRefusal decides refuseLinkedTargetsOutsideProject for one column, given
 // the database the link resolved to (nil when Bytebase does not track it).
-func linkedTargetProjectRefusal(column parserbase.ColumnResource, target *store.DatabaseMessage, requestProjectID string) string {
-	if target == nil {
-		return linkedTableRefusal(column, "is in a database Bytebase does not track on this instance")
+func linkedTargetProjectRefusal(ctx context.Context, column parserbase.ColumnResource, target *store.DatabaseMessage, requestProjectID string, perm permission.Permission) *queryError {
+	var message string
+	switch {
+	case target == nil:
+		message = linkedTableRefusal(column, "is in a database Bytebase does not track on this instance")
+	case target.ProjectID != requestProjectID:
+		message = linkedTableRefusal(column, fmt.Sprintf("is in project %q: reading another project's database through a link is not supported in SQL Editor", target.ProjectID))
+	default:
+		return nil
 	}
-	if target.ProjectID != requestProjectID {
-		return linkedTableRefusal(column, fmt.Sprintf("is in project %q: reading another project's database through a link is not supported in SQL Editor", target.ProjectID))
+	return &queryError{
+		err:        permissionDeniedError(ctx, errors.New(message)),
+		permission: perm,
 	}
-	return ""
 }
 
 // linkedTableRefusal names the linked table as written (an unqualified unresolved reference
@@ -784,7 +787,7 @@ func linkedTableRefusal(column parserbase.ColumnResource, reason string) string 
 // resolves to another instance. The error carries no resource: a placeholder would satisfy
 // a negated condition (table_name != "x") and request-access would offer a grant that
 // cannot help. BYT-10226.
-func remoteColumnRefusal(columns parserbase.SourceColumnSet, connectedInstanceID string, perm permission.Permission) *queryError {
+func remoteColumnRefusal(ctx context.Context, columns parserbase.SourceColumnSet, connectedInstanceID string, perm permission.Permission) *queryError {
 	var remote []parserbase.ColumnResource
 	for column := range columns {
 		if column.Server != "" {
@@ -806,7 +809,7 @@ func remoteColumnRefusal(columns parserbase.SourceColumnSet, connectedInstanceID
 			continue
 		}
 		return &queryError{
-			err:        connect.NewError(connect.CodePermissionDenied, errors.New(message)),
+			err:        permissionDeniedError(ctx, errors.New(message)),
 			permission: perm,
 		}
 	}
@@ -1721,13 +1724,14 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			continue
 		}
 
-		// Oracle database links. A non-Select Oracle span carries no source columns and a linked
-		// table forces the Select classification (plsql getOmniQuerySpan), so none reaches the
-		// branch above. Before the JIT-grant skip below: an unresolved link can carry a local
+		// Oracle database links. A statement that selects through a link is a Select span, never
+		// SelectInfoSchema (plsql getOmniQuerySpan), so it reaches this block. A DML or DDL span
+		// carries no source columns, so a link it reads through is not checked here (BYT-10238).
+		// Before the JIT-grant skip below: an unresolved link can carry a local
 		// database name (ALLOWED_S.T@REMOTE2), which a grant on that database would otherwise
 		// authorize. A SQL Server linked-server reference keeps its pre-existing path (BYT-10235).
 		if instance.Metadata.GetEngine() == storepb.Engine_ORACLE {
-			if qe := remoteColumnRefusal(span.SourceColumns, instance.ResourceID, perm); qe != nil {
+			if qe := remoteColumnRefusal(ctx, span.SourceColumns, instance.ResourceID, perm); qe != nil {
 				return qe
 			}
 			if qe, err := s.refuseLinkedTargetsOutsideProject(ctx, span.SourceColumns, instance, database, perm); err != nil {

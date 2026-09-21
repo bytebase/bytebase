@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -11,6 +12,10 @@ import (
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+// Query reports these refusals inside an OK response, so the mark is the only field that
+// separates them from a successful query in the audit log.
+const wantAuditMark = "the audit interceptor stamps a refusal WARNING only when the request is marked"
 
 func TestRemoteColumnRefusal(t *testing.T) {
 	const connected = "oracle-dblink"
@@ -38,37 +43,69 @@ func TestRemoteColumnRefusal(t *testing.T) {
 		for _, column := range tc.columns {
 			columns[column] = true
 		}
-		got := remoteColumnRefusal(columns, connected, permission.SQLSelect)
+		marked := false
+		ctx := withSetPermissionDenied(context.Background(), func() { marked = true })
+		got := remoteColumnRefusal(ctx, columns, connected, permission.SQLSelect)
 		if tc.want == "" {
 			require.Nil(t, got, tc.name)
+			require.False(t, marked, tc.name)
 			continue
 		}
 		require.NotNil(t, got, tc.name)
 		require.Contains(t, got.Error(), tc.want, tc.name)
 		require.Nil(t, got.resources, "%s: the refusal must offer no resource to request access to", tc.name)
 		require.Equal(t, permission.SQLSelect, got.permission, tc.name)
+		require.True(t, marked, "%s: %s", tc.name, wantAuditMark)
 	}
 }
 
 func TestLinkedTargetProjectRefusal(t *testing.T) {
 	column := parserbase.ColumnResource{Instance: "oracle-dblink", Server: "REMOTE", Database: "SECRET_SCHEMA", Table: "SECRET_T"}
-	require.Empty(t, linkedTargetProjectRefusal(column, &store.DatabaseMessage{ProjectID: "default"}, "default"))
-	require.Contains(t, linkedTargetProjectRefusal(column, nil, "default"), `SECRET_SCHEMA.SECRET_T reached through database link "REMOTE" is in a database Bytebase does not track`)
-	require.Contains(t, linkedTargetProjectRefusal(column, &store.DatabaseMessage{ProjectID: "other"}, "default"), `is in project "other"`)
+	tests := []struct {
+		name   string
+		target *store.DatabaseMessage
+		want   string
+	}{
+		{"target in the request's project", &store.DatabaseMessage{ProjectID: "default"}, ""},
+		{"target Bytebase does not track", nil, `SECRET_SCHEMA.SECRET_T reached through database link "REMOTE" is in a database Bytebase does not track`},
+		{"target in another project", &store.DatabaseMessage{ProjectID: "other"}, `is in project "other"`},
+	}
+	for _, tc := range tests {
+		marked := false
+		ctx := withSetPermissionDenied(context.Background(), func() { marked = true })
+		got := linkedTargetProjectRefusal(ctx, column, tc.target, "default", permission.SQLSelect)
+		if tc.want == "" {
+			require.Nil(t, got, tc.name)
+			require.False(t, marked, tc.name)
+			continue
+		}
+		require.NotNil(t, got, tc.name)
+		require.Contains(t, got.Error(), tc.want, tc.name)
+		require.Nil(t, got.resources, "%s: the refusal must offer no resource to request access to", tc.name)
+		require.Equal(t, permission.SQLSelect, got.permission, tc.name)
+		require.True(t, marked, "%s: %s", tc.name, wantAuditMark)
+	}
 }
 
 func TestPrivateLinkRefusal(t *testing.T) {
 	linked := []parserbase.ColumnResource{{Instance: "oracle-dblink", Server: "REMOTE", Database: "SECRET_SCHEMA", Table: "SECRET_T"}}
-	require.NoError(t, privateLinkRefusal(linked, false, nil))
+	marked := false
+	ctx := withSetPermissionDenied(context.Background(), func() { marked = true })
 
-	owns := privateLinkRefusal(linked, true, nil)
-	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(owns))
-	require.Contains(t, owns.Error(), `table SECRET_SCHEMA.SECRET_T reached through database link "REMOTE" cannot be authorized: the executing account owns private database links`)
+	require.NoError(t, privateLinkRefusal(ctx, linked, false, nil))
+	require.False(t, marked, "no refusal, no mark")
 
-	failed := privateLinkRefusal(linked, false, errors.New("ORA-00942"))
+	// An outage is not a verdict about the caller's permission.
+	failed := privateLinkRefusal(ctx, linked, false, errors.New("ORA-00942"))
 	require.Equal(t, connect.CodeInternal, connect.CodeOf(failed))
 	require.Contains(t, failed.Error(), "ORA-00942")
 	require.Contains(t, failed.Error(), `reached through database link "REMOTE" is not executed`)
+	require.False(t, marked, "a failed check must stay unmarked")
+
+	owns := privateLinkRefusal(ctx, linked, true, nil)
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(owns))
+	require.Contains(t, owns.Error(), `table SECRET_SCHEMA.SECRET_T reached through database link "REMOTE" cannot be authorized: the executing account owns private database links`)
+	require.True(t, marked, wantAuditMark)
 }
 
 func TestLinkedColumns(t *testing.T) {
