@@ -2680,7 +2680,7 @@
       "first-prompt": {
         "description": "连接后，尝试向 AI 助手提问：",
         "example": "列出我的 Bytebase 实例中的所有项目",
-        "title": "您的第一个提示"
+        "title": "你的第一个提示词"
       },
       "ladder": {
         "disabled": "不允许任何操作；MCP 会话无法连接。",
@@ -2696,7 +2696,7 @@
         },
         "row": {
           "export": {
-            "details": "将结果下载为文件。数据会离开 Bytebase",
+            "details": "将结果下载为文件。数据会离开 Bytebase。",
             "title": "导出查询结果"
           },
           "manage": {
@@ -2762,7 +2762,7 @@
         "mode": {
           "disabled": {
             "best-for": "适用于：在准备好开启之前先关闭 MCP。",
-            "caption": "会话无法连接",
+            "caption": "MCP 会话无法连接",
             "description": "任何 MCP 会话都无法连接到本工作空间。",
             "title": "禁用"
           },
@@ -2787,13 +2787,13 @@
         "tightening-change": "{{from}} → {{to}} 从每个运行中会话的下一个请求起生效。",
         "title": "访问策略",
         "unreadable": {
-          "description": "此工作区存储的能力值是当前构建无法理解的。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
+          "description": "本工作空间存储的能力值是当前构建无法理解的。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
           "pick": "请选择一种模式后再保存此策略。",
           "title": "无法读取已存储的访问策略"
         },
         "unserved": {
-          "description": "本工作空间存储的值为 {{stored}}，当前版本不提供该上限。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修复。",
-          "title": "当前版本不提供已存储的访问策略"
+          "description": "本工作空间存储了 {{stored}}，当前构建不支持该值。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
+          "title": "当前构建不支持已存储的访问策略"
         }
       },
       "title": "MCP 集成"
@@ -3472,6 +3472,7 @@
     "search-scope-row-number-description": "输入行号跳转到指定行。",
     "search-scope-row-number-title": "行号",
     "select-a-database-to-start": "选择数据库以开始",
+    "select-a-project-to-choose-a-database": "选择项目以选择数据库",
     "select-connection": "请选择数据连接",
     "select-encoding": "选择编码",
     "self": "SQL 编辑器",
