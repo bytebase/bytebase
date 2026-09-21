@@ -3472,6 +3472,7 @@
     "search-scope-row-number-description": "Ingrese un número de fila para saltar a esa fila.",
     "search-scope-row-number-title": "Número de fila",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "select-a-project-to-choose-a-database": "Seleccione un proyecto para elegir una base de datos",
     "select-connection": "Por favor seleccione conexiones",
     "select-encoding": "Seleccionar codificación",
     "self": "Editor de SQL",

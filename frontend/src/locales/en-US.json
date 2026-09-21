@@ -3472,6 +3472,7 @@
     "search-scope-row-number-description": "Enter a row number to jump to that row.",
     "search-scope-row-number-title": "Row number",
     "select-a-database-to-start": "Select a database to start",
+    "select-a-project-to-choose-a-database": "Select a project to choose a database",
     "select-connection": "Please select connections",
     "select-encoding": "Select encoding",
     "self": "SQL Editor",

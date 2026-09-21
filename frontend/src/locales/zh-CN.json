@@ -3472,6 +3472,7 @@
     "search-scope-row-number-description": "输入行号跳转到指定行。",
     "search-scope-row-number-title": "行号",
     "select-a-database-to-start": "选择数据库以开始",
+    "select-a-project-to-choose-a-database": "选择项目以选择数据库",
     "select-connection": "请选择数据连接",
     "select-encoding": "选择编码",
     "self": "SQL 编辑器",

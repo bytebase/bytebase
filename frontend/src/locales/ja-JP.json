@@ -3472,6 +3472,7 @@
     "search-scope-row-number-description": "行番号を入力してその行にジャンプします。",
     "search-scope-row-number-title": "行番号",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
+    "select-a-project-to-choose-a-database": "データベースを選択するにはプロジェクトを選択してください",
     "select-connection": "データ接続を選択してください",
     "select-encoding": "エンコーディングの選択",
     "self": "SQLエディタ",

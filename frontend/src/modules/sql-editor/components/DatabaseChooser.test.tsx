@@ -12,12 +12,14 @@ const mocks = vi.hoisted(() => ({
   useCurrentSQLEditorTab: vi.fn(),
   useIsInBatchMode: vi.fn(() => false),
   // editor zustand store selector value.
+  projectName: "projects/test",
   projectContextReady: true,
   useConnectionOfCurrentSQLEditorTab: vi.fn(),
   // New zustand store setter.
   setShowConnectionPanel: vi.fn(),
   isValidInstanceName: vi.fn(),
   isValidDatabaseName: vi.fn(),
+  isValidProjectName: vi.fn(),
   extractDatabaseResourceName: vi.fn(),
   getDatabaseEnvironment: vi.fn(),
   getInstanceResource: vi.fn(),
@@ -41,8 +43,12 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 
 vi.mock("@/modules/sql-editor/store/editor", () => ({
   useSQLEditorEditorState: (
-    selector: (s: { projectContextReady: boolean }) => unknown
-  ) => selector({ projectContextReady: mocks.projectContextReady }),
+    selector: (s: { project: string; projectContextReady: boolean }) => unknown
+  ) =>
+    selector({
+      project: mocks.projectName,
+      projectContextReady: mocks.projectContextReady,
+    }),
 }));
 
 vi.mock("@/modules/sql-editor/store", () => ({
@@ -57,6 +63,7 @@ vi.mock("@/modules/sql-editor/store", () => ({
 vi.mock("@/types", () => ({
   isValidInstanceName: mocks.isValidInstanceName,
   isValidDatabaseName: mocks.isValidDatabaseName,
+  isValidProjectName: mocks.isValidProjectName,
 }));
 
 vi.mock("@/utils", () => ({
@@ -117,9 +124,13 @@ beforeEach(async () => {
   });
   mocks.useCurrentSQLEditorTab.mockReturnValue({ id: "tab1" });
   mocks.useIsInBatchMode.mockReturnValue(false);
+  mocks.projectName = "projects/test";
   mocks.projectContextReady = true;
   mocks.isValidInstanceName.mockReturnValue(true);
   mocks.isValidDatabaseName.mockReturnValue(true);
+  mocks.isValidProjectName.mockImplementation((name: string) =>
+    name.startsWith("projects/")
+  );
   mocks.getInstanceResource.mockReturnValue(mockInstance);
   mocks.getDatabaseEnvironment.mockReturnValue(mockEnvironment);
   mocks.extractDatabaseResourceName.mockReturnValue({ databaseName: "mydb" });
@@ -169,6 +180,25 @@ describe("DatabaseChooser", () => {
     render();
     const button = container.querySelector("button");
     expect(button?.hasAttribute("disabled")).toBe(true);
+    unmount();
+  });
+
+  test("requires a project before opening the connection panel", () => {
+    mocks.projectName = "";
+    const { container, render, unmount } = renderIntoContainer(
+      <DatabaseChooser />
+    );
+    render();
+
+    const button = container.querySelector("button");
+    expect(button?.hasAttribute("disabled")).toBe(true);
+    expect(container.textContent).toContain(
+      "sql-editor.select-a-project-to-choose-a-database"
+    );
+    act(() => {
+      button?.click();
+    });
+    expect(mocks.setShowConnectionPanel).not.toHaveBeenCalled();
     unmount();
   });
 
