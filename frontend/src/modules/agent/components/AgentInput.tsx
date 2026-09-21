@@ -778,7 +778,7 @@ export function AgentInput() {
           <div className="relative w-full">
             {!input && (
               <div
-                className="pointer-events-none absolute inset-x-3 top-1.5 z-10 truncate text-sm leading-5 text-control-light"
+                className="pointer-events-none absolute inset-x-3 inset-y-0 z-10 flex items-center truncate text-sm leading-5 text-control-light"
                 data-agent-input-placeholder
               >
                 {inputPlaceholder}
@@ -789,7 +789,7 @@ export function AgentInput() {
               ref={textareaRef}
               value={input}
               rows={1}
-              className="block min-h-9 max-h-[134px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              className="block h-9 min-h-9 max-h-[134px] w-full resize-none overflow-y-hidden rounded-xs border px-3 py-1.5 text-sm leading-5 outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
               aria-label={inputPlaceholder}
               disabled={isCurrentChatRunning || isAIConfigurationBlocked}
               onChange={(e) => {

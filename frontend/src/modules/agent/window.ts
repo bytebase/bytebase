@@ -7,10 +7,10 @@ export const MIN_HEIGHT = 400;
 export const WINDOW_MARGIN = 16;
 export const DEFAULT_SIDEBAR_WIDTH = 200;
 
-const DEFAULT_WIDTH_RATIO = 0.56;
-const DEFAULT_HEIGHT_RATIO = 0.72;
-const MAX_DEFAULT_WIDTH = 960;
-const MAX_DEFAULT_HEIGHT = 820;
+const DEFAULT_WIDTH_RATIO = 0.43;
+const DEFAULT_HEIGHT_RATIO = 0.52;
+const MAX_DEFAULT_WIDTH = 750;
+const MAX_DEFAULT_HEIGHT = 590;
 
 const clampDefaultDimension = (
   preferred: number,
@@ -97,11 +97,15 @@ export const getDefaultAgentWindowState = (
   );
 
   return {
-    position: getCenteredAgentWindowPosition(
+    position: clampAgentWindowPosition(
       viewportWidth,
       viewportHeight,
       width,
-      height
+      height,
+      {
+        x: viewportWidth - width - WINDOW_MARGIN,
+        y: viewportHeight - height - WINDOW_MARGIN,
+      }
     ),
     size: {
       width,

@@ -23,7 +23,7 @@ vi.mock("@/components/ExternalUrlAlert", () => ({ ExternalUrlAlert: () => null }
 vi.mock("./mcp/MCPAccessPolicySection", () => ({
   MCPAccessPolicySection: () => null,
 }));
-vi.mock("@/utils", () => ({ isDev: () => false, cn: (...a: unknown[]) => a.join(" ") }));
+vi.mock("@/utils", () => ({ cn: (...a: unknown[]) => a.join(" ") }));
 
 const { MCPPage } = await import("./MCPPage");
 

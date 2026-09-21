@@ -4,6 +4,7 @@ import type { AgentState } from "./agent";
 import {
   AGENT_STATE_KEY,
   AGENT_WINDOW_KEY,
+  AGENT_WINDOW_LAYOUT_VERSION,
   createAgentStore,
   selectLoading,
   selectOrderedChats,
@@ -70,13 +71,13 @@ describe("useAgentStore (Zustand)", () => {
     expect(s(store).chats[0].totalTokensUsed).toBe(0);
   });
 
-  test("uses viewport-relative medium window defaults when no saved window state exists", () => {
+  test("uses larger bottom-right window defaults when no saved window state exists", () => {
     setViewportSize(1440, 900);
 
     const store = createAgentStore();
 
-    expect(s(store).size).toEqual({ width: 788, height: 625 });
-    expect(s(store).position).toEqual({ x: 326, y: 138 });
+    expect(s(store).size).toEqual({ width: 605, height: 451 });
+    expect(s(store).position).toEqual({ x: 819, y: 433 });
     expect(s(store).sidebarWidth).toBe(200);
   });
 
@@ -86,13 +87,36 @@ describe("useAgentStore (Zustand)", () => {
     const store = createAgentStore();
 
     expect(s(store).size).toEqual({ width: 398, height: 400 });
-    expect(s(store).position).toEqual({ x: 16, y: 25 });
+    expect(s(store).position).toEqual({ x: 16, y: 34 });
   });
 
-  test("loads persisted window state", () => {
+  test("moves outdated stored windows to the current default layout", () => {
+    setViewportSize(1440, 900);
     localStorage.setItem(
       AGENT_WINDOW_KEY,
       JSON.stringify({
+        layoutVersion: AGENT_WINDOW_LAYOUT_VERSION - 1,
+        position: { x: 120, y: 240 },
+        size: { width: 480, height: 640 },
+        sidebarWidth: 280,
+      })
+    );
+
+    const store = createAgentStore();
+
+    expect(s(store).position).toEqual({ x: 819, y: 433 });
+    expect(s(store).size).toEqual({ width: 605, height: 451 });
+    expect(s(store).sidebarWidth).toBe(280);
+    expect(localStorage.getItem(AGENT_WINDOW_KEY)).toContain(
+      `"layoutVersion":${AGENT_WINDOW_LAYOUT_VERSION}`
+    );
+  });
+
+  test("loads persisted window state from the current layout version", () => {
+    localStorage.setItem(
+      AGENT_WINDOW_KEY,
+      JSON.stringify({
+        layoutVersion: AGENT_WINDOW_LAYOUT_VERSION,
         position: { x: 120, y: 240 },
         size: { width: 480, height: 640 },
         sidebarWidth: 280,
@@ -117,6 +141,7 @@ describe("useAgentStore (Zustand)", () => {
     localStorage.setItem(
       AGENT_WINDOW_KEY,
       JSON.stringify({
+        layoutVersion: AGENT_WINDOW_LAYOUT_VERSION,
         position: { x: 120, y: 140 },
         size: { width: 480, height: 540 },
         sidebarWidth: 200,

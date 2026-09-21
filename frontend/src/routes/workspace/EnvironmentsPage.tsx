@@ -246,7 +246,7 @@ function RolloutPolicyConfig({
             {rolloutPolicy.roles.map((role) => (
               <span
                 key={role}
-                className="inline-flex items-center gap-x-1 rounded-xs bg-control-bg px-2 py-1 text-sm"
+                className="inline-flex h-7 items-center gap-x-1 rounded-xs bg-control-bg px-2 text-sm"
               >
                 {displayPolicyRoleTitle(role)}
                 {canUpdatePolicy && (

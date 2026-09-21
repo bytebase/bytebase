@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import { FormError, FormField, FormFieldGroup } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -380,9 +381,16 @@ function GroupRow({
                   <Badge className="text-xs px-1.5 py-0">{group.source}</Badge>
                 )}
               </div>
-              <span className="textinfolabel text-xs">
-                <HighlightLabelText text={group.name} keyword={searchText} />
-              </span>
+              <div className="flex items-center gap-x-1 min-w-0">
+                <span className="textinfolabel text-xs truncate">
+                  <HighlightLabelText text={group.name} keyword={searchText} />
+                </span>
+                {group.name && (
+                  <div onClick={(event) => event.stopPropagation()}>
+                    <CopyButton content={group.name} />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </TableCell>
