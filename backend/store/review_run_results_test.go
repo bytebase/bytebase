@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -210,6 +211,24 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 		}
 	}
 	require.ElementsMatch(t, []string{"person", "guideline", "default third"}, comments)
+
+	// A review result's text belongs to the reviewer: a person can resolve or
+	// reopen it but not rewrite it. A person's own thread stays editable.
+	resolved := store.ThreadStateResolved
+	for _, c := range openThreads {
+		text := "rewritten"
+		err := s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "default", ResourceID: c.ResourceID, Comment: &text})
+		if c.Payload.ReviewMetadata != nil {
+			require.Equal(t, common.Invalid, common.ErrorCode(err), c.Payload.Comment)
+			require.NoError(t, s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "default", ResourceID: c.ResourceID, ThreadState: &resolved}))
+			require.NoError(t, s.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{ProjectID: "default", ResourceID: c.ResourceID, ThreadState: &open}))
+		} else {
+			require.NoError(t, err, c.Payload.Comment)
+		}
+	}
+	for _, c := range listReviewComments(t, fixture, "default") {
+		require.NotEqual(t, "rewritten", c.Comment)
+	}
 
 	// A clean DONE with no results still resolves the previous ones.
 	_, err = s.CreateReviewRun(ctx, "default", issueUID, store.ReviewRunTypeRule)

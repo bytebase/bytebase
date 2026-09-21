@@ -466,9 +466,11 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	}
 	// Text edits apply to rows that already render text: thread roots,
 	// replies, hybrid event+comment rows, and plain comments (protojson omits
-	// an empty comment, so a contentless one is {}) — never to pure events.
+	// an empty comment, so a contentless one is {}) — never to pure events,
+	// and never to review results, whose text is the reviewer's.
 	if patch.Comment != nil {
 		q.And("(payload ?? 'comment' OR payload = '{}'::jsonb OR thread_state IS NOT NULL OR parent_id IS NOT NULL)")
+		q.And("NOT (payload ?? 'reviewMetadata')")
 	}
 
 	query, args, err := q.ToSQL()
@@ -487,6 +489,12 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	if rows == 0 {
 		if patch.ThreadState != nil {
 			return common.Errorf(common.NotFound, "comment %s in project %s is missing or not a thread root; nothing was updated", patch.ResourceID, patch.ProjectID)
+		}
+		var reviewResult bool
+		if err := s.GetDB().QueryRowContext(ctx,
+			"SELECT payload ? 'reviewMetadata' FROM issue_comment WHERE project = $1 AND resource_id = $2",
+			patch.ProjectID, patch.ResourceID).Scan(&reviewResult); err == nil && reviewResult {
+			return common.Errorf(common.Invalid, "comment %s in project %s is a review result; its text belongs to the reviewer and only its thread state can change", patch.ResourceID, patch.ProjectID)
 		}
 		return common.Errorf(common.NotFound, "comment %s in project %s is missing or a pure event; nothing was updated", patch.ResourceID, patch.ProjectID)
 	}
