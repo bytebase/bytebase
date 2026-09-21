@@ -135,6 +135,13 @@ func TestSelectLinkDefinition(t *testing.T) {
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{remote, link("REMOTE", "h2:1521/s", "U1")}, nil, true},
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{remote, link("REMOTE", "h1:1521/s", "U2")}, nil, true},
 		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE.WORLD", "h1:1521/s", "U1"), link("REMOTE.CORP", "h2:1521/s", "U1")}, nil, true},
+		// REMOTE.WORLD@Q is the qualified link Q of REMOTE.WORLD, not a domained REMOTE.
+		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE.WORLD@Q", "h2:1521/s", "U2")}, nil, false},
+		{"REMOTE", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE.WORLD", "h1:1521/s", "U1"), link("REMOTE.WORLD@Q", "h2:1521/s", "U2")}, link("REMOTE.WORLD", "h1:1521/s", "U1"), true},
+		{"REMOTE@Q", []*metadatapb.LinkedDatabaseMetadata{remote, link("REMOTE@Q", "h2:1521/s", "U2"), link("REMOTE@R", "h3:1521/s", "U3")}, link("REMOTE@Q", "h2:1521/s", "U2"), true},
+		{"remote@q", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE@Q", "h2:1521/s", "U2")}, link("REMOTE@Q", "h2:1521/s", "U2"), true},
+		{"REMOTE@Q", []*metadatapb.LinkedDatabaseMetadata{link("REMOTE.WORLD@Q", "h2:1521/s", "U2")}, link("REMOTE.WORLD@Q", "h2:1521/s", "U2"), true},
+		{"REMOTE@Q", []*metadatapb.LinkedDatabaseMetadata{remote, link("REMOTE.WORLD@R", "h3:1521/s", "U3")}, nil, false},
 	}
 	for _, tc := range tests {
 		got, found := selectLinkDefinition(tc.name, tc.links)

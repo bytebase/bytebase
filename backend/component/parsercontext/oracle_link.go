@@ -242,14 +242,21 @@ func dataSourceReachesLinkTarget(target oracleLinkTarget, dataSource *storepb.Da
 // to it by appending the domain. Several definitions of one name (a public
 // and a private link, two domains) resolve only when they agree on host and
 // user; otherwise the statement could reach either, and nothing is returned.
-// found reports whether any definition carried the name.
+// A connection qualifier follows the domain (`REMOTE.WORLD@Q`) and names a
+// different link, so it must match and the domain rule applies to the part
+// before it. found reports whether any definition carried the name.
 func selectLinkDefinition(name string, links []*metadatapb.LinkedDatabaseMetadata) (link *metadatapb.LinkedDatabaseMetadata, found bool) {
+	base, qualifier, _ := strings.Cut(name, "@")
 	var exact, prefixed []*metadatapb.LinkedDatabaseMetadata
 	for _, candidate := range links {
+		candidateBase, candidateQualifier, _ := strings.Cut(candidate.GetName(), "@")
+		if !strings.EqualFold(candidateQualifier, qualifier) {
+			continue
+		}
 		switch {
-		case strings.EqualFold(candidate.GetName(), name):
+		case strings.EqualFold(candidateBase, base):
 			exact = append(exact, candidate)
-		case len(candidate.GetName()) > len(name)+1 && strings.EqualFold(candidate.GetName()[:len(name)+1], name+"."):
+		case len(candidateBase) > len(base)+1 && strings.EqualFold(candidateBase[:len(base)+1], base+"."):
 			prefixed = append(prefixed, candidate)
 		default:
 		}
