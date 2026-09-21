@@ -358,6 +358,31 @@ func TestGetAccessTables(t *testing.T) {
 				},
 			},
 		},
+		// A connection qualifier is part of the link's name: Oracle resolves `t@remote@q` to
+		// the link REMOTE@Q, a different object from REMOTE.
+		{
+			statement: "SELECT * FROM s.t@remote@q;",
+			linked: []base.SchemaResource{
+				{
+					Database:     "S",
+					Table:        "T",
+					LinkedServer: "REMOTE@Q",
+				},
+			},
+		},
+		{
+			statement: "SELECT * FROM t1@remote@q, t1@remote;",
+			linked: []base.SchemaResource{
+				{
+					Table:        "T1",
+					LinkedServer: "REMOTE@Q",
+				},
+				{
+					Table:        "T1",
+					LinkedServer: "REMOTE",
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

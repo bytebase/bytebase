@@ -541,29 +541,42 @@ func omniDualTable() base.TableSource {
 	}
 }
 
+// omniTableLink is the database link a table reference names, as Oracle identifies it. A
+// connection qualifier is part of the name: `t@link@q` reaches the link LINK@Q, which omni
+// splits between ObjectName.DBLink and TableRef.Dblink. omni also fills TableRef.Dblink
+// alone for `t PARTITION (p)@link`, a form Oracle rejects (ORA-03048).
+func omniTableLink(ref *oracleast.TableRef) string {
+	if ref.Name == nil {
+		return ""
+	}
+	if ref.Name.DBLink != "" && ref.Dblink != "" {
+		return ref.Name.DBLink + "@" + ref.Dblink
+	}
+	return ref.Name.DBLink
+}
+
 // A linked table keeps the schema as written; an unqualified one lives in the link user's
-// schema, which the resolver supplies. Only ObjectName.DBLink is read: omni also fills
-// TableRef.Dblink for `t PARTITION (p)@link`, a form Oracle rejects (ORA-03048).
+// schema, which the resolver supplies.
 func collectOmniAccessTables(defaultDatabase string, stmt oracleast.StmtNode) (local, linked []base.SchemaResource) {
 	seen := make(map[base.SchemaResource]bool)
-	addResource := func(name *oracleast.ObjectName) {
+	addResource := func(name *oracleast.ObjectName, link string) {
 		if name == nil || isOmniDual(name) {
 			return
 		}
 		database := name.Schema
-		if database == "" && name.DBLink == "" {
+		if database == "" && link == "" {
 			database = defaultDatabase
 		}
 		resource := base.SchemaResource{
 			Database:     database,
 			Table:        name.Name,
-			LinkedServer: name.DBLink,
+			LinkedServer: link,
 		}
 		if seen[resource] {
 			return
 		}
 		seen[resource] = true
-		if name.DBLink != "" {
+		if link != "" {
 			linked = append(linked, resource)
 			return
 		}
@@ -572,9 +585,11 @@ func collectOmniAccessTables(defaultDatabase string, stmt oracleast.StmtNode) (l
 	oracleast.Inspect(stmt, func(node oracleast.Node) bool {
 		switch node := node.(type) {
 		case *oracleast.TableRef:
-			addResource(node.Name)
+			addResource(node.Name, omniTableLink(node))
 		case *oracleast.ContainersExpr:
-			addResource(node.Name)
+			if node.Name != nil {
+				addResource(node.Name, node.Name.DBLink)
+			}
 		default:
 		}
 		return true
@@ -830,7 +845,7 @@ func (q *omniQuerySpanExtractor) extractOmniTableExpr(expr oracleast.TableExpr) 
 		if isOmniDual(expr.Name) {
 			return aliasOmniTableSource(omniDualTable(), expr.Alias), nil
 		}
-		dbLink := expr.Name.DBLink
+		dbLink := omniTableLink(expr)
 		database := expr.Name.Schema
 		if database == "" && dbLink == "" {
 			database = q.defaultDatabase

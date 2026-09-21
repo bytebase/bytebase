@@ -662,6 +662,49 @@
           table: T
           column: ""
     predicatecolumns: []
+- description: Test For Database Link With A Connection Qualifier
+  statement: SELECT * FROM T, SCHEMA1.LT1@REMOTE@Q;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "linkedDatabases":  [
+        {
+          "name":  "REMOTE",
+          "username":  "SCHEMA1"
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: ""
+          table: T
+          column: ""
+        - server: REMOTE@Q
+          database: SCHEMA1
+          schema: ""
+          table: LT1
+          column: ""
+    predicatecolumns: []
 - description: Test For Database Link With Local Namesake
   statement: SELECT * FROM SCHEMA1.LT1@REMOTE;
   defaultDatabase: PUBLIC
