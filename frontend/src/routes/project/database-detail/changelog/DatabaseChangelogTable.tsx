@@ -3,6 +3,7 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { HumanizeTs } from "@/components/HumanizeTs";
+import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
 import {
   Table,
   TableBody,
@@ -57,28 +58,27 @@ export function DatabaseChangelogTable({
   loading: boolean;
 }) {
   const { t } = useTranslation();
-  // Default widths are ratios once the table fills its container, so the
-  // rollout title -- the only column with an open-ended value -- carries a
-  // large one and absorbs the width the timestamp does not need. The created
-  // column's default fits the compact form on one line; dragged below that it
-  // ellipsizes, and the reading it hides is still on the hover, which is the
-  // one thing a timestamp must never lose.
+  // A fixed-layout table spreads any spare width across every column that
+  // has one, so the rollout title alone is left unsized: it takes what the
+  // others leave, and the timestamp keeps exactly the width its form needs
+  // at any viewport. Its default is only the floor the table keeps before it
+  // scrolls.
   const columns = useMemo(
     () => [
       { key: "status", title: "", defaultWidth: 48, resizable: false },
       {
         key: "created",
         title: t("common.created-at"),
-        defaultWidth: 200,
-        minWidth: 168,
+        defaultWidth: TIMESTAMP_COLUMN.compact.width,
+        minWidth: TIMESTAMP_COLUMN.compact.minWidth,
         resizable: true,
       },
       {
         key: "rollout",
         title: t("common.rollout"),
-        defaultWidth: 700,
-        minWidth: 200,
-        resizable: true,
+        defaultWidth: 200,
+        resizable: false,
+        fills: true,
       },
     ],
     [t]
@@ -108,7 +108,12 @@ export function DatabaseChangelogTable({
       <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
         <colgroup>
           {widths.map((w, index) => (
-            <col key={columns[index].key} style={{ width: `${w}px` }} />
+            <col
+              key={columns[index].key}
+              style={{
+                width: "fills" in columns[index] ? undefined : `${w}px`,
+              }}
+            />
           ))}
         </colgroup>
         <TableHeader className="bg-control-bg">

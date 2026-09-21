@@ -19,6 +19,7 @@ import {
 } from "@/components/ProjectPageLayout";
 import { RouterLink } from "@/components/RouterLink";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
+import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -89,6 +90,52 @@ type GrantColumn = {
   sortKey?: SortKey;
   resizable?: boolean;
 };
+
+/** The table's columns, in `<colgroup>` order; titles follow the language. */
+export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
+  {
+    key: "status",
+    title: t("common.status"),
+    defaultWidth: 160,
+    minWidth: 128,
+  },
+  {
+    key: "creator",
+    title: t("common.creator"),
+    defaultWidth: 200,
+    minWidth: 128,
+    sortKey: "creator",
+  },
+  {
+    key: "created",
+    title: t("common.created-at"),
+    defaultWidth: 200,
+    minWidth: 132,
+    sortKey: "create_time",
+  },
+  {
+    key: "expiration",
+    title: t("common.expiration"),
+    defaultWidth: TIMESTAMP_COLUMN.operational.width,
+    minWidth: TIMESTAMP_COLUMN.operational.minWidth,
+    sortKey: "expire_time",
+  },
+  {
+    key: "statement",
+    title: t("common.statement"),
+    defaultWidth: 400,
+    minWidth: 180,
+  },
+  {
+    key: "databases",
+    title: t("common.databases"),
+    defaultWidth: 240,
+    minWidth: 128,
+  },
+  // Trailing actions column — no title (blank header), fixed
+  // width sized for two ghost buttons + "View issue".
+  { key: "actions", defaultWidth: 140, minWidth: 96, resizable: false },
+];
 
 function hashCode(str: string): number {
   let hash = 0;
@@ -477,59 +524,9 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
     })();
   }, [fetchIssueByName, issueByGrantName, paged.dataList]);
 
-  // Translated column descriptors. Built inside the component (not at
-  // module scope) so `title` strings resolve via `t()` and update
-  // automatically on language switches. Memoized on `t` so the
-  // descriptor array identity is stable between renders within the
-  // same language — which matters because `useColumnWidths` reads the
-  // initial widths from this array on first render.
-  const columns = useMemo<GrantColumn[]>(
-    () => [
-      {
-        key: "status",
-        title: t("common.status"),
-        defaultWidth: 160,
-        minWidth: 128,
-      },
-      {
-        key: "creator",
-        title: t("common.creator"),
-        defaultWidth: 200,
-        minWidth: 128,
-        sortKey: "creator",
-      },
-      {
-        key: "created",
-        title: t("common.created-at"),
-        defaultWidth: 200,
-        minWidth: 132,
-        sortKey: "create_time",
-      },
-      {
-        key: "expiration",
-        title: t("common.expiration"),
-        defaultWidth: 200,
-        minWidth: 132,
-        sortKey: "expire_time",
-      },
-      {
-        key: "statement",
-        title: t("common.statement"),
-        defaultWidth: 400,
-        minWidth: 180,
-      },
-      {
-        key: "databases",
-        title: t("common.databases"),
-        defaultWidth: 240,
-        minWidth: 128,
-      },
-      // Trailing actions column — no title (blank header), fixed
-      // width sized for two ghost buttons + "View issue".
-      { key: "actions", defaultWidth: 140, minWidth: 96, resizable: false },
-    ],
-    [t]
-  );
+  // Memoized on `t` so the array identity is stable within a language:
+  // `useColumnWidths` reads the initial widths from it on first render.
+  const columns = useMemo(() => grantColumns(t), [t]);
 
   // User-controlled column widths so long statements / databases /
   // expiration values aren't permanently truncated by the table's

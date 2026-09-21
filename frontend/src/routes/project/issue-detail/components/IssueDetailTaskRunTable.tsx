@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
+import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import {
   Table,
@@ -107,10 +108,18 @@ export function IssueDetailTaskRunTable({
               <TableHead className="sticky top-0 z-10 bg-control-bg/50">
                 {t("common.detail")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-36 bg-control-bg/50">
+              {/* Sized to the form, since the detail column is the one
+                  that fills; a narrower column breaks a date in two. */}
+              <TableHead
+                className="sticky top-0 z-10 bg-control-bg/50"
+                style={{ width: TIMESTAMP_COLUMN.compact.width }}
+              >
                 {t("task.created")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-36 bg-control-bg/50">
+              <TableHead
+                className="sticky top-0 z-10 bg-control-bg/50"
+                style={{ width: TIMESTAMP_COLUMN.compact.width }}
+              >
                 {t("task.started")}
               </TableHead>
               <TableHead className="sticky top-0 z-10 w-28 bg-control-bg/50 pr-6 whitespace-nowrap text-sm">
@@ -184,7 +193,7 @@ function IssueDetailTaskRunDateCell({ date }: { date?: Timestamp }) {
     <HumanizeTs
       mode="compact"
       tsMs={getTimeForPbTimestampProtoEs(date)}
-      className="text-sm text-control"
+      className="block truncate text-sm text-control"
     />
   );
 }

@@ -36,6 +36,7 @@ vi.mock("@/components/HumanizeTs", async () => ({
   ...(await import("@/test-utils/humanizeTs")).humanizeTsStub(),
 }));
 
+import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
 import { DatabaseChangelogTable } from "./DatabaseChangelogTable";
 
 const renderIntoContainer = (element: ReactElement) => {
@@ -67,7 +68,7 @@ beforeEach(() => {
 });
 
 describe("DatabaseChangelogTable", () => {
-  test("gives the timestamp a fixed share and the title the rest, adjustably", () => {
+  test("sizes the date to its form and lets the title fill", () => {
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseChangelogTable
         loading={false}
@@ -77,18 +78,17 @@ describe("DatabaseChangelogTable", () => {
 
     render();
 
-    // The timestamp column is sized for its own value and the title column
-    // takes what is left, so a date never wraps and a long title still has
-    // room. Both are draggable, since which one matters is the reader's call.
-    const widths = Array.from(container.querySelectorAll("col")).map((col) =>
-      Number.parseInt(col.style.width, 10)
-    );
-    const [, created, rollout] = widths;
-    expect(created).toBeGreaterThanOrEqual(190);
-    expect(rollout).toBeGreaterThan(created);
+    // A fixed-layout table spreads spare width across every sized column, so
+    // the title is left unsized to take it: the date keeps exactly its form's
+    // width at any viewport, which is what keeps it on one line without
+    // letting it grow. Only the date is draggable -- widening it is how the
+    // reader trades room with the title.
+    const [, created, rollout] = Array.from(container.querySelectorAll("col"));
+    expect(created.style.width).toBe(`${TIMESTAMP_COLUMN.compact.width}px`);
+    expect(rollout.style.width).toBe("");
     expect(
       container.querySelectorAll("[class*=cursor-col-resize]")
-    ).toHaveLength(2);
+    ).toHaveLength(1);
 
     unmount();
   });

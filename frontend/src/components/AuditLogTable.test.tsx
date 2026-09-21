@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import {
   AuditLog_Severity,
@@ -172,6 +173,26 @@ afterEach(() => {
 });
 
 describe("AuditLogTable", () => {
+  test("keeps the full date-time on one line at any width", async () => {
+    // The evidence tier's tooltip is the age, which cannot give the value
+    // back, so its column never narrows past the form: sized to it, and the
+    // floor a drag stops at.
+    mocks.searchAuditLogs.mockResolvedValue({
+      auditLogs: [create(AuditLogSchema, { name: "auditLogs/1" })],
+      nextPageToken: "",
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/-" canExport={false} />
+    );
+    await render();
+
+    const [created] = Array.from(container.querySelectorAll("col"));
+    expect(created.style.width).toBe(`${TIMESTAMP_COLUMN.datetime.width}px`);
+
+    unmount();
+  });
+
+
   test("searches only the matching special-account kind for a prefixed actor", async () => {
     mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });
     mocks.listServiceAccounts.mockResolvedValue({
