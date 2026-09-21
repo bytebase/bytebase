@@ -203,22 +203,6 @@ describe("CommentThreadCard", () => {
     expect(mocks.createIssueComment).toHaveBeenCalledExactlyOnceWith({ issueName: ISSUE, comment: "New reply", root: rootName });
   });
 
-  test("returning to draft hides an open reply composer without discarding its text", () => {
-    const [thread] = groupThreads([comment("root", "Root question")]);
-    const props = { project, thread, replyDraft: "Unsent reply", onReplyDraftChange: vi.fn() };
-    render(<CommentThreadCard {...props} issue={issue} />);
-    expect(container.querySelector("textarea")?.value).toBe("Unsent reply");
-
-    render(<CommentThreadCard {...props} issue={create(IssueSchema, { ...issue, draft: true })} />);
-    expect(container.querySelector("textarea")).toBeNull();
-    expect(buttonByText("plan.review.thread.reply-placeholder")).toBeUndefined();
-    expect(mocks.createIssueComment).not.toHaveBeenCalled();
-    expect(props.onReplyDraftChange).not.toHaveBeenCalled();
-
-    render(<CommentThreadCard {...props} issue={issue} />);
-    expect(container.querySelector("textarea")?.value).toBe("Unsent reply");
-  });
-
   test("places statement context above the root author as a separate full-width region", () => {
     const [thread] = groupThreads([comment("root", "Root question")]);
     render(

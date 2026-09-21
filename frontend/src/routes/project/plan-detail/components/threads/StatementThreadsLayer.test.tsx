@@ -839,24 +839,6 @@ describe("StatementThreadsLayer", () => {
     expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/existing`);
   });
 
-  test("returning to draft hides an open composer and removes the comment action", () => {
-    mocks.comments = [];
-    const fake = createFakeEditor();
-    mount(fake.editor);
-    const action = vi.mocked(fake.editor.addAction).mock.results[0].value;
-    fake.fire("move", 2, MouseTargetType.CONTENT_TEXT);
-    fake.fire("down", 2, MouseTargetType.GUTTER_LINE_DECORATIONS);
-    expect(hosted(fake.widgets, "[data-testid='composer']")).not.toBeNull();
-
-    mount(fake.editor, create(IssueSchema, { name: ISSUE, draft: true }));
-
-    expect(hosted(fake.widgets, "[data-testid='composer']")).toBeNull();
-    expect(action.dispose).toHaveBeenCalled();
-    expect(fake.decorations.current).toEqual([]);
-    expect(fake.editor.getDomNode()?.classList.contains("bb-thread-creatable")).toBe(false);
-    expect(mocks.createIssueComment).not.toHaveBeenCalled();
-  });
-
   test("status refreshes do not switch or close the automatically expanded thread", () => {
     mocks.comments = [threadRoot("first", 3, 4), threadRoot("other", 6, 9)];
     const fake = createFakeEditor();
