@@ -26,7 +26,6 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -434,7 +433,7 @@ func (d *Driver) queryStatement(ctx context.Context, statement string, queryCont
 		result.Rows = append(result.Rows, rowData)
 		n := len(result.Rows)
 		if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
-			result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
+			result.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
 			break
 		}
 		if queryContext.Limit > 0 && n >= queryContext.Limit {
