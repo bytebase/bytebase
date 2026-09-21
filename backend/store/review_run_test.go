@@ -53,12 +53,12 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 	require.Equal(t, storepb.ReviewRun_AVAILABLE, run.Status)
 
 	// The superseded execution's completion is fenced off.
-	updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil)
+	updated, err := s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil, nil)
 	require.NoError(t, err)
 	require.False(t, updated, "a superseded completion must match zero rows")
 
 	// Only terminal statuses complete a run.
-	_, err = s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_AVAILABLE, nil)
+	_, err = s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_AVAILABLE, nil, nil)
 	require.Error(t, err)
 
 	// Claim the new attempt and complete it for real.
@@ -66,7 +66,7 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, claimed, 1)
 	require.Equal(t, int64(1), claimed[0].Attempt)
-	updated, err = s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "boom"})
+	updated, err = s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_FAILED, &storepb.ReviewRunPayload{Error: "boom"}, nil)
 	require.NoError(t, err)
 	require.True(t, updated)
 
@@ -79,7 +79,7 @@ func TestReviewRunStoreLifecycle(t *testing.T) {
 	require.Equal(t, "boom", payloadError)
 
 	// A terminal row never completes again.
-	updated, err = s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil)
+	updated, err = s.CompleteReviewRun(ctx, claimed[0], "replica-1", storepb.ReviewRun_DONE, nil, nil)
 	require.NoError(t, err)
 	require.False(t, updated)
 

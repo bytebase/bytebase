@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // GuidelineExecutor is the natural-language guideline reviewer, performed by
@@ -21,6 +23,6 @@ func NewGuidelineExecutor() *GuidelineExecutor {
 }
 
 // RunOnce implements Executor.
-func (*GuidelineExecutor) RunOnce(_ context.Context, _ string, _ int64) error {
-	return errors.New("guideline review is not implemented yet")
+func (*GuidelineExecutor) RunOnce(_ context.Context, _ string, _ int64) ([]*store.IssueCommentMessage, error) {
+	return nil, errors.New("guideline review is not implemented yet")
 }

@@ -149,10 +149,23 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 }
 
 // CompleteReviewRun moves a RUNNING run this replica owns to a terminal
-// status, fenced on the claim's attempt. False means superseded: the slot was
-// reset or reaped since the claim, and the caller must discard its work.
-func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun, replicaID string, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload) (bool, error) {
-	if status != storepb.ReviewRun_DONE && status != storepb.ReviewRun_FAILED {
+// status, fenced on the claim's attempt. On DONE it posts the run's results in
+// the same transaction: every OPEN root the same reviewer posted on the issue
+// is resolved, then the results are inserted as OPEN roots with no creator. A
+// FAILED run leaves the comments alone and takes no results. False means
+// superseded: the slot was reset or reaped since the claim, and nothing was
+// written.
+//
+// Lock order: the issue's review comments, then the run slot, the order the
+// project purge deletes them in.
+func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun, replicaID string, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload, results []*IssueCommentMessage) (bool, error) {
+	switch status {
+	case storepb.ReviewRun_DONE:
+	case storepb.ReviewRun_FAILED:
+		if len(results) > 0 {
+			return false, errors.New("a failed review run posts no results")
+		}
+	default:
 		return false, errors.Errorf("invalid terminal review run status %v", status)
 	}
 	if payload == nil {
@@ -161,6 +174,51 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 	payloadBytes, err := protojson.Marshal(payload)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to marshal review run payload")
+	}
+	resultPayloads, err := marshalReviewResults(claimed, results)
+	if err != nil {
+		return false, err
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	if status == storepb.ReviewRun_DONE {
+		// The literal 'OPEN' lets the planner use idx_issue_comment_open_thread.
+		q := qb.Q().Space(`
+			UPDATE issue_comment
+			SET thread_state = ?
+			WHERE project = ? AND issue_id = ?
+			  AND parent_id IS NULL AND thread_state = 'OPEN'
+			  AND payload->'reviewMetadata'->>'runType' = ?
+		`, string(ThreadStateResolved), claimed.ProjectID, claimed.IssueUID, claimed.Type)
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to build sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return false, errors.Wrapf(err, "failed to resolve previous review results")
+		}
+		if len(resultPayloads) > 0 {
+			// created_at is offset by the ordinal for the same reason as in
+			// CreateIssueComments: the batch keeps its order.
+			q := qb.Q().Space(`
+				INSERT INTO issue_comment (creator, project, issue_id, payload, thread_state, created_at, updated_at)
+				SELECT NULL, ?, ?, c.payload, 'OPEN', t.at, t.at
+				FROM unnest(?::JSONB[]) WITH ORDINALITY AS c(payload, ordinality),
+				     LATERAL (SELECT now() + ((c.ordinality - 1) * interval '1 microsecond')) AS t(at)
+			`, claimed.ProjectID, claimed.IssueUID, resultPayloads)
+			query, args, err := q.ToSQL()
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to build sql")
+			}
+			if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+				return false, errors.Wrapf(err, "failed to post review results")
+			}
+		}
 	}
 
 	q := qb.Q().Space(`
@@ -177,7 +235,7 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 		return false, errors.Wrapf(err, "failed to build sql")
 	}
 
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to complete review run")
 	}
@@ -185,7 +243,47 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get rows affected")
 	}
-	return rowsAffected > 0, nil
+	if rowsAffected == 0 {
+		// Superseded: the rollback discards the results.
+		return false, nil
+	}
+	if err := tx.Commit(); err != nil {
+		return false, errors.Wrapf(err, "failed to commit tx")
+	}
+	return true, nil
+}
+
+// marshalReviewResults checks that every result is a root comment the
+// claimed reviewer posted, with no event and no creator, and returns the
+// payloads to insert.
+func marshalReviewResults(claimed *ClaimedReviewRun, results []*IssueCommentMessage) ([][]byte, error) {
+	payloads := make([][]byte, 0, len(results))
+	for _, result := range results {
+		if result.ProjectID != claimed.ProjectID || result.IssueUID != claimed.IssueUID {
+			return nil, errors.Errorf("review result for issue %d in project %s does not belong to the run on issue %d in project %s", result.IssueUID, result.ProjectID, claimed.IssueUID, claimed.ProjectID)
+		}
+		if result.ParentID != nil || result.CreatorEmail != "" {
+			return nil, errors.New("a review result is a root comment with no creator")
+		}
+		if result.ThreadState != nil && *result.ThreadState != ThreadStateOpen {
+			return nil, errors.New("a review result starts its thread OPEN")
+		}
+		if result.Payload.GetEvent() != nil {
+			return nil, errors.New("a review result cannot carry an event")
+		}
+		if result.Payload.GetReviewMetadata().GetRunType().String() != claimed.Type {
+			return nil, errors.Errorf("review result names reviewer %q; the run is %q", result.Payload.GetReviewMetadata().GetRunType(), claimed.Type)
+		}
+		if err := validateIssueCommentPayload(result.Payload); err != nil {
+			return nil, err
+		}
+		payload, err := protojson.Marshal(result.Payload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal review result")
+		}
+		payloads = append(payloads, payload)
+	}
+	return payloads, nil
 }
 
 // FailStaleReviewRuns fails RUNNING review runs whose owning replica has no

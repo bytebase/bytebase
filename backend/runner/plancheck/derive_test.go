@@ -22,6 +22,7 @@ func TestDeriveReviewTargetsSkipsCISampling(t *testing.T) {
 	plan := &store.PlanMessage{
 		Config: &storepb.PlanConfig{
 			Specs: []*storepb.PlanConfig_Spec{{
+				Id: "spec-1",
 				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
 						Targets: []string{
@@ -42,4 +43,7 @@ func TestDeriveReviewTargetsSkipsCISampling(t *testing.T) {
 	full, err := DeriveReviewTargets(ctx, nil, project, plan, nil)
 	require.NoError(t, err)
 	require.Len(t, full, 3, "review must evaluate every target regardless of CI sampling")
+	for _, target := range full {
+		require.Equal(t, "spec-1", target.SpecID, "a review result anchors on its spec")
+	}
 }

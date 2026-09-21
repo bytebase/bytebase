@@ -5,88 +5,206 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bytebase/omni/review"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/component/dbfactory"
-	"github.com/bytebase/bytebase/backend/component/sheet"
+	"github.com/bytebase/bytebase/backend/common"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
+// maxBackupSize is the largest SQL text prior backup can handle, the same
+// bound the task executor enforces.
+const maxBackupSize = common.MaxSheetCheckSize
+
 // RuleExecutor evaluates the standard rules against every (spec, target)
-// unit of the issue's plan.
-//
-// Findings are not persisted yet: review results become issue comments, and
-// the comment integration lands with the comment-thread design. The executor
-// still evaluates every unit for real so the run lifecycle, fencing, and
-// failure aggregation exercise the true path; computed advices are
-// discarded.
+// unit of the issue's plan through omni's SQL Review V2 contract: one Review
+// call per (spec, engine), the caller resolving every input that needs the
+// store and the engine deriving the findings.
 type RuleExecutor struct {
-	store        *store.Store
-	sheetManager *sheet.Manager
-	dbFactory    *dbfactory.DBFactory
+	store     *store.Store
+	reviewers map[storepb.Engine]review.ReviewFunc
 }
 
 // NewRuleExecutor creates the standard-rule review executor.
-func NewRuleExecutor(s *store.Store, sheetManager *sheet.Manager, dbFactory *dbfactory.DBFactory) *RuleExecutor {
-	return &RuleExecutor{
-		store:        s,
-		sheetManager: sheetManager,
-		dbFactory:    dbFactory,
-	}
+func NewRuleExecutor(s *store.Store) *RuleExecutor {
+	return &RuleExecutor{store: s, reviewers: reviewers}
 }
 
-// RunOnce implements Executor.
-func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID int64) error {
+// RunOnce implements Executor. Collect-all, no fail-fast: every unit is
+// attempted, failures aggregate into one message, and the findings are
+// returned only when every unit was evaluated.
+func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID int64) ([]*store.IssueCommentMessage, error) {
 	issue, err := e.store.GetIssue(ctx, &store.FindIssueMessage{ProjectIDs: []string{projectID}, UID: &issueUID})
 	if err != nil {
-		return errors.Wrapf(err, "failed to get issue")
+		return nil, errors.Wrapf(err, "failed to get issue")
 	}
 	if issue == nil {
-		return errors.Errorf("issue %d not found in project %s", issueUID, projectID)
+		return nil, errors.Errorf("issue %d not found in project %s", issueUID, projectID)
 	}
 	if issue.PlanUID == nil {
-		return errors.Errorf("issue %d has no plan", issueUID)
+		return nil, errors.Errorf("issue %d has no plan", issueUID)
 	}
 	plan, err := e.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: projectID, UID: issue.PlanUID})
 	if err != nil {
-		return errors.Wrapf(err, "failed to get plan")
+		return nil, errors.Wrapf(err, "failed to get plan")
 	}
 	if plan == nil {
-		return errors.Errorf("plan %d not found in project %s", *issue.PlanUID, projectID)
+		return nil, errors.Errorf("plan %d not found in project %s", *issue.PlanUID, projectID)
 	}
 	project, err := e.store.GetProjectByResourceID(ctx, projectID)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get project")
+		return nil, errors.Wrapf(err, "failed to get project")
 	}
 	if project == nil {
-		return errors.Errorf("project %s not found", projectID)
+		return nil, errors.Errorf("project %s not found", projectID)
+	}
+	policy, err := e.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get review rule policy")
 	}
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get database group for plan")
+		return nil, errors.Wrapf(err, "failed to get database group for plan")
 	}
 	// DeriveReviewTargets, not DeriveCheckTargets: review must evaluate every
 	// (spec, target) unit, so the CI sampling limit does not apply.
-	targets, err := plancheck.DeriveReviewTargets(ctx, e.store, project, plan, databaseGroup)
+	checkTargets, err := plancheck.DeriveReviewTargets(ctx, e.store, project, plan, databaseGroup)
 	if err != nil {
-		return errors.Wrapf(err, "failed to derive review targets")
+		return nil, errors.Wrapf(err, "failed to derive review targets")
 	}
 
-	adviseExecutor := plancheck.NewStatementAdviseExecutor(e.store, e.sheetManager, e.dbFactory)
 	var unitErrs []error
-	for _, target := range targets {
+	var targets []*reviewTarget
+	for _, checkTarget := range checkTargets {
 		if err := ctx.Err(); err != nil {
-			return err
+			return nil, err
 		}
-		// Collect-all, no fail-fast: every unit is attempted, and failures
-		// aggregate into one message.
-		if _, err := adviseExecutor.RunForTarget(ctx, target); err != nil {
-			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", target.Target))
+		target, err := e.resolveReviewTarget(ctx, project, checkTarget)
+		if err != nil {
+			unitErrs = append(unitErrs, errors.Wrapf(err, "%s", checkTarget.Target))
+			continue
 		}
+		targets = append(targets, target)
 	}
-	return aggregateUnitErrors(len(targets), unitErrs)
+
+	var comments []*store.IssueCommentMessage
+	sheets := make(map[string]string)
+	for _, unit := range groupReviewUnits(reviewRules(policy), targets) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		reviewer, ok := e.reviewers[unit.Engine]
+		if !ok {
+			unitErrs = append(unitErrs, unit.failures(errors.Errorf("engine %s has no standard rule reviewer", unit.Engine))...)
+			continue
+		}
+		sql, ok := sheets[unit.SheetSha256]
+		if !ok {
+			sheet, err := e.store.GetSheetFull(ctx, unit.SheetSha256)
+			if err != nil {
+				unitErrs = append(unitErrs, unit.failures(errors.Wrapf(err, "failed to get sheet"))...)
+				continue
+			}
+			if sheet == nil {
+				unitErrs = append(unitErrs, unit.failures(errors.Errorf("sheet %s not found", unit.SheetSha256))...)
+				continue
+			}
+			sql = sheet.Statement
+			sheets[unit.SheetSha256] = sql
+		}
+		inputs := make([]review.Target, 0, len(unit.Targets))
+		for _, target := range unit.Targets {
+			inputs = append(inputs, target.Input)
+		}
+		result, err := reviewer(ctx, sql, unit.Options, inputs)
+		if err != nil {
+			unitErrs = append(unitErrs, unit.failures(err)...)
+			continue
+		}
+		for _, failure := range result.Failures {
+			if failure.Target < 0 || failure.Target >= len(unit.Targets) {
+				unitErrs = append(unitErrs, errors.Wrapf(failure.Err, "target %d of spec %s", failure.Target, unit.SpecID))
+				continue
+			}
+			unitErrs = append(unitErrs, errors.Wrapf(failure.Err, "%s", unit.Targets[failure.Target].Check.Target))
+		}
+		comments = append(comments, reviewResultComments(projectID, issueUID, unit, sql, result)...)
+	}
+	if err := aggregateUnitErrors(len(checkTargets), unitErrs); err != nil {
+		return nil, err
+	}
+	return comments, nil
+}
+
+// failures reports one error per target of the unit, so the aggregate counts
+// every database the failure kept from being reviewed.
+func (u *reviewUnit) failures(err error) []error {
+	errs := make([]error, 0, len(u.Targets))
+	for _, target := range u.Targets {
+		errs = append(errs, errors.Wrapf(err, "%s", target.Check.Target))
+	}
+	return errs
+}
+
+// resolveReviewTarget gathers the inputs the engine cannot derive from the
+// SQL: the synced schema, and the instance facts the review contract lists.
+// A database whose schema is not synced cannot be reviewed.
+func (e *RuleExecutor) resolveReviewTarget(ctx context.Context, project *store.ProjectMessage, checkTarget *plancheck.CheckTarget) (*reviewTarget, error) {
+	instance, database, err := plancheck.ResolveDatabaseTarget(ctx, e.store, checkTarget.Target)
+	if err != nil {
+		return nil, err
+	}
+	engine := instance.Metadata.GetEngine()
+	dbSchema, err := e.store.GetDBSchema(ctx, &store.FindDBSchemaMessage{
+		Workspace:    instance.Workspace,
+		InstanceID:   database.InstanceID,
+		DatabaseName: database.DatabaseName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database schema")
+	}
+	if dbSchema == nil || dbSchema.GetProto() == nil {
+		return nil, errors.New("metadata not synced")
+	}
+	schema := dbSchema.GetProto()
+
+	backupDatabaseName := common.BackupDatabaseNameOfEngine(engine)
+	backupDatabase, err := e.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    instance.Workspace,
+		InstanceID:   &instance.ResourceID,
+		DatabaseName: &backupDatabaseName,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to look up backup database %q", backupDatabaseName)
+	}
+
+	return &reviewTarget{
+		Check:  checkTarget,
+		Engine: engine,
+		Input: review.Target{
+			Schema:               schema,
+			BackupDatabaseExists: backupDatabase != nil,
+			SessionUser:          sessionUser(project, instance, schema.GetOwner()),
+			LowerCaseTableNames:  int(instance.Metadata.GetMysqlLowerCaseTableNames()),
+		},
+	}, nil
+}
+
+// sessionUser is the role the change runs as: the database owner when the
+// project's PostgreSQL tenant mode switches to it, else the admin data
+// source's login user. Empty opts out of the engine's ownership checks.
+func sessionUser(project *store.ProjectMessage, instance *store.InstanceMessage, owner string) string {
+	if instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
+		return ""
+	}
+	if project.Setting.GetPostgresDatabaseTenantMode() {
+		return owner
+	}
+	return utils.DataSourceFromInstanceWithType(instance, storepb.DataSourceType_ADMIN).GetUsername()
 }
 
 // aggregateUnitErrors folds per-unit failures into one message, e.g.

@@ -360,7 +360,9 @@ CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 CREATE TABLE issue_comment (
     -- global unique
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
-    creator text NOT NULL,
+    -- NULL on review results, which a reviewer posts (payload.review_metadata
+    -- names it), never a person.
+    creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),

@@ -90,13 +90,16 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_AVAILABLE, runB.Status)
 
-	// The scheduler claims and executes both; the rule engine evaluates the
-	// real test databases and the runs reach DONE.
+	// The scheduler claims and executes both. The rule executor evaluates
+	// the real test databases through omni's SQL Review V2 contract; until
+	// omni ships this engine's review package, the run fails honestly rather
+	// than reporting a vacuous DONE. Flip these to DONE when it registers.
 	rowA := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
-	a.Equal("DONE", rowA.Status, "rule review on project A should succeed, got payload %s", rowA.Payload)
+	a.Equal("FAILED", rowA.Status, "rule review on project A, got payload %s", rowA.Payload)
+	a.Contains(rowA.Payload, "has no standard rule reviewer")
 	a.Equal(int64(0), rowA.Attempt)
 	rowB := waitReviewRunTerminal(ctx, t, ctl, projectBID, issueBUID, "RULE")
-	a.Equal("DONE", rowB.Status, "rule review on project B should succeed, got payload %s", rowB.Payload)
+	a.Equal("FAILED", rowB.Status, "rule review on project B, got payload %s", rowB.Payload)
 	a.Equal(int64(0), rowB.Attempt)
 
 	// Re-running A bumps only A's attempt; B's colliding slot is untouched.
@@ -107,7 +110,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	a.Equal(v1pb.ReviewRun_AVAILABLE, runA2.Status)
 	rowA2 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
 	a.Equal(int64(1), rowA2.Attempt)
-	a.Equal("DONE", rowA2.Status)
+	a.Equal("FAILED", rowA2.Status)
 	afterB := listReviewRuns(ctx, t, ctl, projectBID)
 	a.Equal(beforeB, afterB, "project B review_run rows must be untouched by A's re-run")
 
@@ -143,5 +146,5 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	// The failed guideline run left A's rule slot alone.
 	rowA3 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
 	a.Equal(int64(1), rowA3.Attempt)
-	a.Equal("DONE", rowA3.Status)
+	a.Equal("FAILED", rowA3.Status)
 }
