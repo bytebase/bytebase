@@ -565,7 +565,7 @@ function ThreadActivityRow({
             />
           )
         }
-        issueName={issue.name}
+        issue={issue}
         project={project}
         thread={thread}
       />

@@ -3,7 +3,7 @@ import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { createRef, useState } from "react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { IssueCommentSchema } from "@/types/proto-es/v1/issue_service_pb";
+import { IssueCommentSchema, IssueSchema } from "@/types/proto-es/v1/issue_service_pb";
 import type { EditorThread } from "./threadModel";
 import { ThreadStack } from "./ThreadStack";
 
@@ -46,7 +46,7 @@ const entry = (name: string, resolved: boolean, seconds: number): EditorThread =
   },
 });
 const props = {
-  issueName: "projects/p/issues/1",
+  issue: create(IssueSchema, { name: "projects/p/issues/1" }),
   project: undefined,
   onCollapse: vi.fn(),
   onExpand: vi.fn(),

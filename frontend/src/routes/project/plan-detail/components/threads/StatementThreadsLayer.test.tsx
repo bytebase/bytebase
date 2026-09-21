@@ -422,12 +422,12 @@ const giveElementsHeight = () =>
     .spyOn(HTMLElement.prototype, "getBoundingClientRect")
     .mockReturnValue(new DOMRect(0, 0, 700, 100));
 
-const mount = (editor: IStandaloneCodeEditor) =>
+const mount = (editor: IStandaloneCodeEditor, currentIssue = issue) =>
   act(() =>
     root.render(
       <StatementThreadsLayer
         editor={editor}
-        issue={issue}
+        issue={currentIssue}
         monaco={fakeMonaco}
         sheetSha256={SHA}
         spec={spec}
@@ -814,6 +814,31 @@ describe("StatementThreadsLayer", () => {
     ).not.toHaveBeenCalled();
   });
 
+  test("draft issues show existing threads but enable creation only after submission", () => {
+    mocks.comments = [threadRoot("existing", 3, 4)];
+    const fake = createFakeEditor();
+    mount(fake.editor, create(IssueSchema, { name: ISSUE, draft: true }));
+
+    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/existing`);
+    fake.fire("move", 2, MouseTargetType.CONTENT_TEXT);
+    expect(classesOf(fake.decorations.current, 2)).not.toContain("bb-thread-add-glyph");
+    fake.fire("down", 2, MouseTargetType.GUTTER_LINE_NUMBERS);
+    fake.release();
+    fake.fire("down", 2, MouseTargetType.GUTTER_LINE_DECORATIONS);
+    expect(hosted(fake.widgets, "[data-testid='composer']")).toBeNull();
+    expect(fake.editor.addAction).not.toHaveBeenCalled();
+    expect(fake.editor.getDomNode()?.classList.contains("bb-thread-creatable")).toBe(false);
+
+    mount(fake.editor);
+
+    expect(fake.editor.addAction).toHaveBeenCalled();
+    fake.fire("move", 2, MouseTargetType.CONTENT_TEXT);
+    expect(classesOf(fake.decorations.current, 2)).toContain("bb-thread-add-glyph");
+    fake.fire("down", 2, MouseTargetType.GUTTER_LINE_DECORATIONS);
+    expect(hosted(fake.widgets, "[data-testid='composer']")).not.toBeNull();
+    expect(cardRoot(fake.widgets)).toBe(`${ISSUE}/issueComments/existing`);
+  });
+
   test("status refreshes do not switch or close the automatically expanded thread", () => {
     mocks.comments = [threadRoot("first", 3, 4), threadRoot("other", 6, 9)];
     const fake = createFakeEditor();
@@ -954,4 +979,3 @@ describe("StatementThreadsLayer", () => {
     expect(hosted(fake.widgets, "[data-testid='thread-walker']")).not.toBeNull();
   });
 });
-

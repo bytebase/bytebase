@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   IssueComment_ThreadState,
   IssueCommentSchema,
+  IssueSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 
@@ -109,6 +110,7 @@ import { groupThreads } from "./threadModel";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const ISSUE = "projects/p/issues/1";
+const issue = create(IssueSchema, { name: ISSUE });
 const project = { name: "projects/p" } as Project;
 
 const comment = (
@@ -182,11 +184,30 @@ const denySettle = () =>
   );
 
 describe("CommentThreadCard", () => {
+  test("draft issues keep existing discussion visible and allow replies only after submission", async () => {
+    const [thread] = groupThreads([
+      comment("root", "Root question"),
+      comment("reply", "Existing reply", { root: rootName }),
+    ]);
+    const props = { project, thread };
+    render(<CommentThreadCard {...props} issue={create(IssueSchema, { ...issue, draft: true })} />);
+    expect(container.textContent).toContain("Root question");
+    expect(container.textContent).toContain("Existing reply");
+    expect(buttonByText("plan.review.thread.reply-placeholder")).toBeUndefined();
+
+    render(<CommentThreadCard {...props} issue={issue} replyDraft="New reply" />);
+    click(buttonByText("plan.review.thread.reply-placeholder"));
+    mocks.createIssueComment.mockResolvedValueOnce(comment("new-reply", "New reply", { root: rootName }));
+    submitReply();
+    await act(async () => {});
+    expect(mocks.createIssueComment).toHaveBeenCalledExactlyOnceWith({ issueName: ISSUE, comment: "New reply", root: rootName });
+  });
+
   test("places statement context above the root author as a separate full-width region", () => {
     const [thread] = groupThreads([comment("root", "Root question")]);
     render(
       <CommentThreadCard
-        issueName={ISSUE}
+        issue={issue}
         project={project}
         thread={thread}
         context={<div data-testid="anchor-context">SELECT 1;</div>}
@@ -209,7 +230,7 @@ describe("CommentThreadCard", () => {
       comment("r1", "First reply", { root: rootName }),
     ]);
     render(
-      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+      <CommentThreadCard issue={issue} project={project} thread={thread} />
     );
     const bodies = Array.from(
       container.querySelectorAll("[data-testid='preview']")
@@ -226,7 +247,7 @@ describe("CommentThreadCard", () => {
       comment("r1", "Reply", { root: rootName, creator: "users/bob@example.com" }),
     ]);
     render(
-      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+      <CommentThreadCard issue={issue} project={project} thread={thread} />
     );
     expect(container.textContent).toContain("plan.review.thread.n-replies:1");
     expect(container.querySelector("[data-testid='preview']")).toBeNull();
@@ -241,7 +262,7 @@ describe("CommentThreadCard", () => {
 
   test("roots and replies share header avatars and a full-width body", () => {
     const [thread] = groupThreads([comment("root", "Root"), comment("r1", "Reply", { root: rootName })]);
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} />);
     const comments = container.querySelectorAll("[data-testid='thread-comment']");
     for (const comment of comments) {
       const content = comment.querySelector("[data-testid='comment-content']");
@@ -254,17 +275,17 @@ describe("CommentThreadCard", () => {
     expect(container.querySelector("[data-testid='reply-composer-avatar']")).not.toBeNull();
     click(buttonByText("common.cancel"));
     expect(container.querySelector("[data-testid='reply-composer-avatar']")).toBeNull();
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} />);
     expect(container.querySelector("[data-testid='thread-comment'] [data-testid='comment-avatar']")).not.toBeNull();
   });
 
   test("new replies do not hide replies already visible in a short thread", () => {
     const replies = Array.from({ length: 6 }, (_, index) => comment(`r${index}`, `Reply ${index}`, { root: rootName }));
     const [short] = groupThreads([comment("root", "Root"), ...replies.slice(0, 4)]);
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={short} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={short} />);
     expect(container.querySelectorAll("[data-testid='preview']")).toHaveLength(5);
     const [long] = groupThreads([comment("root", "Root"), ...replies]);
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={long} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={long} />);
     expect(container.querySelectorAll("[data-testid='preview']")).toHaveLength(7);
   });
 
@@ -274,7 +295,7 @@ describe("CommentThreadCard", () => {
     );
     const [thread] = groupThreads([comment("root", "Root"), ...replies]);
     render(
-      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+      <CommentThreadCard issue={issue} project={project} thread={thread} />
     );
     const visible = () =>
       Array.from(container.querySelectorAll("[data-testid='preview']")).map(
@@ -297,7 +318,7 @@ describe("CommentThreadCard", () => {
       comment("root", "Root", { resolved: true })
     );
     render(
-      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+      <CommentThreadCard issue={issue} project={project} thread={thread} />
     );
 
     click(buttonByText("plan.review.thread.reply-placeholder"));
@@ -333,7 +354,7 @@ describe("CommentThreadCard", () => {
     const [thread] = groupThreads([comment("root", "Root", { resolved })]);
     const onThreadStateChanged = vi.fn();
     mocks.updateIssueComment.mockResolvedValue(comment("root", "Root", { resolved: !resolved }));
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} onThreadStateChanged={onThreadStateChanged} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} collapsible={false} onThreadStateChanged={onThreadStateChanged} />);
     click(buttonByText(resolved ? "common.reopen" : "plan.review.thread.resolve"));
     await act(async () => {});
     expect(onThreadStateChanged).toHaveBeenCalledExactlyOnceWith(!resolved);
@@ -343,12 +364,12 @@ describe("CommentThreadCard", () => {
     const [thread] = groupThreads([comment("root", "Root")]);
     const onThreadStateChanged = vi.fn();
     mocks.updateIssueComment.mockRejectedValueOnce(new Error("offline"));
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} onThreadStateChanged={onThreadStateChanged} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} collapsible={false} onThreadStateChanged={onThreadStateChanged} />);
     click(buttonByText("plan.review.thread.resolve"));
     await act(async () => {});
     expect(onThreadStateChanged).not.toHaveBeenCalled();
     const [updated] = groupThreads([comment("root", "Root", {resolved: true})]);
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={updated} collapsible={false} onThreadStateChanged={onThreadStateChanged} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={updated} collapsible={false} onThreadStateChanged={onThreadStateChanged} />);
     expect(onThreadStateChanged).not.toHaveBeenCalled();
     expect(container.querySelector("[data-testid='preview']")).not.toBeNull();
   });
@@ -358,7 +379,7 @@ describe("CommentThreadCard", () => {
     const onThreadStateChanged = vi.fn();
     let complete!: (value: ReturnType<typeof comment>) => void;
     mocks.updateIssueComment.mockReturnValueOnce(new Promise((resolve) => {complete = resolve;}));
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} onThreadStateChanged={onThreadStateChanged} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} collapsible={false} onThreadStateChanged={onThreadStateChanged} />);
     click(buttonByText("plan.review.thread.resolve"));
     render(<div />);
     await act(async () => {complete(comment("root", "Root", {resolved: true}));});
@@ -373,7 +394,7 @@ describe("CommentThreadCard", () => {
     mocks.updateIssueComment.mockImplementationOnce(() => new Promise((resolve) => {finishState = resolve;}));
     const onReplyDraftChange = vi.fn();
     const onThreadStateChanged = vi.fn();
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft="Decision details" onReplyDraftChange={onReplyDraftChange} onThreadStateChanged={onThreadStateChanged} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} collapsible={false} replyDraft="Decision details" onReplyDraftChange={onReplyDraftChange} onThreadStateChanged={onThreadStateChanged} />);
     // Open threads resolve when the box is ticked; resolved ones reopen by
     // default, so the box is left alone there.
     submitReply({ toggleState: !resolved });
@@ -390,7 +411,7 @@ describe("CommentThreadCard", () => {
 
   test.each([false, true])("the composer checkbox mirrors the thread state: resolved=%s", (resolved) => {
     const [thread] = groupThreads([comment("root", "Root", { resolved })]);
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft="Draft" onReplyDraftChange={vi.fn()} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} collapsible={false} replyDraft="Draft" onReplyDraftChange={vi.fn()} />);
     expect(stateCheckbox()?.getAttribute("aria-checked")).toBe(String(resolved));
     expect(container.querySelector("label")?.textContent).toBe(
       resolved ? "plan.review.thread.reopen-thread" : "plan.review.thread.resolve-thread"
@@ -403,7 +424,7 @@ describe("CommentThreadCard", () => {
     const [thread] = groupThreads([comment("root", "Root")]);
     const onThreadStateChanged = vi.fn();
     mocks.createIssueComment.mockResolvedValueOnce(comment("reply", "Just a note", { root: rootName }));
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft="Just a note" onReplyDraftChange={vi.fn()} onThreadStateChanged={onThreadStateChanged} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} collapsible={false} replyDraft="Just a note" onReplyDraftChange={vi.fn()} onThreadStateChanged={onThreadStateChanged} />);
     submitReply();
     await act(async () => {});
     expect(mocks.createIssueComment).toHaveBeenCalledTimes(1);
@@ -416,7 +437,7 @@ describe("CommentThreadCard", () => {
     const onThreadStateChanged = vi.fn();
     mocks.createIssueComment.mockResolvedValue(comment("reply", "Not done yet", { root: rootName }));
     mocks.updateIssueComment.mockResolvedValueOnce(comment("root", "Root", { resolved: false }));
-    const props = { issueName: ISSUE, project, thread, collapsible: false, onReplyDraftChange: vi.fn(), onThreadStateChanged };
+    const props = { issue, project, thread, collapsible: false, onReplyDraftChange: vi.fn(), onThreadStateChanged };
     render(<CommentThreadCard {...props} replyDraft="Not done yet" />);
     expect(stateCheckbox()?.getAttribute("aria-checked")).toBe("true");
     submitReply();
@@ -439,7 +460,7 @@ describe("CommentThreadCard", () => {
   test("hides the state checkbox without the update permission", () => {
     denySettle();
     const [thread] = groupThreads([comment("root", "Root")]);
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft="Draft" onReplyDraftChange={vi.fn()} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} collapsible={false} replyDraft="Draft" onReplyDraftChange={vi.fn()} />);
     expect(stateCheckbox()).toBeNull();
     expect(buttonByText("plan.review.thread.reply")).toBeDefined();
   });
@@ -448,7 +469,7 @@ describe("CommentThreadCard", () => {
     const [thread] = groupThreads([comment("root", "Root")]);
     const onReplyDraftChange = vi.fn();
     mocks.createIssueComment.mockRejectedValueOnce(new Error("offline"));
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} replyDraft="Keep this draft" onReplyDraftChange={onReplyDraftChange} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} replyDraft="Keep this draft" onReplyDraftChange={onReplyDraftChange} />);
     submitReply({ toggleState: true });
     await act(async () => {});
     expect(mocks.updateIssueComment).not.toHaveBeenCalled();
@@ -462,7 +483,7 @@ describe("CommentThreadCard", () => {
     const onReplyDraftChange = vi.fn();
     mocks.createIssueComment.mockResolvedValueOnce(comment("reply", "Posted", {root: rootName}));
     mocks.updateIssueComment.mockRejectedValueOnce(new Error("status update failed"));
-    render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} replyDraft="Posted" onReplyDraftChange={onReplyDraftChange} onThreadStateChanged={onThreadStateChanged} />);
+    render(<CommentThreadCard issue={issue} project={project} thread={thread} replyDraft="Posted" onReplyDraftChange={onReplyDraftChange} onThreadStateChanged={onThreadStateChanged} />);
     submitReply({ toggleState: true });
     await act(async () => {});
     expect(onReplyDraftChange).toHaveBeenCalledWith(expect.any(Function));
@@ -483,7 +504,7 @@ describe("CommentThreadCard", () => {
       comment("root", "Root", { creator: "users/me@example.com" }),
     ]);
     render(
-      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+      <CommentThreadCard issue={issue} project={project} thread={thread} />
     );
     expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
   });
@@ -492,7 +513,7 @@ describe("CommentThreadCard", () => {
     denySettle();
     const [thread] = groupThreads([comment("root", "Root")]);
     render(
-      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+      <CommentThreadCard issue={issue} project={project} thread={thread} />
     );
     expect(buttonByText("plan.review.thread.reply-placeholder")).toBeDefined();
     expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
@@ -505,7 +526,7 @@ test.each(["ctrlKey", "metaKey"])("ignores %s+Enter while a reply is pending", a
   let complete!: (value: ReturnType<typeof comment>) => void;
   mocks.createIssueComment.mockImplementationOnce(() => new Promise(resolve => {complete = resolve;}));
   const onReplyDraftChange = vi.fn();
-  render(<CommentThreadCard issueName={ISSUE} project={project} thread={thread} replyDraft="My reply" onReplyDraftChange={onReplyDraftChange} />);
+  render(<CommentThreadCard issue={issue} project={project} thread={thread} replyDraft="My reply" onReplyDraftChange={onReplyDraftChange} />);
   submitReply();
   expect(mocks.createIssueComment).toHaveBeenCalledTimes(1);
   expect(buttonByText("plan.review.thread.reply")?.disabled).toBe(true);
@@ -518,7 +539,7 @@ test.each(["ctrlKey", "metaKey"])("ignores %s+Enter while a reply is pending", a
 
 test("disables Reply on an empty draft, checkbox or not", () => {
   const [thread] = groupThreads([comment("root", "Root")]);
-  const props = {issueName: ISSUE, project, thread, collapsible: false, onReplyDraftChange: vi.fn()};
+  const props = {issue, project, thread, collapsible: false, onReplyDraftChange: vi.fn()};
   render(<CommentThreadCard {...props} replyDraft="   " />);
   click(stateCheckbox());
   expect(buttonByText("plan.review.thread.reply")?.disabled).toBe(true);
@@ -542,7 +563,7 @@ test.each([
   function DraftOwner({ visible }: { visible: boolean }) {
     const [draft, setDraft] = useState("First reply");
     changeDraft = setDraft;
-    return visible ? <CommentThreadCard issueName={ISSUE} project={project} thread={thread} collapsible={false} replyDraft={draft} onReplyDraftChange={setDraft} /> : null;
+    return visible ? <CommentThreadCard issue={issue} project={project} thread={thread} collapsible={false} replyDraft={draft} onReplyDraftChange={setDraft} /> : null;
   }
   render(<DraftOwner visible />);
   click(buttonByText("plan.review.thread.reply"));
@@ -560,7 +581,7 @@ test.each([
 test("focuses and reveals the reply footer once when opened in Monaco", () => {
   const [thread] = groupThreads([comment("root", "Root")]);
   const reveal = vi.fn();
-  const view = (draft: string) => <MonacoViewZoneRevealContext value={reveal}><CommentThreadCard issueName={ISSUE} project={project} thread={thread} replyDraft={draft} onReplyDraftChange={vi.fn()} /></MonacoViewZoneRevealContext>;
+  const view = (draft: string) => <MonacoViewZoneRevealContext value={reveal}><CommentThreadCard issue={issue} project={project} thread={thread} replyDraft={draft} onReplyDraftChange={vi.fn()} /></MonacoViewZoneRevealContext>;
   render(view(""));
   expect(reveal).not.toHaveBeenCalled();
   click(buttonByText("plan.review.thread.reply-placeholder"));
