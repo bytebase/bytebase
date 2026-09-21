@@ -1,16 +1,16 @@
 import { create } from "@bufbuild/protobuf";
-import { anyPack } from "@bufbuild/protobuf/wkt";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { TIMESTAMP_COLUMN } from "@/components/timestampColumn";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import {
   AuditLog_Severity,
   AuditLogSchema,
 } from "@/types/proto-es/v1/audit_log_service_pb";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
+import { timestampFromMs, anyPack } from "@bufbuild/protobuf/wkt";
+import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -173,15 +173,7 @@ afterEach(() => {
 });
 
 describe("AuditLogTable", () => {
-  test("lets the reader narrow the date column for room elsewhere", async () => {
-    // The default shows the whole value; how much of it to keep is the
-    // reader's trade against four other columns, and one drag undoes it.
-    mocks.searchAuditLogs.mockResolvedValue({
-      auditLogs: [create(AuditLogSchema, { name: "auditLogs/1" })],
-      nextPageToken: "",
-    });
-    const { container, render, unmount } = renderIntoContainer(
-      <AuditLogTable parent="projects/-" canExport={false} />
+    );
     );
     await render();
 

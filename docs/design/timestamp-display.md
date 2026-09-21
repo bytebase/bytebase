@@ -135,16 +135,17 @@ Objective divider: **exportable-as-evidence or a detail view → full; scannable
 compact.**
 
 **Column width follows the form.** Moving a surface off relative wording lengthens its value — "3
-months ago" is about 125px in a table cell, the compact form 190, the operational 260, the full
-date-time 280 — so a column sized for the old wording breaks the new one across two lines or
-truncates it. Each form has a measured width (`TIMESTAMP_COLUMN`, the widest rendering across
-every shipped locale), and a column holding it opens at that width, so nothing is cut unless the
-reader chooses it. In a fixed-layout table the open-ended column — a title, a statement — is the
-one left unsized: the browser spreads spare width across every sized column, so sizing them all
-lets the timestamp swell on a wide screen. The minimum is one floor for every form, room for the
-date, and a column narrower than its form ellipsizes rather than wraps. A reader who drags past
-the seconds or the zone has traded them for another column's room, and one drag undoes it; a floor
-at the widest case would take that trade away from everyone to serve a half-hour zone.
+months ago" is about 125px in a table cell, the compact form 192, the operational 270, the full
+date-time 292 — so a column sized for the old wording breaks the new one across two lines or cuts
+it off. Each form has a width (`TIMESTAMP_COLUMN_WIDTH`) measured over every time zone and shipped
+locale, and a column holding it never opens narrower, so nothing is cut unless the reader chooses
+it. How it is kept there depends on the table. Where the browser spreads spare width across every
+sized column, the open-ended column — a title, a statement — is left unsized to take it, so the
+date neither wraps nor swells; the audit log does not do this yet, and its date grows with the
+rest. Where a table fits its columns to the container itself, the date column does not grow, so
+its minimum floors a drag without also flooring the width it opens at. That minimum is one value
+for every form, room for the date; narrower than its form a cell ellipsizes, and one drag gives
+the rest back.
 
 ## Surface classification
 
