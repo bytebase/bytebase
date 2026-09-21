@@ -156,8 +156,9 @@ func (s *Store) ClaimAvailableReviewRuns(ctx context.Context, replicaID string) 
 // superseded: the slot was reset or reaped since the claim, and nothing was
 // written.
 //
-// Lock order: the issue's review comments, then the run slot, the order the
-// project purge deletes them in.
+// Lock order: the issue's review comments, then the run slot, then the issue
+// (the result insert's foreign key), the order the project purge deletes them
+// in. The fence therefore runs before the insert.
 func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun, replicaID string, status storepb.ReviewRun_Status, payload *storepb.ReviewRunPayload, results []*IssueCommentMessage) (bool, error) {
 	switch status {
 	case storepb.ReviewRun_DONE:
@@ -202,23 +203,6 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 			return false, errors.Wrapf(err, "failed to resolve previous review results")
 		}
-		if len(resultPayloads) > 0 {
-			// created_at is offset by the ordinal for the same reason as in
-			// CreateIssueComments: the batch keeps its order.
-			q := qb.Q().Space(`
-				INSERT INTO issue_comment (creator, project, issue_id, payload, thread_state, created_at, updated_at)
-				SELECT NULL, ?, ?, c.payload, 'OPEN', t.at, t.at
-				FROM unnest(?::JSONB[]) WITH ORDINALITY AS c(payload, ordinality),
-				     LATERAL (SELECT now() + ((c.ordinality - 1) * interval '1 microsecond')) AS t(at)
-			`, claimed.ProjectID, claimed.IssueUID, resultPayloads)
-			query, args, err := q.ToSQL()
-			if err != nil {
-				return false, errors.Wrapf(err, "failed to build sql")
-			}
-			if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-				return false, errors.Wrapf(err, "failed to post review results")
-			}
-		}
 	}
 
 	q := qb.Q().Space(`
@@ -229,12 +213,10 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 	`, status.String(), payloadBytes,
 		claimed.ProjectID, claimed.IssueUID, claimed.Type,
 		storepb.ReviewRun_RUNNING.String(), replicaID, claimed.Attempt)
-
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")
 	}
-
 	result, err := tx.ExecContext(ctx, query, args...)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to complete review run")
@@ -244,9 +226,28 @@ func (s *Store) CompleteReviewRun(ctx context.Context, claimed *ClaimedReviewRun
 		return false, errors.Wrapf(err, "failed to get rows affected")
 	}
 	if rowsAffected == 0 {
-		// Superseded: the rollback discards the results.
+		// Superseded: the rollback discards the resolution.
 		return false, nil
 	}
+
+	if len(resultPayloads) > 0 {
+		// created_at is offset by the ordinal for the same reason as in
+		// CreateIssueComments: the batch keeps its order.
+		q := qb.Q().Space(`
+			INSERT INTO issue_comment (creator, project, issue_id, payload, thread_state, created_at, updated_at)
+			SELECT NULL, ?, ?, c.payload, 'OPEN', t.at, t.at
+			FROM unnest(?::JSONB[]) WITH ORDINALITY AS c(payload, ordinality),
+			     LATERAL (SELECT now() + ((c.ordinality - 1) * interval '1 microsecond')) AS t(at)
+		`, claimed.ProjectID, claimed.IssueUID, resultPayloads)
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to build sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return false, errors.Wrapf(err, "failed to post review results")
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return false, errors.Wrapf(err, "failed to commit tx")
 	}
