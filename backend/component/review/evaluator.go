@@ -182,7 +182,7 @@ func calculateRiskLevelFromCELVars(celVarsList []map[string]any) storepb.RiskLev
 		return storepb.RiskLevel_LOW
 	}
 	statementTypes := collectStatementTypes(celVarsList)
-	return common.GetRiskLevelFromStatementTypes(statementTypes)
+	return GetRiskLevelFromStatementTypes(statementTypes)
 }
 
 // injectRiskLevelIntoCELVars adds the risk level to all CEL variable maps.
@@ -797,7 +797,7 @@ func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, iss
 		return nil, false, errors.New("role grant payload not found")
 	}
 
-	factors, err := common.GetQueryExportFactors(payload.GetRoleGrant().GetCondition().GetExpression())
+	factors, err := getQueryExportFactors(payload.GetRoleGrant().GetCondition().GetExpression())
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get query export factors")
 	}

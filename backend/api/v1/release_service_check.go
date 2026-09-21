@@ -16,6 +16,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/parsercontext"
+	"github.com/bytebase/bytebase/backend/component/review"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -816,7 +817,7 @@ func getRiskLevelFromStatementTypes(statementTypes []storepb.StatementType) v1pb
 	for _, statementType := range statementTypes {
 		statementTypeStrings = append(statementTypeStrings, statementType.String())
 	}
-	switch common.GetRiskLevelFromStatementTypes(statementTypeStrings) {
+	switch review.GetRiskLevelFromStatementTypes(statementTypeStrings) {
 	case storepb.RiskLevel_LOW:
 		return v1pb.RiskLevel_LOW
 	case storepb.RiskLevel_MODERATE:

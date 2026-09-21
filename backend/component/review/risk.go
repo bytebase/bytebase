@@ -1,5 +1,4 @@
-//nolint:revive
-package common
+package review
 
 import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"

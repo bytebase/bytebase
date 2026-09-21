@@ -17,7 +17,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -213,7 +212,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 					result.Rows = append(result.Rows, row)
 					n := len(result.Rows)
 					if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
-						result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
+						result.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
 						break
 					}
 				}
