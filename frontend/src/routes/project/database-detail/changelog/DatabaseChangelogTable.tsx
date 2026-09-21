@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { HumanizeTs } from "@/components/HumanizeTs";
@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useColumnWidths } from "@/hooks/useColumnWidths";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import {
   type Changelog,
@@ -56,6 +57,33 @@ export function DatabaseChangelogTable({
   loading: boolean;
 }) {
   const { t } = useTranslation();
+  // Default widths are ratios once the table fills its container, so the
+  // rollout title -- the only column with an open-ended value -- carries a
+  // large one and absorbs the width the timestamp does not need. The created
+  // column's default fits the compact form on one line; dragged below that it
+  // ellipsizes, and the reading it hides is still on the hover, which is the
+  // one thing a timestamp must never lose.
+  const columns = useMemo(
+    () => [
+      { key: "status", title: "", defaultWidth: 48, resizable: false },
+      {
+        key: "created",
+        title: t("common.created-at"),
+        defaultWidth: 200,
+        minWidth: 168,
+        resizable: true,
+      },
+      {
+        key: "rollout",
+        title: t("common.rollout"),
+        defaultWidth: 700,
+        minWidth: 200,
+        resizable: true,
+      },
+    ],
+    [t]
+  );
+  const { widths, totalWidth, onResizeStart } = useColumnWidths(columns);
 
   const handleRowClick = useCallback(
     (changelog: Changelog, e: React.MouseEvent) => {
@@ -77,16 +105,26 @@ export function DatabaseChangelogTable({
 
   return (
     <div className="overflow-hidden rounded-sm border border-block-border">
-      <Table className="min-w-full">
+      <Table className="table-fixed" style={{ minWidth: `${totalWidth}px` }}>
+        <colgroup>
+          {widths.map((w, index) => (
+            <col key={columns[index].key} style={{ width: `${w}px` }} />
+          ))}
+        </colgroup>
         <TableHeader className="bg-control-bg">
           <TableRow className="text-left text-sm text-control-light hover:bg-control-bg">
-            <TableHead className="w-12" />
-            <TableHead className="w-[180px]">
-              {t("common.created-at")}
-            </TableHead>
-            <TableHead className="min-w-[200px]">
-              {t("common.rollout")}
-            </TableHead>
+            {columns.map((column, index) => (
+              <TableHead
+                key={column.key}
+                className="whitespace-nowrap"
+                resizable={column.resizable}
+                onResizeStart={
+                  column.resizable ? (e) => onResizeStart(index, e) : undefined
+                }
+              >
+                {column.title}
+              </TableHead>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -99,7 +137,7 @@ export function DatabaseChangelogTable({
               <TableCell className="text-center">
                 <ChangelogStatusIcon status={changelog.status} />
               </TableCell>
-              <TableCell className="text-main">
+              <TableCell className="truncate text-main">
                 {changelog.createTime ? (
                   <HumanizeTs
                     mode="compact"
