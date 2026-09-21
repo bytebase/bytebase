@@ -67,6 +67,32 @@ beforeEach(() => {
 });
 
 describe("DatabaseChangelogTable", () => {
+  test("gives the timestamp a fixed share and the title the rest, adjustably", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <DatabaseChangelogTable
+        loading={false}
+        changelogs={[makeChangelog("changelogs/1")]}
+      />
+    );
+
+    render();
+
+    // The timestamp column is sized for its own value and the title column
+    // takes what is left, so a date never wraps and a long title still has
+    // room. Both are draggable, since which one matters is the reader's call.
+    const widths = Array.from(container.querySelectorAll("col")).map((col) =>
+      Number.parseInt(col.style.width, 10)
+    );
+    const [, created, rollout] = widths;
+    expect(created).toBeGreaterThanOrEqual(190);
+    expect(rollout).toBeGreaterThan(created);
+    expect(
+      container.querySelectorAll("[class*=cursor-col-resize]")
+    ).toHaveLength(2);
+
+    unmount();
+  });
+
   test("dates each row in the embedded history form", () => {
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseChangelogTable
