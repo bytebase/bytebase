@@ -6,7 +6,9 @@ truncation, private store credential helpers, and private v1 audit callbacks.
 The second migration moves the PostgreSQL socket-directory helper to
 `resources/postgres`, prefix matching to a private server helper, ANTLR line
 conversion to `plugin/parser/base`, and TiDB error-position conversion to a
-private TiDB parser helper. The remaining entries are proposals.
+private TiDB parser helper. A subsequent migration moves the Connect-specific
+parser-engine conversion into a private v1 helper. The remaining entries are
+proposals.
 
 The root package mixes unrelated ownership: resource names, identity, request
 context, audit transport, policy expressions, SQL execution, and generic helpers.
@@ -34,7 +36,7 @@ necessarily existing files or packages.
 | `HasPrefixes` | Private helper in `server` | Only `server_frontend_routes.go` calls it. |
 | Live position conversions in `common/position.go` | `plugin/parser/base/position.go`; TiDB-only conversion local to `plugin/parser/tidb` | Parser base already owns position mapping. Advisor implementations consume the ANTLR line conversion. |
 | Transaction types and default mode in `common/engine.go` | `plugin/parser/base/transaction_mode.go` | This file already parses directives and converts isolation levels; drivers consume the result. Avoid putting types in `plugin/db` and making parser base depend on drivers. |
-| `ConvertToParserEngine` | Private helper in `api/v1` initially | Only v1 calls it, and it returns a Connect error. A parser-owned version should return a transport-independent error. |
+| `ConvertToParserEngine` (completed) | Private helper in `api/v1` | Only v1 calls it, and it returns a Connect error. The move preserves the mapping and error behavior. |
 | Audit callback keys, setters, getters, `PermissionDeniedError` | Private helpers in `api/v1` | These coordinate v1 interceptors and handlers; no production callers outside v1 were found. |
 | `GetQueryExportFactors` and its traversal | Private helpers in `component/review` | The only production caller is review evaluation. It should consume the shared IAM expression definitions described below. |
 | `SanitizeUTF8Message` and reflection traversal | Private helpers in `plugin/db/oracle` | Only Oracle metadata sync calls it. Keep string sanitization shared because v1 uses it too. |
