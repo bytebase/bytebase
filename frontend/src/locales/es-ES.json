@@ -2787,6 +2787,7 @@
             "title": "Lectura y escritura"
           }
         },
+        "new-workspace": "Los nuevos espacios de trabajo empiezan en modo Solo lectura. Un espacio de trabajo creado antes de que existiera este valor predeterminado funciona en modo Lectura y escritura hasta que un administrador guarde una política.",
         "read-failed": {
           "description": "Recargue para reintentar. Si sigue fallando, la política almacenada es una que Bytebase no puede analizar y un operador debe reparar la fila directamente. Mientras no se pueda leer, se rechaza toda conexión MCP.",
           "title": "No se pudo leer la política de acceso"

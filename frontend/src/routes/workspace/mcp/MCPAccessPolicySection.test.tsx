@@ -158,6 +158,39 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
+  test("the new-workspace sentence shows in every state of the section", async () => {
+    const key = "settings.mcp.policy.new-workspace";
+
+    const read = renderIntoContainer(<MCPAccessPolicySection />);
+    read.render();
+    await flush();
+    expect(read.container.textContent).toContain(
+      "settings.mcp.policy.mode.read-only.title"
+    );
+    expect(read.container.textContent).toContain(key);
+    read.unmount();
+
+    const pending = Promise.withResolvers<undefined>();
+    mocks.serverInfo.value = undefined;
+    mocks.loadServerInfo.mockReturnValue(pending.promise);
+    const loading = renderIntoContainer(<MCPAccessPolicySection />);
+    loading.render();
+    await flush();
+    expect(loading.container.textContent).toContain("settings.mcp.policy.loading");
+    expect(loading.container.textContent).toContain(key);
+    loading.unmount();
+
+    mocks.loadServerInfo.mockResolvedValue(undefined);
+    const failed = renderIntoContainer(<MCPAccessPolicySection />);
+    failed.render();
+    await flush();
+    expect(failed.container.textContent).toContain(
+      "settings.mcp.policy.read-failed.title"
+    );
+    expect(failed.container.textContent).toContain(key);
+    failed.unmount();
+  });
+
   test("registers unsaved edits with the navigation guard", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />

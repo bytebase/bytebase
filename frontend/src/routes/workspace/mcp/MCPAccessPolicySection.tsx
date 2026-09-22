@@ -418,6 +418,9 @@ export function MCPAccessPolicySection() {
             audit: t("settings.mcp.policy.audit"),
           })}
         </p>
+        <p className="textinfolabel">
+          {t("settings.mcp.policy.new-workspace")}
+        </p>
       </div>
 
       {policyBody()}

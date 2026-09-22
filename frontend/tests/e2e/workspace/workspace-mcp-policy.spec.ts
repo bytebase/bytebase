@@ -155,6 +155,7 @@ test.describe("MCP access policy capability ladder", () => {
       page.getByText(/^MCP policy denials are streamed to stdout/)
     ).toHaveCount(0);
     await expect(page.getByText(COPY.policy.description)).toBeVisible();
+    await expect(page.getByText(COPY.policy["new-workspace"])).toBeVisible();
     // Pinned as a literal, not read from the locale: this description carries
     // the page's only audit disclosure, so the claim has to survive a copy edit
     // that keeps the sentence and drops the clause.
