@@ -429,10 +429,7 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
 // A thread anchors to whole lines of the spec's saved sheet; it renders as a
 // gutter marker + expanded card in the statement editor and as a card with
 // its recorded context in the Review Activity timeline.
-// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
-// binary this suite runs against, so the thread UI is absent by design.
-// Re-enable together with the gate in src/utils/featureGates.ts.
-test.describe.skip("Inline comment threads (CUJ K)", () => {
+test.describe("Inline comment threads (CUJ K)", () => {
   test.describe.configure({ mode: "serial" });
   let planId: string;
   let issueName: string;
@@ -846,10 +843,7 @@ test.describe("Long approval flow adaptive rendering (CUJ I)", () => {
 // Inline comment threads, second pass: several composers at once, the
 // reply composer's thread-state checkbox, the editor walker, and the
 // unresolved counts on the change tab and the Review summary.
-// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
-// binary this suite runs against, so the thread UI is absent by design.
-// Re-enable together with the gate in src/utils/featureGates.ts.
-test.describe.skip("Inline comment threads: composers, checkbox, walker, counts (CUJ L)", () => {
+test.describe("Inline comment threads: composers, checkbox, walker, counts (CUJ L)", () => {
   test.describe.configure({ mode: "serial" });
   let planId: string;
   let issueName: string;
@@ -1050,10 +1044,7 @@ test.describe.skip("Inline comment threads: composers, checkbox, walker, counts 
 // A reader who may reply but not resolve sees neither the standalone
 // Resolve action nor the reply composer's state checkbox. No predefined role
 // separates the two comment permissions, so the test provisions its own.
-// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
-// binary this suite runs against, so the thread UI is absent by design.
-// Re-enable together with the gate in src/utils/featureGates.ts.
-test.describe.skip("Inline comment threads as a reply-only reader (CUJ L, restricted)", () => {
+test.describe("Inline comment threads as a reply-only reader (CUJ L, restricted)", () => {
   const stamp = Date.now();
   const readerEmail = `e2e-reply-only-${stamp}@example.com`;
   const readerPassword = "12345678";
@@ -1138,10 +1129,7 @@ test.describe.skip("Inline comment threads as a reply-only reader (CUJ L, restri
 // Inline comment threads, third pass: a range selected from the gutter, two
 // threads sharing one marker, the walker's announcement and its retreat
 // behind the find widget, and a narrow viewport.
-// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
-// binary this suite runs against, so the thread UI is absent by design.
-// Re-enable together with the gate in src/utils/featureGates.ts.
-test.describe.skip("Inline comment threads: ranges, shared markers, walker details, narrow view (CUJ M)", () => {
+test.describe("Inline comment threads: ranges, shared markers, walker details, narrow view (CUJ M)", () => {
   test.describe.configure({ mode: "serial" });
   let planId: string;
   let issueName: string;
@@ -1252,10 +1240,7 @@ test.describe.skip("Inline comment threads: ranges, shared markers, walker detai
 // Inline comment threads, third pass: the editor scroll a walker step makes.
 // A thread taller than the editor's viewport used to be revealed twice, by
 // the walker and then by its zone, so the editor jumped and jumped back.
-// Gated off with the feature: inlineThreadsEnabled() is false in the embedded
-// binary this suite runs against, so the thread UI is absent by design.
-// Re-enable together with the gate in src/utils/featureGates.ts.
-test.describe.skip("Inline comment threads: walker scrolls the editor once (CUJ N)", () => {
+test.describe("Inline comment threads: walker scrolls the editor once (CUJ N)", () => {
   test.describe.configure({ mode: "serial" });
   let planId: string;
   let shortRootName = "";

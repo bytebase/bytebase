@@ -40,7 +40,6 @@ import {
 import { GetSheetRequestSchema } from "@/types/proto-es/v1/sheet_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import { extractDatabaseResourceName, hasProjectPermissionV2 } from "@/utils";
-import { inlineThreadsEnabled } from "@/utils/featureGates";
 import { engineSupportsSchemaEditor } from "@/utils/schemaEditor";
 import { getStatementSize, MAX_UPLOAD_FILE_SIZE_MB } from "@/utils/sheet";
 import { getInstanceResource } from "@/utils/v1/database";
@@ -489,8 +488,7 @@ export function PlanDetailStatementSection({
   const sheetSha256 = sheetSha256OfName(sheetName);
   const issue = page.issue;
   const threadsEnabled = Boolean(
-    inlineThreadsEnabled() &&
-      issue &&
+    issue &&
       !page.isCreating &&
       !isPendingDraft &&
       sheetSha256 &&
