@@ -165,6 +165,8 @@ describe("HumanizeTs", () => {
   });
 
   // Each piece of a fitted label, and whether it keeps its width or gives way.
+  // A kept space must also be preformatted: a flex item drops the space at its
+  // edge, and the cut time then runs into the date.
   const pieces = (box: Element | null) =>
     Array.from(box?.children ?? []).map((piece) => {
       const fit = piece.classList.contains("truncate")
@@ -172,7 +174,8 @@ describe("HumanizeTs", () => {
         : piece.classList.contains("shrink-0")
           ? "kept"
           : "loose";
-      return `${piece.textContent}:${fit}`;
+      const pre = piece.classList.contains("whitespace-pre") ? " pre" : "";
+      return `${piece.textContent}:${fit}${pre}`;
     });
 
   test.each([
@@ -184,12 +187,12 @@ describe("HumanizeTs", () => {
     [
       "after the date and a space",
       { date: "2026年9月21日", rest: " 23:28", dateFirst: true },
-      ["2026年9月21日:kept", " :kept", "23:28:cut"],
+      ["2026年9月21日:kept", " :kept pre", "23:28:cut"],
     ],
     [
       "before the date",
       { date: "21 thg 9, 2026", rest: "23:28 GMT+8 ", dateFirst: false },
-      ["23:28 GMT+8:cut", " :kept", "21 thg 9, 2026:kept"],
+      ["23:28 GMT+8:cut", " :kept pre", "21 thg 9, 2026:kept"],
     ],
   ])(
     "keeps a narrowed date whole and cuts the time written %s",
