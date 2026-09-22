@@ -40,9 +40,13 @@ vi.mock("@/stores/app", () => {
   const getState = () => {
     const store = mocks.actuatorStore as Record<string, unknown>;
     const info = store.authenticationInfo as Record<string, unknown> | undefined;
+    const isSaaSMode = store.isSaaSMode;
     return {
       ...store,
-      isSaaSMode: () => false,
+      isSaaSMode:
+        typeof isSaaSMode === "function"
+          ? (isSaaSMode as () => boolean)
+          : () => false,
       // The login page reads its providers off the authentication info.
       authenticationInfo: info
         ? { ...info, identityProviders: mocks.identityProviders }
@@ -398,8 +402,7 @@ describe("SigninPage", () => {
         type: IdentityProviderType.OIDC,
       },
     ];
-    mocks.identityProviderList = idps;
-    mocks.listIdentityProviders.mockResolvedValue(idps);
+    mocks.identityProviders = idps;
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -457,8 +460,7 @@ describe("SigninPage", () => {
         type: IdentityProviderType.OIDC,
       },
     ];
-    mocks.identityProviderList = idps;
-    mocks.listIdentityProviders.mockResolvedValue(idps);
+    mocks.identityProviders = idps;
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -502,8 +504,7 @@ describe("SigninPage", () => {
         type: IdentityProviderType.OIDC,
       },
     ];
-    mocks.identityProviderList = idps;
-    mocks.listIdentityProviders.mockResolvedValue(idps);
+    mocks.identityProviders = idps;
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -517,15 +518,14 @@ describe("SigninPage", () => {
     );
     expect(
       container.querySelector(
-        'a[href="https://docs.bytebase.com/faq#how-to-reach-us"]'
+        'a[href="https://docs.bytebase.com/faq#how-to-reach-us?source=console"]'
       )
     ).toBeTruthy();
     unmount();
   });
 
   test("shows recovery instructions when no signin method is configured", async () => {
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();

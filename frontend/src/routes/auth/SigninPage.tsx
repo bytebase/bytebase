@@ -38,7 +38,8 @@ type SSOFailure = {
 
 const ADMIN_RECOVERY_URL =
   "https://docs.bytebase.com/administration/admin-recovery?source=console";
-const SUPPORT_URL = "https://docs.bytebase.com/faq#how-to-reach-us?source=console";
+const SUPPORT_URL =
+  "https://docs.bytebase.com/faq#how-to-reach-us?source=console";
 
 function queryString(value: unknown): string {
   return typeof value === "string" ? value : "";
