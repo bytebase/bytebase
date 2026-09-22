@@ -16,6 +16,7 @@ import {
   AccessGrant_Status,
   AccessGrantSchema,
 } from "@/types/proto-es/v1/access_grant_service_pb";
+import { getAccessGrantDisplayStatusText } from "@/utils/accessGrant";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -44,6 +45,18 @@ describe("grantColumns", () => {
     widths[at(key)] === columns[at(key)].defaultWidth;
   const floored = (widths: number[], key: string) =>
     widths[at(key)] === columns[at(key)].minWidth;
+
+  test("reads status, creator, databases, statement, expiry, creation, then actions", () => {
+    expect(columns.map((column) => column.key)).toEqual([
+      "status",
+      "creator",
+      "databases",
+      "statement",
+      "expiration",
+      "created",
+      "actions",
+    ]);
+  });
 
   test("opens both dates whole once the table holds every column", () => {
     for (const width of [preferred, preferred + 300]) {
@@ -77,7 +90,7 @@ describe("grantColumns", () => {
     }
   });
 
-  test("lets a reader narrow either date to the date alone", () => {
+  test("floors both dates at the timestamp minimum", () => {
     expect(columns[at("created")].minWidth).toBe(TIMESTAMP_COLUMN_MIN_WIDTH);
     expect(columns[at("expiration")].minWidth).toBe(TIMESTAMP_COLUMN_MIN_WIDTH);
   });
@@ -91,24 +104,76 @@ describe("AccessGrantRow", () => {
     }
   });
 
-  test("dates a grant's creation and expiry in one form, each ellipsizing", () => {
+  test("puts each cell under its own column", () => {
+    const columns = grantColumns((key) => key);
     const container = document.createElement("div");
     const root = createRoot(container);
     roots.push(root);
     const nowMs = Date.now();
+    const createdMs = nowMs - 60_000;
+    const expiresMs = nowMs + 86_400_000;
     act(() =>
       root.render(
         <table>
           <tbody>
             <AccessGrantRow
+              columns={columns}
               grant={create(AccessGrantSchema, {
                 name: "projects/p1/accessGrants/1",
                 creator: "users/alice@example.com",
                 status: AccessGrant_Status.ACTIVE,
-                createTime: timestampFromMs(nowMs - 60_000),
+                query: "SELECT secret FROM vault",
+                createTime: timestampFromMs(createdMs),
                 expiration: {
                   case: "expireTime",
-                  value: timestampFromMs(nowMs + 86_400_000),
+                  value: timestampFromMs(expiresMs),
+                },
+              })}
+              canActivate={false}
+              canRevoke={true}
+              onActivate={() => {}}
+              onRevoke={() => {}}
+            />
+          </tbody>
+        </table>
+      )
+    );
+
+    const cells = Array.from(container.querySelectorAll("td"));
+    const cell = (key: string) =>
+      cells[columns.findIndex((column) => column.key === key)];
+    expect(cells).toHaveLength(columns.length);
+    expect(cell("status").textContent).toBe(
+      getAccessGrantDisplayStatusText("ACTIVE")
+    );
+    expect(cell("creator").textContent).toBe("alice@example.com");
+    expect(cell("databases").textContent).toBe("-");
+    expect(cell("statement").textContent).toBe("SELECT secret FROM vault");
+    expect(shownTimestampInstants(cell("expiration"))).toEqual([
+      String(expiresMs),
+    ]);
+    expect(shownTimestampInstants(cell("created"))).toEqual([
+      String(createdMs),
+    ]);
+    expect(cell("actions").textContent).toBe("sql-editor.revoke-access");
+  });
+
+  test("dates a grant's creation and expiry in one form, each ellipsizing", () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    roots.push(root);
+    act(() =>
+      root.render(
+        <table>
+          <tbody>
+            <AccessGrantRow
+              columns={grantColumns((key) => key)}
+              grant={create(AccessGrantSchema, {
+                name: "projects/p1/accessGrants/1",
+                createTime: timestampFromMs(1_000),
+                expiration: {
+                  case: "expireTime",
+                  value: timestampFromMs(2_000),
                 },
               })}
               canActivate={false}
@@ -121,15 +186,14 @@ describe("AccessGrantRow", () => {
       )
     );
 
+    const dates = container.querySelectorAll<HTMLElement>(
+      "[data-testid=humanize-ts]"
+    );
     expect(shownTimestampModes(container)).toEqual([
       "operational",
       "operational",
     ]);
-    expect(shownTimestampInstants(container)).toEqual([
-      String(nowMs - 60_000),
-      String(nowMs + 86_400_000),
-    ]);
-    for (const date of container.querySelectorAll("[data-testid=humanize-ts]")) {
+    for (const date of dates) {
       expect(date.className).toContain("truncate");
     }
   });
