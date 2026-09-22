@@ -126,7 +126,13 @@ type QuerySpanResult struct {
 
 // ColumnResource is the resource key for a column.
 type ColumnResource struct {
-	// Server is the normalized server name, it's empty if the column comes from the connected server.
+	// Instance is the resource ID of the Bytebase instance that owns Database when the column
+	// was reached through an Oracle database link; empty means the connected instance. A column
+	// with Server set and Instance empty was reached through a remote reference Bytebase could
+	// not resolve.
+	Instance string `yaml:"instance,omitempty"`
+	// Server is the normalized server name as the statement wrote it (an MSSQL linked server or
+	// an Oracle database link); it's empty if the column comes from the connected server.
 	Server string
 	// Database is the normalized database name, it should not be empty.
 	Database string
