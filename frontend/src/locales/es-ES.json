@@ -254,7 +254,6 @@
     "address": "Dirección",
     "admin": "Administrador",
     "all": "Todos",
-    "allow": "Permitir",
     "and": "y",
     "approve": "Aprobar",
     "approved": "Aprobado",
@@ -1627,6 +1626,7 @@
   },
   "oauth2": {
     "consent": {
+      "allow-access": "Permitir acceso",
       "description": "{{clientName}} está solicitando acceso a tu cuenta",
       "error-client-not-found": "Cliente no encontrado",
       "error-load-failed": "Error al cargar la información del cliente",
@@ -1643,13 +1643,6 @@
           },
           "policy-label": "Política del espacio de trabajo",
           "title": "El acceso MCP está desactivado"
-        },
-        "line": {
-          "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza se envía a la salida estándar cuando el registro de auditoría en la salida estándar está habilitado",
-          "capped-read-only": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase puede comprobar en cada motor: donde no puede demostrar que una sentencia es de lectura, no se ejecuta ninguna consulta",
-          "capped-read-write": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase admite para cada motor de base de datos y cada operación",
-          "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
-          "no-write": "Sin cambios, despliegues, exportaciones ni administración de bases de datos"
         },
         "title": "Esta sesión puede",
         "undisclosed": {
@@ -2758,8 +2751,10 @@
         }
       },
       "policy": {
+        "audit": "Las operaciones de MCP se registran en los registros de auditoría de Bytebase.",
+        "bound": "Cada sesión MCP está limitada por los permisos de Bytebase del usuario conectado y por las operaciones que admite el motor de base de datos de destino.",
         "current": "Política actual: {{mode}}",
-        "description": "Lo máximo que puede hacer aquí cualquier sesión MCP. Las sesiones también están limitadas por los permisos de cada usuario, y las denegaciones de la política se envían a la salida estándar cuando el registro de auditoría en la salida estándar está habilitado.",
+        "description": "{{bound}} {{audit}}",
         "edit": "Editar política",
         "loading": "Leyendo la política de acceso…",
         "masking": {

@@ -361,7 +361,7 @@ export function MCPAccessPolicySection() {
                       aria-label={t("settings.mcp.policy.masking.title")}
                       className="shrink-0"
                     />
-                    <div className="textinfo font-semibold">
+                    <div className="text-base font-semibold text-main">
                       {t("settings.mcp.policy.masking.title")}
                     </div>
                   </div>
@@ -412,7 +412,12 @@ export function MCPAccessPolicySection() {
         <h3 className="text-base font-medium">
           {t("settings.mcp.policy.title")}
         </h3>
-        <p className="textinfolabel">{t("settings.mcp.policy.description")}</p>
+        <p className="textinfolabel">
+          {t("settings.mcp.policy.description", {
+            bound: t("settings.mcp.policy.bound"),
+            audit: t("settings.mcp.policy.audit"),
+          })}
+        </p>
       </div>
 
       {policyBody()}

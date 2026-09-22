@@ -254,7 +254,6 @@
     "address": "Address",
     "admin": "Admin",
     "all": "All",
-    "allow": "Allow",
     "and": "and",
     "approve": "Approve",
     "approved": "Approved",
@@ -1627,6 +1626,7 @@
   },
   "oauth2": {
     "consent": {
+      "allow-access": "Allow access",
       "description": "{{clientName}} is requesting access to your account",
       "error-client-not-found": "Client not found",
       "error-load-failed": "Failed to load client information",
@@ -1643,13 +1643,6 @@
           },
           "policy-label": "Workspace policy",
           "title": "MCP access is turned off"
-        },
-        "line": {
-          "audit": "Audited actions carry an MCP tag, and anything the policy refuses is streamed to stdout when audit logging to stdout is enabled",
-          "capped-read-only": "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all",
-          "capped-read-write": "Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation",
-          "masking": "Your masking exemptions do not apply to this session",
-          "no-write": "No changes, rollouts, exports or database management"
         },
         "title": "This session may",
         "undisclosed": {
@@ -2758,8 +2751,10 @@
         }
       },
       "policy": {
+        "audit": "MCP operations are recorded in Bytebase audit logs.",
+        "bound": "Every MCP session is limited by the connected user's Bytebase permissions and the target database engine's supported operations.",
         "current": "Current policy: {{mode}}",
-        "description": "This is the maximum any MCP session may do in this workspace. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled.",
+        "description": "{{bound}} {{audit}}",
         "edit": "Edit policy",
         "loading": "Reading the access policy…",
         "masking": {

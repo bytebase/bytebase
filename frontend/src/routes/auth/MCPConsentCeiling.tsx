@@ -1,8 +1,11 @@
-import { Check, EyeOff, Info, ScrollText, X } from "lucide-react";
+import { Info, ScrollText } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { mcpRowKey, servedRows } from "@/components/mcp/mcpCapabilityRows";
+import { MCPCapabilityList } from "@/components/mcp/MCPCapabilityList";
 import type { MCPServingMode } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import type { MCPConsentLine } from "./MCPConsentPolicyCard";
 import { MCPConsentPolicyCard } from "./MCPConsentPolicyCard";
@@ -30,57 +33,21 @@ export function MCPConsentCeiling({
   dataMaskingAvailable,
 }: Props) {
   const { t } = useTranslation();
+  const [details, setDetails] = useState(false);
 
-  const readWrite = mode === MCPSetting_Capability.READ_WRITE;
   const lines: MCPConsentLine[] = [
-    ...servedRows(mode).map((row) => ({
-      key: row.id,
-      icon: <Check className="size-4 text-success" />,
-      mark: t("settings.mcp.ladder.mark.allowed"),
-      text: t(mcpRowKey(row, "title")),
-    })),
-    // One line for the whole unserved tier rather than five muted rows: this
-    // screen is an approval, not a comparison, and the person is deciding
-    // about what the session gains.
-    ...(readWrite
-      ? []
-      : [
-          {
-            // No mark: the sentence states the prohibition itself, and
-            // prefixing "Not allowed" would double the negative.
-            key: "no-write",
-            icon: <X className="size-4 text-error" />,
-            text: t("oauth2.consent.mcp.line.no-write"),
-          },
-        ]),
     // A bound, not a grant: neutral glyph and no mark, so it is not counted
-    // among the rows above it. Scoped by mode because Read-only's statement
-    // clamp is one rule with one consequence, while Read-write's answer varies
-    // by engine and by operation — so that line states the bound and stops.
+    // among the rows above it. The capability list holds mode-specific details;
+    // this shared line gives the constraint that applies to every MCP session.
     {
       key: "capped",
       icon: <Info className="size-4 text-control-light" />,
-      text: readWrite
-        ? t("oauth2.consent.mcp.line.capped-read-write")
-        : t("oauth2.consent.mcp.line.capped-read-only"),
+      text: t("settings.mcp.policy.bound"),
     },
-    // Both halves, because the line promises a restriction. The toggle
-    // withholds unmasking exemptions from MCP sessions, which changes nothing
-    // where masking does not run at all — asserting it there would tell the
-    // person approving that their data is covered when it is not.
-    ...(ignoreMaskingExemptions && dataMaskingAvailable
-      ? [
-          {
-            key: "masking",
-            icon: <EyeOff className="size-4 text-control-light" />,
-            text: t("oauth2.consent.mcp.line.masking"),
-          },
-        ]
-      : []),
     {
       key: "audit",
       icon: <ScrollText className="size-4 text-control-light" />,
-      text: t("oauth2.consent.mcp.line.audit"),
+      text: t("settings.mcp.policy.audit"),
     },
   ];
 
@@ -89,10 +56,31 @@ export function MCPConsentCeiling({
       <MCPConsentPolicyCard
         label={t("oauth2.consent.mcp.title")}
         mode={mode}
+        modeAddon={
+          ignoreMaskingExemptions && dataMaskingAvailable ? (
+            <Badge variant="secondary" className="whitespace-nowrap">
+              {t("settings.mcp.policy.masking.badge")}
+            </Badge>
+          ) : undefined
+        }
+        headerAction={
+          <Button
+            appearance="link"
+            size="sm"
+            aria-expanded={details}
+            onClick={() => setDetails(!details)}
+          >
+            {details
+              ? t("settings.mcp.ladder.hide-details")
+              : t("settings.mcp.ladder.show-details")}
+          </Button>
+        }
         lines={lines}
-      />
+      >
+        <MCPCapabilityList mode={mode} details={details} tierDividers floor />
+      </MCPConsentPolicyCard>
 
-      {readWrite && (
+      {mode === MCPSetting_Capability.READ_WRITE && (
         <Alert
           variant="warning"
           description={t("oauth2.consent.mcp.write-caution")}

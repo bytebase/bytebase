@@ -597,39 +597,94 @@ describe("OAuth2ConsentPage", () => {
     handle.unmount();
   });
 
-  test("a read-only ceiling says what the session may not do", async () => {
+  test("a read-only ceiling starts compact and can reveal the complete MCP policy boundary", async () => {
     const { container, unmount } = await renderWithCeiling({
       capability: 3,
       ignoreMaskingExemptions: false,
     });
     expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.no-write");
-    expect(container.textContent).not.toContain("settings.mcp.ladder.row.run-statements.title");
+    expect(container.textContent).not.toContain(
+      "settings.mcp.ladder.row.read-schemas.details"
+    );
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.row.run-statements.title"
+    );
+    expect(container.textContent).not.toContain(
+      "settings.mcp.ladder.row.run-statements.details"
+    );
+    expect(container.textContent).toContain("settings.mcp.ladder.stops.read");
+    expect(container.textContent).toContain("settings.mcp.ladder.floor.text");
+    expect(container.textContent).not.toContain("oauth2.consent.mcp.line.no-write");
     // The masking line is the toggle's, not the ceiling's.
     expect(container.textContent).not.toContain(
       "oauth2.consent.mcp.line.masking"
     );
-    expect(container.textContent).toContain("common.allow");
+    expect(container.textContent).toContain("settings.mcp.ladder.show-details");
+    expect(container.textContent).toContain("oauth2.consent.allow-access");
+
+    const detailsAction = [...container.querySelectorAll("button")].find(
+      (button) =>
+        button.textContent?.includes("settings.mcp.ladder.show-details")
+    );
+    const sessionTitle = [...container.querySelectorAll("p")].find((node) =>
+      node.textContent?.includes("oauth2.consent.mcp.title")
+    );
+    const modeBadge = [...container.querySelectorAll("span")].find((node) =>
+      node.textContent?.includes("settings.mcp.policy.mode.read-only.title")
+    );
+    expect(detailsAction).toHaveAttribute("aria-expanded", "false");
+    expect(detailsAction?.parentElement).toHaveClass("ml-auto", "shrink-0");
+    expect(sessionTitle?.parentElement).toHaveClass("items-center", "gap-2");
+    expect(sessionTitle?.parentElement?.parentElement).toHaveClass(
+      "flex-col",
+      "gap-2"
+    );
+    expect(modeBadge).toHaveClass("whitespace-nowrap");
+    expect(modeBadge?.parentElement).toHaveClass(
+      "flex-wrap",
+      "max-w-full"
+    );
+    expect(modeBadge?.parentElement).not.toHaveClass("ml-auto", "xl:ml-auto");
+    act(() => detailsAction?.click());
+
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.row.read-schemas.details"
+    );
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.row.run-statements.details"
+    );
+    expect(container.textContent).toContain("settings.mcp.ladder.hide-details");
+    expect(detailsAction).toHaveAttribute("aria-expanded", "true");
     unmount();
   });
 
-  // The row titles carry no caveats, so this bound is the only thing limiting
-  // the check marks. It has to be the RIGHT bound: the statement clamp it
-  // describes runs only under Read-only, so claiming it under Read-write would
-  // promise an approver that no query runs where writes execute unverified.
-  test("each ceiling states the bound that holds for it", async () => {
+  test("uses the broad responsive consent-card width", async () => {
+    const { container, unmount } = await renderWithCeiling({
+      capability: 3,
+      ignoreMaskingExemptions: false,
+    });
+
+    expect(container.firstElementChild).toHaveClass(
+      "w-full",
+      "max-w-5xl",
+      "px-4",
+      "md:w-3/5",
+      "lg:w-1/2",
+      "lg:px-0"
+    );
+    unmount();
+  });
+
+  test("each ceiling states the shared policy bound", async () => {
     const readOnly = await renderWithCeiling({
       capability: 3,
       ignoreMaskingExemptions: false,
     });
     expect(readOnly.container.textContent).toContain(
-      "oauth2.consent.mcp.line.capped-read-only"
-    );
-    expect(readOnly.container.textContent).not.toContain(
-      "oauth2.consent.mcp.line.capped-read-write"
+      "settings.mcp.policy.bound"
     );
     expect(readOnly.container.textContent).toContain(
-      "oauth2.consent.mcp.line.audit"
+      "settings.mcp.policy.audit"
     );
     readOnly.unmount();
 
@@ -638,13 +693,10 @@ describe("OAuth2ConsentPage", () => {
       ignoreMaskingExemptions: false,
     });
     expect(readWrite.container.textContent).toContain(
-      "oauth2.consent.mcp.line.capped-read-write"
-    );
-    expect(readWrite.container.textContent).not.toContain(
-      "oauth2.consent.mcp.line.capped-read-only"
+      "settings.mcp.policy.bound"
     );
     expect(readWrite.container.textContent).toContain(
-      "oauth2.consent.mcp.line.audit"
+      "settings.mcp.policy.audit"
     );
     readWrite.unmount();
   });
@@ -656,24 +708,27 @@ describe("OAuth2ConsentPage", () => {
     });
     expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
     expect(container.textContent).toContain("oauth2.consent.mcp.write-caution");
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.masking");
+    expect(container.textContent).toContain("settings.mcp.policy.masking.badge");
+    expect(container.textContent).not.toContain(
+      "oauth2.consent.mcp.line.masking"
+    );
     unmount();
   });
 
-  // The masking line promises a restriction. The toggle withholds unmasking
+  // The masking badge promises a restriction. The toggle withholds unmasking
   // exemptions from MCP sessions, which restricts nothing on a workspace where
   // masking does not run — and this card is read at the moment someone decides
   // whether to hand over access.
-  test("the masking line is not promised where masking does not run", async () => {
+  test("the masking badge is not promised where masking does not run", async () => {
     mocks.dataMaskingAvailable.value = false;
     const { container, unmount } = await renderWithCeiling({
       capability: 4,
       ignoreMaskingExemptions: true,
     });
-    // The rest of the card is unchanged, so this is the line and not the card.
+    // The rest of the card is unchanged, so this is the badge and not the card.
     expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
     expect(container.textContent).not.toContain(
-      "oauth2.consent.mcp.line.masking"
+      "settings.mcp.policy.masking.badge"
     );
     unmount();
   });
@@ -730,7 +785,7 @@ describe("OAuth2ConsentPage", () => {
       "oauth2.consent.mcp.disabled.ask-admin"
     );
     // Nothing to approve and nothing to deny: the grant is not on offer.
-    expect(container.textContent).not.toContain("common.allow");
+    expect(container.textContent).not.toContain("oauth2.consent.allow-access");
     expect(container.textContent).not.toContain("common.deny");
     unmount();
   });
@@ -759,7 +814,7 @@ describe("OAuth2ConsentPage", () => {
       "oauth2.consent.mcp.undisclosed.unknown.title"
     );
     // The hole: neither the grant button nor the form that carries it.
-    expect(container.textContent).not.toContain("common.allow");
+    expect(container.textContent).not.toContain("oauth2.consent.allow-access");
     expect(container.querySelector('form[method="POST"]')).toBeNull();
 
     // The default mock resolves, so the retry reaches a ceiling and the page
@@ -773,7 +828,7 @@ describe("OAuth2ConsentPage", () => {
     });
     await flushPromises();
     expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
-    expect(container.textContent).toContain("common.allow");
+    expect(container.textContent).toContain("oauth2.consent.allow-access");
     unmount();
   });
 
@@ -794,7 +849,7 @@ describe("OAuth2ConsentPage", () => {
       capability,
       ignoreMaskingExemptions: false,
     });
-    expect(container.textContent).not.toContain("common.allow");
+    expect(container.textContent).not.toContain("oauth2.consent.allow-access");
     expect(container.querySelector('form[method="POST"]')).toBeNull();
     expect(container.textContent).toContain(
       "oauth2.consent.mcp.undisclosed.undisclosable.title"

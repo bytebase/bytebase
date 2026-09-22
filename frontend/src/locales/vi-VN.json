@@ -254,7 +254,6 @@
     "address": "Địa chỉ",
     "admin": "Quản trị viên",
     "all": "Tất cả",
-    "allow": "Cho phép",
     "and": "và",
     "approve": "Phê duyệt",
     "approved": "Đã phê duyệt",
@@ -1627,6 +1626,7 @@
   },
   "oauth2": {
     "consent": {
+      "allow-access": "Cho phép truy cập",
       "description": "{{clientName}} đang yêu cầu truy cập vào tài khoản của bạn",
       "error-client-not-found": "Không tìm thấy client",
       "error-load-failed": "Tải thông tin client thất bại",
@@ -1643,13 +1643,6 @@
           },
           "policy-label": "Chính sách không gian làm việc",
           "title": "Truy cập MCP đang tắt"
-        },
-        "line": {
-          "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối được ghi vào đầu ra chuẩn khi bật ghi nhật ký kiểm toán vào đầu ra chuẩn",
-          "capped-read-only": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì Bytebase có thể kiểm tra trên từng engine — nơi không thể chứng minh một câu lệnh là đọc, không truy vấn nào chạy",
-          "capped-read-write": "Giới hạn bởi quyền Bytebase của chính bạn và bởi mức hỗ trợ của Bytebase cho từng loại cơ sở dữ liệu và từng thao tác",
-          "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
-          "no-write": "Không thay đổi, triển khai, xuất dữ liệu hay quản trị cơ sở dữ liệu"
         },
         "title": "Phiên này có thể",
         "undisclosed": {
@@ -2758,8 +2751,10 @@
         }
       },
       "policy": {
+        "audit": "Các thao tác MCP được ghi lại trong nhật ký kiểm toán của Bytebase.",
+        "bound": "Mỗi phiên MCP bị giới hạn bởi quyền Bytebase của người dùng đã kết nối và các thao tác mà engine cơ sở dữ liệu đích hỗ trợ.",
         "current": "Chính sách hiện tại: {{mode}}",
-        "description": "Mức tối đa mà bất kỳ phiên MCP nào có thể làm ở đây. Các phiên còn bị giới hạn bởi quyền của từng người dùng, và những lần từ chối theo chính sách được ghi vào đầu ra chuẩn khi bật ghi nhật ký kiểm toán vào đầu ra chuẩn.",
+        "description": "{{bound}} {{audit}}",
         "edit": "Sửa chính sách",
         "loading": "Đang đọc chính sách truy cập…",
         "masking": {
