@@ -10,12 +10,20 @@ export interface ColumnWithWidth {
   defaultWidth: number;
   minWidth?: number;
   /**
-   * False for a column whose content has a width of its own, such as a date.
-   * `distributeColumnWidths` then opens it at `defaultWidth` however wide the
-   * table is, and `minWidth` only floors a drag; otherwise `minWidth` floors
-   * both. Tables that leave spare width to the browser do not read it.
+   * False for a column whose content has a width of its own, such as a date:
+   * `distributeColumnWidths` gives it none of the spare width, and `minWidth`
+   * floors a drag rather than the width it opens at. Without a `yieldOrder`
+   * it keeps `defaultWidth` at any width. Tables that leave spare width to
+   * the browser do not read it.
    */
   grow?: boolean;
+  /**
+   * When the container is narrower than every column's `defaultWidth`,
+   * columns give width back in ascending order, each down to its `minWidth`
+   * before the next gives any. A column without one gives last; one that is
+   * not resizable never does. Without any, the shortfall is shared.
+   */
+  yieldOrder?: number;
 }
 
 /**
@@ -31,6 +39,13 @@ export interface ColumnWithWidth {
 export function distributeColumnWidths<
   T extends ColumnWithWidth & { resizable?: boolean },
 >(columns: T[], containerWidth: number): number[] {
+  const preferredTotal = columns.reduce((sum, c) => sum + c.defaultWidth, 0);
+  if (
+    containerWidth < preferredTotal &&
+    columns.some((c) => c.yieldOrder !== undefined)
+  ) {
+    return yieldInOrder(columns, preferredTotal - containerWidth);
+  }
   const keepsWidth = (c: T) => c.resizable === false || c.grow === false;
   const floorOf = (c: T) => c.minWidth ?? 40;
   const fixedTotal = columns
@@ -73,6 +88,53 @@ export function distributeColumnWidths<
   if (sharing.length > 0) {
     const widest = sharing.reduce((a, b) => (widths[b] > widths[a] ? b : a));
     widths[widest] += containerWidth - widths.reduce((sum, w) => sum + w, 0);
+  }
+  return widths;
+}
+
+// Starts every column at its default and takes `deficit` back, a yield
+// group at a time: within a group in proportion to how far each column can
+// shrink, and never past a floor. If every group reaches its floors first,
+// the widths add up past the container and the table scrolls.
+function yieldInOrder<T extends ColumnWithWidth & { resizable?: boolean }>(
+  columns: T[],
+  deficit: number
+): number[] {
+  const floorOf = (c: T) => c.minWidth ?? 40;
+  const orderOf = (c: T) => c.yieldOrder ?? Number.POSITIVE_INFINITY;
+  const widths = columns.map((c) => c.defaultWidth);
+  let remaining = deficit;
+  const orders = [
+    ...new Set(columns.filter((c) => c.resizable !== false).map(orderOf)),
+  ].sort((a, b) => a - b);
+  for (const order of orders) {
+    if (remaining <= 0) {
+      break;
+    }
+    const group = columns
+      .map((_, i) => i)
+      .filter(
+        (i) => columns[i].resizable !== false && orderOf(columns[i]) === order
+      );
+    const room = group.map((i) =>
+      Math.max(0, columns[i].defaultWidth - floorOf(columns[i]))
+    );
+    const groupRoom = room.reduce((sum, r) => sum + r, 0);
+    const take = Math.min(remaining, groupRoom);
+    let taken = 0;
+    group.forEach((i, j) => {
+      const cut = groupRoom > 0 ? Math.floor((take * room[j]) / groupRoom) : 0;
+      widths[i] -= cut;
+      taken += cut;
+    });
+    // Flooring each cut leaves a few pixels; the widest in the group gives
+    // them, within its floor.
+    for (const i of [...group].sort((a, b) => widths[b] - widths[a])) {
+      const cut = Math.min(take - taken, widths[i] - floorOf(columns[i]));
+      widths[i] -= cut;
+      taken += cut;
+    }
+    remaining -= take;
   }
   return widths;
 }
