@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 //go:embed base_prompt.md
@@ -27,11 +29,15 @@ type SchemaSummary struct {
 // prefix cache holds it across the reviews of one project: the system message
 // changes only with the policy, and the user message carries the target and the
 // statements.
-func buildMessages(request *Request, numberedStatement string, nonce string) []Message {
-	return []Message{
-		{Role: RoleSystem, Content: buildSystemPrompt(request)},
-		{Role: RoleUser, Content: buildUserPrompt(request.Target, numberedStatement, nonce)},
+func buildMessages(request *Request, numberedStatement string, nonce string) []*v1pb.AIChatMessage {
+	return []*v1pb.AIChatMessage{
+		textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM, buildSystemPrompt(request)),
+		textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, buildUserPrompt(request.Target, numberedStatement, nonce)),
 	}
+}
+
+func textMessage(role v1pb.AIChatMessageRole, content string) *v1pb.AIChatMessage {
+	return &v1pb.AIChatMessage{Role: role, Content: &content}
 }
 
 func buildSystemPrompt(request *Request) string {

@@ -8,6 +8,15 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+)
+
+const (
+	roleSystem    = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM
+	roleUser      = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER
+	roleAssistant = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT
+	roleTool      = v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_TOOL
 )
 
 const threeLineStatement = "ALTER TABLE orders ADD COLUMN note text;\n\nDELETE FROM order_events;\n"
@@ -15,7 +24,7 @@ const threeLineStatement = "ALTER TABLE orders ADD COLUMN note text;\n\nDELETE F
 const validReply = `{"findings": [{"title": "Add a WHERE clause", "severity": "P0", "line": 3, "rule": "an UPDATE or DELETE that touches more rows than the author means", "evidence": "order_events has 9000000 rows", "fix": "Delete in batches by id range"}]}`
 
 type modelStep struct {
-	response *ChatResponse
+	response *v1pb.AIChatResponse
 	err      error
 	// block makes the step wait until the context ends.
 	block bool
@@ -26,12 +35,12 @@ type modelStep struct {
 // scriptedModel replays steps in order and repeats the last one.
 type scriptedModel struct {
 	steps    []modelStep
-	requests []*ChatRequest
+	requests []*v1pb.AIChatRequest
 }
 
-func (m *scriptedModel) Chat(ctx context.Context, request *ChatRequest) (*ChatResponse, error) {
+func (m *scriptedModel) Chat(ctx context.Context, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
 	// The loop appends to the same slice after the call, so keep a copy.
-	m.requests = append(m.requests, &ChatRequest{Messages: slices.Clone(request.Messages), Tools: request.Tools})
+	m.requests = append(m.requests, &v1pb.AIChatRequest{Messages: slices.Clone(request.Messages), ToolDefinitions: request.ToolDefinitions})
 	step := m.steps[min(len(m.requests), len(m.steps))-1]
 	if step.cancelParent != nil {
 		step.cancelParent()
@@ -49,8 +58,8 @@ type fakeTools struct {
 	calls   []string
 }
 
-func (*fakeTools) Definitions() []ToolDefinition {
-	return []ToolDefinition{{Name: "read"}, {Name: "search"}}
+func (*fakeTools) Definitions() []*v1pb.AIChatToolDefinition {
+	return []*v1pb.AIChatToolDefinition{{Name: "read"}, {Name: "search"}}
 }
 
 func (f *fakeTools) Call(_ context.Context, name string, _ string) (string, error) {
@@ -62,11 +71,11 @@ func (f *fakeTools) Call(_ context.Context, name string, _ string) (string, erro
 }
 
 func finalReply(content string) modelStep {
-	return modelStep{response: &ChatResponse{Message: Message{Content: content}, Usage: Usage{TotalTokens: 100}}}
+	return modelStep{response: &v1pb.AIChatResponse{Content: &content, Usage: &v1pb.AIChatUsage{TotalTokens: 100}}}
 }
 
-func toolCallReply(calls ...ToolCall) modelStep {
-	return modelStep{response: &ChatResponse{Message: Message{ToolCalls: calls}, Usage: Usage{TotalTokens: 100}}}
+func toolCallReply(calls ...*v1pb.AIChatToolCall) modelStep {
+	return modelStep{response: &v1pb.AIChatResponse{ToolCalls: calls, Usage: &v1pb.AIChatUsage{TotalTokens: 100}}}
 }
 
 func TestReviewReturnsFindings(t *testing.T) {
@@ -76,7 +85,7 @@ func TestReviewReturnsFindings(t *testing.T) {
 	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
 	require.NoError(t, err)
 	require.Equal(t, 1, result.Calls)
-	require.Equal(t, 100, result.Usage.TotalTokens)
+	require.Equal(t, 100, result.TotalTokens)
 	require.Equal(t, []Finding{{
 		Title:    "Add a WHERE clause",
 		Severity: SeverityP0,
@@ -87,16 +96,17 @@ func TestReviewReturnsFindings(t *testing.T) {
 	}}, result.Findings)
 
 	require.Len(t, model.requests, 1)
-	require.Equal(t, []Role{RoleSystem, RoleUser}, roles(model.requests[0].Messages))
-	require.Len(t, model.requests[0].Tools, 2)
+	require.Equal(t, []v1pb.AIChatMessageRole{roleSystem, roleUser}, roles(model.requests[0].Messages))
+	require.Len(t, model.requests[0].ToolDefinitions, 2)
 }
 
-func TestReviewAnswersEveryToolCallAndKeepsReplay(t *testing.T) {
+func TestReviewAnswersEveryToolCallAndKeepsMetadata(t *testing.T) {
 	t.Parallel()
 
-	calls := []ToolCall{
-		{ID: "call-1", Name: "search", Arguments: `{"text": "orders"}`, Replay: "thought-signature"},
-		{ID: "call-2", Name: "read", Arguments: `{"objects": [{"name": "orders"}]}`},
+	signature := "thought-signature"
+	calls := []*v1pb.AIChatToolCall{
+		{Id: "call-1", Name: "search", Arguments: `{"text": "orders"}`, Metadata: &signature},
+		{Id: "call-2", Name: "read", Arguments: `{"objects": [{"name": "orders"}]}`},
 	}
 	model := &scriptedModel{steps: []modelStep{toolCallReply(calls...), finalReply(`{"findings": []}`)}}
 	tools := &fakeTools{outputs: map[string]string{"search": "orders_summary", "read": "CREATE TABLE orders"}}
@@ -105,14 +115,15 @@ func TestReviewAnswersEveryToolCallAndKeepsReplay(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, result.Findings)
 	require.Equal(t, 2, result.Calls)
-	require.Equal(t, 200, result.Usage.TotalTokens)
+	require.Equal(t, 200, result.TotalTokens)
 	require.Equal(t, []string{"search", "read"}, tools.calls)
 
 	history := model.requests[1].Messages
-	require.Equal(t, []Role{RoleSystem, RoleUser, RoleAssistant, RoleTool, RoleTool}, roles(history))
-	require.Equal(t, calls, history[2].ToolCalls)
-	require.Equal(t, Message{Role: RoleTool, Content: "orders_summary", ToolCallID: "call-1"}, history[3])
-	require.Equal(t, Message{Role: RoleTool, Content: "CREATE TABLE orders", ToolCallID: "call-2"}, history[4])
+	require.Equal(t, []v1pb.AIChatMessageRole{roleSystem, roleUser, roleAssistant, roleTool, roleTool}, roles(history))
+	require.Equal(t, calls, history[2].ToolCalls, "the assistant turn replays the calls with their vendor metadata")
+	require.Nil(t, history[2].Content, "an assistant turn without text carries no content")
+	requireToolMessage(t, history[3], "call-1", "orders_summary")
+	requireToolMessage(t, history[4], "call-2", "CREATE TABLE orders")
 }
 
 func TestReviewExitPaths(t *testing.T) {
@@ -157,23 +168,12 @@ func TestReviewExitPaths(t *testing.T) {
 			name: "announcing a lookup is sent back to call the tool",
 			steps: []modelStep{
 				finalReply("Let me check the orders table first."),
-				toolCallReply(ToolCall{ID: "call-1", Name: "read"}),
+				toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}),
 				finalReply(validReply),
 			},
 			wantFindings:  1,
 			wantCalls:     3,
 			wantToolCalls: []string{"read"},
-		},
-		{
-			name:         "truncated reply fails without a correction round",
-			steps:        []modelStep{{response: &ChatResponse{Message: Message{Content: `{"findings": [`}, StopReason: StopReasonLength}}},
-			wantErr:      ErrReplyTruncated,
-			wantRequests: 1,
-		},
-		{
-			name:    "filtered reply fails",
-			steps:   []modelStep{{response: &ChatResponse{StopReason: StopReasonContentFilter}}},
-			wantErr: ErrReplyFiltered,
 		},
 		{
 			name:        "model error fails",
@@ -182,20 +182,20 @@ func TestReviewExitPaths(t *testing.T) {
 		},
 		{
 			name:          "tool error fails instead of reaching the model as text",
-			steps:         []modelStep{toolCallReply(ToolCall{ID: "call-1", Name: "read"}), finalReply(`{"findings": []}`)},
+			steps:         []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "read"}), finalReply(`{"findings": []}`)},
 			tools:         &fakeTools{err: toolFailure},
 			wantErr:       toolFailure,
 			wantToolCalls: []string{"read"},
 		},
 		{
 			name:      "unknown tool goes back to the model as text",
-			steps:     []modelStep{toolCallReply(ToolCall{ID: "call-1", Name: "get_table"}), finalReply(`{"findings": []}`)},
+			steps:     []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "get_table"}), finalReply(`{"findings": []}`)},
 			wantCalls: 2,
 		},
 		{
 			// The tools of the last permitted call do not run: no call is left to carry their results.
 			name:          "call limit",
-			steps:         []modelStep{toolCallReply(ToolCall{ID: "call-1", Name: "search"})},
+			steps:         []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "search"})},
 			maxModelCalls: 3,
 			wantErr:       ErrCallLimit,
 			wantRequests:  3,
@@ -242,8 +242,8 @@ func TestReviewExitPaths(t *testing.T) {
 			require.Equal(t, tc.wantCalls, result.Calls)
 			if tc.wantLastUserText != "" {
 				last := model.requests[len(model.requests)-1].Messages
-				require.Equal(t, RoleUser, last[len(last)-1].Role)
-				require.Contains(t, last[len(last)-1].Content, tc.wantLastUserText)
+				require.Equal(t, roleUser, last[len(last)-1].GetRole())
+				require.Contains(t, last[len(last)-1].GetContent(), tc.wantLastUserText)
 			}
 		})
 	}
@@ -252,12 +252,12 @@ func TestReviewExitPaths(t *testing.T) {
 func TestReviewUnknownToolNamesTheRealTools(t *testing.T) {
 	t.Parallel()
 
-	model := &scriptedModel{steps: []modelStep{toolCallReply(ToolCall{ID: "call-1", Name: "get_table"}), finalReply(`{"findings": []}`)}}
+	model := &scriptedModel{steps: []modelStep{toolCallReply(&v1pb.AIChatToolCall{Id: "call-1", Name: "get_table"}), finalReply(`{"findings": []}`)}}
 	_, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
 	require.NoError(t, err)
 
 	history := model.requests[1].Messages
-	require.Equal(t, Message{Role: RoleTool, Content: `unknown tool "get_table"; the tools are: read, search`, ToolCallID: "call-1"}, history[len(history)-1])
+	requireToolMessage(t, history[len(history)-1], "call-1", `unknown tool "get_table"; the tools are: read, search`)
 }
 
 func TestReviewRejectsEmptyStatement(t *testing.T) {
@@ -315,14 +315,22 @@ func TestReviewKeepsAnEmptyReplyOutOfTheHistory(t *testing.T) {
 	require.Len(t, result.Findings, 1)
 
 	history := model.requests[1].Messages
-	require.Equal(t, []Role{RoleSystem, RoleUser, RoleUser}, roles(history))
-	require.Contains(t, history[2].Content, "the reply is empty")
+	require.Equal(t, []v1pb.AIChatMessageRole{roleSystem, roleUser, roleUser}, roles(history))
+	require.Contains(t, history[2].GetContent(), "the reply is empty")
 }
 
-func roles(messages []Message) []Role {
-	result := make([]Role, 0, len(messages))
+func roles(messages []*v1pb.AIChatMessage) []v1pb.AIChatMessageRole {
+	result := make([]v1pb.AIChatMessageRole, 0, len(messages))
 	for _, message := range messages {
-		result = append(result, message.Role)
+		result = append(result, message.GetRole())
 	}
 	return result
+}
+
+func requireToolMessage(t *testing.T, message *v1pb.AIChatMessage, toolCallID string, content string) {
+	t.Helper()
+	require.Equal(t, roleTool, message.GetRole())
+	require.Equal(t, toolCallID, message.GetToolCallId())
+	require.Equal(t, content, message.GetContent())
+	require.Empty(t, message.GetToolCalls())
 }

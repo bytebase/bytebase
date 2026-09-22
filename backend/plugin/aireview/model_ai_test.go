@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 // geminiRequest is the part of the Gemini wire format the tests assert on.
@@ -44,8 +45,8 @@ type geminiRequest struct {
 	} `json:"tools"`
 }
 
-// The scripted Model in reviewer_test.go stands in for this one, so this test
-// holds the loop to the real adapter's wire format.
+// The scripted Model in reviewer_test.go stands in for ai.Chat, so this test
+// holds the loop to the real Gemini adapter's wire format.
 func TestSettingModelRoundTripsThroughGemini(t *testing.T) {
 	t.Parallel()
 
@@ -71,7 +72,7 @@ func TestSettingModelRoundTripsThroughGemini(t *testing.T) {
 	require.NoError(t, err)
 	require.Empty(t, result.Findings)
 	require.Equal(t, 2, result.Calls)
-	require.Equal(t, 100, result.Usage.TotalTokens)
+	require.Equal(t, 100, result.TotalTokens)
 
 	require.Len(t, requests, 2)
 	first := requests[0]
@@ -165,7 +166,7 @@ func TestReviewLiveGemini(t *testing.T) {
 
 	result, err := NewReviewer(model).Review(context.Background(), request, tools)
 	require.NoError(t, err)
-	t.Logf("model calls: %d, tokens: %d, tool calls: %v", result.Calls, result.Usage.TotalTokens, tools.calls)
+	t.Logf("model calls: %d, tokens: %d, tool calls: %v", result.Calls, result.TotalTokens, tools.calls)
 	for _, finding := range result.Findings {
 		t.Logf("%s line %d: %s\n  rule: %s\n  evidence: %s\n  fix: %s", finding.Severity, finding.Line, finding.Title, finding.Rule, finding.Evidence, finding.Fix)
 	}
@@ -178,8 +179,8 @@ type catalogTools struct {
 	calls []string
 }
 
-func (*catalogTools) Definitions() []ToolDefinition {
-	return []ToolDefinition{
+func (*catalogTools) Definitions() []*v1pb.AIChatToolDefinition {
+	return []*v1pb.AIChatToolDefinition{
 		{
 			Name:             "search",
 			Description:      "Find the objects whose name or definition contains the text, as a case insensitive substring. Use it to find the views, routines, and triggers that depend on a table.",

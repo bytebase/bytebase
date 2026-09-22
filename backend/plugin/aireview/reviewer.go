@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 const (
@@ -25,10 +27,6 @@ var (
 	ErrCallLimit = errors.New("the review reached the model call limit")
 	// ErrDeadline means the review ran longer than its time limit.
 	ErrDeadline = errors.New("the review ran out of time")
-	// ErrReplyTruncated means the vendor cut the reply at the output token limit.
-	ErrReplyTruncated = errors.New("the model's reply was cut off at its output limit")
-	// ErrReplyFiltered means the vendor's content filter blocked the reply.
-	ErrReplyFiltered = errors.New("the model's reply was blocked by the vendor's content filter")
 	// ErrInvalidReply means the final reply was still invalid after the model was asked to correct it.
 	ErrInvalidReply = errors.New("the model did not return a valid review result")
 )
@@ -47,7 +45,8 @@ type Result struct {
 	Findings []Finding
 	// Calls is the number of model calls the review made.
 	Calls int
-	Usage Usage
+	// TotalTokens is the token usage the vendor reported, summed over the calls.
+	TotalTokens int
 }
 
 // Reviewer runs reviews against one model.
@@ -82,7 +81,7 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 	definitions := tools.Definitions()
 	toolNames := make([]string, 0, len(definitions))
 	for _, definition := range definitions {
-		toolNames = append(toolNames, definition.Name)
+		toolNames = append(toolNames, definition.GetName())
 	}
 
 	numberedStatement, lineCount := numberLines(request.Statement)
@@ -95,53 +94,53 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 			return nil, err
 		}
 		result.Calls++
-		response, err := r.model.Chat(ctx, &ChatRequest{Messages: messages, Tools: definitions})
+		response, err := r.model.Chat(ctx, &v1pb.AIChatRequest{Messages: messages, ToolDefinitions: definitions})
 		if err != nil {
 			if ctxErr := r.contextError(parent, ctx, result.Calls); ctxErr != nil {
 				return nil, ctxErr
 			}
 			return nil, errors.Wrapf(err, "model call %d failed", result.Calls)
 		}
-		result.Usage.TotalTokens += response.Usage.TotalTokens
+		result.TotalTokens += int(response.GetUsage().GetTotalTokens())
 
-		switch response.StopReason {
-		case StopReasonLength:
-			return nil, ErrReplyTruncated
-		case StopReasonContentFilter:
-			return nil, ErrReplyFiltered
-		default:
-		}
-
-		reply := response.Message
-		reply.Role = RoleAssistant
+		content := response.GetContent()
+		toolCalls := response.GetToolCalls()
 		// Vendors reject a history that holds an assistant message with neither
 		// text nor tool calls, which would break the correction round.
-		if strings.TrimSpace(reply.Content) != "" || len(reply.ToolCalls) > 0 {
-			messages = append(messages, reply)
+		if strings.TrimSpace(content) != "" || len(toolCalls) > 0 {
+			messages = append(messages, &v1pb.AIChatMessage{
+				Role:      v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT,
+				Content:   response.Content,
+				ToolCalls: toolCalls,
+			})
 		}
 
-		// Branch on the tool calls and not on the stop reason: Gemini reports
-		// STOP for a reply that holds function calls.
-		if len(reply.ToolCalls) > 0 {
+		// A reply with tool calls is not final, whatever else it says.
+		if len(toolCalls) > 0 {
 			if result.Calls >= r.maxModelCalls {
 				// No call is left to carry the results, so do not run the tools.
 				break
 			}
 			// Vendors reject the next request unless every call has a result.
-			for _, call := range reply.ToolCalls {
+			for _, call := range toolCalls {
 				output, err := callTool(ctx, tools, toolNames, call)
 				if err != nil {
 					if ctxErr := r.contextError(parent, ctx, result.Calls); ctxErr != nil {
 						return nil, ctxErr
 					}
-					return nil, errors.Wrapf(err, "tool %q failed", call.Name)
+					return nil, errors.Wrapf(err, "tool %q failed", call.GetName())
 				}
-				messages = append(messages, Message{Role: RoleTool, Content: output, ToolCallID: call.ID})
+				toolCallID := call.GetId()
+				messages = append(messages, &v1pb.AIChatMessage{
+					Role:       v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_TOOL,
+					Content:    &output,
+					ToolCallId: &toolCallID,
+				})
 			}
 			continue
 		}
 
-		findings, problems := parseFindings(reply.Content, lineCount)
+		findings, problems := parseFindings(content, lineCount)
 		if len(problems) == 0 {
 			result.Findings = findings
 			return result, nil
@@ -150,7 +149,7 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 			return nil, errors.Wrap(ErrInvalidReply, strings.Join(problems, "; "))
 		}
 		invalidReplies++
-		messages = append(messages, Message{Role: RoleUser, Content: correctionMessage(problems)})
+		messages = append(messages, textMessage(v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, correctionMessage(problems)))
 	}
 	return nil, errors.Wrapf(ErrCallLimit, "%d calls", r.maxModelCalls)
 }
@@ -167,13 +166,13 @@ func (r *Reviewer) contextError(parent context.Context, ctx context.Context, cal
 	return nil
 }
 
-func callTool(ctx context.Context, tools Tools, toolNames []string, call ToolCall) (string, error) {
+func callTool(ctx context.Context, tools Tools, toolNames []string, call *v1pb.AIChatToolCall) (string, error) {
 	for _, name := range toolNames {
-		if name == call.Name {
-			return tools.Call(ctx, call.Name, call.Arguments)
+		if name == call.GetName() {
+			return tools.Call(ctx, call.GetName(), call.GetArguments())
 		}
 	}
-	return fmt.Sprintf("unknown tool %q; the tools are: %s", call.Name, strings.Join(toolNames, ", ")), nil
+	return fmt.Sprintf("unknown tool %q; the tools are: %s", call.GetName(), strings.Join(toolNames, ", ")), nil
 }
 
 // correctionMessage asks for a corrected reply. It offers a tool call as well
