@@ -147,11 +147,15 @@ Where the browser spreads spare width across every sized column, the open-ended 
 run's detail — is left unsized to take it, so the date neither wraps nor swells; the audit log does
 not do this yet, and its date grows with the rest. Where a table fits its columns to the container
 itself, a date column takes none of the spare width, and a column raised to its floor takes that
-width from the others rather than overrunning the container. The minimum is one value for every
-form, 140px: the date alone where it is written widest, in Japanese. Narrower than its form a cell
-ellipsizes from the end, so it keeps what the locale writes first — the date in most locales, the
-time and zone in Vietnamese — and in Japanese and Chinese the ellipsis takes the date's last
-character. The hover, or one drag, gives the rest back.
+width from the others rather than overrunning the container. A cell narrower than its form keeps the
+day: the date, written as the locale writes a date alone, never shrinks, and the time and zone
+ellipsize on whichever side of it the locale puts them — after it in most locales, before it in
+Vietnamese — with the space between kept, so a cut time never runs into the date. Cutting the label
+from its end would keep what the locale writes first, which in Vietnamese is the time. A cell asks
+for this with `HumanizeTs`'s `truncate`; a locale whose label does not begin or end with its date
+falls back to cutting the end. The minimum is one value for every form, 154px: the date where it is
+written widest, in Japanese and Chinese, the space, and a whole ellipsis, so a narrowed cell still
+shows there is a time. The hover, or one drag, gives the rest back.
 
 ## Surface classification
 
@@ -170,7 +174,7 @@ Every current `HumanizeTs` call site, classified under the principle:
 | Schema sync status | `modules/sql-editor/components/SchemaPane/SyncSchemaButton.tsx`, `routes/project/ProjectSyncSchemaPage.tsx`, `components/database/DatabaseOverviewInfo.tsx` | Freshness | 30d switch |
 | Agent chat | `modules/agent/components/AgentWindow.tsx` | Feed | 30d switch |
 | Plan-check run time | `components/plan-check/PlanCheckSection.tsx` (bare `toLocaleString()` today — adopts `HumanizeTs`) | Freshness | 30d switch |
-| Access-grant creation time | `routes/project/ProjectAccessGrantsPage.tsx` (`AccessGrantRow`; full absolute today — adopts `HumanizeTs`). Shares the operational form with the expiration beside it: two dates in one row read in one format, and consistency outranks the freshness a relative age would add. The row's status, statement, creator and databases carry what a reader acts on — the status turns Expired by itself — so the dates take none of the spare width, and when the table is narrower than the defaults together they give way first, down to the timestamp minimum, then the statement, the creator and the databases, with the status last. A narrow screen cuts the end of each date, the zone in most locales; the full date-time stays on the hover | Operational | Operational (D6 tooltip) |
+| Access-grant creation time | `routes/project/ProjectAccessGrantsPage.tsx` (`AccessGrantRow`; full absolute today — adopts `HumanizeTs`). Shares the operational form with the expiration beside it: two dates in one row read in one format, and consistency outranks the freshness a relative age would add. The row's status, statement, creator and databases carry what a reader acts on — the status turns Expired by itself — so the dates take none of the spare width, and when the table is narrower than the defaults together they give way first, down to the timestamp minimum, then the statement, the creator and the databases, with the status last. A narrow screen cuts each date's time and zone and keeps its day; the full date-time stays on the hover | Operational | Operational (D6 tooltip) |
 | **Database changelog** | `routes/project/database-detail/changelog/DatabaseChangelogTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Database revisions** | `routes/project/database-detail/revision/DatabaseRevisionTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Task-run history** | `routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx`, `routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |

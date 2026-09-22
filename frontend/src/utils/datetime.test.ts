@@ -23,6 +23,7 @@ import {
   absoluteTimeReading,
   compactTimeReading,
   countdownReading,
+  dateTimeSegments,
   daysLeftReading,
   displayableInstantMs,
   formatAbsoluteDateTime,
@@ -293,6 +294,56 @@ const startAt = (start: string) => {
   vi.setSystemTime(startMs);
   return startMs;
 };
+
+describe("dateTimeSegments", () => {
+  const ts = new Date("2026-09-21T15:28:05Z").getTime();
+  const forms = [
+    ["compact", compactTimeReading],
+    ["operational", operationalTimeReading],
+    ["full", absoluteTimeReading],
+  ] as const;
+
+  test.each([
+    ["en-US", "Sep 21, 2026", true],
+    ["es-ES", "21 sept 2026", true],
+    ["ja-JP", "2026年9月21日", true],
+    ["vi-VN", "21 thg 9, 2026", false],
+    ["zh-CN", "2026年9月21日", true],
+  ])(
+    "splits every %s date-time around the date it writes alone",
+    (locale, date, dateFirst) => {
+      withLocale(locale, () => {
+        for (const [, reading] of forms) {
+          const label = reading.read(ts);
+          const segments = dateTimeSegments(label, ts);
+          expect(segments).toMatchObject({ date, dateFirst });
+          expect(
+            dateFirst
+              ? `${segments?.date}${segments?.rest}`
+              : `${segments?.rest}${segments?.date}`
+          ).toBe(label);
+        }
+      });
+    }
+  );
+
+  test("leaves the separator with the time, so the date is only the date", () => {
+    withLocale("ja-JP", () => {
+      expect(dateTimeSegments(compactTimeReading.read(ts), ts)?.rest).toBe(
+        " 23:28"
+      );
+    });
+    withLocale("vi-VN", () => {
+      expect(dateTimeSegments(compactTimeReading.read(ts), ts)?.rest).toBe(
+        "23:28 "
+      );
+    });
+  });
+
+  test("declines a label whose date sits between its other fields", () => {
+    expect(dateTimeSegments("11:28 PM Sep 21, 2026 GMT+8", ts)).toBeUndefined();
+  });
+});
 
 describe("reading boundaries", () => {
   beforeEach(() => {

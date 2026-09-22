@@ -143,10 +143,11 @@ export function DatabaseChangelogTable({
               <TableCell className="text-center">
                 <ChangelogStatusIcon status={changelog.status} />
               </TableCell>
-              <TableCell className="truncate text-main">
+              <TableCell className="text-main">
                 {changelog.createTime ? (
                   <HumanizeTs
                     mode="compact"
+                    truncate
                     tsMs={getTimeForPbTimestampProtoEs(changelog.createTime)}
                   />
                 ) : (

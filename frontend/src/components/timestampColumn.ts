@@ -15,9 +15,9 @@ export const TIMESTAMP_COLUMN_WIDTH = {
 } as const;
 
 /**
- * How far any timestamp column may narrow: the date alone, measured the same
- * way, which ja-JP writes widest. A narrower cell ellipsizes from the end, so
- * it keeps the date only where the locale writes the date first; vi-VN
- * writes the time first.
+ * How far any timestamp column may narrow, measured the same way: the date
+ * whole, the space where the time meets it, and a whole ellipsis saying the
+ * time is there. ja-JP and zh-CN need the most. `HumanizeTs`'s `truncate`
+ * is what keeps the date whole.
  */
-export const TIMESTAMP_COLUMN_MIN_WIDTH = 140;
+export const TIMESTAMP_COLUMN_MIN_WIDTH = 154;

@@ -72,6 +72,7 @@ const formatters = vi.hoisted(() => {
     compactTimeReading: fixedReading("compact"),
     operationalTimeReading: fixedReading("operational"),
     absoluteTimeReading: fixedReading("absolute"),
+    dateTimeSegments: vi.fn(),
   };
 });
 
@@ -117,6 +118,7 @@ describe("HumanizeTs", () => {
     vi.setSystemTime(new Date("2026-03-02T12:00:00Z"));
     language.current = "en";
     formatters.formatAbsoluteDateTime.mockClear();
+    formatters.dateTimeSegments.mockReset();
   });
 
   afterEach(() => {
@@ -155,11 +157,86 @@ describe("HumanizeTs", () => {
   test("renders one element, so layout classes reach the box that lays out", () => {
     const { container, root } = mount();
     act(() =>
-      root.render(<HumanizeTs className="block truncate" tsMs={1_000_000} />)
+      root.render(<HumanizeTs className="block text-xs" tsMs={1_000_000} />)
     );
     expect(container.childElementCount).toBe(1);
-    expect(container.firstElementChild?.className).toContain("block truncate");
+    expect(container.firstElementChild?.className).toContain("block text-xs");
     expect(container.firstElementChild?.childElementCount).toBe(0);
+  });
+
+  // Each piece of a fitted label, and whether it keeps its width or gives way.
+  const pieces = (box: Element | null) =>
+    Array.from(box?.children ?? []).map((piece) => {
+      const fit = piece.classList.contains("truncate")
+        ? "cut"
+        : piece.classList.contains("shrink-0")
+          ? "kept"
+          : "loose";
+      return `${piece.textContent}:${fit}`;
+    });
+
+  test.each([
+    [
+      "after the date",
+      { date: "Sep 21, 2026", rest: ", 11:28 PM GMT+8", dateFirst: true },
+      ["Sep 21, 2026:kept", ", 11:28 PM GMT+8:cut"],
+    ],
+    [
+      "after the date and a space",
+      { date: "2026年9月21日", rest: " 23:28", dateFirst: true },
+      ["2026年9月21日:kept", " :kept", "23:28:cut"],
+    ],
+    [
+      "before the date",
+      { date: "21 thg 9, 2026", rest: "23:28 GMT+8 ", dateFirst: false },
+      ["23:28 GMT+8:cut", " :kept", "21 thg 9, 2026:kept"],
+    ],
+  ])(
+    "keeps a narrowed date whole and cuts the time written %s",
+    async (_, segments, expected) => {
+      formatters.dateTimeSegments.mockReturnValue(segments);
+      const { container, root } = mount();
+      act(() =>
+        root.render(
+          <HumanizeTs
+            className="text-xs"
+            mode="operational"
+            truncate
+            tsMs={1_000_000}
+          />
+        )
+      );
+
+      const box = container.firstElementChild;
+      expect(formatters.dateTimeSegments).toHaveBeenCalledWith(
+        "operational:1000000:en",
+        1_000_000
+      );
+      expect(box?.className).toContain("text-xs");
+      expect(pieces(box)).toEqual(expected);
+
+      await openTooltip(box);
+      expect(overlayText()).toContain("absolute:1000000");
+    }
+  );
+
+  test("cuts a narrowed label from its end when it will not split", () => {
+    formatters.dateTimeSegments.mockReturnValue(undefined);
+    const { container, root } = mount();
+    act(() =>
+      root.render(<HumanizeTs mode="compact" truncate tsMs={1_000_000} />)
+    );
+    const box = container.firstElementChild;
+    expect(box?.className).toContain("block truncate");
+    expect(box?.textContent).toBe("compact:1000000:en");
+    expect(box?.childElementCount).toBe(0);
+  });
+
+  test("never splits a label that carries no time", () => {
+    const { container, root } = mount();
+    act(() => root.render(<HumanizeTs truncate tsMs={1_000_000} />));
+    expect(formatters.dateTimeSegments).not.toHaveBeenCalled();
+    expect(container.firstElementChild?.className).toContain("block truncate");
   });
 
   test("offers the age on a full cell, and keeps it counting while open", async () => {

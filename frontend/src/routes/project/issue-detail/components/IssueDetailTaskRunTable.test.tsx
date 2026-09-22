@@ -4,7 +4,10 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
-import { shownTimestampModes } from "@/test-utils/humanizeTs";
+import {
+  shownTimestampModes,
+  shownTimestampTruncates,
+} from "@/test-utils/humanizeTs";
 import {
   TaskRun_Status,
   TaskRunSchema,
@@ -82,8 +85,6 @@ describe("IssueDetailTaskRunTable", () => {
     expect(widthOf("task.created")).toBe(`${TIMESTAMP_COLUMN_WIDTH.compact}px`);
     expect(widthOf("task.started")).toBe(`${TIMESTAMP_COLUMN_WIDTH.compact}px`);
     expect(shownTimestampModes(container)).toEqual(["compact", "compact"]);
-    for (const date of container.querySelectorAll("[data-testid=humanize-ts]")) {
-      expect(date.className).toContain("truncate");
-    }
+    expect(shownTimestampTruncates(container)).toEqual([true, true]);
   });
 });

@@ -191,9 +191,10 @@ function IssueDetailTaskRunDateCell({ date }: { date?: Timestamp }) {
   }
   return (
     <HumanizeTs
+      className="text-sm text-control"
       mode="compact"
+      truncate
       tsMs={getTimeForPbTimestampProtoEs(date)}
-      className="block truncate text-sm text-control"
     />
   );
 }

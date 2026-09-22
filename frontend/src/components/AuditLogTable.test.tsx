@@ -194,6 +194,44 @@ describe("AuditLogTable", () => {
     unmount();
   });
 
+  test("opens the date whole, and lets a reader narrow it to the day", async () => {
+    mocks.searchAuditLogs.mockResolvedValue({
+      auditLogs: [
+        create(AuditLogSchema, {
+          name: "auditLogs/1",
+          createTime: timestampFromMs(Date.UTC(2026, 2, 2, 12)),
+        }),
+      ],
+      nextPageToken: "",
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <AuditLogTable parent="projects/-" canExport={false} />
+    );
+    await render();
+
+    const [created] = Array.from(container.querySelectorAll("col"));
+    expect(created.style.width).toBe(`${TIMESTAMP_COLUMN_WIDTH.datetime}px`);
+
+    const handle = container.querySelector("th [class*=cursor-col-resize]");
+    act(() => {
+      handle?.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true, clientX: 400 })
+      );
+      document.dispatchEvent(new MouseEvent("mousemove", { clientX: 300 }));
+      document.dispatchEvent(new MouseEvent("mouseup"));
+    });
+    expect(created.style.width).toBe(
+      `${TIMESTAMP_COLUMN_WIDTH.datetime - 100}px`
+    );
+    // jsdom lays nothing out, so the classes are what say a narrowed date
+    // keeps its day and ellipsizes the rest rather than breaking in two.
+    const date = container.querySelector("tbody tr td:first-child");
+    expect(date?.querySelector(".shrink-0")).not.toBeNull();
+    expect(date?.querySelector(".truncate")).not.toBeNull();
+
+    unmount();
+  });
+
   test("keeps the full date-time on one line at any width", async () => {
     // The evidence tier's tooltip is the age, which cannot give the value
     // back, so its column never narrows past the form: sized to it, and the

@@ -4,7 +4,10 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { shownTimestampModes } from "@/test-utils/humanizeTs";
+import {
+  shownTimestampModes,
+  shownTimestampTruncates,
+} from "@/test-utils/humanizeTs";
 import { ChangelogSchema } from "@/types/proto-es/v1/changelog_service_pb";
 
 (
@@ -86,9 +89,6 @@ describe("DatabaseChangelogTable", () => {
     );
     expect(createdHeader.querySelector("[class*=cursor-col-resize]")).not.toBeNull();
     expect(rolloutHeader.querySelector("[class*=cursor-col-resize]")).toBeNull();
-    expect(
-      container.querySelector("tbody tr td:nth-child(2)")?.className
-    ).toContain("truncate");
     // A widened date pushes the table past its box, and the title -- and the
     // handle that would undo it -- have to stay reachable.
     expect(container.firstElementChild?.className).toContain("overflow-x-auto");
@@ -96,7 +96,7 @@ describe("DatabaseChangelogTable", () => {
     unmount();
   });
 
-  test("dates each row in the embedded history form", () => {
+  test("dates each row in the embedded history form, fitted to its column", () => {
     const { container, render, unmount } = renderIntoContainer(
       <DatabaseChangelogTable
         loading={false}
@@ -113,6 +113,7 @@ describe("DatabaseChangelogTable", () => {
 
     // A row in a list orients the reader; the changelog's own page testifies.
     expect(shownTimestampModes(container)).toEqual(["compact"]);
+    expect(shownTimestampTruncates(container)).toEqual([true]);
 
     unmount();
   });
