@@ -242,14 +242,6 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     setPendingDeleteItem(null);
   }, [database.name]);
 
-  const semanticTypeOptions = useMemo(
-    () =>
-      semanticTypes.map((semanticType) => ({
-        label: semanticType.title || semanticType.id,
-        value: semanticType.id,
-      })),
-    [semanticTypes]
-  );
   const classificationOptions = useMemo(
     () =>
       Object.values(classificationConfig?.classification ?? {}).map(
@@ -499,7 +491,6 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
         showSelection={!isMaskingForNoSQL}
         canEdit={hasUpdateCatalogPermission && hasSensitiveDataFeature}
         showOperation={hasUpdateCatalogPermission && hasSensitiveDataFeature}
-        semanticTypeOptions={semanticTypeOptions}
         classificationOptions={classificationOptions}
         onCheckedColumnListChange={(columnList) =>
           setCheckedColumnList(columnList)

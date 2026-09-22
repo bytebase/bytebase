@@ -91,6 +91,8 @@ function getDefaultValue(
 
 const VALUE_MULTI_FIELD_CLASS =
   "min-h-9 px-3 py-1 text-sm leading-5 rounded-xs border border-control-border bg-background";
+const VALUE_TAG_CLASS =
+  "inline-flex min-w-0 max-w-full items-center gap-1 rounded-xs bg-control-bg px-1.5 py-0.5 text-xs";
 
 // Clone root, apply a mutation to the clone, return the clone.
 function updateExpr(
@@ -550,11 +552,8 @@ function MultiSearchableSelect({
           <span className="text-control-placeholder">{placeholder ?? ""}</span>
         )}
         {value.map((v) => (
-          <span
-            key={v}
-            className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
-          >
-            {getLabelForValue(v)}
+          <span key={v} className={VALUE_TAG_CLASS}>
+            <span className="min-w-0 truncate">{getLabelForValue(v)}</span>
             {!disabled && (
               <Button
                 type="button"
@@ -576,8 +575,7 @@ function MultiSearchableSelect({
         <PortaledDropdown
           anchorRef={triggerRef}
           dropdownRef={dropdownRef}
-          matchAnchorWidth
-          className="bg-background border border-control-border rounded-sm shadow-md"
+          className="w-80 max-w-[calc(100vw-2rem)] bg-background border border-control-border rounded-sm shadow-md"
         >
           <div className="p-1 border-b border-control-border">
             <SearchInput
@@ -670,11 +668,8 @@ function TagInput({
       )}
     >
       {value.map((tag) => (
-        <span
-          key={tag}
-          className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
-        >
-          {tag}
+        <span key={tag} className={VALUE_TAG_CLASS}>
+          <span className="min-w-0 truncate">{tag}</span>
           {!disabled && (
             <Button
               type="button"
@@ -758,7 +753,7 @@ function MultiCheckSelect({
         size="xs"
         className={cn(
           VALUE_MULTI_FIELD_CLASS,
-          "h-auto w-full flex-wrap text-left whitespace-normal hover:bg-control-bg disabled:pointer-events-none"
+          "h-auto w-full flex-wrap justify-start text-left whitespace-normal hover:bg-control-bg disabled:pointer-events-none"
         )}
         disabled={disabled}
         onClick={() => setOpen(!open)}
@@ -767,13 +762,12 @@ function MultiCheckSelect({
           <span className="text-control-placeholder">{placeholder}</span>
         )}
         {value.map((v) => (
-          <span
-            key={v}
-            className="inline-flex items-center gap-1 bg-control-bg text-xs px-1.5 py-0.5 rounded-xs"
-          >
-            {renderValue
-              ? renderValue(v, getLabelForValue(v))
-              : getLabelForValue(v)}
+          <span key={v} className={VALUE_TAG_CLASS}>
+            <span className="min-w-0 truncate">
+              {renderValue
+                ? renderValue(v, getLabelForValue(v))
+                : getLabelForValue(v)}
+            </span>
             {!disabled && (
               <span
                 role="button"
@@ -1503,7 +1497,7 @@ function ConditionGroup({
         </div>
       ))}
 
-      {!root && (
+      {!root && !readonly && (
         <div className="pl-1.5 pb-1 flex gap-x-1">
           <Button
             type="button"
@@ -1530,7 +1524,7 @@ function ConditionGroup({
         </div>
       )}
 
-      {root && (
+      {root && !readonly && (
         <div className="flex gap-x-1">
           <Button
             type="button"

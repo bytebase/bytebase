@@ -45,6 +45,7 @@ const mocks = vi.hoisted(() => ({
 let TableDetailSheet: typeof import("./TableDetailSheet").TableDetailSheet;
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: mocks.useTranslation,
 }));
 
@@ -171,6 +172,7 @@ vi.mock("@/components/FeatureAttention", () => ({
 }));
 
 vi.mock("@/types/semanticTypes", () => ({
+  isBuiltinSemanticTypeId: (id: string) => id.startsWith("bb."),
   getSemanticTypeListWithBuiltins: (
     semanticTypeList: Array<{ id: string; title: string }>
   ) => [

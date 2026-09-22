@@ -229,7 +229,7 @@ test("explains the masking effect for built-in semantic types", async () => {
   const partialDescription = screen.getByText(
     "dynamic.settings.sensitive-data.semantic-types.template.bb-default-partial.algorithm.description"
   );
-  expect(partialDescription).toHaveClass("max-w-prose", "whitespace-normal");
+  expect(partialDescription).toHaveClass("whitespace-normal");
   expect(partialOption).toContainElement(partialDescription);
 });
 

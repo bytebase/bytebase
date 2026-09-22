@@ -15,6 +15,9 @@ const styles = stylex.create({
   pagePadding: {
     paddingInline: 16,
   },
+  horizontalOverflow: {
+    overflowX: "visible",
+  },
   content: {
     minWidth: 0,
   },
@@ -40,11 +43,13 @@ const styles = stylex.create({
 });
 
 type WorkspacePageLayoutProps = ComponentProps<"div"> & {
+  allowHorizontalOverflow?: boolean;
   padding?: "page" | "flush";
 };
 
 function WorkspacePageLayout({
   className,
+  allowHorizontalOverflow = false,
   padding = "page",
   ref,
   style,
@@ -52,7 +57,8 @@ function WorkspacePageLayout({
 }: WorkspacePageLayoutProps) {
   const stylexProps = stylex.props(
     styles.root,
-    padding === "page" && styles.pagePadding
+    padding === "page" && styles.pagePadding,
+    allowHorizontalOverflow && styles.horizontalOverflow
   );
   return (
     <div
