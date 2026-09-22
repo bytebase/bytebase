@@ -107,7 +107,7 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
   {
     key: "created",
     title: t("common.created-at"),
-    defaultWidth: TIMESTAMP_COLUMN_WIDTH.queue,
+    defaultWidth: TIMESTAMP_COLUMN_WIDTH.operational,
     minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
     grow: false,
     sortKey: "create_time",
@@ -759,7 +759,11 @@ export function AccessGrantRow({
       </TableCell>
       <TableCell>
         {createdTimeMs !== undefined ? (
-          <HumanizeTs className="block truncate" tsMs={createdTimeMs} />
+          <HumanizeTs
+            className="block truncate"
+            mode="operational"
+            tsMs={createdTimeMs}
+          />
         ) : (
           "-"
         )}

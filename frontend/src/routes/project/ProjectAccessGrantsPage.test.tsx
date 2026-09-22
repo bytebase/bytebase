@@ -40,7 +40,7 @@ describe("grantColumns", () => {
     "opens both dates whole in a %ipx table",
     (containerWidth) => {
       const widths = distributeColumnWidths(columns, containerWidth);
-      expect(widths[at("created")]).toBe(TIMESTAMP_COLUMN_WIDTH.queue);
+      expect(widths[at("created")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
       expect(widths[at("expiration")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
     }
   );
@@ -60,7 +60,7 @@ describe("grantColumns", () => {
       columns.forEach((column, i) => {
         expect(widths[i]).toBeGreaterThanOrEqual(column.minWidth);
       });
-      expect(widths[at("created")]).toBe(TIMESTAMP_COLUMN_WIDTH.queue);
+      expect(widths[at("created")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
       expect(widths[at("expiration")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
     }
   });
@@ -79,7 +79,7 @@ describe("AccessGrantRow", () => {
     }
   });
 
-  test("dates a grant in its forms, each ellipsizing when narrowed", () => {
+  test("dates a grant's creation and expiry in one form, each ellipsizing", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
     roots.push(root);
@@ -109,7 +109,10 @@ describe("AccessGrantRow", () => {
       )
     );
 
-    expect(shownTimestampModes(container)).toEqual(["queue", "operational"]);
+    expect(shownTimestampModes(container)).toEqual([
+      "operational",
+      "operational",
+    ]);
     expect(shownTimestampInstants(container)).toEqual([
       String(nowMs - 60_000),
       String(nowMs + 86_400_000),
