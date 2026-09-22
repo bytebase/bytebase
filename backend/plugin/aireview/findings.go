@@ -1,12 +1,9 @@
 package aireview
 
 import (
-	"encoding/json"
+	jsonv2 "encoding/json/v2"
 	"fmt"
-	"io"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // Severity is how serious a finding is.
@@ -124,18 +121,14 @@ func decodeReply(text string) (*replyJSON, string) {
 	return decoded, ""
 }
 
-// decodeStrict rejects keys outside the answer format. A model that cannot
-// review sometimes says so in a key of its own, such as "error", and dropping
-// that key would turn its report into a pass.
+// decodeStrict accepts only the answer format. A model that cannot review
+// sometimes says so in a key of its own, such as "error", and dropping that
+// key would turn its report into a pass. json/v2 also rejects a duplicate key,
+// which in v1 would let a second "findings" erase the first, and trailing text.
 func decodeStrict(text string) (*replyJSON, error) {
-	decoder := json.NewDecoder(strings.NewReader(text))
-	decoder.DisallowUnknownFields()
 	decoded := &replyJSON{}
-	if err := decoder.Decode(decoded); err != nil {
+	if err := jsonv2.Unmarshal([]byte(text), decoded, jsonv2.RejectUnknownMembers(true)); err != nil {
 		return nil, err
-	}
-	if _, err := decoder.Token(); err != io.EOF {
-		return nil, errors.New("unexpected text after the JSON object")
 	}
 	return decoded, nil
 }

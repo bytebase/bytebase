@@ -25,6 +25,9 @@ func TestParseReply(t *testing.T) {
 		want         []Finding
 		wantNotes    []string
 		wantProblems []string
+		// wantProblemContains matches json/v2 messages by their stable part,
+		// because the wording differs between Go patch versions.
+		wantProblemContains []string
 	}{
 		{name: "bare object", reply: `{"findings": [` + finding + `]}`, want: want},
 		{name: "code fences", reply: "```json\n{\"findings\": [" + finding + "]}\n```", want: want},
@@ -39,19 +42,25 @@ func TestParseReply(t *testing.T) {
 		{
 			// A model that cannot review sometimes invents a key for it. Dropping
 			// the key would turn its report into a pass.
-			name:         "unknown top level key is rejected",
-			reply:        `{"findings": [], "error": "could not review"}`,
-			wantProblems: []string{`the reply is not a valid JSON object: json: unknown field "error"`},
+			name:                "unknown top level key is rejected",
+			reply:               `{"findings": [], "error": "could not review"}`,
+			wantProblemContains: []string{`unknown object member name "error"`},
 		},
 		{
-			name:         "unknown key inside a finding is rejected",
-			reply:        `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "r", "evidence": "e", "fix": "f", "confidence": 0.9}]}`,
-			wantProblems: []string{`the reply is not a valid JSON object: json: unknown field "confidence"`},
+			// json/v1 would let the second key erase the first and pass the change.
+			name:                "duplicate findings key is rejected",
+			reply:               `{"findings": [` + finding + `], "findings": []}`,
+			wantProblemContains: []string{`duplicate object member name "findings"`},
 		},
 		{
-			name:         "a second object after the first is rejected",
-			reply:        `{"findings": []} {"findings": []}`,
-			wantProblems: []string{"the reply is not a valid JSON object: unexpected text after the JSON object"},
+			name:                "unknown key inside a finding is rejected",
+			reply:               `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "r", "evidence": "e", "fix": "f", "confidence": 0.9}]}`,
+			wantProblemContains: []string{`unknown object member name "confidence" within "/findings/0"`},
+		},
+		{
+			name:                "a second object after the first is rejected",
+			reply:               `{"findings": []} {"findings": []}`,
+			wantProblemContains: []string{"invalid character '{' after top-level value"},
 		},
 		{
 			name:         "a single word on the fence line does not pass",
@@ -111,6 +120,14 @@ func TestParseReply(t *testing.T) {
 			t.Parallel()
 
 			got, problems := parseReply(tc.reply, 5)
+			if tc.wantProblemContains != nil {
+				require.Nil(t, got)
+				require.Len(t, problems, len(tc.wantProblemContains))
+				for i, want := range tc.wantProblemContains {
+					require.Contains(t, problems[i], want)
+				}
+				return
+			}
 			require.Equal(t, tc.wantProblems, problems)
 			if tc.wantProblems != nil {
 				require.Nil(t, got)
@@ -128,8 +145,8 @@ func TestParseReplyReportsTheErrorInsideTheFence(t *testing.T) {
 	// The model must hear about the wrong type of line, not about the fence.
 	_, problems := parseReply("```json\n{\"findings\": [{\"line\": \"3\"}]}\n```", 5)
 	require.Len(t, problems, 1)
-	require.Contains(t, problems[0], "cannot unmarshal string")
-	require.Contains(t, problems[0], "line")
+	require.Contains(t, problems[0], "unmarshal JSON string into Go int")
+	require.Contains(t, problems[0], `"/findings/0/line"`)
 }
 
 func TestParseReplyCapsTheProblemList(t *testing.T) {

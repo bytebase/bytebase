@@ -163,7 +163,7 @@ func TestReviewExitPaths(t *testing.T) {
 			name:             "an invented error key gets a correction round",
 			steps:            []modelStep{finalReply(`{"findings": [], "error": "could not review"}`), finalReply(`{"findings": [], "notes": ["could not review"]}`)},
 			wantCalls:        2,
-			wantLastUserText: `json: unknown field "error"`,
+			wantLastUserText: `unknown object member name "error"`,
 		},
 		{
 			name:        "invalid reply twice fails",
