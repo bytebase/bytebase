@@ -47,6 +47,7 @@ import { useCurrentUser } from "@/hooks/useAppState";
 import {
   type ColumnWithWidth,
   distributeColumnWidths,
+  fillableWidth,
   useColumnWidths,
 } from "@/hooks/useColumnWidths";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
@@ -561,7 +562,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
   const fitTableContainer = useCallback(
     (node: HTMLDivElement | null) => {
       if (!node || didFitColumnsRef.current) return;
-      const width = node.clientWidth;
+      const width = fillableWidth(node);
       if (width <= 0) return;
       didFitColumnsRef.current = true;
       setWidths(distributeColumnWidths(columns, width));

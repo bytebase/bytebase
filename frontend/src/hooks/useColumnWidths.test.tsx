@@ -1,7 +1,11 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { distributeColumnWidths, useColumnWidths } from "./useColumnWidths";
+import {
+  distributeColumnWidths,
+  fillableWidth,
+  useColumnWidths,
+} from "./useColumnWidths";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -474,5 +478,25 @@ describe("distributeColumnWidths with a yield order", () => {
       { defaultWidth: 300, minWidth: 100, yieldOrder: 2 },
     ];
     expect(distributeColumnWidths(narrowDefault, 350)).toEqual([120, 230]);
+  });
+});
+
+describe("fillableWidth", () => {
+  // jsdom lays nothing out, so each case states what a browser reports.
+  const scroller = (rect: number, offset: number, client: number) => {
+    const node = document.createElement("div");
+    Object.defineProperty(node, "offsetWidth", { value: offset });
+    Object.defineProperty(node, "clientWidth", { value: client });
+    node.getBoundingClientRect = () => ({ width: rect }) as DOMRect;
+    return node;
+  };
+
+  test.each([
+    ["a whole width, inside a 1px border", scroller(800, 800, 798), 798],
+    // 795.5 inside reads as 796; a table that wide scrolls by half a pixel.
+    ["a fractional width clientWidth rounds up", scroller(797.5, 798, 796), 795],
+    ["a width beside a vertical scrollbar", scroller(800, 800, 783), 783],
+  ])("fills %s without scrolling", (_, node, width) => {
+    expect(fillableWidth(node)).toBe(width);
   });
 });

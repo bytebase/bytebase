@@ -92,6 +92,18 @@ export function distributeColumnWidths<
   return widths;
 }
 
+/**
+ * The width a table can take inside `scroller` without scrolling it: inside
+ * its border and any scrollbar, and floored, because `clientWidth` rounds and
+ * a table half a pixel wider than its scroller still scrolls.
+ */
+export function fillableWidth(scroller: HTMLElement): number {
+  const bordersAndScrollbar = scroller.offsetWidth - scroller.clientWidth;
+  return Math.floor(
+    scroller.getBoundingClientRect().width - bordersAndScrollbar
+  );
+}
+
 // Starts every column at its default, or its floor if that is wider, and
 // takes back what overruns the container a yield group at a time: within a
 // group in proportion to how far each column can shrink.
