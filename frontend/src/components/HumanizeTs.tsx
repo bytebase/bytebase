@@ -35,8 +35,9 @@ interface HumanizeTsProps {
   mode?: TimeDisplayMode;
   className?: string;
   /**
-   * Keep the label on one line inside its box. Where the box is narrower than
-   * the label, the time and zone ellipsize and the date stays whole.
+   * Keep the label on one line inside its box. Where the box is too narrow, a
+   * date-time keeps its date whole and ellipsizes its time and zone; any
+   * other label ellipsizes from its end.
    */
   truncate?: boolean;
   /**

@@ -626,8 +626,12 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
               {t("common.no-data")}
             </div>
           ) : (
-            <ProjectPageContent ref={fitTableContainer}>
-              <div className="border rounded-sm overflow-x-auto">
+            <ProjectPageContent>
+              {/* Fitted to the scroller, inside its border, not the page. */}
+              <div
+                ref={fitTableContainer}
+                className="border rounded-sm overflow-x-auto"
+              >
                 <Table
                   className="w-auto table-fixed"
                   style={{ width: `${totalWidth}px` }}
