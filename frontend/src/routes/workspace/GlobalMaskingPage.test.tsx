@@ -81,6 +81,7 @@ vi.mock("@/components/ui/select", () => ({
 vi.mock("@/lib/sensitive-data/components-utils", () => ({
   factorOperatorOverrideMap: {},
   getClassificationLevelOptions: () => [],
+  getMaskingType: () => undefined,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -149,6 +150,7 @@ vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
 }));
 
 vi.mock("@/types/semanticTypes", () => ({
+  isBuiltinSemanticTypeId: (id: string) => id.startsWith("bb."),
   getSemanticTypeListWithBuiltins: (
     semanticTypes: Array<{ id: string; title: string }>
   ) => [
@@ -236,12 +238,18 @@ describe("GlobalMaskingPage", () => {
     expect(semanticTypeHeading?.className).toContain("h-9");
     expect(semanticTypeHeading?.className).toContain("items-center");
     expect(semanticTypeHeading?.parentElement?.className).toContain("gap-y-2");
+    expect(semanticTypeHeading?.parentElement?.className).toContain("w-full");
+    expect(semanticTypeHeading?.parentElement?.className).toContain(
+      "xl:w-80"
+    );
     expect(
       container.querySelector("[data-testid='expr-editor']")
     ).not.toBeNull();
-    expect(
-      container.querySelector("[data-testid='semantic-type-trigger']")
-    ).not.toBeNull();
+    const semanticTypeTrigger = container.querySelector(
+      "[data-testid='semantic-type-trigger']"
+    );
+    expect(semanticTypeTrigger).not.toBeNull();
+    expect(semanticTypeTrigger?.className).toContain("w-full");
   });
 
   it("lists built-in semantic types before configured types", async () => {

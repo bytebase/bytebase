@@ -6,6 +6,7 @@ import type { Factor } from "@/modules/cel/types/factor";
 import { type ConditionGroupExpr, ExprType } from "@/modules/cel/types/simple";
 import {
   CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
   CEL_ATTRIBUTE_RISK_LEVEL,
   CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
@@ -219,6 +220,54 @@ describe("ExprEditor", () => {
       operator: "@in",
       args: [CEL_ATTRIBUTE_RISK_LEVEL, ["HIGH"]],
     });
+
+    unmount();
+  });
+
+  test("hides expression editing actions in read-only mode", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.ConditionGroup,
+          operator: "_&&_",
+          args: [
+            {
+              type: ExprType.Condition,
+              operator: "@in",
+              args: [CEL_ATTRIBUTE_STATEMENT_SQL_TYPE, ["DDL"]],
+            },
+          ],
+        },
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RISK_LEVEL, ["HIGH"]],
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        readonly
+        factorList={[
+          CEL_ATTRIBUTE_STATEMENT_SQL_TYPE,
+          CEL_ATTRIBUTE_RISK_LEVEL,
+        ]}
+        optionConfigMap={optionConfigMap}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    expect(container.textContent).toContain("Where");
+    expect(container.textContent).toContain("DDL");
+    expect(container.textContent).not.toContain("cel.condition.add");
+    expect(container.textContent).not.toContain(
+      "cel.condition.add-raw-expression"
+    );
 
     unmount();
   });
@@ -456,6 +505,51 @@ describe("ExprEditor", () => {
     unmount();
   });
 
+  test("searchable multi-select dropdown can exceed its trigger width", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_DATABASE, []],
+        },
+      ],
+    };
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_DATABASE]}
+        optionConfigMap={searchableOptionConfigMap}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const trigger = Array.from(container.querySelectorAll("div")).find(
+      (element) => element.className.includes("cursor-pointer")
+    );
+    expect(trigger).toBeInstanceOf(HTMLDivElement);
+
+    await act(async () => {
+      trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+
+    const filterInput = Array.from(document.body.querySelectorAll("input")).find(
+      (input) => input.placeholder === "common.filter-by-name"
+    );
+    const dropdown = filterInput?.parentElement?.parentElement?.parentElement;
+
+    expect(dropdown).toBeInstanceOf(HTMLDivElement);
+    expect(dropdown?.className).toContain("w-80");
+    expect(dropdown?.getAttribute("style")).not.toContain("width");
+
+    unmount();
+  });
+
   test("collection operator uses tag input when option config disables multi-select", async () => {
     const initialExpr: ConditionGroupExpr = {
       type: ExprType.ConditionGroup,
@@ -500,6 +594,90 @@ describe("ExprEditor", () => {
     expect(container.textContent?.includes("cel.condition.select-value")).toBe(
       false
     );
+
+    unmount();
+  });
+
+  test("constrains long selected CEL values to one line", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_DATABASE, ["long-value"]],
+        },
+      ],
+    };
+    const longLabel = "prod instance (prod-sample-instance)";
+    const selectedValueOptions = new Map<Factor, OptionConfig>([
+      [
+        CEL_ATTRIBUTE_RESOURCE_DATABASE,
+        {
+          options: [],
+          fetch: async () => [{ value: "long-value", label: longLabel }],
+          search: async () => ({ options: [], nextPageToken: "" }),
+        },
+      ],
+    ]);
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_DATABASE]}
+        optionConfigMap={selectedValueOptions}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const tag = Array.from(container.querySelectorAll("span")).find(
+      (span) =>
+        span.textContent === longLabel && span.className.includes("max-w-full")
+    );
+
+    expect(tag).toBeInstanceOf(HTMLSpanElement);
+    expect(tag?.querySelector("span")?.className).toContain("truncate");
+
+    unmount();
+  });
+
+  test("left-aligns selected environment values", async () => {
+    const initialExpr: ConditionGroupExpr = {
+      type: ExprType.ConditionGroup,
+      operator: "_&&_",
+      args: [
+        {
+          type: ExprType.Condition,
+          operator: "@in",
+          args: [CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID, ["test"]],
+        },
+      ],
+    };
+    const environmentOptionConfig = new Map<Factor, OptionConfig>([
+      [
+        CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+        { options: [{ value: "test", label: "Test" }] },
+      ],
+    ]);
+
+    const { container, unmount } = renderIntoContainer(
+      <ExprEditor
+        expr={initialExpr}
+        factorList={[CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID]}
+        optionConfigMap={environmentOptionConfig}
+        onUpdate={() => {}}
+      />
+    );
+    await flushEffects();
+
+    const trigger = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("environments/test")
+    );
+
+    expect(trigger).toBeInstanceOf(HTMLButtonElement);
+    expect(trigger?.className).toContain("justify-start");
 
     unmount();
   });

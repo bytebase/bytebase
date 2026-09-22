@@ -155,7 +155,7 @@ export function DashboardBodyShell({
             ref={mainContainerRef}
             className={cn(
               "flex-1 overflow-y-auto overscroll-y-contain",
-              variant === "workspace" ? "md:min-w-0" : "min-w-0"
+              variant === "workspace" ? "overflow-x-auto md:min-w-0" : "min-w-0"
             )}
           >
             <div ref={contentRef} className="h-full" />
