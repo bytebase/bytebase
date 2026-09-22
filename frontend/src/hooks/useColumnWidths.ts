@@ -22,29 +22,59 @@ export interface ColumnWithWidth {
  * Distributes `containerWidth` across columns so the table fills its container
  * on first render instead of overflowing at the sum of `defaultWidth`s.
  * Columns that are not resizable, or do not grow, keep their `defaultWidth`;
- * the rest share the remaining space proportionally to their `defaultWidth`,
- * each clamped to its `minWidth`. When the container is too narrow for those
- * minimums the widths add up past it, and the table scrolls.
+ * the rest share the remaining space in proportion to their `defaultWidth`.
+ * A column whose share falls under its `minWidth` is held there and the rest
+ * is shared again, so the widths add up to exactly the container whenever it
+ * can hold every floor. When it cannot, every column sits at its floor and
+ * the table scrolls.
  */
 export function distributeColumnWidths<
   T extends ColumnWithWidth & { resizable?: boolean },
 >(columns: T[], containerWidth: number): number[] {
   const keepsWidth = (c: T) => c.resizable === false || c.grow === false;
+  const floorOf = (c: T) => c.minWidth ?? 40;
   const fixedTotal = columns
     .filter(keepsWidth)
     .reduce((sum, c) => sum + c.defaultWidth, 0);
-  const flexBaseTotal = columns
-    .filter((c) => !keepsWidth(c))
-    .reduce((sum, c) => sum + c.defaultWidth, 0);
   const available = Math.max(0, containerWidth - fixedTotal);
-  return columns.map((c) => {
+
+  // Raising a column to its floor has to take that width from the others, so
+  // floored columns are set aside and the remainder re-shared until every
+  // share clears its floor. Each pass sets aside at least one column.
+  const floored = new Set<T>();
+  let shares = new Map<T, number>();
+  for (;;) {
+    const open = columns.filter((c) => !keepsWidth(c) && !floored.has(c));
+    const base = open.reduce((sum, c) => sum + c.defaultWidth, 0);
+    const rest =
+      available - [...floored].reduce((sum, c) => sum + floorOf(c), 0);
+    shares = new Map(
+      open.map((c) => [c, base > 0 ? (rest * c.defaultWidth) / base : 0])
+    );
+    const under = open.filter((c) => (shares.get(c) ?? 0) < floorOf(c));
+    if (under.length === 0) {
+      break;
+    }
+    for (const c of under) {
+      floored.add(c);
+    }
+  }
+
+  const widths = columns.map((c) => {
     if (keepsWidth(c)) return c.defaultWidth;
-    const proportional =
-      flexBaseTotal > 0
-        ? Math.round(available * (c.defaultWidth / flexBaseTotal))
-        : c.defaultWidth;
-    return Math.max(c.minWidth ?? 40, proportional);
+    if (floored.has(c)) return floorOf(c);
+    return Math.floor(shares.get(c) ?? 0);
   });
+  // Flooring each share leaves a few pixels unassigned; the widest column
+  // still sharing takes them, so the total lands on the container.
+  const sharing = columns
+    .map((_, i) => i)
+    .filter((i) => shares.has(columns[i]));
+  if (sharing.length > 0) {
+    const widest = sharing.reduce((a, b) => (widths[b] > widths[a] ? b : a));
+    widths[widest] += containerWidth - widths.reduce((sum, w) => sum + w, 0);
+  }
+  return widths;
 }
 
 /**
