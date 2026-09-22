@@ -8,7 +8,10 @@ import {
   TIMESTAMP_COLUMN_WIDTH,
 } from "@/components/timestampColumn";
 import { distributeColumnWidths } from "@/hooks/useColumnWidths";
-import { shownTimestampModes } from "@/test-utils/humanizeTs";
+import {
+  shownTimestampInstants,
+  shownTimestampModes,
+} from "@/test-utils/humanizeTs";
 import {
   AccessGrant_Status,
   AccessGrantSchema,
@@ -41,6 +44,26 @@ describe("grantColumns", () => {
       expect(widths[at("expiration")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
     }
   );
+
+  test("fits the container exactly at every width that holds its floors", () => {
+    const floors = columns.reduce(
+      (sum, column) =>
+        sum +
+        (column.resizable === false || column.grow === false
+          ? column.defaultWidth
+          : column.minWidth),
+      0
+    );
+    for (let containerWidth = floors; containerWidth <= 1800; containerWidth++) {
+      const widths = distributeColumnWidths(columns, containerWidth);
+      expect(widths.reduce((sum, w) => sum + w, 0)).toBe(containerWidth);
+      columns.forEach((column, i) => {
+        expect(widths[i]).toBeGreaterThanOrEqual(column.minWidth);
+      });
+      expect(widths[at("created")]).toBe(TIMESTAMP_COLUMN_WIDTH.queue);
+      expect(widths[at("expiration")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
+    }
+  });
 
   test("lets a reader narrow either date to the date alone", () => {
     expect(columns[at("created")].minWidth).toBe(TIMESTAMP_COLUMN_MIN_WIDTH);
@@ -87,6 +110,10 @@ describe("AccessGrantRow", () => {
     );
 
     expect(shownTimestampModes(container)).toEqual(["queue", "operational"]);
+    expect(shownTimestampInstants(container)).toEqual([
+      String(nowMs - 60_000),
+      String(nowMs + 86_400_000),
+    ]);
     for (const date of container.querySelectorAll("[data-testid=humanize-ts]")) {
       expect(date.className).toContain("truncate");
     }

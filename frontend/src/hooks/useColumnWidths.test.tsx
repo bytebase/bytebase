@@ -384,6 +384,41 @@ describe("distributeColumnWidths", () => {
     }
   });
 
+  test("fills the container exactly whenever every floor fits", () => {
+    // A column raised to its floor has to take that width from the others,
+    // or the table overruns a container it could have filled.
+    const columns = [
+      { key: "status", defaultWidth: 160, minWidth: 128 },
+      { key: "creator", defaultWidth: 200, minWidth: 128 },
+      { key: "date", defaultWidth: 270, minWidth: 140, grow: false },
+      { key: "statement", defaultWidth: 400, minWidth: 180 },
+      { key: "actions", defaultWidth: 140, resizable: false },
+    ];
+    const floors = 128 + 128 + 270 + 180 + 140;
+    for (let containerWidth = floors; containerWidth <= 1800; containerWidth++) {
+      const widths = distributeColumnWidths(columns, containerWidth);
+      expect(widths.reduce((sum, w) => sum + w, 0)).toBe(containerWidth);
+      columns.forEach((column, i) => {
+        expect(widths[i]).toBeGreaterThanOrEqual(
+          column.minWidth ?? column.defaultWidth
+        );
+      });
+      expect(widths[2]).toBe(270);
+      expect(widths[4]).toBe(140);
+    }
+  });
+
+  test("keeps every floor when the container is too narrow for them", () => {
+    const widths = distributeColumnWidths(
+      [
+        { key: "a", defaultWidth: 200, minWidth: 150 },
+        { key: "b", defaultWidth: 200, minWidth: 150 },
+      ],
+      200
+    );
+    expect(widths).toEqual([150, 150]);
+  });
+
   test("its minimum floors a drag, not the width it opens at", () => {
     const columns = [
       { key: "date", defaultWidth: 260, minWidth: 140, grow: false },
