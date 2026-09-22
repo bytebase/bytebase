@@ -165,17 +165,22 @@ describe("HumanizeTs", () => {
   });
 
   // Each piece of a fitted label, and whether it keeps its width or gives way.
-  // A kept space must also be preformatted: a flex item drops the space at its
-  // edge, and the cut time then runs into the date.
+  // A piece with a space at its edge must also render it: a flex item drops
+  // that space unless it is preformatted, and the cut time runs into the date.
   const pieces = (box: Element | null) =>
     Array.from(box?.children ?? []).map((piece) => {
+      const text = piece.textContent ?? "";
       const fit = piece.classList.contains("truncate")
         ? "cut"
         : piece.classList.contains("shrink-0")
           ? "kept"
           : "loose";
-      const pre = piece.classList.contains("whitespace-pre") ? " pre" : "";
-      return `${piece.textContent}:${fit}${pre}`;
+      const edgeSpace = /^\s|\s$/.test(text)
+        ? piece.closest(".whitespace-pre")
+          ? " pre"
+          : " dropped"
+        : "";
+      return `${text}:${fit}${edgeSpace}`;
     });
 
   test.each([
