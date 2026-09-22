@@ -45,16 +45,15 @@ test.afterAll(async () => {
 });
 
 test.describe("Switching DB connection preserves editor content (C4)", () => {
-  // The disposable server provisions two HR sample databases (hr_prod
-  // on prod-sample-instance, hr_test on test-sample-instance). We use
-  // whichever DB env.database resolved to as the source and pick the
-  // other as the target — the contract is engine-/instance-agnostic.
+  // The setup project adds hr_prod beside the hr_test sample database. We use
+  // whichever DB env.database resolved to as the source and pick the other as
+  // the target — the contract is engine-/instance-agnostic.
 
   test("typing into Monaco then switching DBs keeps the SQL body intact", async () => {
     const sourceShort = env.databaseId;
     const targetShort = sourceShort === "hr_prod" ? "hr_test" : "hr_prod";
 
-    const target = await env.api.findDatabaseByShortName(targetShort);
+    const target = await env.api.findDatabaseByShortName(targetShort, env.project);
     test.skip(
       !target,
       `target DB ${targetShort} not present — needs both hr_prod and hr_test`,
@@ -204,18 +203,19 @@ test.describe("Connection panel Database Group tab (C8/C9)", () => {
     await sqlEditor.runPreparedQuery("SELECT 1 AS n;");
 
     // BatchQuerySelect rendering signal: the "Batch export" button is
-    // present alongside one button per queried database. The DB tabs
-    // are plain <button name="hr_prod"> elements (the breadcrumb's
-    // button is "Prod Prod Sample Instance hr_prod", so exact match
-    // disambiguates).
+    // present alongside one result tab per queried database. Each tab's
+    // accessible name is the full "<instance> / <env> <db>" path (e.g.
+    // "Sample Project Instance / Prod hr_prod"), so anchor on the database
+    // name at the END of the name — the breadcrumb's connection button also
+    // contains "hr_prod" but is not a result tab and does not end with it.
     await expect(
       page.getByRole("button", { name: /Batch export/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(
-      page.getByRole("button", { name: "hr_prod", exact: true }).first(),
+      page.getByRole("button", { name: /\bhr_prod$/ }).first(),
     ).toBeVisible({ timeout: 5_000 });
     await expect(
-      page.getByRole("button", { name: "hr_test", exact: true }).first(),
+      page.getByRole("button", { name: /\bhr_test$/ }).first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 

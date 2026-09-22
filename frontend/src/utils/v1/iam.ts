@@ -13,7 +13,13 @@ import {
   workloadIdentityNamePrefix,
 } from "@/stores/modules/v1/common";
 import {
+  AccountType,
   ALL_USERS_USER_EMAIL,
+  getAccountTypeByFullname,
+  getGroupEmailInBinding,
+  getServiceAccountNameInBinding,
+  getUserEmailInBinding,
+  getWorkloadIdentityNameInBinding,
   groupBindingPrefix,
   type QueryPermission,
   QueryPermissionQueryAny,
@@ -160,6 +166,28 @@ export const convertMemberToFullname = (member: string) => {
   }
 };
 
+export const convertFullnameToMember = (fullname: string) => {
+  if (fullname === ALL_USERS_USER_EMAIL) {
+    return fullname;
+  }
+  if (fullname.startsWith(groupNamePrefix)) {
+    return getGroupEmailInBinding(fullname.slice(groupNamePrefix.length));
+  }
+  switch (getAccountTypeByFullname(fullname)) {
+    case AccountType.SERVICE_ACCOUNT:
+      return getServiceAccountNameInBinding(extractServiceAccountId(fullname));
+    case AccountType.WORKLOAD_IDENTITY:
+      return getWorkloadIdentityNameInBinding(
+        extractWorkloadIdentityId(fullname)
+      );
+    default:
+      if (fullname.startsWith(userNamePrefix)) {
+        return getUserEmailInBinding(fullname.slice(userNamePrefix.length));
+      }
+      return fullname;
+  }
+};
+
 // getUserListInBinding will extract users in the IAM policy binding.
 // If the binding is group, will conains all members in the group.
 // The return value should be the user full name with the prefix:
@@ -173,9 +201,8 @@ export const getUserListInBinding = ({
 }: {
   binding: Binding;
   ignoreGroup: boolean;
-  // Resolves a group from its binding member string. Defaults to the Pinia
-  // group store; React callers pass a resolver backed by the app store so
-  // group expansion reads from the same cache they populate.
+  // Resolves a group from its binding member string. Defaults to the app
+  // store's group cache via the util bridge.
   getGroupByIdentifier?: (identifier: string) => Group | undefined;
 }): string[] => {
   if (isBindingPolicyExpired(binding)) {
@@ -281,9 +308,8 @@ export const filterBindingsByUserName = ({
   });
 };
 
-// Project-level IAM permission check. Reads the React app store (project IAM
-// policy + roles) via the util bridge — relocated from the deleted Pinia
-// `projectIamPolicy` store, whose data was never populated in the React shell.
+// Project-level IAM permission check. Reads the app store (project IAM policy +
+// roles) via the util bridge.
 const checkProjectIAMPolicyWithExpr = (
   user: User,
   project: Project,

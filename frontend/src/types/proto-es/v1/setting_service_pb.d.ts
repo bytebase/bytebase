@@ -198,6 +198,11 @@ export enum Setting_SettingName {
    * @generated from enum value: EMAIL = 8;
    */
   EMAIL = 8,
+
+  /**
+   * @generated from enum value: MCP = 9;
+   */
+  MCP = 9,
 }
 
 /**
@@ -262,6 +267,12 @@ export declare type SettingValue = Message<"bytebase.v1.SettingValue"> & {
      */
     value: EmailSetting;
     case: "email";
+  } | {
+    /**
+     * @generated from field: bytebase.v1.MCPSetting mcp = 9;
+     */
+    value: MCPSetting;
+    case: "mcp";
   } | { case: undefined; value?: undefined };
 };
 
@@ -659,17 +670,6 @@ export declare type WorkspaceProfileSetting = Message<"bytebase.v1.WorkspaceProf
   maximumRoleExpiration?: Duration | undefined;
 
   /**
-   * The maximum capability available to MCP (Model Context Protocol) sessions in
-   * this workspace, acting as an admin-set ceiling. Unset is treated as
-   * READ_WRITE for backward compatibility; DISABLED rejects all MCP
-   * connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
-   * omit the update mask path to leave the ceiling unset.
-   *
-   * @generated from field: bytebase.v1.WorkspaceProfileSetting.MCPCapability mcp_capability = 26;
-   */
-  mcpCapability: WorkspaceProfileSetting_MCPCapability;
-
-  /**
    * Whether a directory sync token has been generated for this workspace.
    * The token itself is never returned; this only lets the UI decide between
    * offering "generate" and "regenerate".
@@ -746,18 +746,59 @@ export declare type WorkspaceProfileSetting_PasswordRestriction = Message<"byteb
 export declare const WorkspaceProfileSetting_PasswordRestrictionSchema: GenMessage<WorkspaceProfileSetting_PasswordRestriction>;
 
 /**
- * MCPCapability is the maximum capability an MCP (Model Context Protocol)
- * session may have in the workspace. It is a ceiling: a session runs at this
- * level or lower. Unset (UNSPECIFIED) is treated as READ_WRITE so existing
- * workspaces are unaffected.
+ * MCPSetting is what an MCP (Model Context Protocol) session may do in this
+ * workspace.
  *
- * @generated from enum bytebase.v1.WorkspaceProfileSetting.MCPCapability
+ * @generated from message bytebase.v1.MCPSetting
  */
-export enum WorkspaceProfileSetting_MCPCapability {
+export declare type MCPSetting = Message<"bytebase.v1.MCPSetting"> & {
   /**
-   * @generated from enum value: MCP_CAPABILITY_UNSPECIFIED = 0;
+   * The maximum capability available to MCP sessions in this workspace, acting
+   * as an admin-set ceiling. Enforced server-side at three points: the /mcp
+   * endpoint decides whether a connection is admitted at all, the ceiling gate
+   * on the internal MCP chain decides, per request, which method classes are
+   * served, and under READ_ONLY the SQL clamp decides, per statement, whether
+   * it only reads.
+   *
+   * @generated from field: bytebase.v1.MCPSetting.Capability capability = 1;
    */
-  MCP_CAPABILITY_UNSPECIFIED = 0,
+  capability: MCPSetting_Capability;
+
+  /**
+   * Whether a request that arrived over MCP stops applying the caller's own
+   * unmasking provisioning. Two mechanisms let a user see a real value and this
+   * suppresses both: the masking exemptions granted to them, and the unmask
+   * carried by an access grant. The same user in the console is untouched.
+   *
+   * It cannot force masking where there is none. Masking substitutes values in
+   * query results, so this does not reach data copied into a column carrying no
+   * masking policy, and it does nothing on the engines Bytebase does not mask.
+   * It narrows what an agent reads through the paths Bytebase masks; it is not
+   * a confidentiality boundary.
+   *
+   * @generated from field: bool ignore_masking_exemptions = 2;
+   */
+  ignoreMaskingExemptions: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.MCPSetting.
+ * Use `create(MCPSettingSchema)` to create a new message.
+ */
+export declare const MCPSettingSchema: GenMessage<MCPSetting>;
+
+/**
+ * Capability is the ceiling: a session runs at this level or lower.
+ * Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
+ * path to leave the current ceiling unchanged.
+ *
+ * @generated from enum bytebase.v1.MCPSetting.Capability
+ */
+export enum MCPSetting_Capability {
+  /**
+   * @generated from enum value: CAPABILITY_UNSPECIFIED = 0;
+   */
+  CAPABILITY_UNSPECIFIED = 0,
 
   /**
    * MCP connections are rejected.
@@ -767,9 +808,11 @@ export enum WorkspaceProfileSetting_MCPCapability {
   DISABLED = 1,
 
   /**
-   * MCP may inspect metadata and run read-only queries. Not enforceable yet:
-   * until per-tool enforcement ships, this fails closed and refuses all MCP
-   * connections, the same as DISABLED.
+   * MCP may inspect metadata and run read-only queries. A session opens, and
+   * what it may do is decided per method by the capability gate and per
+   * statement by the SQL clamp: a request holding a statement that is not a
+   * read is refused whole, and where the engine's driver has one the
+   * database session is opened read-only as well.
    *
    * @generated from enum value: READ_ONLY = 3;
    */
@@ -784,9 +827,9 @@ export enum WorkspaceProfileSetting_MCPCapability {
 }
 
 /**
- * Describes the enum bytebase.v1.WorkspaceProfileSetting.MCPCapability.
+ * Describes the enum bytebase.v1.MCPSetting.Capability.
  */
-export declare const WorkspaceProfileSetting_MCPCapabilitySchema: GenEnum<WorkspaceProfileSetting_MCPCapability>;
+export declare const MCPSetting_CapabilitySchema: GenEnum<MCPSetting_Capability>;
 
 /**
  * @generated from message bytebase.v1.SQLEditorThemeSetting

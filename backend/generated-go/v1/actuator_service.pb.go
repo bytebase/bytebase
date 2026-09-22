@@ -10,7 +10,6 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -24,43 +23,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Request message for setting up sample data.
-type SetupSampleRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SetupSampleRequest) Reset() {
-	*x = SetupSampleRequest{}
-	mi := &file_v1_actuator_service_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetupSampleRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetupSampleRequest) ProtoMessage() {}
-
-func (x *SetupSampleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetupSampleRequest.ProtoReflect.Descriptor instead.
-func (*SetupSampleRequest) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{0}
-}
-
 // Request message for getting actuator information.
 type GetActuatorInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -70,7 +32,7 @@ type GetActuatorInfoRequest struct {
 
 func (x *GetActuatorInfoRequest) Reset() {
 	*x = GetActuatorInfoRequest{}
-	mi := &file_v1_actuator_service_proto_msgTypes[1]
+	mi := &file_v1_actuator_service_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -82,7 +44,7 @@ func (x *GetActuatorInfoRequest) String() string {
 func (*GetActuatorInfoRequest) ProtoMessage() {}
 
 func (x *GetActuatorInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[1]
+	mi := &file_v1_actuator_service_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -95,7 +57,62 @@ func (x *GetActuatorInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActuatorInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetActuatorInfoRequest) Descriptor() ([]byte, []int) {
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{0}
+}
+
+// SampleInfo describes sample setup availability and provisioned resources.
+type SampleInfo struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether sample setup is currently available.
+	Available bool `protobuf:"varint,1,opt,name=available,proto3" json:"available,omitempty"`
+	// The provisioned sample instances.
+	Instances     []*SampleInfo_Instance `protobuf:"bytes,2,rep,name=instances,proto3" json:"instances,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SampleInfo) Reset() {
+	*x = SampleInfo{}
+	mi := &file_v1_actuator_service_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SampleInfo) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SampleInfo) ProtoMessage() {}
+
+func (x *SampleInfo) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_actuator_service_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SampleInfo.ProtoReflect.Descriptor instead.
+func (*SampleInfo) Descriptor() ([]byte, []int) {
 	return file_v1_actuator_service_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SampleInfo) GetAvailable() bool {
+	if x != nil {
+		return x.Available
+	}
+	return false
+}
+
+func (x *SampleInfo) GetInstances() []*SampleInfo_Instance {
+	if x != nil {
+		return x.Instances
+	}
+	return nil
 }
 
 // System information and configuration for the Bytebase instance.
@@ -121,8 +138,6 @@ type ActuatorInfo struct {
 	ActivatedInstanceCount int32 `protobuf:"varint,20,opt,name=activated_instance_count,json=activatedInstanceCount,proto3" json:"activated_instance_count,omitempty"`
 	// The total number of database instances.
 	TotalInstanceCount int32 `protobuf:"varint,21,opt,name=total_instance_count,json=totalInstanceCount,proto3" json:"total_instance_count,omitempty"`
-	// Whether sample data setup is enabled.
-	EnableSample bool `protobuf:"varint,22,opt,name=enable_sample,json=enableSample,proto3" json:"enable_sample,omitempty"`
 	// Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
 	ExternalUrlFromFlag bool `protobuf:"varint,23,opt,name=external_url_from_flag,json=externalUrlFromFlag,proto3" json:"external_url_from_flag,omitempty"`
 	// The number of active replicas (servers sharing the same database).
@@ -134,8 +149,12 @@ type ActuatorInfo struct {
 	UserCountInIam int32 `protobuf:"varint,27,opt,name=user_count_in_iam,json=userCountInIam,proto3" json:"user_count_in_iam,omitempty"`
 	// The number of active VCS users seen in the active window.
 	ActiveVcsUserCount int32 `protobuf:"varint,28,opt,name=active_vcs_user_count,json=activeVcsUserCount,proto3" json:"active_vcs_user_count,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Sample setup availability and provisioned resources.
+	Sample *SampleInfo `protobuf:"bytes,29,opt,name=sample,proto3" json:"sample,omitempty"`
+	// The MCP (Model Context Protocol) setting in the current workspace.
+	McpSetting    *MCPSetting `protobuf:"bytes,30,opt,name=mcp_setting,json=mcpSetting,proto3" json:"mcp_setting,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
@@ -231,13 +250,6 @@ func (x *ActuatorInfo) GetTotalInstanceCount() int32 {
 	return 0
 }
 
-func (x *ActuatorInfo) GetEnableSample() bool {
-	if x != nil {
-		return x.EnableSample
-	}
-	return false
-}
-
 func (x *ActuatorInfo) GetExternalUrlFromFlag() bool {
 	if x != nil {
 		return x.ExternalUrlFromFlag
@@ -273,13 +285,91 @@ func (x *ActuatorInfo) GetActiveVcsUserCount() int32 {
 	return 0
 }
 
+func (x *ActuatorInfo) GetSample() *SampleInfo {
+	if x != nil {
+		return x.Sample
+	}
+	return nil
+}
+
+func (x *ActuatorInfo) GetMcpSetting() *MCPSetting {
+	if x != nil {
+		return x.McpSetting
+	}
+	return nil
+}
+
+// Instance describes one provisioned sample instance.
+type SampleInfo_Instance struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The provisioned sample instance.
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
+	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
+	// The time when the provisioned sample instance expires.
+	ExpireTime    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SampleInfo_Instance) Reset() {
+	*x = SampleInfo_Instance{}
+	mi := &file_v1_actuator_service_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SampleInfo_Instance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SampleInfo_Instance) ProtoMessage() {}
+
+func (x *SampleInfo_Instance) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_actuator_service_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SampleInfo_Instance.ProtoReflect.Descriptor instead.
+func (*SampleInfo_Instance) Descriptor() ([]byte, []int) {
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{1, 0}
+}
+
+func (x *SampleInfo_Instance) GetInstance() string {
+	if x != nil {
+		return x.Instance
+	}
+	return ""
+}
+
+func (x *SampleInfo_Instance) GetExpireTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpireTime
+	}
+	return nil
+}
+
 var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x14\n" +
-	"\x12SetupSampleRequest\"\x18\n" +
-	"\x16GetActuatorInfoRequest\"\x80\x06\n" +
+	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\"\x18\n" +
+	"\x16GetActuatorInfoRequest\"\xfe\x01\n" +
+	"\n" +
+	"SampleInfo\x12!\n" +
+	"\tavailable\x18\x01 \x01(\bB\x03\xe0A\x03R\tavailable\x12C\n" +
+	"\tinstances\x18\x02 \x03(\v2 .bytebase.v1.SampleInfo.InstanceB\x03\xe0A\x03R\tinstances\x1a\x87\x01\n" +
+	"\bInstance\x129\n" +
+	"\binstance\x18\x01 \x01(\tB\x1d\xe0A\x03\xfaA\x17\n" +
+	"\x15bytebase.com/InstanceR\binstance\x12@\n" +
+	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"expireTime\"\xd1\x06\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -290,18 +380,19 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\tworkspace\x18\r \x01(\tB\x03\xe0A\x03R\tworkspace\x124\n" +
 	"\x13unlicensed_features\x18\x0f \x03(\tB\x03\xe0A\x03R\x12unlicensedFeatures\x12=\n" +
 	"\x18activated_instance_count\x18\x14 \x01(\x05B\x03\xe0A\x03R\x16activatedInstanceCount\x125\n" +
-	"\x14total_instance_count\x18\x15 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x12(\n" +
-	"\renable_sample\x18\x16 \x01(\bB\x03\xe0A\x03R\fenableSample\x128\n" +
+	"\x14total_instance_count\x18\x15 \x01(\x05B\x03\xe0A\x03R\x12totalInstanceCount\x128\n" +
 	"\x16external_url_from_flag\x18\x17 \x01(\bB\x03\xe0A\x03R\x13externalUrlFromFlag\x12(\n" +
 	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12,\n" +
 	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProject\x12.\n" +
 	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIam\x126\n" +
-	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCountJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
+	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCount\x124\n" +
+	"\x06sample\x18\x1d \x01(\v2\x17.bytebase.v1.SampleInfoB\x03\xe0A\x03R\x06sample\x12=\n" +
+	"\vmcp_setting\x18\x1e \x01(\v2\x17.bytebase.v1.MCPSettingB\x03\xe0A\x03R\n" +
+	"mcpSettingJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x14J\x04\b\x19\x10\x1a2\x8b\x02\n" +
-	"\x0fActuatorService\x12o\n" +
-	"\x0fGetActuatorInfo\x12#.bytebase.v1.GetActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\"\x1c\xdaA\x00\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/actuator/info\x12\x86\x01\n" +
-	"\vSetupSample\x12\x1f.bytebase.v1.SetupSampleRequest\x1a\x16.google.protobuf.Empty\">\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1a\"\x18/v1/actuator:setupSampleB\xaa\x01\n" +
+	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x14J\x04\b\x16\x10\x17J\x04\b\x19\x10\x1a2\x86\x01\n" +
+	"\x0fActuatorService\x12s\n" +
+	"\x0fGetActuatorInfo\x12#.bytebase.v1.GetActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\" \xdaA\x00\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/actuator/infoB\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14ActuatorServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -316,25 +407,28 @@ func file_v1_actuator_service_proto_rawDescGZIP() []byte {
 	return file_v1_actuator_service_proto_rawDescData
 }
 
-var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_v1_actuator_service_proto_goTypes = []any{
-	(*SetupSampleRequest)(nil),     // 0: bytebase.v1.SetupSampleRequest
-	(*GetActuatorInfoRequest)(nil), // 1: bytebase.v1.GetActuatorInfoRequest
+	(*GetActuatorInfoRequest)(nil), // 0: bytebase.v1.GetActuatorInfoRequest
+	(*SampleInfo)(nil),             // 1: bytebase.v1.SampleInfo
 	(*ActuatorInfo)(nil),           // 2: bytebase.v1.ActuatorInfo
-	(*timestamppb.Timestamp)(nil),  // 3: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),          // 4: google.protobuf.Empty
+	(*SampleInfo_Instance)(nil),    // 3: bytebase.v1.SampleInfo.Instance
+	(*timestamppb.Timestamp)(nil),  // 4: google.protobuf.Timestamp
+	(*MCPSetting)(nil),             // 5: bytebase.v1.MCPSetting
 }
 var file_v1_actuator_service_proto_depIdxs = []int32{
-	3, // 0: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
-	1, // 1: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
-	0, // 2: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
-	2, // 3: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
-	4, // 4: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
-	3, // [3:5] is the sub-list for method output_type
-	1, // [1:3] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	3, // 0: bytebase.v1.SampleInfo.instances:type_name -> bytebase.v1.SampleInfo.Instance
+	4, // 1: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
+	1, // 2: bytebase.v1.ActuatorInfo.sample:type_name -> bytebase.v1.SampleInfo
+	5, // 3: bytebase.v1.ActuatorInfo.mcp_setting:type_name -> bytebase.v1.MCPSetting
+	4, // 4: bytebase.v1.SampleInfo.Instance.expire_time:type_name -> google.protobuf.Timestamp
+	0, // 5: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
+	2, // 6: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
+	6, // [6:7] is the sub-list for method output_type
+	5, // [5:6] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_v1_actuator_service_proto_init() }
@@ -343,13 +437,14 @@ func file_v1_actuator_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
+	file_v1_setting_service_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_actuator_service_proto_rawDesc), len(file_v1_actuator_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

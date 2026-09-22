@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"sync"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -36,7 +37,7 @@ func NewStatusBySQLReviewRuleLevel(level storepb.SQLReviewRule_Level) (storepb.A
 
 // Context is the context for advisor.
 type Context struct {
-	DBSchema              *storepb.DatabaseSchemaMetadata
+	DBSchema              *metadatapb.DatabaseSchemaMetadata
 	EnablePriorBackup     bool
 	EnableGhost           bool
 	ListDatabaseNamesFunc base.ListDatabaseNamesFunc

@@ -1,4 +1,5 @@
-import { create as createProto } from "@bufbuild/protobuf";
+import { create as createProto, toJson } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { changelogServiceClientConnect } from "@/api";
 import { UNKNOWN_ID } from "@/types";
 import {
@@ -6,6 +7,7 @@ import {
   GetChangelogRequestSchema,
   ListChangelogsRequestSchema,
 } from "@/types/proto-es/v1/changelog_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import type { AppSliceCreator, ChangelogSlice } from "./types";
 
@@ -189,21 +191,21 @@ export const createChangelogSlice: AppSliceCreator<ChangelogSlice> = (
       return undefined;
     }
 
-    const { changelogs } = await get().listChangelogs({
-      parent: database,
-      pageSize: 1000,
-      view: ChangelogView.BASIC,
-    });
-    const index = changelogs.findIndex(
-      (changelog) => extractChangelogUID(changelog.name) === currentUid
-    );
-    if (index < 0 || index === changelogs.length - 1) {
-      return undefined;
-    }
-    return get().getOrFetchChangelogByName(
-      changelogs[index + 1].name,
+    const current = await get().getOrFetchChangelogByName(
+      name,
       ChangelogView.FULL
     );
+    if (!current?.createTime) {
+      return undefined;
+    }
+    const createTime = toJson(TimestampSchema, current.createTime);
+    const { changelogs } = await get().listChangelogs({
+      parent: database,
+      pageSize: 1,
+      view: ChangelogView.FULL,
+      filter: `has_schema_snapshot == true && create_time < ${celString(createTime)}`,
+    });
+    return changelogs[0];
   },
 });
 

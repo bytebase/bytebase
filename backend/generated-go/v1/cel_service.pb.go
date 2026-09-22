@@ -211,7 +211,7 @@ var File_v1_cel_service_proto protoreflect.FileDescriptor
 
 const file_v1_cel_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14v1/cel_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a%google/api/expr/v1alpha1/syntax.proto\"5\n" +
+	"\x14v1/cel_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x13v1/annotation.proto\"5\n" +
 	"\x11BatchParseRequest\x12 \n" +
 	"\vexpressions\x18\x01 \x03(\tR\vexpressions\"V\n" +
 	"\x12BatchParseResponse\x12@\n" +
@@ -219,12 +219,12 @@ const file_v1_cel_service_proto_rawDesc = "" +
 	"\x13BatchDeparseRequest\x12@\n" +
 	"\vexpressions\x18\x01 \x03(\v2\x1e.google.api.expr.v1alpha1.ExprR\vexpressions\"8\n" +
 	"\x14BatchDeparseResponse\x12 \n" +
-	"\vexpressions\x18\x01 \x03(\tR\vexpressions2\xf0\x01\n" +
+	"\vexpressions\x18\x01 \x03(\tR\vexpressions2\xf8\x01\n" +
 	"\n" +
-	"CelService\x12l\n" +
+	"CelService\x12p\n" +
 	"\n" +
-	"BatchParse\x12\x1e.bytebase.v1.BatchParseRequest\x1a\x1f.bytebase.v1.BatchParseResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/cel/batchParse\x12t\n" +
-	"\fBatchDeparse\x12 .bytebase.v1.BatchDeparseRequest\x1a!.bytebase.v1.BatchDeparseResponse\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/cel/batchDeparseB\xa5\x01\n" +
+	"BatchParse\x12\x1e.bytebase.v1.BatchParseRequest\x1a\x1f.bytebase.v1.BatchParseResponse\"!\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/cel/batchParse\x12x\n" +
+	"\fBatchDeparse\x12 .bytebase.v1.BatchDeparseRequest\x1a!.bytebase.v1.BatchDeparseResponse\"#\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x19:\x01*\"\x14/v1/cel/batchDeparseB\xa5\x01\n" +
 	"\x0fcom.bytebase.v1B\x0fCelServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -266,6 +266,7 @@ func file_v1_cel_service_proto_init() {
 	if File_v1_cel_service_proto != nil {
 		return
 	}
+	file_v1_annotation_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

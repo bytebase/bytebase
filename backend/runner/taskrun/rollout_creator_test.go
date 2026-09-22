@@ -2,15 +2,14 @@ package taskrun
 
 import (
 	"context"
-	"fmt"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -121,7 +120,7 @@ func TestTryCreateRolloutSkipsDraft(t *testing.T) {
 	require.NotNil(t, gotIssue)
 	require.True(t, gotIssue.Payload.GetDraft())
 	require.Equal(t, storepb.Issue_OPEN, gotIssue.Status)
-	require.Empty(t, b.TaskRunTickleChan)
+	require.Empty(t, b.TaskRunPendingTickleChan)
 }
 
 func TestTryCreateRolloutSkipsArchivedProject(t *testing.T) {
@@ -205,7 +204,7 @@ func TestTryCreateRolloutSkipsArchivedProject(t *testing.T) {
 	tasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: plan.ProjectID, PlanID: &plan.UID})
 	require.NoError(t, err)
 	require.Empty(t, tasks)
-	require.Empty(t, b.TaskRunTickleChan)
+	require.Empty(t, b.TaskRunPendingTickleChan)
 }
 
 func TestTryCreateRolloutResolvesProjectInstanceOutsideRequestContext(t *testing.T) {
@@ -278,7 +277,7 @@ func TestTryCreateRolloutResolvesProjectInstanceOutsideRequestContext(t *testing
 	tasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectID, PlanID: &plan.UID})
 	require.NoError(t, err)
 	require.Len(t, tasks, 1)
-	require.Len(t, b.TaskRunTickleChan, 1)
+	require.Len(t, b.TaskRunPendingTickleChan, 1)
 }
 
 func TestTryCreateRolloutRejectsArchivedProjectInstanceWithWarmDatabaseCache(t *testing.T) {
@@ -368,7 +367,7 @@ func TestTryCreateRolloutRejectsArchivedProjectInstanceWithWarmDatabaseCache(t *
 	tasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectID, PlanID: &plan.UID})
 	require.NoError(t, err)
 	require.Empty(t, tasks)
-	require.Empty(t, b.TaskRunTickleChan)
+	require.Empty(t, b.TaskRunPendingTickleChan)
 }
 
 func setupRolloutCreatorStore(ctx context.Context, t *testing.T) *store.Store {
@@ -382,11 +381,7 @@ func setupRolloutCreatorStoreInWorkspace(ctx context.Context, t *testing.T, work
 func setupRolloutCreatorStoreInWorkspaceWithCache(ctx context.Context, t *testing.T, workspaceID string, enableCache bool) *store.Store {
 	t.Helper()
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testcontainer.NewMetadataDBWithCache(t, enableCache)
 
 	_, err := db.ExecContext(ctx, "INSERT INTO workspace (resource_id) VALUES ($1)", workspaceID)
 	require.NoError(t, err)
@@ -395,12 +390,5 @@ func setupRolloutCreatorStoreInWorkspaceWithCache(ctx context.Context, t *testin
 	_, err = db.ExecContext(ctx, "INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', $1, 'Project A')", workspaceID)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, enableCache)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return s
 }

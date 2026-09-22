@@ -38,22 +38,16 @@ export declare const GetDatabaseCatalogRequestSchema: GenMessage<GetDatabaseCata
  */
 export declare type UpdateDatabaseCatalogRequest = Message<"bytebase.v1.UpdateDatabaseCatalogRequest"> & {
   /**
-   * The database catalog to update.
-   *
-   * The catalog's `name` field is used to identify the database catalog to update.
+   * The database catalog to update, identified by its `name` field.
    * Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
+   *
+   * Replaces the whole catalog: send the complete value, since anything omitted
+   * is erased. There is no `update_mask` because `schemas` is a repeated field,
+   * and AIP-161 forbids addressing one element of one.
    *
    * @generated from field: bytebase.v1.DatabaseCatalog catalog = 1;
    */
   catalog?: DatabaseCatalog | undefined;
-
-  /**
-   * If set to true, and the database catalog is not found, a new database catalog will be created.
-   * In this situation, `update_mask` is ignored.
-   *
-   * @generated from field: bool allow_missing = 2;
-   */
-  allowMissing: boolean;
 };
 
 /**

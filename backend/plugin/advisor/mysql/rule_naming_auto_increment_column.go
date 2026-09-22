@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -58,7 +58,7 @@ func (*NamingAutoIncrementColumnAdvisor) Check(_ context.Context, checkCtx advis
 		maxLength: maxLength,
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type namingAutoIncrementColumnOmniRule struct {
@@ -115,7 +115,7 @@ func (r *namingAutoIncrementColumnOmniRule) handleAutoIncrementColumn(tableName,
 			Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, naming format should be %q", tableName, columnName, r.format),
-			StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
+			StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
 		})
 	}
 	if r.maxLength > 0 && len(columnName) > r.maxLength {
@@ -124,7 +124,7 @@ func (r *namingAutoIncrementColumnOmniRule) handleAutoIncrementColumn(tableName,
 			Code:          code.NamingAutoIncrementColumnConventionMismatch.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("`%s`.`%s` mismatches auto_increment column naming convention, its length should be within %d characters", tableName, columnName, r.maxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
+			StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
 		})
 	}
 }

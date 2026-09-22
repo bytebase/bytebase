@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -24,10 +25,7 @@ func TestGitOpsCheck(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create a project for GitOps testing.
 	projectID := generateRandomString("gitops-check")
@@ -43,11 +41,9 @@ func TestGitOpsCheck(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision test and prod instances.
-	testPgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	testPgContainer := provisionPgInstance(t)
 
-	prodPgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	prodPgContainer := provisionPgInstance(t)
 
 	// Add the provisioned instances.
 	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
@@ -77,7 +73,7 @@ func TestGitOpsCheck(t *testing.T) {
 	prodInstance := prodInstanceResp.Msg
 
 	// Create databases.
-	databaseName := "gitops_check_db"
+	databaseName := uniqueDB("gitops_check_db")
 	err = ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 	a.NoError(err)
 	err = ctl.createDatabase(ctx, project, prodInstance, nil, databaseName, "")
@@ -102,6 +98,12 @@ func TestGitOpsCheck(t *testing.T) {
 				Version:   "002",
 				Statement: []byte(`CREATE INDEX idx_users_email ON users(email);`),
 			},
+			{
+				// Each file is checked against the database as it is, where users does not exist yet.
+				Path:      "migrations/003__normalize_emails.sql",
+				Version:   "003",
+				Statement: []byte(`UPDATE users SET email = lower(email);`),
+			},
 		},
 	}
 
@@ -116,17 +118,32 @@ func TestGitOpsCheck(t *testing.T) {
 	a.NoError(err)
 	a.NotNil(checkResp)
 	// The response contains results for each file-target combination
-	a.Len(checkResp.Msg.Results, 2) // 2 files x 1 target = 2 results
+	a.Len(checkResp.Msg.Results, 3) // 3 files x 1 target = 3 results
 
 	// Verify check results.
 	targetCount := make(map[string]int)
+	updateChecked := false
 	for _, result := range checkResp.Msg.Results {
 		targetCount[result.Target]++
-		// The check should complete successfully.
-		a.NotNil(result)
+		var estimateWarnings []*v1pb.Advice
+		for _, advice := range result.Advices {
+			if advice.Title == "Affected rows estimate is incomplete" {
+				estimateWarnings = append(estimateWarnings, advice)
+			}
+		}
+		if result.File != "migrations/003__normalize_emails.sql" {
+			a.Empty(estimateWarnings, result.File)
+			continue
+		}
+		// The UPDATE cannot be explained before users exists, which the check reports instead of failing.
+		updateChecked = true
+		a.Len(estimateWarnings, 1)
+		a.Equal(v1pb.Advice_WARNING, estimateWarnings[0].Status)
+		a.Contains(estimateWarnings[0].Content, "Affected rows could not be estimated for 1 of 1 DML statements")
 	}
-	// Should have 2 results for the single target (one for each file)
-	a.Equal(2, targetCount[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
+	a.True(updateChecked)
+	// Should have 3 results for the single target (one for each file)
+	a.Equal(3, targetCount[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
 
 	// Test 2: Check release against multiple targets (test and prod).
 	checkRespMulti, err := ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
@@ -139,30 +156,26 @@ func TestGitOpsCheck(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.NotNil(checkRespMulti)
-	// 2 files x 2 targets = 4 results
-	a.Len(checkRespMulti.Msg.Results, 4)
+	// 3 files x 2 targets = 6 results
+	a.Len(checkRespMulti.Msg.Results, 6)
 
 	// Verify both targets were checked.
 	checkedTargets := make(map[string]int)
 	for _, result := range checkRespMulti.Msg.Results {
 		checkedTargets[result.Target]++
 	}
-	// Each target should have 2 results (one for each file)
-	a.Equal(2, checkedTargets[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
-	a.Equal(2, checkedTargets[fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName)])
+	// Each target should have 3 results (one for each file)
+	a.Equal(3, checkedTargets[fmt.Sprintf("%s/databases/%s", testInstance.Name, databaseName)])
+	a.Equal(3, checkedTargets[fmt.Sprintf("%s/databases/%s", prodInstance.Name, databaseName)])
 }
 
 func TestGitOpsCheckReleaseRiskLevel(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	database, pgContainer := ctl.createTestPostgreSQLDatabase(ctx, t)
-	defer pgContainer.Close(ctx)
+	database := ctl.createTestPostgreSQLDatabase(ctx, t)
 
 	setupSheet, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
@@ -199,10 +212,7 @@ func TestGitOpsCheckReleaseVCSUserTracking(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	project := createGitOpsVCSUserTestProject(ctx, t, ctl)
 	stores := getStore(t, ctl.server)
@@ -300,10 +310,7 @@ func TestGitOpsCheckReleaseVCSUserValidation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	project := createGitOpsVCSUserTestProject(ctx, t, ctl)
 	stores := getStore(t, ctl.server)
@@ -420,15 +427,12 @@ func TestGitOpsCheckReleaseVCSUserMetadataTruncation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	project := createGitOpsVCSUserTestProject(ctx, t, ctl)
 	target := createGitOpsVCSUserTestTarget(ctx, t, ctl, project)
 
-	_, err = ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+	_, err := ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
 		Parent:  project.Name,
 		Release: gitOpsVCSUserTestRelease(),
 		Targets: []string{target},
@@ -456,10 +460,7 @@ func TestGitOpsCheckReleaseVCSUserEmptyDatabaseGroup(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	project := createGitOpsVCSUserTestProject(ctx, t, ctl)
 	databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, connect.NewRequest(&v1pb.CreateDatabaseGroupRequest{
@@ -497,10 +498,7 @@ func TestVCSProviderUserActuatorAndExport(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	stores := getStore(t, ctl.server)
 	workspaceID, err := stores.GetWorkspaceID(ctx)
@@ -549,10 +547,7 @@ func TestVCSProviderUserExportEscapesSpreadsheetFormulas(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	stores := getStore(t, ctl.server)
 	workspaceID, err := stores.GetWorkspaceID(ctx)
@@ -621,10 +616,7 @@ func TestGitOpsRollout(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create a project for GitOps testing.
 	projectID := generateRandomString("gitops-rollout")
@@ -640,25 +632,25 @@ func TestGitOpsRollout(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision test instance.
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// Add the provisioned instance.
 	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "gitops-rollout-test",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/test"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "gitops-rollout-test",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/test"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	testInstance := testInstanceResp.Msg
 
 	// Create database.
-	databaseName := "gitops_rollout_db"
+	databaseName := uniqueDB("gitops_rollout_db")
 	err = ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 	a.NoError(err)
 
@@ -715,6 +707,25 @@ func TestGitOpsRollout(t *testing.T) {
 	changeDatabaseConfig := plan.Specs[0].GetChangeDatabaseConfig()
 	a.NotNil(changeDatabaseConfig)
 	a.Equal(createReleaseResp.Msg.Name, changeDatabaseConfig.Release)
+
+	// A release-backed plan's specs are the release's: editing them here would
+	// desynchronize the plan from what was released, so the update is refused
+	// and the plan's editor attribution stays with its creator.
+	_, err = ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name: plan.Name,
+			Specs: []*v1pb.Plan_Spec{{
+				Id:     uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{}},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.ErrorContains(err, "created from a release")
+	unchanged, err := ctl.planServiceClient.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{Name: plan.Name}))
+	a.NoError(err)
+	a.Equal(plan.LastPlanEditor, unchanged.Msg.LastPlanEditor)
 
 	// Step 3: Create a rollout from the plan.
 	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
@@ -777,24 +788,21 @@ func TestGitOpsRollout(t *testing.T) {
 	a.Equal(rollout.Name, rolloutResp2.Msg.Name)
 }
 
+// TestGitOpsRolloutGhostDirective keeps MySQL deliberately. gh-ost is a MySQL-only
+// online schema change tool, so the engine is the workflow here rather than a
+// substitutable backing store, and no Postgres equivalent can prove it.
+// Everything else in this package tests workflows against Postgres.
 func TestGitOpsRolloutGhostDirective(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	mysqlContainer, err := getMySQLContainer(ctx)
-	a.NoError(err)
-	defer func() {
-		mysqlContainer.Close(ctx)
-	}()
+	mysqlContainer := provisionMySQLInstance(t)
 
-	const databaseName = "gitops_rollout_ghost_db"
-	mysqlDB := mysqlContainer.db
-	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
+	databaseName := uniqueDB("gitops_rollout_ghost_db")
+	mysqlDB := mysqlContainer.GetDB()
+	_, err := mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
 	a.NoError(err)
 	_, err = mysqlDB.Exec("DROP USER IF EXISTS bytebase")
 	a.NoError(err)
@@ -822,16 +830,16 @@ func TestGitOpsRolloutGhostDirective(t *testing.T) {
 			Engine:      v1pb.Engine_MYSQL,
 			Environment: new("environments/test"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.GetHost(), Port: mysqlContainer.GetPort(), Username: "bytebase", Password: "bytebase", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
 	backupDBName := common.BackupDatabaseNameOfEngine(storepb.Engine_MYSQL)
-	err = ctl.createDatabase(ctx, project, instance, nil, backupDBName, "")
+	err = ctl.createDatabaseByRollout(ctx, project, instance, nil, backupDBName)
 	a.NoError(err)
-	err = ctl.createDatabase(ctx, project, instance, nil, databaseName, "")
+	err = ctl.createDatabaseByRollout(ctx, project, instance, nil, databaseName)
 	a.NoError(err)
 
 	createReleaseResp, err := ctl.releaseServiceClient.CreateRelease(ctx, connect.NewRequest(&v1pb.CreateReleaseRequest{
@@ -923,10 +931,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create a project for GitOps testing.
 	projectID := generateRandomString("gitops-multi")
@@ -942,11 +947,9 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision test and prod instances.
-	testPgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	testPgContainer := provisionPgInstance(t)
 
-	prodPgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	prodPgContainer := provisionPgInstance(t)
 
 	// Add the provisioned instances.
 	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
@@ -976,7 +979,7 @@ func TestGitOpsRolloutMultiTarget(t *testing.T) {
 	prodInstance := prodInstanceResp.Msg
 
 	// Create databases.
-	databaseName := "gitops_multi_db"
+	databaseName := uniqueDB("gitops_multi_db")
 	err = ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 	a.NoError(err)
 	err = ctl.createDatabase(ctx, project, prodInstance, nil, databaseName, "")
@@ -1169,10 +1172,7 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create a project for GitOps testing.
 	projectID := generateRandomString("gitops-changed")
@@ -1188,25 +1188,25 @@ func TestGitOpsCheckAppliedButChanged(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision test instance.
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	// Add the provisioned instance.
 	testInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "gitops-changed-test",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/test"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "gitops-changed-test",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/test"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	testInstance := testInstanceResp.Msg
 
 	// Create database.
-	databaseName := "gitops_changed_db"
+	databaseName := uniqueDB("gitops_changed_db")
 	err = ctl.createDatabase(ctx, project, testInstance, nil, databaseName, "")
 	a.NoError(err)
 
@@ -1331,10 +1331,7 @@ func TestGitOpsCheckEmptyTargets(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create a project.
 	projectID := generateRandomString("gitops-empty")
@@ -1375,10 +1372,7 @@ func TestGitOpsCheckDeclarative(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create a project.
 	projectID := generateRandomString("gitops-decl")
@@ -1394,21 +1388,20 @@ func TestGitOpsCheckDeclarative(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision PostgreSQL instance.
-	pgContainer, err := getPgContainer(ctx)
-	a.NoError(err)
-	defer pgContainer.Close(ctx)
+	pgContainer := sharedPgTarget(t)
 
 	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "gitops-decl-pg",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/test"),
-			Activation:  true,
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "gitops-decl-pg",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/test"),
+			Activation:    true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,
-				Host:     pgContainer.host,
-				Port:     pgContainer.port,
+				Host:     pgContainer.GetHost(),
+				Port:     pgContainer.GetPort(),
 				Username: "postgres",
 				Password: "root-password",
 				Id:       "admin",
@@ -1419,7 +1412,7 @@ func TestGitOpsCheckDeclarative(t *testing.T) {
 	pgInstance := pgInstanceResp.Msg
 
 	// Create database.
-	databaseName := "gitops_decl_db"
+	databaseName := uniqueDB("gitops_decl_db")
 	err = ctl.createDatabase(ctx, project, pgInstance, nil, databaseName, "postgres")
 	a.NoError(err)
 
@@ -1516,10 +1509,7 @@ ALTER TABLE public.users ADD COLUMN name VARCHAR(255);`,
 			t.Parallel()
 			a := require.New(t)
 			ctx := context.Background()
-			ctl := &controller{}
-			ctx, err := ctl.StartServerWithExternalPg(ctx)
-			a.NoError(err)
-			defer ctl.Close(ctx)
+			ctl, ctx := startProject(ctx, t)
 
 			// Create a project.
 			projectID := generateRandomString("gitops-disallow")
@@ -1535,21 +1525,20 @@ ALTER TABLE public.users ADD COLUMN name VARCHAR(255);`,
 			project := projectResp.Msg
 
 			// Provision PostgreSQL instance.
-			pgContainer, err := getPgContainer(ctx)
-			a.NoError(err)
-			defer pgContainer.Close(ctx)
+			pgContainer := sharedPgTarget(t)
 
 			pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 				InstanceId: generateRandomString("instance"),
 				Instance: &v1pb.Instance{
-					Title:       "gitops-disallow-pg",
-					Engine:      v1pb.Engine_POSTGRES,
-					Environment: new("environments/test"),
-					Activation:  true,
+					SyncDatabases: &v1pb.SyncDatabases{},
+					Title:         "gitops-disallow-pg",
+					Engine:        v1pb.Engine_POSTGRES,
+					Environment:   new("environments/test"),
+					Activation:    true,
 					DataSources: []*v1pb.DataSource{{
 						Type:     v1pb.DataSourceType_ADMIN,
-						Host:     pgContainer.host,
-						Port:     pgContainer.port,
+						Host:     pgContainer.GetHost(),
+						Port:     pgContainer.GetPort(),
 						Username: "postgres",
 						Password: "root-password",
 						Id:       "admin",
@@ -1560,7 +1549,7 @@ ALTER TABLE public.users ADD COLUMN name VARCHAR(255);`,
 			pgInstance := pgInstanceResp.Msg
 
 			// Create database.
-			databaseName := "gitops_disallow_db"
+			databaseName := uniqueDB("gitops_disallow_db")
 			err = ctl.createDatabase(ctx, project, pgInstance, nil, databaseName, "postgres")
 			a.NoError(err)
 
@@ -1664,10 +1653,7 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 			t.Parallel()
 			a := require.New(t)
 			ctx := context.Background()
-			ctl := &controller{}
-			ctx, err := ctl.StartServerWithExternalPg(ctx)
-			a.NoError(err)
-			defer ctl.Close(ctx)
+			ctl, ctx := startWorkspace(ctx, t)
 
 			// Create a project.
 			projectID := generateRandomString("gitops-dep")
@@ -1717,21 +1703,20 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 			a.NoError(err)
 
 			// Provision PostgreSQL instance.
-			pgContainer, err := getPgContainer(ctx)
-			a.NoError(err)
-			defer pgContainer.Close(ctx)
+			pgContainer := sharedPgTarget(t)
 
 			pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 				InstanceId: generateRandomString("instance"),
 				Instance: &v1pb.Instance{
-					Title:       "gitops-dep-pg",
-					Engine:      v1pb.Engine_POSTGRES,
-					Environment: new("environments/test"),
-					Activation:  true,
+					SyncDatabases: &v1pb.SyncDatabases{},
+					Title:         "gitops-dep-pg",
+					Engine:        v1pb.Engine_POSTGRES,
+					Environment:   new("environments/test"),
+					Activation:    true,
 					DataSources: []*v1pb.DataSource{{
 						Type:     v1pb.DataSourceType_ADMIN,
-						Host:     pgContainer.host,
-						Port:     pgContainer.port,
+						Host:     pgContainer.GetHost(),
+						Port:     pgContainer.GetPort(),
 						Username: "postgres",
 						Password: "root-password",
 						Id:       "admin",
@@ -1742,7 +1727,7 @@ func TestGitOpsCheckVersionedDependency(t *testing.T) {
 			pgInstance := pgInstanceResp.Msg
 
 			// Create database.
-			databaseName := "gitops_dep_db"
+			databaseName := uniqueDB("gitops_dep_db")
 			err = ctl.createDatabase(ctx, project, pgInstance, nil, databaseName, "postgres")
 			a.NoError(err)
 
@@ -1796,10 +1781,7 @@ func TestGitOpsCheckDeclarativeMultipleFiles(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	// Create a project.
 	projectID := generateRandomString("gitops-multi-decl")
@@ -1815,21 +1797,20 @@ func TestGitOpsCheckDeclarativeMultipleFiles(t *testing.T) {
 	project := projectResp.Msg
 
 	// Provision PostgreSQL instance.
-	pgContainer, err := getPgContainer(ctx)
-	a.NoError(err)
-	defer pgContainer.Close(ctx)
+	pgContainer := sharedPgTarget(t)
 
 	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "gitops-multi-decl-pg",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/test"),
-			Activation:  true,
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "gitops-multi-decl-pg",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/test"),
+			Activation:    true,
 			DataSources: []*v1pb.DataSource{{
 				Type:     v1pb.DataSourceType_ADMIN,
-				Host:     pgContainer.host,
-				Port:     pgContainer.port,
+				Host:     pgContainer.GetHost(),
+				Port:     pgContainer.GetPort(),
 				Username: "postgres",
 				Password: "root-password",
 				Id:       "admin",
@@ -1840,7 +1821,7 @@ func TestGitOpsCheckDeclarativeMultipleFiles(t *testing.T) {
 	pgInstance := pgInstanceResp.Msg
 
 	// Create database.
-	databaseName := "gitops_multi_decl_db"
+	databaseName := uniqueDB("gitops_multi_decl_db")
 	err = ctl.createDatabase(ctx, project, pgInstance, nil, databaseName, "postgres")
 	a.NoError(err)
 

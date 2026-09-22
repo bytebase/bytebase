@@ -4,13 +4,13 @@ import { head } from "lodash-es";
 import { CircleAlert, Eye, EyeOff, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import {
   DataExportButton,
   type DataExportRequest,
   type DownloadContent,
 } from "@/components/DataExportButton";
 import { DatabaseTableView } from "@/components/database";
-import { EngineIconPath } from "@/components/instance/constants";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,6 @@ import { DEFAULT_ENVIRONMENT_COLOR } from "@/types/v1/environment";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
-  getInstanceResource,
   hexToRgb,
 } from "@/utils";
 import { TabContextMenu } from "./ContextMenu";
@@ -68,8 +67,6 @@ const isDatabaseQueryFailed = (item: BatchQueryItem) =>
   );
 
 /**
- * Replaces `frontend/src/views/sql-editor/EditorPanel/ResultPanel/BatchQuerySelect.vue`.
- *
  * Renders the batch-query tab strip above the result panel: one tab per
  * queried database, with environment-tinted backgrounds, an empty-results
  * toggle, a batch-export drawer, and a right-click context menu (close /
@@ -130,8 +127,7 @@ export function BatchQuerySelect({
     return items.filter((item) => !isEmptyQueryItem(item));
   }, [items, showEmpty, showEmptySwitch]);
 
-  // Auto-select a proper database when the items list changes (mirrors
-  // the Vue `watch(filteredItems, ..., { immediate: true })`).
+  // Auto-select a proper database when the items list changes.
   useEffect(() => {
     if (
       !selectedDatabase ||
@@ -327,7 +323,7 @@ export function BatchQuerySelect({
           <Button
             appearance={showEmpty ? "solid" : "secondary"}
             size="sm"
-            className="h-7 px-1.5 mb-2"
+            className="mb-2"
             onClick={() => setShowEmpty(!showEmpty)}
             aria-label={t(
               "sql-editor.batch-query.show-or-hide-empty-query-results"
@@ -464,31 +460,26 @@ function TabButton({
     borderTop: isSelected ? "3px solid" : "",
     ...styleProp,
   };
-  const instance = getInstanceResource(item.database);
-
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="sm"
       type="button"
       ref={ref}
       style={style}
       onClick={onSelect}
       className={cn(
-        "inline-flex items-center gap-x-1 h-7 px-2 rounded-xs text-xs font-medium",
+        "inline-flex shrink-0 items-center gap-x-1 rounded-xs text-xs font-medium",
         "border border-control-border cursor-pointer whitespace-nowrap",
         className
       )}
       {...rest}
     >
-      {EngineIconPath[instance.engine] && (
-        <img
-          src={EngineIconPath[instance.engine]}
-          alt=""
-          className="size-4 shrink-0"
-        />
-      )}
-      <span className="truncate">
-        {extractDatabaseResourceName(item.database.name).databaseName}
-      </span>
+      <DatabaseTargetDisplay
+        database={item.database}
+        showEnvironment
+        className="text-xs"
+      />
       {isFailed && <CircleAlert className="ml-1 text-error size-4 shrink-0" />}
       {isEmpty && (
         <span className="text-control-placeholder italic ml-1">
@@ -502,6 +493,6 @@ function TabButton({
           onClose();
         }}
       />
-    </button>
+    </Button>
   );
 }

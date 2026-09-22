@@ -2,37 +2,81 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
+func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	_, stores, _ := testcontainer.NewMetadataDB(t)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
+	const workspaceID = "workspace-defaults"
+	_, err := stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+		ResourceID: workspaceID,
+		AdditionalSettings: []store.AdditionalSetting{{
+			Name:    storepb.SettingName_AI,
+			Payload: &storepb.AISetting{},
+		}},
+	}, "admin@example.com")
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+
+	settings, err := stores.ListSettings(ctx, &store.FindSettingMessage{Workspace: workspaceID})
+	require.NoError(t, err)
+	var names []storepb.SettingName
+	for _, setting := range settings {
+		names = append(names, setting.Name)
+	}
+	for _, name := range []storepb.SettingName{
+		storepb.SettingName_SYSTEM,
+		storepb.SettingName_APP_IM,
+		storepb.SettingName_DATA_CLASSIFICATION,
+		storepb.SettingName_WORKSPACE_APPROVAL,
+		storepb.SettingName_WORKSPACE_PROFILE,
+		storepb.SettingName_ENVIRONMENT,
+		storepb.SettingName_MCP,
+		storepb.SettingName_AI,
+	} {
+		require.Truef(t, slices.Contains(names, name), "missing setting %s", name)
+	}
+
+	mcpSetting, err := stores.GetSetting(ctx, workspaceID, storepb.SettingName_MCP)
+	require.NoError(t, err)
+	mcp, ok := mcpSetting.Value.(*storepb.MCPSetting)
+	require.True(t, ok)
+	require.Equal(t, storepb.MCPSetting_READ_ONLY, mcp.Capability)
+
+	environmentSetting, err := stores.GetSetting(ctx, workspaceID, storepb.SettingName_ENVIRONMENT)
+	require.NoError(t, err)
+	environments, ok := environmentSetting.Value.(*storepb.EnvironmentSetting)
+	require.True(t, ok)
+	require.Equal(t, []string{common.DefaultTestEnvironmentID, common.DefaultProdEnvironmentID}, []string{
+		environments.Environments[0].Id,
+		environments.Environments[1].Id,
+	})
+
+	defaultProjectID := common.DefaultProjectID(workspaceID)
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &defaultProjectID})
+	require.NoError(t, err)
+	require.NotNil(t, project)
+}
+
+func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	const email = "member@example.com"
 	activeCondition := `request.time < timestamp("2099-01-01T00:00:00Z")`

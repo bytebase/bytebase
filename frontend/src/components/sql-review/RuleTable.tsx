@@ -487,9 +487,11 @@ function RuleTableRow({
           onClick={(e) => e.stopPropagation()}
         >
           {expandable && (
-            <button
+            <Button
               type="button"
-              className="cursor-pointer p-0.5 text-control-light hover:text-control"
+              appearance="secondary"
+              size="xs"
+              className="text-control-light hover:text-control"
               onClick={() => setExpanded((prev) => !prev)}
             >
               {expanded ? (
@@ -497,7 +499,7 @@ function RuleTableRow({
               ) : (
                 <ChevronRight className="w-4 h-4" />
               )}
-            </button>
+            </Button>
           )}
         </TableCell>
         {supportSelect && (
@@ -555,7 +557,7 @@ function RuleTableRow({
                 <Button
                   appearance="secondary"
                   size="sm"
-                  className="size-7 p-0 text-control hover:text-accent"
+                  className="text-control hover:text-accent"
                   aria-label={editable ? t("common.edit") : t("common.view")}
                   onClick={() => setEditing(true)}
                 >
@@ -568,7 +570,7 @@ function RuleTableRow({
                     variant="destructive"
                     appearance="secondary"
                     size="sm"
-                    className="size-7 p-0 text-error hover:bg-error/10 hover:text-error"
+                    className="text-error hover:bg-error/10 hover:text-error"
                     aria-label={t("common.delete")}
                     onClick={() => onRuleRemove?.(rule)}
                   >
@@ -691,7 +693,7 @@ const MobileRuleTableRow = memo(function MobileRuleTableRow({
                 type="button"
                 appearance="secondary"
                 size="sm"
-                className="size-7 p-0 text-control hover:text-accent"
+                className="text-control hover:text-accent"
                 aria-label={t("common.edit")}
                 onClick={() => setEditing(true)}
               >
@@ -702,7 +704,7 @@ const MobileRuleTableRow = memo(function MobileRuleTableRow({
               <Button
                 appearance="secondary"
                 size="sm"
-                className="size-7 p-0 text-error hover:bg-error/10 hover:text-error"
+                className="text-error hover:bg-error/10 hover:text-error"
                 aria-label={t("common.delete")}
                 onClick={() => onRuleRemove?.(rule)}
               >

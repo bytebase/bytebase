@@ -7,11 +7,9 @@ type Props = {
 };
 
 /**
- * React port of `plugins/ai/components/ChatView/Markdown/AstToVNode.vue`.
  * Walks the mdast root via `mdastToReact[node.type]` and returns the
  * React tree. `slots` overrides the default renderer for specific node
- * types (`code`, `inlineCode`, `image`) — same hook the Vue version
- * exposed via `defineSlots`.
+ * types (`code`, `inlineCode`, `image`).
  */
 export function AstToReact({ ast, slots = {} }: Props) {
   const state: State = {

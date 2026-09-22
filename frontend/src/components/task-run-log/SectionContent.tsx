@@ -34,26 +34,26 @@ export function SectionContent({
 
   return (
     <div
-      className="bg-gray-50 border-t border-gray-100 overflow-auto"
+      className="overflow-auto border-block-border border-t bg-control-bg/50"
       style={{ maxHeight: `${MAX_VISIBLE_ITEMS * ITEM_HEIGHT}px` }}
     >
       {visibleItems.map((item, index) => (
         <div
           key={item.key}
           className={cn(
-            "flex items-start gap-x-2 py-0.5 hover:bg-gray-100",
+            "flex items-start gap-x-2 py-0.5 hover:bg-control-bg",
             indent ? "px-6" : "px-3",
-            index > 0 && "border-t border-gray-100"
+            index > 0 && "border-block-border border-t"
           )}
         >
-          <span className="w-6 shrink-0 text-right tabular-nums text-gray-300">
+          <span className="w-6 shrink-0 text-right text-control-placeholder tabular-nums">
             {index + 1}
           </span>
-          <span className="shrink-0 tabular-nums text-gray-400">
+          <span className="shrink-0 text-control-placeholder tabular-nums">
             {item.time}
           </span>
           {item.relativeTime ? (
-            <span className="shrink-0 tabular-nums text-gray-300">
+            <span className="shrink-0 text-control-placeholder tabular-nums">
               {item.relativeTime}
             </span>
           ) : null}
@@ -65,12 +65,10 @@ export function SectionContent({
           </span>
           <span className="ml-auto flex shrink-0 items-center gap-x-2">
             {item.duration ? (
-              <span className="tabular-nums text-blue-500">
-                {item.duration}
-              </span>
+              <span className="text-info tabular-nums">{item.duration}</span>
             ) : null}
             {item.affectedRows !== undefined ? (
-              <span className="text-gray-400">
+              <span className="text-control-placeholder">
                 {item.affectedRows} {t("task.affected-rows")}
               </span>
             ) : null}
@@ -82,10 +80,7 @@ export function SectionContent({
           type="button"
           appearance="secondary"
           size="sm"
-          className={cn(
-            "flex w-full items-center justify-center gap-x-2 rounded-none border-t border-gray-100 px-3 py-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700",
-            indent ? "px-6" : "px-3"
-          )}
+          className="w-full rounded-none border-block-border border-t text-control-light hover:bg-control-bg-hover hover:text-control"
           onClick={() => setShowAllItems(true)}
         >
           <span>{t("common.load-more")}</span>

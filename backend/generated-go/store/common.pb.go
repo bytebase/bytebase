@@ -9,6 +9,7 @@ package store
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -480,6 +481,7 @@ const (
 	StatementType_INSERT StatementType = 60
 	StatementType_UPDATE StatementType = 61
 	StatementType_DELETE StatementType = 62
+	StatementType_MERGE  StatementType = 63
 )
 
 // Enum value maps for StatementType.
@@ -526,6 +528,7 @@ var (
 		60: "INSERT",
 		61: "UPDATE",
 		62: "DELETE",
+		63: "MERGE",
 	}
 	StatementType_value = map[string]int32{
 		"STATEMENT_TYPE_UNSPECIFIED": 0,
@@ -569,6 +572,7 @@ var (
 		"INSERT":                     60,
 		"UPDATE":                     61,
 		"DELETE":                     62,
+		"MERGE":                      63,
 	}
 )
 
@@ -605,9 +609,12 @@ type PageToken struct {
 	// Maximum number of items to return.
 	Limit int32 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
 	// Number of items to skip before starting to return results.
-	Offset        int32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Offset int32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+	// Bounds later pages to the rows that existed when the traversal started,
+	// inclusive. Set by a list whose own reads write rows it would page over.
+	CreateTimeUpperBound *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=create_time_upper_bound,json=createTimeUpperBound,proto3" json:"create_time_upper_bound,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *PageToken) Reset() {
@@ -652,6 +659,13 @@ func (x *PageToken) GetOffset() int32 {
 		return x.Offset
 	}
 	return 0
+}
+
+func (x *PageToken) GetCreateTimeUpperBound() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreateTimeUpperBound
+	}
+	return nil
 }
 
 // Position in a text expressed as one-based line and one-based column.
@@ -792,10 +806,11 @@ var File_store_common_proto protoreflect.FileDescriptor
 
 const file_store_common_proto_rawDesc = "" +
 	"\n" +
-	"\x12store/common.proto\x12\x0ebytebase.store\"9\n" +
+	"\x12store/common.proto\x12\x0ebytebase.store\x1a\x1fgoogle/protobuf/timestamp.proto\"\x8c\x01\n" +
 	"\tPageToken\x12\x14\n" +
 	"\x05limit\x18\x01 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x05R\x06offset\"6\n" +
+	"\x06offset\x18\x02 \x01(\x05R\x06offset\x12Q\n" +
+	"\x17create_time_upper_bound\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x14createTimeUpperBound\"6\n" +
 	"\bPosition\x12\x12\n" +
 	"\x04line\x18\x01 \x01(\x05R\x04line\x12\x16\n" +
 	"\x06column\x18\x02 \x01(\x05R\x06column\"/\n" +
@@ -865,7 +880,7 @@ const file_store_common_proto_rawDesc = "" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
 	"\x04LARK\x10\a\x12\x0f\n" +
-	"\vGOOGLE_CHAT\x10\b*\x83\x06\n" +
+	"\vGOOGLE_CHAT\x10\b*\x8e\x06\n" +
 	"\rStatementType\x12\x1e\n" +
 	"\x1aSTATEMENT_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCREATE_DATABASE\x10\x01\x12\x10\n" +
@@ -917,7 +932,8 @@ const file_store_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06UPDATE\x10=\x12\n" +
 	"\n" +
-	"\x06DELETE\x10>\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;B\x8e\x01\n" +
+	"\x06DELETE\x10>\x12\t\n" +
+	"\x05MERGE\x10?\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;B\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vCommonProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -935,23 +951,25 @@ func file_store_common_proto_rawDescGZIP() []byte {
 var file_store_common_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_store_common_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_store_common_proto_goTypes = []any{
-	(Engine)(0),           // 0: bytebase.store.Engine
-	(VCSType)(0),          // 1: bytebase.store.VCSType
-	(ExportFormat)(0),     // 2: bytebase.store.ExportFormat
-	(RiskLevel)(0),        // 3: bytebase.store.RiskLevel
-	(SchemaChangeType)(0), // 4: bytebase.store.SchemaChangeType
-	(WebhookType)(0),      // 5: bytebase.store.WebhookType
-	(StatementType)(0),    // 6: bytebase.store.StatementType
-	(*PageToken)(nil),     // 7: bytebase.store.PageToken
-	(*Position)(nil),      // 8: bytebase.store.Position
-	(*Range)(nil),         // 9: bytebase.store.Range
+	(Engine)(0),                   // 0: bytebase.store.Engine
+	(VCSType)(0),                  // 1: bytebase.store.VCSType
+	(ExportFormat)(0),             // 2: bytebase.store.ExportFormat
+	(RiskLevel)(0),                // 3: bytebase.store.RiskLevel
+	(SchemaChangeType)(0),         // 4: bytebase.store.SchemaChangeType
+	(WebhookType)(0),              // 5: bytebase.store.WebhookType
+	(StatementType)(0),            // 6: bytebase.store.StatementType
+	(*PageToken)(nil),             // 7: bytebase.store.PageToken
+	(*Position)(nil),              // 8: bytebase.store.Position
+	(*Range)(nil),                 // 9: bytebase.store.Range
+	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 }
 var file_store_common_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	10, // 0: bytebase.store.PageToken.create_time_upper_bound:type_name -> google.protobuf.Timestamp
+	1,  // [1:1] is the sub-list for method output_type
+	1,  // [1:1] is the sub-list for method input_type
+	1,  // [1:1] is the sub-list for extension type_name
+	1,  // [1:1] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_store_common_proto_init() }

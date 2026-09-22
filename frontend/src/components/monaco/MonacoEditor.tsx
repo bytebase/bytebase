@@ -12,7 +12,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import { Tooltip } from "@/components/ui/tooltip";
-import { instanceNamePrefix } from "@/lib/resourceName";
 import { cn } from "@/lib/utils";
 import type { Language, SQLDialect } from "@/types";
 import { UNKNOWN_ID } from "@/types";
@@ -600,9 +599,7 @@ export function MonacoEditor({
   // LSP `setMetadata` — must run *after* the editor + its model are
   // attached so the language server has a document to bind the
   // metadata to. We gate on `ready`, which the big editor effect
-  // flips true once `editor.setModel(model)` has run. Mirrors Vue's
-  // `useAutoComplete` call site, which lives inside the post-setup
-  // path of `MonacoTextModelEditor.vue`.
+  // flips true once `editor.setModel(model)` has run.
   //
   // Skipped entirely when the caller does not opt in to SQL LSP via
   // `autoCompleteContext`, so editors like `SchemaEditorLite` that mount
@@ -625,7 +622,7 @@ export function MonacoEditor({
     };
     const instance = extractInstanceResourceName(ctx.instance);
     if (instance && instance !== String(UNKNOWN_ID)) {
-      params.instanceId = `${instanceNamePrefix}${instance}`;
+      params.instanceId = ctx.instance;
     }
     const { databaseName } = extractDatabaseResourceName(ctx.database ?? "");
     if (databaseName && databaseName !== String(UNKNOWN_ID)) {
@@ -719,9 +716,9 @@ export function MonacoEditor({
         ref={containerRef}
         className={cn(
           "w-full overflow-clip text-sm",
-          // Match Vue's `bb-monaco-editor` — flush against the host
-          // shell with no border or rounded corners. Consumers that
-          // want a chrome can wrap the component themselves.
+          // Flush against the host shell with no border or rounded
+          // corners. Consumers that want a chrome can wrap the component
+          // themselves.
           autoHeight ? "" : "h-full"
         )}
         style={autoHeight ? { height } : undefined}
@@ -744,7 +741,7 @@ export function MonacoEditor({
             </pre>
           </div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center rounded-md border bg-background/70">
+          <div className="absolute inset-0 flex items-center justify-center rounded-sm border bg-background/70">
             <Loader2 className="h-5 w-5 animate-spin text-control-light" />
           </div>
         ))}

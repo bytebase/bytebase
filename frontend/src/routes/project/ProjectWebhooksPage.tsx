@@ -184,7 +184,6 @@ function WebhookTable({
         <TableHeader>
           <TableRow className="bg-control-bg">
             <TableHead className="w-60">{t("common.name")}</TableHead>
-            <TableHead>URL</TableHead>
             <TableHead>{t("project.webhook.triggering-activity")}</TableHead>
             {allowEdit && <TableHead className="w-12" />}
           </TableRow>
@@ -193,7 +192,7 @@ function WebhookTable({
           {webhooks.length === 0 ? (
             <TableRow>
               <TableCell
-                colSpan={allowEdit ? 4 : 3}
+                colSpan={allowEdit ? 3 : 2}
                 className="py-8 text-center text-control-light"
               >
                 {t("common.no-data")}
@@ -223,9 +222,6 @@ function WebhookTable({
                       <WebhookTypeIcon type={webhook.type} className="size-5" />
                       {webhook.title}
                     </div>
-                  </TableCell>
-                  <TableCell className="truncate max-w-xs text-control-light">
-                    {webhook.url}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-2">

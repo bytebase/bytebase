@@ -42,9 +42,7 @@ export const createIdentityProviderSlice: AppSliceCreator<
   listIdentityProviders: async (parent) => {
     const response =
       await identityProviderServiceClientConnect.listIdentityProviders(
-        createProto(ListIdentityProvidersRequestSchema, {
-          parent: parent ?? "",
-        })
+        createProto(ListIdentityProvidersRequestSchema, { parent })
       );
     set({
       identityProvidersByName: Object.fromEntries(

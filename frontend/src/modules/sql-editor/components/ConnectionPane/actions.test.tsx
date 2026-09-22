@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   maybeUpdateSavedQuery: vi.fn().mockResolvedValue(undefined),
   canCreateSavedQueryInProject: vi.fn(() => true),
   addTab: vi.fn(() => ({ id: "local-tab" })),
+  updateTab: vi.fn(),
+  tabsById: new Map<string, { id: string; mode: string }>(),
+  currentTabId: "",
 }));
 
 vi.mock("react-i18next", () => ({
@@ -68,10 +71,10 @@ vi.mock("@/modules/sql-editor/model/events", () => ({
 
 vi.mock("@/modules/sql-editor/store/tab", () => ({
   getSQLEditorTabsState: () => ({
-    tabsById: new Map(),
-    currentTabId: "",
+    tabsById: mocks.tabsById,
+    currentTabId: mocks.currentTabId,
     addTab: mocks.addTab,
-    updateTab: vi.fn(),
+    updateTab: mocks.updateTab,
   }),
 }));
 
@@ -168,6 +171,9 @@ beforeEach(async () => {
   mocks.canCreateSavedQueryInProject.mockReturnValue(true);
   mocks.addTab.mockReturnValue({ id: "local-tab" });
   mocks.createSavedQuery.mockResolvedValue(undefined);
+  mocks.updateTab.mockReset();
+  mocks.tabsById.clear();
+  mocks.currentTabId = "";
   ({ useConnectionMenu } = await import("./actions"));
 });
 
@@ -190,7 +196,7 @@ describe("setConnection", () => {
     expect(mocks.addTab).toHaveBeenCalled();
   });
 
-  test("creates a saved query when the caller may", async () => {
+  test("opens an unsaved local tab when the caller may", async () => {
     mocks.canCreateSavedQueryInProject.mockReturnValue(true);
     const { setConnection } = await import("./actions");
 
@@ -202,8 +208,59 @@ describe("setConnection", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.createSavedQuery).toHaveBeenCalled();
-    expect(mocks.addTab).not.toHaveBeenCalled();
+    expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.addTab).toHaveBeenCalled();
+  });
+
+  test("does not replace a data explorer tab", async () => {
+    mocks.currentTabId = "data-explorer";
+    mocks.tabsById.set("data-explorer", {
+      id: "data-explorer",
+      mode: "DATA_EXPLORER",
+    });
+    const { setConnection } = await import("./actions");
+
+    await act(async () => {
+      setConnection({
+        database: { name: "instances/prod/databases/db1" } as never,
+        mode: "DATA_EXPLORER",
+        newTab: false,
+      });
+      await Promise.resolve();
+    });
+
+    expect(mocks.maybeUpdateSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.createSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.addTab).toHaveBeenCalled();
+  });
+
+  test("keeps a local draft dirty when changing its connection", async () => {
+    mocks.currentTabId = "local-tab";
+    mocks.tabsById.set("local-tab", {
+      id: "local-tab",
+      mode: "SAVED_QUERY",
+      savedQuery: "",
+      status: "DIRTY",
+      statement: "SELECT 1",
+      title: "",
+    } as never);
+    const { setConnection } = await import("./actions");
+
+    await act(async () => {
+      setConnection({
+        database: { name: "instances/prod/databases/db1" } as never,
+        newTab: false,
+      });
+      await Promise.resolve();
+    });
+
+    expect(mocks.maybeUpdateSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.updateTab).toHaveBeenCalledWith("local-tab", {
+      connection: {
+        instance: "instances/prod",
+        database: "instances/prod/databases/db1",
+      },
+    });
   });
 });
 

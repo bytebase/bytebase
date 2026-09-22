@@ -49,10 +49,10 @@ export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQue
    *
    * Supported filter:
    * - project: the project full name in "projects/{id}" format, support "==" operator.
-   * - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
-   * - instance: the instance full name in "instances/{id}" format, support "==" operator.
+   * - database: the database full name in "instances/{id}/databases/{name}" or "projects/{project}/instances/{id}/databases/{name}" format, support "==" operator.
+   * - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
    * - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-   * - statement: the SQL statement, support ".contains()" operator.
+   * - statement: the SQL statement, support "==" and ".contains()" operators.
    *
    * For example:
    * project == "projects/{project}"
@@ -60,6 +60,7 @@ export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQue
    * instance == "instances/{instance}"
    * type == "QUERY"
    * type == "EXPORT"
+   * statement == "SELECT 1;"
    * statement.contains("select")
    * type == "QUERY" && statement.contains("select")
    *
@@ -215,7 +216,7 @@ export declare type QueryHistory = Message<"bytebase.v1.QueryHistory"> & {
 
   /**
    * The database name to execute the query.
-   * Format: instances/{instance}/databases/{databaseName}
+   * Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
    *
    * @generated from field: string database = 2;
    */
@@ -308,6 +309,7 @@ export declare const QueryHistoryService: GenService<{
   },
   /**
    * ListQueryHistories lists query histories of all users in a project.
+   * Results are ordered by create time descending (newest first).
    * Permissions required: bb.queryHistories.list
    *
    * @generated from rpc bytebase.v1.QueryHistoryService.ListQueryHistories

@@ -4,6 +4,7 @@ import { ChevronDown, Download } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { databaseServiceClientConnect } from "@/api";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,16 +25,9 @@ const extractDatabaseName = (resource: string) => {
   return matches?.groups?.databaseName ?? "";
 };
 
-export function DatabaseExportSchemaButton({
-  database,
-  disabled = false,
-}: {
-  database: Database;
-  disabled?: boolean;
-}) {
+export function useDatabaseSchemaExport(database: Database) {
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const options = useMemo(
     () => [
@@ -52,7 +46,6 @@ export function DatabaseExportSchemaButton({
   const handleExport = useCallback(
     async (format: GetDatabaseSDLSchemaRequest_SDLFormat) => {
       setExporting(true);
-      setOpen(false);
 
       try {
         const response =
@@ -103,10 +96,24 @@ export function DatabaseExportSchemaButton({
     [database, t]
   );
 
+  return { exporting, options, exportSchema: handleExport };
+}
+
+export function DatabaseExportSchemaButton({
+  database,
+  disabled = false,
+}: {
+  database: Database;
+  disabled?: boolean;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const { exporting, options, exportSchema } =
+    useDatabaseSchemaExport(database);
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
-        className="inline-flex h-8 items-center justify-center gap-x-2 whitespace-nowrap rounded-sm border border-control-border bg-background px-3 text-sm font-medium text-control shadow-xs hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+        render={<Button appearance="outline" />}
         disabled={disabled || exporting}
       >
         <Download className="size-4" />
@@ -117,7 +124,10 @@ export function DatabaseExportSchemaButton({
         {options.map((option) => (
           <DropdownMenuItem
             key={option.key}
-            onClick={() => void handleExport(option.key)}
+            onClick={() => {
+              setOpen(false);
+              void exportSchema(option.key);
+            }}
           >
             {option.label}
           </DropdownMenuItem>

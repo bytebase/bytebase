@@ -51,12 +51,13 @@ const buttonStyles = cva(
       {
         variant: "destructive",
         appearance: "solid",
-        className: "bg-error text-white hover:bg-error-hover",
+        className: "bg-error text-accent-text hover:bg-error-hover",
       },
       {
         variant: "destructive",
         appearance: "outline",
-        className: "border-error text-error hover:bg-error hover:text-white",
+        className:
+          "border-error text-error hover:bg-error hover:text-accent-text",
       },
       {
         variant: "destructive",

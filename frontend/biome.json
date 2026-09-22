@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.6/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.12/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": true,
@@ -11,6 +11,7 @@
       "!!src/types/proto-es/**"
     ]
   },
+  "plugins": ["./biome-plugins/no-crypto-randomuuid.grit"],
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -46,6 +47,14 @@
       "style": {
         "noCommonJs": "error",
         "noNamespace": "error",
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "vue": "The frontend is React-only; do not reintroduce Vue."
+            }
+          }
+        },
         "useArrayLiterals": "error",
         "useAsConstAssertion": "error",
         "useBlockStatements": "off",
@@ -212,11 +221,7 @@
   },
   "overrides": [
     {
-      "includes": [
-        "src/shims-3rd-party.d.ts",
-        "tailwind.config.js",
-        "vite-plugin-export-csp-hashes.ts"
-      ],
+      "includes": ["tailwind.config.js", "vite-plugin-export-csp-hashes.ts"],
       "formatter": { "enabled": false },
       "linter": { "enabled": false }
     },
@@ -258,6 +263,45 @@
       "assist": {
         "enabled": false
       }
+    },
+    {
+      "includes": [
+        "src/api/**",
+        "src/components/**",
+        "src/hooks/**",
+        "src/lib/**",
+        "src/modules/**",
+        "src/stores/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "vue": "The frontend is React-only; do not reintroduce Vue."
+                },
+                "patterns": [
+                  {
+                    "group": ["@/routes/**"],
+                    "message": "Shared code must not import from src/routes; move the code to its shared owner."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "!src/**/*.test.ts",
+        "!src/**/*.test.tsx"
+      ],
+      "plugins": ["./biome-plugins/cel-filter-literals.grit"]
     },
     {
       "includes": ["*.json", "**/*.json", "*.json5", "**/*.json5"],

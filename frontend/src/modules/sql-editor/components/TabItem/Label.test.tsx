@@ -158,6 +158,18 @@ describe("Label", () => {
     unmount();
   });
 
+  test("data explorer title is read-only", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <Label tab={makeTab({ mode: "DATA_EXPLORER" })} />
+    );
+    render();
+
+    expect(container.querySelector(".cursor-text")).toBeNull();
+    expect(container.querySelector("input")).toBeNull();
+
+    unmount();
+  });
+
   test("blur with the initial title still calls store.updateTab (preserving title)", () => {
     const { container, render, unmount } = renderIntoContainer(
       <Label tab={makeTab({ title: "Old" })} />

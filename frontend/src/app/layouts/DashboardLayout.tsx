@@ -5,12 +5,10 @@ import type { DashboardFrameShellTargets } from "@/app/dashboard-shell";
 import { DashboardFrameShell } from "@/components/DashboardFrameShell";
 import { useEnsureWorkspaceCommonData } from "@/hooks/useEnsureWorkspaceCommonData";
 
-// Ported from `src/layouts/DashboardLayout.vue`. The Vue layout mounted
-// `DashboardFrameShell` and teleported `<router-view name="body"/>` into the
-// shell's body target. In React the named view collapses to the single
-// `<Outlet/>`, portaled into the body element the shell reports via `onReady`.
-// The shell renders banners + a loading gate; this layout also kicks off the
-// workspace-scope bootstrap (idempotent, deduped by the app store).
+// Mounts `DashboardFrameShell` and portals the routed `<Outlet/>` into the body
+// element the shell reports via `onReady`. The shell renders banners + a
+// loading gate; this layout also kicks off the workspace-scope bootstrap
+// (idempotent, deduped by the app store).
 export function DashboardLayout() {
   useEnsureWorkspaceCommonData();
 

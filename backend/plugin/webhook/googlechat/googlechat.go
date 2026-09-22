@@ -12,7 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
@@ -107,7 +106,7 @@ func BuildMessage(ctx webhook.Context) MessagePayload {
 			widgets = append(widgets, textWidgetHTML(fmt.Sprintf("<b>%s</b>", escapeText(ctx.Issue.Name))))
 		}
 		if ctx.Issue.Description != "" {
-			widgets = append(widgets, textWidgetHTML(fmt.Sprintf("<b>%s</b>", escapeText(common.TruncateStringWithDescription(ctx.Issue.Description)))))
+			widgets = append(widgets, textWidgetHTML(fmt.Sprintf("<b>%s</b>", escapeText(webhook.TruncateStringWithDescription(ctx.Issue.Description)))))
 		}
 	} else if ctx.Rollout != nil && ctx.Rollout.Title != "" {
 		widgets = append(widgets, textWidgetHTML(fmt.Sprintf("<b>%s</b>", escapeText(ctx.Rollout.Title))))

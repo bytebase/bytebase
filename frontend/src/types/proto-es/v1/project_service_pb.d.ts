@@ -57,7 +57,7 @@ export declare const BatchGetProjectsRequestSchema: GenMessage<BatchGetProjectsR
  */
 export declare type BatchGetProjectsResponse = Message<"bytebase.v1.BatchGetProjectsResponse"> & {
   /**
-   * The projects from the specified request.
+   * One project per requested name, in the same order as `names`.
    *
    * @generated from field: repeated bytebase.v1.Project projects = 1;
    */
@@ -582,6 +582,13 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
    * @generated from field: bool allow_just_in_time_access = 23;
    */
   allowJustInTimeAccess: boolean;
+
+  /**
+   * Whether to allow the last Plan editor to approve a database change issue.
+   *
+   * @generated from field: bool allow_last_plan_editor_approval = 24;
+   */
+  allowLastPlanEditorApproval: boolean;
 };
 
 /**
@@ -700,7 +707,11 @@ export declare type TestWebhookRequest = Message<"bytebase.v1.TestWebhookRequest
   project: string;
 
   /**
-   * The webhook to test. Identified by its url.
+   * The webhook to test.
+   *
+   * The url is what gets posted to. Reads do not return a saved webhook's url,
+   * so leave url empty and set name to test the one already stored; set url to
+   * test a url before saving it.
    *
    * @generated from field: bytebase.v1.Webhook webhook = 2;
    */
@@ -761,9 +772,32 @@ export declare type Webhook = Message<"bytebase.v1.Webhook"> & {
   /**
    * url is the url of the webhook, should be unique within the project.
    *
+   * Write-only: an incoming-webhook url is the whole credential for posting
+   * into the customer's chat, so reads leave it empty, the same way a data
+   * source's password and SSL material are left empty. Set it to change it.
+   *
+   * Required to create a webhook. Not required on TestWebhook, where an empty
+   * url on a request that names a webhook means the one already stored, so the
+   * field carries no REQUIRED behavior it would contradict there.
+   *
    * @generated from field: string url = 4;
    */
   url: string;
+
+  /**
+   * Whether the stored url's endpoint form can carry a direct message to the
+   * users an event mentions, rather than only a post to the channel the url
+   * names. False for a Microsoft Teams Power Automate workflow endpoint, which
+   * direct messages bypass entirely: a webhook with direct_message set sends
+   * them and returns, so the workflow post never happens.
+   *
+   * Reads do not return the url, so a client editing a saved webhook cannot
+   * work this out for itself. It is a fact about the stored url and says
+   * nothing about what the url is.
+   *
+   * @generated from field: bool url_supports_direct_message = 8;
+   */
+  urlSupportsDirectMessage: boolean;
 
   /**
    * if direct_message is set, the notification is sent directly
@@ -891,7 +925,9 @@ export declare const ProjectService: GenService<{
   },
   /**
    * BatchGetProjects retrieves multiple projects by their names.
-   * Permissions required: bb.projects.get
+   * One resource per requested name, in request order. The first name that
+   * does not resolve fails the whole call (AIP-231: no partial response).
+   * Permissions required: bb.projects.get (on each named project)
    *
    * @generated from rpc bytebase.v1.ProjectService.BatchGetProjects
    */

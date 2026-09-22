@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -69,7 +69,7 @@ func (c *allowDropEmptyDBChecker) checkStmt(ostmt OmniStmt) {
 			Code:          code.NotCurrentDatabase.Int32(),
 			Title:         c.title,
 			Content:       fmt.Sprintf("Database `%s` that is trying to be deleted is not the current database `%s`", node.Name, c.originalMetadata.DatabaseName()),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	} else if !c.originalMetadata.HasNoTable() {
 		c.adviceList = append(c.adviceList, &storepb.Advice{
@@ -77,7 +77,7 @@ func (c *allowDropEmptyDBChecker) checkStmt(ostmt OmniStmt) {
 			Code:          code.DatabaseNotEmpty.Int32(),
 			Title:         c.title,
 			Content:       fmt.Sprintf("Database `%s` is not allowed to drop if not empty", node.Name),
-			StartPosition: common.ConvertANTLRLineToPosition(line),
+			StartPosition: base.ConvertANTLRLineToPosition(line),
 		})
 	}
 }

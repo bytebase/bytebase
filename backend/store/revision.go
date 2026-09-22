@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 type RevisionMessage struct {
@@ -76,7 +76,10 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	if !find.ShowDeleted {
 		q.And("deleted_at IS NULL")
 	}
-	q.Space("ORDER BY version DESC")
+	// version is unique only per (instance, db_name, type) and only while
+	// deleted_at IS NULL, so it does not identify a row on its own — least of
+	// all under ShowDeleted. resource_id is the primary key.
+	q.Space("ORDER BY revision.version DESC, revision.resource_id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -168,7 +171,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 		return nil, errors.Wrapf(err, "failed to marshal revision payload")
 	}
 
-	err = s.withDatabasePurgeFence(ctx, revision.InstanceID, revision.DatabaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+	err = s.withDatabaseWrite(ctx, revision.InstanceID, revision.DatabaseName, nil, func(tx *sql.Tx, _ *databaseOwnership) error {
 		return tx.QueryRowContext(ctx, query,
 			revision.InstanceID,
 			revision.DatabaseName,

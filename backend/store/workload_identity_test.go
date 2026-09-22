@@ -9,6 +9,7 @@ import (
 )
 
 func TestWorkloadIdentityMessageConfig(t *testing.T) {
+	t.Parallel()
 	config := &storepb.WorkloadIdentityConfig{
 		ProviderType:     storepb.WorkloadIdentityConfig_GITHUB,
 		IssuerUrl:        "https://token.actions.githubusercontent.com",
@@ -27,6 +28,7 @@ func TestWorkloadIdentityMessageConfig(t *testing.T) {
 }
 
 func TestCreateWorkloadIdentityMessageConfig(t *testing.T) {
+	t.Parallel()
 	create := &CreateWorkloadIdentityMessage{
 		Email: "test@workload.bytebase.com",
 		Name:  "test",
@@ -45,6 +47,7 @@ func TestCreateWorkloadIdentityMessageConfig(t *testing.T) {
 }
 
 func TestUpdateWorkloadIdentityMessageConfig(t *testing.T) {
+	t.Parallel()
 	patch := &UpdateWorkloadIdentityMessage{
 		Config: &storepb.WorkloadIdentityConfig{
 			ProviderType:     storepb.WorkloadIdentityConfig_GITHUB,

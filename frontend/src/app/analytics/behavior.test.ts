@@ -1,7 +1,6 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
-import type { BehaviorMetricInput } from "./behavior";
 import {
-  behaviorMetricDefinitions,
   buildBehaviorAnalyticsConfig,
   classifyBehaviorRoute,
   createBehaviorMetric,
@@ -14,6 +13,7 @@ describe("behavior analytics config", () => {
       buildBehaviorAnalyticsConfig({
         posthogKey: "",
         posthogHost: "https://us.i.posthog.com",
+        deployment: "cloud",
         recordingSampleRate: 0.1,
       })
     ).toBeNull();
@@ -21,6 +21,7 @@ describe("behavior analytics config", () => {
     expect(
       buildBehaviorAnalyticsConfig({
         posthogKey: "phc_test",
+        deployment: "cloud",
         recordingSampleRate: 0.1,
       })
     ).toBeNull();
@@ -30,6 +31,7 @@ describe("behavior analytics config", () => {
     const config = buildBehaviorAnalyticsConfig({
       posthogKey: "phc_test",
       posthogHost: "https://us.i.posthog.com",
+      deployment: "cloud",
       recordingSampleRate: 0.25,
     });
 
@@ -74,18 +76,24 @@ describe("behavior analytics config", () => {
     ).toBeUndefined();
   });
 
-  test("adds build commit metadata to PostHog event properties", () => {
+  test("adds common metadata to PostHog event properties", () => {
     const config = buildBehaviorAnalyticsConfig({
       posthogKey: "phc_test",
       posthogHost: "https://us.i.posthog.com",
+      deployment: "cloud",
       recordingSampleRate: 0.25,
       gitCommit: "abc123",
+      resolveRouteId: (url) =>
+        url.includes("/projects/acme/")
+          ? "workspace.project.database"
+          : undefined,
     });
 
     if (!config) {
       throw new Error("Expected behavior analytics config");
     }
     expect(config.properties).toEqual({
+      deployment: "cloud",
       git_commit: "abc123",
     });
 
@@ -97,12 +105,16 @@ describe("behavior analytics config", () => {
     expect(
       sanitizeProperties(
         {
-          $current_url: "https://cloud.bytebase.com/projects/acme?token=secret",
+          $current_url:
+            "https://cloud.bytebase.com/projects/acme/databases?token=secret",
+          title: "Acme production - Bytebase",
         },
         "$pageview"
       )
     ).toEqual({
+      deployment: "cloud",
       git_commit: "abc123",
+      route_id: "workspace.project.database",
     });
   });
 });
@@ -111,10 +123,10 @@ describe("behavior analytics routes", () => {
   test("allows page sessions on any named route", () => {
     expect(
       classifyBehaviorRoute({
-        name: "auth.profile.setup",
+        name: "auth.setup",
       })
     ).toMatchObject({
-      routeId: "auth.profile.setup",
+      routeId: "auth.setup",
       recording: "allow",
     });
 
@@ -205,20 +217,6 @@ describe("behavior analytics privacy helpers", () => {
 });
 
 describe("behavior analytics metrics", () => {
-  test("defines metric names in one map", () => {
-    expect([...behaviorMetricDefinitions.keys()]).toContain("page session");
-    expect([...behaviorMetricDefinitions.keys()]).toContain("page navigated");
-    expect([...behaviorMetricDefinitions.keys()]).toContain(
-      "locked feature clicked"
-    );
-    expect([...behaviorMetricDefinitions.keys()]).not.toContain(
-      "locked feature viewed"
-    );
-    expect([...behaviorMetricDefinitions.keys()]).not.toContain(
-      "locked feature upgrade clicked"
-    );
-  });
-
   test("creates allowlisted page session metrics with route context", () => {
     expect(
       createBehaviorMetric("page session", {
@@ -238,49 +236,25 @@ describe("behavior analytics metrics", () => {
     });
   });
 
-  test("creates allowlisted page navigation metrics with route transition context", () => {
-    expect(
-      createBehaviorMetric("page navigated", {
-        properties: {
-          from_route_id: "workspace.landing",
-          to_route_id: "workspace.instance.create",
-        },
-      })
-    ).toEqual({
-      event: "page navigated",
-      properties: {
-        from_route_id: "workspace.landing",
-        to_route_id: "workspace.instance.create",
-      },
-    });
-  });
-
-  test("keeps route transition context out of the shared metric input fields", () => {
-    const routeTransitionInput = {
-      // @ts-expect-error route transitions should use event-specific properties.
-      fromRouteId: "workspace.landing",
-    } satisfies BehaviorMetricInput;
-
-    expect(routeTransitionInput).toEqual({
-      fromRouteId: "workspace.landing",
-    });
-  });
-
   test("creates allowlisted custom action metrics and drops unsafe properties", () => {
     expect(
-      createBehaviorMetric("setup guide action clicked", {
+      createBehaviorMetric("workspace setup submitted", {
         routeId: "workspace.landing",
         resource: "projects/demo",
         properties: {
-          step: "hasProject",
+          scenario: "query-data",
+          result: "finished",
+          sample_enabled: true,
         },
       })
     ).toEqual({
-      event: "setup guide action clicked",
+      event: "workspace setup submitted",
       properties: {
         route_id: "workspace.landing",
         resource: "projects/demo",
-        step: "hasProject",
+        scenario: "query-data",
+        result: "finished",
+        sample_enabled: true,
       },
     });
   });

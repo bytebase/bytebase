@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
+import { useAppStore } from "@/stores/app";
 
 export type ConnectionFailureCategory =
   | "auth_failed"
@@ -42,6 +43,7 @@ export function ConnectionRecovery({
   className?: string;
 }>) {
   const { t } = useTranslation();
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const recovery = {
     auth_failed: {
       title: t("instance.connection-recovery.auth.title"),
@@ -54,10 +56,16 @@ export function ConnectionRecovery({
     },
     network_unreachable: {
       title: t("instance.connection-recovery.network.title"),
-      description: t("instance.connection-recovery.network.description"),
+      description: isSaaSMode
+        ? t("instance.connection-recovery.network.description-saas")
+        : t("instance.connection-recovery.network.description-self-hosted"),
       steps: [
         t("instance.connection-recovery.network.steps.address"),
-        t("instance.connection-recovery.network.steps.firewall"),
+        isSaaSMode
+          ? t("instance.connection-recovery.network.steps.firewall-saas")
+          : t(
+              "instance.connection-recovery.network.steps.firewall-self-hosted"
+            ),
         t("instance.connection-recovery.network.steps.private-network"),
       ],
     },
@@ -72,7 +80,9 @@ export function ConnectionRecovery({
     },
     timeout: {
       title: t("instance.connection-recovery.timeout.title"),
-      description: t("instance.connection-recovery.timeout.description"),
+      description: isSaaSMode
+        ? t("instance.connection-recovery.timeout.description-saas")
+        : t("instance.connection-recovery.timeout.description-self-hosted"),
       steps: [
         t("instance.connection-recovery.timeout.steps.load"),
         t("instance.connection-recovery.timeout.steps.retry"),
@@ -103,7 +113,9 @@ export function ConnectionRecovery({
       steps: [
         t("instance.connection-recovery.unknown.steps.fields"),
         t("instance.connection-recovery.unknown.steps.help"),
-        t("instance.connection-recovery.unknown.steps.logs"),
+        isSaaSMode
+          ? t("instance.connection-recovery.unknown.steps.logs-saas")
+          : t("instance.connection-recovery.unknown.steps.logs-self-hosted"),
       ],
     },
   }[category];
@@ -122,7 +134,11 @@ export function ConnectionRecovery({
       </ul>
       <a
         className="mt-3 inline-flex items-center gap-x-1 text-sm font-medium underline underline-offset-2"
-        href="https://docs.bytebase.com/get-started/connect/overview?source=console"
+        href={
+          isSaaSMode
+            ? "https://docs.bytebase.com/get-started/cloud#prerequisites"
+            : "https://docs.bytebase.com/get-started/connect/overview?source=console"
+        }
         target="_blank"
         rel="noreferrer"
       >

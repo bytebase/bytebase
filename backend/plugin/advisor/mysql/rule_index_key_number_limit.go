@@ -7,10 +7,10 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -46,7 +46,7 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		max: int(numberPayload.Number),
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type indexKeyNumberLimitOmniRule struct {
@@ -123,7 +123,7 @@ func (r *indexKeyNumberLimitOmniRule) handleConstraint(tableName string, constra
 			Code:          code.IndexKeyNumberExceedsLimit.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", indexName, tableName, r.max),
-			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
+			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(line)),
 		})
 	}
 }
@@ -145,7 +145,7 @@ func (r *indexKeyNumberLimitOmniRule) checkCreateIndex(n *ast.CreateIndexStmt) {
 			Code:          code.IndexKeyNumberExceedsLimit.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", indexName, tableName, r.max),
-			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
+			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 		})
 	}
 }

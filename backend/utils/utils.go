@@ -13,7 +13,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -100,17 +99,14 @@ func CheckIssueApprovedForPlan(issue *store.IssueMessage, plan *store.PlanMessag
 }
 
 // UpdateProjectPolicyFromRoleGrantIssue updates the project policy from a role grant issue.
+// The grant is merged into the policy as stored, under lock, so approving a
+// grant while an admin edits the same project's permissions cannot drop either
+// change -- including a revoke.
 func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.Store, workspaceID string, issue *store.IssueMessage, roleGrant *storepb.RoleGrant) error {
-	policyMessage, err := stores.GetProjectIamPolicy(ctx, workspaceID, issue.ProjectID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get project policy for project %s", issue.ProjectID)
-	}
-
 	var newConditionExpr string
 	if roleGrant.Condition != nil {
 		newConditionExpr = roleGrant.Condition.Expression
 	}
-	updated := false
 
 	email, err := extractEmailFromUserIdentifier(roleGrant.User)
 	if err != nil {
@@ -124,50 +120,37 @@ func UpdateProjectPolicyFromRoleGrantIssue(ctx context.Context, stores *store.St
 		return connect.NewError(connect.CodeInternal, errors.Errorf("user %s not found", email))
 	}
 	memberName := formatMemberNameByType(newUser)
-	for _, binding := range policyMessage.Policy.Bindings {
-		if binding.Role != roleGrant.Role {
-			continue
-		}
-		var oldConditionExpr string
-		if binding.Condition != nil {
-			oldConditionExpr = binding.Condition.Expression
-		}
-		if oldConditionExpr != newConditionExpr {
-			continue
-		}
-		// Append
-		binding.Members = append(binding.Members, memberName)
-		updated = true
-		break
-	}
-	if !updated {
-		condition := roleGrant.Condition
-		if condition == nil {
-			condition = &expr.Expr{}
-		}
-		condition.Description = fmt.Sprintf("#%d", issue.UID)
-		policyMessage.Policy.Bindings = append(policyMessage.Policy.Bindings, &storepb.Binding{
-			Role:      roleGrant.Role,
-			Members:   []string{memberName},
-			Condition: condition,
-		})
-	}
 
-	policyPayload, err := protojson.Marshal(policyMessage.Policy)
-	if err != nil {
-		return err
-	}
-	if _, err := stores.CreatePolicy(ctx, &store.PolicyMessage{
-		Workspace:         workspaceID,
-		Resource:          common.FormatProject(issue.ProjectID),
-		ResourceType:      storepb.Policy_PROJECT,
-		Payload:           string(policyPayload),
-		Type:              storepb.Policy_IAM,
-		InheritFromParent: false,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}); err != nil {
-		return err
+	if _, err := stores.PatchIamPolicy(ctx, workspaceID, storepb.Policy_PROJECT, common.FormatProject(issue.ProjectID),
+		func(policy *storepb.IamPolicy) error {
+			for _, binding := range policy.Bindings {
+				if binding.Role != roleGrant.Role {
+					continue
+				}
+				var oldConditionExpr string
+				if binding.Condition != nil {
+					oldConditionExpr = binding.Condition.Expression
+				}
+				if oldConditionExpr != newConditionExpr {
+					continue
+				}
+				// Append
+				binding.Members = append(binding.Members, memberName)
+				return nil
+			}
+			condition := roleGrant.Condition
+			if condition == nil {
+				condition = &expr.Expr{}
+			}
+			condition.Description = fmt.Sprintf("#%d", issue.UID)
+			policy.Bindings = append(policy.Bindings, &storepb.Binding{
+				Role:      roleGrant.Role,
+				Members:   []string{memberName},
+				Condition: condition,
+			})
+			return nil
+		}); err != nil {
+		return errors.Wrapf(err, "failed to grant role in project %s", issue.ProjectID)
 	}
 
 	return nil

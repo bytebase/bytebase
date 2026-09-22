@@ -33,6 +33,7 @@ const mocks = vi.hoisted(() => {
     featureToRef: vi.fn(() => ({ value: true })),
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
+    accountSelectProps: { value: undefined as { accountParents: string[] } | undefined },
   };
 });
 
@@ -84,16 +85,21 @@ vi.mock("@/components/AccountMultiSelect", () => ({
   AccountMultiSelect: ({
     value,
     onChange,
+    accountParents,
   }: {
     value: string[];
     onChange: (value: string[]) => void;
-  }) => (
-    <button
-      data-testid="account-multi-select"
-      onClick={() => onChange([...value, "users/alice"])}
-      type="button"
-    />
-  ),
+    accountParents: string[];
+  }) => {
+    mocks.accountSelectProps.value = { accountParents };
+    return (
+      <button
+        data-testid="account-multi-select"
+        onClick={() => onChange([...value, "users/alice"])}
+        type="button"
+      />
+    );
+  },
 }));
 
 vi.mock("@/components/DatabaseResourceSelector", () => ({
@@ -176,7 +182,9 @@ vi.mock("@/components/FeatureAttention", () => ({
 }));
 
 vi.mock("@/components/FeatureBadge", () => ({
-  FeatureBadge: () => <div data-testid="feature-badge" />,
+  FeatureBadge: ({ clickable }: { clickable?: boolean }) => (
+    <div data-clickable={String(clickable)} data-testid="feature-badge" />
+  ),
 }));
 
 vi.mock("@/components/ui/feature-modal", () => ({
@@ -236,11 +244,13 @@ vi.mock("@/stores/app", () => ({
       selector: (state: {
         settingsByName: Record<string, unknown>;
         hasInstanceFeature: () => boolean;
+        workspaceResourceName: () => string;
       }) => unknown
     ) =>
       selector({
         settingsByName: {},
         hasInstanceFeature: () => mocks.featureToRef().value,
+        workspaceResourceName: () => "workspaces/default",
       }),
     {
       getState: () => ({
@@ -279,14 +289,31 @@ const flush = async () => {
   });
 };
 
-const getRadios = (container: HTMLElement) =>
+const resourceModeValues = ["ALL", "EXPRESSION", "SELECT"] as const;
+
+const getResourceModeRadios = (container: HTMLElement) =>
   Array.from(container.querySelectorAll<HTMLElement>('[role="radio"]'));
 
-const isChecked = (radio: HTMLElement | undefined) =>
-  radio?.getAttribute("aria-checked") === "true";
+const selectedResourceMode = (container: HTMLElement) =>
+  resourceModeValues.find(
+    (_, index) =>
+      getResourceModeRadios(container)[index]?.getAttribute("aria-checked") ===
+      "true"
+  );
 
-const isDisabled = (radio: HTMLElement | undefined) =>
-  radio?.getAttribute("aria-disabled") === "true";
+const isResourceModeDisabled = (
+  container: HTMLElement,
+  value: (typeof resourceModeValues)[number]
+) => getResourceModeRadios(container)[resourceModeValues.indexOf(value)]?.getAttribute("aria-disabled") === "true";
+
+const selectResourceMode = async (
+  container: HTMLElement,
+  value: "ALL" | "EXPRESSION" | "SELECT"
+) => {
+  await click(
+    getResourceModeRadios(container)[resourceModeValues.indexOf(value)]!
+  );
+};
 
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
@@ -377,16 +404,41 @@ describe("GrantAccessDialog", () => {
     mocks.stringifyConditionExpression.mockClear();
   });
 
+  test("keeps resource scope choices visible", async () => {
+    const { container, unmount } = renderGrantAccessDialog();
+    await flush();
+
+    expect(getResourceModeRadios(container)).toHaveLength(3);
+    expect(selectedResourceMode(container)).toBe("SELECT");
+    expect(isResourceModeDisabled(container, "ALL")).toBe(true);
+
+    const badges = container.querySelectorAll('[data-testid="feature-badge"]');
+    expect(badges).toHaveLength(2);
+    for (const badge of badges) {
+      expect(badge.getAttribute("data-clickable")).toBe("false");
+    }
+
+    unmount();
+  });
+
+  test("discovers special accounts in the workspace and project scopes", () => {
+    const { unmount } = renderGrantAccessDialog();
+
+    expect(mocks.accountSelectProps.value?.accountParents).toEqual([
+      "workspaces/default",
+      "projects/proj1",
+    ]);
+
+    unmount();
+  });
+
   test("preserves selected scope when switching from select to expression mode", async () => {
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
-    const radioList = getRadios(container);
+    expect(selectedResourceMode(container)).toBe("SELECT");
 
-    expect(radioList).toHaveLength(3);
-    expect(isChecked(radioList[2])).toBe(true);
-
-    await click(radioList[1]!);
+    await selectResourceMode(container, "EXPRESSION");
 
     expect(mocks.stringifyConditionExpression).toHaveBeenCalledWith({
       databaseResources: [
@@ -414,20 +466,18 @@ describe("GrantAccessDialog", () => {
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
-    let radioList = getRadios(container);
-    expect(isDisabled(radioList[0])).toBe(true);
-    expect(isDisabled(radioList[1])).toBe(false);
-    expect(isDisabled(radioList[2])).toBe(false);
+    expect(isResourceModeDisabled(container, "ALL")).toBe(true);
+    expect(isResourceModeDisabled(container, "EXPRESSION")).toBe(false);
+    expect(isResourceModeDisabled(container, "SELECT")).toBe(false);
     expect(
       container
         .querySelector('[data-testid="database-resource-selector"]')
         ?.getAttribute("data-readonly")
     ).toBe("true");
 
-    await click(radioList[1]!);
+    await selectResourceMode(container, "EXPRESSION");
 
-    radioList = getRadios(container);
-    expect(isChecked(radioList[1])).toBe(true);
+    expect(selectedResourceMode(container)).toBe("EXPRESSION");
     expect(
       container
         .querySelector('[data-testid="expr-editor"]')
@@ -461,9 +511,8 @@ describe("GrantAccessDialog", () => {
     });
     await flush();
 
-    const radioList = getRadios(container);
-    expect(isChecked(radioList[1])).toBe(true);
-    expect(isDisabled(radioList[2])).toBe(false);
+    expect(selectedResourceMode(container)).toBe("EXPRESSION");
+    expect(isResourceModeDisabled(container, "SELECT")).toBe(false);
 
     const exprEditor = container.querySelector('[data-testid="expr-editor"]');
     expect(exprEditor?.textContent).toContain("serialized-selection");
@@ -475,25 +524,22 @@ describe("GrantAccessDialog", () => {
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
-    let radioList = getRadios(container);
-    expect(isChecked(radioList[2])).toBe(true);
-    expect(isDisabled(radioList[2])).toBe(false);
+    expect(selectedResourceMode(container)).toBe("SELECT");
+    expect(isResourceModeDisabled(container, "SELECT")).toBe(false);
 
-    await click(radioList[1]!);
+    await selectResourceMode(container, "EXPRESSION");
     await click(
       container.querySelector<HTMLElement>(
         '[data-testid="expr-editor-set-column-scope"]'
       )!
     );
 
-    radioList = getRadios(container);
-    expect(isChecked(radioList[1])).toBe(true);
-    expect(isDisabled(radioList[2])).toBe(false);
+    expect(selectedResourceMode(container)).toBe("EXPRESSION");
+    expect(isResourceModeDisabled(container, "SELECT")).toBe(false);
 
-    await click(radioList[2]!);
+    await selectResourceMode(container, "SELECT");
 
-    radioList = getRadios(container);
-    expect(isChecked(radioList[2])).toBe(true);
+    expect(selectedResourceMode(container)).toBe("SELECT");
     expect(
       container
         .querySelector('[data-testid="database-resource-selector"]')
@@ -543,24 +589,19 @@ describe("GrantAccessDialog", () => {
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
-    const radioList = getRadios(container);
+    expect(selectedResourceMode(container)).toBe("SELECT");
 
-    expect(isChecked(radioList[2])).toBe(true);
-
-    await click(radioList[1]!);
+    await selectResourceMode(container, "EXPRESSION");
     await flush();
 
-    const pendingRadioList = getRadios(container);
-    expect(isDisabled(pendingRadioList[0])).toBe(true);
-    expect(isDisabled(pendingRadioList[1])).toBe(true);
-    expect(isDisabled(pendingRadioList[2])).toBe(true);
+    expect(
+      resourceModeValues.every((value) => isResourceModeDisabled(container, value))
+    ).toBe(true);
 
     pendingConversion.resolve([{ parsed: true }]);
     await flush();
 
-    const refreshedRadioList = getRadios(container);
-    expect(isChecked(refreshedRadioList[1])).toBe(true);
-    expect(isChecked(refreshedRadioList[2])).toBe(false);
+    expect(selectedResourceMode(container)).toBe("EXPRESSION");
     expect(container.querySelector('[data-testid="expr-editor"]')).toBeTruthy();
 
     unmount();
@@ -634,9 +675,8 @@ describe("GrantAccessDialog — composite exemption precedence (BYT-9791)", () =
     const { container, unmount } = renderGrantAccessDialog();
     await flush();
 
-    // Default mode for a non-column-scoped selection is SELECT (radio index 2).
-    const radios = getRadios(container);
-    expect(isChecked(radios[2])).toBe(true);
+    // Default mode for a non-column-scoped selection is SELECT.
+    expect(selectedResourceMode(container)).toBe("SELECT");
 
     await click(
       container.querySelector<HTMLElement>('[data-testid="set-two-resources"]')!

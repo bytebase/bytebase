@@ -5,11 +5,13 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import {
   DataSourceSchema,
+  DataSource_AuthenticationType,
   DataSourceType,
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import type { EditDataSource } from "./common";
+import type { DataSourceEditState, EditDataSource } from "./common";
 import { DataSourceSection } from "./DataSourceSection";
+import { validateDataSource } from "./validation";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -33,6 +35,8 @@ vi.mock("./InstanceFormContext", () => ({
   useInstanceFormContext: () => mocks.context,
 }));
 
+vi.mock("./CreateDataSourceExample", () => ({ CreateDataSourceExample: () => null }));
+
 vi.mock("./DataSourceForm", () => ({
   DataSourceForm: ({ dataSource }: { dataSource: EditDataSource }) => (
     <div data-testid="data-source-form" data-id={dataSource.id} />
@@ -46,8 +50,27 @@ vi.mock("@/components/ui/alert", () => ({
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children }: { children: React.ReactNode }) => (
-    <button type="button">{children}</button>
+  Button: ({
+    children,
+    className,
+    disabled,
+    onClick,
+    type = "button",
+  }: {
+    children: React.ReactNode;
+    className?: string;
+    disabled?: boolean;
+    onClick?: () => void;
+    type?: "button" | "submit" | "reset";
+  }) => (
+    <button
+      className={className}
+      disabled={disabled}
+      onClick={onClick}
+      type={type}
+    >
+      {children}
+    </button>
   ),
 }));
 
@@ -57,6 +80,7 @@ vi.mock("@/stores/app", () => ({
 
 vi.mock("@/types", () => ({
   DATASOURCE_READONLY_USER_NAME: "bytebase_readonly",
+  unknownDataSource: () => create(DataSourceSchema, { authenticationType: DataSource_AuthenticationType.PASSWORD }),
 }));
 
 const editDataSource = (
@@ -117,6 +141,7 @@ const renderSection = async () => {
       button.textContent?.startsWith("common.read-only")
   );
   return {
+    container,
     unmount: () =>
       act(() => {
         root.unmount();
@@ -185,3 +210,27 @@ describe("DataSourceSection incomplete markers", () => {
     unmount();
   });
 });
+
+
+test.each([Engine.SPANNER, Engine.BIGQUERY])(
+  "new read-only GCP connections use IAM and require SaaS credentials for engine %s",
+  async (engine) => {
+    let state: DataSourceEditState = {dataSources: [adminDataSource], editingDataSourceId: "admin"};
+    mocks.context = {...mocks.context,
+      basicInfo: create(InstanceSchema, {engine}),
+      adminDataSource: {...adminDataSource, projectId: "valid-project", instanceId: "valid-instance"},
+      setDataSourceEditState: (update: (previous: DataSourceEditState) => DataSourceEditState) => {state = update(state);},
+    };
+    const {container, unmount} = await renderSection();
+    try {
+      const add = container.querySelector("svg.lucide-plus")?.closest("button");
+      expect(add).toBeTruthy();
+      await act(async () => {add!.click();});
+      expect(state.dataSources).toHaveLength(2);
+      const draft = state.dataSources[1];
+      expect(draft.authenticationType).toBe(DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM);
+      expect(draft.type).toBe(DataSourceType.READ_ONLY);
+      expect(validateDataSource(draft, {engine, isSaaSMode: true}).iamExtension).toBe("specific-credential");
+    } finally {unmount();}
+  }
+);

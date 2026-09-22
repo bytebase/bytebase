@@ -11,17 +11,15 @@ package tests
 //   - accepted: backend/api/mcp/server_test.go
 //     TestMCPAuthMiddlewareAudienceMatrix/"unexpired legacy oauth2 audience is
 //     accepted" and TestDecideAudience/"legacy oauth2 audience is accepted
-//     while its token lives"; against a real store,
-//     backend/api/mcp/server_killswitch_test.go TestMCPKillSwitchEndToEnd
-//     (its tokenForWorkspace helper mints the legacy audience).
+//     while its token lives".
 //   - expired: backend/api/mcp/server_test.go TestMCPAuthMiddleware/"expired
 //     token returns 401", whose generateExpiredToken deliberately carries the
 //     legacy audience for exactly this reason.
 //
 // Row 2 — a legacy refresh grant with no stored resource is refused with the
 // re-consent signal (invalid_grant naming the reauthorize tool). MAPPED:
-// backend/api/oauth2/grant_test.go TestResourceScopeGrantLifecycle/"legacy
-// unbound grants are refused at the token endpoint with re-auth guidance" —
+// TestOAuth2GrantLifecycle/"legacy unbound grants are refused at the token
+// endpoint with re-auth guidance" in this package —
 // both grant types, plus the negative control that a resource-bound grant
 // with an empty scope is NOT legacy.
 //
@@ -29,17 +27,19 @@ package tests
 // delegation state is BOTH-EMPTY. The links were pinned separately (session
 // works: TestMCPToolCallParity; credential: backend/api/mcp/
 // internal_transport_test.go TestMCPAuthMiddlewareLegacySessionEmptyGrantState;
-// AuthContext: backend/api/auth/internal_interceptor_livestate_test.go;
-// audit row: backend/api/v1/audit_mcp_provenance_test.go) but nothing composed
-// them on a live server. NEW: TestMCPMigrationGrantStateMatrix.
+// AuthContext: backend/api/auth/internal_interceptor_test.go
+// TestAuthenticateDelegatedCarriesGrantVerbatim; audit row:
+// backend/api/v1/audit_test.go TestAuditRowCarriesMCPDelegationProvenance)
+// but nothing composed them on a live server. NEW:
+// TestMCPMigrationGrantStateMatrix.
 //
 // Row 4 — a grant whose client omitted `scope` at consent: resource bound,
 // scope empty. The state has two indistinguishable origins — scope-omitting
 // clients, which make it permanent rather than only migration-era, and,
 // transiently, PR-3-era tokens whose grant DID record a scope — and it must
 // never collapse into row 3. The AuthContext-level distinction is pinned
-// (internal_interceptor_livestate_test.go/"grant-backed token: resource
-// present, scope empty"); nothing minted the state from a real scope-less
+// (TestAuthenticateDelegatedCarriesGrantVerbatim/"grant-backed token:
+// resource present, scope empty"); nothing minted the state from a real scope-less
 // token, carried it to an audit row, or checked it survives a refresh that
 // names a scope — the one path that could widen a grant which recorded none.
 // NEW: TestMCPMigrationGrantStateMatrix, which asserts rows 3 and 4 against
@@ -47,10 +47,8 @@ package tests
 //
 // Row 5 — bb.oauth2.access on the public v1 API is refused. MAPPED:
 // backend/api/auth/auth_test.go TestCheckTokenAudience/"legacy oauth2
-// audience is refused: it is MCP-minted too" (the legacy audience by name),
-// backend/api/oauth2/grant_test.go TestResourceScopeGrantLifecycle/"an MCP
-// token is refused on the general API but keeps serving /mcp", and the
-// end-to-end flow in TestMCPTokenIsRejectedOnGeneralAPI.
+// audience is refused: it is MCP-minted too" (the legacy audience by name)
+// and the end-to-end flow in TestMCPTokenIsRejectedOnGeneralAPI.
 //
 // Row 6 — a ceiling lookup FAILURE fails closed (lookup error → DISABLED →
 // connection refused). NEW: TestMCPMigrationCeilingLookupFailureFailsClosed.
@@ -60,12 +58,10 @@ package tests
 // backend/api/mcp/server_test.go TestDecideAudience.
 //
 // Row 7 — a tightened ceiling bites the NEXT request of a live MCP session,
-// with no re-auth. The request-level half is pinned
-// (backend/api/mcp/server_killswitch_test.go
-// TestMCPKillSwitchBypassesSettingCache, which also pins that the read
-// bypasses the setting cache), but that test has no session and the
-// session-level test runs with a nil store, so the ceiling is never consulted
-// there. NEW: TestMCPMigrationTightenedCeilingBitesLiveSession.
+// with no re-auth. That the gate reads the stored setting fresh, past the
+// setting cache, is pinned by TestMCPMaskingToggleBitesTheNextRequest in this
+// package, which flips the same setting out of band. NEW:
+// TestMCPMigrationTightenedCeilingBitesLiveSession.
 
 import (
 	"context"
@@ -74,6 +70,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -171,25 +168,34 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
-	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
-		Name: "workspaces/-",
+	// The probe is an audited mutation, so each session leaves exactly one
+	// provenance-carrying row to sort out below, and it is a WRITE method
+	// because the MCP ceiling serves READ and WRITE only. Every audited
+	// serving-class method is project-scoped, hence the project.
+	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		ProjectId: "mcp-grant-matrix",
+		Project:   &v1pb.Project{Title: "MCP grant matrix"},
 	}))
 	a.NoError(err)
+	// The probe below is a WRITE method. Pinned so this test does not depend on
+	// the resolved default; it is about which grant state a token carries.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+
+	createSheet := func(sql string) map[string]any {
+		return map[string]any{
+			"parent": project.Msg.Name,
+			"sheet":  map[string]any{"content": base64.StdEncoding.EncodeToString([]byte(sql))},
+		}
+	}
 
 	// Row 3: the legacy admission — a plain web-session token driving MCP.
-	// The call is an audited mutation, so each session leaves exactly one
-	// provenance-carrying row to sort out below.
 	plainSession := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer plainSession.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, plainSession, "GroupService/CreateGroup", map[string]any{
-		"group":      map[string]any{"title": "driven by a pre-grant session"},
-		"groupEmail": "pre-grant-group@example.com",
-	}), "a plain web-session token must keep working through tools")
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, plainSession, "SheetService/CreateSheet",
+		createSheet("SELECT 'driven by a pre-grant session';")),
+		"a plain web-session token must keep working through tools")
 
 	// Row 4: a real consent that never names a scope.
 	scopelessToken, scopelessRefresh, clientID := mintMCPOAuthTokenWithScope(t, ctl, ctl.authInterceptor.token, "")
@@ -211,15 +217,14 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 
 	scopelessSession := openMCPSession(ctx, t, ctl, scopelessToken)
 	defer scopelessSession.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, scopelessSession, "GroupService/CreateGroup", map[string]any{
-		"group":      map[string]any{"title": "driven by a scope-less grant"},
-		"groupEmail": "scopeless-grant-group@example.com",
-	}), "a grant that recorded no scope must still work end to end")
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, scopelessSession, "SheetService/CreateSheet",
+		createSheet("SELECT 'driven by a scope-less grant';")),
+		"a grant that recorded no scope must still work end to end")
 
 	// What an operator investigating these sessions sees.
 	rows, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
-		Parent:  workspace.Msg.Name,
-		Filter:  `method == "/bytebase.v1.GroupService/CreateGroup"`,
+		Parent:  project.Msg.Name,
+		Filter:  `method == "/bytebase.v1.SheetService/CreateSheet"`,
 		OrderBy: "create_time desc",
 	}))
 	a.NoError(err)
@@ -275,16 +280,16 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
 		Name: "workspaces/-",
 	}))
 	a.NoError(err)
 	workspaceID := strings.TrimPrefix(workspace.Msg.Name, "workspaces/")
+
+	// Set the control value explicitly before corrupting it.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 
 	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 
@@ -294,17 +299,17 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
-	defer db.Close()
+	t.Cleanup(func() { db.Close() })
 
-	// The stored ceiling is given a value the profile cannot be parsed with, so
-	// the read errors. An unrecognized enum NAME would not do it: the store's
-	// unmarshaler discards values it does not know, so such a ceiling reads
-	// back as unset — a different behavior, and one this test deliberately does
-	// not assert either way.
+	// The stored ceiling is given a value the MCP setting cannot be parsed with,
+	// so the read errors outright. That is a distinct arm from an unrecognized
+	// enum NAME, which the store's unmarshaler discards: a name it does not
+	// know is parsed as UNSPECIFIED and fails closed, and TestMCPCutoverAdmitsReadOnlyAndNothingElse
+	// owns that case. This one is the unmarshal error itself.
 	restore := func() {
 		result, err := db.ExecContext(ctx, `
-			UPDATE setting SET value = value - 'mcpCapability'
-			WHERE workspace = $1 AND name = 'WORKSPACE_PROFILE';
+			UPDATE setting SET value = '{"capability":"READ_WRITE"}'::jsonb
+			WHERE workspace = $1 AND name = 'MCP';
 		`, workspaceID)
 		a.NoError(err)
 		affected, err := result.RowsAffected()
@@ -312,12 +317,12 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 		a.Equal(int64(1), affected, "the corrupted policy row must be restored")
 	}
 	result, err := db.ExecContext(ctx, `
-		UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', 'true')
-		WHERE workspace = $1 AND name = 'WORKSPACE_PROFILE';
+		UPDATE setting SET value = jsonb_set(value, '{capability}', 'true')
+		WHERE workspace = $1 AND name = 'MCP';
 	`, workspaceID)
 	a.NoError(err)
 	// Registered before the assertions below so a failing one cannot leave the
-	// server running on an unreadable profile through teardown, burying the
+	// server running on an invalid MCP setting through teardown, burying the
 	// real failure under unrelated errors.
 	restored := false
 	t.Cleanup(func() {
@@ -330,9 +335,34 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	a.Equal(int64(1), affected, "the workspace profile row must exist for this test to mean anything")
 
 	status, body = postMCP(t, ctl, mcpToken)
-	a.Equal(http.StatusForbidden, status,
+	a.Equal(http.StatusServiceUnavailable, status,
 		"a ceiling that cannot be read must fail closed, not fall back to permitting MCP; %s", body)
-	a.Contains(body, "MCP access is disabled")
+	a.Contains(body, "could not be read")
+	a.NotContains(body, "turned MCP access off")
+
+	// The same row must not take the bootstrap response down with it (BOT-106):
+	// actuator info still answers, with the setting absent rather than guessed,
+	// so the admin repairing the row is not locked out of the app.
+	info, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	a.NoError(err)
+	a.Nil(info.Msg.McpSetting)
+
+	// The same outage refuses a NEW consent as an outage too, never as a
+	// policy: the client is told to retry in its own vocabulary and gets no
+	// code, and no denial row is written — telling a user their admin
+	// disabled MCP during a database blip would send them to an admin with
+	// nothing to fix, and an outage recorded as a denial is a decision nobody
+	// made.
+	consentStatus, consentBody := postOAuth2Consent(t, ctl, ctl.authInterceptor.token,
+		oauth2ConsentForm(registerOAuth2Client(t, ctl), url.Values{"resource": {ctl.rootURL + "/mcp"}, "scope": {"mcp:read-only"}}))
+	a.Equal(http.StatusOK, consentStatus, "an error redirect is a 200 carrying the error")
+	consentCallback := oauth2Callback(t, consentBody)
+	a.Equal("temporarily_unavailable", consentCallback.Query().Get("error"))
+	a.Empty(consentCallback.Query().Get("code"), "an outage must not mint a credential either")
+	var consentDenials int
+	a.NoError(db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM audit_log WHERE payload->>'method' = '/bytebase.mcp.Consent/Approve'`).Scan(&consentDenials))
+	a.Zero(consentDenials)
 
 	// Restoring the row proves the refusal was the unreadable policy and
 	// nothing else: the very same token opens a session again.
@@ -341,7 +371,10 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 
 	session := openMCPSession(ctx, t, ctl, mcpToken)
 	defer session.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "ProjectService/ListProjects", nil))
+	// The probe is a READ method deliberately: the MCP gate serves READ and
+	// WRITE and refuses everything else, so an EXCLUDED probe would answer 403
+	// for a reason that has nothing to do with the ceiling this test is about.
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil))
 }
 
 // TestMCPMigrationTightenedCeilingBitesLiveSession is matrix row 7: tightening
@@ -349,36 +382,35 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 // of an already-open session — no re-auth, no token re-issue, nothing revoked.
 //
 // The ceiling is read live on every /mcp request, which is what makes this
-// admission control rather than a property of session setup. READ_ONLY is the
-// tightening used here because this phase cannot yet clamp per tool, so a
-// ceiling the server cannot apply must refuse the connection instead of
-// silently granting read-write.
+// admission control rather than a property of session setup. DISABLED is the
+// tightening used here because it is the ceiling that refuses the connection
+// itself. Tightening to READ_ONLY bites the same way and at the same moment,
+// but a step further in: the session still opens, and what it may then do
+// narrows per method and per statement — TestMCPReadOnlyTighteningBitesAnOpenSession
+// drives that half, on a session that is already open when the ceiling moves.
 func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 	session := openMCPSession(ctx, t, ctl, mcpToken)
 	defer session.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "ProjectService/ListProjects", nil),
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil),
 		"the session is live under the default ceiling")
 
 	// An admin tightens the ceiling while the session stays open.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_READ_ONLY))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_DISABLED))
 
 	status, body := postMCP(t, ctl, mcpToken)
 	a.Equal(http.StatusForbidden, status,
 		"the same bearer must be refused on its next request after the ceiling tightens; %s", body)
-	a.Contains(body, "MCP access is disabled")
+	a.Contains(body, "turned MCP access off")
 
-	_, err = session.CallTool(ctx, &mcp.CallToolParams{
+	_, err := session.CallTool(ctx, &mcp.CallToolParams{
 		Name:      "call_api",
-		Arguments: map[string]any{"operationId": "ProjectService/ListProjects"},
+		Arguments: map[string]any{"operationId": "WorkspaceService/ListWorkspaces"},
 	})
 	// The cause matters, not just the failure: a bare "some error" would go
 	// green if the session broke for an unrelated reason while the ceiling
@@ -388,8 +420,80 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 
 	// Widening again admits a new session, so the refusal was the ceiling
 	// rather than damage to the session or the grant.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 	restored := openMCPSession(ctx, t, ctl, mcpToken)
 	defer restored.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, restored, "ProjectService/ListProjects", nil))
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, restored, "WorkspaceService/ListWorkspaces", nil))
+}
+
+// TestMCPMembershipRevocationBitesLiveSession pins the property the delegated
+// credential rests on: it carries identity and grant state only, so
+// authorization-relevant state — here workspace membership — is re-resolved
+// against the store on EVERY internal request. Revoking membership bites on
+// the very next tool call with the SAME still-valid bearer: no re-consent, no
+// token expiry, no session restart. If a refactor ever starts trusting the
+// credential for authorization state, this goes red.
+func TestMCPMembershipRevocationBitesLiveSession(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	const memberEmail = "revoked-member@example.com"
+	const memberPassword = "1024bytebase"
+	memberResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "revoked member", Email: memberEmail, Password: memberPassword},
+	}))
+	a.NoError(err)
+	workspace := memberResp.Msg.Workspace
+	member := "user:" + memberEmail
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, workspace, member, "roles/workspaceMember")
+	a.NoError(err)
+	memberLogin, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    memberEmail,
+		Password: memberPassword,
+	}))
+	a.NoError(err)
+
+	mcpToken, _ := mintMCPOAuthToken(t, ctl, memberLogin.Msg.Token)
+	session := openMCPSession(ctx, t, ctl, mcpToken)
+	defer session.Close()
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil),
+		"a member's session serves tool calls")
+
+	setWorkspaceMemberRoles(ctx, t, ctl, workspace, member, nil)
+	a.Equal(http.StatusUnauthorized, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil),
+		"the same credential must stop working the moment membership is revoked")
+
+	// Live in both directions, not a one-way latch: restoring membership
+	// restores service with the unchanged credential.
+	setWorkspaceMemberRoles(ctx, t, ctl, workspace, member, []string{"roles/workspaceMember"})
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil))
+}
+
+// setWorkspaceMemberRoles rewrites the workspace IAM policy so that member holds
+// exactly roles — none, to revoke the membership entirely.
+func setWorkspaceMemberRoles(ctx context.Context, t *testing.T, ctl *controller, workspace, member string, roles []string) {
+	t.Helper()
+	policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{Resource: workspace}))
+	require.NoError(t, err)
+	policy := policyResp.Msg
+	for _, binding := range policy.Bindings {
+		kept := binding.Members[:0]
+		for _, m := range binding.Members {
+			if m != member {
+				kept = append(kept, m)
+			}
+		}
+		binding.Members = kept
+	}
+	for _, role := range roles {
+		policy.Bindings = append(policy.Bindings, &v1pb.Binding{Role: role, Members: []string{member}})
+	}
+	_, err = ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Etag:     policy.Etag,
+		Policy:   policy,
+		Resource: workspace,
+	}))
+	require.NoError(t, err)
 }

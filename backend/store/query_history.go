@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
@@ -14,8 +13,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 type QueryHistoryType string
@@ -56,8 +55,6 @@ type FindQueryHistoryMessage struct {
 	// column, so without a Project filter the rows must be scoped through the
 	// owning project to keep multi-workspace deployments isolated.
 	Workspace string
-	// Instance is the instance resource name like instances/{instance}.
-	Instance *string
 	// Database is database resource name like instances/{instance}/databases/{database}.
 	Database *string
 	Type     *QueryHistoryType
@@ -105,7 +102,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid query history database %q", create.Database)
 	}
-	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, create.Project, nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+	err = s.withDatabaseWrite(ctx, instanceID, databaseName, nil, func(tx *sql.Tx, _ *databaseOwnership) error {
 		return tx.QueryRowContext(ctx, query, args...).Scan(
 			&create.ResourceID,
 			&create.CreatedAt,
@@ -149,16 +146,15 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 	if v := find.Workspace; v != "" {
 		q.And("EXISTS (SELECT 1 FROM project WHERE project.resource_id = query_history.project AND project.workspace = ?)", v)
 	}
-	if v := find.Instance; v != nil {
-		q.And("query_history.database LIKE ?", *v)
-	} else if v := find.Database; v != nil {
+	if v := find.Database; v != nil {
 		q.And("query_history.database = ?", *v)
 	}
 	if v := find.Type; v != nil {
 		q.And("query_history.type = ?", *v)
 	}
 
-	q.Space("ORDER BY created_at DESC")
+	// resource_id breaks created_at ties so offset pages stay stable.
+	q.Space("ORDER BY created_at DESC, resource_id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -231,34 +227,45 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.Errorf("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 
 	parseToSQL := func(variable, value any) (*qb.Query, error) {
+		strValue, ok := value.(string)
+		if !ok {
+			return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
+		}
 		switch variable {
 		case "project":
-			projectID, err := common.GetProjectID(value.(string))
+			projectID, err := common.GetProjectID(strValue)
 			if err != nil {
-				return nil, errors.Errorf("invalid project filter %q", value)
+				return nil, errors.Errorf("invalid project filter %q", strValue)
 			}
 			return qb.Q().Space("query_history.project = ?", projectID), nil
 		case "database":
-			return qb.Q().Space("query_history.database = ?", value.(string)), nil
+			return qb.Q().Space("query_history.database = ?", strValue), nil
 		case "instance":
-			return qb.Q().Space("query_history.database LIKE ?", value.(string)), nil
+			projectID, instanceID, err := common.GetInstanceResourceName(strValue)
+			if err != nil {
+				return nil, errors.Errorf("invalid instance filter %q, expect instances/{instance} or projects/{project}/instances/{instance}", strValue)
+			}
+			// database holds the instance's own name plus /databases/{database},
+			// project-scoped instances included, so an instance matches every
+			// database under it by prefix.
+			instanceName := common.FormatInstance(instanceID)
+			if projectID != nil {
+				instanceName = common.FormatProjectInstance(*projectID, instanceID)
+			}
+			prefix := instanceName + "/" + common.DatabaseIDPrefix
+			return qb.Q().Space("query_history.database LIKE ? ESCAPE '\\'", escapeLikePattern(prefix)+"%"), nil
 		case "type":
-			historyType := QueryHistoryType(value.(string))
-			return qb.Q().Space("query_history.type = ?", historyType), nil
+			return qb.Q().Space("query_history.type = ?", QueryHistoryType(strValue)), nil
 		case "statement":
-			return qb.Q().Space("query_history.statement LIKE ?", value), nil
+			return qb.Q().Space("query_history.statement = ?", strValue), nil
 		default:
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
@@ -311,7 +318,7 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 				// the access-grant `query.contains` search in
 				// GetListAccessGrantFilter.
 				normalizedValue := strings.Join(strings.Fields(strValue), " ")
-				return qb.Q().Space("regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE ?", "%"+normalizedValue+"%"), nil
+				return qb.Q().Space("regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE ? ESCAPE '\\'", containsPattern(normalizedValue)), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}
@@ -335,13 +342,9 @@ func GetListQueryHistoriesCreatorFilter(filter string) (*string, error) {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.Errorf("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	expr := ast.NativeRep().Expr()

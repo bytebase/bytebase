@@ -1,4 +1,4 @@
-import { ChevronLeft, Play, Save, Share2 } from "lucide-react";
+import { ChevronLeft, Save, Share2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useSavedQueryAndTab } from "@/hooks/useSavedQueryAndTab";
-import { cn } from "@/lib/utils";
+import { RUN_QUERY_PRODUCT_INTRO, useProductIntro } from "@/lib/productIntro";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -32,6 +32,7 @@ import { ChooserGroup } from "./ChooserGroup";
 import { ContainerChooser } from "./ContainerChooser";
 import { OpenAIButton } from "./OpenAIButton";
 import { QueryContextSettingPopover } from "./QueryContextSettingPopover";
+import { RunQueryButton } from "./RunQueryButton";
 import { SharePopoverBody } from "./SharePopoverBody";
 
 type Props = {
@@ -39,11 +40,10 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/EditorCommon/EditorAction.vue.
  * Top toolbar in the SQL editor: Run / QueryContextSettingPopover /
  * AdminModeButton / Save / Share / ChooserGroup / OpenAIButton.
  *
- * `onExecute` is optional because `TerminalPanel.vue` mounts the toolbar in
+ * `onExecute` is optional because `TerminalPanel` mounts the toolbar in
  * ADMIN mode where the Run button is not rendered.
  */
 export function EditorAction({ onExecute }: Props) {
@@ -74,7 +74,6 @@ export function EditorAction({ onExecute }: Props) {
     (s) => s.tabsById.get(s.currentTabId)?.connection.table ?? ""
   );
   const isDisconnected = useIsDisconnected();
-  const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
   const project = useSQLEditorEditorState((s) => s.project);
 
   const isAdminMode = tabMode === "ADMIN";
@@ -89,6 +88,13 @@ export function EditorAction({ onExecute }: Props) {
     if (isCosmosDBWithoutContainer) return false;
     return true;
   })();
+
+  useProductIntro({
+    id: RUN_QUERY_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.steps.query-data"),
+    description: t("workspace-setup-guide.descriptions.query-data"),
+    disabled: isAdminMode || !allowQuery,
+  });
 
   const canWriteSheet = (() => {
     if (!tabSavedQuery) return false;
@@ -134,10 +140,6 @@ export function EditorAction({ onExecute }: Props) {
       explain: false,
       selection: currentTab.editorState.selection,
     });
-    useAppStore.getState().saveIntroStateByKey({
-      key: "data.query",
-      newState: true,
-    });
   };
 
   const exitAdminMode = () => {
@@ -157,7 +159,8 @@ export function EditorAction({ onExecute }: Props) {
         {isAdminMode && (
           <Button
             appearance="outline"
-            className="h-8 px-1.5 gap-1 border-dashed text-sm"
+            size="md"
+            className="gap-1 border-dashed"
             onClick={(e) => {
               e.stopPropagation();
               exitAdminMode();
@@ -168,31 +171,22 @@ export function EditorAction({ onExecute }: Props) {
           </Button>
         )}
 
-        {!isAdminMode && (
-          <div className="inline-flex">
-            {isCosmosDBWithoutContainer ? (
+        {!isAdminMode &&
+          (isCosmosDBWithoutContainer ? (
+            <div className="inline-flex">
               <ContainerChooser variant="run" />
-            ) : (
-              <Tooltip content="" side="bottom">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className={cn("h-7 px-1.5 gap-1 rounded-r-none text-sm")}
-                  disabled={!allowQuery}
-                  onClick={handleRunQuery}
-                >
-                  <Play className="size-4 fill-current" />
-                  <span className="inline-flex items-center">
-                    (limit&nbsp;{resultRowsLimit})
-                  </span>
-                </Button>
-              </Tooltip>
-            )}
-            <QueryContextSettingPopover
-              disabled={!showQueryContextSettingPopover}
+              <QueryContextSettingPopover
+                disabled={!showQueryContextSettingPopover}
+              />
+            </div>
+          ) : (
+            <RunQueryButton
+              disabled={!allowQuery}
+              productIntroTarget={RUN_QUERY_PRODUCT_INTRO}
+              settingsDisabled={!showQueryContextSettingPopover}
+              onClick={handleRunQuery}
             />
-          </div>
-        )}
+          ))}
 
         <AdminModeButton size="sm" hideText />
 
@@ -210,7 +204,6 @@ export function EditorAction({ onExecute }: Props) {
               <Button
                 appearance="outline"
                 size="sm"
-                className="h-7 px-1.5"
                 disabled={!allowSave}
                 onClick={handleClickSave}
                 aria-label={t("common.save")}
@@ -232,7 +225,6 @@ export function EditorAction({ onExecute }: Props) {
                     <Button
                       appearance="outline"
                       size="sm"
-                      className="h-7 px-1.5"
                       disabled={!allowShare}
                       aria-label={t("common.share")}
                     >
@@ -250,10 +242,7 @@ export function EditorAction({ onExecute }: Props) {
       </div>
       <div className="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center">
         <ChooserGroup />
-        <OpenAIButton
-          size="sm"
-          statement={currentTab?.selectedStatement || currentTab?.statement}
-        />
+        <OpenAIButton size="sm" />
       </div>
     </div>
   );

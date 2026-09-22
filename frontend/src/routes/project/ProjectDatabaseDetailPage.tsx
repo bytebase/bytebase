@@ -6,10 +6,14 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
 import { TransferProjectSheet } from "@/components/database";
+import { SampleExpirationAlert } from "@/components/SampleExpirationAlert";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  MARK_SENSITIVE_DATA_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+} from "@/lib/productIntro";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -17,7 +21,13 @@ import {
   DatabaseSchema$,
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
-import { autoDatabaseRoute, getDatabaseProject } from "@/utils";
+import {
+  autoDatabaseRoute,
+  getDatabaseEngine,
+  getDatabaseProject,
+  instanceV1MaskingForNoSQL,
+} from "@/utils";
+import { isProjectInstanceDatabase } from "@/utils/v1/database";
 import { DatabaseDetailActions } from "./database-detail/DatabaseDetailActions";
 import { DatabaseDetailHeader } from "./database-detail/DatabaseDetailHeader";
 import { DatabaseCatalogPanel } from "./database-detail/panels/DatabaseCatalogPanel";
@@ -67,8 +77,6 @@ export function ProjectDatabaseDetailPage({
     parseProjectDatabaseDetailTabHash(hash)
   );
   const [showTransferDrawer, setShowTransferDrawer] = useState(false);
-  const [showIncorrectProjectModal, setShowIncorrectProjectModal] =
-    useState(false);
 
   const handleTabChange = useCallback(
     (tab: string | number | null) => {
@@ -92,16 +100,22 @@ export function ProjectDatabaseDetailPage({
   );
 
   useEffect(() => {
-    setSelectedTab(parseProjectDatabaseDetailTabHash(hash));
-  }, [hash]);
+    const tab = parseProjectDatabaseDetailTabHash(hash);
+    if (
+      detail.ready &&
+      tab === PROJECT_DATABASE_DETAIL_TAB_CATALOG &&
+      query?.[PRODUCT_INTRO_QUERY_KEY] === MARK_SENSITIVE_DATA_PRODUCT_INTRO &&
+      instanceV1MaskingForNoSQL(getDatabaseEngine(detail.database))
+    ) {
+      handleTabChange(PROJECT_DATABASE_DETAIL_TAB_OVERVIEW);
+      return;
+    }
+    setSelectedTab(tab);
+  }, [detail.database, detail.ready, handleTabChange, hash, query]);
 
   const handleSetEnvironment = useCallback(() => {
     handleTabChange(PROJECT_DATABASE_DETAIL_TAB_SETTING);
   }, [handleTabChange]);
-
-  const handleSQLEditorFailed = useCallback(() => {
-    setShowIncorrectProjectModal(true);
-  }, []);
 
   const handleTransferProject = useCallback(
     async (projectName: string) => {
@@ -158,9 +172,24 @@ export function ProjectDatabaseDetailPage({
       </div>
     );
   }
+  const isProjectInstance = detail.database
+    ? isProjectInstanceDatabase(detail.database)
+    : false;
 
   return (
     <div className="flex min-h-full flex-col gap-y-4 p-4">
+      <SampleExpirationAlert
+        instanceName={detail.database.instanceResource?.name ?? parent}
+      />
+
+      {isProjectInstance && (
+        <Alert
+          variant="info"
+          title={t("instance.project-bound-title")}
+          description={t("instance.project-bound-description")}
+        />
+      )}
+
       {!detail.database.effectiveEnvironment && (
         <Alert
           variant="warning"
@@ -175,11 +204,10 @@ export function ProjectDatabaseDetailPage({
         />
       )}
 
-      <div className="flex flex-col items-start gap-y-2 xl:flex-row xl:items-center xl:justify-between xl:gap-x-2">
-        <DatabaseDetailHeader
-          database={detail.database}
-          onSQLEditorFailed={handleSQLEditorFailed}
-        />
+      <div className="flex flex-col items-stretch gap-2 xl:flex-row xl:items-center">
+        <div className="min-w-0 xl:w-1/3">
+          <DatabaseDetailHeader database={detail.database} />
+        </div>
         <DatabaseDetailActions
           database={detail.database}
           isDefaultProject={detail.isDefaultProject}
@@ -238,42 +266,14 @@ export function ProjectDatabaseDetailPage({
         </ComponentPermissionGuard>
       )}
 
-      <Dialog
-        open={showIncorrectProjectModal}
-        onOpenChange={setShowIncorrectProjectModal}
-      >
-        <DialogContent className="p-6">
-          <DialogTitle>{t("common.warning")}</DialogTitle>
-          <p className="mt-3 text-sm text-control-light">
-            {t("common.missing-required-permission", {
-              permissions: "bb.sql.select",
-            })}
-          </p>
-          <div className="mt-6 flex justify-end gap-x-2">
-            <Button
-              appearance="outline"
-              onClick={() => setShowIncorrectProjectModal(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={() => {
-                setShowIncorrectProjectModal(false);
-                setShowTransferDrawer(true);
-              }}
-            >
-              {t("database.transfer-project")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <TransferProjectSheet
-        open={showTransferDrawer}
-        databases={[detail.database]}
-        onClose={() => setShowTransferDrawer(false)}
-        onTransfer={handleTransferProject}
-      />
+      {!isProjectInstance && (
+        <TransferProjectSheet
+          open={showTransferDrawer}
+          databases={[detail.database]}
+          onClose={() => setShowTransferDrawer(false)}
+          onTransfer={handleTransferProject}
+        />
+      )}
     </div>
   );
 }

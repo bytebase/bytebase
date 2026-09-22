@@ -38,7 +38,7 @@ export function ExpirationPicker({
       {value && (
         <button
           type="button"
-          className="p-1 rounded-full hover:bg-gray-200 text-control-placeholder shrink-0"
+          className="p-1 rounded-full hover:bg-control-bg-hover text-control-placeholder shrink-0"
           onClick={() => onChange(undefined)}
           title={t("common.clear")}
         >

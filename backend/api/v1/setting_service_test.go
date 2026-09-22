@@ -16,6 +16,7 @@ import (
 )
 
 func TestValidateDomains(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 
 	testCases := []struct {
@@ -63,6 +64,7 @@ func TestValidateDomains(t *testing.T) {
 }
 
 func TestValidateApprovalTemplate(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name     string
 		template *v1pb.ApprovalTemplate
@@ -107,6 +109,7 @@ func TestValidateApprovalTemplate(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateApprovalTemplate(tc.template)
 			if tc.wantErr {
 				require.Error(t, err)
@@ -175,6 +178,7 @@ func colorWithAlpha(red, green, blue, alpha float32) *colorpb.Color {
 }
 
 func TestValidateAnnouncementTheme(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name    string
 		theme   *storepb.WorkspaceProfileSetting_Announcement_AnnouncementTheme
@@ -189,6 +193,7 @@ func TestValidateAnnouncementTheme(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateAnnouncementTheme(tc.theme)
 			if tc.wantErr {
 				require.Error(t, err)
@@ -200,20 +205,22 @@ func TestValidateAnnouncementTheme(t *testing.T) {
 }
 
 func TestValidateMCPCapability(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name       string
-		capability storepb.WorkspaceProfileSetting_MCPCapability
+		capability storepb.MCPSetting_Capability
 		wantErr    bool
 	}{
-		{"unspecified rejected", storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, true},
-		{"disabled", storepb.WorkspaceProfileSetting_DISABLED, false},
-		{"read only", storepb.WorkspaceProfileSetting_READ_ONLY, false},
-		{"read write", storepb.WorkspaceProfileSetting_READ_WRITE, false},
-		{"reserved value rejected", storepb.WorkspaceProfileSetting_MCPCapability(2), true},
-		{"unknown value rejected", storepb.WorkspaceProfileSetting_MCPCapability(99), true},
+		{"unspecified rejected", storepb.MCPSetting_CAPABILITY_UNSPECIFIED, true},
+		{"disabled", storepb.MCPSetting_DISABLED, false},
+		{"read only", storepb.MCPSetting_READ_ONLY, false},
+		{"read write", storepb.MCPSetting_READ_WRITE, false},
+		{"reserved value rejected", storepb.MCPSetting_Capability(2), true},
+		{"unknown value rejected", storepb.MCPSetting_Capability(99), true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateMCPCapability(tc.capability)
 			if tc.wantErr {
 				require.Error(t, err)
@@ -261,6 +268,7 @@ func TestValidateEnvironmentsColor(t *testing.T) {
 // stdout) are rejected in SaaS mode: on a shared replica they would let one
 // workspace admin change process-wide behavior affecting other workspaces.
 func TestPreflightWorkspaceProfileSaaSRestrictedPaths(t *testing.T) {
+	t.Parallel()
 	newRequest := func(path string) *connect.Request[v1pb.UpdateSettingRequest] {
 		return connect.NewRequest(&v1pb.UpdateSettingRequest{
 			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{path}},
@@ -281,4 +289,62 @@ func TestPreflightWorkspaceProfileSaaSRestrictedPaths(t *testing.T) {
 		err = selfHosted.preflightWorkspaceProfilePaths(context.Background(), "ws", newRequest(path), &storepb.WorkspaceProfileSetting{})
 		require.NoError(t, err, path)
 	}
+}
+
+// TestMergeAppIMSetting covers the second T15 site: saving one provider used to
+// assign the request wholesale over the stored setting, erasing every provider
+// it left out.
+func TestMergeAppIMSetting(t *testing.T) {
+	stored := func() *storepb.AppIMSetting {
+		return &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{
+			{
+				Type:    storepb.WebhookType_SLACK,
+				Payload: &storepb.AppIMSetting_IMSetting_Slack{Slack: &storepb.AppIMSetting_Slack{Token: "slack-token"}},
+			},
+			{
+				Type:    storepb.WebhookType_FEISHU,
+				Payload: &storepb.AppIMSetting_IMSetting_Feishu{Feishu: &storepb.AppIMSetting_Feishu{AppSecret: "feishu-secret"}},
+			},
+		}}
+	}
+	feishuSecret := func(s *storepb.AppIMSetting) string {
+		return findIMSetting(s.GetSettings(), storepb.WebhookType_FEISHU).GetFeishu().GetAppSecret()
+	}
+
+	t.Run("saving one provider leaves the others alone", func(t *testing.T) {
+		payload := &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{{
+			Type:    storepb.WebhookType_SLACK,
+			Payload: &storepb.AppIMSetting_IMSetting_Slack{Slack: &storepb.AppIMSetting_Slack{Token: "new-token"}},
+		}}}
+		merged, err := mergeAppIMSetting(stored(), payload, []string{"value.app_im.slack"})
+		require.NoError(t, err)
+		require.Equal(t, "new-token", findIMSetting(merged.GetSettings(), storepb.WebhookType_SLACK).GetSlack().GetToken())
+		require.Equal(t, "feishu-secret", feishuSecret(merged))
+	})
+
+	t.Run("a masked provider the payload omits is removed", func(t *testing.T) {
+		merged, err := mergeAppIMSetting(stored(), &storepb.AppIMSetting{}, []string{"value.app_im.slack"})
+		require.NoError(t, err)
+		require.Nil(t, findIMSetting(merged.GetSettings(), storepb.WebhookType_SLACK))
+		require.Equal(t, "feishu-secret", feishuSecret(merged))
+	})
+
+	t.Run("adding a provider that is not configured yet", func(t *testing.T) {
+		payload := &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{{
+			Type:    storepb.WebhookType_TEAMS,
+			Payload: &storepb.AppIMSetting_IMSetting_Teams{Teams: &storepb.AppIMSetting_Teams{TenantId: "tenant"}},
+		}}}
+		merged, err := mergeAppIMSetting(stored(), payload, []string{"value.app_im_setting_value.teams"})
+		require.NoError(t, err)
+		require.Equal(t, "tenant", findIMSetting(merged.GetSettings(), storepb.WebhookType_TEAMS).GetTeams().GetTenantId())
+		require.Len(t, merged.GetSettings(), 3)
+	})
+
+	t.Run("unknown path, and the stored value is never mutated", func(t *testing.T) {
+		before := stored()
+		_, err := mergeAppIMSetting(before, &storepb.AppIMSetting{}, []string{"value.app_im.mattermost"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.Equal(t, "feishu-secret", feishuSecret(before))
+	})
 }

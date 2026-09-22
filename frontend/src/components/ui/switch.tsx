@@ -28,6 +28,19 @@ interface SwitchProps {
   disabled?: boolean;
   className?: string;
   size?: SwitchSize;
+  /**
+   * Accessible name for the control. A switch renders no text of its own, so
+   * without this — or a `<label>` wrapping it — assistive technology announces
+   * an unnamed switch and the person cannot tell which setting they are
+   * toggling. Pass it whenever the visible title sits in a sibling element.
+   *
+   * `id` alone does not substitute: Base UI renders the switch as a `<span>`,
+   * and `<label for>` cannot name a span.
+   */
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
+  "aria-describedby"?: string;
+  id?: string;
 }
 
 function Switch({
@@ -36,6 +49,10 @@ function Switch({
   disabled,
   className,
   size = "md",
+  id,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
+  "aria-describedby": ariaDescribedBy,
 }: SwitchProps) {
   const sizeClasses = SWITCH_SIZES[size];
 
@@ -44,6 +61,10 @@ function Switch({
       checked={checked}
       onCheckedChange={onCheckedChange}
       disabled={disabled}
+      id={id}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
+      aria-describedby={ariaDescribedBy}
       className={cn(
         "relative inline-flex cursor-pointer items-center rounded-full transition-colors",
         sizeClasses.root,
@@ -52,7 +73,11 @@ function Switch({
         // the off state into a colored fill. Checked uses the accent.
         "bg-control/30 data-[checked]:bg-accent",
         "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
-        "disabled:cursor-not-allowed disabled:opacity-50",
+        // Base UI renders the root as a span and exposes disabled state through
+        // `data-disabled`, so native `:disabled` selectors do not apply here.
+        // Preserve the checked state with a muted accent while making the
+        // locked control visually subordinate.
+        "data-disabled:cursor-not-allowed data-disabled:data-[checked]:bg-accent/50 data-disabled:not-data-[checked]:opacity-50 data-disabled:[&>span]:bg-control-bg",
         className
       )}
     >

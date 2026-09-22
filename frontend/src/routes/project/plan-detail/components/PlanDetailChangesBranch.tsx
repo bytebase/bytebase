@@ -66,6 +66,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useOnKeyChange } from "@/hooks/useOnKeyChange";
@@ -147,16 +155,11 @@ import { PlanDetailDraftChecks } from "./PlanDetailDraftChecks";
 import { PlanDetailStatementSection } from "./PlanDetailStatementSection";
 import { PlanDetailTabItem, PlanDetailTabStrip } from "./PlanDetailTabStrip";
 import { PlanTargetDisplay } from "./PlanTargetDisplay";
+import { usePlacedUnresolvedThreadCounts } from "./threads/useUnresolvedThreadCounts";
 
 const DEFAULT_VISIBLE_TARGETS = 20;
 const DATABASE_GROUP_VISIBLE_DATABASES = 3;
 const EMPTY_SELECT_VALUE = "__empty__";
-
-// Shared hover/focus recipe for the square icon buttons on the tab strip
-// (the per-tab actions menu and the add-change button). Callers append their
-// own size and corner radius.
-const ICON_ACTION_CLASS =
-  "inline-flex cursor-pointer items-center justify-center text-control-light outline-hidden transition-colors hover:bg-control-bg hover:text-control focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50";
 
 const pushSpecDetailRoute = (
   projectId: string,
@@ -202,6 +205,10 @@ export function PlanDetailChangesBranch({
   const page = usePlanDetailContext();
   const { patchState } = page;
   const currentUser = useCurrentUser();
+  const unresolvedThreadsBySpec = usePlacedUnresolvedThreadCounts(
+    page.issue?.name,
+    page.plan.specs
+  );
   // subscribe to re-render on project cache change
   const projectsByName = useAppStore((s) => s.projectsByName);
   void projectsByName;
@@ -302,6 +309,10 @@ export function PlanDetailChangesBranch({
 
   const selectSpec = useCallback(
     (specId: string) => {
+      if (specId === pendingNewSpec?.id) {
+        setIsPendingSelected(true);
+        return;
+      }
       if (page.isCreating) {
         // No URL drives the selection during plan creation.
         onSelectedSpecIdChange(specId);
@@ -312,7 +323,13 @@ export function PlanDetailChangesBranch({
       // confirm dialog when the navigation is cancelled.
       void pushSpecDetailRoute(page.projectId, page.planId, specId);
     },
-    [onSelectedSpecIdChange, page.isCreating, page.planId, page.projectId]
+    [
+      onSelectedSpecIdChange,
+      page.isCreating,
+      page.planId,
+      page.projectId,
+      pendingNewSpec?.id,
+    ]
   );
 
   const handleSpecCreate = async (targets: string[]) => {
@@ -546,7 +563,7 @@ export function PlanDetailChangesBranch({
 
   if (!selectedSpec) {
     return (
-      <div className="rounded-md border bg-white px-4 py-3 text-sm text-control-light">
+      <div className="rounded-sm border bg-background px-4 py-3 text-sm text-control-light">
         {t("common.no-data")}
       </div>
     );
@@ -574,10 +591,7 @@ export function PlanDetailChangesBranch({
             >
               <Button
                 aria-label={t("plan.add-spec")}
-                className={cn(
-                  ICON_ACTION_CLASS,
-                  "size-7 rounded-md p-0 [touch-action:manipulation]"
-                )}
+                className="text-control-light hover:text-control [touch-action:manipulation]"
                 disabled={Boolean(pendingNewSpec)}
                 onClick={() => setShowAddSpecSheet(true)}
                 size="sm"
@@ -592,6 +606,7 @@ export function PlanDetailChangesBranch({
         {visibleSpecs.map((spec, index) => {
           const isSelected = selectedSpec.id === spec.id;
           const isPending = pendingNewSpec?.id === spec.id;
+          const unresolvedCount = unresolvedThreadsBySpec.get(spec.id) ?? 0;
           const reference = derivePlanChangeReference({
             index,
             resources: changeReferenceResources,
@@ -607,12 +622,7 @@ export function PlanDetailChangesBranch({
               action={
                 canModifySpecs && visibleSpecs.length > 1 ? (
                   <DropdownMenu>
-                    <DropdownMenuTrigger
-                      className={cn(
-                        ICON_ACTION_CLASS,
-                        "mr-2 size-6 shrink-0 rounded-xs"
-                      )}
-                    >
+                    <DropdownMenuTrigger className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-xs text-control-light outline-hidden transition-colors hover:bg-control-bg hover:text-control focus-visible:ring-2 focus-visible:ring-accent">
                       <EllipsisVertical className="size-3.5" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
@@ -635,29 +645,27 @@ export function PlanDetailChangesBranch({
                   </DropdownMenu>
                 ) : undefined
               }
-              onSelect={() => {
-                if (isPending) {
-                  // Draft has no backend URL — only update local selection.
-                  setIsPendingSelected(true);
-                  return;
-                }
-                // Don't clear isPendingSelected here — if a leave-confirm
-                // dialog intercepts the navigation, we want the draft to
-                // stay visible behind the dialog. The URL-sync effect
-                // below clears it once selectedSpecId actually changes.
-                selectSpec(spec.id);
-              }}
+              onSelect={() => selectSpec(spec.id)}
               selected={isSelected}
             >
               <PlanChangeReference
                 ariaHidden
-                className={cn(
-                  "text-sm font-medium transition-colors",
-                  isSelected ? "" : "text-control-light hover:text-control"
-                )}
+                className={isSelected ? undefined : "text-control-light"}
                 density="tab"
                 reference={reference}
               />
+              {unresolvedCount > 0 && (
+                <Badge
+                  className="h-5 min-w-5 shrink-0 justify-center px-1.5 py-0 text-xs tabular-nums"
+                  data-testid="spec-unresolved-threads"
+                  title={t("plan.summary.n-unresolved-threads", {
+                    count: unresolvedCount,
+                  })}
+                  variant="secondary"
+                >
+                  {unresolvedCount}
+                </Badge>
+              )}
             </PlanDetailTabItem>
           );
         })}
@@ -1471,21 +1479,21 @@ function TargetsSection({
               isValidDatabaseName(target) ? (
                 <div
                   key={target}
-                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
+                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border px-2 py-1"
                 >
                   <PlanTargetDisplay showEnvironment target={target} />
                 </div>
               ) : isValidDatabaseGroupName(target) ? (
                 <div
                   key={target}
-                  className="min-w-0 max-w-full rounded-lg border px-2 py-1"
+                  className="min-w-0 max-w-full rounded-sm border px-2 py-1"
                 >
                   <DatabaseGroupTarget className="py-1" target={target} />
                 </div>
               ) : (
                 <div
                   key={target}
-                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
+                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border px-2 py-1"
                 >
                   <span className="truncate text-sm text-control-placeholder">
                     {target}
@@ -1535,7 +1543,7 @@ function TargetsSection({
                   {filteredTargets.map((target) => (
                     <div
                       key={target}
-                      className="w-full rounded-lg border px-2 py-1.5"
+                      className="w-full rounded-sm border px-2 py-1.5"
                     >
                       {isValidDatabaseName(target) ? (
                         <PlanTargetDisplay showEnvironment target={target} />
@@ -1611,7 +1619,7 @@ function TargetSelectorSheet({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="w-screen sm:w-[80vw]" width="wide">
+      <SheetContent width="workspace">
         <SheetHeader>
           <SheetTitle>{title ?? t("plan.select-targets")}</SheetTitle>
         </SheetHeader>
@@ -1672,7 +1680,9 @@ function DatabaseAndGroupSelector({
   return (
     <div className="flex flex-col gap-y-3">
       <div className="flex border-b border-control-border">
-        <button
+        <Button
+          appearance="secondary"
+          size="md"
           type="button"
           className={cn(
             "border-b-2 -mb-px px-4 py-2 text-sm font-medium transition-colors",
@@ -1686,8 +1696,10 @@ function DatabaseAndGroupSelector({
             <DatabaseIcon className="size-4" />
             {t("common.databases")}
           </span>
-        </button>
-        <button
+        </Button>
+        <Button
+          appearance="secondary"
+          size="md"
           type="button"
           className={cn(
             "border-b-2 -mb-px px-4 py-2 text-sm font-medium transition-colors",
@@ -1701,7 +1713,7 @@ function DatabaseAndGroupSelector({
             <FolderTree className="size-4" />
             {t("common.database-group")}
           </span>
-        </button>
+        </Button>
       </div>
 
       {changeSource === "DATABASE" ? (
@@ -1806,10 +1818,10 @@ function DatabaseSelector({
         </div>
       ) : (
         <>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-control-light">
-                <th className="w-8 py-2 pr-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
                   <Checkbox
                     checked={someSelected ? "indeterminate" : allSelected}
                     onCheckedChange={() =>
@@ -1820,63 +1832,57 @@ function DatabaseSelector({
                       )
                     }
                   />
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.database")}
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.instance")}
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.environment")}
-                </th>
-                <th className="py-2 pr-4 font-medium whitespace-nowrap">
+                </TableHead>
+                <TableHead>{t("common.database")}</TableHead>
+                <TableHead>{t("common.instance")}</TableHead>
+                <TableHead>{t("common.environment")}</TableHead>
+                <TableHead className="whitespace-nowrap">
                   {t("common.status")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody striped={false}>
               {databases.map((db) => {
                 const { databaseName } = extractDatabaseResourceName(db.name);
                 const inst = getInstanceResource(db);
                 const env = getDatabaseEnvironment(db);
                 const isSelected = selectedNames.has(db.name);
                 return (
-                  <tr
+                  <TableRow
                     key={db.name}
                     className={cn(
-                      "cursor-pointer border-b hover:bg-control-bg",
+                      "cursor-pointer",
                       isSelected && "bg-accent/5"
                     )}
                     onClick={() => toggleDatabase(db.name)}
                   >
-                    <td className="py-2 pr-2">
+                    <TableCell className="py-2">
                       <Checkbox checked={isSelected} />
-                    </td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell className="py-2">
                       <div className="flex items-center gap-x-1.5">
                         {inst && (
                           <EngineIcon engine={inst.engine} className="size-4" />
                         )}
                         <span>{databaseName}</span>
                       </div>
-                    </td>
-                    <td className="py-2 pr-4">{inst?.title}</td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell className="py-2">{inst?.title}</TableCell>
+                    <TableCell className="py-2">
                       {env && <EnvironmentLabel environmentName={env.name} />}
-                    </td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell className="py-2">
                       {db.syncStatus === SyncStatus.FAILED ? (
                         <XCircle className="size-4 text-error" />
                       ) : (
                         <CheckCircle className="size-4 text-success" />
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           {hasMore && (
             <div className="flex justify-center">
               <Button
@@ -1939,43 +1945,38 @@ function DatabaseGroupSelector({
       onValueChange={(value) => onSelectedGroupChange(String(value))}
       className="block"
     >
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="w-8 py-2 pr-2" />
-            <th className="py-2 pr-4 font-medium">
-              {t("common.database-group")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-10" />
+            <TableHead>{t("common.database-group")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody striped={false}>
           {groups.map((group) => {
             const isSelected = selectedGroup === group.name;
             return (
-              <tr
+              <TableRow
                 key={group.name}
-                className={cn(
-                  "cursor-pointer border-b hover:bg-control-bg",
-                  isSelected && "bg-accent/5"
-                )}
+                className={cn("cursor-pointer", isSelected && "bg-accent/5")}
                 onClick={() =>
                   onSelectedGroupChange(isSelected ? undefined : group.name)
                 }
               >
-                <td className="py-2 pr-2">
+                <TableCell className="py-2">
                   <RadioGroupItem value={group.name} aria-label={group.title} />
-                </td>
-                <td className="py-2 pr-4">
+                </TableCell>
+                <TableCell className="py-2">
                   <div className="flex items-center gap-x-1.5">
                     <FolderTree className="size-4 shrink-0 text-control-light" />
                     <span>{group.title}</span>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </RadioGroup>
   );
 }
@@ -2074,7 +2075,7 @@ export function DatabaseGroupTarget({
           {inlineDatabases.map((database) => (
             <div
               key={database.name}
-              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
+              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border bg-control-bg/50 px-2 py-1 transition-all"
             >
               <PlanTargetDisplay showEnvironment target={database.name} />
             </div>
@@ -2084,7 +2085,7 @@ export function DatabaseGroupTarget({
               <PopoverTrigger
                 render={
                   <Button
-                    className="h-6 px-1.5 text-xs text-accent hover:bg-accent/10 hover:text-accent"
+                    className="text-accent hover:bg-accent/10 hover:text-accent"
                     size="xs"
                     type="button"
                     appearance="secondary"

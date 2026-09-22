@@ -6,15 +6,16 @@ import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import {
   AUTH_MFA_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
-  AUTH_PROFILE_SETUP_MODULE,
+  AUTH_SETUP_MODULE,
   AUTH_SIGNIN_MODULE,
-  SETUP_MODULE,
+  WORKSPACE_ROUTE_LANDING,
 } from "@/app/router/handles";
 import {
   navigateByName,
   navigateToPath,
   resolvePath,
 } from "@/app/router/navigation";
+import { saveWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
 import {
   LoginRequestSchema,
   SendEmailLoginCodeRequestSchema,
@@ -41,20 +42,8 @@ function readResetPassword(email: string): boolean {
   }
 }
 
-/**
- * Returns true if the user should be prompted to set up their profile.
- * First-time login with an auto-generated name (email local-part or full
- * email). Ported verbatim from the legacy Pinia auth store.
- */
-function needsProfileSetup(user: User): boolean {
-  if (user.profile?.lastLoginTime) return false;
-  const name = user.title;
-  const email = user.email;
-  if (!name || !email) return false;
-  if (name === email) return true;
-  const atIndex = email.indexOf("@");
-  if (atIndex > 0 && name === email.substring(0, atIndex)) return true;
-  return false;
+function isFirstLogin(user: User): boolean {
+  return !user.profile?.lastLoginTime;
 }
 
 export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
@@ -76,7 +65,7 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
 
   fetchAuthenticationInfo: async (workspace) => {
     try {
-      const info = await authServiceClientConnect.getAuthenticationRestriction({
+      const info = await authServiceClientConnect.getAuthenticationInfo({
         workspace: workspace ?? get().currentUser?.workspace ?? "",
       });
       set({ authenticationInfo: info });
@@ -141,17 +130,23 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     return request;
   },
 
-  // Force re-fetch (mirrors the Pinia `fetchCurrentUser`, which always hits
-  // the server — login/signup need the fresh authenticated user).
-  fetchCurrentUser: async () => {
+  // Force re-fetch: always hits the server — login/signup need the fresh
+  // authenticated user.
+  fetchCurrentUser: async (silent = false) => {
     try {
-      const user = await userServiceClientConnect.getCurrentUser({});
+      const user = await userServiceClientConnect.getCurrentUser(
+        {},
+        { contextValues: createContextValues().set(silentContextKey, silent) }
+      );
       set({ currentUser: user, currentUserName: user.name });
       return user;
     } catch {
       return undefined;
     }
   },
+
+  setCurrentUser: (user) =>
+    set({ currentUser: user, currentUserName: user.name }),
 
   // sometimes we have to redirect users even if we don't want to redirect them.
   // for example, the user is forced to reset their password,
@@ -168,7 +163,8 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     const redirectQuery = new URLSearchParams(window.location.search).get(
       "redirect"
     );
-    const nextPage = redirectUrl ?? (redirectQuery || "/");
+    const explicitRedirect = redirectUrl ?? redirectQuery;
+    const nextPage = explicitRedirect || "/";
     if (resp.mfaTempToken) {
       set({ unauthenticatedOccurred: false });
       navigateByName(AUTH_MFA_MODULE, {
@@ -203,10 +199,21 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       });
       return;
     }
-    if (get().isSaaSMode() && resp.user && needsProfileSetup(resp.user)) {
-      navigateByName(AUTH_PROFILE_SETUP_MODULE, {
-        query: { redirect: nextPage },
-      });
+    if (resp.user && isFirstLogin(resp.user)) {
+      set({ workspacePolicy: undefined });
+      await get()
+        .fetchWorkspaceIamPolicy(true)
+        .catch(() => undefined);
+      if (get().enableOnboarding()) {
+        if (get().isSaaSMode()) {
+          saveWorkspaceSetupFinished(user?.workspace ?? "", false);
+        }
+        navigateByName(AUTH_SETUP_MODULE, {
+          query: { redirect: nextPage },
+        });
+      } else {
+        navigateToPath(nextPage, { replace: true });
+      }
       return;
     }
     if (redirect) {
@@ -232,20 +239,31 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     }
 
     await get().fetchServerInfo();
-    // See `login()`. Loaded above the onboarding branch because `SetupPage`
-    // reads the change mode too, and its skip button navigates to "/".
-    await get().loadWorkspaceProfile(true);
+    set({ workspacePolicy: undefined });
+    await Promise.all([
+      get().loadWorkspaceProfile(true),
+      get()
+        .fetchWorkspaceIamPolicy(true)
+        .catch(() => undefined),
+    ]);
     set({ authSessionKey: uniqueId() });
 
     if (get().enableOnboarding()) {
-      navigateByName(SETUP_MODULE, { replace: true });
+      if (get().isSaaSMode()) {
+        saveWorkspaceSetupFinished(user?.workspace ?? "", false);
+      }
+      navigateByName(AUTH_SETUP_MODULE, { replace: true });
       return;
     }
 
     const redirectQuery = new URLSearchParams(window.location.search).get(
       "redirect"
     );
-    navigateToPath(redirectQuery || "/", { replace: true });
+    if (redirectQuery) {
+      navigateToPath(redirectQuery, { replace: true });
+      return;
+    }
+    navigateByName(WORKSPACE_ROUTE_LANDING, { replace: true });
   },
 
   logout: async () => {

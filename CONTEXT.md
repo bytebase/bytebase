@@ -28,6 +28,10 @@ _Avoid_: Project instance, unassigned instance
 An instance owned by exactly one project. Every database it contains belongs to that same project.
 _Avoid_: Workspace instance, shared instance
 
+**Sample Project Instance**:
+A Project Instance provided by Bytebase Cloud for temporary evaluation. It is an aggregate comprising one Project Instance and its one dedicated database and login role on Bytebase's shared, dedicated Cloud SQL PostgreSQL instance. Each Workspace has one lifetime entitlement. Seven-day eligibility begins only when the aggregate is ready; physical cleanup removes the backing database and role while retaining Bytebase metadata.
+_Avoid_: Sample instance, sample database, shared instance
+
 **Database**:
 A named database inside an instance that Bytebase tracks and assigns to a project. In a project instance, it belongs to the instance's project; in a workspace instance, it may be assigned independently.
 _Avoid_: Instance, schema
@@ -71,6 +75,14 @@ _Avoid_: Plan, rollout, issue
 **Changelog**:
 The recorded history of a database migration after execution. It is evidence that a change ran, not the proposed change itself.
 _Avoid_: Change request, release
+
+**Work Queue Surface**:
+A list surface read to decide what needs attention now, such as the issue, plan, and release lists. The primary time question on a work queue is freshness.
+_Avoid_: History view, feed, dashboard
+
+**History View Surface**:
+A surface read as a record of what already happened, such as the audit log, database changelog, revisions, and task-run history. The primary time question on a history view is exactly when something happened.
+_Avoid_: Work queue, activity feed
 
 **Composite Type**:
 A PostgreSQL-family standalone named row type (`CREATE TYPE x AS (...)`, `pg_type.typtype = 'c'` excluding table row types). Distinct from enums, domains, ranges, Oracle object types, and SQL Server table/alias types — each is its own concept with its own name.

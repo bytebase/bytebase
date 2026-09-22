@@ -107,6 +107,105 @@ func TestValidateQuery(t *testing.T) {
 			valid:       true,
 			description: "CTE-prefixed SELECT is read-only",
 		},
+		{
+			statement:   "SELECT EXTRACT(YEAR FROM MONTHS_ADD(NOW(), -1))",
+			valid:       true,
+			description: "EXTRACT(unit FROM expr) is read-only",
+		},
+		{
+			statement: `SELECT EXTRACT(
+  YEAR
+  FROM
+    MONTHS_ADD(NOW(), -1)
+)`,
+			valid:       true,
+			description: "Multi-line EXTRACT is read-only",
+		},
+		{
+			statement:   "WITH c AS (SELECT EXTRACT(MONTH FROM created_at) m FROM t) SELECT * FROM c",
+			valid:       true,
+			description: "EXTRACT inside a CTE body is read-only",
+		},
+		{
+			statement:   "SELECT TRIM(s), LEFT(s, 2), RIGHT(s, 2), IF(a, 1, 2) FROM t",
+			valid:       true,
+			description: "Reserved keywords used as function names are read-only",
+		},
+		{
+			statement:   "SELECT DATABASE()",
+			valid:       true,
+			description: "DATABASE() is read-only",
+		},
+		{
+			statement:   "SELECT CURRENT_TIMESTAMP(3)",
+			valid:       true,
+			description: "Datetime function with precision is read-only",
+		},
+		{
+			statement:   "SELECT @@version_comment, @@session.query_timeout, @uservar",
+			valid:       true,
+			description: "Session and user variables are read-only",
+		},
+		{
+			statement:   "SELECT [1, 2, 3], {'a': 1}, x'1f', b'101'",
+			valid:       true,
+			description: "Array, map, hex and bit literals are read-only",
+		},
+		{
+			statement:   "SELECT array_map(x -> x + 1, arr) FROM t",
+			valid:       true,
+			description: "Lambda in a higher-order array function is read-only",
+		},
+		{
+			statement:   "SELECT /*+ SET_VAR(query_timeout = 100) */ a FROM t",
+			valid:       true,
+			description: "Statement with an optimizer hint is read-only",
+		},
+		{
+			statement:   "SELECT a, SUM(b) FROM t GROUP BY CUBE(a)",
+			valid:       true,
+			description: "GROUP BY CUBE is read-only",
+		},
+		{
+			statement:   "SELECT CONVERT(s USING utf8), CONVERT(s, SIGNED), BINARY s FROM t",
+			valid:       true,
+			description: "CONVERT and BINARY forms are read-only",
+		},
+		{
+			statement:   "(SELECT 1) LIMIT 1",
+			valid:       true,
+			description: "Parenthesized query with trailing LIMIT is read-only",
+		},
+		{
+			statement:   "(SELECT 1 LIMIT 1) LIMIT 2",
+			valid:       true,
+			description: "GroupedQuery wrapper (repeated clause groups) is read-only",
+		},
+		{
+			statement:   "SELECT 1 LIMIT 5 ORDER BY 1",
+			valid:       true,
+			description: "Engine-lenient clause order wraps in GroupedQuery, still read-only",
+		},
+		{
+			statement:   "(WITH c AS (SELECT 1) SELECT * FROM c)",
+			valid:       true,
+			description: "Parenthesized WITH group (CTE scope boundary) is read-only",
+		},
+		{
+			statement:   "SELECT 1 UNION (SELECT 2) LIMIT 5",
+			valid:       true,
+			description: "Set operation with parenthesized operand and trailing LIMIT is read-only",
+		},
+		{
+			statement:   "EXPLAIN (SELECT 1)",
+			valid:       true,
+			description: "EXPLAIN over a parenthesized query is read-only",
+		},
+		{
+			statement:   "EXPLAIN (SELECT 1 LIMIT 1) LIMIT 2",
+			valid:       true,
+			description: "EXPLAIN over a grouped query is read-only",
+		},
 	}
 
 	for _, tc := range tests {
@@ -139,6 +238,10 @@ func TestValidateQuery(t *testing.T) {
 			description: "CTE-prefixed DELETE must be rejected",
 		},
 		{
+			statement:   "WITH c AS (SELECT 1) INSERT INTO t SELECT * FROM c",
+			description: "CTE-prefixed INSERT must be rejected",
+		},
+		{
 			statement:   "SELECT a > (select max(a) from t1) FROM",
 			description: "Truncated SELECT must be rejected as syntax error",
 		},
@@ -160,6 +263,13 @@ func TestValidateQuery(t *testing.T) {
 			// EXPLAIN over DDL is not a real read-only operation.
 			statement:   "EXPLAIN DROP TABLE t",
 			description: "EXPLAIN over DDL must be rejected",
+		},
+		{
+			// Strict parsing (BYT-10085): a valid prefix followed by junk no
+			// longer silently truncates — it is a syntax error. Before the
+			// fix this parsed as `SELECT a FROM t` and ran.
+			statement:   "SELECT a FROM t xx yy zz",
+			description: "Trailing junk after a valid prefix must be rejected",
 		},
 	}
 	for _, tc := range rejectCases {

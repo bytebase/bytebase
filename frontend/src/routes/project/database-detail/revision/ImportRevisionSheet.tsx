@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Sheet,
   SheetBody,
   SheetContent,
@@ -27,6 +34,14 @@ import {
   StepIndicator,
   type StepIndicatorStep,
 } from "@/components/ui/step-indicator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -368,7 +383,7 @@ export function ImportRevisionSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent width="wide" className="max-w-[90vw]">
+      <SheetContent width="large">
         <SheetHeader>
           <SheetTitle>{t("database.revision.import-revision")}</SheetTitle>
         </SheetHeader>
@@ -570,17 +585,19 @@ function SourceOption({
   onSelect: (source: "release" | "local") => void;
 }) {
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="md"
       type="button"
       role="radio"
       aria-checked={selected}
       className={cn(
-        "w-full rounded-sm border border-control-border p-4 text-left transition-colors",
+        "h-auto w-full items-start justify-start rounded-sm border border-control-border p-4 text-left whitespace-normal transition-colors",
         selected && "border-accent bg-control-bg"
       )}
       onClick={() => onSelect(value)}
     >
-      <div className="flex items-start gap-x-3">
+      <div className="flex w-full min-w-0 items-start gap-x-3">
         <span
           className={cn(
             "mt-1 flex size-4 items-center justify-center rounded-full border border-control-border",
@@ -588,12 +605,16 @@ function SourceOption({
           )}
         />
         {icon}
-        <div className="flex-1">
-          <div className="text-lg font-medium text-control">{title}</div>
-          <p className="mt-1 text-sm text-control-light">{description}</p>
+        <div className="min-w-0 flex-1">
+          <div className="break-words text-lg font-medium text-control">
+            {title}
+          </div>
+          <p className="mt-1 break-words text-sm text-control-light">
+            {description}
+          </p>
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -633,33 +654,35 @@ function ReleaseSelector({
         }}
         className="block overflow-x-auto rounded-sm border border-control-border"
       >
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-control-border bg-control-bg text-left">
-              <th className="w-10 px-4 py-2" />
-              <th className="px-4 py-2 font-medium">{t("common.name")}</th>
-              <th className="px-4 py-2 font-medium">{t("release.files")}</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader className="bg-control-bg">
+            <TableRow>
+              <TableHead className="w-10" />
+              <TableHead>{t("common.name")}</TableHead>
+              <TableHead>{t("release.files")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody striped={false}>
             {releases.map((release) => (
-              <tr
+              <TableRow
                 key={release.name}
-                className="cursor-pointer border-b border-control-border last:border-b-0 hover:bg-control-bg"
+                className="cursor-pointer"
                 onClick={() => onSelectedReleaseChange(release)}
               >
-                <td className="px-4 py-2">
+                <TableCell className="py-2">
                   <RadioGroupItem
                     value={release.name}
                     aria-label={release.name.split("/").pop()}
                   />
-                </td>
-                <td className="px-4 py-2">{release.name.split("/").pop()}</td>
-                <td className="px-4 py-2">{release.files.length}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="py-2">
+                  {release.name.split("/").pop()}
+                </TableCell>
+                <TableCell className="py-2">{release.files.length}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </RadioGroup>
     </div>
   );
@@ -690,7 +713,7 @@ function LocalFileUpload({
       <div className="text-sm text-control-light">
         {t("database.revision.upload-files-description")}
       </div>
-      <input
+      <Input
         ref={fileInputRef}
         type="file"
         multiple
@@ -771,25 +794,30 @@ function LocalFileUpload({
                       <span className="text-xs text-control-light">
                         {t("database.revision.revision-type")}
                       </span>
-                      <select
-                        className="h-9 rounded-xs border border-control-border bg-background px-2 text-sm"
+                      <Select
                         value={file.type}
-                        onChange={(event) => {
+                        onValueChange={(type: Revision_Type | null) => {
+                          if (type === null) return;
                           const next = [...files];
                           next[index] = {
                             ...file,
-                            type: Number(event.target.value) as Revision_Type,
+                            type,
                           };
                           onFilesChange(next);
                         }}
                       >
-                        <option value={Revision_Type.VERSIONED}>
-                          {t("database.revision.type-versioned")}
-                        </option>
-                        <option value={Revision_Type.DECLARATIVE}>
-                          {t("database.revision.type-declarative")}
-                        </option>
-                      </select>
+                        <SelectTrigger className="px-2 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={Revision_Type.VERSIONED}>
+                            {t("database.revision.type-versioned")}
+                          </SelectItem>
+                          <SelectItem value={Revision_Type.DECLARATIVE}>
+                            {t("database.revision.type-declarative")}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </label>
                   </div>
                   {file.content && (

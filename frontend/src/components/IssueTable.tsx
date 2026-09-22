@@ -4,14 +4,12 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
-import {
-  PROJECT_V1_ROUTE_DETAIL,
-  WORKSPACE_ROUTE_USER_PROFILE,
-} from "@/app/router/handles";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import {
   AdvancedSearch,
   type ScopeOption,
   type SearchParams,
+  type SearchScope,
   type ValueOption,
 } from "@/components/AdvancedSearch";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
@@ -19,6 +17,7 @@ import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
+import { UserHoverCard } from "@/components/UserHoverCard";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -38,6 +37,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
@@ -47,6 +47,8 @@ import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
+  AccountType,
+  getAccountTypeByEmail,
   getTimeForPbTimestampProtoEs,
   isValidProjectName,
   unknownUser,
@@ -72,8 +74,6 @@ import {
   getValuesFromSearchParams,
   projectOfIssue,
   upsertScope,
-  type SearchParams as VueSearchParams,
-  type SearchScope as VueSearchScope,
 } from "@/utils";
 
 // ===========================================================================
@@ -221,7 +221,7 @@ export function PresetButtons({
 
   const isActive = useCallback(
     (preset: PresetValue): boolean => {
-      const vp = params as VueSearchParams;
+      const vp = params as SearchParams;
       if (preset === "WAITING_APPROVAL") {
         return (
           getValueFromSearchParams(vp, "approval") ===
@@ -254,7 +254,7 @@ export function PresetButtons({
     (preset: PresetValue) => {
       const myEmail = me?.email ?? "";
       const readonlyScopes = params.scopes.filter((s) => s.readonly);
-      let newParams: VueSearchParams = {
+      let newParams: SearchParams = {
         query: "",
         scopes: [...readonlyScopes],
       };
@@ -292,7 +292,7 @@ export function PresetButtons({
         scopes: newParams.scopes.map((s) => ({
           id: s.id,
           value: s.value,
-          readonly: (s as VueSearchScope & { readonly?: boolean }).readonly,
+          readonly: (s as SearchScope & { readonly?: boolean }).readonly,
         })),
       });
     },
@@ -773,18 +773,23 @@ export const IssueListItem = memo(function IssueListItem({
             {t("common.created")}
             <HumanizeTs ts={createTimeTs} />
             <span>&middot;</span>
-            <RouterLink
-              className="hover:underline"
-              to={{
-                name: WORKSPACE_ROUTE_USER_PROFILE,
-                params: { principalEmail: creator.email },
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              {creator.title}
-            </RouterLink>
+            {getAccountTypeByEmail(creator.email) === AccountType.USER ? (
+              <UserHoverCard
+                email={creator.email}
+                fallbackTitle={creator.title}
+              >
+                <span
+                  className="cursor-default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {creator.title}
+                </span>
+              </UserHoverCard>
+            ) : (
+              <span>{creator.title}</span>
+            )}
             {showProject && issueProject && (
               <>
                 <span>&middot;</span>
@@ -1120,7 +1125,8 @@ export function BatchIssueStatusActionDrawer({
             <div className="font-medium text-control">
               {t("common.comment")}
             </div>
-            <textarea
+            <Textarea
+              size="md"
               className="w-full border border-control-border rounded-sm px-3 py-2 text-sm focus:outline-none focus:border-accent min-h-[6rem] resize-y"
               value={comment}
               placeholder={t("issue.leave-a-comment")}

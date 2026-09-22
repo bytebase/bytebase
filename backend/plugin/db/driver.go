@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -22,7 +23,7 @@ import (
 type InstanceMetadata struct {
 	Version string
 	// Simplified database metadata.
-	Databases []*storepb.DatabaseSchemaMetadata
+	Databases []*metadatapb.DatabaseSchemaMetadata
 	Metadata  *storepb.Instance
 }
 
@@ -35,7 +36,7 @@ type TableKey struct {
 type TableKeyWithColumns struct {
 	Schema  string
 	Table   string
-	Columns []*storepb.ColumnMetadata
+	Columns []*metadatapb.ColumnMetadata
 }
 
 // ColumnKey is the map key for table metadata.
@@ -99,7 +100,10 @@ type ConnectionContext struct {
 	DatabaseName string
 	// It's only set for Redshift datashare database.
 	DataShare bool
-	// ReadOnly is only supported for Postgres at the moment.
+	// ReadOnly asks the driver to open a read-only database session. Three
+	// honor it, all by setting default_transaction_read_only on the connection
+	// they open: postgres, cockroachdb, and redshift outside a datashare
+	// database. Every other driver ignores it.
 	ReadOnly bool
 	// MessageBuffer is used for logging messages from the database server.
 	MessageBuffer []*v1pb.QueryResult_Message
@@ -127,6 +131,13 @@ type QueryContext struct {
 	Option        *v1pb.QueryOption
 	// SkipMasking skips data masking when the query is authorized by an access grant with unmask=true.
 	SkipMasking bool
+	// MaskingEnabled means the results will be masked. Masking finds the columns to mask
+	// from the statement, so a driver must withhold rows the statement does not trace
+	// to columns, such as those a procedure call returns.
+	MaskingEnabled bool
+	// DataSourceType records which data source runs the query; the Oracle private-link guard
+	// exempts the admin one, whose ALL_DB_LINKS the sync recorded.
+	DataSourceType storepb.DataSourceType
 	// The maximum number of bytes for sql results in response body.
 	MaximumSQLResultSize int64
 	Timeout              *durationpb.Duration
@@ -151,10 +162,10 @@ type Driver interface {
 	// SyncInstance syncs the instance metadata.
 	SyncInstance(ctx context.Context) (*InstanceMetadata, error)
 	// SyncDBSchema syncs a single database schema.
-	SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetadata, error)
+	SyncDBSchema(ctx context.Context) (*metadatapb.DatabaseSchemaMetadata, error)
 
 	// Dump dumps the schema of database.
-	Dump(ctx context.Context, out io.Writer, dbMetadata *storepb.DatabaseSchemaMetadata) error
+	Dump(ctx context.Context, out io.Writer, dbMetadata *metadatapb.DatabaseSchemaMetadata) error
 }
 
 // Register makes a database driver available by the provided type.

@@ -81,7 +81,7 @@ func prepareTransformation(databaseName, statement string, dbMetadata *model.Dat
 			continue
 		}
 
-		parsed, err := ParseMySQLOmni(item.Text)
+		parsed, err := ParseMySQL(item.Text)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse sql")
 		}
@@ -308,7 +308,7 @@ func parseCTEPrefix(fullSQL string, stmtLoc ast.Loc) []*ast.CommonTableExpr {
 		return nil
 	}
 	// Wrap the prefix with a dummy SELECT to make it parseable.
-	parsed, err := ParseMySQLOmni(prefix + " SELECT 1")
+	parsed, err := ParseMySQL(prefix + " SELECT 1")
 	if err != nil || parsed == nil {
 		return nil
 	}

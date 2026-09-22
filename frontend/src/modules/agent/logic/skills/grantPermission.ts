@@ -153,7 +153,7 @@ call_api(operationId="ProjectService/SetIamPolicy", body={
 \`\`\`
 
 **CEL variables for sqlEditorUser:**
-- \`resource.database\`: Database name (\`instances/{id}/databases/{name}\`)
+- \`resource.database\`: Canonical database name (\`instances/{id}/databases/{name}\` or \`projects/{project}/instances/{id}/databases/{name}\`)
 - \`resource.schema_name\`: Schema name
 - \`resource.table_name\`: Table name
 - \`request.time\`: For expiration
@@ -161,6 +161,7 @@ call_api(operationId="ProjectService/SetIamPolicy", body={
 **CEL examples:**
 - Expire at date: \`request.time < timestamp('2024-12-31T23:59:59Z')\`
 - Limit to database: \`resource.database == "instances/prod/databases/main"\`
+- Limit to project-instance database: \`resource.database == "projects/acme/instances/prod/databases/main"\`
 
 ## Common Errors
 

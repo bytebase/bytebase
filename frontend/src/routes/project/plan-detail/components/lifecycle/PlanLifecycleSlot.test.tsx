@@ -75,7 +75,7 @@ describe("PlanLifecycleSlot (right action area)", () => {
     slot({ kind: "review-generating" });
     expect(container.textContent).toContain("plan.review.action");
 
-    slot({ kind: "review-your-turn" });
+    slot({ canApprove: true, kind: "review-your-turn" });
     expect(container.textContent).toContain("marker-review-your-turn");
 
     slot({ kind: "plan-status", reason: "rejected" });
@@ -117,16 +117,12 @@ describe("PlanLifecycleStamp (left of title)", () => {
   });
 
   test("renders nothing for non-terminal states", () => {
-    for (const kind of [
-      "create",
-      "review-your-turn",
-      "running-stage",
+    for (const state of [
+      { kind: "create" },
+      { canApprove: true, kind: "review-your-turn" },
+      { kind: "running-stage", stage },
     ] as const) {
-      renderEl(
-        <PlanLifecycleStamp
-          state={kind === "running-stage" ? { kind, stage } : { kind }}
-        />
-      );
+      renderEl(<PlanLifecycleStamp state={state} />);
       expect(container.textContent).toBe("");
     }
   });

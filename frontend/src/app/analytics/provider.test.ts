@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test, vi } from "vitest";
 import type { BehaviorAnalyticsConfig } from "./behavior";
 import { createBehaviorAnalytics } from "./provider";
@@ -24,6 +25,7 @@ const configWithProperties: BehaviorAnalyticsConfig = {
   apiKey: "phc_test",
   options: {},
   properties: {
+    deployment: "cloud",
     git_commit: "abc123",
   },
 };
@@ -106,6 +108,7 @@ describe("BehaviorAnalytics provider", () => {
     });
 
     expect(client.capture).toHaveBeenCalledWith("connect database clicked", {
+      deployment: "cloud",
       git_commit: "abc123",
       route_id: "workspace.project.database",
     });

@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -33,7 +33,7 @@ func (*InsertMustSpecifyColumnAdvisor) Check(_ context.Context, checkCtx advisor
 
 	rule := NewInsertMustSpecifyColumnRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // InsertMustSpecifyColumnRule is the rule implementation for enforcing column specification in INSERT.
@@ -70,7 +70,7 @@ func (r *InsertMustSpecifyColumnRule) OnStatement(node ast.Node) {
 			r.level,
 			code.InsertNotSpecifyColumn.Int32(),
 			"INSERT statement should specify column name.",
-			common.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
+			base.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
 		)
 	}
 	for _, item := range listItems(n.MultiTable) {
@@ -80,7 +80,7 @@ func (r *InsertMustSpecifyColumnRule) OnStatement(node ast.Node) {
 				r.level,
 				code.InsertNotSpecifyColumn.Int32(),
 				"INSERT statement should specify column name.",
-				common.ConvertANTLRLineToPosition(r.locLine(clause.Loc)),
+				base.ConvertANTLRLineToPosition(r.locLine(clause.Loc)),
 			)
 		}
 	}

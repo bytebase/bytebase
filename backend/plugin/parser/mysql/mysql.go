@@ -34,7 +34,7 @@ func parseMySQLStatements(statement string) ([]base.ParsedStatement, error) {
 			continue
 		}
 
-		list, omniErr := ParseMySQLOmni(stmt.Text)
+		list, omniErr := ParseMySQL(stmt.Text)
 		if omniErr != nil {
 			return nil, convertOmniError(omniErr, stmt)
 		}

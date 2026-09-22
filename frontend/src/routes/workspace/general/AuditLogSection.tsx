@@ -10,8 +10,8 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureBadge } from "@/components/FeatureBadge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import { usePlanFeature } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -90,7 +90,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
           <FormField
             title={
               <span className="flex items-start gap-x-3">
-                <Checkbox
+                <Switch
                   checked={state.enableAuditLogStdout}
                   className="mt-1"
                   disabled={!allowEdit || !hasAuditLogFeature}
@@ -113,7 +113,7 @@ export const AuditLogSection = forwardRef<SectionHandle, AuditLogSectionProps>(
           <FormField
             title={
               <span className="flex items-start gap-x-3">
-                <Checkbox
+                <Switch
                   checked={state.enableDebug}
                   className="mt-1"
                   disabled={!allowEdit}

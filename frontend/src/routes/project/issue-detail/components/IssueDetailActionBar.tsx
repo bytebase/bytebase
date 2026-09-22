@@ -58,7 +58,6 @@ import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   ApproveIssueRequestSchema,
   BatchUpdateIssuesStatusRequestSchema,
-  ListIssueCommentsRequestSchema,
   RejectIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -219,12 +218,10 @@ export function IssueDetailActionBar() {
     if (!page.issue?.name) {
       return;
     }
-    await useAppStore.getState().listIssueComments(
-      create(ListIssueCommentsRequestSchema, {
-        parent: page.issue.name,
-        pageSize: 1000,
-      })
-    );
+    await useAppStore.getState().fetchIssueCommentTimeline({
+      parent: page.issue.name,
+      pageSize: 1000,
+    });
   }, [page.issue?.name]);
 
   const handleRefreshIssueDetailState = useCallback(async () => {
@@ -396,6 +393,7 @@ export function IssueDetailActionBar() {
               onExecute={executeAction}
             >
               <IssueDetailReviewPopover
+                canApprove={context.permissions.canApproveIssue}
                 context={context}
                 mobile={page.sidebarMode === "MOBILE"}
                 onOpenChange={setPendingReviewOpen}
@@ -552,7 +550,7 @@ function IssueDetailActionButton({
     <Button
       className={cn(
         action.buttonType === "success" &&
-          "bg-success text-white hover:bg-success/90",
+          "bg-success text-accent-text hover:bg-success/90",
         action.id === "ISSUE_REVIEW" && "gap-x-1.5"
       )}
       disabled={disabled}
@@ -618,6 +616,7 @@ function IssueDetailConfirmDialog({
 type IssueReviewAction = "COMMENT" | "APPROVE" | "REJECT";
 
 function IssueDetailReviewPopover({
+  canApprove,
   context,
   mobile,
   onOpenChange,
@@ -625,6 +624,7 @@ function IssueDetailReviewPopover({
   onRefreshState,
   open,
 }: {
+  canApprove: boolean;
   context: ActionContext;
   mobile: boolean;
   onOpenChange: (open: boolean) => void;
@@ -641,7 +641,9 @@ function IssueDetailReviewPopover({
     useState<IssueReviewAction>("COMMENT");
   const issue = page.issue;
   const submitDisabled =
-    loading || (selectedAction === "COMMENT" && comment.trim().length === 0);
+    loading ||
+    (selectedAction === "APPROVE" && !canApprove) ||
+    (selectedAction === "COMMENT" && comment.trim().length === 0);
 
   useEffect(() => {
     if (!open) {
@@ -742,7 +744,7 @@ function IssueDetailReviewPopover({
       />
 
       <RadioGroup
-        className="flex-col items-stretch gap-y-2.5"
+        className="flex-col items-stretch gap-y-2"
         value={selectedAction}
         onValueChange={(value) => setSelectedAction(value as IssueReviewAction)}
       >
@@ -753,8 +755,14 @@ function IssueDetailReviewPopover({
           selected={selectedAction === "COMMENT"}
           value="COMMENT"
         />
-        {context.permissions.isApprovalCandidate && (
+        {context.permissions.isReviewCandidate && (
           <IssueDetailReviewOption
+            disabled={!canApprove}
+            disabledReason={
+              canApprove
+                ? undefined
+                : t("plan.review.last-plan-editor-cannot-approve")
+            }
             description={t("issue.review.approve-description")}
             icon={<Check className="size-4 text-success" />}
             label={t("common.approve")}
@@ -762,7 +770,7 @@ function IssueDetailReviewPopover({
             value="APPROVE"
           />
         )}
-        {context.permissions.isApprovalCandidate && (
+        {context.permissions.isReviewCandidate && (
           <IssueDetailReviewOption
             description={t("issue.review.reject-description")}
             icon={<X className="size-4 text-error" />}
@@ -798,10 +806,7 @@ function IssueDetailReviewPopover({
   if (mobile) {
     return (
       <Sheet onOpenChange={onOpenChange} open={open}>
-        <SheetContent
-          className="w-[calc(100vw-2rem)] max-w-[32rem]"
-          width="standard"
-        >
+        <SheetContent width="panel">
           <SheetHeader>
             <SheetTitle>{t("issue.review.self")}</SheetTitle>
           </SheetHeader>
@@ -814,7 +819,7 @@ function IssueDetailReviewPopover({
   return (
     <div
       className={cn(
-        "absolute right-0 top-full mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-white px-4 py-4 shadow-lg",
+        "absolute right-0 top-full mt-2 w-[min(34rem,calc(100vw-2rem))] rounded-sm border border-control-border bg-background px-4 py-4 shadow-lg",
         LAYER_SURFACE_CLASS
       )}
       ref={popoverRef}
@@ -825,20 +830,25 @@ function IssueDetailReviewPopover({
 }
 
 function IssueDetailReviewOption({
+  disabled = false,
+  disabledReason,
   description,
   icon,
   label,
   selected,
   value,
 }: {
+  disabled?: boolean;
+  disabledReason?: string;
   description?: string;
   icon?: ReactNode;
   label: string;
   selected: boolean;
   value: IssueReviewAction;
 }) {
-  return (
+  const option = (
     <RadioGroupItem
+      disabled={disabled}
       value={value}
       radioClassName="mt-1"
       className={cn(
@@ -855,5 +865,13 @@ function IssueDetailReviewOption({
         )}
       </span>
     </RadioGroupItem>
+  );
+  if (!disabledReason) {
+    return option;
+  }
+  return (
+    <Tooltip content={disabledReason}>
+      <span className="block">{option}</span>
+    </Tooltip>
   );
 }

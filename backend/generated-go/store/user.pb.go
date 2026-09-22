@@ -78,13 +78,14 @@ func (PrincipalType) EnumDescriptor() ([]byte, []int) {
 	return file_store_user_proto_rawDescGZIP(), []int{0}
 }
 
-// ProviderType identifies the CI/CD platform.
+// ProviderType identifies the workload identity configuration mode.
 type WorkloadIdentityConfig_ProviderType int32
 
 const (
 	WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED WorkloadIdentityConfig_ProviderType = 0
 	WorkloadIdentityConfig_GITHUB                    WorkloadIdentityConfig_ProviderType = 1
 	WorkloadIdentityConfig_GITLAB                    WorkloadIdentityConfig_ProviderType = 2
+	WorkloadIdentityConfig_OIDC                      WorkloadIdentityConfig_ProviderType = 3
 )
 
 // Enum value maps for WorkloadIdentityConfig_ProviderType.
@@ -93,11 +94,13 @@ var (
 		0: "PROVIDER_TYPE_UNSPECIFIED",
 		1: "GITHUB",
 		2: "GITLAB",
+		3: "OIDC",
 	}
 	WorkloadIdentityConfig_ProviderType_value = map[string]int32{
 		"PROVIDER_TYPE_UNSPECIFIED": 0,
 		"GITHUB":                    1,
 		"GITLAB":                    2,
+		"OIDC":                      3,
 	}
 )
 
@@ -284,7 +287,7 @@ func (x *UserProfile) GetLastLoginWorkspace() string {
 // WorkloadIdentityConfig stores OIDC configuration for workload identity.
 type WorkloadIdentityConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Provider type (currently only GITHUB is supported)
+	// Provider configuration mode.
 	ProviderType WorkloadIdentityConfig_ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.store.WorkloadIdentityConfig_ProviderType" json:"provider_type,omitempty"`
 	// OIDC issuer URL
 	IssuerUrl string `protobuf:"bytes,2,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
@@ -292,8 +295,10 @@ type WorkloadIdentityConfig struct {
 	AllowedAudiences []string `protobuf:"bytes,3,rep,name=allowed_audiences,json=allowedAudiences,proto3" json:"allowed_audiences,omitempty"`
 	// Subject pattern to match against token subject claim
 	SubjectPattern string `protobuf:"bytes,4,opt,name=subject_pattern,json=subjectPattern,proto3" json:"subject_pattern,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
+	JwksUrl       string `protobuf:"bytes,5,opt,name=jwks_url,json=jwksUrl,proto3" json:"jwks_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkloadIdentityConfig) Reset() {
@@ -354,6 +359,13 @@ func (x *WorkloadIdentityConfig) GetSubjectPattern() string {
 	return ""
 }
 
+func (x *WorkloadIdentityConfig) GetJwksUrl() string {
+	if x != nil {
+		return x.JwksUrl
+	}
+	return ""
+}
+
 var File_store_user_proto protoreflect.FileDescriptor
 
 const file_store_user_proto_rawDesc = "" +
@@ -370,19 +382,21 @@ const file_store_user_proto_rawDesc = "" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source\x120\n" +
-	"\x14last_login_workspace\x18\x05 \x01(\tR\x12lastLoginWorkspaceJ\x04\b\x04\x10\x05\"\xae\x02\n" +
+	"\x14last_login_workspace\x18\x05 \x01(\tR\x12lastLoginWorkspaceJ\x04\b\x04\x10\x05\"\xd3\x02\n" +
 	"\x16WorkloadIdentityConfig\x12X\n" +
 	"\rprovider_type\x18\x01 \x01(\x0e23.bytebase.store.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
 	"\n" +
 	"issuer_url\x18\x02 \x01(\tR\tissuerUrl\x12+\n" +
 	"\x11allowed_audiences\x18\x03 \x03(\tR\x10allowedAudiences\x12'\n" +
-	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"E\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\x12\x19\n" +
+	"\bjwks_url\x18\x05 \x01(\tR\ajwksUrl\"O\n" +
 	"\fProviderType\x12\x1d\n" +
 	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06GITHUB\x10\x01\x12\n" +
 	"\n" +
-	"\x06GITLAB\x10\x02*i\n" +
+	"\x06GITLAB\x10\x02\x12\b\n" +
+	"\x04OIDC\x10\x03*i\n" +
 	"\rPrincipalType\x12\x1e\n" +
 	"\x1aPRINCIPAL_TYPE_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bEND_USER\x10\x01\x12\x15\n" +

@@ -25,6 +25,7 @@ service PlanService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.plans.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists deployment plans in a project.
@@ -34,6 +35,7 @@ service PlanService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.plans.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new deployment plan.
@@ -47,6 +49,11 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.plans.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // This is the step that produces the issueless plan — it creates a plan
+    // and links no issue. It stays WRITE and needs no rule of its own: the
+    // rule the gate PR owes belongs at execution, not here, since a plan that
+    // is never rolled out changes nothing. See RolloutService/CreateRollout.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // UpdatePlan updates the plan.
@@ -61,6 +68,7 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.plans.update";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Gets the plan check run for a deployment plan.
@@ -70,6 +78,7 @@ service PlanService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.planCheckRuns.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Executes validation checks on a deployment plan.
@@ -83,6 +92,7 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Cancels the plan check run for a deployment plan.
@@ -96,6 +106,7 @@ service PlanService {
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }
 
@@ -254,10 +265,15 @@ message Plan {
   // Unspecified when no linked issue exists.
   IssueStatus issue_status = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The user who last created or updated the Plan specs.
+  // Format: users/hello@world.com. For legacy Plans without stored attribution,
+  // this falls back to the Plan creator.
+  string last_plan_editor = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message CreateDatabaseConfig {
     reserved 8;
     // The resource name of the instance on which the database is created.
-    // Format: instances/{instance}
+    // Format: instances/{instance} or projects/{project}/instances/{instance}
     string target = 1 [(google.api.field_behavior) = REQUIRED];
     // The name of the database to create.
     string database = 2 [(google.api.field_behavior) = REQUIRED];
@@ -379,7 +395,7 @@ message PlanCheckRun {
     int32 code = 4;
 
     // Target identification for consolidated results.
-    // Format: instances/{instance}/databases/{database}
+    // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
     string target = 7;
     Type type = 8;
 

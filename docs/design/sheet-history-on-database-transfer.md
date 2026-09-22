@@ -21,7 +21,7 @@ Four code paths move a database between projects, only one of which is a user-fa
 | `UpdateDatabase` | `backend/store/database.go:332-380` | one database |
 | `BatchUpdateDatabases` | `backend/store/database.go:397-560` | a batch |
 | `updateInstanceLifecycle` | `backend/store/instance.go:373-455` | every database of a **workspace** instance, on archive |
-| `DeleteProject` | `backend/store/project.go:722-729` | workspace-instance databases, reassigned to the default project |
+| `DeleteProjects` | `backend/store/project.go:611-620` | workspace-instance databases, reassigned to the default project |
 
 Both instance-related paths concern **workspace** instances specifically, and for the same reason:
 those instances are shared infrastructure, so their databases cannot simply be deleted along with a
@@ -33,9 +33,9 @@ instance" (`backend/store/instance.go:44-46`), and `:434` rejects the project-in
 with *cannot transfer databases while archiving project instance*. It also requires `Deleted` to be
 set (`:288`), so it is an archive path rather than an ordinary update.
 
-`DeleteProject` is the same shape and the one most easily missed: purge does not delete
+`DeleteProjects` is the same shape and the one most easily missed: purge does not delete
 workspace-instance databases, it reassigns them to the default project, and the `revision` delete at
-`:702` covers only project instances — so those revisions survive a purge with their hashes intact.
+`:593` covers only project instances — so those revisions survive a purge with their hashes intact.
 Project-instance databases are deleted with their instance in both paths and raise no question.
 
 ## Requirements
@@ -172,7 +172,7 @@ stamp only when the server knew the owner at creation or the backfill corroborat
 
 **Purge timing splits into two outcomes, deliberately.** A project purged *before* the migration
 leaves its surviving revisions unstampable — provenance naming it can no longer corroborate, since
-`DeleteProject` hard-deletes the `release`, `task` and `plan` rows — so those rows carry no name.
+`DeleteProjects` hard-deletes the `release`, `task` and `plan` rows — so those rows carry no name.
 A project purged *after* its revisions were stamped leaves the stamp behind: the revision keeps
 naming the purged project, the name 404s on read (purge deleted the refs), and the UI reports the
 statement as owned by a project the caller cannot read. The dangling name is accepted rather than
@@ -234,8 +234,8 @@ corruption outweighs the modelling improvement.
   current project would keep exactly the false resource name the scoping doc's R7 exists to
   eliminate — a response handing the client `projects/B/sheets/{sha}` to follow, which then 404s.
 - No *carry* logic in `UpdateDatabase`, `BatchUpdateDatabases`, `updateInstanceLifecycle`, or
-  `DeleteProject` — nothing moves refs between projects. `DeleteProject` still needs its
-  `DELETE FROM sheet_blob_ref WHERE project = ?` from the scoping doc: `sheet_blob_ref(project)` has
+  `DeleteProjects` — nothing moves refs between projects. `DeleteProjects` still needs its
+  `DELETE FROM sheet_blob_ref WHERE project = ANY(?)` from the scoping doc: `sheet_blob_ref(project)` has
   a plain foreign key with no `ON DELETE CASCADE`, so purging a project that owns refs fails without
   it. "No changes" here means no transfer behavior, not no purge cleanup.
 

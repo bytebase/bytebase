@@ -12,6 +12,7 @@ import (
 )
 
 func TestIsReadOnlyStatementForAccessGrantRejectsDocumentEngineWriteStatements(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		engine    storepb.Engine
@@ -41,6 +42,7 @@ func TestIsReadOnlyStatementForAccessGrantRejectsDocumentEngineWriteStatements(t
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			readOnly, err := isReadOnlyStatementForAccessGrant(context.Background(), tc.engine, tc.statement)
 			require.NoError(t, err)
 			require.False(t, readOnly)
@@ -49,6 +51,7 @@ func TestIsReadOnlyStatementForAccessGrantRejectsDocumentEngineWriteStatements(t
 }
 
 func TestIsReadOnlyStatementForAccessGrantAllowsDocumentEngineReadStatements(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		engine    storepb.Engine
@@ -68,6 +71,7 @@ func TestIsReadOnlyStatementForAccessGrantAllowsDocumentEngineReadStatements(t *
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			readOnly, err := isReadOnlyStatementForAccessGrant(context.Background(), tc.engine, tc.statement)
 			require.NoError(t, err)
 			require.True(t, readOnly)
@@ -76,6 +80,7 @@ func TestIsReadOnlyStatementForAccessGrantAllowsDocumentEngineReadStatements(t *
 }
 
 func TestIsReadOnlyStatementForAccessGrantRejectsDocumentEngineInvalidStatements(t *testing.T) {
+	t.Parallel()
 	readOnly, err := isReadOnlyStatementForAccessGrant(context.Background(), storepb.Engine_ELASTICSEARCH, `db.users.find({})`)
 	require.Error(t, err)
 	require.False(t, readOnly)
@@ -87,6 +92,7 @@ func TestIsReadOnlyStatementForAccessGrantRejectsDocumentEngineInvalidStatements
 // frontend tooltips and audit displays that depend on the user-typed
 // reason silently render empty.
 func TestConvertToAccessGrantPropagatesPayloadFields(t *testing.T) {
+	t.Parallel()
 	expire := time.Date(2026, 6, 30, 12, 0, 0, 0, time.UTC)
 	msg := &store.AccessGrantMessage{
 		ProjectID:  "proj",
@@ -119,6 +125,7 @@ func TestConvertToAccessGrantPropagatesPayloadFields(t *testing.T) {
 // TestConvertToAccessGrantNilPayloadIsSafe guards the `if p := msg.Payload; p != nil`
 // branch — a nil payload must not panic and payload-sourced fields stay zero.
 func TestConvertToAccessGrantNilPayloadIsSafe(t *testing.T) {
+	t.Parallel()
 	msg := &store.AccessGrantMessage{
 		ProjectID: "proj",
 		ID:        "ag1",
@@ -136,67 +143,4 @@ func TestConvertToAccessGrantNilPayloadIsSafe(t *testing.T) {
 	require.Empty(t, ag.Reason)
 	require.Empty(t, ag.Schema)
 	require.Empty(t, ag.Container)
-}
-
-func TestAccessGrantMatchesExecutionContext(t *testing.T) {
-	schema := "APP"
-	tests := []struct {
-		name      string
-		payload   *storepb.AccessGrantPayload
-		schema    *string
-		container string
-		want      bool
-	}{
-		{
-			name: "matching schema and container",
-			payload: &storepb.AccessGrantPayload{
-				Schema:    "APP",
-				Container: "orders",
-			},
-			schema:    &schema,
-			container: "orders",
-			want:      true,
-		},
-		{
-			name: "different schema",
-			payload: &storepb.AccessGrantPayload{
-				Schema:    "APP",
-				Container: "orders",
-			},
-			schema:    func() *string { v := "OTHER"; return &v }(),
-			container: "orders",
-			want:      false,
-		},
-		{
-			name: "different container",
-			payload: &storepb.AccessGrantPayload{
-				Schema:    "APP",
-				Container: "orders",
-			},
-			schema:    &schema,
-			container: "customers",
-			want:      false,
-		},
-		{
-			name:      "nil payload",
-			payload:   nil,
-			schema:    &schema,
-			container: "orders",
-			want:      false,
-		},
-		{
-			name:      "empty context matches omitted values",
-			payload:   &storepb.AccessGrantPayload{},
-			schema:    nil,
-			container: "",
-			want:      true,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			grant := &store.AccessGrantMessage{Payload: tc.payload}
-			require.Equal(t, tc.want, accessGrantMatchesExecutionContext(grant, tc.schema, tc.container))
-		})
-	}
 }

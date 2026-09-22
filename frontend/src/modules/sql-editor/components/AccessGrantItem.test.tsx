@@ -217,6 +217,25 @@ describe("AccessGrantItem", () => {
     unmount();
   });
 
+  test("constrains an unbroken long query within the panel", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <AccessGrantItem
+        grant={makeGrant({ query: "x".repeat(100_000) }) as never}
+        onRun={vi.fn()}
+        onRequest={vi.fn()}
+      />
+    );
+    render();
+
+    expect(container.firstElementChild?.className).toContain("min-w-0");
+    const query = container.querySelector("p");
+    expect(query?.className).toContain("w-full");
+    expect(query?.className).toContain("min-w-0");
+    expect(query?.className).toContain("wrap-anywhere");
+    expect(query?.className).toContain("line-clamp-2");
+    unmount();
+  });
+
   test("Run button shows only for ACTIVE status", () => {
     mocks.getAccessGrantDisplayStatus.mockReturnValue("ACTIVE");
     const grant = makeGrant();

@@ -20,10 +20,7 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import {
-  WORKSPACE_ROUTE_GROUPS,
-  WORKSPACE_ROUTE_USER_PROFILE,
-} from "@/app/router";
+import { WORKSPACE_ROUTE_GROUPS } from "@/app/router";
 import { AccountMultiSelect } from "@/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/components/DatabaseResourceSelector";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
@@ -65,6 +62,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   WorkspacePageLayout,
@@ -77,6 +75,10 @@ import {
   getMemberBindings,
   groupProjectRoleBindings,
 } from "@/lib/memberBindings";
+import {
+  GRANT_ACCESS_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/lib/productIntro";
 import {
   getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
@@ -403,9 +405,11 @@ function MemberTable({
                       avatar={
                         mb.type === "groups" ? (
                           <>
-                            <button
+                            <Button
+                              appearance="secondary"
+                              size="xs"
                               type="button"
-                              className="flex size-5 shrink-0 items-center justify-center cursor-pointer"
+                              className="flex shrink-0 items-center justify-center cursor-pointer"
                               onClick={() =>
                                 mb.group && toggleGroupExpand(mb.group)
                               }
@@ -415,30 +419,26 @@ function MemberTable({
                               ) : (
                                 <ChevronRight className="size-4 text-control-light" />
                               )}
-                            </button>
+                            </Button>
                             <div className="size-9 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
                               <Users className="size-4 text-control-light" />
                             </div>
                           </>
                         ) : undefined
                       }
+                      hoverEmail={
+                        mb.type === "users" && canGetUsers
+                          ? mb.user?.email
+                          : undefined
+                      }
                       nameLink={
-                        mb.type === "users" && canGetUsers && mb.user?.email
+                        mb.type === "groups" && canGetGroups
                           ? {
                               to: {
-                                name: WORKSPACE_ROUTE_USER_PROFILE,
-                                params: {
-                                  principalEmail: mb.user.email,
-                                },
+                                name: WORKSPACE_ROUTE_GROUPS,
                               },
                             }
-                          : mb.type === "groups" && canGetGroups
-                            ? {
-                                to: {
-                                  name: WORKSPACE_ROUTE_GROUPS,
-                                },
-                              }
-                            : undefined
+                          : undefined
                       }
                       badges={
                         <>
@@ -542,18 +542,7 @@ function MemberTable({
                             subtitle={user.email}
                             size="sm"
                             className="pl-12"
-                            nameLink={
-                              canGetUsers
-                                ? {
-                                    to: {
-                                      name: WORKSPACE_ROUTE_USER_PROFILE,
-                                      params: {
-                                        principalEmail: user.email,
-                                      },
-                                    },
-                                  }
-                                : undefined
-                            }
+                            hoverEmail={canGetUsers ? user.email : undefined}
                             badges={
                               user.name === currentUser.name ? (
                                 <Badge className="text-xs">
@@ -917,7 +906,9 @@ function ExpirationChip({
   onClick: () => void;
 }) {
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="xs"
       type="button"
       className={cn(
         "px-2.5 py-1 text-xs rounded-sm border transition-colors",
@@ -928,7 +919,7 @@ function ExpirationChip({
       onClick={onClick}
     >
       {label}
-    </button>
+    </Button>
   );
 }
 
@@ -1171,13 +1162,15 @@ function ProjectRoleBindingForm({
   return (
     <div className="border rounded-sm p-4 flex flex-col gap-y-4 relative">
       {canRemove && (
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           type="button"
           className="absolute top-2 right-2 text-control-light hover:text-error"
           onClick={onRemove}
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       )}
 
       {/* Role select */}
@@ -1219,7 +1212,8 @@ function ProjectRoleBindingForm({
           </>
         }
       >
-        <textarea
+        <Textarea
+          size="sm"
           className="w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm resize-none"
           rows={2}
           value={form.reason}
@@ -1371,6 +1365,7 @@ function EditMemberRoleDrawer({
     (state) => state.updateProjectIamPolicy
   );
   const isSaaSMode = useAppStore((s) => s.isSaaSMode());
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
   const roleList = useAppStore((state) => state.roleList);
   const settingsByName = useAppStore((s) => s.settingsByName);
   const hasEmailSetting = useMemo(
@@ -1386,6 +1381,16 @@ function EditMemberRoleDrawer({
   const isEditMode = !!member;
   const isProjectCreateMode = !!projectName && !isEditMode;
   const isProjectEditMode = !!projectName && isEditMode;
+  const accountParents = useMemo(
+    () => [
+      ...new Set(
+        [workspaceResourceName, projectName].filter(
+          (parent): parent is string => !!parent
+        )
+      ),
+    ],
+    [workspaceResourceName, projectName]
+  );
 
   // Live project role bindings for the member (reactively updated when IAM policy changes).
   // Active bindings come first, expired ones last; original order is preserved within each group.
@@ -1964,6 +1969,7 @@ function EditMemberRoleDrawer({
                   value={selectedBindings}
                   onChange={setSelectedBindings}
                   includeAllUsers={!isSaaSMode}
+                  accountParents={accountParents}
                 />
               )}
             </FormField>
@@ -2065,22 +2071,12 @@ export function MembersPage({ projectId }: { projectId?: string }) {
   >();
   const [showRequestRoleDialog, setShowRequestRoleDialog] = useState(false);
 
-  useEffect(() => {
-    const store = useAppStore.getState();
-    if (!store.getIntroStateByKey("member.visit")) {
-      store.saveIntroStateByKey({
-        key: "member.visit",
-        newState: true,
-      });
-    }
-  }, []);
-
   const hasRequestRoleFeature = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_REQUEST_ROLE_WORKFLOW)
   );
   const roleList = useAppStore((state) => state.roleList);
 
-  // IAM policy loads are owned by the parent shells: ProjectRouteShell
+  // IAM policy loads are owned by the parent shells: ProjectRouteGate
   // loads project IAM on /projects/:projectId/members, and
   // DashboardFrameShell's useEnsureWorkspaceCommonData loads workspace IAM
   // (+ referenced groups) on /settings/members. This page just reads them.
@@ -2130,10 +2126,17 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       hasProjectPermissionV2(project, "bb.projects.setIamPolicy")
     : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy");
 
+  useProductIntro({
+    id: GRANT_ACCESS_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.intro.grant-access-title"),
+    description: t("workspace-setup-guide.intro.grant-access-description"),
+    disabled: !!projectName || !canSetIamPolicy,
+  });
+
   // Whether the current user already holds every PROJECT_OWNER permission
   // (workspace- or project-scoped). hasProjectPermissionV2 falls back to
-  // workspace permissions, so a single check covers both contexts. Mirrors the
-  // Vue `hasMissingPermission` gate rather than checking `setIamPolicy` alone.
+  // workspace permissions, so a single check covers both contexts. It checks
+  // every owner permission rather than `setIamPolicy` alone.
   // Computed inline (not memoized) so it tracks live IAM policy changes, the
   // same way canSetIamPolicy above does — the permission check reads
   // current-user state that isn't captured by [project, roleList] deps.
@@ -2305,13 +2308,14 @@ export function MembersPage({ projectId }: { projectId?: string }) {
                   </Button>
                 )}
                 <Button
+                  data-product-intro-target={GRANT_ACCESS_PRODUCT_INTRO}
                   disabled={disabled || !canSetIamPolicy}
                   onClick={() => {
                     setEditingMember(undefined);
                     setShowEditMemberDrawer(true);
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus />
                   {t("settings.members.grant-access")}
                 </Button>
               </div>

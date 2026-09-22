@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -48,7 +49,7 @@ func (*StatementWhereDisallowFunctionsAndCalculationsAdvisor) Check(_ context.Co
 		checkCtx.IsObjectCaseSensitive,
 	)
 	rule.currentDatabase = checkCtx.CurrentDatabase
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // ---- Types ---------------------------------------------------------------
@@ -105,7 +106,7 @@ func NewWhereDisallowFunctionsAndCalculationsRule(
 	level storepb.Advice_Status,
 	title string,
 	currentSchema string,
-	dbSchema *storepb.DatabaseSchemaMetadata,
+	dbSchema *metadatapb.DatabaseSchemaMetadata,
 	isObjectCaseSensitive bool,
 ) *WhereDisallowFunctionsAndCalculationsRule {
 	r := &WhereDisallowFunctionsAndCalculationsRule{
@@ -564,7 +565,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) addOmniFunctionAdvice(funcNa
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         r.title,
 		Content:       content,
-		StartPosition: common.ConvertANTLRLineToPosition(line),
+		StartPosition: base.ConvertANTLRLineToPosition(line),
 	})
 }
 
@@ -579,7 +580,7 @@ func (r *WhereDisallowFunctionsAndCalculationsRule) addOmniCalculationAdvice(col
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         r.title,
 		Content:       content,
-		StartPosition: common.ConvertANTLRLineToPosition(line),
+		StartPosition: base.ConvertANTLRLineToPosition(line),
 	})
 }
 

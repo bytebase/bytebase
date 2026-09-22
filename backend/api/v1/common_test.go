@@ -9,6 +9,7 @@ import (
 )
 
 func TestIsValidResourceID(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		resourceID string
 		want       bool
@@ -42,6 +43,7 @@ func TestIsValidResourceID(t *testing.T) {
 }
 
 func TestParseFilter(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		input string
 		want  []Expression
@@ -91,6 +93,7 @@ func TestParseFilter(t *testing.T) {
 }
 
 func TestIsValidateOnlyRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		request any
@@ -152,6 +155,7 @@ func TestIsValidateOnlyRequest(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := isValidateOnlyRequest(test.request)
 			require.Equal(t, test.want, got)
 		})

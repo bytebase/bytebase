@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "Solo activos",
+    "active-only-chats": "Ver chats activos",
     "ai-not-configured": {
       "configure": "Configurar",
       "contact-admin": "Contacte al administrador de su espacio de trabajo para configurar la IA.",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "Archivar todos los chats",
     "archive-chat": "Archivar chat",
-    "archived-only-chats": "Solo archivados",
+    "archived-only-chats": "Ver chats archivados",
     "args": "Argumentos",
     "assistant-title": "Asistente de IA",
     "cancel": "Cancelar",
@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Buscar por el actor del registro de auditoría",
+          "description": "Busca usuarios por correo electrónico. Usa el prefijo serviceAccounts/ o workloadIdentities/ para buscar esos actores.",
           "title": "Actor"
         },
         "level": {
@@ -154,9 +154,11 @@
       "continue-with-email": "Continuar con email",
       "continue-with-idp": "Continuar con {{idp}}",
       "email-code-tab": "Código por email",
+      "failed": "No se pudo iniciar sesión",
       "failed-to-send-code": "No se pudo enviar el código de verificación. {{error}}",
       "forget-password": "¿Olvidaste tu contraseña?",
       "invited-email": "Has sido invitado. Inicia sesión con {{email}}",
+      "load-failed": "No se pudieron cargar las opciones de inicio de sesión. Inténtalo de nuevo.",
       "new-user": "¿Nuevo en Bytebase?",
       "no-method-available": {
         "description": "El inicio de sesión con contraseña y código por email está deshabilitado, y no hay ningún proveedor de identidad configurado para este espacio de trabajo.",
@@ -186,6 +188,11 @@
       "create-admin-account": "Crear cuenta de administrador",
       "existing-user": "¿Ya tienes una cuenta?",
       "title": "Registre su cuenta"
+    },
+    "sso": {
+      "invalid-authorization-url": "URL de autorización no válida: debe ser una URL HTTP o HTTPS válida.",
+      "no-authorization-endpoint": "El proveedor de identidad no publicó ningún punto de autorización. Revisa su configuración.",
+      "unsupported-provider-type": "Este tipo de proveedor de identidad no admite la redirección SSO."
     },
     "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente",
     "token-expired-title": "Token expirado"
@@ -294,6 +301,7 @@
     "database-group": "Grupo de bases de datos",
     "databases": "Bases de datos",
     "deactivate": "Desactivar",
+    "deactivated": "Desactivado",
     "default": "Predeterminado",
     "definition": "Definición",
     "delete": "Eliminar",
@@ -310,6 +318,7 @@
     "discard-changes": "Descartar cambios",
     "discord": "Discord",
     "dismiss": "Descartar",
+    "done": "Listo",
     "download": "Descargar",
     "draft": "Borrador",
     "duplicate": "Duplicar",
@@ -450,6 +459,10 @@
     "search": "Buscar",
     "search-for-more": "Buscar más",
     "search-no-result": "No se encontraron resultados coincidentes",
+    "search-results": "Buscar resultados",
+    "secret-input": {
+      "unchanged": "Sin cambios"
+    },
     "select": "Seleccionar",
     "select-all": "Seleccionar todo",
     "selected": "seleccionado",
@@ -480,6 +493,8 @@
     "tips": "Consejos",
     "title": "Título",
     "to": "Hasta",
+    "toggle-password-visibility": "Alternar visibilidad de la contraseña",
+    "token": "Token",
     "total": "Total",
     "total-n-items": "Total {{n}} elementos",
     "transfer": "Transferir",
@@ -522,6 +537,16 @@
     "new-collection-name": "Nuevo Nombre de Colección",
     "new-database-name": "Nuevo nombre de la base de datos",
     "reserved-db-error": "{{databaseName}} es un nombre reservado"
+  },
+  "credential-proof": {
+    "code-sent": "Código enviado; revisa tu correo",
+    "email-label": "Código de verificación por correo",
+    "email-me-a-code": "Enviarme un código por correo",
+    "email-placeholder": "Código de 6 dígitos",
+    "factor-label": "Código de verificación",
+    "factor-placeholder": "Código del autenticador o código de recuperación",
+    "password-label": "Contraseña actual",
+    "resend-in": "Reenviar en {{seconds}}s"
   },
   "custom-approval": {
     "approval-flow": {
@@ -622,11 +647,8 @@
     },
     "no-read-only-data-source": "Sin fuente de datos de solo lectura",
     "private-key-passphrase": "Frase de contraseña de clave privada",
-    "private-key-passphrase-placeholder": "Deje vacío si su clave privada no está cifrada",
     "private-key-passphrase-tip": "Frase de contraseña opcional para claves privadas cifradas",
     "read-only": "Solo lectura",
-    "read-replica-host": "Anfitrión de réplica de lectura",
-    "read-replica-port": "Puerto de réplica de lectura",
     "replica-set": "Conjunto de réplicas",
     "select-query-data-source": "Seleccionar fuente de datos de consulta",
     "snowflake-keypair-tip": "Autenticación de par de claves",
@@ -638,11 +660,7 @@
       "ssh-key": "Clave del SSH",
       "user": "Nombre de usuario"
     },
-    "ssh-connection": "Conexión SSH",
-    "ssh-type": {
-      "none": "Ninguno",
-      "tunnel-and-private-key": "Túnel + Clave Privada"
-    },
+    "ssh-connection": "Túnel SSH",
     "ssl": {
       "ca-cert": "Certificado de CA",
       "ca-path": "Ruta del certificado de CA",
@@ -669,7 +687,7 @@
       "client-key-path": "Ruta de la clave privada",
       "client-key-placeholder": "Ingrese o arrastre y suelte YOUR_CLIENT_KEY",
       "configured": "Configurado",
-      "connection-security": "Seguridad de la conexión",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "El TLS mutuo no está disponible para este motor.",
       "posture": {
         "disabled": "Deshabilitado",
@@ -678,11 +696,10 @@
         "tls": "TLS"
       },
       "server-identity": "Identidad del servidor",
-      "verification-disabled-description": "La verificación está deshabilitada. La conexión está cifrada, pero la identidad del servidor no se verifica; la configuración de CA se ignora.",
-      "verify-certificate": "Verificar certificado del servidor",
-      "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
+      "verification-disabled-description": "La verificación está desactivada. La conexión está cifrada, pero no se verifica la identidad del servidor y se ignora la configuración de CA. Esto es inseguro. Activa la verificación para conexiones seguras; desactívala solo temporalmente durante el desarrollo o la resolución de problemas.",
+      "verify-certificate": "Verificar certificado del servidor"
     },
-    "ssl-connection": "Conexión SSL"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "No tiene permiso para acceder a esta base de datos.",
@@ -725,8 +742,10 @@
     "mixed-label-values": "valores mixtos",
     "mixed-label-values-warning": "Algunos de los recursos seleccionados tienen valores mixtos para la misma clave. Solo edite estos pares clave-valor si tiene la intención de cambiarlos.",
     "nullable": "Anulable",
+    "open-sql-editor": "Abrir editor SQL",
     "partition-tables": "Tablas de particiones",
     "partitioned": "Particionado",
+    "project-instance-transfer-disabled": "Las bases de datos de una instancia vinculada a un proyecto no se pueden transferir ni desasignar.",
     "revision": {
       "add-more-files": "Añadir más",
       "available-files": "Archivos disponibles",
@@ -800,7 +819,6 @@
     "unassign": "Desasignar",
     "unassign-alert-description": "Las bases de datos seleccionadas serán eliminadas del proyecto",
     "unassign-alert-title": "Desasignar bases de datos",
-    "unassigned-databases": "Bases de datos no asignadas",
     "unique": "Único",
     "visible": "Visible"
   },
@@ -840,7 +858,14 @@
     "partitions": "Particiones",
     "procedures": "Procedimientos",
     "project-instance-synced-action": "Crear cambio de base de datos",
+    "project-instance-synced-create-change-description": "Tu base de datos está lista en este proyecto. Crea un cambio de base de datos gobernado para continuar.",
+    "project-instance-synced-create-change-title": "Base de datos lista para cambios",
     "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza consultando datos en SQL Editor, o crea un cambio de base de datos gobernado cuando lo necesites.",
+    "project-instance-synced-mark-sensitive-data-action": "Marcar datos sensibles",
+    "project-instance-synced-mark-sensitive-data-description": "Tu base de datos está lista en este proyecto. Marca una columna sensible para aplicar enmascaramiento de datos.",
+    "project-instance-synced-mark-sensitive-data-title": "Lista para proteger datos sensibles",
+    "project-instance-synced-query-data-description": "Tu base de datos está lista en este proyecto. Abre SQL Editor para consultarla.",
+    "project-instance-synced-query-data-title": "Base de datos lista para consultar",
     "project-instance-synced-sql-editor-action": "Abrir SQL Editor",
     "project-instance-synced-title": "Base de datos conectada",
     "project-instance-syncing-description": "Esto puede tardar de unos segundos a unos minutos. Puedes actualizar esta página más tarde.",
@@ -955,6 +980,8 @@
   },
   "instance": {
     "account-locator": "Localizadora de cuentas",
+    "account-locator-description": "Identifica la cuenta de Snowflake a la que conectarse.",
+    "add-parameter": "Añadir parámetro",
     "advanced-search": {
       "scope": {
         "host": {
@@ -969,6 +996,7 @@
     },
     "archive-instance-instance-name": "¿Archivar la instancia '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
+    "authentication": "Autenticación",
     "authentication-database": "Base de datos de autenticación",
     "cloud-sql-ip-type": {
       "description": "Usa IP privada cuando la instancia no tiene IP pública y Bytebase se ejecuta en la misma VPC.",
@@ -979,9 +1007,10 @@
     },
     "connect-database-to-project": "Conectar base de datos al proyecto",
     "connect-instance": "Conectar instancia",
+    "connect-using": "Conectar usando",
     "connecting-database-to-project": "Conectando base de datos...",
+    "connection-database": "Base de datos de conexión",
     "connection-info": "Información de conexión",
-    "connection-options": "Opciones de conexión",
     "connection-recovery": {
       "auth": {
         "description": "Verifica el usuario, la contraseña, el token o la configuración de autenticación IAM y vuelve a probar la conexión.",
@@ -994,10 +1023,12 @@
       },
       "docs": "Abrir guía de conexión",
       "network": {
-        "description": "Confirma que el host y el puerto sean accesibles desde Bytebase Cloud. Revisa reglas de firewall, listas de permitidos, proxies, túneles y si la base de datos solo acepta tráfico de red privada.",
+        "description-saas": "Confirma que el host y el puerto sean accesibles desde Bytebase Cloud. Revisa reglas de firewall, listas de permitidos, proxies, túneles y si la base de datos solo acepta tráfico de red privada.",
+        "description-self-hosted": "Confirma que el host y el puerto sean accesibles desde tu despliegue de Bytebase. Revisa el firewall, las rutas de red, los proxies, los túneles y si la base de datos solo acepta tráfico de otra red.",
         "steps": {
           "address": "Verifica que el host o socket y el puerto coincidan con el endpoint de la base de datos.",
-          "firewall": "Si usas Bytebase Cloud, agrega la IP requerida de Cloud a la lista permitida del firewall de la base de datos.",
+          "firewall-saas": "Agrega la IP de Bytebase Cloud a la lista permitida del firewall de la base de datos.",
+          "firewall-self-hosted": "Permite conexiones desde la red donde está desplegado Bytebase.",
           "private-network": "Para una base de datos privada, configura primero VPN, red privada o túnel SSH."
         },
         "title": "Revisar alcance de red"
@@ -1012,12 +1043,14 @@
         "title": "Revisar permisos de base de datos"
       },
       "timeout": {
-        "description": "La base de datos no respondió a tiempo. Revisa reglas de firewall, configuración de puertos, rutas de red y si la base de datos permite conexiones desde Bytebase Cloud.",
+        "description-saas": "La prueba de conexión no se completó a tiempo. Revisa reglas de firewall, configuración de puertos, rutas de red y si la base de datos permite conexiones desde Bytebase Cloud.",
+        "description-self-hosted": "La prueba de conexión no se completó a tiempo. Revisa las reglas de firewall, los puertos, las rutas de red y si la base de datos permite conexiones desde tu despliegue de Bytebase.",
         "steps": {
           "load": "Confirma que la base de datos esté en línea y acepte nuevas conexiones.",
           "retry": "Si la base de datos está detrás de un firewall, completa primero la lista permitida o el túnel.",
           "route": "Revisa rutas, proxy, túnel, puerto y configuración de tiempo de espera."
         },
+        "test-title": "La prueba de conexión agotó el tiempo de espera",
         "title": "Revisar firewall y rutas"
       },
       "tls": {
@@ -1034,7 +1067,8 @@
         "steps": {
           "fields": "Revisa host, puerto, usuario, contraseña o fuente de secreto y modo SSL/TLS.",
           "help": "Si la base de datos es privada, configura VPN, red privada o túnel SSH antes de reintentar.",
-          "logs": "Si la base de datos tiene reglas de firewall, permite conexiones desde Bytebase Cloud o la red donde está desplegado Bytebase."
+          "logs-saas": "Si la base de datos tiene reglas de firewall, permite conexiones desde Bytebase Cloud.",
+          "logs-self-hosted": "Si la base de datos tiene reglas de firewall, permite conexiones desde la red donde está desplegado Bytebase."
         },
         "title": "Revisar configuración de conexión"
       },
@@ -1079,7 +1113,6 @@
           "role-id": "ID de rol de autenticación",
           "secret-env-name": "Nombre del entorno",
           "secret-id": "ID de secreto de autenticación",
-          "secret-plain-text": "Texto sin formato",
           "self": "AppRole"
         },
         "self": "Tipo de autenticación",
@@ -1099,8 +1132,9 @@
       "vault-tls-config": "Configuración TLS de Vault (opcional)",
       "vault-url": "URL de Vault"
     },
-    "failed-to-connect-instance": "Error al conectar la instancia.",
-    "failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
+    "failed-to-connect-instance": "La prueba de conexión falló.",
+    "failed-to-connect-instance-localhost": "Esta dirección apunta al host de Bytebase. Si la base de datos se ejecuta en el host de Docker, prueba \"host.docker.internal\" como dirección del host.",
+    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" es una dirección local que Bytebase Cloud no puede usar para acceder a tu base de datos. Introduce un nombre de host o una dirección IP accesible desde Bytebase Cloud.",
     "filter-instance-name": "Filtrar nombre de instancia",
     "find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
@@ -1108,7 +1142,7 @@
     "gcp-endpoint-tip": "Opcional. Reemplaza el punto de conexión predeterminado de la API de Google, p. ej., un punto de conexión de Private Service Connect como {{example}}.",
     "gcp-endpoint-toggle": "Configurar un punto de conexión de API personalizado",
     "grants": "Concesiones",
-    "host-or-socket": "Host o Socket",
+    "hostname": "Nombre de host",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1186,6 +1220,7 @@
     },
     "instance-id": "ID de la instancia",
     "instance-name": "Nombre de la instancia",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance, opcional",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "Host del KDC",
@@ -1197,14 +1232,21 @@
     "keytab-resupply-required": "Esta fuente de datos ahora se conecta a un destino nuevo. Vuelva a subir el keytab para confirmar que todavía lo tiene.",
     "keytab-upload-placeholder": "Haga clic o arrastre su archivo .keytab aquí",
     "keytab-write-only": "El keytab es de solo escritura. Suba un archivo nuevo para reemplazar el existente.",
+    "master-name": "Nombre del nodo maestro",
+    "master-password": "Contraseña del nodo maestro",
+    "master-username": "Usuario del nodo maestro",
     "new-instance": "Nueva instancia",
     "no-environment": "Esta instancia no ha sido ligada al entorno.",
     "no-extra-params-configured": "No hay parámetros de conexión adicionales configurados",
     "no-params-yet-add-above": "No hay parámetros configurados todavía. \nAgregue parámetros usando el formulario anterior.",
-    "no-password": "Sin contraseña",
     "open-data-source": "Abra esta fuente de datos para ver qué necesita.",
     "parameter-name-placeholder": "Nombre de parámetro",
     "parameter-value-placeholder": "Valor de parámetro",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "Origen de la contraseña",
+      "stored-in-bytebase": "Almacenada en Bytebase"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1212,18 +1254,27 @@
       "external-secret-azure": "Azure Key Vault",
       "external-secret-gcp": "GCP Secret Manager",
       "external-secret-vault": "Vault (KV v2)",
+      "google-cloud-iam": "Google Cloud IAM",
       "google-iam": "Google Cloud SQL IAM",
       "password": "Contraseña"
     },
-    "password-write-only": "SU_DB_PWD - solo escritura",
     "port": "Puerto",
+    "prepare-sample-instance-failed": "No se pudo preparar la instancia de proyecto de muestra.",
+    "preparing-sample-instance": "Preparando la instancia de proyecto de muestra…",
+    "project-bound-description": "Esta instancia está vinculada a este proyecto. Todas sus bases de datos se transfieren automáticamente al proyecto y no se pueden transferir ni desasignar.",
+    "project-bound-title": "Instancia vinculada al proyecto",
     "project-id": "ID del proyecto",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{{0}}' al estado normal?",
     "role-arn": "ARN del rol",
     "role-arn-description": "Rol IAM para asumir en acceso entre cuentas. Dejar vacío para acceso en la misma cuenta.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "La instancia de muestra venció el {{time}} y se eliminará en breve.",
+    "sample-expiration-future_one": "La instancia de muestra se eliminará en {{count}} día, a las {{time}}.",
+    "sample-expiration-future_other": "La instancia de muestra se eliminará en {{count}} días, a las {{time}}.",
+    "sample-project-instance-description": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar durante 7 días.",
+    "sample-project-instance-description-self-host": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar.",
+    "sample-project-instance-title": "Pruebe una instancia de proyecto de muestra",
     "scan-interval": {
-      "default-never": "Predeterminado (nunca)",
       "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
       "min-value": "Valor mínimo {{value}} minutos",
       "self": "Intervalo de escaneo"
@@ -1270,7 +1321,7 @@
           "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} para {{warehouse}} y otorgar al usuario los privilegios necesarios."
         }
       },
-      "firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud.",
+      "firewall-info": "Agrega la IP de Bytebase Cloud a la lista permitida del firewall de la base de datos.",
       "google-cloud-sql": {
         "instance-name": "Nombre de conexión de instancia",
         "instance-name-tips": "El nombre de la conexión de la instancia debería ser {{instance}}.",
@@ -1282,16 +1333,18 @@
         }
       },
       "host": {
-        "none-snowflake": "por ejemplo, host.docker.internal | host ip | local socket"
-      },
-      "proxy": {
-        "snowflake": "Para el servidor proxy, agregue @PROXY_HOST y especifique PROXY_PORT en el puerto"
+        "none-snowflake": "por ejemplo, host.docker.internal | IP del host | socket local",
+        "saas": "por ejemplo, db.example.com | IP de la base de datos"
       }
     },
+    "service-name": "Nombre del servicio",
+    "service-name-placeholder": "p. ej., sales.example.com",
     "show-how-to-create": "Mostrar cómo crear",
+    "sid": "SID",
+    "sid-placeholder": "p. ej., ORCL",
     "snowflake-web-console": "Consola web de Snowflake",
     "successfully-archived-instance": "Se archivó exitosamente la instancia '{{0}}'.",
-    "successfully-connected-instance": "Instancia conectada correctamente.",
+    "successfully-connected-instance": "Conexión correcta.",
     "successfully-created-instance-createdinstance-name": "Se ha creado correctamente la instancia '{{0}}'.",
     "successfully-restored-instance": "Se restauró exitosamente la instancia '{{0}}'.",
     "successfully-updated-instance-instance-name": "Se ha actualizado correctamente la instancia '{{0}}'.",
@@ -1303,19 +1356,40 @@
     },
     "sync-databases": {
       "add-database": "+ Agregar base de datos, presione enter para enviar",
+      "all-databases": "Todas las bases de datos",
       "description": "Elige qué bases de datos sincronizar desde esta instancia.",
+      "hostname-required": "Introduce un nombre de host para elegir qué bases de datos sincronizar.",
       "project-sync-all": "Sincronizar todas las bases de datos con este proyecto",
+      "required-fields": "Completa los campos obligatorios de arriba para elegir qué bases de datos sincronizar.",
       "search-database": "Buscar en la base de datos",
+      "selected-databases": "Bases de datos seleccionadas",
       "self": "Sincronizar bases de datos",
       "sync-all": "Sincronizar todas las bases de datos"
     },
     "syncing": "Sincronizando...",
     "test-connection": "Probar conexión",
     "testing-connection": "Probando conexión...",
-    "token-write-only": "TU_TOKEN - solo escritura",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
-    "unable-to-connect": "Bytebase no puede conectar la instancia. Le recomendamos que revise la información de conexión nuevamente. Pero está bien ignorar esta advertencia por ahora. Aún puede solucionar la información de conexión desde la página de detalles de la instancia después de la creación.\n\nDetalle del error: {{0}}",
+    "unable-to-connect": "Bytebase no pudo conectarse con esta configuración. Revisa las indicaciones anteriores o continúa y actualiza la conexión más tarde.\n\nDetalles técnicos: {{0}}",
+    "use-sample-instance": "Usar instancia de ejemplo (Disponible durante 7 días)",
+    "use-sample-instance-self-host": "Usar instancia de ejemplo",
     "users": "Usuarios",
+    "validation": {
+      "absolute-path": "Introduce una ruta absoluta que comience por /.",
+      "aws-credential": "Introduce un ID de clave de acceso o un ARN de rol.",
+      "cloud-sql-host": "Introduce el nombre de la instancia como project:region:instance.",
+      "forbidden-parameter": "El parámetro allowAllFiles no está permitido porque expone archivos del servidor Bytebase.",
+      "gcp-instance": "Usa letras minúsculas, números o guiones.",
+      "gcp-project": "Usa letras minúsculas, números, puntos, dos puntos o guiones.",
+      "keytab-resupply": "Vuelve a cargar el archivo keytab para el nuevo destino de conexión.",
+      "oracle-service": "Introduce un nombre de servicio o SID.",
+      "pem-certificate": "Introduce un certificado PEM, incluidas las líneas BEGIN y END CERTIFICATE.",
+      "pem-key": "Introduce una clave privada PEM (PKCS#1, PKCS#8 o EC).",
+      "required": "Este campo es obligatorio.",
+      "specific-credential": "Proporciona credenciales específicas. Las credenciales predeterminadas no están disponibles en Bytebase Cloud.",
+      "tls-pair": "Proporciona tanto el certificado de cliente como la clave privada.",
+      "tls-source-conflict": "Usa contenido PEM o una ruta de archivo, pero no ambos."
+    },
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },
   "issue": {
@@ -1551,7 +1625,6 @@
     },
     "recovery-code": "Código de recuperación"
   },
-  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} está solicitando acceso a tu cuenta",
@@ -1559,8 +1632,45 @@
       "error-load-failed": "Error al cargar la información del cliente",
       "error-missing-params": "Faltan parámetros obligatorios de OAuth2",
       "error-switch-failed": "Error al cambiar de workspace",
-      "permission-access": "Acceder a tu cuenta de Bytebase con tus permisos",
-      "permissions": "Esta aplicación podrá:",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "¿Cree que debería estar activado? Pregunte a un administrador del espacio de trabajo por la política de acceso MCP.",
+          "description": "Un administrador del espacio de trabajo ha desactivado el acceso MCP para {{workspace}}. No se conectó nada.",
+          "description-no-workspace": "Un administrador del espacio de trabajo ha desactivado el acceso MCP para este espacio de trabajo. No se conectó nada.",
+          "line": {
+            "no-session": "Ninguna sesión de IA puede conectarse a este espacio de trabajo",
+            "recorded": "Cualquier intento de conectarse de todos modos queda registrado en el registro de auditoría"
+          },
+          "policy-label": "Política del espacio de trabajo",
+          "title": "El acceso MCP está desactivado"
+        },
+        "line": {
+          "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza se envía a la salida estándar cuando el registro de auditoría en la salida estándar está habilitado",
+          "capped-read-only": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase puede comprobar en cada motor: donde no puede demostrar que una sentencia es de lectura, no se ejecuta ninguna consulta",
+          "capped-read-write": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase admite para cada motor de base de datos y cada operación",
+          "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
+          "no-write": "Sin cambios, despliegues, exportaciones ni administración de bases de datos"
+        },
+        "title": "Esta sesión puede",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "No se ha aprobado nada y no hay nada conectado"
+          },
+          "policy-label": "Política del espacio de trabajo",
+          "undisclosable": {
+            "description": "La política MCP de este espacio de trabajo es un valor que esta página no sabe describir. O es más reciente que la página que tiene abierta, o no es una política que sirva esta versión de Bytebase, en cuyo caso se rechazan todas las conexiones MCP.",
+            "line": "Vuelva a cargar para obtener la versión actual. Si esta página reaparece, pida a un administrador del espacio de trabajo que establezca una política compatible",
+            "title": "Esta página no puede mostrar lo que permite la política MCP de este espacio de trabajo"
+          },
+          "unknown": {
+            "description": "Bytebase no ha podido leer la política de acceso MCP de este espacio de trabajo en este momento.",
+            "line": "No se puede mostrar lo que esta sesión tendría permitido hacer",
+            "retry": "Comprobar de nuevo",
+            "title": "No se pudo comprobar la política MCP"
+          }
+        },
+        "write-caution": "Una sesión de IA con acceso de escritura hace cambios reales. Apruébela solo en una máquina que usted controle."
+      },
       "title": "Solicitud de autorización",
       "workspace-label": "Concediendo acceso al workspace"
     }
@@ -1592,9 +1702,12 @@
       "configure": "Configurar",
       "parameters": "Parámetros de gh-ost",
       "requirements-not-met": "Los requisitos de Ghost no se cumplen para: {{databases}}",
-      "reset-to-defaults": "Restablecer valores predeterminados"
+      "reset-to-defaults": "Restablecer valores predeterminados",
+      "skip-metadata-lock-check-risk": "Omitir esta comprobación puede provocar la pérdida de escrituras durante el corte.",
+      "skip-metadata-lock-check-why": "¿Por qué?"
     },
     "go-to-plan-page": "Ir a la página del plan",
+    "initial-sql-storage-failed": "No se pudo guardar temporalmente el SQL. Libera espacio de almacenamiento del navegador e inténtalo de nuevo.",
     "isolation-level": {
       "read-committed": "Lectura confirmada",
       "read-uncommitted": "Lectura no confirmada",
@@ -1678,6 +1791,7 @@
         "no-reviewers": "Sin revisores",
         "rejected-by": "Rechazado por {{user}}"
       },
+      "candidate-last-changed-plan": "No puede aprobar — fue la última persona en modificar este plan",
       "comment-required-to-reject": "Se requiere un comentario para rechazar",
       "footer": {
         "all-gates-passed": "Todos los requisitos cumplidos",
@@ -1707,11 +1821,50 @@
         "rollout-not-created": "El despliegue no se creó automáticamente",
         "waiting-on-review": "Esperando revisión"
       },
+      "last-plan-editor-cannot-approve": "No puedes aprobar este issue porque fuiste la última persona en modificar su plan. Otra persona debe aprobarlo.",
       "rejection": {
         "guidance-prefix": "Actualiza tus cambios para atender los comentarios, o",
         "guidance-suffix": "sin cambios",
         "re-request-review": "vuelve a solicitar la revisión",
         "title": "Rechazado por {{user}}"
+      },
+      "thread": {
+        "add-comment": "Añadir comentario",
+        "add-comment-on-line": "Añadir un comentario en la línea {{line}}",
+        "add-comment-on-lines": "Añadir un comentario en las líneas {{startLine}} a {{endLine}}",
+        "anchor": {
+          "line_one": "Línea {{range}}",
+          "line_other": "Líneas {{range}}",
+          "outdated": "Obsoleto",
+          "statement-unavailable": "Sentencia no disponible",
+          "unavailable-change": "Cambio eliminado",
+          "view-in-statement": "Ver en la sentencia"
+        },
+        "comment-on-lines": "Comentar las líneas",
+        "n-replies-hidden_one": "{{count}} respuesta oculta",
+        "n-replies-hidden_other": "{{count}} respuestas ocultas",
+        "n-replies_one": "{{count}} respuesta",
+        "n-replies_other": "{{count}} respuestas",
+        "publish": "Publicar",
+        "reopen-thread": "Reabrir hilo",
+        "reply": "Responder",
+        "reply-placeholder": "Responder...",
+        "reply-posted-status-failed": "La respuesta se publicó, pero no se pudo actualizar el estado del hilo. Vuelve a intentar cambiar el estado.",
+        "resolve": "Resolver",
+        "resolve-thread": "Resolver hilo",
+        "resolved": "Resuelto",
+        "threads-on-line_one": "{{count}} hilo en esta línea",
+        "threads-on-line_other": "{{count}} hilos en esta línea",
+        "walker": {
+          "count_one": "{{count}} hilo sin resolver en esta versión",
+          "count_other": "{{count}} hilos sin resolver en esta versión",
+          "next": "Siguiente hilo sin resolver",
+          "position": "Hilo {{index}} de {{count}}",
+          "previous": "Hilo sin resolver anterior",
+          "remainder_one": "{{count}} más no se muestra en esta versión",
+          "remainder_other": "{{count}} más no se muestran en esta versión"
+        },
+        "write-comment": "Escribe un comentario..."
       }
     },
     "rollback": {
@@ -1754,6 +1907,8 @@
       "n-of-m-approved": "{{n}} de {{m}} aprobadas",
       "n-of-m-tasks": "{{n}}/{{m}} tareas",
       "n-passed": "{{n}} aprobadas",
+      "n-unresolved-threads_one": "{{count}} hilo sin resolver",
+      "n-unresolved-threads_other": "{{count}} hilos sin resolver",
       "n-warning": "{{n}} advertencia"
     },
     "targets": {
@@ -1772,7 +1927,8 @@
       "actions": {
         "explain-code": "Explicar el código",
         "find-problems": "encontrar problemas",
-        "insert-at-caret": "Insertar en el cursor"
+        "insert-at-caret": "Insertar en el cursor",
+        "new-chat-using-selection": "Nuevo chat con la selección"
       },
       "ai-assistant": "Asistente de IA",
       "conversation": {
@@ -1814,7 +1970,6 @@
     }
   },
   "project": {
-    "add-database": "Agregar base de datos",
     "add-database-empty-placeholder": "Agrega una base de datos de una instancia existente a este proyecto",
     "batch": {
       "archive": {
@@ -1893,29 +2048,34 @@
       },
       "revoke-role-from-member": "¿Revocar '{{role}}' de '{{member}}'?"
     },
-    "overview": {
-      "info-slot-content": "Bytebase sincroniza periódicamente el esquema de la instancia. Las bases de datos recién sincronizadas se colocan aquí primero. El usuario debe transferirlas al proyecto de aplicación adecuado."
-    },
     "select": "Seleccionar proyecto",
     "settings": {
       "confirm-archive-project": "Archivar \"{{name}}\" lo hará de solo lectura y lo ocultará de las listas de proyectos activos. Se conservarán todos los issues, bases de datos y configuraciones. Puede restaurarlo más tarde desde la lista de proyectos archivados.",
       "confirm-delete-project": "Eliminar \"{{name}}\" eliminará permanentemente el proyecto y todos los datos asociados, incluidos issues, configuraciones e historial. Todas las bases de datos de este proyecto se moverán al proyecto predeterminado. Esta acción no se puede deshacer.",
       "issue-related": {
         "allow-access-grants": {
-          "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura.",
+          "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura. Las concesiones también pueden incluir la exportación de resultados y la visualización de datos sin enmascarar.",
           "self": "Permitir concesiones de acceso"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "Permite que la persona que modificó un plan por última vez apruebe el issue de cambio de base de datos relacionado.",
+          "self": "Permitir la aprobación de la persona que modificó el plan por última vez"
         },
         "allow-request-role": {
           "description": "Los usuarios que no son propietarios del proyecto pueden solicitar roles a nivel de proyecto por sí mismos",
           "self": "Permitir solicitar rol"
         },
         "allow-self-approval": {
-          "description": "Permitir que el creador del problema apruebe el problema.",
-          "self": "Permitir la autoaprobación"
+          "description": "Permite que la persona que creó un issue lo apruebe.",
+          "self": "Permitir que los creadores aprueben sus propios issues"
         },
         "approval-flow-configured": "Flujo de aprobación configurado",
         "approval-flow-fallback": "Usando regla de aprobación predeterminada",
         "approval-flow-not-configured": "Flujo de aprobación no configurado",
+        "approval-permissions": {
+          "description": "Estos permisos son acumulativos. Si una persona creó el issue y también modificó su plan por última vez, ambos permisos deben estar habilitados.",
+          "self": "Permisos de aprobación"
+        },
         "ci-sampling-size": {
           "description": "El número máximo de bases de datos para probar durante la validación de datos de CI. \nCuando está deshabilitado (cero), se realizará la validación completa.",
           "self": "Tamaño de muestreo de datos de CI"
@@ -2025,30 +2185,14 @@
       "success-updated-prompt": "Webhook {{name}} actualizado exitosamente.",
       "test-webhook": "Probar webhook",
       "triggering-activity": "Actividades de disparo",
+      "url-hidden": "Oculta por seguridad. Introduzca una nueva URL para reemplazarla.",
       "webhook-url": "URL del webhook"
     }
   },
   "quick-action": {
-    "create-db": "Crear base de datos",
     "create-project": "Crear proyecto",
     "new-project": "Nuevo Proyecto"
   },
-  "quick-start": {
-    "guide": "haga clic en el paso para probarlo",
-    "notice": {
-      "desc": "Todavía puede volver a abrirla más tarde desde el menú en la parte superior derecha",
-      "title": "Guía de inicio rápido omitida"
-    },
-    "query-data": "Consultar datos",
-    "self": "Inicio rápido",
-    "view-an-issue": "Ver una incidencia",
-    "visit-database": "Visitar Bases de datos",
-    "visit-environment": "Visitar Entornos",
-    "visit-instance": "Visitar Instancias",
-    "visit-member": "Visitar Miembros",
-    "visit-project": "Visitar Proyectos"
-  },
-  "refresh-remind": {},
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
@@ -2276,8 +2420,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "Clasificación de búsqueda",
-      "select": "Seleccionar clasificación"
+      "search": "Clasificación de búsqueda"
     }
   },
   "sensitive-data": {
@@ -2290,6 +2433,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "Gestiona tu perfil personal y cómo inicias sesión.",
+      "email-managed": "Contacta con un administrador del espacio de trabajo para cambiar tu correo de inicio de sesión.",
+      "password-notice": "Al cambiar la contraseña se cerrará la sesión en todos los dispositivos, incluido este.",
+      "security": "Seguridad",
+      "self": "Configuración de la cuenta",
+      "update-password": "Actualizar contraseña"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2310,12 +2461,17 @@
           "enable-ai-assistant": "Habilitar el Asistente de IA",
           "enabled-in-saas": "Gemini AI se habilita automáticamente en el modo SaaS.",
           "endpoint": {
-            "description": "Proporcione una implementación privada del Punto de conexión de API.",
+            "description": "Introduzca el endpoint de API para el modelo personalizado.",
+            "openai-description": "Use un endpoint /responses para la API Responses o /chat/completions para la API Chat Completions.",
             "self": "Punto de conexión de API"
           },
           "model": {
-            "description": "Suministro de implementación privada del nombre del modelo.",
-            "self": "Nombre del modelo"
+            "custom": "Modelo personalizado",
+            "deployment": "Nombre de implementación",
+            "deployment-description": "El nombre de la implementación de Azure OpenAI. Puede diferir del modelo.",
+            "description": "Seleccione un modelo compatible o elija un modelo personalizado para introducir otro modelo y endpoint.",
+            "name": "Nombre del modelo",
+            "self": "Modelo"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",
@@ -2381,7 +2537,10 @@
           "exiting": "Saliendo..."
         },
         "data-copy": "Habilitar la copia de datos",
-        "data-export": "Habilitar la exportación de datos",
+        "data-export": {
+          "description": "Si está deshabilitado, los usuarios no pueden exportar directamente los resultados de las consultas. En los proyectos que permiten concesiones de acceso, aún pueden pulsar \"Solicitar exportación\" para enviar una solicitud de concesión de acceso y exportar tras la aprobación.",
+          "self": "Permitir la exportación de datos sin aprobación"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
           "go-to-sql-editor": "Ir al Editor SQL",
@@ -2463,25 +2622,6 @@
             "self": "Tamaño máximo del resultado de SQL"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "La capacidad máxima disponible para las sesiones MCP (Model Context Protocol) en este espacio de trabajo. Los cambios se aplican de inmediato a la siguiente solicitud MCP.",
-            "disabled": {
-              "description": "Se rechazan todas las conexiones MCP.",
-              "self": "Deshabilitado"
-            },
-            "read-only": {
-              "description": "Reservado para el control de solo lectura detallado, que aún no está disponible. Hasta entonces, elegir esta opción rechaza por completo las conexiones MCP, igual que Deshabilitado.",
-              "self": "Solo lectura"
-            },
-            "read-write": {
-              "description": "Las sesiones MCP pueden leer y escribir, siempre limitadas por los permisos de cada usuario. Es el valor predeterminado cuando no está configurado.",
-              "self": "Lectura y escritura"
-            },
-            "self": "Acceso MCP"
-          },
-          "self": "MCP"
-        },
         "no-limit": "No hay límite cuando el valor <= 0",
         "password-restriction": {
           "min-length": "La longitud mínima de la contraseña no debe ser inferior a {{min}} caracteres",
@@ -2545,25 +2685,131 @@
       "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
     },
     "mcp": {
-      "auth": {
-        "description": "Se requiere autenticación OAuth en la primera conexión. Asegúrese de tener los permisos apropiados en Bytebase.",
-        "title": "Autenticación requerida"
+      "connect": {
+        "description": "Añada Bytebase a su cliente de IA y empiece a preguntar. En la primera conexión inicia sesión y aprueba el acceso en el navegador.",
+        "desktop-note": "Claude Desktop lee los servidores remotos de su cuenta de Claude, no del archivo de configuración. Añada esta URL como conector personalizado en Customize > Connectors de claude.ai y aparecerá en Claude Desktop.",
+        "json-note": "Este es el formato mcpServers. Los formatos de configuración varían según el cliente: VS Code, por ejemplo, espera servers en su propio mcp.json, así que use la pestaña de VS Code para eso.",
+        "title": "Conectar un cliente"
       },
       "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
       "first-prompt": {
         "description": "Una vez conectado, intente preguntar a su asistente de IA:",
-        "example": "Listar todos los proyectos en mi instancia de Bytebase",
-        "title": "Tu primer prompt"
+        "example": "Enumera todos los proyectos de mi instancia de Bytebase",
+        "title": "Su primer prompt"
       },
-      "general-config": {
-        "title": "Opción 1: Configuración JSON"
+      "ladder": {
+        "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
+        "floor": {
+          "label": "Nunca, en ningún modo:",
+          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una sesión de modo Admin ni leer el historial de consultas de otra persona."
+        },
+        "heading": "{{mode}} permite",
+        "hide-details": "Ocultar detalles",
+        "mark": {
+          "allowed": "Permitido",
+          "refused": "No permitido"
+        },
+        "row": {
+          "export": {
+            "details": "Descargar resultados como archivo. Los datos salen de Bytebase.",
+            "title": "Exportar resultados de consulta"
+          },
+          "manage": {
+            "details": "Sincronizar instancias y bases de datos · Configuración y etiquetas de bases de datos · Mover bases de datos entre proyectos · Grupos de bases de datos · Consultas guardadas",
+            "title": "Gestionar el mantenimiento de bases de datos"
+          },
+          "propose": {
+            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear, eliminar y restaurar versiones · Crear y eliminar revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
+            "title": "Proponer cambios"
+          },
+          "read-data": {
+            "details": "Ejecutar consultas de solo lectura · En Solo lectura, una solicitud se rechaza por completo salvo que cada sentencia se demuestre ser una lectura que devuelve datos; la profundidad de esa comprobación depende del motor y, en algunos motores, ninguna sentencia puede demostrarse que sea una lectura · Su propio historial de consultas · Consultas guardadas y hojas a las que tiene acceso",
+            "title": "Leer datos ejecutando consultas"
+          },
+          "read-schemas": {
+            "details": "Esquemas · Bases de datos e instancias · Proyectos y grupos de bases de datos · Catálogos, historiales de cambios y revisiones · Configuraciones de revisión SQL · Datos de su propia sesión y del espacio de trabajo",
+            "title": "Leer esquemas y metadatos"
+          },
+          "read-workflow": {
+            "details": "Issues y comentarios · Plans y comprobaciones de plan · Despliegues, ejecuciones de tareas y registros · Versiones · Vistas previas de reversión",
+            "title": "Leer el flujo de cambios"
+          },
+          "run-rollouts": {
+            "details": "Crear un despliegue · Ejecutar, omitir o cancelar sus tareas, bajo la política de aprobación del proyecto",
+            "title": "Ejecutar despliegues y tareas"
+          },
+          "run-statements": {
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP a través de consultas, hasta donde el motor y los permisos del propio usuario lo permitan",
+            "title": "Ejecutar sentencias DML y DDL"
+          }
+        },
+        "show-details": "Mostrar detalles",
+        "stops": {
+          "read": "Solo lectura termina aquí",
+          "write": "Lectura y escritura termina aquí"
+        },
+        "summary": {
+          "read-only": "Leer esquemas, datos y el flujo de cambios; una solicitud que lleve algo que no pueda demostrarse que es una lectura se rechaza, y no se exporta nada",
+          "read-write": "Leer esquemas, datos y el flujo de cambios; proponer, ejecutar, exportar y gestionar"
+        },
+        "tier": {
+          "read": "lectura",
+          "write": "escritura"
+        }
       },
-      "quick-start": {
-        "description": "Alternativamente, use uno de estos comandos CLI.",
-        "title": "Opción 2: Comandos CLI"
-      },
-      "setup": {
-        "add-to-config": "Agregue este JSON a su archivo de configuración del cliente MCP."
+      "policy": {
+        "current": "Política actual: {{mode}}",
+        "description": "Lo máximo que puede hacer aquí cualquier sesión MCP. Las sesiones también están limitadas por los permisos de cada usuario, y las denegaciones de la política se envían a la salida estándar cuando el registro de auditoría en la salida estándar está habilitado.",
+        "edit": "Editar política",
+        "loading": "Leyendo la política de acceso…",
+        "masking": {
+          "badge": "Exenciones de enmascaramiento ignoradas",
+          "badge-disabled": "Exenciones de enmascaramiento ignoradas — MCP está desactivado",
+          "badge-unlicensed": "Exenciones de enmascaramiento ignoradas — enmascaramiento sin licencia",
+          "description": "Si se activa, los datos enmascarados siguen enmascarados en las sesiones MCP incluso para usuarios con exenciones o permisos de desenmascarado. La cobertura depende del motor: donde Bytebase no enmascara, esto no cambia nada. La consola no se ve afectada.",
+          "title": "Ignorar las exenciones de enmascaramiento",
+          "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
+        },
+        "masking-pending": {
+          "applied": "Esta política se guardará con las exenciones de enmascaramiento aplicadas.",
+          "ignored": "Esta política se guardará con las exenciones de enmascaramiento ignoradas."
+        },
+        "mode": {
+          "disabled": {
+            "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",
+            "caption": "Ninguna sesión puede conectarse",
+            "description": "Ninguna sesión MCP puede conectarse a este espacio de trabajo.",
+            "title": "Desactivado"
+          },
+          "read-only": {
+            "best-for": "Ideal para: consultar y explorar datos mediante lenguaje natural.",
+            "caption": "Explorar y consultar",
+            "title": "Solo lectura"
+          },
+          "read-write": {
+            "best-for": "Ideal para: hacer cambios en la base de datos a través de un agente de IA, siempre limitado por los permisos de cada usuario.",
+            "caption": "Cambiar datos y esquemas",
+            "title": "Lectura y escritura"
+          }
+        },
+        "read-failed": {
+          "description": "Recargue para reintentar. Si sigue fallando, la política almacenada es una que Bytebase no puede analizar y un operador debe reparar la fila directamente. Mientras no se pueda leer, se rechaza toda conexión MCP.",
+          "title": "No se pudo leer la política de acceso"
+        },
+        "save": "Guardar política",
+        "saved": "Política guardada. {{mode}} se aplica a la siguiente solicitud de cada sesión.",
+        "tightening": "Se aplica a la siguiente solicitud de cada sesión en curso.",
+        "tightening-change": "{{from}} → {{to}} se aplica a la siguiente solicitud de cada sesión en curso.",
+        "title": "Política de acceso",
+        "unreadable": {
+          "description": "Este espacio de trabajo almacena un valor de capacidad que esta versión no entiende. Se rechaza toda conexión MCP. Elija un modo y guarde para corregirlo.",
+          "pick": "Elija un modo para guardar esta política.",
+          "title": "No se puede leer la política de acceso almacenada"
+        },
+        "unserved": {
+          "description": "Este espacio de trabajo almacena {{stored}}, que esta versión no admite. Se rechaza toda conexión MCP. Elija un modo y guarde para corregirlo.",
+          "title": "La política de acceso almacenada no es compatible con esta versión"
+        }
       },
       "title": "Integración MCP"
     },
@@ -2573,6 +2819,29 @@
         "reactivate-confirm-title": "¿Estás seguro de que deseas reactivar?"
       },
       "add-member": "Agregar miembro",
+      "admin": {
+        "change-email": "Cambiar correo electrónico",
+        "change-email-description": "Cambia la dirección de inicio de sesión de esta cuenta desde {{email}}. El usuario deberá iniciar sesión con la nueva dirección.",
+        "create-user": "Crear usuario",
+        "create-user-roles-failed": "La cuenta se creó, pero no se pudieron asignar sus roles. Configúralos desde Miembros.",
+        "deactivate": "Desactivar usuario",
+        "deactivate-tip": "La cuenta conserva sus datos pero ya no puede iniciar sesión. Puedes reactivarla más tarde.",
+        "edit-user": "Editar usuario",
+        "email-immutable-tip": "Para mover esta cuenta a otra dirección, cierra este panel y usa Cambiar correo electrónico en el menú de la fila.",
+        "external-source": "Esta cuenta se sincroniza desde {{source}}. Los cambios hechos aquí pueden sobrescribirse en la próxima sincronización.",
+        "generate": "Generar",
+        "reactivate": "Reactivar usuario",
+        "reactivate-tip": "La cuenta puede volver a iniciar sesión con sus credenciales y roles actuales.",
+        "reset-mfa": "Restablecer 2FA",
+        "reset-mfa-optional": "{{user}} pierde su autenticador y sus códigos de recuperación, e iniciará sesión sin verificación en dos pasos hasta que vuelva a registrarse.",
+        "reset-mfa-recovery-first": "Si aún conserva un código de recuperación, puede iniciar sesión con él y volver a registrarse sin este restablecimiento.",
+        "reset-mfa-required": "{{user}} pierde su autenticador y sus códigos de recuperación. Este espacio de trabajo exige verificación en dos pasos, así que deberá configurar un autenticador nuevo al iniciar sesión.",
+        "reset-password": "Restablecer contraseña",
+        "reset-password-deliver": "Envíasela por un canal de confianza. Bytebase no la envía por correo.",
+        "reset-password-description": "Establece una nueva contraseña para {{user}}. Se cerrarán todas sus sesiones y deberá iniciar sesión de nuevo con ella.",
+        "reset-password-issued": "Nueva contraseña de {{user}}. Se muestra una sola vez y no se puede recuperar después.",
+        "saas-read-only": "En la nube, los perfiles pertenecen al titular de la cuenta. Gestiona el acceso al espacio de trabajo desde Miembros."
+      },
       "all-users": "Todos los usuarios",
       "assign-role": "Asignar rol",
       "cannot-revoke-self": "No puede revocarse a sí mismo",
@@ -2627,7 +2896,7 @@
       "select-role_other": "Seleccionar roles",
       "service-account": "Cuenta de Servicio",
       "service-accounts": "Cuentas de Servicio",
-      "service-key-copied": "Clave de Servicio copiada al portapapeles, por favor manténgala en secreto.",
+      "service-key-reset-and-copied": "Clave de servicio restablecida y copiada",
       "show-inactive": "Mostrar cuentas inactivas",
       "table": {
         "account": "Cuenta",
@@ -2642,12 +2911,16 @@
       "workload-identity-all-branches-tags": "Todas las ramas y etiquetas",
       "workload-identity-allowed-branches-tags": "Ramas/etiquetas permitidas",
       "workload-identity-audience": "Audiencia",
+      "workload-identity-audience-hint": "La audiencia que solicita tu pipeline. Los flujos de trabajo generados por Bytebase solicitan bytebase; las guías de configuración solicitan el valor predeterminado del proveedor, así que añade también esa línea si tu pipeline lo usa.",
       "workload-identity-branch": "Rama",
       "workload-identity-branch-hint": "Dejar vacío para todas las ramas",
+      "workload-identity-config-rejected": "Bytebase no puede aceptar esta configuración:",
+      "workload-identity-generic-oidc": "OIDC genérico",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "La URL de su instancia de GitLab",
       "workload-identity-group": "Grupo / Nombre de usuario",
       "workload-identity-issuer": "URL del emisor",
+      "workload-identity-jwks-url": "URL de JWKS",
       "workload-identity-owner": "Organización / Nombre de usuario",
       "workload-identity-platform": "Plataforma",
       "workload-identity-project": "Proyecto",
@@ -2665,6 +2938,10 @@
       "display-name": "Su nombre",
       "display-name-placeholder": "Ingrese su nombre",
       "email": "Correo electrónico",
+      "enable-sample-databases": "Habilitar bases de datos de ejemplo",
+      "enable-sample-databases-create-change": "Habilitar bases de datos de ejemplo como destino seguro para el cambio",
+      "enable-sample-databases-mark-sensitive-data": "Habilitar bases de datos de ejemplo para probar el enmascaramiento de datos de inmediato",
+      "enable-sample-databases-query-data": "Habilitar bases de datos de ejemplo para empezar a consultar de inmediato",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
@@ -2672,13 +2949,42 @@
       "password-mismatch": "Nueva contraseña no coincide",
       "phone": "Número de móvil",
       "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
-      "role": "Rol",
       "setup-failed": "Error al actualizar el perfil.",
       "setup-first-project": "Configurar el primer proyecto",
+      "setup-scenario": {
+        "continue": "Continuar",
+        "create-database-change": {
+          "description": "Defina un cambio y cree una incidencia rastreable.",
+          "title": "Crear un cambio de base de datos"
+        },
+        "mark-sensitive-data": {
+          "description": "Identifica columnas sensibles y aplica enmascaramiento de datos.",
+          "title": "Marcar datos sensibles"
+        },
+        "outcome-title": "¿Qué le gustaría hacer con Bytebase?",
+        "query-data": {
+          "description": "Abra SQL Editor y ejecute una sentencia en una base de datos.",
+          "title": "Consultar datos"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "Usaré Bytebase por mi cuenta.",
+            "title": "Solo yo"
+          },
+          "team": {
+            "description": "Trabajaré con otras personas.",
+            "title": "Mi equipo"
+          },
+          "title": "¿Quién usará Bytebase con usted?"
+        }
+      },
       "setup-skip": "Lo haré después",
+      "setup-steps": {
+        "scenario": "Elegir un objetivo",
+        "workspace": "Configurar espacio de trabajo"
+      },
+      "setup-submit": "Configurar mi espacio de trabajo",
       "setup-success": "Perfil actualizado.",
-      "setup-title": "¡Bienvenido! Configure su espacio de trabajo",
-      "subscription": "(Actualice para habilitar la gestión de roles)",
       "workspace-name": "Nombre del espacio de trabajo",
       "workspace-name-placeholder": "Ingrese el nombre del espacio de trabajo"
     },
@@ -2725,6 +3031,7 @@
           "masking-type": "Tipo De Enmascaramiento"
         }
       },
+      "apply-masking": "Aplicar enmascaramiento",
       "classification": {
         "empty-classification": "El campo \"classification\" está vacío",
         "guide-classification": "\"classification\" asigna cada categoría por ID. Las categorías hoja deben referenciar un número de nivel; las categorías padre omiten el nivel.",
@@ -2735,6 +3042,7 @@
         "missing-classification": "Falta el campo \"classification\"",
         "missing-levels": "Falta el campo \"levels\""
       },
+      "columns-to-mask": "Columnas que se enmascararán",
       "global-rules": {
         "condition-order": "Orden de condición",
         "delete-rule-tip": "¿Eliminar esta regla?",
@@ -2746,10 +3054,18 @@
         "re-order": "Reordenar"
       },
       "grant-access": "Conceder acceso",
+      "mark-sensitive-data": "Marcar datos confidenciales",
+      "mark-sensitive-data-description": "Selecciona las columnas cuyos valores deben ocultarse en los resultados de las consultas.",
       "never-expires": "Nunca expira",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
+      "semantic-type-description": "Los tipos semánticos agrupan columnas que representan la misma clase de datos para que Bytebase aplique un enmascaramiento coherente.",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "No hay cambios para guardar",
+          "title-required": "El título es obligatorio"
+        },
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
+        "masking-effect": "Efecto de enmascaramiento: {{effect}}",
         "select": "Seleccionar tipo semántico",
         "self": "Tipos Semánticos",
         "table": {
@@ -2757,13 +3073,9 @@
           "description": "Descripción",
           "icon": "Icono",
           "masking-algorithm": "Algoritmo de enmascaramiento",
-          "semantic-type": "Tipo Semántico"
-        },
-        "template": {
-          "description": "Puede aplicar tipos semánticos integrados desde la plantilla. La plantilla integrada no se puede modificar.",
-          "duplicate-warning": "El tipo semántico \"{{title}}\" ya existe"
-        },
-        "use-predefined-type": "Utiliza el Tipo Predefinido"
+          "semantic-type": "Tipo Semántico",
+          "title": "Título"
+        }
       }
     },
     "sidebar": {
@@ -2870,26 +3182,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "Información básica",
-    "data": {
-      "built-in": "Utilice la muestra incorporada",
-      "built-in-desc": "Generar proyecto de muestra e instancias",
-      "self-setup": "Configurar el proyecto"
-    },
-    "purposes": {
-      "alter-schema": "Alterar esquema",
-      "query-data": "Consultar datos",
-      "self": "¿Cuál es su propósito principal con Bytebase?"
-    },
-    "self": "Configuración",
-    "skip-setup": "Saltar configuración",
-    "workflow": {
-      "self": "¿Cuál es su flujo de trabajo con la base de datos?",
-      "simple": "No hay un flujo de trabajo complejo, solo se necesitan herramientas de interfaz de usuario",
-      "team": "Trabajar con compañeros de equipo, necesita una canalización de CI/CD"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "Mostrar solo destacadas",
@@ -2986,6 +3278,10 @@
     "copy-selected-rows-as-csv": "Copiar las filas seleccionadas como CSV",
     "copy-selected-rows-as-sql": "Copiar las filas seleccionadas como SQL",
     "copy-url": "Copiar URL",
+    "data-explorer-elasticsearch-filter-placeholder": "Introduce una expresión de consulta, p. ej. status:active",
+    "data-explorer-filter-placeholder": "Introduce un predicado de consulta, p. ej. WHERE c.id = \"1\"",
+    "data-explorer-mongodb-filter-placeholder": "Introduce un documento de filtro, p. ej. { \"status\": \"active\" }",
+    "data-explorer-sql-filter-placeholder": "Introduce un predicado de consulta, p. ej. WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {{file}}",
     "duration-day": "{{days}} día",
@@ -2997,6 +3293,7 @@
     "expire-at": "Expira el {{time}}",
     "expire-in": "Expira en {{time}}",
     "expired": "Expirado",
+    "explore-data": "Explorar datos",
     "export-available-via-issue": "Exportación disponible vía issue \"{{title}}\"",
     "export-available-via-n-grants": "Exportación disponible vía {{count}} concesiones de acceso:",
     "export-enabled-by-grant": "Exportación habilitada por la concesión de acceso",
@@ -3014,6 +3311,7 @@
       }
     },
     "invalid-database": "Base de datos no válida {{database}}",
+    "json-view": "Vista JSON",
     "last-synced": "Última sincronización: <time></time>",
     "loading-data": "Cargando datos...",
     "loading-databases": "Cargando bases de datos...",
@@ -3029,12 +3327,113 @@
     "open-in-new-tab": "Abrir en nueva pestaña",
     "opened-from-link": "Abierto desde enlace",
     "pending-query": "Consulta pendiente",
-    "preview-table-data": "Vista previa de datos de la tabla",
     "previous-row": "Fila anterior",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."
     },
     "query-history-not-found": "Historial de consultas no encontrado o ya no accesible",
+    "query-plan-load-failed": "No se pudo cargar el plan de consulta",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "Copiado",
+        "failed": "Error al copiar",
+        "plan": "Copiar plan",
+        "query": "Copiar consulta"
+      },
+      "details": {
+        "select-node": "Selecciona un nodo para ver sus detalles."
+      },
+      "diagram": {
+        "collapse": "Contraer {{count}} nodos bajo {{node}}",
+        "cost": "coste {{cost}}",
+        "estimated-rows": "{{count}} filas estimadas",
+        "expand": "Expandir {{count}} nodos bajo {{node}}",
+        "fit": "Ajustar a la vista",
+        "nodes-hidden": "{{count}} nodos ocultos",
+        "plan-cost-share": "{{share}} del coste del plan",
+        "rows": "filas {{count}}",
+        "zoom-in": "Acercar",
+        "zoom-out": "Alejar"
+      },
+      "error": {
+        "mssql-empty": "SQL Server no devolvió ningún plan de consulta para esta sentencia.",
+        "mssql-invalid": "El plan de consulta no es XML válido. Se espera la salida de SHOWPLAN_XML.",
+        "mssql-no-plan": "El XML del plan de consulta no es un showplan de SQL Server con al menos una sentencia.",
+        "postgres-empty": "PostgreSQL no devolvió ningún plan de consulta para esta sentencia.",
+        "postgres-invalid": "El plan de consulta no es JSON válido. Se espera la salida de EXPLAIN (FORMAT JSON).",
+        "postgres-no-plan": "El JSON del plan de consulta no contiene un objeto \"Plan\".",
+        "spanner-empty": "Spanner no devolvió ningún plan de consulta para esta sentencia.",
+        "spanner-emulator": "Spanner no devolvió ningún plan de consulta para esta sentencia. El emulador de Spanner no devuelve ninguno para ninguna sentencia; explíquela en una instancia de Spanner para ver uno.",
+        "spanner-invalid": "El plan de consulta no es JSON válido. Se espera un plan de consulta de Spanner.",
+        "spanner-no-plan": "El JSON del plan de consulta no contiene una lista \"planNodes\" con un operador en la raíz.",
+        "too-deep": "El plan de consulta está demasiado anidado para que este visualizador pueda dibujarlo.",
+        "unreadable": "No se pudo leer este plan de consulta"
+      },
+      "grid": {
+        "added-cost": "Coste añadido",
+        "added-cost-hint": "Coste que este nodo añade sobre sus hijos; algunos motores también cuentan aquí las repeticiones de una entrada, como bajo un bucle anidado. La barra muestra este coste como parte del plan.",
+        "caption": "Nodos del plan en el orden en que el planificador los anida, con los padres antes que los hijos.",
+        "estimated-rows": "Filas estimadas",
+        "node": "Nodo",
+        "rows": "Filas",
+        "total-cost": "Coste total",
+        "width": "Anchura",
+        "width-hint": "Anchura estimada de la fila en bytes"
+      },
+      "highlight": {
+        "cost": "Coste",
+        "cost-hint": "Sombrear según el coste que un nodo añade sobre sus hijos",
+        "label": "Resaltar",
+        "off": "Desactivado",
+        "off-hint": "Dejar todas las tarjetas de nodo sin sombrear",
+        "rows": "Filas",
+        "rows-hint": "Sombrear según el número estimado de filas"
+      },
+      "legend": {
+        "cost": "la barra de cada tarjeta indica la parte del coste estimado del plan correspondiente a ese nodo",
+        "rows": "una arista se hace más gruesa según las filas que se estima que devolverá su nodo hijo"
+      },
+      "metric": {
+        "added-cost": "Coste añadido",
+        "bytes": "{{count}} bytes",
+        "estimated-rows": "Filas estimadas",
+        "row-width": "Anchura de fila",
+        "startup-cost": "Coste inicial",
+        "total-cost": "Coste total"
+      },
+      "query": {
+        "missing": "La sentencia no se guardó con este plan."
+      },
+      "summary": {
+        "added-cost": "Coste añadido",
+        "cost-by-operation": "Coste por operación",
+        "cost-by-operation-description": "Cada tipo de nodo del plan y su coste total.",
+        "cost-ranges": "Rangos de coste",
+        "cost-ranges-description": "Cada nodo abarca desde su coste inicial —el coste antes de su primera fila— hasta su coste total; ambos incluyen todo lo que hay debajo. Los intervalos más oscuros contienen más coste del plan. Los costes no son un calendario: dos entradas de una unión se solapan aquí, pero se ejecutan una tras otra.",
+        "costliest": "Operadores más costosos",
+        "costliest-description": "Ordenados por el coste que un nodo añade sobre sus hijos. Cuando una entrada se ejecuta repetidamente, como bajo un bucle anidado, algunos motores cuentan las repeticiones en el nodo que la vuelve a ejecutar y no en la propia entrada.",
+        "count": "Cantidad",
+        "estimate-note": "La sentencia se planificó, pero no se ejecutó, por lo que todas las cifras son estimaciones del optimizador y no mediciones. Las unidades de coste son arbitrarias y solo comparables dentro de este plan.",
+        "estimated-rows-returned": "Filas devueltas estimadas",
+        "no-added-cost": "Ningún nodo de este plan añade un coste estimado propio.",
+        "nodes": "Nodos",
+        "operation": "Operación",
+        "share": "Proporción",
+        "timeline-node": "{{name}}, coste de {{startup}} a {{total}}, {{share}} del coste del plan",
+        "total-estimated-cost": "Coste total estimado"
+      },
+      "tab": {
+        "diagram": "Diagrama",
+        "grid": "Cuadrícula",
+        "query": "Consulta",
+        "summary": "Resumen",
+        "text": "Texto"
+      },
+      "totals": {
+        "estimated-cost": "coste estimado {{cost}}",
+        "nodes": "{{count}} nodos"
+      }
+    },
     "query-time": "Tiempo de consulta",
     "re-request": "Volver a solicitar",
     "recent": "Reciente",
@@ -3046,7 +3445,11 @@
     },
     "request-aborted": "El usuario abortó la solicitud",
     "request-access-grant": "Solicitar concesión de acceso",
+    "request-export": "Solicitar exportación",
+    "request-query": "Solicitar consulta",
+    "request-unmask": "Solicitar desenmascaramiento",
     "result-detail": {
+      "cell": "Detalle de celda",
       "next-match": "Siguiente coincidencia",
       "previous-match": "Coincidencia anterior",
       "search": "Buscar en detalles"
@@ -3054,6 +3457,7 @@
     "result-limit": {
       "self": "Límite de resultados"
     },
+    "result-view-mode": "Modo de vista de resultados",
     "revoke-access": "Revocar",
     "revoke-confirm": "¿Está seguro de que desea revocar esta concesión de acceso?",
     "rows": {
@@ -3063,13 +3467,16 @@
     "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
     "save-sheet": "Guardar consulta",
     "saved-query-share": {
+      "add-people": "Agregar usuarios o grupos",
       "editor": "Editor",
-      "granted-at-other-level": "{{count}} más con acceso en otro nivel.",
+      "load-failed": "No se pudo cargar el uso compartido.",
       "not-shared": "No compartido con nadie.",
       "only-users-and-groups": "Solo se puede conceder acceso a usuarios y grupos.",
+      "owner": "Propietario",
+      "people-with-access": "Usuarios con acceso",
       "policy-changed": "El uso compartido cambió en otro lugar. Se recargó la versión más reciente.",
       "private-hint": "Solo tú y los administradores del espacio de trabajo pueden abrir esta consulta guardada.",
-      "shared-with": "Compartido con",
+      "share-title": "“{{title}}”",
       "viewer": "Lector"
     },
     "scroll-to-bottom": "Desplazarse hacia abajo",
@@ -3080,6 +3487,7 @@
     "search-scope-row-number-description": "Ingrese un número de fila para saltar a esa fila.",
     "search-scope-row-number-title": "Número de fila",
     "select-a-database-to-start": "Seleccione una base de datos para comenzar",
+    "select-a-project-to-choose-a-database": "Seleccione un proyecto para elegir una base de datos",
     "select-connection": "Por favor seleccione conexiones",
     "select-encoding": "Seleccionar codificación",
     "self": "Editor de SQL",
@@ -3113,7 +3521,6 @@
     "view-detail": "Ver detalle",
     "view-issue": "Ver issue",
     "view-schema-text": "Ver texto del esquema",
-    "visualize-explain": "Visualizar explicación",
     "web-socket": {
       "connection-status": {
         "connected": "conectado",
@@ -3296,8 +3703,7 @@
     },
     "prior-backup": "Respaldo previo",
     "run-immediately": {
-      "description": "Las tareas comenzarán a ejecutarse en cuanto haga clic en \"Ejecutar\". No requiere demora ni programación.",
-      "self": "Corre inmediatamente"
+      "description": "Las tareas comenzarán a ejecutarse en cuanto haga clic en \"Ejecutar\". No requiere demora ni programación."
     },
     "run-task": "Ejecutar tarea | Ejecutar tareas",
     "schedule-for-later": {
@@ -3393,6 +3799,7 @@
     },
     "self": "Autenticación de dos factores",
     "setup-steps": {
+      "confirm-code": "Introduce un código nuevo de tu autenticador para finalizar",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "Estos códigos son el último recurso para acceder a su cuenta en caso de que pierda su código de autenticación de dos factores. Si no puede encontrar estos códigos, perderá el acceso a su cuenta.",
@@ -3424,21 +3831,35 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "Crear cambio de base de datos",
       "query": "Ir a SQL Editor"
     },
+    "all-steps-completed": "Todos los pasos completados",
     "descriptions": {
-      "database": "Crea o transfiere una base de datos a un proyecto antes de consultar datos.",
-      "instance": "Conecta una instancia para que Bytebase pueda sincronizar tus bases de datos.",
+      "add-teammate": "Invite a un compañero y concédale acceso al espacio de trabajo.",
+      "create-database-change": "Define un cambio de base de datos y crea su incidencia.",
+      "database": "Abre una base de datos y explora sus esquemas y tablas.",
+      "instance": "Conecta una instancia para que Bytebase pueda sincronizar sus bases de datos.",
+      "mark-sensitive-data": "Abre la base de datos seleccionada y asigna un tipo semántico a una columna sensible.",
       "project": "Crea un proyecto para organizar bases de datos y cambios.",
-      "sql-editor": "Consulta datos en SQL Editor o crea un cambio de base de datos gobernado."
+      "query-data": "Abre la base de datos seleccionada en SQL Editor y ejecuta cualquier sentencia."
     },
     "dismiss": "Cerrar guía",
+    "generic": {
+      "title": "Configurar Bytebase"
+    },
+    "getting-started": "Primeros pasos",
     "intro": {
+      "create-user-description": "Cree una cuenta para un compañero en este espacio de trabajo autohospedado.",
+      "create-user-title": "Crear un usuario",
       "database-description": "Crea una base de datos en tu instancia conectada.",
       "database-title": "Crear base de datos",
+      "grant-access-description": "Invite a un compañero y asígnele un rol en el espacio de trabajo.",
+      "grant-access-title": "Conceder acceso al espacio de trabajo",
       "instance-description": "Crea una instancia para que Bytebase pueda conectarse a tu servidor de base de datos.",
       "instance-title": "Conectar la instancia",
+      "mark-sensitive-data-description": "Selecciona una columna y asigna un tipo semántico para que Bytebase pueda aplicar enmascaramiento de datos.",
+      "mark-sensitive-data-title": "Marcar datos sensibles",
+      "mark-sensitive-fields-description": "Abre una tabla o colección y asigna tipos semánticos a los campos sensibles de su catálogo.",
       "project-description": "Crea primero un proyecto. Las bases de datos se pueden sincronizar en él después de conectar la instancia.",
       "project-title": "Crear un proyecto",
       "transfer-description": "Selecciona una o más bases de datos y transfiérelas al proyecto.",
@@ -3446,12 +3867,28 @@
     },
     "prepare-database-tip": "Selecciona las bases de datos para transferirlas al proyecto.",
     "previous-step-required": "Debes terminar el paso anterior.",
-    "self": "Configurar Bytebase",
+    "product-model": "Cómo funciona Bytebase",
+    "scenarios": {
+      "create-database-change": {
+        "title": "Crear un cambio de base de datos"
+      },
+      "mark-sensitive-data": {
+        "title": "Marcar datos sensibles"
+      },
+      "query-data": {
+        "title": "Consultar datos"
+      }
+    },
+    "step-progress": "{{current}} de {{total}}",
     "steps": {
-      "database": "Preparar base de datos",
+      "add-teammate": "Añadir compañero",
+      "create-database-change": "Crear cambio de base de datos",
+      "database": "Explorar base de datos",
       "instance": "Conectar instancia",
+      "mark-sensitive-data": "Marcar datos sensibles",
       "project": "Crear proyecto",
-      "query": "Consultar datos"
-    }
+      "query-data": "Consultar datos"
+    },
+    "view-all-steps": "Ver todos los pasos"
   }
 }

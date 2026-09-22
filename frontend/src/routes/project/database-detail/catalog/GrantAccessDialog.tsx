@@ -71,6 +71,11 @@ export function GrantAccessDialog({
   onDismiss,
 }: GrantAccessDialogProps) {
   const { t } = useTranslation();
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
+  const accountParents = useMemo(
+    () => [...new Set([workspaceResourceName, projectName].filter(Boolean))],
+    [workspaceResourceName, projectName]
+  );
 
   const hasRequiredFeature = useAppStore((s) =>
     s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING, instance)
@@ -432,6 +437,7 @@ export function GrantAccessDialog({
                       <FeatureBadge
                         feature={PlanFeature.FEATURE_DATA_MASKING}
                         instance={instance}
+                        clickable={false}
                       />
                       <span>{t("issue.role-grant.use-cel")}</span>
                     </div>
@@ -445,6 +451,7 @@ export function GrantAccessDialog({
                       <FeatureBadge
                         feature={PlanFeature.FEATURE_DATA_MASKING}
                         instance={instance}
+                        clickable={false}
                       />
                       <span>{t("issue.role-grant.manually-select")}</span>
                     </div>
@@ -504,7 +511,11 @@ export function GrantAccessDialog({
                   <CircleHelp className="size-4 textinfolabel" />
                 </Tooltip>
               </div>
-              <AccountMultiSelect value={memberList} onChange={setMemberList} />
+              <AccountMultiSelect
+                value={memberList}
+                onChange={setMemberList}
+                accountParents={accountParents}
+              />
             </div>
           </div>
 

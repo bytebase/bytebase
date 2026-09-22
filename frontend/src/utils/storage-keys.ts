@@ -31,6 +31,8 @@ export const STORAGE_KEY_SQL_EDITOR_RESULT_LIMIT = "bb.sql-editor.result-limit";
 export const STORAGE_KEY_SQL_EDITOR_REDIS_NODE = "bb.sql-editor.redis-node";
 export const STORAGE_KEY_SQL_EDITOR_AI_PANEL_SIZE =
   "bb.sql-editor.ai-panel-size";
+export const STORAGE_KEY_SQL_EDITOR_RESULT_PANEL_SIZE =
+  "bb.sql-editor.result-panel-size";
 export const STORAGE_KEY_SQL_EDITOR_SIDEBAR_TAB =
   "bb.sql-editor.sidebar.last-visited-tab";
 export const storageKeySqlEditorSidebarTab = (project: string) =>
@@ -57,8 +59,20 @@ export const storageKeyLastActivity = (email: string) =>
   `bb.last-activity.${email}`;
 export const storageKeyCollapseState = (email: string) =>
   `bb.collapse-state.${email}`;
+// Always workspace-scoped, including self-host, because browser storage can
+// outlive the server data associated with a workspace id.
 export const storageKeyIntroState = (scope: string, email: string) =>
   withScope("bb.intro-state", scope, email);
+export const storageKeyWorkspaceSetupGuideScenario = (
+  scope: string,
+  email: string
+) => withScope("bb.workspace-setup-guide.scenario", scope, email);
+export const storageKeyWorkspaceSetupGuideWorkspaceUsage = (
+  scope: string,
+  email: string
+) => withScope("bb.workspace-setup-guide.workspace-usage", scope, email);
+export const storageKeyWorkspaceSetupFinished = (workspace: string) =>
+  withScope("bb.workspace-setup.finished", workspace);
 // Workspace-scoped: value keys embed project resource names.
 export const storageKeyIamRemind = (scope: string, email: string) =>
   withScope("bb.iam-remind", scope, email);
@@ -115,6 +129,8 @@ export const storageKeySqlEditorAiSuggestion = (email: string) =>
   `bb.sql-editor.ai-suggestion.${email}`;
 
 // --- AI ---
+export const storageKeyAiConversations = (scope: string, email: string) =>
+  withScope("bb.ai.conversations", scope, email);
 export const storageKeyAiSuggestions = (hash: string) =>
   `bb.ai.suggestions.${hash}`;
 

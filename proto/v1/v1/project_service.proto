@@ -26,14 +26,18 @@ service ProjectService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // BatchGetProjects retrieves multiple projects by their names.
-  // Permissions required: bb.projects.get
+  // One resource per requested name, in request order. The first name that
+  // does not resolve fails the whole call (AIP-231: no partial response).
+  // Permissions required: bb.projects.get (on each named project)
   rpc BatchGetProjects(BatchGetProjectsRequest) returns (BatchGetProjectsResponse) {
     option (google.api.http) = {get: "/v1/projects:batchGet"};
     option (bytebase.v1.permission) = "bb.projects.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists all projects in the workspace with optional filtering.
@@ -43,6 +47,7 @@ service ProjectService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.projects.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Searches for projects with advanced filtering capabilities.
@@ -55,6 +60,7 @@ service ProjectService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new project in the workspace.
@@ -68,6 +74,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates an existing project's properties.
@@ -81,6 +89,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes (soft-delete or purge) a project.
@@ -91,6 +101,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Restores a soft-deleted project.
@@ -103,6 +115,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.undelete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes multiple projects in a single operation.
@@ -115,6 +129,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves the IAM policy for a project.
@@ -123,6 +139,8 @@ service ProjectService {
     option (google.api.http) = {get: "/v1/{resource=projects/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Sets the IAM policy for a project.
@@ -135,6 +153,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.setIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Adds a webhook to a project for notifications.
@@ -147,6 +167,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates an existing webhook configuration.
@@ -160,6 +182,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Removes a webhook from a project.
@@ -172,6 +196,8 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Tests a webhook by sending a test notification.
@@ -183,6 +209,8 @@ service ProjectService {
     };
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = SENDS_DATA_TO_A_THIRD_PARTY;
   }
 }
 
@@ -205,7 +233,7 @@ message BatchGetProjectsRequest {
 }
 
 message BatchGetProjectsResponse {
-  // The projects from the specified request.
+  // One project per requested name, in the same order as `names`.
   repeated Project projects = 1;
 }
 
@@ -463,6 +491,9 @@ message Project {
 
   // Once enabled, users can request and use the just-in-time access in the SQL Editor.
   bool allow_just_in_time_access = 23;
+
+  // Whether to allow the last Plan editor to approve a database change issue.
+  bool allow_last_plan_editor_approval = 24;
 }
 
 message AddWebhookRequest {
@@ -502,7 +533,11 @@ message TestWebhookRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
-  // The webhook to test. Identified by its url.
+  // The webhook to test.
+  //
+  // The url is what gets posted to. Reads do not return a saved webhook's url,
+  // so leave url empty and set name to test the one already stored; set url to
+  // test a url before saving it.
   Webhook webhook = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -529,7 +564,29 @@ message Webhook {
   string title = 3 [(google.api.field_behavior) = REQUIRED];
 
   // url is the url of the webhook, should be unique within the project.
-  string url = 4 [(google.api.field_behavior) = REQUIRED];
+  //
+  // Write-only: an incoming-webhook url is the whole credential for posting
+  // into the customer's chat, so reads leave it empty, the same way a data
+  // source's password and SSL material are left empty. Set it to change it.
+  //
+  // Required to create a webhook. Not required on TestWebhook, where an empty
+  // url on a request that names a webhook means the one already stored, so the
+  // field carries no REQUIRED behavior it would contradict there.
+  string url = 4 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
+
+  // Whether the stored url's endpoint form can carry a direct message to the
+  // users an event mentions, rather than only a post to the channel the url
+  // names. False for a Microsoft Teams Power Automate workflow endpoint, which
+  // direct messages bypass entirely: a webhook with direct_message set sends
+  // them and returns, so the workflow post never happens.
+  //
+  // Reads do not return the url, so a client editing a saved webhook cannot
+  // work this out for itself. It is a fact about the stored url and says
+  // nothing about what the url is.
+  bool url_supports_direct_message = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // if direct_message is set, the notification is sent directly
   // to the persons and url will be ignored.

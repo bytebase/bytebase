@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -123,6 +123,6 @@ func checkColumnTypeDisallow(typeRestriction map[string]bool, level storepb.Advi
 		Code:          code.DisabledColumnType.Int32(),
 		Title:         title,
 		Content:       fmt.Sprintf("Disallow column type %s but column `%s`.`%s` is", columnType, tableName, col.Name),
-		StartPosition: common.ConvertANTLRLineToPosition(line),
+		StartPosition: base.ConvertANTLRLineToPosition(line),
 	}
 }

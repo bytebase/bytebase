@@ -111,15 +111,17 @@ export function ReviewReadinessFooter({
       )}
 
       {weight === "link" && (
-        <button
-          className="ml-auto inline-flex shrink-0 items-center gap-x-1 text-xs text-control-placeholder underline hover:text-control disabled:opacity-60"
+        <Button
+          appearance="link"
+          className="ml-auto shrink-0 text-control-placeholder underline hover:text-control"
           disabled={creating}
           onClick={triggerDeploy}
+          size="xs"
           type="button"
         >
           {creating && <Loader2 className="size-3 animate-spin" />}
           {t("plan.review.footer.bypass-and-deploy")}
-        </button>
+        </Button>
       )}
       {weight === "button" && (
         <Button

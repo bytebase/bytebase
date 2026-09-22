@@ -18,6 +18,7 @@ import (
 // split is otherwise compiler-enforced — the raw batch getters and the ref
 // filter are unexported from the store.
 func TestSheetContentGetterConfinement(t *testing.T) {
+	t.Parallel()
 	forbidden := map[string]bool{
 		"GetSheetFull": true,
 	}

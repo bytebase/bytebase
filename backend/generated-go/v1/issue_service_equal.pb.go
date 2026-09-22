@@ -424,6 +424,9 @@ func (x *ListIssueCommentsRequest) Equal(y *ListIssueCommentsRequest) bool {
 	if x.PageToken != y.PageToken {
 		return false
 	}
+	if x.Filter != y.Filter {
+		return false
+	}
 	return true
 }
 
@@ -486,6 +489,33 @@ func (x *UpdateIssueCommentRequest) Equal(y *UpdateIssueCommentRequest) bool {
 	}
 	if x.AllowMissing != y.AllowMissing {
 		return false
+	}
+	return true
+}
+
+func (x *IssueComment_ReviewMetadata) Equal(y *IssueComment_ReviewMetadata) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.RunType != y.RunType {
+		return false
+	}
+	if x.RuleType != y.RuleType {
+		return false
+	}
+	if x.Priority != y.Priority {
+		return false
+	}
+	if len(x.Targets) != len(y.Targets) {
+		return false
+	}
+	for i := 0; i < len(x.Targets); i++ {
+		if x.Targets[i] != y.Targets[i] {
+			return false
+		}
 	}
 	return true
 }
@@ -608,6 +638,18 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 	if x.Creator != y.Creator {
 		return false
 	}
+	if p, q := x.Root, y.Root; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if p, q := x.ThreadState, y.ThreadState; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if !x.StatementAnchor.Equal(y.StatementAnchor) {
+		return false
+	}
+	if !x.ReviewMetadata.Equal(y.ReviewMetadata) {
+		return false
+	}
 	if !x.GetApproval().Equal(y.GetApproval()) {
 		return false
 	}
@@ -618,6 +660,69 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 		return false
 	}
 	if !x.GetReviewSubmission().Equal(y.GetReviewSubmission()) {
+		return false
+	}
+	return true
+}
+
+func (x *StatementAnchor) Equal(y *StatementAnchor) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Spec != y.Spec {
+		return false
+	}
+	if x.SheetSha256 != y.SheetSha256 {
+		return false
+	}
+	if !x.StartPosition.Equal(y.StartPosition) {
+		return false
+	}
+	if !x.EndPosition.Equal(y.EndPosition) {
+		return false
+	}
+	return true
+}
+
+func (x *ReviewRun) Equal(y *ReviewRun) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.Status != y.Status {
+		return false
+	}
+	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if p, q := x.EndTime, y.EndTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if x.Error != y.Error {
+		return false
+	}
+	return true
+}
+
+func (x *RunReviewRequest) Equal(y *RunReviewRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
 		return false
 	}
 	return true

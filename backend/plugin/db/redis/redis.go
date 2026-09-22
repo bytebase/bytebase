@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/google/shlex"
 	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
@@ -19,7 +20,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -210,7 +210,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // Dump and restore
 // Dump the database, if dbName is empty, then dump all databases.
 // Redis is schemaless, we don't support dump Redis data currently.
-func (*Driver) Dump(_ context.Context, _ io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (*Driver) Dump(_ context.Context, _ io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	return nil
 }
 
@@ -346,7 +346,7 @@ func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd, limit int64) {
 			result.Rows = append(result.Rows, getResultRow(i+1, v))
 			n := len(result.Rows)
 			if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
-				result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
+				result.Error = util.FormatMaximumSQLResultSizeMessage(limit)
 				return
 			}
 		}

@@ -14,19 +14,32 @@ const mocks = vi.hoisted(() => ({
   uploadLicense: vi.fn(),
   emitStorageChangedEvent: vi.fn(),
   push: vi.fn(),
-  resolve: vi.fn(({ name }: { name: string }) => ({ fullPath: `/${name}` })),
+  resolve: vi.fn(({ name }: { name: string }) => ({
+    fullPath: `/${name}`,
+    href: `/${name}`,
+  })),
   currentRoute: {
     name: "sql-editor.home",
     fullPath: "/sql-editor",
     params: {},
     query: {},
   },
-  resetQuickstart: vi.fn(),
+  resumeQuickstart: vi.fn(),
+  captureMetric: vi.fn(),
+  scenarioId: "query-data" as string | undefined,
+  workspaceUsage: undefined as string | undefined,
+  introState: {} as Record<string, boolean>,
   hideQuickStart: false,
+  canReadSetupResources: true,
+  userCountInIam: 1,
   isDev: false,
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: {
+    init: vi.fn(),
+    type: "3rdParty",
+  },
   useTranslation: () => ({
     i18n: {
       language: "en-US",
@@ -35,7 +48,7 @@ vi.mock("react-i18next", () => ({
       ({
         "common.language": "Language",
         "common.license": "License",
-        "quick-start.self": "Quick Start",
+        "workspace-setup-guide.getting-started": "Getting started",
         "common.logout": "Logout",
         "settings.general.workspace.default-landing-page.go-to-workspace":
           "Go to workspace",
@@ -73,10 +86,12 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuItem: ({
     children,
     onClick,
+    render,
   }: {
-    children: ReactElement | string;
+    children?: ReactElement | string;
     onClick?: () => void;
-  }) => <button onClick={onClick}>{children}</button>,
+    render?: ReactElement;
+  }) => render ?? <button onClick={onClick}>{children}</button>,
   DropdownMenuSeparator: () => <div />,
   DropdownMenuSubmenu: ({ children }: { children: ReactElement[] }) => (
     <div>{children}</div>
@@ -101,6 +116,10 @@ vi.mock("./common", () => ({
 }));
 
 vi.mock("@/app/router", () => ({
+  router: {
+    push: mocks.push,
+    resolve: mocks.resolve,
+  },
   useCurrentRoute: () => mocks.currentRoute,
   useNavigate: () => ({
     push: mocks.push,
@@ -109,18 +128,16 @@ vi.mock("@/app/router", () => ({
   isSqlEditorRouteName: (name?: string) => name?.startsWith("sql-editor"),
   AUTH_SIGNIN_MODULE: "auth.signin",
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
-  SETTING_ROUTE_PROFILE: "setting.profile",
+  ACCOUNT_ROUTE: "account",
+  SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
   SQL_EDITOR_HOME_MODULE: "sql-editor.home",
+  SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
   useOptionalCurrentUser: () => ({
     title: "Alice",
     email: "alice@example.com",
-  }),
-  useServerInfo: () => ({
-    enableSample: true,
-    userCountInIam: 1,
   }),
   useSubscription: () => ({
     subscription: { plan: PlanType.FREE },
@@ -130,15 +147,36 @@ vi.mock("@/hooks/useAppState", () => ({
     logo: "",
   }),
   useAppFeature: () => mocks.hideQuickStart,
-  useQuickstartReset: () => mocks.resetQuickstart,
+  useWorkspaceSetupGuideResume: () => mocks.resumeQuickstart,
+  useIntroStateByKey: (key: string) => mocks.introState[key] ?? false,
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: {
+    captureMetric: mocks.captureMetric,
+  },
+}));
+
+vi.mock("@/modules/workspace-setup-guide/selection", () => ({
+  readGuideWorkspaceUsage: () => mocks.workspaceUsage,
+  readSelectedGuideScenarioId: () => mocks.scenarioId,
 }));
 
 vi.mock("@/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({
-      logout: mocks.logout,
-    }),
-  },
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        workspaceSetupGuideEnabled: (allowMultipleMembers = false) =>
+          !mocks.hideQuickStart &&
+          mocks.canReadSetupResources &&
+          (mocks.userCountInIam === 1 || allowMultipleMembers),
+      }),
+    {
+      getState: () => ({
+        logout: mocks.logout,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/utils/util", () => ({
@@ -169,7 +207,13 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.hideQuickStart = false;
+  mocks.canReadSetupResources = true;
+  mocks.userCountInIam = 1;
   mocks.isDev = false;
+  mocks.scenarioId = "query-data";
+  mocks.workspaceUsage = undefined;
+  mocks.introState = {};
+  mocks.currentRoute.name = "sql-editor.home";
   window.open = vi.fn();
   ({ ProfileMenuTrigger } = await import("./ProfileMenuTrigger"));
 });
@@ -229,7 +273,24 @@ describe("ProfileMenuTrigger", () => {
     unmount();
   });
 
-  test("hides quick start when the app feature disables it", () => {
+  test("renders the shared SQL Editor link outside SQL Editor", () => {
+    mocks.currentRoute.name = "workspace.landing";
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    const sqlEditorLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent?.includes("Go to SQL Editor")
+    );
+    expect(sqlEditorLink).not.toBeUndefined();
+    expect(sqlEditorLink).toHaveAttribute("target", "_blank");
+
+    unmount();
+  });
+
+  test("hides getting started when the app feature disables it", () => {
     mocks.hideQuickStart = true;
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
@@ -237,7 +298,119 @@ describe("ProfileMenuTrigger", () => {
 
     render();
 
-    expect(container.textContent).not.toContain("Quick Start");
+    expect(container.textContent).not.toContain("Getting started");
+    unmount();
+  });
+
+  test("records a selected guide opening", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    const gettingStartedButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent === "Getting started");
+    expect(gettingStartedButton).not.toBeUndefined();
+    act(() => gettingStartedButton?.click());
+    expect(mocks.resumeQuickstart).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide opened",
+      properties: {
+        journey: "query-data",
+        scenario: "query-data",
+        collaboration_type: "unselected",
+      },
+    });
+    unmount();
+  });
+
+  test("records a generic guide opening", () => {
+    mocks.scenarioId = undefined;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    const gettingStartedButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent === "Getting started");
+    act(() => gettingStartedButton?.click());
+    expect(mocks.resumeQuickstart).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup guide opened",
+      properties: {
+        journey: "workspace-setup",
+        scenario: "unselected",
+        collaboration_type: "unselected",
+      },
+    });
+    unmount();
+  });
+
+  test.each([0, 2])("hides getting started for IAM user count %s", (count) => {
+    mocks.userCountInIam = count;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Getting started");
+    unmount();
+  });
+
+  test("keeps the original admin's unfinished team guide resumable", () => {
+    mocks.userCountInIam = 2;
+    mocks.workspaceUsage = "team";
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).toContain("Getting started");
+    unmount();
+  });
+
+  test("ends the multi-member exception after completion acknowledgment", () => {
+    mocks.userCountInIam = 2;
+    mocks.workspaceUsage = "team";
+    mocks.introState["workspace-setup-guide.completed.query-data"] = true;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Getting started");
+    unmount();
+  });
+
+  test("does not give an invited member the local team exception", () => {
+    mocks.userCountInIam = 2;
+    mocks.workspaceUsage = undefined;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Getting started");
+    unmount();
+  });
+
+  test("hides getting started without setup resource permissions", () => {
+    mocks.canReadSetupResources = false;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Getting started");
     unmount();
   });
 

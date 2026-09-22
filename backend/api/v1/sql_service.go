@@ -8,6 +8,7 @@ import (
 	"io"
 	"math"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -168,11 +169,11 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 }
 
 // buildExportQueryContext assembles the db.QueryContext for an export request.
-// SkipMasking has to be set here (not only checked around the post-execution
-// MaskResults pass) because some drivers mask at query time via SQL rewrites
-// — by the time the second pass runs the rows would already be masked, and
-// a JIT grant with unmask=true would silently export masked data. See PR
-// #20487 review (RainbowDashy).
+// SkipMasking has to be set here, not only checked around the post-execution
+// MaskResults pass: queryRetry reads it off the QueryContext to decide
+// maskingEnabled and whether to extract sensitive predicate columns, and both
+// of those run before the export's own check. See PR #20487 review
+// (RainbowDashy). No driver reads the field.
 func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEmail string, schema *string, container string, skipMasking bool) db.QueryContext {
 	qc := db.QueryContext{
 		Limit:                int(restriction.MaximumResultRows),
@@ -191,7 +192,7 @@ func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEm
 }
 
 // preCheckAccess returns the user's most capable active access grant matching
-// the given query, or nil if none. When `requireExport` is true the CEL
+// the given query, or nil if none. When `requireExport` is true the SQL
 // filter is narrowed to grants with `export == true`, so an unmask-only
 // grant on the same statement can't shadow a separately-active export
 // grant via slice-order ties (see PR #20491 review).
@@ -221,36 +222,27 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		return nil
 	}
 
-	databaseFullName := formatDatabaseResourceName(instance, database)
-	now := time.Now().UTC().Format(time.RFC3339)
-
-	filter := fmt.Sprintf(
-		`status == "ACTIVE" && target == %q && expire_time > %q && query == %q`,
-		databaseFullName,
-		now,
-		strings.TrimSpace(statement),
-	)
-	if requireExport {
-		filter += ` && export == true`
+	requestSchema := ""
+	if schema != nil {
+		requestSchema = *schema
 	}
-	filterQ, err := store.GetListAccessGrantFilter(filter)
-	if err != nil {
-		slog.Warn("failed to build access grant filter", log.BBError(err))
-		return nil
-	}
-
-	grants, err := s.store.ListAccessGrants(ctx, &store.FindAccessGrantMessage{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		ProjectID: &database.ProjectID,
-		Creator:   &user.Email,
-		FilterQ:   filterQ,
+	grants, err := s.store.ListActiveAccessGrants(ctx, &store.FindActiveAccessGrantMessage{
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:     database.ProjectID,
+		Creator:       user.Email,
+		Target:        formatDatabaseResourceName(instance, database),
+		Statement:     strings.Trim(statement, " \t\n\r\v\f"),
+		Schema:        requestSchema,
+		Container:     container,
+		RequireExport: requireExport,
+		ExpireTime:    time.Now().UTC(),
 	})
 	if err != nil {
-		slog.Warn("failed to list access grants", log.BBError(err))
+		slog.Warn("failed to find active access grant", log.BBError(err))
 		return nil
 	}
-
-	if len(grants) == 0 {
+	grant := selectBestAccessGrant(grants)
+	if grant == nil {
 		return nil
 	}
 	readOnly, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), statement)
@@ -262,13 +254,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		return nil
 	}
-	matchingGrants := make([]*store.AccessGrantMessage, 0, len(grants))
-	for _, grant := range grants {
-		if accessGrantMatchesExecutionContext(grant, schema, container) {
-			matchingGrants = append(matchingGrants, grant)
-		}
-	}
-	return selectBestAccessGrant(matchingGrants)
+	return grant
 }
 
 // selectBestAccessGrant picks the highest-ranked grant by capability count
@@ -289,8 +275,8 @@ func selectBestAccessGrant(grants []*store.AccessGrantMessage) *store.AccessGran
 		}
 		// Rank by Unmask only — Export plays no role in selection:
 		//
-		//   - Export callers pass `requireExport=true`, which pushes
-		//     `&& export == true` into the CEL filter, so every grant in
+		//   - Export callers pass `requireExport=true`, which adds
+		//     `export == true` to the SQL filter, so every grant in
 		//     this slice already has `Export=true` and a per-grant Export
 		//     bump would just be a uniform constant.
 		//   - Query callers don't read `Payload.Export` from the returned
@@ -312,17 +298,6 @@ func selectBestAccessGrant(grants []*store.AccessGrantMessage) *store.AccessGran
 	return best
 }
 
-func accessGrantMatchesExecutionContext(grant *store.AccessGrantMessage, schema *string, container string) bool {
-	if grant.Payload == nil {
-		return false
-	}
-	requestSchema := ""
-	if schema != nil {
-		requestSchema = *schema
-	}
-	return grant.Payload.Schema == requestSchema && grant.Payload.Container == container
-}
-
 func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {
 	request := req.Msg
 	// Prepare related message.
@@ -340,21 +315,54 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 
 	// Validate the request.
-	// New query ACL experience.
+	// Engines without the per-statement ACL rely on this read-only gate to refuse
+	// writes (they do not classify DML/DDL in the access check). New-ACL engines
+	// classify per statement instead.
 	if !request.Explain && !common.EngineSupportQueryNewACL(instance.Metadata.GetEngine()) {
 		if err := validateQueryRequest(instance, statement); err != nil {
 			return nil, err
 		}
 	}
+	// EXPLAIN ANALYZE of a write executes it, so refuse an explain whose wrapped
+	// form is not read-only. See validateExplainStatements.
+	if request.Explain {
+		if err := validateExplainStatements(instance, statement, request.GetQueryOption().GetExplainFormat()); err != nil {
+			return nil, err
+		}
+	}
+	if request.Explain {
+		if err := validateExplainFormat(instance.Metadata.GetEngine(), request.GetQueryOption().GetExplainFormat()); err != nil {
+			return nil, err
+		}
+	}
 
-	queryDataPolicy := getEffectiveQueryDataPolicy(
+	// The MCP read-only clamp. Unconditional on Explain, unlike the gate
+	// above: an explain request carries the bare statement and the driver
+	// prepends EXPLAIN, so skipping it would hand a read-only session an
+	// unclassified write to send.
+	clamped, err := mcpReadOnlyClampApplies(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if clamped {
+		if err := refuseNonReadOnlyStatement(instance.Metadata.GetEngine(), statement); err != nil {
+			// The same kind of refusal the ceiling gate marks, taken at the
+			// one point that can see the request's argument. Query is audited
+			// and this runs in its handler, so the row is stored either way;
+			// the mark stamps it WARNING.
+			setPermissionDenied(ctx)
+			return nil, err
+		}
+	}
+
+	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,
 		s.store,
 		s.licenseService,
-		0,
+		request.Limit,
 		database.ProjectID,
 	)
-	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryDataPolicy.AllowAdminDataSource)
+	resolvedDataSourceID, err := resolveDataSourceID(ctx, instance, request.DataSourceId, statement, queryRestriction.AllowAdminDataSource)
 	if err != nil {
 		return nil, err
 	}
@@ -366,7 +374,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
 		DatabaseName: database.DatabaseName,
 		DataShare:    database.Metadata.GetDatashare(),
-		ReadOnly:     dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+		// A clamped request asks for the read-only session whatever data
+		// source it landed on, so the depth does not depend on the customer
+		// having configured a read-only data source. The driver is opened and
+		// closed inside this handler, so the session cannot outlive the
+		// request or be reused by another one.
+		ReadOnly: clamped || dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
@@ -384,21 +397,18 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 
 	startTime := time.Now()
-	queryRestriction := getEffectiveQueryDataPolicy(
-		ctx,
-		s.store,
-		s.licenseService,
-		request.Limit,
-		database.ProjectID,
-	)
 	queryContext := db.QueryContext{
 		Explain:              request.Explain,
+		DataSourceType:       dataSource.GetType(),
 		Limit:                int(queryRestriction.MaximumResultRows),
 		OperatorEmail:        user.Email,
 		Option:               request.QueryOption,
 		Container:            request.GetContainer(),
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
-		SkipMasking:          accessGrant != nil && accessGrant.Payload.Unmask,
+		// SkipMasking turns the whole masking pass off (queryRetry's
+		// maskingEnabled), so exemptionsForPrincipal never runs when it is set.
+		// The toggle has to suppress it here as well as there.
+		SkipMasking: accessGrant != nil && accessGrant.Payload.Unmask && !mcpIgnoresMaskingExemptions(ctx),
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
@@ -631,6 +641,7 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 	switch engine {
 	case storepb.Engine_POSTGRES:
 		return parserbase.ColumnResource{
+			Instance: column.Instance,
 			Server:   column.Server,
 			Database: column.Database,
 			Schema:   database,
@@ -639,6 +650,7 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 		}
 	default:
 		return parserbase.ColumnResource{
+			Instance: column.Instance,
 			Server:   column.Server,
 			Database: database,
 			Schema:   schema,
@@ -646,6 +658,155 @@ func generateNewColumn(engine storepb.Engine, column parserbase.ColumnResource, 
 			Column:   column.Column,
 		}
 	}
+}
+
+// privateDatabaseLinkOwner is implemented by a driver whose session account can own
+// private database links (Oracle).
+type privateDatabaseLinkOwner interface {
+	OwnsPrivateDatabaseLink(ctx context.Context, conn *sql.Conn) (bool, error)
+}
+
+// refuseLinkedReadsShadowedByPrivateLinks refuses a linked read when the executing account
+// owns any private database link. Oracle resolves @name to the executing account's private
+// link before a public one, and the sync recorded the admin account's links only, so a
+// private link on another account can shadow the synced definition. No link name is
+// compared: Oracle expands a bare name with the database domain and accepts connection
+// qualifiers, and the synced list cannot settle either. The admin data source is the synced
+// account and is exempt. Runs on the executing connection right before execution, so a link
+// created by an earlier statement of the same request is seen. A failed check refuses.
+// BYT-10239 replaces this with resolution from the executing session's own links.
+func refuseLinkedReadsShadowedByPrivateLinks(ctx context.Context, driver db.Driver, conn *sql.Conn, instance *store.InstanceMessage, queryContext db.QueryContext, spans []*parserbase.QuerySpan) error {
+	if instance.Metadata.GetEngine() != storepb.Engine_ORACLE || queryContext.DataSourceType == storepb.DataSourceType_ADMIN {
+		return nil
+	}
+	linked := linkedColumns(spans)
+	if len(linked) == 0 {
+		return nil
+	}
+	owner, ok := driver.(privateDatabaseLinkOwner)
+	if !ok || conn == nil {
+		return privateLinkRefusal(ctx, linked, false, errors.New("the driver exposes no session connection"))
+	}
+	owns, err := owner.OwnsPrivateDatabaseLink(ctx, conn)
+	return privateLinkRefusal(ctx, linked, owns, err)
+}
+
+// linkedColumns lists the columns reached through a resolved database link, in a stable order.
+func linkedColumns(spans []*parserbase.QuerySpan) []parserbase.ColumnResource {
+	var linked []parserbase.ColumnResource
+	for _, span := range spans {
+		if span == nil {
+			continue
+		}
+		for column := range span.SourceColumns {
+			if column.Instance != "" {
+				linked = append(linked, column)
+			}
+		}
+	}
+	slices.SortFunc(linked, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
+	return linked
+}
+
+// privateLinkRefusal is the verdict of refuseLinkedReadsShadowedByPrivateLinks: nil only when
+// the check ran and found no private link.
+func privateLinkRefusal(ctx context.Context, linked []parserbase.ColumnResource, owns bool, err error) error {
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check the executing account's private database links; %s", linkedTableRefusal(linked[0], "is not executed")))
+	}
+	if owns {
+		return permissionDeniedError(ctx, errors.New(linkedTableRefusal(linked[0], "cannot be authorized: the executing account owns private database links, which Oracle resolves before the public links Bytebase synced. Run the query under the admin data source, or remove the private links from the account behind the read-only data source (BYT-10239)")))
+	}
+	return nil
+}
+
+// refuseLinkedTargetsOutsideProject mirrors authorizeWriteTargets: the access check
+// evaluates the session project's IAM policy only, so a target in another project is
+// refused. Runs after remoteColumnRefusal, so every linked column is on the connected
+// instance. SUP-222 / BYT-9698, BYT-10226.
+func (s *SQLService) refuseLinkedTargetsOutsideProject(ctx context.Context, columns parserbase.SourceColumnSet, instance *store.InstanceMessage, database *store.DatabaseMessage, perm permission.Permission) (*queryError, error) {
+	targets := map[string]*store.DatabaseMessage{}
+	for _, column := range linkedColumns([]*parserbase.QuerySpan{{SourceColumns: columns}}) {
+		target, seen := targets[column.Database]
+		if !seen {
+			databaseName := column.Database
+			var err error
+			target, err = s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+				Workspace:    common.GetWorkspaceIDFromContext(ctx),
+				InstanceID:   &instance.ResourceID,
+				DatabaseName: &databaseName,
+			})
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve linked database %q: %v", column.Database, err))
+			}
+			targets[column.Database] = target
+		}
+		if qe := linkedTargetProjectRefusal(ctx, column, target, database.ProjectID, perm); qe != nil {
+			return qe, nil
+		}
+	}
+	return nil, nil
+}
+
+// linkedTargetProjectRefusal decides refuseLinkedTargetsOutsideProject for one column, given
+// the database the link resolved to (nil when Bytebase does not track it).
+func linkedTargetProjectRefusal(ctx context.Context, column parserbase.ColumnResource, target *store.DatabaseMessage, requestProjectID string, perm permission.Permission) *queryError {
+	var message string
+	switch {
+	case target == nil:
+		message = linkedTableRefusal(column, "is in a database Bytebase does not track on this instance")
+	case target.ProjectID != requestProjectID:
+		message = linkedTableRefusal(column, fmt.Sprintf("is in project %q: reading another project's database through a link is not supported in SQL Editor", target.ProjectID))
+	default:
+		return nil
+	}
+	return &queryError{
+		err:        permissionDeniedError(ctx, errors.New(message)),
+		permission: perm,
+	}
+}
+
+// linkedTableRefusal names the linked table as written (an unqualified unresolved reference
+// has no database) followed by the reason.
+func linkedTableRefusal(column parserbase.ColumnResource, reason string) string {
+	table := column.Table
+	if column.Database != "" {
+		table = column.Database + "." + table
+	}
+	return fmt.Sprintf("table %s reached through database link %q %s", table, column.Server, reason)
+}
+
+// remoteColumnRefusal refuses an Oracle database link Bytebase could not resolve or that
+// resolves to another instance. The error carries no resource: a placeholder would satisfy
+// a negated condition (table_name != "x") and request-access would offer a grant that
+// cannot help. BYT-10226.
+func remoteColumnRefusal(ctx context.Context, columns parserbase.SourceColumnSet, connectedInstanceID string, perm permission.Permission) *queryError {
+	var remote []parserbase.ColumnResource
+	for column := range columns {
+		if column.Server != "" {
+			remote = append(remote, column)
+		}
+	}
+	slices.SortFunc(remote, func(a, b parserbase.ColumnResource) int { return strings.Compare(a.String(), b.String()) })
+	for _, column := range remote {
+		var message string
+		switch {
+		case column.Instance == "":
+			message = linkedTableRefusal(column, "cannot be authorized: Bytebase could not establish which database it reaches. A link is authorized when the connect string Bytebase synced for it names the host, port and service of a data source of exactly one instance")
+		case column.Instance != connectedInstanceID:
+			// Links to another instance are refused until the masker resolves a linked column's
+			// policy on its own instance; it lists databases by name on the connected instance
+			// (BYT-10237).
+			message = linkedTableRefusal(column, fmt.Sprintf("is on instance %q: querying another instance through a database link is not supported in SQL Editor", column.Instance))
+		default:
+			continue
+		}
+		return &queryError{
+			err:        permissionDeniedError(ctx, errors.New(message)),
+			permission: perm,
+		}
+	}
+	return nil
 }
 
 func isBackupTable(engine storepb.Engine, column parserbase.ColumnResource) bool {
@@ -701,30 +862,37 @@ func queryRetry(
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
-		if optionalAccessCheck != nil {
-			// Check query access
-			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema, multiStatement); err != nil {
-				return nil, nil, time.Duration(0), err
-			}
-			slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+	}
+	if optionalAccessCheck != nil {
+		// An EXPLAIN request leaves spans nil (GetQuerySpan runs only above), so
+		// accessCheckWithGrantedTargets takes its database-level branch and requires
+		// bb.sql.explain. A smuggled write (EXPLAIN ANALYZE of a write) is refused
+		// earlier, in the Query handler, before it reaches execution.
+		if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Explain, statements, queryContext.Schema, multiStatement); err != nil {
+			return nil, nil, time.Duration(0), err
 		}
-		if !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
-			masker := NewQueryResultMasker(stores)
-			sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
-			if err != nil {
-				return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
-			}
-			slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+		slog.Debug("optional access check", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
+	}
+	if !queryContext.Explain && !queryContext.SkipMasking && licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil {
+		masker := NewQueryResultMasker(stores)
+		sensitivePredicateColumns, err = masker.ExtractSensitivePredicateColumns(ctx, spans, instance, user)
+		if err != nil {
+			return nil, nil, time.Duration(0), connect.NewError(connect.CodeInternal, errors.New(err.Error()))
 		}
+		slog.Debug("extract sensitive predicate columns", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 	}
 
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
 		licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
+	queryContext.MaskingEnabled = maskingEnabled
 
 	if maskingEnabled {
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
 			return nil, nil, time.Duration(0), err
 		}
+	}
+	if err := refuseLinkedReadsShadowedByPrivateLinks(ctx, driver, conn, instance, queryContext, spans); err != nil {
+		return nil, nil, time.Duration(0), err
 	}
 
 	slog.Debug("start execute with timeout", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName), slog.String("statement", originalStatement))
@@ -740,15 +908,36 @@ func queryRetry(
 	}
 	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", originalStatement), slog.Duration("duration", duration))
 	if queryContext.Explain {
+		if format, ok := db.ExplainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat()); ok {
+			for _, result := range results {
+				if result.Error == "" {
+					result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
+				}
+			}
+		}
 		return results, nil, duration, nil
 	}
 
 	syncDatabaseMap := make(map[string]bool)
 	for i, r := range results {
+		if i >= len(spans) {
+			continue
+		}
+		// Re-sync even for error results: MaskResults also refuses partial rows.
+		// Permanently empty tables re-sync on every query until BYT-10074 adds throttling.
+		if maskingEnabled && maskingBlockedByUnresolvedColumns(spans[i], instance) {
+			for _, dbName := range spans[i].UnresolvedColumnsError.Databases() {
+				slog.Debug("database metadata need to sync: unresolved columns",
+					slog.String("instance", instance.ResourceID),
+					slog.String("database", dbName),
+					slog.String("detail", spans[i].UnresolvedColumnsError.Error()))
+				syncDatabaseMap[dbName] = true
+			}
+		}
 		if r.Error != "" {
 			continue
 		}
-		if i < len(spans) && spans[i].NotFoundError != nil {
+		if spans[i].NotFoundError != nil {
 			for k := range spans[i].SourceColumns {
 				slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
 				syncDatabaseMap[k.Database] = true
@@ -764,11 +953,7 @@ func queryRetry(
 			return nil, nil, duration, err
 		}
 		if d == nil {
-			// The referenced database is not tracked by Bytebase (e.g. it was
-			// dropped, excluded by sync filters, or never discovered yet).
-			// Skip the sync attempt and leave the span's NotFoundError in place
-			// so the masking policy below can reject the query cleanly instead
-			// of panicking on a nil *DatabaseMessage.
+			// Leave the span error in place so masking can reject an untracked database.
 			slog.Debug("skip metadata sync: database not tracked",
 				slog.String("instance", instance.ResourceID),
 				slog.String("database", accessDatabaseName))
@@ -1022,9 +1207,11 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// its target databases, so span-level ACL still runs and only the
 	// granted targets are exempted from IAM. See PR #20487 review.
 	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
+	// Export is a WRITE method, so a read-write MCP session reaches it with the
+	// same access-grant unmask Query carries.
 	skipMasking := false
 	if accessGrant != nil {
-		skipMasking = accessGrant.Payload.Unmask
+		skipMasking = accessGrant.Payload.Unmask && !mcpIgnoresMaskingExemptions(ctx)
 	}
 	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
 
@@ -1094,6 +1281,7 @@ func doExport(
 		database.ProjectID,
 	)
 	queryContext := buildExportQueryContext(queryRestriction, user.Email, request.Schema, request.GetContainer(), skipMasking)
+	queryContext.DataSourceType = dataSource.GetType()
 
 	// Split the statement for span analysis
 	statements, err := parserbase.SplitMultiSQL(instance.Metadata.GetEngine(), request.Statement)
@@ -1383,9 +1571,8 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	}
 
 	checkDatabaseAccess := func(perm permission.Permission) error {
-		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
-		grantTargetName := formatDatabaseResourceName(instance, database)
-		if _, granted := grantedTargets[grantTargetName]; granted {
+		databaseFullName := formatDatabaseResourceName(instance, database)
+		if _, granted := grantedTargets[databaseFullName]; granted {
 			return nil
 		}
 		attributes := map[string]any{
@@ -1410,6 +1597,11 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", databaseFullName, err))
 		}
 		if !ok {
+			// queryError does not implement Unwrap, and Query reports a refusal
+			// inside its response rather than as an RPC error, so connect.CodeOf
+			// cannot see this verdict. The mark is the only way it reaches the
+			// audit interceptor.
+			setPermissionDenied(ctx)
 			return &queryError{
 				err: connect.NewError(
 					connect.CodePermissionDenied,
@@ -1422,8 +1614,9 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 		return nil
 	}
 
-	// When spans is empty, it's an EXPLAIN query where GetQuerySpan is skipped (queryContext.Explain is true).
-	// Check at database level with EXPLAIN permission.
+	// No spans: either a read with no source columns (e.g. SELECT 1) or an EXPLAIN
+	// request (GetQuerySpan runs only for non-EXPLAIN). Check at the database
+	// level, with EXPLAIN permission for the latter.
 	if len(spans) == 0 {
 		perm := permission.SQLSelect
 		if isExplain {
@@ -1502,6 +1695,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				return err
 			}
 			if len(deniedResources) > 0 {
+				setPermissionDenied(ctx)
 				return &queryError{
 					err: connect.NewError(
 						connect.CodePermissionDenied,
@@ -1523,9 +1717,28 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			continue
 		}
 
+		// Oracle database links. Only a Select span carries linked columns, and a link never
+		// makes it SelectInfoSchema (plsql getOmniQuerySpan). A DML, DDL or EXPLAIN PLAN span has
+		// no source columns, so a link it reads through is not checked here (BOT-133).
+		// Before the JIT-grant skip below: an unresolved link can carry a local
+		// database name (ALLOWED_S.T@REMOTE2), which a grant on that database would otherwise
+		// authorize. A SQL Server linked-server reference keeps its pre-existing path (BYT-10235).
+		if instance.Metadata.GetEngine() == storepb.Engine_ORACLE {
+			if qe := remoteColumnRefusal(ctx, span.SourceColumns, instance.ResourceID, perm); qe != nil {
+				return qe
+			}
+			if qe, err := s.refuseLinkedTargetsOutsideProject(ctx, span.SourceColumns, instance, database, perm); err != nil {
+				return err
+			} else if qe != nil {
+				return qe
+			}
+		}
 		var deniedResources []string
 		for column := range span.SourceColumns {
-			columnDatabaseFullName := common.FormatDatabase(instance.ResourceID, column.Database)
+			columnDatabaseFullName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
+				InstanceID:   instance.ResourceID,
+				DatabaseName: column.Database,
+			})
 			grantTargetName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
 				ProjectID:    database.ProjectID,
 				InstanceID:   instance.ResourceID,
@@ -1566,6 +1779,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			}
 		}
 		if len(deniedResources) > 0 {
+			setPermissionDenied(ctx)
 			return &queryError{
 				err: connect.NewError(
 					connect.CodePermissionDenied,
@@ -1629,7 +1843,10 @@ func (s *SQLService) authorizeWriteTargets(
 
 	var deniedResources []string
 	for _, t := range targets {
-		databaseFullName := common.FormatDatabase(instance.ResourceID, t.database)
+		databaseFullName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
+			InstanceID:   instance.ResourceID,
+			DatabaseName: t.database,
+		})
 		grantTargetName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
 			ProjectID:    database.ProjectID,
 			InstanceID:   instance.ResourceID,
@@ -1943,6 +2160,69 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 
 	return user, instance, database, nil
+}
+
+// validateExplainFormat refuses a format the driver cannot produce. Drivers
+// map whatever reaches them onto their own syntax, so a request that slipped
+// through would silently come back in a format the caller cannot parse.
+func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) error {
+	supported := db.SupportedExplainFormats(engine)
+	// An engine with no explain at all is refused whatever the caller asked for,
+	// including nothing. Its driver would otherwise run the statement as an
+	// ordinary query — and an explain request skips the read-only validation
+	// above, on the understanding that the driver turns the statement into a
+	// plan.
+	if len(supported) == 0 {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support EXPLAIN", engine))
+	}
+	if format == v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED {
+		return nil
+	}
+	if slices.Contains(supported, format) {
+		return nil
+	}
+	names := make([]string, 0, len(supported))
+	for _, f := range supported {
+		names = append(names, f.String())
+	}
+	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain format %s, supported formats: %s", engine, format, strings.Join(names, ", ")))
+}
+
+// validateExplainStatements refuses an explain request whose planned form would
+// execute a write. The driver splits a multi-statement request and builds the
+// EXPLAIN of each statement (see pg.go and its siblings), so this validates the
+// same per-statement form built the same way: a smuggled "ANALYZE DELETE FROM t"
+// is not a statement the parser can plan, and an EXPLAIN ANALYZE DELETE the caller
+// wrote itself is rebuilt as a plain EXPLAIN or refused before it runs.
+//
+// An engine whose EXPLAIN is not a statement prefix (Oracle EXPLAIN PLAN, SQL
+// Server SHOWPLAN, Spanner/BigQuery plan APIs) runs its own plan API, which does
+// not execute the statement, and so has nothing registered to validate here.
+func validateExplainStatements(instance *store.InstanceMessage, statement string, format v1pb.QueryOption_ExplainFormat) error {
+	engine := instance.Metadata.GetEngine()
+	if !parserbase.HasExplainStatement(engine) {
+		return nil
+	}
+	statements, err := parserbase.SplitMultiSQL(engine, statement)
+	if err != nil {
+		// No splitter for this engine: validate the whole statement planned once.
+		// Execution goes through the same splitter, so a request that fails to split
+		// here fails there too rather than executing.
+		statements = []parserbase.Statement{{Text: statement}}
+	}
+	for _, stmt := range statements {
+		if stmt.Empty {
+			continue
+		}
+		planned, err := parserbase.ExplainStatement(engine, stmt.Text, db.ExplainFormat(format))
+		if err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		if err := validateQueryRequest(instance, planned); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {

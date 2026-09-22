@@ -1,0 +1,111 @@
+# Core Redis commands that the server flags "readonly" in its own command table.
+#
+# Source: redis_version 7.4.7, from
+#   redis/redis-stack-server@sha256:798ab84d9f266936b034ab11c4d04a2b8e4b441884c5aa7d17ac951eefdf742a
+# Pinned by digest on purpose: the "latest" tag moves, so it would not name the
+# version this snapshot was taken from.
+#
+# Generated with:
+#   docker run -d --rm --name redis-oracle -p 6399:6379 \
+#     redis/redis-stack-server@sha256:798ab84d9f266936b034ab11c4d04a2b8e4b441884c5aa7d17ac951eefdf742a
+#   # then, per top-level entry of `COMMAND INFO` and each of its subcommands,
+#   # keep the name when its flags contain "readonly"; module commands (a dot in
+#   # the name) are excluded because module presence varies per instance.
+#
+# Container subcommands appear as "<container> <subcommand>".
+# Regenerate when bumping the pinned version. TestReadCommandsMatchServerFlags
+# then reports every read command Redis has shipped since.
+bitcount
+bitfield_ro
+bitpos
+dbsize
+dump
+eval_ro
+evalsha_ro
+exists
+expiretime
+fcall_ro
+geodist
+geohash
+geopos
+georadius_ro
+georadiusbymember_ro
+geosearch
+get
+getbit
+getrange
+hexists
+hexpiretime
+hget
+hgetall
+hkeys
+hlen
+hmget
+hpexpiretime
+hpttl
+hrandfield
+hscan
+hstrlen
+httl
+hvals
+keys
+lcs
+lindex
+llen
+lolwut
+lpos
+lrange
+memory usage
+mget
+object encoding
+object freq
+object idletime
+object refcount
+pexpiretime
+pfcount
+pttl
+randomkey
+scan
+scard
+sdiff
+sinter
+sintercard
+sismember
+smembers
+smismember
+sort_ro
+srandmember
+sscan
+strlen
+substr
+sunion
+touch
+ttl
+type
+xinfo consumers
+xinfo groups
+xinfo stream
+xlen
+xpending
+xrange
+xread
+xrevrange
+zcard
+zcount
+zdiff
+zinter
+zintercard
+zlexcount
+zmscore
+zrandmember
+zrange
+zrangebylex
+zrangebyscore
+zrank
+zrevrange
+zrevrangebylex
+zrevrangebyscore
+zrevrank
+zscan
+zscore
+zunion

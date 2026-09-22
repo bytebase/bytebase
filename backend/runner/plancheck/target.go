@@ -9,8 +9,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// resolveDatabaseTarget resolves a workspace- or project-scoped database resource name.
-func resolveDatabaseTarget(ctx context.Context, stores *store.Store, target string) (*store.InstanceMessage, *store.DatabaseMessage, error) {
+// ResolveDatabaseTarget resolves a workspace- or project-scoped database resource name.
+func ResolveDatabaseTarget(ctx context.Context, stores *store.Store, target string) (*store.InstanceMessage, *store.DatabaseMessage, error) {
 	projectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to parse target %s", target)

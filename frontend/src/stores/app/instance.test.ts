@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
@@ -5,14 +6,16 @@ import {
   type ListInstancesRequest,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
-import { createInstanceSlice } from "./instance";
+import { createInstanceSlice, getListInstanceFilter } from "./instance";
 
 const mocks = vi.hoisted(() => ({
   getInstance: vi.fn(),
   listInstances: vi.fn(),
   createInstance: vi.fn(),
+  prepareSampleProjectInstance: vi.fn(),
   batchSyncInstances: vi.fn(),
   batchUpdateInstances: vi.fn(),
+  refreshServerInfo: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
   hasProjectPermissionV2: vi.fn(() => true),
 }));
@@ -22,6 +25,7 @@ vi.mock("@/api", () => ({
     getInstance: mocks.getInstance,
     listInstances: mocks.listInstances,
     createInstance: mocks.createInstance,
+    prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
     batchSyncInstances: mocks.batchSyncInstances,
     batchUpdateInstances: mocks.batchUpdateInstances,
   },
@@ -34,7 +38,9 @@ vi.mock("@/utils", async (importOriginal) => ({
 }));
 
 const createStore = () => {
-  const state: Record<string, unknown> = {};
+  const state: Record<string, unknown> = {
+    refreshServerInfo: mocks.refreshServerInfo,
+  };
   const set = (updater: unknown) => {
     const patch =
       typeof updater === "function"
@@ -65,6 +71,13 @@ describe("instance store project parent", () => {
         title: "Prod",
       })
     );
+    mocks.prepareSampleProjectInstance.mockResolvedValue(
+      create(InstanceSchema, {
+        name: "projects/app/instances/sample",
+        title: "Sample",
+      })
+    );
+    mocks.refreshServerInfo.mockResolvedValue({});
     mocks.batchSyncInstances.mockResolvedValue({});
     mocks.batchUpdateInstances.mockResolvedValue({ instances: [] });
   });
@@ -107,6 +120,31 @@ describe("instance store project parent", () => {
     expect(mocks.createInstance.mock.calls[0][0]).toMatchObject({
       parent: "projects/app",
     });
+    expect(mocks.refreshServerInfo).toHaveBeenCalledOnce();
+  });
+
+  test("refreshes sample metadata after preparing a sample instance", async () => {
+    const store = createStore();
+
+    const instance = await store.prepareSampleProjectInstance("projects/app");
+
+    expect(mocks.prepareSampleProjectInstance.mock.calls[0][0]).toMatchObject({
+      parent: "projects/app",
+    });
+    expect(mocks.refreshServerInfo).toHaveBeenCalledOnce();
+    expect(instance.name).toBe("projects/app/instances/sample");
+    expect(store.instancesByName[instance.name]).toBe(instance);
+  });
+
+  test("returns the prepared sample when refreshing metadata fails", async () => {
+    const store = createStore();
+    mocks.refreshServerInfo.mockRejectedValue(new Error("refresh failed"));
+
+    await expect(
+      store.prepareSampleProjectInstance("projects/app")
+    ).resolves.toMatchObject({
+      name: "projects/app/instances/sample",
+    });
   });
 
   test("uses project permission to fetch a nested instance", async () => {
@@ -148,5 +186,22 @@ describe("instance store project parent", () => {
     expect(mocks.batchUpdateInstances.mock.calls[0][0]).toMatchObject({
       parent: "projects/app",
     });
+  });
+});
+
+describe("getListInstanceFilter", () => {
+  const QUOTED = 'SELECT * FROM "users"';
+  const ESCAPED = 'SELECT * FROM \\"users\\"';
+
+  test("escapes a quote in the free-text query", () => {
+    const filter = getListInstanceFilter({ query: QUOTED }).toLowerCase();
+    expect(filter).not.toContain(QUOTED.toLowerCase());
+    expect(filter).toContain(ESCAPED.toLowerCase());
+  });
+
+  test("escapes a quote in the host and port", () => {
+    expect(getListInstanceFilter({ host: 'h"1', port: 'p"2' })).toBe(
+      'host.contains("h\\"1") && port.contains("p\\"2")'
+    );
   });
 });

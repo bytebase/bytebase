@@ -24,6 +24,7 @@ service ReleaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.releases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists releases in a project.
@@ -33,6 +34,7 @@ service ReleaseService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.releases.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new release with SQL files.
@@ -46,6 +48,7 @@ service ReleaseService {
     option (bytebase.v1.permission) = "bb.releases.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Updates an existing release.
@@ -60,6 +63,7 @@ service ReleaseService {
     option (bytebase.v1.permission) = "bb.releases.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Deletes a release.
@@ -70,6 +74,7 @@ service ReleaseService {
     option (bytebase.v1.permission) = "bb.releases.delete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Restores a deleted release.
@@ -79,6 +84,7 @@ service ReleaseService {
     option (bytebase.v1.permission) = "bb.releases.undelete";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Validates a release by dry-running checks on target databases.
@@ -90,6 +96,7 @@ service ReleaseService {
     };
     option (bytebase.v1.permission) = "bb.releases.check";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Lists all unique categories in a project.
@@ -99,6 +106,7 @@ service ReleaseService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.releases.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 
@@ -215,6 +223,7 @@ message CheckReleaseRequest {
   // Format:
   // projects/{project}/databaseGroups/{databaseGroup}
   // instances/{instance}/databases/{database}
+  // projects/{project}/instances/{instance}/databases/{database}
   repeated string targets = 3;
 
   // Custom linting rules in natural language for AI-powered validation.
@@ -242,7 +251,8 @@ message CheckReleaseResponse {
     string file = 1;
 
     // The target that the check is performed on.
-    // Should be a database. Format: instances/{instance}/databases/{database}
+    // Should be a database.
+    // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
     string target = 2;
 
     // The list of advice for the file and the target.
@@ -334,7 +344,10 @@ message Release {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 3 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
     // The raw SQL statement content.
-    bytes statement = 7 [(google.api.field_behavior) = INPUT_ONLY];
+    bytes statement = 7 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = OMIT
+    ];
     // The SHA256 hash value of the sheet content or the statement.
     string sheet_sha256 = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
   }

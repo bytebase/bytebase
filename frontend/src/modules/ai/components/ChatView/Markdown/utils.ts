@@ -10,22 +10,6 @@ import { normalizeUri } from "micromark-util-sanitize-uri";
 import type { ReactNode } from "react";
 import { createElement, Fragment } from "react";
 
-/**
- * React port of `plugins/ai/components/ChatView/Markdown/utils.ts`.
- *
- * Same mdast walker as the Vue version; `h(...)` is swapped for
- * `React.createElement(...)`. Differences from the Vue source:
- *
- * - `class` becomes `className`; HTML attributes use React's
- *   camelCased form (`htmlFor`, `tabIndex`, etc. — none of those
- *   actually appear here).
- * - `style` props use a CSS object instead of a string.
- * - Arrays of children get explicit `key`s (React warns when keys are
- *   missing; Vue auto-keys by index).
- * - `slots` is a plain mapped object (`{ code?, inlineCode?, image? }`)
- *   instead of Vue's `defineSlots<CustomRender>`.
- */
-
 export type CustomSlotRenderer<K extends keyof RootContentMap> = (
   node: RootContentMap[K],
   state: State
@@ -102,7 +86,9 @@ function defaultMdNodeToReact(node: RootContent, state: State): ReactNode {
 function rootToReact(node: Root, state: State): ReactNode {
   return createElement(
     "div",
-    { className: "markdown" },
+    {
+      className: "markdown min-w-0 max-w-full wrap-anywhere text-sm leading-5",
+    },
     mapChildren(node.children, state)
   );
 }
@@ -144,9 +130,8 @@ function emphasisToReact(
 function footnoteDefinitionToReact(
   node: RootContentMap["footnoteDefinition"]
 ): ReactNode {
-  // Same shape as the Vue source — render the first text child inside a
-  // `<div class="footnote-definition">`. The richer footnote-numbering
-  // path was commented out in Vue and isn't needed for LLM output.
+  // Render the first text child inside a `<div class="footnote-definition">`.
+  // Richer footnote numbering isn't needed for LLM output.
   const text = node.children[0] as unknown as Text;
   return createElement("div", { className: "footnote-definition" }, text.value);
 }
@@ -169,12 +154,16 @@ function htmlToReact(node: RootContentMap["html"]): ReactNode {
 
 type ImageProps = {
   src: string;
+  className: string;
   alt?: string;
   title?: string;
 };
 
 function imageToReact(node: RootContentMap["image"]): ReactNode {
-  const props: ImageProps = { src: normalizeUri(node.url) };
+  const props: ImageProps = {
+    src: normalizeUri(node.url),
+    className: "h-auto max-w-full",
+  };
   if (node.alt) props.alt = node.alt;
   if (node.title) props.title = node.title;
   return createElement("img", props);
@@ -218,7 +207,10 @@ function imageReferenceToReact(
   if (!definition) {
     return referenceToText(node, state);
   }
-  const props: ImageProps = { src: normalizeUri(definition.url || "") };
+  const props: ImageProps = {
+    src: normalizeUri(definition.url || ""),
+    className: "h-auto max-w-full",
+  };
   if (node.alt) props.alt = node.alt;
   if (definition.title) props.title = definition.title;
   return createElement("img", props);
@@ -315,8 +307,8 @@ function paragraphToReact(
   node: RootContentMap["paragraph"],
   state: State
 ): ReactNode {
-  // Match the Vue version's `<div class="paragraph">` (avoids `<p>` inside
-  // surrounding `<p>` when host components nest markdown).
+  // `<div class="paragraph">` instead of `<p>` avoids `<p>` inside a
+  // surrounding `<p>` when host components nest markdown.
   return createElement(
     "div",
     { className: "paragraph" },
@@ -364,7 +356,7 @@ function tableToReact(node: RootContentMap["table"], state: State): ReactNode {
   if (bodyRows.length > 0) {
     sections.push(createElement("tbody", { key: "tbody" }, bodyRows));
   }
-  return createElement("table", null, sections);
+  return createElement("table", { className: "w-full table-fixed" }, sections);
 }
 
 function textToReact(node: RootContentMap["text"]): ReactNode {

@@ -1,0 +1,722 @@
+# Backend test execution time
+
+Status: in progress
+
+## Scope
+
+Cut the execution time of `go test ./backend/...`. It takes 14–19.5 minutes in
+CI and has grown 54% since May (p50 10.2 → 15.7 min).
+
+Runner capacity and queue time are out of scope. The self-hosted VM exists
+because the Bytebase binary is expensive to build, and the warm Go build cache
+is the point.
+
+## Measurements
+
+Everything below is one local pass of `go test -p=8 -json ./backend/...` on
+20 vCPU / 31 GB with warm build and image caches. **The run this design started
+from finished in 14 m 19 s**, with individual package wall times summing to
+**3180 s**, so packages overlapped about 3.7×. Those are the numbers the efforts
+were sized against; see "Where it stands now" for what the same command costs
+today.
+
+Per-operation costs are means of 5 sequential runs:
+
+| Operation | Cost |
+| --- | ---: |
+| MySQL container start | 10 420 ms |
+| Postgres container start | 4 328 ms |
+| Server shutdown | 1 047 ms — 1 036 of it `httpServer.Shutdown` |
+| Server boot | 703 ms — `CREATE DATABASE` 39, `NewServer`+`LATEST.sql` 381, serve/healthz/signup/login 266 |
+
+A Postgres container costs 6.2× a full server boot, and a boot's own teardown
+costs more than the boot. `GetTestPgContainer` has no pooling, so every call is
+a new container. The suite makes roughly 400 Postgres containers, 37
+non-Postgres ones, and 207 server boots per run. The non-Postgres and boot
+counts are exact; the Postgres count is approximate, because `docker events`
+caught 297 creations but only started recording after two dozen packages had
+finished.
+
+### What that costs each package
+
+Four packages run their tests **serially**: `store`, `migrator` and
+`component/review` never call `t.Parallel()`, and `api/v1` calls it 8 times
+across 350 tests. Their test time and wall time match to within 1%, so their
+container cost *is* wall clock.
+
+| Package | Tests | Containers | Container time | Wall | Share of wall |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `backend/store` | 128 | 90 | 390 s | 459 s | **85%** |
+| `backend/api/v1` | 350 | 100 | 433 s | 540 s | **80%** |
+| `backend/migrator` | 18 | 16 | 69 s | 90 s | **77%** |
+| `backend/component/review` | 53 | 41 | 178 s | 282 s | **63%** |
+
+Those shares are arithmetic, not estimates. Remove a container start in one of
+those packages and you remove a second of its wall clock.
+
+The two other expensive packages have to be read differently:
+
+- **`backend/tests`** — 635 s wall. It calls `t.Parallel()` 203 times and runs
+  about 3.7× parallel inside, so costs overlap. Its fixtures come to roughly
+  812 s of work (104 containers, plus 207 boot-and-shutdown cycles), which
+  compresses to about 220 s of its wall.
+- **`backend/plugin/schema/oracle`** — 315 s wall, and fixtures are not the
+  story here. Its container starts in 14 s. The other 273 s is DDL work against
+  a real Oracle.
+
+### Where it stands now
+
+Same command, same box, with efforts 1, 2, 6 and 7 partly landed: **272 s**
+(4 m 32 s), package walls summing to 736 s and overlapping 2.7×. Every package
+passes.
+
+| Package | Then | Now | What moved it |
+| --- | ---: | ---: | --- |
+| `backend/tests` | 635 s | 174 s | effort 1, then effort 2's `t.Parallel()` |
+| `backend/api/v1` | 540 s | 43 s | #21349, a shared Postgres — not this design |
+| `backend/store` | 459 s | 12 s | effort 2, both steps |
+| `backend/plugin/schema/oracle` | 315 s | 78 s | #21344 goldens, #21351 shared container |
+| `backend/component/review` | 282 s | 17 s | #21349 |
+| `backend/migrator` | 90 s | <2 s | effort 6, by deletion |
+
+Two rows are worth reading twice. `api/v1` fell 12× without anyone writing a
+fake, which removes the wall-clock argument for effort 6 — the case for seams
+there is now about what the tests say, not what they cost. And
+`plugin/schema/*` as a whole went from 475 s to 164 s, `plugin/db/*` from 339 s
+to 145 s, which shrinks effort 7 from the largest item here to a middling one.
+
+### Second pass: 189 s to 152 s
+
+Same command, same box, measured again on 2026-09-06 after everything above
+had landed: **189 s**, package walls summing to 620 s and overlapping 3.3×.
+Five changes later it is **152 s**, walls summing to 654 s and overlapping 4.3×.
+Every package passes, `api/v1` also under `-race`.
+
+What the measurement found, what changed, and what it bought:
+
+| Finding | Change | Measured |
+| --- | --- | --- |
+| `backend/tests` was scheduled last. `./backend/...` expands alphabetically, so it got its first `-p=8` slot at +93 s and ran alone from +125 s. | CI lists `./backend/tests ./backend/api/v1` ahead of `./backend/...`; `go test` keeps command-line order and drops duplicates. | 189 s → 147 s on a cold cache, before any other change. |
+| `waitDBPing` waited on a 3 s ticker before its first ping, and a container is pingable 13 ms after `GenericContainer` returns. | Ping first, then poll every 100 ms. | Postgres start 4.33 s → 1.33 s; `backend/tests` alone 97 s → 79 s, its summed test time 1215 s → 953 s. |
+| Parallel subtests only get a slot once every top-level test has started, so the action command cases and the database group cases ran last, at one to eight concurrency, for the package's final 25 s. | Flattened into top-level tests. | The tail is gone; `TestWebhookIntegration`, 43 s from a first slot at about +18 s, is now the package floor. |
+| `plugin/db/pg` started nine containers, serially. | One shared container, a database per test with roles named after it, `t.Parallel()`. | 53 s → 7 s. |
+| `api/v1` ran 336 tests serially, and four of them were 27 s of its 38 s. | `t.Parallel()` on 263 tests: 217 without subtests, 46 table-driven ones at both levels, 3 slow parents under `//nolint:tparallel`. Six stay serial for `t.Setenv`, 62 with sequential subtests stay serial. | 41 s → 25 s inside the full run. |
+
+Two suspects were measured and cleared. The 5 s tickers in the plan check, task
+run and review run schedulers all have tickle channels that the API fires, and
+forcing them to 300 ms made `backend/tests` slower, 79 s → 84 s, from sixty
+schedulers polling Postgres. And `TestWebhookIntegration` is the longest test at
+43 s but no longer the tail; it is the floor of a package whose other 225 tests
+now fit around it.
+
+What is left of a Postgres start is `initdb`, about 1.25 s, and `backend/tests`
+still pays it 161 times. An image with the data directory already initialized
+was tried: a container answered in 0.18 s and the run came in at 140 s, but a
+`docker build` inside the test helper is more machinery than the 12 s it
+bought, and it is not in. The way to take those starts out is the one
+`plugin/db/pg` and the metadata packages use, one container per package and a
+database per test, with one caveat: a Bytebase instance syncs every database on
+its server, so the tests that assert on an instance's database list keep a
+server of their own.
+
+Measured standalone after all of it, `backend/tests` is **75.2 s** against
+97.1 s, with 1139 s of summed test time against 1215 s.
+
+**The gate has moved again.** With `backend/tests` finishing at +122 s, the
+run's last 30 s are `plugin/schema/oracle` alone. It still sorts into the
+alphabetical part of the list, starts at +74 s and takes 77 s under contention:
+13 subtests of 4.4 s of Oracle work each, on an engine capped at two threads,
+so Go-side parallelism buys at most 2×. Listing it ahead of `./backend/...` as
+well takes that tail off the run; shrinking the package is effort 7's business.
+
+One race surfaced under the heavier overlap, in `TestWebhookIntegration`'s
+completion cases. They provisioned databases, reset the collector, and only
+then registered the PIPELINE_COMPLETED webhook, trusting that the creation
+rollouts' completions had already been delivered. They had not necessarily:
+the running scheduler marks the task DONE, which is what `createDatabase`
+waits on, before it emits the completion event, so a webhook registered in that
+gap still received it and the assertion of zero completions failed once in
+about ten runs. `createDatabasesFlushingCompletion` now registers the webhook
+first, waits for one completion per database, and discards them.
+
+One hazard to know about. Two back-to-back heavy runs failed container starts
+with `failed to bind host port 0.0.0.0:49xxx/tcp: address already in use`.
+Docker publishes ports from the same 32768–60999 range the kernel hands to
+outgoing connections, and twenty servers' clients hold many of those. It shows
+in none of the CI logs checked, but it scales with throughput; a runner that
+starts seeing it should move one of the two ranges apart.
+
+### Third pass: 130 s, and every container in one place
+
+2026-09-12, same box, the command CI runs with `-count=1`: **130 s**, walls
+summing to 469 s and overlapping 3.6×, `backend/tests` 118 s of it.
+
+Every engine container now starts inside `backend/common/testcontainer` and is
+shared per package — `plugin/db/mongodb` 12.9 s to 6.3 s, three containers to
+one; `plugin/db/tidb` 5.1 s to 4.4 s; the pg17, TLS-Postgres and sample targets
+onto the same machinery. The Oracle container, unused since #21356, is deleted,
+and the per-test `GetTest*Container` helpers with it. Effort 4 then took the run
+to 120 s, the package to 107 s.
+
+**Then the target Postgres went the same way.** `backend/tests` was starting 162
+of them, one per test, because a container it registers as an instance is a
+whole server whose databases the syncer enumerates. `Instance.sync_databases` is
+what lets one server carry many instances — the syncer imports only the
+databases the list names, which is how Sample Project Instance already shares
+one target across workspaces — so a test now takes a database of its own on one
+shared target and the instance it registers names that database.
+**173 Postgres containers across the run became 31** and the run 1 m 56 s became
+**1 m 39 s**. Seventeen provisions stay private: the tests that create a
+cluster-wide role, the two that need separate servers to hold the same database
+name, and the one whose subject is two instances discovering the same physical
+`postgres` database. One server for twenty parallel tests also needs a raised
+`max_connections`; at the default 100 the failure reads "server refused TLS
+connection", which names neither the limit nor the cause.
+
+The two share a package, so they were measured as a 2×2 rather than in sequence
+— standalone `backend/tests`, one box, the same code with one toggle each:
+
+| | a server per test | one server |
+| --- | ---: | ---: |
+| **a container per test** | 87.9 s | 76.0 s |
+| **one target container** | 77.4 s | **55.3 s** |
+
+Each is worth about 11 s alone (effort 4 −11.9, the shared target −10.5) and
+32.6 s together, so the pair beats the sum of its parts by 10 s. Neither cost is
+the container or the boot itself: it is that a test spends that second holding a
+parallel slot, and removing one of the two just moves the queue to the other.
+
+### The floor
+
+`backend/plugin/...` cost 866 s across 69 packages at the start, and split by
+who owns the code: `plugin/schema/*` was 475 s in 6 packages, `plugin/db/*`
+339 s in 18. The other 45 packages — pure parser and advisor tests, no
+containers — came to 51 s. Parsing is not what costs; engines are. Today the
+same 70 packages come to 358 s.
+
+What any of this buys follows one rule:
+
+```
+wall ≈ max( slowest single package , sum of package walls ÷ overlap )
+```
+
+It reproduced the starting run — `max(635, 3180 ÷ 3.7)` is 859 s against an
+actual 859 s — and it reproduces the current one: `max(174, 736 ÷ 2.7)` is
+273 s against an actual 272 s. Treat the overlap factor as an observed property
+of a given schedule, not a constant.
+
+**The gate has moved, and that is the most important thing on this page.** The
+run used to be bound by its slowest package, so only `backend/tests` was worth
+attacking. It is now bound by the sum term: 736 s of work over an overlap of
+2.7, with the slowest package at 174 s and nowhere near binding. Every second
+removed anywhere now buys about 0.37 s of wall, and no single package is the
+gate. That makes the remaining efforts additive rather than a queue behind one
+package — and it makes work outside `backend/tests` worth doing again.
+
+## Design
+
+Six efforts. The numbering is the order they were written in, kept so existing
+references resolve, and it is no longer the order of payoff — effort 3, a
+checkout pool for the 104 `provisionPgInstance` callers, is dropped outright, and
+four of the rest have been re-sized since. **Read the sizing line at the top of
+each section, not its position.**
+
+What changed is that effort 2's second step overtook everything else. Adding
+`t.Parallel()` to 34 tests took `backend/tests` from 615 s to a median 173 s on
+its own — more than efforts 1, 4 and 5 together were ever projected to buy — and
+by making the run sum-bound rather than bound by one package it changed what the
+others are worth. Efforts 4, 6 and 7 deflated: their costs now overlap, or were
+already collected by work that landed outside this design. Effort 5 did not,
+because deleting a test removes work instead of moving it.
+
+The standing order, by what is left rather than by number:
+
+| | Effort | Worth |
+| --- | --- | --- |
+| 1 | 6, seams instead of containers | seconds; do it for the tests, not the clock |
+| 2 | 7, engine conformance to omni | 14 s; do it for ownership, not the clock |
+
+Three entries have left this list. Effort 4 is done, and beat its own
+re-sizing; see its section. Effort 5 is done — and was worth less than the
+~320 s it was sized at, because a third of that number was
+`TestSQLReviewForMySQL`, which was not the duplicate the sizing assumed; see its
+section. `TestWebhookIntegration` was second at 148 s until #21355 fixed the
+scheduler stall underneath it and took it to 45 s, which is the largest single
+saving on this page and came from a production bug rather than a test change.
+
+### [✓] 1. Close idle connections before shutting the server down
+
+**Three lines.** `httpServer.Shutdown` burns 1036 ms on every one of the 207
+boots. It is waiting out an idle HTTP/2 connection that nobody will reuse: the
+test client's `http2.Transport` is never closed. Runners exit in 0 ms.
+
+```go
+func (ctl *controller) Close(ctx context.Context) error {
+    if ctl.client != nil {
+        ctl.client.CloseIdleConnections()
+    }
+    ...
+}
+```
+
+**Measured, not projected.** With those three lines applied, shutdown drops
+from 1047 ms to **1 ms**, and a full boot-and-shutdown cycle goes from 1750 ms
+to 676 ms. Across 207 boots that is ~217 s.
+
+That 217 s is part of effort 4's total, not on top of it. This goes first only
+because it is three lines and needs no restructuring, and it stops mattering
+once effort 4 collapses the boot count.
+
+**What it bought.** Over 5 cycles the shutdown went from 1058 ms to **1 ms**
+and the boot-and-shutdown cycle from 1720 ms to **691 ms**, as projected. A
+package-isolated `go test ./backend/tests/` — not the full-suite figure above —
+went from **679 s to 611 s** across its 233 boots: 227 s off the summed test
+time, compressed 3.3× by the package's own parallelism. Measure the efforts
+below against 611 s.
+
+### [✓] 2. One shared container per package, then turn parallelism on
+
+**459 s of wall clock, 390 s of it container starts.** `store` starts 90
+containers, and because it runs serially that cost is its wall clock almost
+exactly.
+
+`api/v1`, `component/review` and `migrator` were in this effort's original
+scope. Effort 5 confines a real metadata Postgres to `store` and `tests`, so all
+three move to effort 6 instead.
+
+Two changes, in this order:
+
+1. Give each package a `TestMain` that starts one Postgres and migrates a
+   template database once. Each test then gets its own database with
+   `CREATE DATABASE … TEMPLATE`. `backend/tests/main_test.go` is the reference.
+2. Add `t.Parallel()`. Sharing the container is what makes parallelism
+   affordable: a 44 ms database copy can run concurrently in a way a 4.3 s
+   container start cannot.
+
+Measured on the migrated Bytebase schema (9.5 MB): migrating the template costs
+309 ms once, a plain `CREATE DATABASE` is 32 ms, and
+`CREATE DATABASE … TEMPLATE` is **44 ms** — 98× cheaper than the 4328 ms
+container it replaces.
+
+One detail. Close the template connection after migrating, because `TEMPLATE`
+refuses to copy a database that still has a session attached.
+
+This section originally called for `api/v1` to share a Postgres "rather than
+using a fake store". Effort 6 reverses that.
+
+Expect tests that silently assumed a virgin database to fail. That is the point.
+Fix them with per-test databases, not with cleanup hooks — those reintroduce
+ordering coupling.
+
+Step 1 alone takes `store` from 459 s to roughly 75 s. Step 2 should take it
+below that; what remains is real work across 128 tests.
+
+**What it bought, measured on one Mac, same tests both sides.** `backend/store`
+went from **382.95 s to 12.0 s** — 90 container starts down to 1, and 20 files
+off `GetTestPgContainer`. `main_test.go` holds the whole mechanism in one
+helper: `newTestDB` returns a raw handle for seeding, a Store for the code under
+test, and the URL for tests that open their own connections, all on a database
+copied from the template.
+
+The copies are never dropped, deliberately. They are physical — 140 tests hold
+roughly 1.3 GB — but they live inside the package's own container, which
+`TestMain` terminates on the way out, so the space comes back with it. Dropping
+each database costs about 54 ms, or 7 s across the package, to reclaim disk that
+is already reclaimed.
+
+**What step 2 bought, measured on one Linux box (20 vCPU), same tests both
+sides.** `t.Parallel()` on all 139 tests took `backend/store` from **16.2 s to
+10.9 s**, means of runs spanning 16.0–16.3 and 10.8–10.9. Those are not the
+12.0 s above; that was the Mac. Two things that would have blocked this were
+checked first and held: Postgres advisory locks are per-database, so the lock and
+claim tests cannot reach each other across per-test databases, and eight
+concurrent `CREATE DATABASE … TEMPLATE` from one template all succeed.
+
+**What is left is nearly all floor.** The package costs 1.3 s with no container
+at all and 6.9 s for a single test that needs one, so 5.6 s of the 10.9 s is the
+one container start and template migration that every test now queues behind
+inside `metaOnce`. Subtracting that 6.9 s from each side, the 138 other tests'
+own work went from 9.3 s to 4.0 s. Nothing further is worth spending here: the
+next second has to come off the container, not off the tests.
+
+**Nine tests keep serial subtests, and two of them give up top-level parallelism
+for it.** `TestAuditLogRetentionFilteringEndToEnd` sets one workspace license row
+per subtest and reads it back, and `TestLoginAttemptClaim`'s purge subtest
+asserts a table-wide delete count that only holds while nothing else writes the
+table; both carry a comment saying so. The other seven parallelize at both levels
+because their subtests are keyed apart — distinct identities, codes, token
+hashes — or take a database each. `tparallel` enforces all-or-nothing per test,
+which is why those two go serial rather than parallel with serial subtests.
+
+Peak concurrent connections to the shared container is 38 against Postgres's
+default 100, at `-parallel=20`. A runner with many more cores should have that
+re-measured before it is trusted.
+
+**Step 2 again, in `backend/tests`, and this is where the package was hiding its
+time.** 175 of its 209 tests already called `t.Parallel()`. The other 34 never
+did, and they summed to **483.7 s — 79% of the package's 614.7 s wall**, running
+strictly one at a time, because Go defers parallel tests to the end and runs
+everything else back to back. The 175 that did were compressing 1717.7 s into
+about 131 s, a 13× overlap. The machinery was already there; a fifth of the
+tests were not using it.
+
+Adding `t.Parallel()` to those 34 — one line each, no other change — takes the
+package from **614.7 s to a median 173 s**, over ten runs spanning 155–236 s
+with no failures. The spread is real: twenty concurrent servers is a noisy
+schedule, and the worst run is still 2.6× better than the best serial one.
+
+Almost nothing structural was in the way. 32 of the 34 boot a server, and each
+already gets its own server, workspace and database, so there is nothing to
+share. **One exception, and it is the interesting one:**
+`webhook.TestOnlyAllowedDomains` is a plain map in `plugin/webhook` that
+`TestWebhookIntegration` wrote and deleted, while `ValidateWebhookURL` reads it
+unsynchronized on behalf of every other test that adds a webhook — and two of
+those were already parallel. Concurrent map access is fatal to the process, not
+merely racy. `TestMain` now seeds it once for SLACK and DINGTALK and nothing
+mutates it afterwards.
+
+The lesson generalizes past this one map: **grepping the package for shared state
+is not enough, because the shared state can live in the package under test.** A
+`^var ` sweep of `backend/tests` finds `nextPort` and friends and reports all
+clear. What it cannot see is a test reaching into another package's global. When
+turning parallelism on, follow the writes out of the test package as well. Every
+piece of package-level state is already guarded — `nextPort` and
+`nextDatabaseNumber` behind `mu`, `externalPgHost`/`Port` written once in
+`TestMain` and read-only thereafter — and the package has no `t.Setenv` or
+`t.Chdir` anywhere, either of which would panic under `t.Parallel()`. Of the 34,
+exactly one contains a `time.Sleep` and it is inside a comment:
+`waitForWebhookCount` replaced it with a poll-until-deadline. The two explicit
+deadlines are 5-minute context timeouts against tests that run in about ten
+seconds.
+
+Ten of the 34 have subtests, and `tparallel`'s all-or-nothing rule forces a
+choice on each. Two of them — the account email validation pair — boot a server
+*inside every subtest*, so their subtests are independent and now run parallel
+too. The other eight boot one server in the parent and drive it through the
+subtests in order, which is `backend/tests`'s existing
+`//nolint:tparallel // Subtests share one server lifecycle.` case; each now
+carries that directive with its own reason. Note what this does not cost:
+the parent stays parallel with the rest of the package either way, and that is
+where the entire saving came from.
+
+**`TestWebhookIntegration` was the package floor at 148 s.** #21355 then took it
+to 45 s by fixing the task run scheduler stall, so it no longer dominates; the
+paragraph below described the state before that landed. At 148 s it was most of the
+173 s, and the rest of the package finishes around it. It is the one place left
+in `backend/tests` where a single test is worth attacking on its own.
+
+### [✓] 4. Isolate per project, not per workspace
+
+**237 server boots down to 109, `backend/tests` 83–90 s to 71–77 s standalone,
+its summed test time 1954 s to 1765 s.** Project is Bytebase's tenancy boundary,
+so it is the test boundary: `startProject` takes a project on the package's one
+server (113 call sites), `startWorkspace` takes a server, and so a workspace, of
+its own (102).
+
+What forces a workspace is wider than the settings files this section first
+listed, and every item came back as a failing test rather than a prediction: the
+MCP capability ceiling and the license, the demo principal's password and MFA,
+**removals** from the workspace IAM policy — grants are additive, but
+`SetIamPolicy` writes the whole policy, so a grant that read before a removal and
+wrote after resurrects the binding — any workspace-wide list or count assertion,
+and workspace-scoped resource IDs, where instances collided on
+`generateRandomString("inst")[:8]`, a prefix plus three hex characters. One
+conflict was worth fixing in the helper instead: `addMemberToWorkspaceIAM`
+re-reads and re-applies on the etag conflict the server tells it to retry, which
+keeps all sixteen granting files on the shared server.
+
+The re-sizing to ~7 s of wall held for the run and understated the package,
+because the boots also set the memory ceiling on `-parallel`. What is left is the
+floor: `TestWebhookIntegration`, 48.7 s of a 73 s package, 24 sequential subtests
+behind one boot.
+
+### [✓] 5. Postgres only for `backend/store` and `backend/tests`
+
+**Done, and the headline example in the original sizing was wrong.** This section
+said `TestSQLReviewForMySQL` cost 52.7 s where `TestSQLReviewForPostgreSQL` cost
+17.9 s "for the same assertion". They were not the same assertion:
+`sql_review_mysql.yaml` held 21 cases against `sql_review_pg.yaml`'s 9. Deleting
+it as a duplicate would have dropped real rule coverage.
+
+The principle that resolved it is sharper than the one written here.
+**`backend/tests` tests workflows; engines belong to the layer that owns them.**
+Sorting the expensive tests by that rule gave four outcomes rather than one:
+
+- **Same workflow run twice.** Five tests had literally mirrored cases —
+  "MySQL - Second statement fails" beside "PostgreSQL - Second statement fails" —
+  for behavior that is ours, not a dialect's. MySQL arm dropped, one unique case
+  ported: **127.9 s → 59.9 s**.
+- **MySQL-only, engine incidental.** Three tests about data source resolution and
+  masking, ported to Postgres. The translation was not mechanical — Postgres
+  grants are per object, `BIN_TO_UUID` became a `uuid` cast, and the catalog
+  needed a `public` schema.
+- **Engine wearing workflow clothing.** `TestSQLReviewForMySQL` was rule coverage
+  in the wrong place: of the 41 rules its fixture asserts, 39 have a file under
+  `plugin/advisor/mysql/test` carrying real `want:` expectations, and
+  `TestMySQLRules` drives ~60 rules through them with no container, in 2.3 s.
+  **Two did not, and checking that the file merely exists would have missed it.**
+  `RunSQLReviewRuleTest` builds its context with `Driver: nil`, so the two rules
+  that need a live `EXPLAIN` — `STATEMENT_AFFECTED_ROW_LIMIT` and
+  `STATEMENT_DML_DRY_RUN` — have yaml files holding statements and no
+  expectations at all. The first is covered anyway by two driver-backed tests
+  against a fake `database/sql` EXPLAIN driver; the second was not, so deleting
+  the workflow test would have dropped its only coverage, and
+  `TestMySQLDMLDryRunAdvisor` was written against that same fake driver to
+  replace it. Deleted, with
+  `TestSyncerForMySQL` (its Postgres twin sits in the same file) and
+  `TestGetLatestSchema`'s MySQL arm (it asserted a literal dump, including MySQL's
+  `SET @OLD_UNIQUE_CHECKS` preamble). `TestTransactionMode` is deleted, 41 s. It had
+  four engine cases whose expectations were identical — `expectRollbackOn` was `true`
+  in all four and `skipTransaction` was never set, so both fields that existed to
+  express engine variation were dead, along with two unreachable branches.
+
+  **This leaves a known gap, recorded here rather than left silent.** Nothing now
+  covers the execution half of the `-- txn-mode` directive:
+  `executeInTransactionMode` and `executeInAutoCommitMode` appear in no test, so
+  `txn-mode = on` could stop wrapping and every test would stay green. Parsing is
+  still covered by `plugin/parser/base`. Anyone reintroducing coverage should
+  guard the mode switch on one engine, and the case actually worth an engine
+  matrix is DDL inside `txn-mode = on`, where MySQL and Oracle implicitly commit
+  and defeat it — which is the reason the directive exists, and which no version
+  of the deleted test ever covered.
+
+- **Engine is the workflow.** `TestGhostSchemaUpdate` and
+  `TestGitOpsRolloutGhostDirective` keep MySQL, and now say why in a comment:
+  gh-ost is MySQL-only. `TestActionCheckCommand_DeclarativeCheckWithDatabaseGroup`
+  keeps it too — the port was tried and reverted, because the declarative check returns
+  three errors against the same schema on Postgres. Worth chasing separately.
+
+MySQL in `backend/tests` is now those three tests and nothing else.
+
+Unlike effort 4, this one did not deflate. Deleting a test removes work rather
+than moving it, and the run is now bound by the sum term, so the 320 s converts
+at the whole-run rate of about 0.37 s of wall per second removed — roughly two
+minutes off the suite. That makes this the largest remaining item on the page.
+
+Two packages may hold a real database, and no others. `backend/store` is where a
+metadata query is asserted against one, and `backend/tests` is the only package
+that boots a server. Everywhere else — `api/v1` above all — the handler's
+decide-and-convert half is tested over a fake or over plain data, which is effort
+6; an API test does not earn a container by being an API test. Inside the two
+packages that keep one, the engine is Postgres: engine dialects and DDL fidelity
+belong in omni. The root `AGENTS.md` carries that second half of the rule today,
+in the words "test API and workflow behavior against Postgres only".
+
+`docker events` recorded 11 MySQL containers from `backend/tests` when this was
+written. Each of those twelve candidate tests is accounted for above; the one
+that is not is `TestActionCheckCommand_DeclarativeCheckWithDatabaseGroup`, which
+keeps its container.
+
+The original plan here said "where a Postgres equivalent proves the same
+workflow, delete the MySQL copy". That held for `TestSyncerForMySQL`, whose twin
+was already in the same file. It did not hold for `TestSQLReviewForMySQL`: the
+copy was not equivalent, and the thing that made it deletable was finding the
+coverage a layer down rather than a layer across. **Check the layer below before
+calling a test a duplicate.**
+
+### 6. Seams instead of containers
+
+**Re-sized: the seconds are already gone, the argument is not.** This section
+was written against 822 s of wall clock, 611 s of it container starts. #21349
+then gave `api/v1`, `component/review`, `auth`, `oauth2`, `lsp` and `mcp` a
+shared Postgres through `testcontainer.NewMetadataDB`, and those two packages
+went to 43 s and 17 s without a single fake being written. All six now sit within
+a couple of seconds of the 6.9 s floor that a package holding one container
+cannot go below, and `api/v1` is 43 s of which about 36 s is its own tests.
+
+So do this for what the tests say, not what they cost. A container in `api/v1`
+still buys a `*store.Store` that the assertions never look at, and effort 5 still
+says the metadata database belongs in `store` and `tests`. The classification
+below stands; only the payoff line has changed. `backend/api/mcp` remains the
+proof it is livable: 168 tests in 19 s, 16 of its 18 files containerless.
+
+Effort 2 declined a fake store on two grounds, and both fail here. `api/v1` is
+not testing its API — `mcp_info_test.go` called `service.GetMCPInfo` as a Go
+method, so the container bought a `*store.Store` and nothing the test asserts. And
+"a fake store" was the wrong unit: `store.Store` has 305 methods and `api/v1`
+calls 181, but `api/mcp` needed five (`serverStore`, faked in 62 lines) and
+`mcp_gate.go` needed one (`mcpSettingsReader`). Interfaces go beside the handler
+that reads them, never over the store.
+
+Fourteen files in `api/v1` start containers, 90 tests, classified from their
+bodies:
+
+| Disposition | Tests | Shape |
+| --- | ---: | --- |
+| Move to `backend/store` | 18 | the 7 lockout and claims tests, 6 concurrency and transaction tests, 2 retention-filter boundaries, `TestIssueApprovalFiltersRunBeforePaging` |
+| Replace with a fake | 66 | canonical-name assertions through real services, the list-and-hide tests, validation rejections, `TestGetMCPInfoHandler`, `TestApproveIssueFailsClosedWhenIAMLookupFails` |
+| Pure function over plain data | 6 | `TestExtractDomain`, `TestLDAPLoginIdentity`, the MFA temp-token shapes |
+
+The last two rows are one boundary, not two: a fake test becomes a pure one as
+soon as its decide-half is extracted, so 66 is a ceiling on the fakes and 6 a
+floor on the pure functions.
+
+The rest of `backend/api` adds 14, all fakes — `oauth2` 6, `mcp` 5, `auth` 2,
+`lsp` 1. `oauth2`'s consent-ceiling tests seed five workspaces and their MCP
+settings in raw SQL to exercise one ceiling read each. The 6 pure tests need no
+work: verified by call closure, none reaches a container.
+
+**Outside `api/`, seven more packages hold a metadata Postgres**, 73 tests
+between them, classified the same way by call closure:
+
+| Package | → `store` | → fake |
+| --- | ---: | ---: |
+| `component/review` | 12 | 29 |
+| `runner/schemasync` | 5 | 2 |
+| `runner/taskrun` | 5 | 4 |
+| `runner/plancheck` | 1 | 5 |
+| `server` | 2 | 2 |
+| `component/recovery` | 0 | 5 |
+| `enterprise` | 0 | 1 |
+
+`component/review`'s 12 are the largest store-bound group anywhere — approval
+lock ordering, concurrent approvals, staleness races — and share helpers with
+their own 29, so fakes-first applies there too. `runner/schemasync`'s five hold
+`AdvisoryLockKeySchemaSyncer` in a live transaction, which nothing but Postgres
+can do. `plugin/db/*` and `plugin/schema/*` are out of scope: target engines,
+not metadata, and effort 7's business.
+
+Two places already have the right shape: 39 of `backend/store`'s 140 tests never
+touch a database (the CEL-to-SQL builders assert generated SQL rather than
+executing it), and 52 tests across the seven packages above are already
+container-free.
+
+Prefer the middle row: a handler is fetch, decide, convert, and only the fetch
+needs a store.
+
+`migrator` is done, by deletion rather than by moving. `TestLatestVersion` and
+`TestVersionUnique` need no database and stay; the other 16 booted a container
+each to apply one migration to a hand-built fixture and assert the transform.
+Moving them to `backend/store` would have relocated the 90 s, not removed it, so
+they were deleted outright. The package now runs in under 2 s.
+
+That is 90 s bought at a real price, and the price should be stated plainly: the
+migration SQL — including irreversible data transforms over customer metadata —
+now has no test coverage, and no fake can restore it. Anyone reintroducing
+coverage here should bring back the fixtures against a shared container rather
+than one per test.
+
+**Every fake needs a contract test** — one table run against both the fake and
+the real store — or effort 2's objection is right. Since none of these packages
+may hold a container, that suite lives in `backend/store`. No `mockgen`, no SQLite.
+
+**Fakes before moves.** The 18 do not move first, because their helpers are
+shared with the tests that stay: 9 of the 11 helpers the 8 issue tests need are
+also used by the 27 `issue_service_test.go` tests bound for fakes, so moving now
+would duplicate them across two packages. Converting the 27 first lets those
+helpers diverge naturally, and the 8 then move with helpers of their own. The
+exception is a file whose tests all move — `audit_log_service_test.go` had two
+tests and four file-local helpers, so it moved whole (**done**: now
+`backend/store/audit_log_retention_test.go`, 0.14 s and 0.11 s against 4.3 s
+each before). Its one unexported dependency, `convertToAuditLogs`, stayed behind
+as a pure converter test with no database.
+
+**Done anyway, duplication accepted.** The 8 issue tests moved to
+`backend/store/issue_service_concurrency_test.go` with copies of the 9 shared
+helpers; `api/v1` keeps its own for the 27 that stay, which get rewritten against
+a fake regardless. All 8 run in 0.04–0.07 s against 4.3 s. Two snags, neither
+needing a production change: they asserted on `IssueService.bus`, unexported, so
+the helper now returns the bus it built; and `errDraftIssueNotSubmitted` is
+unexported, but `IsDraftIssueNotSubmittedError` sits exported beside it.
+
+Five of the 18 call unexported `api/v1` methods — `getAndVerifyUser`,
+`verifyEmailCode`, `completeMFALogin`, `getOrCreateUserWithIDP` — and cannot
+move without exporting them. `TestLoginAttemptRetentionOutlivesLockouts` is not
+a database test at all; it compares two constants.
+
+**Landed for `backend/api`.** `auth`, `oauth2`, `lsp` and `mcp` hold no
+metadata Postgres now — about 1.5 s each, `mcp` 9.6 s of deliberate sleeps —
+and `api/v1` runs in 9 s with 14 tests left on the shared container. No fake
+was written. The decide-and-convert halves came out as functions over plain
+data (`buildAuditRows`, `buildV1Plans`, `linkedIssueForCreate`,
+`checkReleaseDatabase`, `consentRefusalRow`), `mcp_info_test.go` became
+`TestActuatorMCPSetting` over the existing `mcpSettingsReader`, and what needs
+a live workflow — the OAuth2 grant lifecycle, login lockouts, the sample
+project instance — joined the tests already in `backend/tests`. The 14 that
+stay need state no API can set up: a planted email code, a stale approval
+snapshot, a sample instance's lifecycle hooks. The seven packages outside
+`api/` are untouched.
+
+Server boots go the same way:
+`mcp_capability_setting_test.go` spends 6 to read and write one settings row,
+the saved-query list and filter tests 12, GitOps `CheckRelease` 11 of 17. Keep
+the 27 `TestCollision*` and `TestClaim*` tests where they are —
+`backend/store/AGENTS.md` requires them for a bug class unit tests cannot catch.
+
+### 7. Engine conformance to omni
+
+**Not done, and re-sized again: 14 s, so the clock argument is spent.** #21415
+took the testcontainer out of `plugin/schema` and #21429 moved every engine's
+catalog load onto omni's `LoadMetadata`, so the seven `plugin/schema/*` packages
+cost **14.2 s between them**, oracle **0.05 s** against the 315 s it opened this
+design at. Most of the rest is the ~3 s a package pays to start its test binary.
+`plugin/db/*` is 100 s and stays — it is our driver — with containers in four
+packages, each sharing one.
+
+Port it when omni owns the metadata model, because these tests assert engine
+fidelity and that is omni's to assert. Not to make the suite faster.
+
+The blocker is that the round-trip is expressed in Bytebase's metadata proto
+(`storepb`, `plugin/schema`, `store/model`), so omni must own the metadata model
+first. The ownership split above is the plan: all of `plugin/schema/*` moves,
+all of `plugin/db/*` stays, because that is our driver. The figures in the rest
+of this section are the ones the analysis was done against; the split they
+describe is unchanged, the totals are in the opening above.
+
+For most engines the metadata model is not the near blocker — omni has no engine
+to move to. It ships a parser and AST for Oracle and for MSSQL and nothing more,
+so `schema/oracle` (272 s) and `schema/mssql` (51 s) have no destination; both
+already use omni, but only for the AST their own extractors walk. omni does own
+a TiDB catalog and deparser, and `schema/tidb` imports neither. Only pg and
+mysql delegate, and only in part: pg's SDL diff is a 140-line adapter over
+`omni/pg/catalog`, while `get_database_definition.go` (4855 lines) and
+`metadata_migration.go` (2956 lines) are ours; mysql's `GetDatabaseMetadata` is
+a 46-line adapter, while its `GenerateMigration` (1121 lines) is not. Every
+container test in `plugin/schema/*` calls one of those Bytebase-owned entry
+points, so the tests follow the implementation and not the other way round.
+
+What was already omni's is gone. 24 files and 150 tests in `schema/pg` called
+`omni/pg/catalog` directly — `LoadSDL`, `Diff`, `GenerateMigration` — with no
+Bytebase symbol in them. Read against omni's own `pg/catalog` suite, all but
+four of their behaviors were already covered there by more cases and stronger
+assertions: they matched substrings of the rendered SQL where omni inspects
+typed migration ops. Two of them could not fail at all — the pair named for
+EXCLUDE constraints has no EXCLUDE constraint in either fixture. The four
+genuine gaps went into omni beside the cases they belong with; the rest were
+deleted rather than moved. That is 3 s of the 403 s this effort is about, which
+is the measure of how much of the cost sits behind the port rather than beside
+it.
+
+`plugin/db/starrocks` (158 s) is gone. Nearly all of it was two testcontainer
+tests booting the `allin1` image — an FE and a BE in one container, with a
+readiness wait measured in minutes — to assert materialized-view sync and dump
+round-trip. That is engine fidelity, which belongs in omni, paid for on every PR
+by every engineer. The two tests and the `GetStarRocksContainer` helpers were
+deleted; the package now runs in under 2 s on its remaining unit tests.
+
+### [✓] One loose end
+
+`action/**` was in the workflow's `paths` filter while the test command never
+ran the seven test files under `action/`, so a PR touching only the action CLI
+ran the whole backend suite and none of its own tests. `./action/...` is now on
+the command: 48 tests, 0.15 s, in the tail behind `backend/tests`.
+
+## Reproducing
+
+```bash
+go test -p=8 -timeout 60m -json ./backend/... > test.json
+
+# package wall time, descending
+jq -r 'select(.Action=="pass" or .Action=="fail") | select(has("Test")|not)
+       | "\(.Elapsed)\t\(.Package)"' test.json | sort -rn | head -20
+```
+
+Package wall time is the figure to trust. Summing per-test `Elapsed` is
+misleading: parallel subtests overlap, so the sum can exceed the package's own
+wall time by an order of magnitude — `plugin/schema/oracle` reports 3666 s of
+subtest time inside a 315 s package.
+
+Per-operation costs came from a temporary test in `backend/tests` that timed
+`StartServerWithExternalPg` phase by phase, `GetPgContainer` and
+`provisionMySQLInstance` in a loop, plus four `slog` probes inside `server.Shutdown`.
+All reverted.

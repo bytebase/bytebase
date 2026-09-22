@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
@@ -141,15 +142,15 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 		return "", nil, nil
 	}
 
-	return "db", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	return "db", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: databaseName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t1",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "c1",
 								Type: "int",
@@ -158,7 +159,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 					},
 					{
 						Name: "t2",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "c1",
 								Type: "int",
@@ -170,16 +171,16 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "v1",
 						Definition: `SELECT * FROM t1`,
 					},
 				},
-				ExternalTables: []*storepb.ExternalTableMetadata{
+				ExternalTables: []*metadatapb.ExternalTableMetadata{
 					{
 						Name: "ft1",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "f1",
 								Type: "int",
@@ -191,13 +192,13 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						},
 					},
 				},
-				MaterializedViews: []*storepb.MaterializedViewMetadata{
+				MaterializedViews: []*metadatapb.MaterializedViewMetadata{
 					{
 						Name:       "mv1",
 						Definition: "SELECT c1, c2 FROM t2",
 					},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name:      "seq1",
 						DataType:  "bigint",
@@ -218,10 +219,10 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 			},
 			{
 				Name: "test",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "auto",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "id",
 								Type: "int",
@@ -234,7 +235,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 					},
 					{
 						Name: "users",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "user_id",
 								Type: "int",
@@ -246,7 +247,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 						},
 					},
 				},
-				Sequences: []*storepb.SequenceMetadata{
+				Sequences: []*metadatapb.SequenceMetadata{
 					{
 						Name:      "order_id_seq",
 						DataType:  "bigint",
@@ -336,15 +337,15 @@ func getQuotedIdentifierMetadataForTest(_ context.Context, _, databaseName strin
 		return "", nil, nil
 	}
 
-	return "db", model.NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+	return "db", model.NewDatabaseMetadata(&metadatapb.DatabaseSchemaMetadata{
 		Name: databaseName,
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "t1",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "c1",
 								Type: "int",
@@ -353,7 +354,7 @@ func getQuotedIdentifierMetadataForTest(_ context.Context, _, databaseName strin
 					},
 					{
 						Name: "order",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "id",
 								Type: "int",
@@ -366,7 +367,7 @@ func getQuotedIdentifierMetadataForTest(_ context.Context, _, databaseName strin
 					},
 					{
 						Name: "MyTable",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "Id",
 								Type: "int",
@@ -379,7 +380,7 @@ func getQuotedIdentifierMetadataForTest(_ context.Context, _, databaseName strin
 					},
 					{
 						Name: "my-table",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{
 								Name: "col1",
 								Type: "int",

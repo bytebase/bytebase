@@ -683,13 +683,18 @@ LIMIT $n OFFSET $k;
 
 Honest per-tab costs (G7):
 
-- **My** (`creator = me`): the `(project, creator, folder)` and
-  `(creator, project)` btrees answer the equality; the title sort is
-  uncovered, so each page sorts the matched rows. That set is one person's
-  scratchpad in one project — tens to hundreds — so the sort is noise. The
-  `(creator, project)` index also serves the auditor's cross-project
-  `creator` filter (no binding test needed there), which is bounded and
-  cold enough to need no index of its own.
+- **My** (`creator = me`): the `(project, creator, folder)` btree answers
+  the equality; the title sort is uncovered, so each page sorts the
+  matched rows. That set is one person's scratchpad in one project — tens
+  to hundreds — so the sort is noise. The auditor's cross-project
+  `creator` filter (no binding test needed there) outgrew that index when
+  it became a programmatic service-account pull (BYT-10078): it now has
+  `(creator, updated_at DESC, resource_id DESC)`, which serves the filter
+  and the pull's `order_by` "update_time desc" in one scan. The old
+  `(creator, project)` btree is dropped in the same migration: every
+  creator-led scan it served — including the purge subqueries, which read
+  columns outside it anyway — rides the new index's creator prefix, and
+  keeping it would mean three creator-led btrees written on every update.
 - **Starred**: my rows in `saved_query_star` via its `principal` btree —
   row existence is the star. Fetch the (naturally small) set, join, drop
   rows I can no longer read from the view — the star row itself persists,
@@ -708,14 +713,22 @@ carries no cursor field to hold a keyset. Saved queries use the same
 mechanism; adopting keyset pagination here would be a platform-wide change,
 out of scope for this design. Two properties worth naming:
 
-- **The sort key is the title** (`saved_query.name`), matching the SQL
+- **Search sorts by title** (`saved_query.name`), matching the SQL
   Editor's folder tree rather than a recency feed. This matters more than
   it looks: titles change only on explicit create, rename, or delete, so
   the row set under a paging caller is nearly static, and the window in
   which offset paging can skip or repeat a row is correspondingly narrow.
   Ordering by `updated_at` would instead have the 2-second autosave
   debounce reshuffling the list continuously — a worse fit for the same
-  pagination mechanism.
+  pagination mechanism. `ListSavedQueries` shares the title default — a
+  row must not jump the list because somebody edited it — and carries an
+  AIP-132 `order_by` (BYT-10078: `update_time`, `create_time`, `title`,
+  each ± `desc`; `resource_id` appended as tiebreak in the last key's
+  direction) for pulls that want recency instead. "update_time desc"
+  accepts the churn the title order avoids — a row autosaved mid-pull can
+  skip or repeat across pages, healed by the consumer's next sync. The
+  recency pull's index is costed in the My bullet above; other orders sort
+  per page, fine at per-user volumes.
 - **The offset re-scan is real but small**: page *k* walks and discards
   *k × page* rows. Scratchpad volumes keep this far from mattering; if a
   project's list ever grows enough to feel it, the first fix is an index
@@ -736,73 +749,39 @@ saved_query)` — still group references — indexed
 per-principal *ordered* seeks (`O(K · page)`) and isolating the ACL index
 from content churn. A pure storage change behind the same API.
 
-**Lifecycle vs. project deletion.** `saved_query.project` is an FK with no
-cascade, so the two directions are fenced explicitly (AGENTS.md transaction
-lock-ordering):
+**Writer behavior.** `saved_query.project` is an FK with no cascade.
 
-- **Create requires an *active* project.** `CreateSavedQuery` does not go
+- **Create requires an active project.** `CreateSavedQuery` does not go
   through `nextProjectID` (IDs are `gen_random_uuid()`, not a project-scoped
-  sequence), so it must itself, in the insert transaction, lock the project
-  row and reject the write unless the project is active — a create racing a
-  purge fails cleanly (`FAILED_PRECONDITION`), never as an FK violation and
-  never leaving a row in a project mid-deletion.
-- **Star writes are child-before-parent; the parent fence covers only the
-  first star.** The lock rule treats an upsert as an existing-row lock, so
-  toggling or removing an **existing** `saved_query_star` row locks that
-  child row directly — no parent lock. Only the **first** star for a
-  (query, caller) inserts a child that cannot be locked in advance; that
-  case alone takes the parent fence (lock the `saved_query` row, reject as
-  `NotFound` if gone), the same missing-child carve-out `CreateSavedQuery`
-  uses for `project`. Its inserted key is novel, so it never contends with
-  purge's existing-child locks — no cross-order deadlock.
+  sequence), so it verifies the project before inserting.
+- **Star writes are child-before-parent.** The lock rule treats an upsert as
+  an existing-row lock, so toggling or removing an **existing**
+  `saved_query_star` row locks that child row directly. A first star verifies
+  its parent saved query before inserting the new child.
 - **Batch folder moves lock rows in primary-key order.**
   `MoveMySavedQueries` only *updates* existing `saved_query` rows (no
   new child), but "existing" is not enough on its own: two overlapping
   batches could grab their target rows in different scan orders and
   deadlock. So it locks its selected rows in full primary-key order
-  (`resource_id`) — the AGENTS.md batch rule — and a folder move touching a
-  row mid-purge simply updates zero rows.
+  (`resource_id`) — the AGENTS.md batch rule.
 - **Delete is child-before-parent, explicitly.** `DeleteSavedQuery` removes
   the query's `saved_query_star` rows before the `saved_query` row itself —
-  **not** via the FK cascade, which would lock the parent first — matching
-  the star and purge order so a delete racing a star toggle or a purge
-  cannot deadlock.
-- **Purge is child-before-parent, and re-parents human rows.** The
-  hard-delete path deletes the stars and saved queries of project service
-  accounts and workload identities (stars first), then reassigns the
-  remaining, human-created saved queries to the default project — locking
-  existing child rows ahead of their parents, per the rule. Because a
-  surviving row changes project mid-purge, **every non-purge writer scopes
-  its predicate by `(resource_id, project)`** — patch, delete, and the
-  first-star parent fence — so a write authorized in the purged project
-  cannot land on the reassigned row; it updates zero rows and surfaces as
-  NotFound (the fenced delete rolls back its star cleanup). The declared
-  lifecycle policy: writers on existing rows require the row in the
-  authorized project, not an active project — archived projects are already
-  unreachable through every read path, so a write racing an archive is an
-  ordinary serialization of concurrent requests, and restore does not
-  promise to resurrect a row whose authorized delete won that race. Only
-  creation requires an active project.
+  **not** via the FK cascade, which would lock the parent first — so a delete
+  racing a star toggle cannot deadlock.
+
+Project and instance archive and physical purge are best-effort lifecycle
+operations. A rare concurrent writer may fail with a PostgreSQL conflict or
+commit based on state it observed before the lifecycle transition. These
+outcomes are accepted and the user can retry the lifecycle operation or write.
 
 Two invariants cover every writer. **(1) Child before parent** for
-existing-row writes/deletes; the *only* parent-first step is a new-child
-*insert* (create → lock `project`; first star → lock `saved_query`), safe
-because its key cannot be locked in advance — the AGENTS.md missing-child
-carve-out. **(2) Any multi-row lock/update/delete acquires its rows in full
-primary-key order** — `saved_query` by `resource_id`, `saved_query_star` by
-`(saved_query, principal)` — so two operations over an overlapping set
-(delete vs. purge deleting the same query's stars; two batch folder moves;
-purge's own `saved_query` batch) can never lock in opposing orders. A plain
-`DELETE … WHERE` does not guarantee that order, so these paths take their
-row locks through an ordered `… ORDER BY <pk> FOR UPDATE` (or an ordered
-delete) before mutating. Required before
-implementation: deterministic real-PostgreSQL regression tests for **both**
-acquisition orders of each contending pair — create↔purge,
-first-star↔purge, delete↔star-toggle, delete↔purge over a query with
-multiple stars, and two overlapping `MoveMySavedQueries` over
-the same folder — asserting the terminal outcomes — project (or query) deleted, no orphaned
-saved query or star, and **no** FK failure or deadlock (`40P01`) in either
-direction (absence of `40P01` alone is insufficient).
+existing-row writes and deletes. **(2) Any multi-row lock, update, or delete
+acquires its rows in full primary-key order** — `saved_query` by
+`resource_id`, `saved_query_star` by `(saved_query, principal)` — so
+overlapping ordinary operations, such as a delete and star toggle or two
+folder moves, cannot lock in opposing orders. A plain `DELETE … WHERE` does
+not guarantee that order, so these paths take their row locks through an
+ordered `… ORDER BY <pk> FOR UPDATE` (or an ordered delete) before mutating.
 
 ### Sharing and organization UX
 

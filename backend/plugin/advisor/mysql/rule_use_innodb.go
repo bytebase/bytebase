@@ -10,8 +10,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
-
-	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 const (
@@ -44,7 +43,7 @@ func (*UseInnoDBAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([]*
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type useInnoDBOmniRule struct {
@@ -126,6 +125,6 @@ func (r *useInnoDBOmniRule) addAdvice(content string, lineNumber int32) {
 		Code:          advisorcode.NotInnoDBEngine.Int32(),
 		Title:         r.Title,
 		Content:       fmt.Sprintf("\"%s;\" doesn't use InnoDB engine", content),
-		StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
+		StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
 	})
 }

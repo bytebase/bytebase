@@ -100,7 +100,7 @@ export function AccessGrantItem({
   return (
     <div
       className={cn(
-        "w-full p-2 gap-y-2 border-b flex flex-col justify-start items-start hover:bg-control-bg",
+        "w-full min-w-0 p-2 gap-y-2 border-b flex flex-col justify-start items-start hover:bg-control-bg",
         highlight
           ? "bb-access-grant-highlight"
           : "transition-colors duration-1000"
@@ -121,14 +121,14 @@ export function AccessGrantItem({
         <div className="flex items-center gap-x-1 shrink-0">
           <Badge
             variant={badgeVariant}
-            className="text-[10px] px-1.5 py-0 rounded-full"
+            className="text-xs px-1.5 py-0 rounded-full"
           >
             {statusLabel}
           </Badge>
           {grant.unmask && (
             <Badge
               variant="default"
-              className="text-[10px] px-1.5 py-0 rounded-full"
+              className="text-xs px-1.5 py-0 rounded-full"
             >
               {t("sql-editor.grant-type-unmask")}
             </Badge>
@@ -136,7 +136,7 @@ export function AccessGrantItem({
           {grant.export && (
             <Badge
               variant="default"
-              className="text-[10px] px-1.5 py-0 rounded-full"
+              className="text-xs px-1.5 py-0 rounded-full"
             >
               {t("sql-editor.grant-type-export")}
             </Badge>
@@ -159,7 +159,7 @@ export function AccessGrantItem({
       >
         <p
           className={cn(
-            "max-w-full text-xs wrap-break-word whitespace-pre-wrap font-mono line-clamp-2",
+            "w-full min-w-0 text-xs wrap-anywhere whitespace-pre-wrap font-mono line-clamp-2",
             (isExpired || isRejectedOrCanceled) &&
               "line-through text-control-placeholder"
           )}
@@ -194,9 +194,8 @@ export function AccessGrantItem({
           <div>
             {isActive && (
               <Button
-                size="sm"
+                size="xs"
                 variant="default"
-                className="h-6 text-xs"
                 data-run-btn
                 onClick={(e) => {
                   e.stopPropagation();
@@ -211,8 +210,7 @@ export function AccessGrantItem({
             {isRejectedOrCanceled && (
               <Button
                 appearance="secondary"
-                size="sm"
-                className="h-6 text-xs"
+                size="xs"
                 data-re-request-btn
                 onClick={(e) => {
                   e.stopPropagation();

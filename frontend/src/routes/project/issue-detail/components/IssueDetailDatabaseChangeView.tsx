@@ -11,6 +11,7 @@ import {
 import { buildPlanRolloutRouteFromPlanName } from "@/app/router/routeHelpers";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { RouterLink } from "@/components/RouterLink";
+import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import {
   Select,
@@ -114,12 +115,14 @@ export function IssueDetailDatabaseChangeView({
             {specs.map((spec, index) => {
               const isSelected = selectedSpec?.id === spec.id;
               return (
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   key={spec.id}
                   className={cn(
-                    "relative -mb-px flex cursor-pointer items-center gap-1 rounded-t-md border px-3 py-1.5 text-sm transition-colors",
+                    "relative -mb-px flex cursor-pointer items-center gap-1 rounded-t-sm border px-3 py-1.5 text-sm transition-colors",
                     isSelected
-                      ? "border-control-border border-b-white bg-white font-medium text-main"
+                      ? "border-control-border border-b-background bg-background font-medium text-main"
                       : "border-transparent bg-transparent text-control-light hover:text-control"
                   )}
                   onClick={() => onSelectedSpecIdChange(spec.id)}
@@ -132,7 +135,7 @@ export function IssueDetailDatabaseChangeView({
                       <span className="text-error">*</span>
                     </Tooltip>
                   )}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -147,7 +150,7 @@ export function IssueDetailDatabaseChangeView({
           )}
         </div>
 
-        <div className="rounded-b-lg border-x border-b border-control-border bg-white px-3 py-2">
+        <div className="rounded-b-sm border-x border-b border-control-border bg-background px-3 py-2">
           {selectedSpec && (
             <div className="flex flex-col gap-2">
               <IssueDetailDatabaseChangeTargets
@@ -567,7 +570,7 @@ function IssueDetailDatabaseChangeTargets({
       try {
         await fetchTargets(visibleTargets);
       } catch {
-        // Ignore target loading failures to match the current Vue behavior.
+        // Ignore target loading failures.
       } finally {
         if (!canceled) {
           setIsLoadingTargets(false);
@@ -595,7 +598,7 @@ function IssueDetailDatabaseChangeTargets({
       try {
         await fetchTargets(targets);
       } catch {
-        // Ignore target loading failures to match the current Vue behavior.
+        // Ignore target loading failures.
       } finally {
         if (!canceled) {
           setIsLoadingAllTargets(false);
@@ -627,7 +630,7 @@ function IssueDetailDatabaseChangeTargets({
         </div>
 
         {!isLoadingTargets && nonEnvDatabaseNames.length > 0 && (
-          <div className="rounded-sm border border-yellow-200 bg-yellow-50 px-3 py-2 text-sm text-yellow-900">
+          <div className="rounded-sm border border-warning/20 bg-warning/10 px-3 py-2 text-sm text-warning">
             <div>{nonEnvWarning}</div>
             <div className="mt-1 flex flex-col gap-1 text-sm">
               {nonEnvDatabaseNames.map((name) => (
@@ -649,7 +652,7 @@ function IssueDetailDatabaseChangeTargets({
             {visibleTargets.map((target) => (
               <div
                 key={target}
-                className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
+                className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border px-2 py-1"
               >
                 {isValidDatabaseName(target) ? (
                   <IssueDetailDatabaseTarget showEnvironment target={target} />
@@ -666,13 +669,15 @@ function IssueDetailDatabaseChangeTargets({
               </div>
             ))}
             {targets.length > DEFAULT_VISIBLE_TARGETS && (
-              <button
-                className="h-7 cursor-pointer rounded-sm px-2 text-xs text-control transition-colors hover:bg-control-bg"
+              <Button
+                appearance="secondary"
+                size="sm"
+                className="cursor-pointer rounded-sm text-xs text-control transition-colors hover:bg-control-bg"
                 onClick={() => setShowAllTargetsDialog(true)}
                 type="button"
               >
                 {t("plan.targets.view-all", { count: targets.length })}
-              </button>
+              </Button>
             )}
           </div>
         ) : (
@@ -711,7 +716,7 @@ function IssueDetailDatabaseChangeTargets({
                   {filteredTargets.map((target) => (
                     <div
                       key={target}
-                      className="w-full rounded-lg border px-2 py-1.5"
+                      className="w-full rounded-sm border px-2 py-1.5"
                     >
                       {isValidDatabaseName(target) ? (
                         <IssueDetailDatabaseTarget
@@ -813,17 +818,19 @@ function IssueDetailDatabaseGroupTarget({
         <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
           {t("common.database-group")}
         </span>
-        <span className="min-w-0 truncate text-sm text-gray-800">
+        <span className="min-w-0 truncate text-sm text-main">
           {extractDatabaseGroupName(databaseGroup.name || target)}
         </span>
         {isValidDatabaseGroupName(databaseGroup.name) && (
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             className="flex cursor-pointer items-center opacity-60 hover:opacity-100"
             onClick={gotoDatabaseGroupDetailPage}
             type="button"
           >
             <ExternalLink className="h-4 w-auto" />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -832,7 +839,7 @@ function IssueDetailDatabaseGroupTarget({
           {databases.slice(0, MAX_INLINE_DATABASES).map((database) => (
             <div
               key={database}
-              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
+              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border bg-control-bg/50 px-2 py-1 transition-all"
             >
               <IssueDetailDatabaseTarget showEnvironment target={database} />
             </div>
@@ -877,7 +884,7 @@ const fetchTargets = async (targets: string[]) => {
           databaseTargets.add(database.name);
         }
       } catch {
-        // Ignore target loading failures to match the current Vue behavior.
+        // Ignore target loading failures.
       }
       continue;
     }

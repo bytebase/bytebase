@@ -1,0 +1,483 @@
+import { create } from "@bufbuild/protobuf";
+import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
+import { router } from "@/app/router";
+import {
+  PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASES,
+} from "@/app/router/handles";
+import { ResourceIdField } from "@/components/ResourceIdField";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FormField } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { StepIndicator } from "@/components/ui/step-indicator";
+import {
+  useCreateProject,
+  useCurrentUser,
+  useIntroStateByKey,
+  useWorkspace,
+  useWorkspacePermission,
+} from "@/hooks/useAppState";
+import {
+  CONNECT_DATABASE_PRODUCT_INTRO,
+  CREATE_PROJECT_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+} from "@/lib/productIntro";
+import { cn } from "@/lib/utils";
+import {
+  clearGuideWorkspaceUsage,
+  clearSelectedGuideScenarioId,
+  saveGuideWorkspaceUsage,
+  saveSelectedGuideScenarioId,
+} from "@/modules/workspace-setup-guide/selection";
+import { saveWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
+import type {
+  GuideScenarioId,
+  GuideWorkspaceUsage,
+} from "@/modules/workspace-setup-guide/types";
+import { pushNotification } from "@/stores";
+import { useAppStore } from "@/stores/app";
+import { projectNamePrefix } from "@/stores/modules/v1/common";
+import type { ValidatedMessage } from "@/types";
+import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
+import {
+  extractInstanceResourceName,
+  extractProjectResourceName,
+} from "@/utils";
+import { extractGrpcErrorMessage } from "@/utils/connect";
+import { WorkspaceSetupQuestionnaireStep } from "./WorkspaceSetupQuestionnaireStep";
+
+const WORKSPACE_SETUP_PAGE_ENTERED_KEY = "workspace-setup.page-entered.v1";
+const WORKSPACE_SETUP_VERSION = "v1";
+
+export function WorkspaceSetupPage() {
+  const { t } = useTranslation();
+  const currentUser = useCurrentUser();
+  const updateUser = useAppStore((state) => state.updateUser);
+  const updateWorkspace = useAppStore((state) => state.updateWorkspace);
+  const prepareSampleProjectInstance = useAppStore(
+    (state) => state.prepareSampleProjectInstance
+  );
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
+  const sampleAvailable = useAppStore(
+    (state) => state.serverInfo?.sample?.available ?? false
+  );
+  const sampleProvisioned = useAppStore(
+    (state) => (state.serverInfo?.sample?.instances.length ?? 0) > 0
+  );
+  const canPrepareSample = sampleAvailable && !sampleProvisioned;
+  const { createProject, setRecentProject } = useCreateProject();
+  const workspace = useWorkspace();
+  const workspacePolicy = useAppStore((state) => state.workspacePolicy);
+  const canUpdateWorkspace = useWorkspacePermission("bb.workspaces.update");
+  const canCreateProject = useWorkspacePermission("bb.projects.create");
+  const setupPageEntered = useIntroStateByKey(WORKSPACE_SETUP_PAGE_ENTERED_KEY);
+  const setupPageEnteredRef = useRef(false);
+
+  // Show workspace name field only if the user is the sole member of the
+  // workspace (i.e. they just created it), not when they were invited.
+  const canRenameWorkspace =
+    canUpdateWorkspace &&
+    (workspacePolicy?.bindings ?? []).reduce(
+      (count, b) => count + b.members.length,
+      0
+    ) === 1;
+  const [setupStep, setSetupStep] = useState<"scenario" | "workspace">(
+    "scenario"
+  );
+  const [selectedScenarioId, setSelectedScenarioId] =
+    useState<GuideScenarioId>();
+  const [workspaceUsage, setWorkspaceUsage] = useState<GuideWorkspaceUsage>();
+
+  // `currentUser` loads asynchronously (unknownUser with an empty email until
+  // then), so seed the name field once the real user is known rather than
+  // freezing on the placeholder title. The ref keeps it a one-shot seed so
+  // later edits aren't clobbered.
+  const [name, setName] = useState(
+    currentUser.email ? (currentUser.title ?? "") : ""
+  );
+  const nameSeededRef = useRef(Boolean(currentUser.email));
+  useEffect(() => {
+    if (!nameSeededRef.current && currentUser.email) {
+      nameSeededRef.current = true;
+      setName(currentUser.title ?? "");
+    }
+  }, [currentUser.email, currentUser.title]);
+  const [workspaceTitle, setWorkspaceTitle] = useState(workspace?.title ?? "");
+  const [projectTitle, setProjectTitle] = useState(() =>
+    t("settings.profile.default-project-name")
+  );
+  const [projectResourceId, setProjectResourceId] = useState("");
+  const [isProjectResourceIdValid, setIsProjectResourceIdValid] =
+    useState(false);
+  const [enableSampleDatabases, setEnableSampleDatabases] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const shouldCreateProject = canCreateProject && !!projectTitle.trim();
+  const projectIsReady =
+    shouldCreateProject && !!projectResourceId && isProjectResourceIdValid;
+  const sampleRequested =
+    shouldCreateProject && enableSampleDatabases && canPrepareSample;
+  const canEnableSample = !!projectTitle.trim() && !!projectResourceId;
+
+  useEffect(() => {
+    if (
+      !currentUser.name ||
+      !workspace?.name ||
+      setupPageEntered ||
+      setupPageEnteredRef.current
+    ) {
+      return;
+    }
+    setupPageEnteredRef.current = true;
+    try {
+      useAppStore.getState().saveIntroStateByKey({
+        key: WORKSPACE_SETUP_PAGE_ENTERED_KEY,
+        newState: true,
+      });
+    } catch {
+      // Analytics markers must not interrupt workspace setup when storage fails.
+    }
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("workspace setup page entered", {
+        properties: { setup_version: WORKSPACE_SETUP_VERSION },
+      })
+    );
+  }, [currentUser.name, setupPageEntered, workspace?.name]);
+
+  const validateProjectResourceId = useCallback(
+    async (id: string): Promise<ValidatedMessage[]> => {
+      try {
+        const existing = await useAppStore
+          .getState()
+          .fetchProject(`${projectNamePrefix}${id}`, true);
+        if (!existing) return [];
+        return [
+          {
+            type: "error",
+            message: t("resource-id.validation.duplicated", {
+              resource: t("common.project"),
+            }),
+          },
+        ];
+      } catch {
+        return [];
+      }
+    },
+    [t]
+  );
+
+  const canSave =
+    !!name.trim() &&
+    !saving &&
+    (isSaaSMode ? projectIsReady : !shouldCreateProject || projectIsReady);
+
+  const handleSave = async () => {
+    if (!currentUser?.name || !canSave) return;
+    setSaving(true);
+    try {
+      await updateUser(
+        create(UpdateUserRequestSchema, {
+          user: { name: currentUser.name, title: name.trim() },
+          updateMask: create(FieldMaskSchema, { paths: ["title"] }),
+        })
+      );
+      if (canRenameWorkspace && workspaceTitle.trim() && workspace?.name) {
+        await updateWorkspace(
+          create(WorkspaceSchema, {
+            name: workspace.name,
+            title: workspaceTitle.trim(),
+          }),
+          ["title"]
+        );
+      }
+      let createdProjectName = "";
+      let sampleInstanceName = "";
+      if (shouldCreateProject) {
+        const createdProject = await createProject(
+          projectTitle.trim(),
+          projectResourceId
+        );
+        setRecentProject(createdProject.name);
+        createdProjectName = createdProject.name;
+        if (sampleRequested && createdProject.name) {
+          behaviorAnalytics.captureMetric(
+            createBehaviorMetric("sample instance requested", {
+              properties: { source: "workspace_setup" },
+            })
+          );
+          try {
+            const sampleInstance = await prepareSampleProjectInstance(
+              createdProject.name
+            );
+            sampleInstanceName = sampleInstance.name;
+          } catch (error) {
+            pushNotification({
+              module: "bytebase",
+              style: "CRITICAL",
+              title: t("instance.prepare-sample-instance-failed"),
+              description: extractGrpcErrorMessage(error),
+            });
+          }
+        }
+      }
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("settings.profile.setup-success"),
+      });
+      if (isSaaSMode) {
+        saveWorkspaceSetupFinished(
+          workspace?.name ?? currentUser.workspace,
+          true
+        );
+      }
+      behaviorAnalytics.captureMetric(
+        createBehaviorMetric("workspace setup submitted", {
+          properties: {
+            scenario: selectedScenarioId ?? "unselected",
+            collaboration_type: workspaceUsage ?? "unselected",
+            result: "finished",
+            sample_enabled: sampleRequested,
+          },
+        })
+      );
+      if (createdProjectName) {
+        const sampleInstanceId =
+          extractInstanceResourceName(sampleInstanceName);
+        router.replace({
+          name: PROJECT_V1_ROUTE_DATABASES,
+          params: {
+            projectId: extractProjectResourceName(createdProjectName),
+          },
+          query: sampleInstanceId
+            ? {
+                syncingInstance: sampleInstanceId,
+                [PRODUCT_INTRO_QUERY_KEY]:
+                  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+              }
+            : {
+                [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO,
+              },
+        });
+      } else {
+        goToDashboard();
+      }
+    } catch {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("settings.profile.setup-failed"),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const goToDashboard = () => {
+    router.replace({
+      name: PROJECT_V1_ROUTE_DASHBOARD,
+      query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
+    });
+  };
+
+  const handleSkip = () => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("workspace setup submitted", {
+        properties: {
+          scenario: selectedScenarioId ?? "unselected",
+          collaboration_type: workspaceUsage ?? "unselected",
+          result: "skipped",
+          sample_enabled: false,
+        },
+      })
+    );
+    goToDashboard();
+  };
+
+  const setupSteps = [
+    {
+      key: "scenario",
+      title: t("settings.profile.setup-steps.scenario"),
+    },
+    {
+      key: "workspace",
+      title: t("settings.profile.setup-steps.workspace"),
+    },
+  ];
+
+  if (setupStep === "scenario") {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="flex w-full max-w-lg flex-col gap-y-6">
+          <StepIndicator steps={setupSteps} currentKey={setupStep} />
+          <WorkspaceSetupQuestionnaireStep
+            scenarioValue={selectedScenarioId}
+            workspaceUsageValue={workspaceUsage}
+            required={isSaaSMode}
+            onScenarioChange={setSelectedScenarioId}
+            onWorkspaceUsageChange={setWorkspaceUsage}
+            onContinue={() => {
+              if (selectedScenarioId) {
+                saveSelectedGuideScenarioId(selectedScenarioId);
+              } else {
+                clearSelectedGuideScenarioId();
+              }
+              if (workspaceUsage) {
+                saveGuideWorkspaceUsage(workspaceUsage);
+              } else {
+                clearGuideWorkspaceUsage();
+              }
+              setSetupStep("workspace");
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen px-4">
+      <div className="w-full max-w-lg mx-4 flex flex-col items-center gap-y-6">
+        <StepIndicator
+          className="w-full"
+          steps={setupSteps}
+          currentKey={setupStep}
+        />
+        <h1 className="sr-only">
+          {t("settings.profile.setup-steps.workspace")}
+        </h1>
+
+        <div className="w-full flex flex-col gap-y-4">
+          <FormField title={t("settings.profile.display-name")}>
+            <Input
+              data-testid="profile-display-name"
+              value={name}
+              autoComplete="off"
+              onChange={(e) => setName(e.target.value)}
+              placeholder={t("settings.profile.display-name-placeholder")}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && name.trim()) {
+                  void handleSave();
+                }
+              }}
+            />
+          </FormField>
+
+          {canRenameWorkspace && (
+            <FormField title={t("settings.profile.workspace-name")}>
+              <Input
+                data-testid="profile-workspace-title"
+                value={workspaceTitle}
+                autoComplete="off"
+                onChange={(event) => setWorkspaceTitle(event.target.value)}
+                placeholder={t("settings.profile.workspace-name-placeholder")}
+              />
+            </FormField>
+          )}
+
+          {canCreateProject && (
+            <FormField
+              title={
+                <>
+                  {t("settings.profile.setup-first-project")}
+                  {isSaaSMode && (
+                    <span
+                      aria-hidden="true"
+                      className="ml-1 text-error"
+                      data-testid="project-required-indicator"
+                    >
+                      *
+                    </span>
+                  )}
+                </>
+              }
+            >
+              <Input
+                data-testid="profile-project-title"
+                value={projectTitle}
+                autoComplete="off"
+                required={isSaaSMode}
+                onChange={(event) => {
+                  const title = event.target.value;
+                  setProjectTitle(title);
+                  if (!title.trim()) {
+                    setProjectResourceId("");
+                    setIsProjectResourceIdValid(false);
+                  }
+                }}
+                placeholder={t("project.create-modal.project-name")}
+              />
+              {!!projectTitle.trim() && (
+                <ResourceIdField
+                  suffix
+                  value={projectResourceId}
+                  autoComplete="off"
+                  resourceName={t("common.project")}
+                  resourceTitle={projectTitle}
+                  validate={validateProjectResourceId}
+                  onChange={setProjectResourceId}
+                  onValidationChange={setIsProjectResourceIdValid}
+                />
+              )}
+              {canPrepareSample && (
+                <div className="flex items-center gap-x-2 pt-1">
+                  <Checkbox
+                    id="enable-sample-databases"
+                    data-testid="enable-sample-databases"
+                    checked={canEnableSample && enableSampleDatabases}
+                    disabled={!canEnableSample}
+                    onCheckedChange={setEnableSampleDatabases}
+                  />
+                  <label
+                    htmlFor="enable-sample-databases"
+                    className={cn(
+                      "cursor-pointer",
+                      !canEnableSample &&
+                        "cursor-not-allowed text-control-placeholder"
+                    )}
+                  >
+                    {t(
+                      selectedScenarioId === "query-data"
+                        ? "settings.profile.enable-sample-databases-query-data"
+                        : selectedScenarioId === "create-database-change"
+                          ? "settings.profile.enable-sample-databases-create-change"
+                          : selectedScenarioId === "mark-sensitive-data"
+                            ? "settings.profile.enable-sample-databases-mark-sensitive-data"
+                            : "settings.profile.enable-sample-databases"
+                    )}
+                  </label>
+                </div>
+              )}
+            </FormField>
+          )}
+
+          <div className="mt-2 flex items-center justify-between gap-x-2 border-t border-block-border pt-4">
+            <Button
+              appearance="secondary"
+              onClick={() => setSetupStep("scenario")}
+            >
+              {t("common.back")}
+            </Button>
+            <div className="flex flex-col items-end gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 sm:gap-y-0">
+              {!isSaaSMode && (
+                <Button appearance="secondary" onClick={handleSkip}>
+                  {t("settings.profile.setup-skip")}
+                </Button>
+              )}
+              <Button onClick={() => void handleSave()} disabled={!canSave}>
+                {t("settings.profile.setup-submit")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

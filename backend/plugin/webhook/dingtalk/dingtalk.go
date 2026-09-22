@@ -16,7 +16,6 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
@@ -88,7 +87,7 @@ func sendDirectMessage(webhookCtx webhook.Context) bool {
 	ctx := context.Background()
 
 	sent := map[string]bool{}
-	if err := common.Retry(ctx, func() error {
+	if err := webhook.Retry(ctx, func() error {
 		var errs error
 		var userPhones, userIDs []string
 		for _, u := range webhookCtx.MentionEndUsers {

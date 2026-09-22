@@ -10,8 +10,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // TaskRunMessage is message for task run.
@@ -45,6 +45,9 @@ type FindTaskRunMessage struct {
 	Environment *string
 	PlanUID     *int64
 	Status      *[]storepb.TaskRun_Status
+
+	Limit  *int
+	Offset *int
 }
 
 // TaskRunStatusPatch is the API message for patching a task run.
@@ -119,7 +122,15 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		q.Space("WHERE ?", where)
 	}
 
-	q.Space("ORDER BY task_run.id ASC")
+	// (project, id) is the primary key, so the order is total for the
+	// cross-project runner lists as well as the offset-paginated API list.
+	q.Space("ORDER BY task_run.project ASC, task_run.id ASC")
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -355,12 +366,6 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		return errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
-	for _, instanceID := range instanceIDs {
-		if err := acquireInstancePurgeLock(ctx, tx, instanceID); err != nil {
-			return errors.Wrapf(err, "failed to lock instance lifecycle fence for %s", instanceID)
-		}
-	}
-
 	lockQ := qb.Q().Space(`
 		SELECT task.project, task.id, task.instance
 		FROM (
@@ -411,19 +416,19 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	for _, instanceID := range lockedInstanceIDs {
 		var deleted bool
 		if err := tx.QueryRowContext(ctx, `
-			SELECT deleted FROM instance WHERE resource_id = $1 FOR UPDATE
+			SELECT deleted FROM instance WHERE resource_id = $1
 		`, instanceID).Scan(&deleted); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return common.Errorf(common.NotFound, "instance %s not found", instanceID)
 			}
-			return errors.Wrapf(err, "failed to lock instance %s", instanceID)
+			return errors.Wrapf(err, "failed to find instance %s", instanceID)
 		}
 		if deleted {
 			return common.Errorf(common.Conflict, "instance %s is archived", instanceID)
 		}
 	}
 
-	// Keep the child-to-parent lock order used by project deletion: task, instance, then project.
+	// nextProjectID locks the project row to serialize ID allocation.
 	baseID, err := nextProjectID(ctx, tx, "task_run", projectID)
 	if err != nil {
 		return err

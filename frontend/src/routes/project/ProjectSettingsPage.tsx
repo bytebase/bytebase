@@ -23,6 +23,7 @@ import { PermissionGuard } from "@/components/PermissionGuard";
 import { ResourceIdField } from "@/components/ResourceIdField";
 import { RouterLink } from "@/components/RouterLink";
 import { Button } from "@/components/ui/button";
+import { ColorSwatchInput } from "@/components/ui/color-input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   FormControlRow,
@@ -226,6 +227,8 @@ export function ProjectSettingsPage() {
   const [allowSelfApproval, setAllowSelfApproval] = useState(
     project?.allowSelfApproval ?? false
   );
+  const [allowLastPlanEditorApproval, setAllowLastPlanEditorApproval] =
+    useState(project?.allowLastPlanEditorApproval ?? false);
   const [requireIssueApproval, setRequireIssueApproval] = useState(
     project?.requireIssueApproval ?? false
   );
@@ -310,6 +313,8 @@ export function ProjectSettingsPage() {
     if (enforceIssueTitle !== project.enforceIssueTitle) return true;
     if (enforceSqlReview !== project.enforceSqlReview) return true;
     if (allowSelfApproval !== project.allowSelfApproval) return true;
+    if (allowLastPlanEditorApproval !== project.allowLastPlanEditorApproval)
+      return true;
     if (requireIssueApproval !== project.requireIssueApproval) return true;
     if (requirePlanCheckNoError !== project.requirePlanCheckNoError)
       return true;
@@ -341,6 +346,7 @@ export function ProjectSettingsPage() {
     enforceIssueTitle,
     enforceSqlReview,
     allowSelfApproval,
+    allowLastPlanEditorApproval,
     requireIssueApproval,
     requirePlanCheckNoError,
     postgresDatabaseTenantMode,
@@ -387,6 +393,7 @@ export function ProjectSettingsPage() {
     setEnforceIssueTitle(project.enforceIssueTitle);
     setEnforceSqlReview(project.enforceSqlReview);
     setAllowSelfApproval(project.allowSelfApproval);
+    setAllowLastPlanEditorApproval(project.allowLastPlanEditorApproval);
     setRequireIssueApproval(project.requireIssueApproval);
     setRequirePlanCheckNoError(project.requirePlanCheckNoError);
     setPostgresDatabaseTenantMode(project.postgresDatabaseTenantMode);
@@ -490,6 +497,10 @@ export function ProjectSettingsPage() {
         projectPatch.allowSelfApproval = allowSelfApproval;
         updateMask.push("allow_self_approval");
       }
+      if (allowLastPlanEditorApproval !== project.allowLastPlanEditorApproval) {
+        projectPatch.allowLastPlanEditorApproval = allowLastPlanEditorApproval;
+        updateMask.push("allow_last_plan_editor_approval");
+      }
       if (requireIssueApproval !== project.requireIssueApproval) {
         projectPatch.requireIssueApproval = requireIssueApproval;
         updateMask.push("require_issue_approval");
@@ -566,6 +577,7 @@ export function ProjectSettingsPage() {
     enforceIssueTitle,
     enforceSqlReview,
     allowSelfApproval,
+    allowLastPlanEditorApproval,
     requireIssueApproval,
     requirePlanCheckNoError,
     postgresDatabaseTenantMode,
@@ -884,24 +896,23 @@ export function ProjectSettingsPage() {
                     key={index}
                     className="inline-flex h-9 items-center gap-x-2 border border-control-border rounded-sm px-1 py-1"
                   >
-                    <input
-                      type="color"
+                    <ColorSwatchInput
                       value={label.color ? colorToHex(label.color) : "#4f46e5"}
-                      onChange={(e) =>
-                        updateIssueLabelColor(index, e.target.value)
-                      }
+                      onChange={(value) => updateIssueLabelColor(index, value)}
                       disabled={!canUpdateProject}
-                      className="w-5 h-6 rounded-sm cursor-pointer border-0 p-0"
+                      className="h-6 w-5 rounded-sm border-0"
                     />
                     <span className="text-sm">{label.value}</span>
                     {canUpdateProject && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
                         className="text-control-light hover:text-main"
                         onClick={() => removeIssueLabel(index)}
                       >
                         <X className="size-3" />
-                      </button>
+                      </Button>
                     )}
                   </span>
                 ))}
@@ -975,6 +986,14 @@ export function ProjectSettingsPage() {
                 "project.settings.issue-related.enforce-sql-review.description"
               )}
             />
+            <FormField
+              title={t(
+                "project.settings.issue-related.approval-permissions.self"
+              )}
+              description={t(
+                "project.settings.issue-related.approval-permissions.description"
+              )}
+            />
             <ToggleRow
               checked={allowSelfApproval}
               onCheckedChange={setAllowSelfApproval}
@@ -984,6 +1003,17 @@ export function ProjectSettingsPage() {
               )}
               description={t(
                 "project.settings.issue-related.allow-self-approval.description"
+              )}
+            />
+            <ToggleRow
+              checked={allowLastPlanEditorApproval}
+              onCheckedChange={setAllowLastPlanEditorApproval}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.allow-last-plan-editor-approval.self"
+              )}
+              description={t(
+                "project.settings.issue-related.allow-last-plan-editor-approval.description"
               )}
             />
             <ToggleRow
@@ -1178,26 +1208,30 @@ export function ProjectSettingsPage() {
               </div>
             ) : (
               reviewPolicyList.map((policy) => (
-                <button
+                <Button
+                  appearance="secondary"
+                  size="md"
                   key={policy.id}
                   type="button"
-                  className="w-full text-left px-4 py-3 border border-control-border rounded-sm hover:bg-control-bg transition-colors"
+                  className="h-auto w-full flex-col items-start rounded-sm border border-control-border px-4 py-3 text-left whitespace-normal transition-colors hover:bg-control-bg"
                   onClick={() => {
                     setPendingReviewPolicy(policy);
                     setEnforceReview(true);
                     setShowReviewDialog(false);
                   }}
                 >
-                  <div className="font-medium">{policy.name}</div>
+                  <div className="w-full min-w-0 break-words font-medium">
+                    {policy.name}
+                  </div>
                   {policy.resources.length > 0 && (
-                    <div className="text-xs text-control-light mt-1">
+                    <div className="mt-1 w-full min-w-0 break-words text-xs text-control-light">
                       {policy.resources.length}{" "}
                       {t("common.resource", {
                         count: policy.resources.length,
                       })}
                     </div>
                   )}
-                </button>
+                </Button>
               ))
             )}
           </div>

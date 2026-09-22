@@ -231,9 +231,9 @@ func (x *GetIdentityProviderRequest) GetName() string {
 
 type ListIdentityProvidersRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The parent workspace whose identity providers should be listed.
+	// The parent workspace whose identity providers should be listed. It must be
+	// the workspace the caller's credential belongs to.
 	// Format: workspaces/{workspace}
-	// When unset, the workspace is resolved from the request context.
 	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1427,10 +1427,10 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x14v1/idp_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\"J\n" +
 	"\x1aGetIdentityProviderRequest\x12,\n" +
 	"\x04name\x18\x01 \x01(\tB\x18\xe0A\x02\xfaA\x12\n" +
-	"\x10bytebase.com/IdPR\x04name\"S\n" +
-	"\x1cListIdentityProvidersRequest\x123\n" +
-	"\x06parent\x18\x01 \x01(\tB\x1b\xfaA\x18\n" +
-	"\x16bytebase.com/WorkspaceR\x06parent\"m\n" +
+	"\x10bytebase.com/IdPR\x04name\"r\n" +
+	"\x1cListIdentityProvidersRequest\x12R\n" +
+	"\x06parent\x18\x01 \x01(\tB:\xe0A\x02\xfaA\x18\n" +
+	"\x16bytebase.com/Workspace\xbaH\x19\xc8\x01\x01r\x142\x12^workspaces/[^/]+$R\x06parent\"m\n" +
 	"\x1dListIdentityProvidersResponse\x12L\n" +
 	"\x12identity_providers\x18\x01 \x03(\v2\x1d.bytebase.v1.IdentityProviderR\x11identityProviders\"\xc7\x01\n" +
 	"\x1dCreateIdentityProviderRequest\x12O\n" +
@@ -1450,14 +1450,14 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x0eoauth2_context\x18\x02 \x01(\v25.bytebase.v1.OAuth2IdentityProviderTestRequestContextH\x00R\roauth2Context\x12X\n" +
 	"\foidc_context\x18\x03 \x01(\v23.bytebase.v1.OIDCIdentityProviderTestRequestContextH\x00R\voidcContext\x12X\n" +
 	"\fldap_context\x18\x04 \x01(\v23.bytebase.v1.LDAPIdentityProviderTestRequestContextH\x00R\vldapContextB\t\n" +
-	"\acontext\">\n" +
-	"(OAuth2IdentityProviderTestRequestContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"<\n" +
-	"&OIDCIdentityProviderTestRequestContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"`\n" +
+	"\acontext\"D\n" +
+	"(OAuth2IdentityProviderTestRequestContext\x12\x18\n" +
+	"\x04code\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x04code\"B\n" +
+	"&OIDCIdentityProviderTestRequestContext\x12\x18\n" +
+	"\x04code\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x04code\"f\n" +
 	"&LDAPIdentityProviderTestRequestContext\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xbb\x02\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12 \n" +
+	"\bpassword\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\bpassword\"\xbb\x02\n" +
 	"\x1cTestIdentityProviderResponse\x12M\n" +
 	"\x06claims\x18\x01 \x03(\v25.bytebase.v1.TestIdentityProviderResponse.ClaimsEntryR\x06claims\x12T\n" +
 	"\tuser_info\x18\x02 \x03(\v27.bytebase.v1.TestIdentityProviderResponse.UserInfoEntryR\buserInfo\x1a9\n" +
@@ -1481,34 +1481,34 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"oidcConfig\x12J\n" +
 	"\vldap_config\x18\x03 \x01(\v2'.bytebase.v1.LDAPIdentityProviderConfigH\x00R\n" +
 	"ldapConfigB\b\n" +
-	"\x06config\"\xf9\x02\n" +
+	"\x06config\"\xff\x02\n" +
 	"\x1cOAuth2IdentityProviderConfig\x12\x19\n" +
 	"\bauth_url\x18\x01 \x01(\tR\aauthUrl\x12\x1b\n" +
 	"\ttoken_url\x18\x02 \x01(\tR\btokenUrl\x12\"\n" +
 	"\ruser_info_url\x18\x03 \x01(\tR\vuserInfoUrl\x12\x1b\n" +
-	"\tclient_id\x18\x04 \x01(\tR\bclientId\x12#\n" +
-	"\rclient_secret\x18\x05 \x01(\tR\fclientSecret\x12\x16\n" +
+	"\tclient_id\x18\x04 \x01(\tR\bclientId\x12)\n" +
+	"\rclient_secret\x18\x05 \x01(\tB\x04\xd0\xea0\x01R\fclientSecret\x12\x16\n" +
 	"\x06scopes\x18\x06 \x03(\tR\x06scopes\x12>\n" +
 	"\rfield_mapping\x18\a \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\b \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
-	"auth_style\x18\t \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\"\xdd\x02\n" +
+	"auth_style\x18\t \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\"\xe3\x02\n" +
 	"\x1aOIDCIdentityProviderConfig\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1b\n" +
-	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
-	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12\x16\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12)\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\x04\xd0\xea0\x01R\fclientSecret\x12\x16\n" +
 	"\x06scopes\x18\x04 \x03(\tR\x06scopes\x12>\n" +
 	"\rfield_mapping\x18\x05 \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\x06 \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
 	"auth_style\x18\a \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\x12(\n" +
-	"\rauth_endpoint\x18\b \x01(\tB\x03\xe0A\x03R\fauthEndpoint\"\xdc\x03\n" +
+	"\rauth_endpoint\x18\b \x01(\tB\x03\xe0A\x03R\fauthEndpoint\"\xe2\x03\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12&\n" +
 	"\x0fskip_tls_verify\x18\x03 \x01(\bR\rskipTlsVerify\x12\x17\n" +
-	"\abind_dn\x18\x04 \x01(\tR\x06bindDn\x12#\n" +
-	"\rbind_password\x18\x05 \x01(\tR\fbindPassword\x12\x17\n" +
+	"\abind_dn\x18\x04 \x01(\tR\x06bindDn\x12)\n" +
+	"\rbind_password\x18\x05 \x01(\tB\x04\xd0\xea0\x01R\fbindPassword\x12\x17\n" +
 	"\abase_dn\x18\x06 \x01(\tR\x06baseDn\x12\x1f\n" +
 	"\vuser_filter\x18\a \x01(\tR\n" +
 	"userFilter\x12e\n" +
@@ -1534,13 +1534,13 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x0fOAuth2AuthStyle\x12!\n" +
 	"\x1dOAUTH2_AUTH_STYLE_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tIN_PARAMS\x10\x01\x12\r\n" +
-	"\tIN_HEADER\x10\x022\xf7\b\n" +
-	"\x17IdentityProviderService\x12\x9f\x01\n" +
-	"\x13GetIdentityProvider\x12'.bytebase.v1.GetIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"@\xdaA\x04name\x8a\xea0\x18bb.identityProviders.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/{name=idps/*}\x12\xa9\x01\n" +
-	"\x15ListIdentityProviders\x12).bytebase.v1.ListIdentityProvidersRequest\x1a*.bytebase.v1.ListIdentityProvidersResponse\"9\xdaA\x00\x80\xea0\x01\x82\xd3\xe4\x93\x02,Z \x12\x1e/v1/{parent=workspaces/*}/idps\x12\b/v1/idps\x12\xba\x01\n" +
+	"\tIN_HEADER\x10\x022\xb2\t\n" +
+	"\x17IdentityProviderService\x12\xa7\x01\n" +
+	"\x13GetIdentityProvider\x12'.bytebase.v1.GetIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"H\xdaA\x04name\x8a\xea0\x18bb.identityProviders.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/{name=idps/*}\x12\xd4\x01\n" +
+	"\x15ListIdentityProviders\x12).bytebase.v1.ListIdentityProvidersRequest\x1a*.bytebase.v1.ListIdentityProvidersResponse\"d\xdaA\x06parent\x8a\xea0\x19bb.identityProviders.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02,Z \x12\x1e/v1/{parent=workspaces/*}/idps\x12\b/v1/idps\x12\xba\x01\n" +
 	"\x16CreateIdentityProvider\x12*.bytebase.v1.CreateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"U\xdaA\x00\x8a\xea0\x1bbb.identityProviders.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02\x1d:\x11identity_provider\"\b/v1/idps\x12\xf3\x01\n" +
-	"\x16UpdateIdentityProvider\x12*.bytebase.v1.UpdateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"\x8d\x01\xdaA\x1didentity_provider,update_mask\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x028:\x11identity_provider2#/v1/{identity_provider.name=idps/*}\x12\xa5\x01\n" +
-	"\x16DeleteIdentityProvider\x12*.bytebase.v1.DeleteIdentityProviderRequest\x1a\x16.google.protobuf.Empty\"G\xdaA\x04name\x8a\xea0\x1bbb.identityProviders.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x13*\x11/v1/{name=idps/*}\x12\xb2\x01\n" +
+	"\x16UpdateIdentityProvider\x12*.bytebase.v1.UpdateIdentityProviderRequest\x1a\x1d.bytebase.v1.IdentityProvider\"\x8d\x01\xdaA\x1didentity_provider,update_mask\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x028:\x11identity_provider2#/v1/{identity_provider.name=idps/*}\x12\xad\x01\n" +
+	"\x16DeleteIdentityProvider\x12*.bytebase.v1.DeleteIdentityProviderRequest\x1a\x16.google.protobuf.Empty\"O\xdaA\x04name\x8a\xea0\x1bbb.identityProviders.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x13*\x11/v1/{name=idps/*}\x12\xb2\x01\n" +
 	"\x14TestIdentityProvider\x12(.bytebase.v1.TestIdentityProviderRequest\x1a).bytebase.v1.TestIdentityProviderResponse\"E\x8a\xea0\x1bbb.identityProviders.update\x90\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/idps/*:testB\xa5\x01\n" +
 	"\x0fcom.bytebase.v1B\x0fIdpServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 

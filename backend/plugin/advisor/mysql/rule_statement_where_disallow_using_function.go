@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -41,7 +41,7 @@ func (*StatementWhereDisallowUsingFunctionAdvisor) Check(_ context.Context, chec
 		rule.dbMetadata = model.NewDatabaseMetadata(checkCtx.DBSchema, nil, nil, storepb.Engine_MYSQL, checkCtx.IsObjectCaseSensitive)
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type whereDisallowFuncOmniRule struct {
@@ -551,7 +551,7 @@ func (r *whereDisallowFuncOmniRule) addFunctionAdvice(funcName, col string, loc 
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         r.Title,
 		Content:       fmt.Sprintf("Function %q is applied to indexed column %q in the WHERE clause, which prevents index usage", funcName, col),
-		StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
+		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
 	})
 }
 
@@ -561,7 +561,7 @@ func (r *whereDisallowFuncOmniRule) addCalculationAdvice(col string, loc ast.Loc
 		Code:          code.StatementDisallowFunctionsAndCalculations.Int32(),
 		Title:         r.Title,
 		Content:       fmt.Sprintf("Calculation is applied to indexed column %q in the WHERE clause, which prevents index usage", col),
-		StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
+		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
 	})
 }
 

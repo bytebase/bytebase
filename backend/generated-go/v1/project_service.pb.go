@@ -189,7 +189,7 @@ func (x *BatchGetProjectsRequest) GetNames() []string {
 
 type BatchGetProjectsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The projects from the specified request.
+	// One project per requested name, in the same order as `names`.
 	Projects      []*Project `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -952,8 +952,10 @@ type Project struct {
 	AllowRequestRole        bool `protobuf:"varint,22,opt,name=allow_request_role,json=allowRequestRole,proto3" json:"allow_request_role,omitempty"`
 	// Once enabled, users can request and use the just-in-time access in the SQL Editor.
 	AllowJustInTimeAccess bool `protobuf:"varint,23,opt,name=allow_just_in_time_access,json=allowJustInTimeAccess,proto3" json:"allow_just_in_time_access,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Whether to allow the last Plan editor to approve a database change issue.
+	AllowLastPlanEditorApproval bool `protobuf:"varint,24,opt,name=allow_last_plan_editor_approval,json=allowLastPlanEditorApproval,proto3" json:"allow_last_plan_editor_approval,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -1115,6 +1117,13 @@ func (x *Project) GetAllowRequestRole() bool {
 func (x *Project) GetAllowJustInTimeAccess() bool {
 	if x != nil {
 		return x.AllowJustInTimeAccess
+	}
+	return false
+}
+
+func (x *Project) GetAllowLastPlanEditorApproval() bool {
+	if x != nil {
+		return x.AllowLastPlanEditorApproval
 	}
 	return false
 }
@@ -1288,7 +1297,11 @@ type TestWebhookRequest struct {
 	// The name of the project which owns the webhook to test.
 	// Format: projects/{project}
 	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
-	// The webhook to test. Identified by its url.
+	// The webhook to test.
+	//
+	// The url is what gets posted to. Reads do not return a saved webhook's url,
+	// so leave url empty and set name to test the one already stored; set url to
+	// test a url before saving it.
 	Webhook       *Webhook `protobuf:"bytes,2,opt,name=webhook,proto3" json:"webhook,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1394,7 +1407,25 @@ type Webhook struct {
 	// title is the title of the webhook.
 	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// url is the url of the webhook, should be unique within the project.
+	//
+	// Write-only: an incoming-webhook url is the whole credential for posting
+	// into the customer's chat, so reads leave it empty, the same way a data
+	// source's password and SSL material are left empty. Set it to change it.
+	//
+	// Required to create a webhook. Not required on TestWebhook, where an empty
+	// url on a request that names a webhook means the one already stored, so the
+	// field carries no REQUIRED behavior it would contradict there.
 	Url string `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
+	// Whether the stored url's endpoint form can carry a direct message to the
+	// users an event mentions, rather than only a post to the channel the url
+	// names. False for a Microsoft Teams Power Automate workflow endpoint, which
+	// direct messages bypass entirely: a webhook with direct_message set sends
+	// them and returns, so the workflow post never happens.
+	//
+	// Reads do not return the url, so a client editing a saved webhook cannot
+	// work this out for itself. It is a fact about the stored url and says
+	// nothing about what the url is.
+	UrlSupportsDirectMessage bool `protobuf:"varint,8,opt,name=url_supports_direct_message,json=urlSupportsDirectMessage,proto3" json:"url_supports_direct_message,omitempty"`
 	// if direct_message is set, the notification is sent directly
 	// to the persons and url will be ignored.
 	// IM integration setting should be set for this function to work.
@@ -1469,6 +1500,13 @@ func (x *Webhook) GetUrl() string {
 		return x.Url
 	}
 	return ""
+}
+
+func (x *Webhook) GetUrlSupportsDirectMessage() bool {
+	if x != nil {
+		return x.UrlSupportsDirectMessage
+	}
+	return false
 }
 
 func (x *Webhook) GetDirectMessage() bool {
@@ -1624,7 +1662,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
 	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xa7\t\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xed\t\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -1645,7 +1683,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x16require_issue_approval\x18\x14 \x01(\bR\x14requireIssueApproval\x12<\n" +
 	"\x1brequire_plan_check_no_error\x18\x15 \x01(\bR\x17requirePlanCheckNoError\x12,\n" +
 	"\x12allow_request_role\x18\x16 \x01(\bR\x10allowRequestRole\x128\n" +
-	"\x19allow_just_in_time_access\x18\x17 \x01(\bR\x15allowJustInTimeAccess\x1a?\n" +
+	"\x19allow_just_in_time_access\x18\x17 \x01(\bR\x15allowJustInTimeAccess\x12D\n" +
+	"\x1fallow_last_plan_editor_approval\x18\x18 \x01(\bR\x1ballowLastPlanEditorApproval\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
@@ -1669,12 +1708,13 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
 	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"+\n" +
 	"\x13TestWebhookResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\xbb\x02\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\x83\x03\n" +
 	"\aWebhook\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x18.bytebase.v1.WebhookTypeB\x03\xe0A\x02R\x04type\x12\x19\n" +
-	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x15\n" +
-	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x02R\x03url\x12%\n" +
+	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x19\n" +
+	"\x03url\x18\x04 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x03url\x12B\n" +
+	"\x1burl_supports_direct_message\x18\b \x01(\bB\x03\xe0A\x03R\x18urlSupportsDirectMessage\x12%\n" +
 	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12N\n" +
 	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes:@\xeaA=\n" +
 	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xb6\x01\n" +
@@ -1687,25 +1727,25 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x0fISSUE_SENT_BACK\x10\f\x12\x13\n" +
 	"\x0fPIPELINE_FAILED\x10\r\x12\x16\n" +
 	"\x12PIPELINE_COMPLETED\x10\x0e\x12\x12\n" +
-	"\x0eISSUE_APPROVED\x10\x0f\"\x04\b\x01\x10\t2\x96\x12\n" +
-	"\x0eProjectService\x12\x7f\n" +
+	"\x0eISSUE_APPROVED\x10\x0f\"\x04\b\x01\x10\t2\x80\x13\n" +
+	"\x0eProjectService\x12\x83\x01\n" +
 	"\n" +
-	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\";\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x95\x01\n" +
-	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"4\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x84\x01\n" +
-	"\fListProjects\x12 .bytebase.v1.ListProjectsRequest\x1a!.bytebase.v1.ListProjectsResponse\"/\xdaA\x00\x8a\xea0\x10bb.projects.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/projects\x12\x80\x01\n" +
-	"\x0eSearchProjects\x12\".bytebase.v1.SearchProjectsRequest\x1a#.bytebase.v1.SearchProjectsResponse\"%\xdaA\x00\x90\xea0\x02\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/projects:search\x12\x88\x01\n" +
-	"\rCreateProject\x12!.bytebase.v1.CreateProjectRequest\x1a\x14.bytebase.v1.Project\">\xdaA\x00\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x17:\aproject\"\f/v1/projects\x12\xac\x01\n" +
-	"\rUpdateProject\x12!.bytebase.v1.UpdateProjectRequest\x1a\x14.bytebase.v1.Project\"b\xdaA\x13project,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(:\aproject2\x1d/v1/{project.name=projects/*}\x12\x8e\x01\n" +
-	"\rDeleteProject\x12!.bytebase.v1.DeleteProjectRequest\x1a\x16.google.protobuf.Empty\"B\xdaA\x04name\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x17*\x15/v1/{name=projects/*}\x12\x97\x01\n" +
-	"\x0fUndeleteProject\x12#.bytebase.v1.UndeleteProjectRequest\x1a\x14.bytebase.v1.Project\"I\x8a\xea0\x14bb.projects.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=projects/*}:undelete\x12\x99\x01\n" +
-	"\x13BatchDeleteProjects\x12'.bytebase.v1.BatchDeleteProjectsRequest\x1a\x16.google.protobuf.Empty\"A\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/projects:batchDelete\x12\x98\x01\n" +
-	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"N\x8a\xea0\x18bb.projects.getIamPolicy\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{resource=projects/*}:getIamPolicy\x12\x9f\x01\n" +
-	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"U\x8a\xea0\x18bb.projects.setIamPolicy\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{resource=projects/*}:setIamPolicy\x12\x90\x01\n" +
+	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\"?\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x99\x01\n" +
+	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"8\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x88\x01\n" +
+	"\fListProjects\x12 .bytebase.v1.ListProjectsRequest\x1a!.bytebase.v1.ListProjectsResponse\"3\xdaA\x00\x8a\xea0\x10bb.projects.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/projects\x12\x84\x01\n" +
+	"\x0eSearchProjects\x12\".bytebase.v1.SearchProjectsRequest\x1a#.bytebase.v1.SearchProjectsResponse\")\xdaA\x00\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/projects:search\x12\x90\x01\n" +
+	"\rCreateProject\x12!.bytebase.v1.CreateProjectRequest\x1a\x14.bytebase.v1.Project\"F\xdaA\x00\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x17:\aproject\"\f/v1/projects\x12\xb4\x01\n" +
+	"\rUpdateProject\x12!.bytebase.v1.UpdateProjectRequest\x1a\x14.bytebase.v1.Project\"j\xdaA\x13project,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02(:\aproject2\x1d/v1/{project.name=projects/*}\x12\x96\x01\n" +
+	"\rDeleteProject\x12!.bytebase.v1.DeleteProjectRequest\x1a\x16.google.protobuf.Empty\"J\xdaA\x04name\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x17*\x15/v1/{name=projects/*}\x12\x9f\x01\n" +
+	"\x0fUndeleteProject\x12#.bytebase.v1.UndeleteProjectRequest\x1a\x14.bytebase.v1.Project\"Q\x8a\xea0\x14bb.projects.undelete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=projects/*}:undelete\x12\xa1\x01\n" +
+	"\x13BatchDeleteProjects\x12'.bytebase.v1.BatchDeleteProjectsRequest\x1a\x16.google.protobuf.Empty\"I\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x1d:\x01*\"\x18/v1/projects:batchDelete\x12\xa0\x01\n" +
+	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"V\x8a\xea0\x18bb.projects.getIamPolicy\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02(\x12&/v1/{resource=projects/*}:getIamPolicy\x12\xa7\x01\n" +
+	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"]\x8a\xea0\x18bb.projects.setIamPolicy\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{resource=projects/*}:setIamPolicy\x12\x98\x01\n" +
 	"\n" +
-	"AddWebhook\x12\x1e.bytebase.v1.AddWebhookRequest\x1a\x14.bytebase.v1.Project\"L\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/{project=projects/*}:addWebhook\x12\xc5\x01\n" +
-	"\rUpdateWebhook\x12!.bytebase.v1.UpdateWebhookRequest\x1a\x14.bytebase.v1.Project\"{\xdaA\x13webhook,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02A:\awebhook26/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook\x12\xa9\x01\n" +
-	"\rRemoveWebhook\x12!.bytebase.v1.RemoveWebhookRequest\x1a\x14.bytebase.v1.Project\"_\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook\x12\x9b\x01\n" +
-	"\vTestWebhook\x12\x1f.bytebase.v1.TestWebhookRequest\x1a .bytebase.v1.TestWebhookResponse\"I\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{project=projects/*}:testWebhookB\xa9\x01\n" +
+	"AddWebhook\x12\x1e.bytebase.v1.AddWebhookRequest\x1a\x14.bytebase.v1.Project\"T\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02(:\x01*\"#/v1/{project=projects/*}:addWebhook\x12\xce\x01\n" +
+	"\rUpdateWebhook\x12!.bytebase.v1.UpdateWebhookRequest\x1a\x14.bytebase.v1.Project\"\x83\x01\xdaA\x13webhook,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02A:\awebhook26/v1/{webhook.name=projects/*/webhooks/*}:updateWebhook\x12\xb1\x01\n" +
+	"\rRemoveWebhook\x12!.bytebase.v1.RemoveWebhookRequest\x1a\x14.bytebase.v1.Project\"g\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02;:\x01*\"6/v1/{webhook.name=projects/*/webhooks/*}:removeWebhook\x12\xa3\x01\n" +
+	"\vTestWebhook\x12\x1f.bytebase.v1.TestWebhookRequest\x1a .bytebase.v1.TestWebhookResponse\"Q\x8a\xea0\x12bb.projects.update\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\f\x82\xd3\xe4\x93\x02):\x01*\"$/v1/{project=projects/*}:testWebhookB\xa9\x01\n" +
 	"\x0fcom.bytebase.v1B\x13ProjectServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

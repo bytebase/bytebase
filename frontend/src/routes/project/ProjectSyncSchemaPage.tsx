@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
 import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { DatabaseSelect } from "@/components/DatabaseSelect";
@@ -47,10 +46,11 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { StepIndicator } from "@/components/ui/step-indicator";
+import { Table } from "@/components/ui/table";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useProjectByName } from "@/hooks/useProjectByName";
-import { keyValueStorage } from "@/lib/keyValueStorage";
+import { saveInitialSQL } from "@/lib/plan/initialSQLStorage";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
@@ -81,6 +81,7 @@ import {
   getDefaultPagination,
   getInstanceResource,
 } from "@/utils";
+import { celString } from "@/utils/v1/celLiteral";
 import {
   extractDatabaseNameAndChangelogUID,
   isValidChangelogName,
@@ -188,7 +189,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     };
     window.addEventListener("beforeunload", beforeUnload);
 
-    // Guard in-app Vue router navigation
+    // Guard in-app router navigation
     const removeRouterGuard = router.beforeEach((_to, _from, next) => {
       const answer = window.confirm(t("common.leave-without-saving"));
       if (answer) {
@@ -401,9 +402,16 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
       }
     });
     query.databaseList = Object.keys(sqlMap).join(",");
-    const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-    void keyValueStorage.put(sqlMapStorageKey, sqlMap);
-    query.sqlMapStorageKey = sqlMapStorageKey;
+    try {
+      query.sqlMapStorageKey = saveInitialSQL(sqlMap);
+    } catch {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("plan.initial-sql-storage-failed"),
+      });
+      return;
+    }
     if (!project) return; // defensive: should not happen if the page rendered
     applyPlanTitleToQuery(query, project, () =>
       generatePlanTitle(
@@ -416,7 +424,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     router.push(
       buildPlanCreateRoute(extractProjectResourceName(project.name), query)
     );
-  }, [selectedDatabaseNameList, schemaDiffCache, project]);
+  }, [selectedDatabaseNameList, schemaDiffCache, project, t]);
 
   if (!project) return null;
 
@@ -745,7 +753,7 @@ function ChangelogSelector({
         await listChangelogs({
           parent: database,
           pageSize: getDefaultPagination(),
-          filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
+          filter: `status == ${celString(Changelog_Status[Changelog_Status.DONE])}`,
         });
 
       if (cancelled) return;
@@ -779,7 +787,7 @@ function ChangelogSelector({
       parent: database,
       pageToken: nextPageToken,
       pageSize: getDefaultPagination(),
-      filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
+      filter: `status == ${celString(Changelog_Status[Changelog_Status.DONE])}`,
     });
     setEntries((prev) => [...prev, ...more.map(toEntry)]);
     setNextPageToken(token);
@@ -790,11 +798,13 @@ function ChangelogSelector({
 
   return (
     <div ref={containerRef} className="relative w-full">
-      <button
+      <Button
+        appearance="secondary"
+        size="md"
         type="button"
         disabled={disabled}
         className={cn(
-          "w-full flex items-center justify-between gap-2 border border-control-border rounded-xs h-9 px-3 text-sm bg-background text-left transition-colors",
+          "w-full flex items-center justify-between gap-2 border border-control-border rounded-xs text-sm bg-background text-left transition-colors",
           "hover:border-control-border",
           "disabled:opacity-50 disabled:pointer-events-none",
           open && "border-accent shadow-[0_0_0_1px_var(--color-accent)]"
@@ -819,7 +829,7 @@ function ChangelogSelector({
             open && "rotate-180"
           )}
         />
-      </button>
+      </Button>
       {open && (
         <div
           className={cn(
@@ -829,11 +839,13 @@ function ChangelogSelector({
         >
           <div className="max-h-60 overflow-y-auto">
             {entries.map((entry) => (
-              <button
+              <Button
+                appearance="secondary"
+                size="md"
                 key={entry.name}
                 type="button"
                 className={cn(
-                  "w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors",
+                  "h-auto w-full justify-start px-3 py-2 text-left text-sm transition-colors",
                   "hover:bg-control-bg",
                   entry.name === value && "bg-accent/5"
                 )}
@@ -843,12 +855,14 @@ function ChangelogSelector({
                 }}
               >
                 <ChangelogLabel entry={entry} />
-              </button>
+              </Button>
             ))}
             {nextPageToken && (
-              <button
+              <Button
+                appearance="secondary"
+                size="md"
                 type="button"
-                className="w-full text-center px-3 py-2 text-sm text-accent hover:bg-control-bg transition-colors"
+                className="h-auto w-full px-3 py-2 text-center text-sm text-accent hover:bg-control-bg transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   loadMore();
@@ -856,7 +870,7 @@ function ChangelogSelector({
                 disabled={loadingMore}
               >
                 {loadingMore ? t("common.loading") : t("common.load-more")}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -1059,8 +1073,10 @@ function SourceSchemaInfo({
       <span>{t("database.sync-schema.source-schema")}</span>
       {changelogSourceSchema ? (
         <>
-          <button
-            className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg hover:bg-control-bg-hover text-sm transition-colors"
+          <Button
+            appearance="secondary"
+            size="md"
+            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
             onClick={gotoDatabase}
           >
             <span className="opacity-60">{t("common.database")}</span>
@@ -1071,14 +1087,16 @@ function SourceSchemaInfo({
                   .databaseName
               }
             </span>
-          </button>
-          <button
-            className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg hover:bg-control-bg-hover text-sm transition-colors"
+          </Button>
+          <Button
+            appearance="secondary"
+            size="md"
+            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
             onClick={gotoChangelog}
           >
             <span className="opacity-60 mr-1">{t("common.changelog")}</span>
             <span>{changelogUID ? `#${changelogUID}` : "Latest"}</span>
-          </button>
+          </Button>
         </>
       ) : (
         <>
@@ -1391,7 +1409,7 @@ function SelectTargetDatabasesView({
         sourceEngine={sourceEngine}
         changelogSourceSchema={changelogSourceSchema}
       />
-      <div className="relative border rounded-lg w-full flex flex-row flex-1 overflow-hidden">
+      <div className="relative border rounded-sm w-full flex flex-row flex-1 overflow-hidden">
         {/* Left panel: target database list */}
         <div className="w-1/4 min-w-[256px] max-w-xs h-full border-r">
           <div className="w-full h-full relative flex flex-col justify-start items-start overflow-y-auto pb-2">
@@ -1400,17 +1418,21 @@ function SelectTargetDatabasesView({
                 <span className="text-sm">
                   {t("database.sync-schema.target-databases")}
                 </span>
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   className="p-0.5 rounded-sm bg-control-bg hover:shadow-sm hover:opacity-80"
                   onClick={() => setShowSelectPanel(true)}
                 >
                   <Plus className="w-4 h-auto" />
-                </button>
+                </Button>
               </div>
               {targetDatabaseList.length > 0 && (
                 <div className="w-full mt-2 px-2">
                   <div className="flex rounded-xs bg-control-bg p-0.5">
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       className={cn(
                         "flex-1 text-xs px-2 py-1 rounded-xs transition-colors",
                         showDatabaseWithDiff
@@ -1423,8 +1445,10 @@ function SelectTargetDatabasesView({
                       <span className="text-control-placeholder">
                         ({databaseListWithDiff.length})
                       </span>
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       className={cn(
                         "flex-1 text-xs px-2 py-1 rounded-xs transition-colors",
                         !showDatabaseWithDiff
@@ -1437,7 +1461,7 @@ function SelectTargetDatabasesView({
                       <span className="text-control-placeholder">
                         ({databaseListWithoutDiff.length})
                       </span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -1470,7 +1494,9 @@ function SelectTargetDatabasesView({
                     </span>
                   </span>
                   <div className="grow" />
-                  <button
+                  <Button
+                    appearance="secondary"
+                    size="xs"
                     className="hidden shrink-0 group-hover:block ml-1 p-0.5 rounded-sm bg-background hover:shadow-sm"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1478,7 +1504,7 @@ function SelectTargetDatabasesView({
                     }}
                   >
                     <Minus className="w-4 h-auto text-control-light" />
-                  </button>
+                  </Button>
                 </div>
               ))}
               {targetDatabaseList.length === 0 && (
@@ -1569,28 +1595,32 @@ function DiffViewPanel({
     <div className="w-full h-full flex flex-col gap-y-2">
       {/* Tabs */}
       <div className="flex border-b border-control-border gap-x-4">
-        <button
+        <Button
+          appearance="secondary"
+          size="md"
           className={cn(
-            "relative px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
+            "relative h-auto px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
             tab === "diff"
-              ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
+              ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:border-b-2 after:border-accent"
               : "text-control-light hover:text-control"
           )}
           onClick={() => setTab("diff")}
         >
           {t("database.sync-schema.schema-change")}
-        </button>
-        <button
+        </Button>
+        <Button
+          appearance="secondary"
+          size="md"
           className={cn(
-            "relative px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
+            "relative h-auto px-1 pb-2 text-sm font-medium transition-colors cursor-pointer",
             tab === "ddl"
-              ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
+              ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:border-b-2 after:border-accent"
               : "text-control-light hover:text-control"
           )}
           onClick={() => setTab("ddl")}
         >
           {t("database.sync-schema.generated-ddl-statement")}
-        </button>
+        </Button>
       </div>
 
       <div className="flex-1 w-full flex flex-col gap-y-2 overflow-hidden">
@@ -2035,7 +2065,7 @@ function TargetDatabasesSelectPanel({
             </div>
           ) : (
             <>
-              <table className="w-full text-sm">
+              <Table>
                 <thead>
                   <tr className="border-b">
                     <th className="py-2 px-2 w-8 text-left">
@@ -2092,7 +2122,7 @@ function TargetDatabasesSelectPanel({
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </Table>
               {dbNextPageToken && (
                 <div className="flex justify-center py-3">
                   <Button

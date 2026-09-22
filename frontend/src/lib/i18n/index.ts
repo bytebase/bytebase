@@ -24,6 +24,11 @@ import zhCN from "@/locales/zh-CN.json";
 const STORAGE_KEY_LANGUAGE = "bb.language";
 
 function getLocale(): string {
+  // Runs at module scope through i18n.init below, so it must not assume a DOM:
+  // any test that transitively imports this module would otherwise need jsdom.
+  if (typeof localStorage === "undefined") {
+    return "en-US";
+  }
   const stored = localStorage.getItem(STORAGE_KEY_LANGUAGE) ?? "";
   if (stored) {
     try {

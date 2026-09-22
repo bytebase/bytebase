@@ -48,6 +48,15 @@ const mocks = vi.hoisted(() => ({
   syncProps: undefined as Record<string, unknown> | undefined,
   providerProps: undefined as Record<string, unknown> | undefined,
   batchProps: undefined as Record<string, unknown> | undefined,
+  serverInfo: { defaultProject: "projects/default" } as {
+    defaultProject: string;
+    sample?: {
+      instances: {
+        instance: string;
+        expireTime?: { seconds: bigint; nanos: number };
+      }[];
+    };
+  },
 }));
 
 vi.mock("react-router", () => ({
@@ -91,7 +100,7 @@ vi.mock("@/stores/app", () => {
     removeDatabaseMetadataCache: mocks.removeDatabaseMetadataCache,
     instancesByName: { [mocks.instance.name]: mocks.instance },
     environmentList: [],
-    serverInfo: { defaultProject: "projects/default" },
+    serverInfo: mocks.serverInfo,
   });
   const useAppStore = (selector?: (s: ReturnType<typeof getState>) => unknown) =>
     selector ? selector(getState()) : getState();
@@ -112,12 +121,14 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  engineNameV1: () => "PostgreSQL",
   extractDatabaseResourceName: (name: string) => {
     const [, instanceName, , databaseName] = name.split("/");
     return { instanceName, databaseName };
   },
   extractInstanceResourceName: (name: string) => name.split("/").pop() ?? "",
   extractProjectResourceName: (name: string) => name.split("/").pop() ?? "",
+  formatAbsoluteDateTime: () => "Aug 30, 2026, 1:30:00 PM GMT+8",
   getDefaultPagination: () => 10,
   hasWorkspacePermissionV2: () => true,
   instanceV1Name: (instance: Instance) => instance.title,
@@ -267,6 +278,7 @@ beforeEach(() => {
   mocks.syncProps = undefined;
   mocks.providerProps = undefined;
   mocks.batchProps = undefined;
+  mocks.serverInfo = { defaultProject: "projects/default" };
   mocks.fetchProjectList.mockImplementation(async () => ({
     projects: mocks.projects,
     nextPageToken: "",
@@ -284,6 +296,73 @@ afterEach(() => {
 });
 
 describe("InstanceDetailView", () => {
+  it("shows the sample expiration warning for a sample instance", async () => {
+    mocks.serverInfo = {
+      defaultProject: "projects/default",
+      sample: {
+        instances: [
+          {
+            instance: "projects/app/instances/prod",
+            expireTime: {
+              seconds: BigInt(
+                Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+              ),
+              nanos: 0,
+            },
+          },
+        ],
+      },
+    };
+    mocks.instance = {
+      ...mocks.instance,
+      name: "projects/app/instances/prod",
+    } as Instance;
+
+    await render(
+      <InstanceDetailView instanceName="projects/app/instances/prod" />
+    );
+
+    expect(container.textContent).toContain(
+      "instance.sample-expiration-future"
+    );
+  });
+
+  it("shows the pending-removal warning for an expired sample instance", async () => {
+    mocks.serverInfo = {
+      defaultProject: "projects/default",
+      sample: {
+        instances: [
+          {
+            instance: "instances/prod",
+            expireTime: {
+              seconds: BigInt(Math.floor(Date.now() / 1000) - 60),
+              nanos: 0,
+            },
+          },
+        ],
+      },
+    };
+
+    await render(<InstanceDetailView instanceName="instances/prod" />);
+
+    expect(container.textContent).toContain(
+      "instance.sample-expiration-expired"
+    );
+  });
+
+  it("does not show an expiration warning without sample expiration metadata", async () => {
+    mocks.serverInfo = {
+      defaultProject: "projects/default",
+      sample: {
+        instances: [{ instance: "instances/prod" }],
+      },
+    };
+
+    await render(<InstanceDetailView instanceName="instances/prod" />);
+
+    expect(container.textContent).not.toContain("instance.sample-expiration");
+  });
+
   it("does not show the post-sync transfer action when there is no user project", async () => {
     await render(<InstanceDetailView instanceName="instances/prod" />);
 
@@ -387,5 +466,9 @@ describe("InstanceDetailView", () => {
     expect(container.querySelector("[data-testid='create-database-sheet']"))
       .toBeNull();
     expect(mocks.fetchProjectList).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("instance.project-bound-title");
+    expect(container.textContent).toContain(
+      "instance.project-bound-description"
+    );
   });
 });

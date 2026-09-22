@@ -176,16 +176,17 @@ blocks data and workflow operations for every caller, including workspace Admins
 and DBAs; workspace-level authority does not override an archived parent's
 lifecycle state. Explicit project restore and purge operations remain available.
 
-Creating a project instance requires its owning project to remain active through
-commit. Once the instance exists, in-flight writers beneath it may finish after
-the project is archived; their results remain unavailable until the project is
-restored. This deliberately avoids making project archival a transaction fence
-for descendant metadata.
+Creating a project instance checks that its owning project is active. Once the
+instance exists, in-flight writers beneath it may finish after the project is
+archived; their results remain unavailable until the project is restored. This
+deliberately avoids making project archival a transaction fence for descendant
+metadata.
 
 Permanently purging a project permanently deletes its project instances,
 databases, and related Bytebase metadata. They are not converted to workspace
-instances or moved to the default project. Purge serializes against descendant
-writers so that no writer can commit after the owning project is removed.
+instances or moved to the default project. Purge does not serialize against
+descendant writers; a rare concurrent write may fail with a PostgreSQL conflict
+or commit based on state observed before the purge.
 
 Directly archiving a project instance leaves its databases assigned to the
 owning project, but they are unavailable to data and workflow operations until
@@ -194,8 +195,9 @@ any targeting task run is `PENDING`, `AVAILABLE`, or `RUNNING`; operators must
 cancel that work or wait for it to finish before retrying the lifecycle request.
 Applying the same guard to restoration prevents legacy queued work from
 silently resuming. Archival does not stop or delete the physical databases.
-Purging serializes against descendant writers, then deletes the databases,
-their metadata and history, and instance-targeting tasks and task runs.
+Purging does not serialize against descendant writers. It deletes the databases,
+their metadata and history, and instance-targeting tasks and task runs; a rare
+concurrent write may fail or commit from an earlier observed state.
 Project-level issues, plans, and releases remain, retaining canonical target
 names that may later identify a replacement resource if the purged instance ID
 is reused; audit logs also remain under the workspace retention policy. This

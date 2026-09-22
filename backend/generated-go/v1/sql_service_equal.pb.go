@@ -117,7 +117,7 @@ func (x *QueryOption) Equal(y *QueryOption) bool {
 	if x.RedisRunCommandsOn != y.RedisRunCommandsOn {
 		return false
 	}
-	if x.MssqlExplainFormat != y.MssqlExplainFormat {
+	if x.ExplainFormat != y.ExplainFormat {
 		return false
 	}
 	return true
@@ -226,6 +226,22 @@ func (x *QueryResult_Message) Equal(y *QueryResult_Message) bool {
 	return true
 }
 
+func (x *QueryResult_QueryPlan) Equal(y *QueryResult_QueryPlan) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Format != y.Format {
+		return false
+	}
+	if x.Executed != y.Executed {
+		return false
+	}
+	return true
+}
+
 func (x *QueryResult) Equal(y *QueryResult) bool {
 	if x == y {
 		return true
@@ -296,6 +312,9 @@ func (x *QueryResult) Equal(y *QueryResult) bool {
 		if !x.Masked[i].Equal(y.Masked[i]) {
 			return false
 		}
+	}
+	if !x.QueryPlan.Equal(y.QueryPlan) {
+		return false
 	}
 	return true
 }

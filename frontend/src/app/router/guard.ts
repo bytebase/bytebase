@@ -1,4 +1,5 @@
 import { redirect } from "react-router";
+import { readWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
 import { useAppStore } from "@/stores/app";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -7,13 +8,14 @@ import {
   workspaceCacheScope,
 } from "@/utils/storage-keys";
 import {
+  ACCOUNT_ROUTE,
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
   AUTH_OAUTH_CALLBACK_MODULE,
   AUTH_OIDC_CALLBACK_MODULE,
   AUTH_PASSWORD_FORGOT_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
-  AUTH_PROFILE_SETUP_MODULE,
+  AUTH_SETUP_MODULE,
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
   DATABASE_ROUTE_DASHBOARD,
@@ -22,7 +24,6 @@ import {
   OAUTH2_CONSENT_MODULE,
   PROJECT_V1_ROUTE_DASHBOARD,
   SETTING_ROUTE,
-  SETUP_MODULE,
   SQL_EDITOR_HOME_MODULE,
   WORKSPACE_ROOT_MODULE,
   WORKSPACE_ROUTE_403,
@@ -40,7 +41,6 @@ const SIGNIN_QUERY_PARAMS = [
 ] as const;
 
 // Auth/landing route names that don't require an authenticated session.
-// Inlined (rather than importing `@/utils/auth`, which pulls the Vue router).
 export function isAuthRelatedRoute(routeName: string): boolean {
   return [
     AUTH_SIGNIN_MODULE,
@@ -76,20 +76,57 @@ export function buildSigninRedirectQuery(url: URL): Record<string, string> {
   return query;
 }
 
+export async function workspaceSetupGuard(url: URL): Promise<Response | null> {
+  const store = useAppStore.getState();
+  if (!store.isLoggedIn()) {
+    return null;
+  }
+
+  try {
+    await Promise.all([
+      store.fetchServerInfo(),
+      store.fetchWorkspaceIamPolicy(true),
+    ]);
+  } catch {
+    return redirect(resolvePath(WORKSPACE_ROUTE_LANDING));
+  }
+  const setupFinished = readWorkspaceSetupFinished(
+    store.currentUser?.workspace ?? store.serverInfo?.workspace ?? ""
+  );
+  if (store.isSaaSMode() && setupFinished === false) {
+    return null;
+  }
+  if (
+    (!store.isSaaSMode() || setupFinished === undefined) &&
+    store.enableOnboarding()
+  ) {
+    return null;
+  }
+
+  const redirectParam = url.searchParams.get("redirect");
+  const target =
+    redirectParam?.startsWith("/") &&
+    !redirectParam.startsWith("//") &&
+    !redirectParam.includes("\\")
+      ? redirectParam
+      : resolvePath(WORKSPACE_ROUTE_LANDING);
+  return redirect(target);
+}
+
 // Route-name prefixes that an authenticated user may always access.
 const ALLOWED_ROUTE_PATTERNS = [
+  ACCOUNT_ROUTE,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
   DATABASE_ROUTE_DASHBOARD,
   SETTING_ROUTE,
-  SETUP_MODULE,
   "workspace",
   "sql-editor",
 ];
 
-// Resolve the redirect target for the bare workspace root ("/"), mirroring the
-// legacy `DummyRootView`. The root path has no page of its own:
+// Resolve the redirect target for the bare workspace root ("/"). The root path
+// has no page of its own:
 //   - EDITOR change-mode workspaces go to the SQL Editor home
 //   - otherwise the user's last meaningful visit, if any
 //   - falling back to the landing page
@@ -100,8 +137,6 @@ const ALLOWED_ROUTE_PATTERNS = [
 // boot cannot load it, the setting is authenticated-only). Miss that and an
 // EDITOR workspace silently falls through to the landing page. This loader
 // resolves synchronously (see AppRoot), so it does not fetch the profile
-// itself. `SetupPage.homePath` still keeps its own copy of the EDITOR rule;
-// folding it in here is a follow-up.
 function resolveRootRedirect(
   store: ReturnType<typeof useAppStore.getState>
 ): string {
@@ -140,7 +175,7 @@ function readLastVisit(
 }
 
 // Ignore root-ish / transient paths so we don't redirect "/" back to itself or
-// to a route that itself redirects (mirrors `DummyRootView`'s ignore list).
+// to a route that itself redirects.
 function isMeaningfulVisit(path: string): boolean {
   return !(
     path === "" ||
@@ -156,12 +191,11 @@ function isMeaningfulVisit(path: string): boolean {
 }
 
 /**
- * Faithful port of the legacy vue-router `beforeEach` guard
- * (`src/router/index.ts`). Runs as the react-router root-route loader: the
- * root `.tsx` loader resolves the matched leaf route's `handle.name` (via
- * `matchRoutes`) and calls this. Returns a `redirect()` Response to navigate
- * elsewhere, or `null` to allow the navigation. Session state is read from the
- * app store (the single source of truth).
+ * Runs as the react-router root-route loader: the root `.tsx` loader resolves
+ * the matched leaf route's `handle.name` (via `matchRoutes`) and calls this.
+ * Returns a `redirect()` Response to navigate elsewhere, or `null` to allow the
+ * navigation. Session state is read from the app store (the single source of
+ * truth).
  */
 export function rootGuard({
   name,
@@ -207,12 +241,12 @@ export function rootGuard({
     );
   }
 
-  // Allow 2FA setup / password reset / profile setup for logged-in users.
+  // Allow 2FA setup / password reset / workspace setup for logged-in users.
   if (
     isLoggedIn &&
     (toName === AUTH_2FA_SETUP_MODULE ||
       toName === AUTH_PASSWORD_RESET_MODULE ||
-      toName === AUTH_PROFILE_SETUP_MODULE)
+      toName === AUTH_SETUP_MODULE)
   ) {
     return null;
   }
@@ -277,7 +311,16 @@ export function rootGuard({
     return redirect(resolvePath(AUTH_PASSWORD_RESET_MODULE));
   }
 
-  // The bare workspace root ("/") has no page — redirect like DummyRootView.
+  if (
+    store.isSaaSMode() &&
+    readWorkspaceSetupFinished(
+      store.currentUser?.workspace ?? store.serverInfo?.workspace ?? ""
+    ) === false
+  ) {
+    return redirect(resolvePath(AUTH_SETUP_MODULE));
+  }
+
+  // The bare workspace root ("/") has no page, so always redirect.
   if (toName === WORKSPACE_ROOT_MODULE) {
     return redirect(resolveRootRedirect(store));
   }

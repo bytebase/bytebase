@@ -1,16 +1,17 @@
 import { ChevronLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import {
   Panel,
   Group as PanelGroup,
+  type PanelImperativeHandle,
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { useNavigate } from "@/app/router";
 import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { IAMRemindDialog } from "@/components/IAMRemindDialog";
-import { Quickstart } from "@/components/Quickstart";
+import { Button } from "@/components/ui/button";
 import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
@@ -37,6 +38,7 @@ import {
   useCurrentSQLEditorTab,
   useIsDisconnected,
 } from "@/modules/sql-editor/store/tab";
+import { WorkspaceSetupGuide } from "@/modules/workspace-setup-guide/WorkspaceSetupGuide";
 import { useAppStore } from "@/stores/app";
 import { unknownProject } from "@/types";
 import {
@@ -45,25 +47,18 @@ import {
 } from "@/utils";
 
 /**
- * React port of `frontend/src/views/sql-editor/SQLEditorHomePage.vue`.
- *
  * Top-level shell of the SQL Editor route:
  *  - desktop: a horizontal split between `<AsidePanel>` (workspace
  *    tree, etc.) and the main column (`<TabList>` + `<Panels>`).
  *  - mobile (window width < 800px): the aside collapses behind a
  *    floating chevron + drawer.
  *
- * Two emittery listeners survive from the Vue version:
+ * Two emittery listeners:
  *  - `alter-schema` opens a new tab to the plan editor with a
  *    pre-filled `ALTER TABLE` statement.
  *  - `insert-at-caret` flips back to the CODE view and stages the
- *    content into `pendingInsertAtCaret`; the React `<SQLEditor>` reads
- *    that ref and inserts at the cursor.
- *
- * The Vue Router route entry lives in `router/sqlEditor.ts` as a
- * tiny inline `defineComponent` whose sole job is to mount this
- * React tree via `<ReactPageMount page="SQLEditorHomePage">` — no
- * per-route `.vue` file remains.
+ *    content into `pendingInsertAtCaret`; `<SQLEditor>` reads it and
+ *    inserts at the cursor.
  */
 export function SQLEditorHomePage() {
   const { t } = useTranslation();
@@ -93,12 +88,31 @@ export function SQLEditorHomePage() {
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
-  const hideSidebar = windowWidth < 800;
+  // Two separate reasons to give up the sidebar, and only one of them wants
+  // the phone treatment. A narrow window moves the tree into a drawer behind a
+  // floating toggle; a maximized result pane collapses it in place, so the
+  // tree keeps its scroll position and its dragged width for the trip back.
+  const isNarrowWindow = windowWidth < 800;
+  const collapseSidebar = useSQLEditorStore((s) => s.resultPanelMaximized);
+
+  const sidebarPanelRef = useRef<PanelImperativeHandle | null>(null);
+  // `isNarrowWindow` is a dependency because the panel it drives only exists on
+  // the desktop layout: widening the window past the breakpoint mounts a fresh
+  // panel that still has to be collapsed for a pane maximized while narrow.
+  useLayoutEffect(() => {
+    const panel = sidebarPanelRef.current;
+    if (!panel) return;
+    if (collapseSidebar) {
+      panel.collapse();
+    } else {
+      panel.expand();
+    }
+  }, [collapseSidebar, isNarrowWindow]);
 
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   // alter-schema: open a new tab to the plan editor with a pre-filled
-  // ALTER TABLE template (mirrors Vue's `useEmitteryEventListener`).
+  // ALTER TABLE template.
   useEffect(() => {
     const off = sqlEditorEvents.on(
       "alter-schema",
@@ -141,8 +155,8 @@ export function SQLEditorHomePage() {
   }, [navigate, t]);
 
   // insert-at-caret: flip view to CODE, stage content into
-  // pendingInsertAtCaret. The React `<SQLEditor>` reads the same Pinia
-  // ref and inserts at the cursor.
+  // pendingInsertAtCaret. `<SQLEditor>` reads it from the SQL Editor
+  // store and inserts at the cursor.
   useEffect(() => {
     const off = sqlEditorEvents.on(
       "insert-at-caret",
@@ -163,13 +177,15 @@ export function SQLEditorHomePage() {
     };
   }, [setPendingInsertAtCaret]);
 
-  const mobileToggle = hideSidebar
+  const mobileToggle = isNarrowWindow
     ? createPortal(
         <SQLEditorThemeScope theme={theme} asContents>
-          <button
+          <Button
+            appearance="secondary"
+            size="lg"
             type="button"
             className={cn(
-              "fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-16 flex items-center justify-center bg-background hover:bg-control-bg cursor-pointer transition-all",
+              "fixed rounded-full border border-control-border shadow-lg bottom-16 flex items-center justify-center bg-background hover:bg-control-bg cursor-pointer transition-all",
               LAYER_SURFACE_CLASS,
               sidebarExpanded ? "left-[80%] -translate-x-5" : "left-4"
             )}
@@ -186,7 +202,7 @@ export function SQLEditorHomePage() {
                 !sidebarExpanded && "-scale-100"
               )}
             />
-          </button>
+          </Button>
         </SQLEditorThemeScope>,
         getLayerRoot("overlay")
       )
@@ -196,7 +212,7 @@ export function SQLEditorHomePage() {
     <div className="sqleditor--wrapper w-full flex-1 overflow-hidden flex flex-col bg-background text-main">
       <SQLEditorHeader />
       {mobileToggle}
-      {hideSidebar &&
+      {isNarrowWindow &&
         sidebarExpanded &&
         createPortal(
           <SQLEditorThemeScope theme={theme} asContents>
@@ -221,14 +237,24 @@ export function SQLEditorHomePage() {
           getLayerRoot("overlay")
         )}
       <PanelGroup orientation="horizontal" className="h-full">
-        {!hideSidebar && (
+        {!isNarrowWindow && (
           <>
-            <Panel defaultSize="25%" minSize="10%" maxSize="40%">
+            <Panel
+              panelRef={sidebarPanelRef}
+              collapsible
+              collapsedSize="0%"
+              defaultSize="25%"
+              minSize="10%"
+              maxSize="40%"
+            >
               <div className="h-full">
                 <AsidePanel />
               </div>
             </Panel>
+            {/* Dragging a collapsed sidebar back open would leave the result
+                pane short of the width its control still claims. */}
             <PanelResizeHandle
+              disabled={collapseSidebar}
               className={resizeHandleClass("vertical", "w-0.5")}
             />
           </>
@@ -245,15 +271,11 @@ export function SQLEditorHomePage() {
         </Panel>
       </PanelGroup>
 
-      <Quickstart />
+      <WorkspaceSetupGuide />
       {projectContextReady && project && <IAMRemindDialog project={project} />}
 
       <ConnectionPanel />
 
-      {/* Diagnostic teleport target — the Vue version reused
-          `#sql-editor-debug`. Skipped here; the legacy markers
-          (`isDisconnected`, `currentTab.id`, `currentTab.connection`)
-          are still inspectable via Vue devtools on the Pinia store. */}
       <DebugProbe
         isDisconnected={isDisconnected}
         tabId={tab?.id}
@@ -264,9 +286,8 @@ export function SQLEditorHomePage() {
 }
 
 /**
- * Renders the same `[Page]…` debug strings the Vue version teleported
- * into `#sql-editor-debug`. The portal is no-op when that target isn't
- * in the DOM (production builds), matching the legacy behavior.
+ * Renders the `[Page]…` debug strings into `#sql-editor-debug`. The
+ * portal is a no-op when that target isn't in the DOM.
  */
 function DebugProbe({
   isDisconnected,

@@ -10,9 +10,8 @@ import { useViewStateNav } from "../common/useViewStateNav";
 import { TriggersTable } from "./TriggersTable";
 
 /**
- * Standalone TriggersPanel. The Vue version reads `viewState.table` to
- * scope the trigger list to a specific table; the React port preserves
- * that behavior.
+ * Standalone TriggersPanel. Reads `viewState.table` to scope the trigger
+ * list to a specific table.
  */
 export function TriggersPanel() {
   const { database } = useConnectionOfCurrentSQLEditorTab();
@@ -54,7 +53,8 @@ export function TriggersPanel() {
         titlePrefix={
           <Button
             appearance="secondary"
-            className="h-8 px-1 text-sm"
+            size="md"
+            className="px-1"
             onClick={() => clearDetail()}
           >
             <ChevronLeft className="size-5" />

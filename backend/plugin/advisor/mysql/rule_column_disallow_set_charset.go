@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -40,7 +40,7 @@ func (*ColumnDisallowSetCharsetAdvisor) Check(_ context.Context, checkCtx adviso
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnDisallowSetCharsetOmniRule struct {
@@ -75,7 +75,7 @@ func (r *columnDisallowSetCharsetOmniRule) checkCreateTable(n *ast.CreateTableSt
 				Code:          code.SetColumnCharset.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", r.QueryText()),
-				StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+				StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 			})
 		}
 	}
@@ -121,7 +121,7 @@ func (r *columnDisallowSetCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt
 					Code:          code.SetColumnCharset.Int32(),
 					Title:         r.Title,
 					Content:       fmt.Sprintf("Disallow set column charset but \"%s\" does", r.QueryText()),
-					StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+					StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 				})
 			}
 		}

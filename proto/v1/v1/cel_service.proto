@@ -4,6 +4,7 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/expr/v1alpha1/syntax.proto";
+import "v1/annotation.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -16,6 +17,7 @@ service CelService {
       post: "/v1/cel/batchParse"
       body: "*"
     };
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Converts multiple CEL AST representations back into expression strings.
@@ -25,6 +27,7 @@ service CelService {
       post: "/v1/cel/batchDeparse"
       body: "*"
     };
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 

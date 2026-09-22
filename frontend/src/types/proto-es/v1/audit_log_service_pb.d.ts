@@ -30,16 +30,22 @@ export declare type SearchAuditLogsRequest = Message<"bytebase.v1.SearchAuditLog
    * The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
    *
    * Supported filter:
-   * - method: the API name, can be found in the docs, should start with "/bytebase.v1." prefix. For example "/bytebase.v1.UserService/CreateUser". Support "==" operator.
+   * - method: the API name, can be found in the docs. Usually "/bytebase.v1.…", for example "/bytebase.v1.UserService/CreateUser"; entries written outside the v1 API carry their own prefix, such as "/bytebase.mcp.Session/Authorize" or "/bytebase.cli.Recovery/ResetUserPassword". Support "==" operator.
+   * - resource: the resource the entry is about, support "==" operator.
    * - severity: support "==" operator, check Severity enum in AuditLog message for values.
-   * - user: the actor, should in "users/{email}" format, support "==" operator.
+   * - actor: the actor, in users/{email}, serviceAccounts/{email}, or
+   *   workloadIdentities/{email} format. Support "==" operator.
    * - create_time: support ">=" and "<=" operator.
+   * - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
+   * - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
    *
    * For example:
    *  - filter = "method == '/bytebase.v1.SQLService/Query'"
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+   *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && actor == 'users/bb@bytebase.com'"
    *  - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+   *  - filter = "mcp == true"
+   *  - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
    *
    * @generated from field: string filter = 1;
    */
@@ -223,12 +229,12 @@ export declare type AuditLog = Message<"bytebase.v1.AuditLog"> & {
   createTime?: Timestamp | undefined;
 
   /**
-   * The user who performed the action.
-   * Format: users/{email}
+   * The principal who performed the action.
+   * Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}
    *
-   * @generated from field: string user = 3;
+   * @generated from field: string actor = 3;
    */
-  user: string;
+  actor: string;
 
   /**
    * The method or action being audited.

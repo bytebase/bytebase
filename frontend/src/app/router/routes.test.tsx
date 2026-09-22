@@ -3,15 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
   WORKSPACE_ROUTE_404,
+  WORKSPACE_ROUTE_MCP,
 } from "@/app/router/handles";
+import { buildReactRoute } from "./index";
 import { routes } from "./routes";
+import { sqlEditorRoutes } from "./routes/sqlEditor";
 
-// Guardrail for the "blank body" route bug class. During the Vue→React router
-// migration, several leaf routes were ported as bare `{ path, handle }` objects
-// with no `element`/`lazy`/`Component`. react-router renders such a leaf as an
-// empty `<Outlet/>`, so the page shows nothing (e.g. `/projects/bbdev` and the
-// legacy rollout/environment-detail routes). A leaf must therefore either
-// render something or redirect:
+// Guardrail for the "blank body" route bug class. react-router renders a bare
+// `{ path, handle }` leaf (no `element`/`lazy`/`Component`) as an empty
+// `<Outlet/>`, so the page shows nothing. A leaf must therefore either render
+// something or redirect:
 //   - `lazy` / `element` / `Component` — renders a page
 //   - `loader` — performs a (typically param-aware) redirect()
 //   - an ancestor flagged `handle.layoutAsPage` — the ancestor renders the
@@ -84,7 +85,30 @@ describe("workspace root", () => {
   });
 });
 
+describe("MCP integration route", () => {
+  it("does not require settings access to open the setup page", () => {
+    const matches = matchRoutes(routes, "/integration/mcp");
+    const route = buildReactRoute(
+      { pathname: "/integration/mcp", search: "", hash: "" },
+      (matches ?? []).map((match) => ({ handle: match.route.handle })),
+      {}
+    );
+
+    expect(route.name).toBe(WORKSPACE_ROUTE_MCP);
+    expect(route.requiredPermissions).toEqual([]);
+  });
+});
+
 describe("react route table reachability", () => {
+  it("marks SQL Editor layout leaves with an explicit null element", () => {
+    const children = sqlEditorRoutes[0].children ?? [];
+
+    expect(children.length).toBeGreaterThan(0);
+    for (const route of children) {
+      expect(route).toHaveProperty("element", null);
+    }
+  });
+
   it("every leaf route renders something or redirects (no blank-body bare leaves)", () => {
     expect(collectBareLeaves(routes)).toEqual([]);
   });

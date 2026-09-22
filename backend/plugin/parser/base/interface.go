@@ -93,12 +93,30 @@ func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 // 2. SELECT statement
 // We also support CTE with SELECT statements, but not with DML statements.
 // The first bool indicates whether the query can run in read-only mode, and the second bool determines whether all queries return data.
+//
+// An engine with no registered validator answers "read-only, all queries
+// return data". That default suits the callers who only route or format with
+// it; a caller that must REFUSE a write has to ask HasQueryValidator first,
+// because here the answer for such an engine is a default rather than a
+// verdict.
 func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, bool, error) {
 	f, ok := queryValidators[engine]
 	if !ok {
 		return true, true, nil
 	}
 	return f(statement)
+}
+
+// HasQueryValidator reports whether a read-only query validator is registered
+// for engine, so a caller can tell ValidateSQLForEditor's verdict apart from
+// its no-validator default. The map stays unexported: this is the whole of
+// what a caller outside the package may learn about it.
+//
+// Lock-free like every other lookup here, and for the same reason: validators
+// are registered from package init functions, before any request runs.
+func HasQueryValidator(engine storepb.Engine) bool {
+	_, ok := queryValidators[engine]
+	return ok
 }
 
 func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChangedResourcesFunc) {
@@ -321,7 +339,7 @@ func GetStatementTypes(engine storepb.Engine, asts []AST) ([]storepb.StatementTy
 	return f(asts)
 }
 
-// IsAllDML checks if all statements are DML (INSERT, UPDATE, DELETE).
+// IsAllDML checks if all statements are DML (INSERT, UPDATE, DELETE, MERGE).
 // Returns false for unsupported engines or parse errors (conservative approach).
 // Results are cached to avoid repeated parsing of the same statement.
 // Safe for concurrent calls with the same statement.
@@ -364,7 +382,7 @@ func isAllDMLImpl(engine storepb.Engine, statement string) bool {
 	}
 	for _, t := range types {
 		switch t {
-		case storepb.StatementType_INSERT, storepb.StatementType_UPDATE, storepb.StatementType_DELETE:
+		case storepb.StatementType_INSERT, storepb.StatementType_UPDATE, storepb.StatementType_DELETE, storepb.StatementType_MERGE:
 			// DML statement, continue
 		default:
 			return false
@@ -375,9 +393,39 @@ func isAllDMLImpl(engine storepb.Engine, statement string) bool {
 
 type ChangeSummary struct {
 	ChangedResources *model.ChangedResources
-	SampleDMLS       []string
-	DMLCount         int
-	InsertCount      int
+	// DMLStatements holds the text of every DML statement whose rows can be estimated, in order.
+	// A statement that runs after the sheet changes the search path starts with WithSearchPath's
+	// prefix, which the driver splits off with SplitSearchPath and runs before the EXPLAIN.
+	DMLStatements []string
+	// DMLCount counts the DML statements, including those DMLStatements omits.
+	DMLCount int
+	// InsertCount counts the rows of INSERT ... VALUES statements.
+	InsertCount int
+}
+
+// searchPathPrefix starts the statement WithSearchPath puts before a DML statement.
+const searchPathPrefix = "SET LOCAL search_path TO "
+
+// WithSearchPath returns statement preceded by a SET LOCAL search_path statement for schemas.
+func WithSearchPath(statement string, schemas []string) string {
+	quoted := make([]string, len(schemas))
+	for i, schema := range schemas {
+		quoted[i] = `"` + strings.ReplaceAll(schema, `"`, `""`) + `"`
+	}
+	return searchPathPrefix + strings.Join(quoted, ", ") + ";\n" + statement
+}
+
+// SplitSearchPath returns the SET LOCAL search_path statement that WithSearchPath put before
+// statement, or "" when there is none, and the statement after it.
+func SplitSearchPath(statement string) (string, string) {
+	if !strings.HasPrefix(statement, searchPathPrefix) {
+		return "", statement
+	}
+	setup, rest, ok := strings.Cut(statement, ";\n")
+	if !ok {
+		return "", statement
+	}
+	return setup, rest
 }
 
 // REFACTOR(zp): Put it here to avoid circular import for now.

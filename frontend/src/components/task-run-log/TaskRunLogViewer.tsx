@@ -136,7 +136,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     // the box in place instead of popping the card taller.
     if (logFetch.status === "loading") {
       return (
-        <div className="flex min-h-20 items-center justify-center rounded-md border bg-gray-50 px-3 py-2 text-sm text-control-light">
+        <div className="flex min-h-20 items-center justify-center rounded-sm border border-block-border bg-control-bg/50 px-3 py-2 text-sm text-control-light">
           {t("common.loading")}
         </div>
       );
@@ -154,7 +154,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
   if (soleSection) {
     return (
       <div className="w-full font-mono text-xs">
-        <div className="w-full overflow-hidden rounded border border-gray-200 bg-gray-50">
+        <div className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50">
           <div className="flex items-center gap-x-2 px-3 py-1.5 text-control">
             <SectionStatusIcon section={soleSection} />
             <span>{soleSection.label}</span>
@@ -182,7 +182,10 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     section: (typeof sections)[number],
     indent = false
   ) => (
-    <div key={section.id} className="border-b border-gray-200 last:border-b-0">
+    <div
+      key={section.id}
+      className="border-block-border border-b last:border-b-0"
+    >
       <SectionHeader
         section={section}
         indent={indent}
@@ -214,26 +217,28 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     return (
       <div
         key={fileGroup.id}
-        className="border-b border-gray-200 last:border-b-0"
+        className="border-block-border border-b last:border-b-0"
       >
         <div className={indent ? "pl-4" : ""}>
-          <button
+          <Button
             type="button"
-            className="flex w-full select-none items-center gap-x-2 bg-blue-50 px-3 py-1.5 text-left hover:bg-blue-100"
+            appearance="secondary"
+            size="sm"
+            className="w-full justify-start rounded-none bg-info/10 text-info hover:bg-info/20"
             onClick={() => toggleReleaseFile(fileGroup.id)}
           >
             {isReleaseFileExpanded(fileGroup.id) ? (
-              <ChevronsDownUp className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+              <ChevronsDownUp className="size-4 shrink-0" />
             ) : (
-              <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-blue-500" />
+              <ChevronsUpDown className="size-4 shrink-0" />
             )}
-            <FileCode className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-            <span className="font-medium text-blue-700">
+            <FileCode className="size-4 shrink-0" />
+            <span className="font-medium">
               {fileGroup.filePath
                 ? `${fileGroup.version}: ${fileGroup.filePath}`
                 : fileGroup.version}
             </span>
-          </button>
+          </Button>
           {isReleaseFileExpanded(fileGroup.id) ? (
             <div className={indent ? "pl-4" : ""}>
               {fileGroup.sections.map((section) =>
@@ -248,33 +253,35 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
 
   const content = hasMultipleReplicas ? (
     <>
-      <div className="flex items-center gap-x-2 px-3 py-2 bg-amber-50 border-b border-amber-200 text-amber-800">
-        <AlertTriangle className="h-4 w-4 shrink-0" />
+      <div className="flex items-center gap-x-2 border-warning/40 border-b bg-warning/10 px-3 py-2 text-warning">
+        <AlertTriangle className="size-4 shrink-0" />
         <span>{t("task-run.log-viewer.multiple-replicas-notice")}</span>
       </div>
       {replicaGroups.map((replicaGroup, replicaIdx) => (
         <div
           key={replicaGroup.replicaId}
-          className="border-b border-gray-300 last:border-b-0"
+          className="border-control-border border-b last:border-b-0"
         >
-          <button
+          <Button
             type="button"
-            className="flex w-full select-none items-center gap-x-2 bg-gray-100 px-3 py-1.5 text-left hover:bg-gray-200"
+            appearance="secondary"
+            size="sm"
+            className="w-full justify-start rounded-none bg-control-bg text-control hover:bg-control-bg-hover"
             onClick={() => toggleReplica(replicaGroup.replicaId)}
           >
             {isReplicaExpanded(replicaGroup.replicaId) ? (
-              <ChevronsDownUp className="h-3.5 w-3.5 shrink-0 text-gray-500" />
+              <ChevronsDownUp className="size-4 shrink-0 text-control-light" />
             ) : (
-              <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-gray-500" />
+              <ChevronsUpDown className="size-4 shrink-0 text-control-light" />
             )}
-            <Server className="h-3.5 w-3.5 shrink-0 text-gray-500" />
-            <span className="font-medium text-gray-700">
+            <Server className="size-4 shrink-0 text-control-light" />
+            <span className="font-medium text-control">
               {t("task-run.log-viewer.replica-n", { n: replicaIdx + 1 })}
             </span>
-            <span className="text-[10px] font-normal text-gray-400">
+            <span className="font-normal text-control-placeholder text-xs">
               {replicaGroup.replicaId.substring(0, 8)}
             </span>
-          </button>
+          </Button>
 
           {isReplicaExpanded(replicaGroup.replicaId) ? (
             <div>
@@ -299,10 +306,10 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
 
   return (
     <div className="w-full font-mono text-xs">
-      <div className="w-full overflow-hidden rounded border border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-100 px-2 py-1">
-          <div className="flex items-center gap-x-2 text-gray-500">
-            <List className="h-3.5 w-3.5" />
+      <div className="w-full overflow-hidden rounded-sm border border-block-border bg-control-bg/50">
+        <div className="flex items-center justify-between border-block-border border-b bg-control-bg px-2 py-1">
+          <div className="flex items-center gap-x-2 text-control-light">
+            <List className="size-3.5" />
             <span>
               {t("task-run.log-viewer.summary", {
                 sections: totalSections,
@@ -318,9 +325,9 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
             onClick={toggleExpandAll}
           >
             {areAllExpanded ? (
-              <ChevronsDownUp className="h-3.5 w-3.5" />
+              <ChevronsDownUp className="size-3.5" />
             ) : (
-              <ChevronsUpDown className="h-3.5 w-3.5" />
+              <ChevronsUpDown className="size-3.5" />
             )}
             <span>
               {areAllExpanded

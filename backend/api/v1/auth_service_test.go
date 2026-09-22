@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -10,171 +9,17 @@ import (
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
-	statuspb "google.golang.org/genproto/googleapis/rpc/status"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-const authTestEnterpriseLicense = "eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJpbnN0YW5jZUNvdW50Ijo5OTksInRyaWFsaW5nIjpmYWxzZSwicGxhbiI6IkVOVEVSUFJJU0UiLCJvcmdOYW1lIjoiYmIiLCJhdWQiOiJiYi5saWNlbnNlIiwiZXhwIjo3OTc0OTc5MjAwLCJpYXQiOjE2NjM2Njc1NjEsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMDAwMDEwMDAuIn0.JjYCMeAAMB9FlVeDFLdN3jvFcqtPsbEzaIm1YEDhUrfekthCbIOeX_DB2Bg2OUji3HSX5uDvG9AkK4Gtrc4gLMPI3D5mk3L-6wUKZ0L4REztS47LT4oxVhpqPQayYa9lKJB1YoHaqeMV4Z5FXeOXwuACoELznlwpT6pXo9xXm_I6QwQiO7-zD83XOTO4PRjByc-q3GKQu_64zJMIKiCW0I8a3GvrdSnO7jUuYU1KPmCuk0ZRq3I91m29LTo478BMST59HqCLj1GGuCKtR3SL_376XsZfUUM0iSAur5scg99zNGWRj-sUo05wbAadYx6V6TKaWrBUi_8_0RnJyP5gbA"
-
-func TestCountRecentLoginFailures(t *testing.T) {
-	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('ws-test')`)
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
-	service := &AuthService{store: stores}
-
-	const email = "member@example.com"
-	createFailure := func(workspace, method, resource, user, message, response string) {
-		t.Helper()
-		require.NoError(t, stores.CreateAuditLog(ctx, workspace, &storepb.AuditLog{
-			Method:   method,
-			Resource: resource,
-			User:     user,
-			Response: response,
-			Status: &statuspb.Status{
-				Code:    int32(connect.CodeUnauthenticated),
-				Message: message,
-			},
-		}))
-	}
-
-	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidCredentials, "")
-	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidCredentials, "")
-	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidCredentials, "old")
-	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidMFACode, "")
-	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidRecoveryCode, "")
-	createFailure("ws-test", v1connect.AuthServiceSwitchWorkspaceProcedure, "workspaces/ws-test", common.FormatUserEmail(email), errMsgInvalidMFACode, "")
-	createFailure("ws-test", v1connect.AuthServiceSwitchWorkspaceProcedure, "workspaces/ws-test", common.FormatUserEmail(email), errMsgInvalidRecoveryCode, "")
-	require.NoError(t, stores.CreateAuditLog(ctx, "ws-test", &storepb.AuditLog{
-		Method:   v1connect.AuthServiceLoginProcedure,
-		Resource: email,
-		Status:   &statuspb.Status{},
-	}))
-
-	result, err := db.ExecContext(ctx, `UPDATE audit_log SET created_at = $1 WHERE payload->>'response' = 'old'`, time.Now().Add(-2*time.Hour))
-	require.NoError(t, err)
-	rowsAffected, err := result.RowsAffected()
-	require.NoError(t, err)
-	require.EqualValues(t, 1, rowsAffected)
-
-	passwordFailures, err := service.countRecentLoginFailures(ctx, email, time.Hour, errMsgInvalidCredentials)
-	require.NoError(t, err)
-	require.Equal(t, 2, passwordFailures)
-
-	mfaFailures, err := service.countRecentLoginFailures(ctx, email, time.Hour, errMsgInvalidMFACode, errMsgInvalidRecoveryCode)
-	require.NoError(t, err)
-	require.Equal(t, 2, mfaFailures)
-}
-
-func TestLoginAnnouncesPreAuthenticationWorkspace(t *testing.T) {
-	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('ws-test')`)
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
-
-	t.Run("self-hosted singleton", func(t *testing.T) {
-		service := &AuthService{store: stores, profile: &config.Profile{}}
-		var auditWorkspaceID string
-		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
-			auditWorkspaceID = workspaceID
-		})
-		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-			Email:    "unknown@example.com",
-			Password: "wrong-password",
-		}))
-		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
-		require.Equal(t, "ws-test", auditWorkspaceID)
-	})
-
-	t.Run("SaaS requested workspace", func(t *testing.T) {
-		service := &AuthService{store: stores, profile: &config.Profile{SaaS: true}}
-		var auditWorkspaceID string
-		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
-			auditWorkspaceID = workspaceID
-		})
-		workspace := common.FormatWorkspace("ws-test")
-		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-			Email:     "unknown@example.com",
-			Password:  "wrong-password",
-			Workspace: &workspace,
-		}))
-		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
-		require.Equal(t, "ws-test", auditWorkspaceID)
-	})
-
-	t.Run("SaaS requested workspace without membership", func(t *testing.T) {
-		user, err := stores.CreateUser(ctx, &store.UserMessage{
-			Email:        "member@example.com",
-			Name:         "Member",
-			PasswordHash: "wrong-password-hash",
-			Profile:      &storepb.UserProfile{},
-		})
-		require.NoError(t, err)
-		_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
-			ResourceID: "ws-member",
-			Payload:    &storepb.WorkspacePayload{Title: "Member workspace"},
-		}, user.Email)
-		require.NoError(t, err)
-
-		service := &AuthService{store: stores, profile: &config.Profile{SaaS: true}}
-		var auditWorkspaceIDs []string
-		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
-			auditWorkspaceIDs = append(auditWorkspaceIDs, workspaceID)
-		})
-		workspace := common.FormatWorkspace("ws-test")
-		_, err = service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-			Email:     user.Email,
-			Password:  "wrong-password",
-			Workspace: &workspace,
-		}))
-		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
-		require.Equal(t, []string{"ws-test"}, auditWorkspaceIDs)
-	})
-
-	t.Run("rejects nonexistent requested workspace", func(t *testing.T) {
-		service := &AuthService{store: stores, profile: &config.Profile{}}
-		var auditWorkspaceID string
-		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
-			auditWorkspaceID = workspaceID
-		})
-		workspace := common.FormatWorkspace("missing")
-		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-			Email:     "unknown@example.com",
-			Password:  "wrong-password",
-			Workspace: &workspace,
-		}))
-		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-		require.Empty(t, auditWorkspaceID)
-	})
-}
-
 func TestExtractDomain(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		domain string
 		want   string
@@ -205,218 +50,6 @@ func TestExtractDomain(t *testing.T) {
 	}
 }
 
-func TestPasswordResetEmailSkipsDeletedUser(t *testing.T) {
-	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
-
-	user, err := stores.CreateUser(ctx, &store.UserMessage{
-		Email:        "deleted@example.com",
-		Name:         "Deleted user",
-		PasswordHash: "unused",
-		Profile:      &storepb.UserProfile{},
-	})
-	require.NoError(t, err)
-	deleted := true
-	_, err = stores.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deleted})
-	require.NoError(t, err)
-
-	t.Setenv("EMAIL_CONFIG", "")
-	service := &AuthService{store: stores, secret: "test-secret"}
-	require.NoError(t, service.sendEmailVerificationCode(
-		ctx,
-		"",
-		user.Email,
-		storepb.EmailVerificationCodePurpose_PASSWORD_RESET,
-		"subject",
-		"code: %s, expires in %d minutes",
-	))
-}
-
-func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
-	const (
-		workspaceID = "email-code-domain-test"
-		secret      = "test-secret"
-		code        = "123456"
-	)
-
-	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
-
-	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
-		ResourceID: workspaceID,
-		Payload:    &storepb.WorkspacePayload{Title: "Email code domain test"},
-	}, "admin@allowed.example")
-	require.NoError(t, err)
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_WORKSPACE_PROFILE,
-		Workspace: workspaceID,
-		Value: &storepb.WorkspaceProfileSetting{
-			Domains:                []string{"allowed.example"},
-			EnforceIdentityDomain:  true,
-			AllowEmailCodeSignin:   true,
-			PasswordRestriction:    &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
-			EnableMetricCollection: true,
-			DisallowSignup:         false,
-			DisallowPasswordSignin: true,
-		},
-	})
-	require.NoError(t, err)
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_EMAIL,
-		Workspace: workspaceID,
-		Value:     &storepb.EmailSetting{},
-	})
-	require.NoError(t, err)
-
-	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
-	require.NoError(t, err)
-	require.NoError(t, licenseService.StoreLicense(ctx, workspaceID, authTestEnterpriseLicense))
-	service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
-	workspaceName := common.FormatWorkspace(workspaceID)
-
-	allowedAdmin, err := stores.CreateUser(ctx, &store.UserMessage{
-		Email:        "admin@allowed.example",
-		Name:         "Allowed admin",
-		PasswordHash: "unused",
-		Profile:      &storepb.UserProfile{},
-	})
-	require.NoError(t, err)
-	blockedAdmin, err := stores.CreateUser(ctx, &store.UserMessage{
-		Email:        "admin@blocked.example",
-		Name:         "Blocked admin",
-		PasswordHash: "unused",
-		Profile:      &storepb.UserProfile{},
-	})
-	require.NoError(t, err)
-	_, err = stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Workspace: workspaceID,
-		Member:    common.FormatUserEmail(blockedAdmin.Email),
-		Roles:     []string{common.FormatRole(store.WorkspaceAdminRole)},
-	})
-	require.NoError(t, err)
-
-	t.Run("workspace admin", func(t *testing.T) {
-		err := service.validateLoginPermissions(ctx, blockedAdmin, workspaceID, &v1pb.LoginRequest{
-			Email:   blockedAdmin.Email,
-			IdpName: "idps/test",
-		})
-		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-		require.ErrorContains(t, err, "does not belong to allowed domains")
-
-		err = service.validateLoginPermissions(ctx, allowedAdmin, workspaceID, &v1pb.LoginRequest{
-			Email:    allowedAdmin.Email,
-			Password: "password",
-		})
-		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
-		require.ErrorContains(t, err, "password signin is disallowed")
-	})
-
-	t.Run("send code", func(t *testing.T) {
-		for _, email := range []string{"new@blocked.example", blockedAdmin.Email} {
-			_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
-				Email:     email,
-				Workspace: &workspaceName,
-			}))
-			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-			require.ErrorContains(t, err, "does not belong to allowed domains")
-
-			row, err := stores.GetEmailVerificationCode(ctx, email, storepb.EmailVerificationCodePurpose_LOGIN)
-			require.NoError(t, err)
-			require.Nil(t, row)
-		}
-	})
-
-	t.Run("authenticate existing user", func(t *testing.T) {
-		const email = "existing@blocked.example"
-		_, err := stores.CreateUser(ctx, &store.UserMessage{
-			Email:        email,
-			Name:         "Existing user",
-			PasswordHash: "unused",
-			Profile:      &storepb.UserProfile{},
-		})
-		require.NoError(t, err)
-		_, err = stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
-			Email:      email,
-			Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
-			CodeHash:   service.hashEmailCode(code),
-			ExpiresAt:  time.Now().Add(time.Minute),
-			LastSentAt: time.Now(),
-			Workspace:  workspaceID,
-		}, 0)
-		require.NoError(t, err)
-
-		_, err = service.authenticateEmailCodeLogin(ctx, &v1pb.LoginRequest{
-			Email:     email,
-			EmailCode: ptr(code),
-		})
-		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-		require.ErrorContains(t, err, "does not belong to allowed domains")
-	})
-
-	t.Run("authenticate workspace admin", func(t *testing.T) {
-		_, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
-			Email:      blockedAdmin.Email,
-			Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
-			CodeHash:   service.hashEmailCode(code),
-			ExpiresAt:  time.Now().Add(time.Minute),
-			LastSentAt: time.Now(),
-			Workspace:  workspaceID,
-		}, 0)
-		require.NoError(t, err)
-
-		_, err = service.authenticateEmailCodeLogin(ctx, &v1pb.LoginRequest{
-			Email:     blockedAdmin.Email,
-			EmailCode: ptr(code),
-		})
-		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-		require.ErrorContains(t, err, "does not belong to allowed domains")
-	})
-
-	t.Run("authenticate unknown user before provisioning", func(t *testing.T) {
-		const email = "unknown@blocked.example"
-		_, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
-			Email:      email,
-			Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
-			CodeHash:   service.hashEmailCode(code),
-			ExpiresAt:  time.Now().Add(time.Minute),
-			LastSentAt: time.Now(),
-			Workspace:  workspaceID,
-		}, 0)
-		require.NoError(t, err)
-
-		_, err = service.authenticateEmailCodeLogin(ctx, &v1pb.LoginRequest{
-			Email:     email,
-			EmailCode: ptr(code),
-		})
-		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-		require.ErrorContains(t, err, "does not belong to allowed domains")
-
-		user, err := stores.GetUserByEmail(ctx, email)
-		require.NoError(t, err)
-		require.Nil(t, user)
-
-		policy, err := stores.GetWorkspaceIamPolicy(ctx, workspaceID)
-		require.NoError(t, err)
-		for _, binding := range policy.Policy.Bindings {
-			require.NotContains(t, binding.Members, common.FormatUserEmail(email))
-		}
-	})
-}
-
 // TestSwitchWorkspaceMCPRecognition pins the SwitchWorkspace guard predicate
 // across both MCP credential generations. An MCP session must never mint a
 // plain user token: that token is not audience-bound to the MCP resource, does
@@ -428,6 +61,7 @@ func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 // invisible to the raw-secret extraction the guard used to do (asserted below).
 // Recognizing only extractable claims would fail OPEN for every MCP session.
 func TestSwitchWorkspaceMCPRecognition(t *testing.T) {
+	t.Parallel()
 	const secret = "test-secret"
 
 	delegated, err := auth.GenerateInternalMCPToken(auth.DelegatedMCPCredential{
@@ -477,6 +111,7 @@ func mustLegacyOAuth2Token(t *testing.T, secret string) string {
 }
 
 func TestLoginAuthMethodRequiresPasswordReset(t *testing.T) {
+	t.Parallel()
 	emailCode := "123456"
 	tests := []struct {
 		name    string
@@ -502,13 +137,58 @@ func TestLoginAuthMethodRequiresPasswordReset(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := loginAuthMethodFromRequest(test.request).requiresPasswordReset()
 			require.Equal(t, test.want, got)
 		})
 	}
 }
 
+func TestRejectWebLoginForNonEndUser(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name      string
+		principal storepb.PrincipalType
+		web       bool
+		wantCode  connect.Code
+	}{
+		{
+			name:      "service account web login",
+			principal: storepb.PrincipalType_SERVICE_ACCOUNT,
+			web:       true,
+			wantCode:  connect.CodePermissionDenied,
+		},
+		{
+			name:      "workload identity web login",
+			principal: storepb.PrincipalType_WORKLOAD_IDENTITY,
+			web:       true,
+			wantCode:  connect.CodePermissionDenied,
+		},
+		{
+			name:      "service account API login",
+			principal: storepb.PrincipalType_SERVICE_ACCOUNT,
+			web:       false,
+			wantCode:  connect.CodeUnknown,
+		},
+		{
+			name:      "end user web login",
+			principal: storepb.PrincipalType_END_USER,
+			web:       true,
+			wantCode:  connect.CodeUnknown,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			err := rejectWebLoginForNonEndUser(test.web, test.principal)
+			require.Equal(t, test.wantCode, connect.CodeOf(err))
+		})
+	}
+}
+
 func TestMFATempTokenPreservesLoginAuthMethod(t *testing.T) {
+	t.Parallel()
 	const secret = "test-secret"
 
 	tests := []struct {
@@ -533,6 +213,7 @@ func TestMFATempTokenPreservesLoginAuthMethod(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			token, err := auth.GenerateMFATempTokenWithLoginMethod("user@example.com", string(test.method), secret, time.Minute)
 			require.NoError(t, err)
 
@@ -546,6 +227,7 @@ func TestMFATempTokenPreservesLoginAuthMethod(t *testing.T) {
 }
 
 func TestLegacyMFATempTokenDefaultsToPasswordLoginAuthMethod(t *testing.T) {
+	t.Parallel()
 	const secret = "test-secret"
 
 	token, err := auth.GenerateMFATempToken("user@example.com", secret, time.Minute)
@@ -570,6 +252,7 @@ func TestLegacyMFATempTokenDefaultsToPasswordLoginAuthMethod(t *testing.T) {
 // return before generateLoginToken touches it, so a regression panics rather
 // than quietly minting a token.
 func TestSwitchWorkspaceInternalRefusesMCPCaller(t *testing.T) {
+	t.Parallel()
 	const secret = "test-secret"
 	s := &AuthService{secret: secret}
 	user := &store.UserMessage{Email: "demo@example.com"}
@@ -603,4 +286,29 @@ func TestSwitchWorkspaceInternalRefusesMCPCaller(t *testing.T) {
 	webHeaders := http.Header{}
 	webHeaders.Set("Authorization", "Bearer "+webToken)
 	require.NoError(t, s.rejectMCPOriginatedTokenMint(context.Background(), webHeaders, "obtain a workspace token"))
+}
+
+// TestSignupOnSaaSDeniesBeforeAnyLookup pins that whether signup is allowed
+// never depends on the address: SaaS refuses every signup outright, and it
+// must not answer differently for an address that has an account than for
+// one that does not. The nil store is the proof that nothing the address
+// selects was read. The self-hosted ordering — a duplicate is reported once
+// the workspace would accept a signup at all, and outranks the password
+// policy — is pinned on a live server in backend/tests.
+func TestSignupOnSaaSDeniesBeforeAnyLookup(t *testing.T) {
+	t.Parallel()
+	service := &AuthService{profile: &config.Profile{SaaS: true}}
+	signup := func(email string) error {
+		_, err := service.Signup(context.Background(), connect.NewRequest(&v1pb.SignupRequest{
+			Email:    email,
+			Title:    "Signup test",
+			Password: "password-long-enough",
+		}))
+		return err
+	}
+	takenErr := signup("taken@example.com")
+	unknownErr := signup("unknown@example.com")
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(takenErr))
+	require.Equal(t, connect.CodeOf(unknownErr), connect.CodeOf(takenErr))
+	require.Equal(t, unknownErr.Error(), takenErr.Error())
 }

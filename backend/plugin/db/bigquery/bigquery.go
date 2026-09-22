@@ -17,11 +17,14 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	// Register how this engine plans a limit, for base.StatementWithResultLimit below.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 )
 
 var (
@@ -102,21 +105,51 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement.
-func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	q := d.client.Query(statement)
 	q.DefaultDatasetID = d.databaseName
+
+	// BigQuery submits the whole sheet as one query job, so the task run log
+	// carries one command spanning the entire statement, as snowflake does.
+	// Without these the log holds only the surrounding sync entries and the
+	// engine's error reaches no reader.
+	opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
+
 	job, err := q.Run(ctx)
 	if err != nil {
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, err
 	}
 	status, err := job.Wait(ctx)
 	if err != nil {
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, err
 	}
 	if err := status.Err(); err != nil {
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, err
 	}
-	return 0, nil
+
+	// NumDMLAffectedRows is 0 for DDL and for a multi-statement script, whose
+	// parent job reports statementType SCRIPT and carries no row count.
+	var affectedRows int64
+	if stats, ok := statisticsOf(status); ok {
+		affectedRows = stats.NumDMLAffectedRows
+	}
+	opts.LogCommandResponse(affectedRows, nil, "")
+	return affectedRows, nil
+}
+
+// statisticsOf returns the query statistics of a finished job.
+// JobStatus.Statistics is nil when the jobs.get response carried no statistics
+// block (Job.setStatistics returns early on that), so the Details assertion
+// alone dereferences nil.
+func statisticsOf(status *bigquery.JobStatus) (*bigquery.QueryStatistics, bool) {
+	if status.Statistics == nil {
+		return nil, false
+	}
+	stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics)
+	return stats, ok
 }
 
 // QueryConn queries a SQL statement in a given connection.
@@ -137,7 +170,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
 				if queryContext.Limit > 0 {
-					statement = getStatementWithResultLimit(statement, queryContext.Limit)
+					statement = base.StatementWithResultLimit(storepb.Engine_BIGQUERY, statement, queryContext.Limit, "")
 				}
 				q := d.client.Query(statement)
 				if queryContext.OperatorEmail != "" {
@@ -179,7 +212,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 					result.Rows = append(result.Rows, row)
 					n := len(result.Rows)
 					if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
-						result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
+						result.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
 						break
 					}
 				}
@@ -200,12 +233,11 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			if err := status.Err(); err != nil {
 				return nil, err
 			}
-			switch r := status.Statistics.Details.(type) {
-			case *bigquery.QueryStatistics:
-				return util.BuildAffectedRowsResult(r.NumDMLAffectedRows, nil), nil
-			default:
+			stats, ok := statisticsOf(status)
+			if !ok {
 				return nil, errors.New("invalid status statistics detail type")
 			}
+			return util.BuildAffectedRowsResult(stats.NumDMLAffectedRows, nil), nil
 		}()
 		stop := false
 		if err != nil {
@@ -282,7 +314,7 @@ func (d *Driver) dryRunQuery(ctx context.Context, statement string, queryContext
 			Latency:   durationpb.New(time.Since(startTime)),
 		}
 
-		if stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics); ok {
+		if stats, ok := statisticsOf(status); ok {
 			bytesProcessed := stats.TotalBytesProcessed
 
 			// Format output similar to bq CLI
@@ -329,14 +361,6 @@ func encodeOperatorEmail(email string) string {
 		return string(values[:63])
 	}
 	return string(values)
-}
-
-func getStatementWithResultLimit(statement string, limit int) string {
-	limitPart := ""
-	if limit > 0 {
-		limitPart = fmt.Sprintf(" LIMIT %d", limit)
-	}
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", util.TrimStatement(statement), limitPart)
 }
 
 func convertValue(v bigquery.Value, fieldType bigquery.FieldType) *v1pb.RowValue {

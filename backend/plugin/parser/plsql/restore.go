@@ -77,7 +77,7 @@ func findFirstOracleDML(statement string) (oracleast.StmtNode, error) {
 }
 
 func findFirstOracleDMLOnce(statement string) (oracleast.StmtNode, error) {
-	list, err := ParsePLSQLOmni(statement)
+	list, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
 	}

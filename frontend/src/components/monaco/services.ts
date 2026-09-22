@@ -6,13 +6,6 @@ import "@codingame/monaco-vscode-theme-defaults-default-extension";
 import getThemeServiceOverride from "@codingame/monaco-vscode-theme-service-override";
 import "vscode/localExtensionHost";
 
-// Vue and React both ship their own Monaco wrappers during the React migration.
-// Without the guards below, whichever module evaluates second would clobber
-// `window.MonacoEnvironment` (losing worker labels the other side needs) and
-// re-trigger `@codingame/monaco-vscode-api` `initialize`, which is a *global*
-// one-shot — the second call rejects and leaves the editor spinner stuck
-// forever until a hard refresh. See BYT-9242.
-
 type WorkerLoader = () => Worker;
 
 const workerLoaders: Partial<Record<string, WorkerLoader>> = {
@@ -61,9 +54,9 @@ window.MonacoEnvironment = {
   },
 };
 
-// Share the init promise across both Vue and React Monaco wrappers. The
-// underlying `@codingame/monaco-vscode-api` `initialize` is a global one-shot,
-// so both sides must await the same promise rather than each caching its own.
+// `@codingame/monaco-vscode-api` `initialize` is a *global* one-shot: a second
+// call rejects and leaves the editor spinner stuck forever until a hard
+// refresh (BYT-9242), so every caller must await the same promise.
 const GLOBAL_INIT_KEY = "__bytebaseMonacoServicesInitPromise__";
 
 type GlobalWithMonacoInit = typeof globalThis & {

@@ -3,19 +3,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { RowValue } from "@/types/proto-es/v1/sql_service_pb";
 import type { SearchScope } from "@/utils/v1/advanced-search/common";
-import { getInstanceResource } from "@/utils/v1/database";
 import { BinaryFormatButton } from "./BinaryFormatButton";
 import type { BinaryFormat } from "./binary-format";
-import { getPlainValue } from "./cell-value";
+import { getPlainValue, isLikelyJSON } from "./cell-value";
 import {
   useBinaryFormatContext,
   useSelectionContext,
   useSQLResultViewContext,
 } from "./context";
+import { PlainCellValue } from "./PlainCellValue";
 
 interface TableCellProps {
   value: RowValue;
@@ -23,9 +21,9 @@ interface TableCellProps {
   colIndex: number;
   allowSelect?: boolean;
   columnType: string;
-  database: Database;
   scope?: SearchScope;
   keyword: string;
+  showDetailAction?: boolean;
 }
 
 export function TableCell({
@@ -34,9 +32,9 @@ export function TableCell({
   colIndex,
   allowSelect: allowSelectProp,
   columnType,
-  database,
   scope,
   keyword,
+  showDetailAction = true,
 }: TableCellProps) {
   const { setDetail } = useSQLResultViewContext();
   const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
@@ -55,8 +53,11 @@ export function TableCell({
   const hasByteData = value.kind?.case === "bytesValue";
 
   const binaryFormat = getBinaryFormat({ rowIndex, colIndex });
+  const plainValue = useMemo(
+    () => getPlainValue(value, columnType, binaryFormat),
+    [value, columnType, binaryFormat]
+  );
 
-  // ResizeObserver replaces Vue's `useResizeObserver(cellRef, ...)`.
   useEffect(() => {
     const cell = cellRef.current;
     const wrapper = wrapperRef.current;
@@ -73,18 +74,10 @@ export function TableCell({
     return () => observer.disconnect();
   }, []);
 
-  const clickable = useMemo(() => {
-    if (truncated) return true;
-    const eng = getInstanceResource(database).engine;
-    if (eng === Engine.MONGODB || eng === Engine.ELASTICSEARCH) {
-      const maybeJSON = String(value).trim();
-      return (
-        (maybeJSON.startsWith("{") && maybeJSON.endsWith("}")) ||
-        (maybeJSON.startsWith("[") && maybeJSON.endsWith("]"))
-      );
-    }
-    return false;
-  }, [truncated, database, value]);
+  const clickable = useMemo(
+    () => truncated || isLikelyJSON(plainValue),
+    [plainValue, truncated]
+  );
 
   const selected = useMemo(() => {
     if (!allowSelect) return false;
@@ -95,13 +88,8 @@ export function TableCell({
     return columns.includes(colIndex) || rows.includes(rowIndex);
   }, [allowSelect, selectionState, colIndex, rowIndex]);
 
-  const plainValue = useMemo(
-    () => getPlainValue(value, columnType, binaryFormat),
-    [value, columnType, binaryFormat]
-  );
-
   const showDetail = () => {
-    setDetail({ row: rowIndex, col: colIndex });
+    setDetail({ row: rowIndex, col: colIndex, view: "cell" });
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -117,22 +105,18 @@ export function TableCell({
 
   const activeKeyword = (scope?.value || keyword).trim();
 
-  let inner: React.ReactNode;
-  if (plainValue === undefined) {
-    inner = <span className="text-control-placeholder italic">UNSET</span>;
-  } else if (plainValue === null) {
-    inner = <span className="text-control-placeholder italic">NULL</span>;
-  } else if (plainValue.length === 0) {
-    inner = <br style={{ minWidth: "1rem", display: "inline-flex" }} />;
-  } else {
-    inner = <HighlightLabelText text={plainValue} keyword={activeKeyword} />;
-  }
+  const inner = (
+    <PlainCellValue value={plainValue}>
+      {plainValue !== undefined && plainValue !== null ? (
+        <HighlightLabelText text={plainValue} keyword={activeKeyword} />
+      ) : undefined}
+    </PlainCellValue>
+  );
 
   return (
     <div
       ref={cellRef}
       onClick={handleClick}
-      onDoubleClick={showDetail}
       className={cn(
         "relative w-full h-full px-2 py-1 flex items-center",
         allowSelect ? "cursor-pointer hover:bg-accent/10" : "select-none",
@@ -143,8 +127,12 @@ export function TableCell({
         ref={wrapperRef}
         className={cn(
           "font-mono text-start whitespace-pre line-clamp-3",
-          (hasByteData || clickable) && "max-w-[calc(100%-1.5rem)]",
-          hasByteData && clickable && "max-w-[calc(100%-3.25rem)]"
+          (hasByteData || (clickable && showDetailAction)) &&
+            "max-w-[calc(100%-1.5rem)]",
+          hasByteData &&
+            clickable &&
+            showDetailAction &&
+            "max-w-[calc(100%-3.25rem)]"
         )}
       >
         {inner}
@@ -158,11 +146,11 @@ export function TableCell({
             }
           />
         )}
-        {clickable && (
+        {clickable && showDetailAction && (
           <Button
-            size="sm"
+            size="xs"
             appearance="outline"
-            className="size-6 p-0 rounded-full shadow opacity-90 hover:opacity-100"
+            className="w-6 p-0 rounded-full shadow opacity-90 hover:opacity-100"
             onClick={(e) => {
               e.stopPropagation();
               showDetail();

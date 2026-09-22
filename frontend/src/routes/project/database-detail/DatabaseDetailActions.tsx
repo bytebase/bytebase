@@ -1,15 +1,17 @@
-import { ArrowRightLeft, Pencil } from "lucide-react";
-import { useMemo } from "react";
+import { ArrowRightLeft, Download, Pencil, RefreshCw } from "lucide-react";
+import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/components/PermissionGuard";
-import { Button } from "@/components/ui/button";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { preCreateIssue } from "@/lib/plan/issue";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { DatabaseExportSchemaButton } from "./DatabaseExportSchemaButton";
-import { DatabaseSyncButton } from "./DatabaseSyncButton";
+import { isProjectInstanceDatabase } from "@/utils/v1/database";
+import { type DatabaseAction, DatabaseActionBar } from "./DatabaseActionBar";
+import { useDatabaseSchemaExport } from "./DatabaseExportSchemaButton";
+import { DatabaseSQLEditorButton } from "./DatabaseSQLEditorButton";
+import { useDatabaseSync } from "./DatabaseSyncButton";
 
 const DATABASE_CHANGE_PERMISSIONS: Permission[] = [
   "bb.plans.create",
@@ -66,54 +68,60 @@ export function DatabaseDetailActions({
     [hasProjectPermission]
   );
 
+  const { syncing, sync } = useDatabaseSync(database);
+  const { exporting, options, exportSchema } =
+    useDatabaseSchemaExport(database);
+  const guard = (permissions: Permission[]) => (content: ReactNode) => (
+    <PermissionGuard permissions={permissions} project={project}>
+      {content}
+    </PermissionGuard>
+  );
+  const actions: DatabaseAction[] = [];
+  if (!isDefaultProject) {
+    actions.push({
+      key: "change",
+      label: t("database.change-database"),
+      icon: Pencil,
+      disabled: !canChangeDatabase,
+      onClick: () => void preCreateIssue(database.project, [database.name]),
+      wrap: guard(DATABASE_CHANGE_PERMISSIONS),
+    });
+  }
+  actions.push(
+    {
+      key: "sync",
+      label: t("database.sync-database"),
+      icon: RefreshCw,
+      disabled: !canSync || syncing,
+      onClick: () => void sync(),
+      wrap: guard(["bb.databases.sync"]),
+    },
+    {
+      key: "export",
+      label: t("database.export-schema"),
+      icon: Download,
+      disabled: !canExportSchema || exporting,
+      options: options.map((option) => ({
+        ...option,
+        onClick: () => void exportSchema(option.key),
+      })),
+      wrap: guard(["bb.databases.getSchema"]),
+    }
+  );
+  if (!isDefaultProject && !isProjectInstanceDatabase(database)) {
+    actions.push({
+      key: "transfer",
+      label: t("database.transfer-project"),
+      icon: ArrowRightLeft,
+      disabled: !canUpdate,
+      onClick: onOpenTransferProject,
+      wrap: guard(["bb.databases.update"]),
+    });
+  }
   return (
-    <>
-      <div className="flex shrink-0 flex-wrap items-center justify-start gap-x-2 gap-y-2">
-        <PermissionGuard permissions={["bb.databases.sync"]} project={project}>
-          <DatabaseSyncButton database={database} disabled={!canSync} />
-        </PermissionGuard>
-        <PermissionGuard
-          permissions={["bb.databases.getSchema"]}
-          project={project}
-        >
-          <DatabaseExportSchemaButton
-            database={database}
-            disabled={!canExportSchema}
-          />
-        </PermissionGuard>
-        {!isDefaultProject && (
-          <PermissionGuard
-            permissions={["bb.databases.update"]}
-            project={project}
-          >
-            <Button
-              appearance="outline"
-              disabled={!canUpdate}
-              onClick={onOpenTransferProject}
-            >
-              <ArrowRightLeft className="h-4 w-4" />
-              {t("database.transfer-project")}
-            </Button>
-          </PermissionGuard>
-        )}
-        {!isDefaultProject && (
-          <PermissionGuard
-            permissions={["bb.plans.create", "bb.sheets.create"]}
-            project={project}
-          >
-            <Button
-              appearance="outline"
-              disabled={!canChangeDatabase}
-              onClick={() =>
-                void preCreateIssue(database.project, [database.name])
-              }
-            >
-              <Pencil className="h-4 w-4" />
-              {t("database.change-database")}
-            </Button>
-          </PermissionGuard>
-        )}
-      </div>
-    </>
+    <DatabaseActionBar
+      actions={actions}
+      primary={<DatabaseSQLEditorButton database={database} />}
+    />
   );
 }

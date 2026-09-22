@@ -39,7 +39,12 @@ export function PlanLifecycleSlot({
       );
     case "review-your-turn":
       // review-your-turn only resolves while an open issue exists.
-      return page.issue ? <ReviewYourTurnAction issue={page.issue} /> : null;
+      return page.issue ? (
+        <ReviewYourTurnAction
+          canApprove={state.canApprove}
+          issue={page.issue}
+        />
+      ) : null;
     case "plan-status":
       return page.issue ? (
         <PlanStatusAction issue={page.issue} reason={state.reason} />

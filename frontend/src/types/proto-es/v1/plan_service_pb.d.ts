@@ -294,6 +294,15 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: bytebase.v1.IssueStatus issue_status = 15;
    */
   issueStatus: IssueStatus;
+
+  /**
+   * The user who last created or updated the Plan specs.
+   * Format: users/hello@world.com. For legacy Plans without stored attribution,
+   * this falls back to the Plan creator.
+   *
+   * @generated from field: string last_plan_editor = 16;
+   */
+  lastPlanEditor: string;
 };
 
 /**
@@ -343,7 +352,7 @@ export declare const Plan_SpecSchema: GenMessage<Plan_Spec>;
 export declare type Plan_CreateDatabaseConfig = Message<"bytebase.v1.Plan.CreateDatabaseConfig"> & {
   /**
    * The resource name of the instance on which the database is created.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string target = 1;
    */
@@ -657,7 +666,7 @@ export declare type PlanCheckRun_Result = Message<"bytebase.v1.PlanCheckRun.Resu
 
   /**
    * Target identification for consolidated results.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string target = 7;
    */

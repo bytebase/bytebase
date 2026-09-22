@@ -13,7 +13,6 @@ const mocks = vi.hoisted(() => ({
     name: string;
     allowJustInTimeAccess: boolean;
   },
-  useSQLEditorVueState: vi.fn(),
   hasFeature: vi.fn(() => true),
 }));
 
@@ -33,10 +32,6 @@ vi.mock("@/stores/app", () => {
 
 vi.mock("@/hooks/useAppProject", () => ({
   useAppProject: () => mocks.projectData,
-}));
-
-vi.mock("@/modules/sql-editor/store/editor-vue-state", () => ({
-  useSQLEditorVueState: mocks.useSQLEditorVueState,
 }));
 
 vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
@@ -156,7 +151,6 @@ const setupDefaultMocks = (allowJIT = false) => {
     name: "projects/proj1",
     allowJustInTimeAccess: allowJIT,
   };
-  mocks.useSQLEditorVueState.mockReturnValue({ project: "projects/proj1" });
   mocks.hasFeature.mockReturnValue(true);
 };
 
@@ -243,7 +237,21 @@ describe("MaskingReasonPopover", () => {
     unmount();
   });
 
-  test("does not show the request-access-grant button when JIT not available", () => {
+  test("wraps a long masking context within the popover", () => {
+    const context = "Column-level semantic type: sample-" + "x".repeat(500);
+    const { container, render, unmount } = renderIntoContainer(
+      <MaskingReasonPopover reason={makeReason({ context })} />
+    );
+    render();
+
+    const contextValue = Array.from(container.querySelectorAll("span")).find(
+      (element) => element.textContent === context
+    );
+    expect(contextValue?.className).toContain("wrap-anywhere");
+    unmount();
+  });
+
+  test("does not show the request-unmask button when JIT not available", () => {
     setupDefaultMocks(false);
     const { container, render, unmount } = renderIntoContainer(
       <MaskingReasonPopover reason={makeReason()} statement="SELECT * FROM t" />
@@ -252,13 +260,13 @@ describe("MaskingReasonPopover", () => {
 
     const buttons = container.querySelectorAll("[data-testid='jit-button']");
     const jitBtn = Array.from(buttons).find((b) =>
-      b.textContent?.includes("sql-editor.request-access-grant")
+      b.textContent?.includes("sql-editor.request-unmask")
     );
     expect(jitBtn).toBeUndefined();
     unmount();
   });
 
-  test("shows the request-access-grant button and opens drawer when JIT available and statement provided", async () => {
+  test("shows the request-unmask button and opens drawer when JIT available and statement provided", async () => {
     setupDefaultMocks(true);
     const { container, render, unmount } = renderIntoContainer(
       <MaskingReasonPopover
@@ -277,7 +285,7 @@ describe("MaskingReasonPopover", () => {
       "[data-testid='jit-button']"
     ) as HTMLButtonElement;
     expect(jitBtn).not.toBeNull();
-    expect(jitBtn.textContent).toContain("sql-editor.request-access-grant");
+    expect(jitBtn.textContent).toContain("sql-editor.request-unmask");
 
     await act(async () => {
       jitBtn.click();

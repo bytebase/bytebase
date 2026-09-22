@@ -4,6 +4,14 @@ import { RoleSelect } from "@/components/RoleSelect";
 import { PresetRoleType } from "@/types";
 import { displayRoleTitle } from "@/utils";
 import { Button } from "../ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../ui/table";
 
 interface ApprovalStepsTableProps {
   roles: string[];
@@ -39,86 +47,81 @@ export function ApprovalStepsTable({
 
   return (
     <div>
-      <table className="w-full border-collapse border border-control-border text-sm">
-        <thead>
-          <tr className="bg-control-bg">
-            <th className="w-20 border border-control-border px-3 py-2 text-center font-medium text-control">
-              {t("custom-approval.approval-flow.node.order")}
-            </th>
-            <th className="border border-control-border px-3 py-2 text-left font-medium text-control">
-              {t("custom-approval.approval-flow.node.approver")}
-            </th>
-            {editable && (
-              <th className="border border-control-border px-3 py-2 text-left font-medium text-control">
-                {t("common.operations")}
-              </th>
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {roles.map((role, index) => (
-            <tr
-              key={index}
-              className={index % 2 === 1 ? "bg-control-bg/50" : "bg-background"}
-            >
-              <td className="border border-control-border px-3 py-2 text-center text-control">
-                {index + 1}
-              </td>
-              <td className="border border-control-border px-3 py-2">
-                {editable ? (
-                  <RoleSelect
-                    value={role ? [role] : []}
-                    onChange={(vals) => {
-                      const newRoles = [...roles];
-                      newRoles[index] = vals[0] ?? "";
-                      onRolesChange(newRoles);
-                    }}
-                    multiple={false}
-                  />
-                ) : (
-                  <span className="text-control">{displayRoleTitle(role)}</span>
-                )}
-              </td>
-              {editable && (
-                <td className="border border-control-border px-3 py-2">
-                  <div className="flex gap-x-1">
-                    <Button
-                      appearance="outline"
-                      size="sm"
-                      disabled={index === 0 || !allowAdmin}
-                      onClick={() => reorder(index, -1)}
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      appearance="outline"
-                      size="sm"
-                      disabled={index === roles.length - 1 || !allowAdmin}
-                      onClick={() => reorder(index, 1)}
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                    {allowAdmin && (
+      <div className="overflow-hidden rounded-sm border border-block-border">
+        <Table>
+          <TableHeader className="bg-control-bg">
+            <TableRow>
+              <TableHead className="w-20 text-center">
+                {t("custom-approval.approval-flow.node.order")}
+              </TableHead>
+              <TableHead>
+                {t("custom-approval.approval-flow.node.approver")}
+              </TableHead>
+              {editable && <TableHead>{t("common.operations")}</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {roles.map((role, index) => (
+              <TableRow key={index}>
+                <TableCell className="py-2 text-center">{index + 1}</TableCell>
+                <TableCell className="py-2">
+                  {editable ? (
+                    <RoleSelect
+                      value={role ? [role] : []}
+                      onChange={(vals) => {
+                        const newRoles = [...roles];
+                        newRoles[index] = vals[0] ?? "";
+                        onRolesChange(newRoles);
+                      }}
+                      multiple={false}
+                    />
+                  ) : (
+                    <span className="text-control">
+                      {displayRoleTitle(role)}
+                    </span>
+                  )}
+                </TableCell>
+                {editable && (
+                  <TableCell className="py-2">
+                    <div className="flex gap-x-2">
                       <Button
                         appearance="outline"
                         size="sm"
-                        title={t("custom-approval.approval-flow.node.delete")}
-                        onClick={() => removeStep(index)}
+                        disabled={index === 0 || !allowAdmin}
+                        onClick={() => reorder(index, -1)}
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <ArrowUp className="size-4" />
                       </Button>
-                    )}
-                  </div>
-                </td>
-              )}
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                      <Button
+                        appearance="outline"
+                        size="sm"
+                        disabled={index === roles.length - 1 || !allowAdmin}
+                        onClick={() => reorder(index, 1)}
+                      >
+                        <ArrowDown className="size-4" />
+                      </Button>
+                      {allowAdmin && (
+                        <Button
+                          appearance="outline"
+                          size="sm"
+                          title={t("custom-approval.approval-flow.node.delete")}
+                          onClick={() => removeStep(index)}
+                        >
+                          <Trash2 className="size-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
       {editable && allowAdmin && (
         <div className="mt-4">
           <Button appearance="outline" onClick={addStep}>
-            <Plus className="h-4 w-4" />
+            <Plus className="size-4" />
             {t("custom-approval.approval-flow.node.add")}
           </Button>
         </div>

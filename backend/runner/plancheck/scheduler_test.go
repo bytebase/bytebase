@@ -4,12 +4,54 @@ import (
 	"context"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestRunOnceRecordsEmptySuccess(t *testing.T) {
+	ctx := context.Background()
+	stores := setupPlancheckStore(ctx, t)
+	b, err := bus.New()
+	require.NoError(t, err)
+	metrics := productmetrics.New(nil, nil)
+
+	NewScheduler(stores, b, nil, nil, metrics).runOnce(ctx)
+	NewScheduler(nil, nil, nil, nil, metrics).runOnce(ctx)
+
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerPlanCheck, productmetrics.ResultSuccess))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerPlanCheck, productmetrics.ResultFailure))
+}
+
+func runnerRunCount(t *testing.T, metrics *productmetrics.ProductMetrics, runner productmetrics.Runner, result productmetrics.RunnerResult) uint64 {
+	t.Helper()
+	ch := make(chan prometheus.Metric, 16)
+	go func() {
+		metrics.Collect(ch)
+		close(ch)
+	}()
+
+	var count uint64
+	for metric := range ch {
+		var dtoMetric dto.Metric
+		if metric.Write(&dtoMetric) != nil {
+			continue
+		}
+		labels := map[string]string{}
+		for _, label := range dtoMetric.GetLabel() {
+			labels[label.GetName()] = label.GetValue()
+		}
+		if labels["runner"] == string(runner) && labels["result"] == string(result) {
+			count += dtoMetric.GetHistogram().GetSampleCount()
+		}
+	}
+	return count
+}
 
 func TestMarkPlanCheckRunDoneSkipsDraftIssue(t *testing.T) {
 	ctx := context.Background()
@@ -43,7 +85,7 @@ func TestMarkPlanCheckRunDoneSkipsDraftIssue(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, claimed, 1)
 
-	scheduler := NewScheduler(stores, b, nil, nil)
+	scheduler := NewScheduler(stores, b, nil, nil, nil)
 	scheduler.markPlanCheckRunDone(ctx, "project-a", claimed[0].UID, plan.UID, 1, nil)
 
 	run, err := stores.GetPlanCheckRun(ctx, "project-a", plan.UID)
@@ -81,7 +123,7 @@ func TestRunPlanCheckRunStopsAfterProjectArchive(t *testing.T) {
 		Workspace:  "default",
 		Delete:     &archived,
 	}))
-	scheduler := NewScheduler(stores, b, nil, nil)
+	scheduler := NewScheduler(stores, b, nil, nil, nil)
 	scheduler.runPlanCheckRun(ctx, "project-a", claimed[0].UID, plan.UID, 1)
 
 	run, err := stores.GetPlanCheckRun(ctx, "project-a", plan.UID)

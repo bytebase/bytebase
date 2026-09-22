@@ -3,7 +3,14 @@ import type {
   InputHTMLAttributes,
   ReactNode,
 } from "react";
-import { act, createElement } from "react";
+import {
+  act,
+  Children,
+  createContext,
+  createElement,
+  isValidElement,
+  useContext,
+} from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -179,6 +186,7 @@ const mocks = vi.hoisted(() => {
     useDatabaseCatalog: vi.fn(() => makeDatabaseCatalog()),
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
+    updateColumnCatalog: vi.fn(),
     updateDatabaseCatalog: vi.fn(),
     getOrFetchSettingByName: vi.fn(),
     getProjectClassification: vi.fn(() => ({
@@ -223,6 +231,19 @@ const mocks = vi.hoisted(() => {
       engine: 1,
     })),
     instanceV1MaskingForNoSQL: vi.fn(() => false),
+    useAppDatabaseMetadata: vi.fn(() => ({
+      schemas: [
+        {
+          name: "public",
+          tables: [
+            {
+              name: "book",
+              columns: [{ name: "email" }, { name: "phone" }],
+            },
+          ],
+        },
+      ],
+    })),
     hasProjectPermissionV2,
     autoDatabaseRoute: vi.fn(() => ({ name: "database" })),
     routerResolve: vi.fn(() => ({ fullPath: "/database/route" })),
@@ -245,6 +266,22 @@ const mocks = vi.hoisted(() => {
       }
     ),
     FeatureAttention: vi.fn(() => <div data-testid="feature-attention" />),
+    FeatureModal: vi.fn(
+      ({
+        open,
+        onFeatureUnlocked,
+      }: {
+        open: boolean;
+        onFeatureUnlocked?: () => void;
+      }) =>
+        open ? (
+          <div data-testid="feature-modal">
+            <button type="button" onClick={onFeatureUnlocked}>
+              unlock-feature
+            </button>
+          </div>
+        ) : null
+    ),
     FeatureBadge: vi.fn(() => <div data-testid="feature-badge" />),
     Button: (props: ButtonHTMLAttributes<HTMLButtonElement>) => (
       <button {...props} />
@@ -258,6 +295,22 @@ const mocks = vi.hoisted(() => {
       <div>{children}</div>
     ),
     DialogTitle: ({ children }: { children: ReactNode }) => <h1>{children}</h1>,
+    Sheet: ({ open, children }: { open: boolean; children: ReactNode }) =>
+      open ? <div data-testid="sheet-root">{children}</div> : null,
+    SheetBody: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    SheetContent: ({ children }: { children: ReactNode }) => (
+      <div>{children}</div>
+    ),
+    SheetDescription: ({ children }: { children: ReactNode }) => (
+      <p>{children}</p>
+    ),
+    SheetFooter: ({ children }: { children: ReactNode }) => (
+      <div>{children}</div>
+    ),
+    SheetHeader: ({ children }: { children: ReactNode }) => (
+      <div>{children}</div>
+    ),
+    SheetTitle: ({ children }: { children: ReactNode }) => <h1>{children}</h1>,
     AlertDialog: ({
       open,
       children,
@@ -349,6 +402,7 @@ const mocks = vi.hoisted(() => {
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
     })),
+    useProductIntro: vi.fn(),
   };
 });
 
@@ -356,7 +410,8 @@ let DatabaseCatalogPanel: typeof import("./DatabaseCatalogPanel").DatabaseCatalo
 
 vi.stubGlobal("localStorage", mocks.localStorage);
 
-vi.mock("react-i18next", () => ({
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
   useTranslation: mocks.useTranslation,
 }));
 
@@ -365,8 +420,21 @@ vi.mock("@/stores", () => ({
   pushNotification: mocks.pushNotification,
 }));
 
+vi.mock("@/lib/productIntro", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/productIntro")>()),
+  useProductIntro: mocks.useProductIntro,
+}));
+
 vi.mock("@/hooks/useDatabaseCatalog", () => ({
   useDatabaseCatalog: () => mocks.useDatabaseCatalog(),
+}));
+
+vi.mock("@/hooks/useAppDatabaseMetadata", () => ({
+  useAppDatabaseMetadata: () => mocks.useAppDatabaseMetadata(),
+}));
+
+vi.mock("@/lib/column-data-table/utils", () => ({
+  updateColumnCatalog: mocks.updateColumnCatalog,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -411,6 +479,10 @@ vi.mock("@/components/FeatureBadge", () => ({
   FeatureBadge: mocks.FeatureBadge,
 }));
 
+vi.mock("@/components/ui/feature-modal", () => ({
+  FeatureModal: mocks.FeatureModal,
+}));
+
 vi.mock("@/components/PermissionGuard", () => ({
   PermissionGuard: mocks.PermissionGuard,
 }));
@@ -438,13 +510,86 @@ vi.mock("@/components/ui/input", () => ({
   Input: mocks.Input,
 }));
 
-vi.mock("@/components/ui/select", () => ({
-  Select: mocks.Select,
-  SelectContent: mocks.SelectContent,
-  SelectItem: mocks.SelectItem,
-  SelectTrigger: mocks.SelectTrigger,
-  SelectValue: mocks.SelectValue,
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: mocks.Sheet,
+  SheetBody: mocks.SheetBody,
+  SheetContent: mocks.SheetContent,
+  SheetDescription: mocks.SheetDescription,
+  SheetFooter: mocks.SheetFooter,
+  SheetHeader: mocks.SheetHeader,
+  SheetTitle: mocks.SheetTitle,
 }));
+
+vi.mock("@/components/ui/select", () => {
+  // A native <option> may hold only text, and items can render markup — a
+  // semantic type's title over its masking effect — so the mock flattens it.
+  const textOf = (node: ReactNode): string =>
+    Children.toArray(node)
+      .map((child) =>
+        isValidElement<{ children?: ReactNode }>(child)
+          ? textOf(child.props.children)
+          : String(child)
+      )
+      .join("");
+  const SelectContext = createContext<{
+    value?: string;
+    disabled?: boolean;
+    onValueChange?: (value: string) => void;
+  }>({});
+  return {
+    Select: ({
+      value,
+      disabled,
+      onValueChange,
+      children,
+    }: {
+      value?: string;
+      disabled?: boolean;
+      onValueChange?: (value: string) => void;
+      children: ReactNode;
+    }) => (
+      <SelectContext.Provider value={{ value, disabled, onValueChange }}>
+        {children}
+      </SelectContext.Provider>
+    ),
+    SelectTrigger: ({ children }: { children: ReactNode }) => (
+      <div data-testid="select-trigger">{children}</div>
+    ),
+    SelectValue: ({
+      children,
+    }: {
+      children?: ReactNode | ((value: string | undefined) => ReactNode);
+    }) => {
+      const { value } = useContext(SelectContext);
+      return (
+        <span data-testid="select-value">
+          {typeof children === "function"
+            ? children(value)
+            : (children ?? value)}
+        </span>
+      );
+    },
+    SelectContent: ({ children }: { children: ReactNode }) => {
+      const { value, disabled, onValueChange } = useContext(SelectContext);
+      return (
+        <select
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onValueChange?.(event.target.value)}
+        >
+          {children}
+        </select>
+      );
+    },
+    SelectItem: ({
+      value,
+      children,
+    }: {
+      value: string;
+      children: ReactNode;
+    }) => <option value={value}>{textOf(children)}</option>,
+  };
+});
 
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: mocks.Tooltip,
@@ -476,6 +621,8 @@ beforeEach(async () => {
   mocks.upsertPolicy.mockReset();
   mocks.updateDatabaseCatalog.mockReset();
   mocks.updateDatabaseCatalog.mockResolvedValue(undefined);
+  mocks.updateColumnCatalog.mockReset();
+  mocks.updateColumnCatalog.mockResolvedValue(undefined);
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getProjectClassification.mockReset();
   mocks.getProjectClassification.mockReturnValue({
@@ -526,12 +673,27 @@ beforeEach(async () => {
   });
   mocks.instanceV1MaskingForNoSQL.mockReset();
   mocks.instanceV1MaskingForNoSQL.mockReturnValue(false);
+  mocks.useAppDatabaseMetadata.mockReset();
+  mocks.useAppDatabaseMetadata.mockReturnValue({
+    schemas: [
+      {
+        name: "public",
+        tables: [
+          {
+            name: "book",
+            columns: [{ name: "email" }, { name: "phone" }],
+          },
+        ],
+      },
+    ],
+  });
   mocks.featureToRef.mockReset();
   mocks.featureToRef.mockReturnValue({ value: true });
   mocks.hasProjectPermissionV2.mockReset();
   mocks.hasProjectPermissionV2.mockReturnValue(true);
   mocks.PermissionGuard.mockClear();
   mocks.FeatureAttention.mockClear();
+  mocks.FeatureModal.mockClear();
   mocks.FeatureBadge.mockClear();
   mocks.GrantAccessDialog.mockClear();
   mocks.DatabaseResourceSelector.mockClear();
@@ -559,6 +721,242 @@ describe("DatabaseCatalogPanel", () => {
     expect(container.textContent).toContain("email");
     expect(container.textContent).toContain("public.profile");
     expect(container.textContent).toContain("contact.email");
+
+    unmount();
+  });
+
+  test("shows mark sensitive data when catalog update is permitted", async () => {
+    mocks.featureToRef.mockReturnValue({ value: false });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    const button = getButton(
+      container,
+      "settings.sensitive-data.mark-sensitive-data"
+    );
+    expect(button).toBeDefined();
+    expect(button?.getAttribute("data-product-intro-target")).toBe(
+      "mark-sensitive-data"
+    );
+
+    unmount();
+  });
+
+  test("hides mark sensitive data for NoSQL databases", async () => {
+    mocks.instanceV1MaskingForNoSQL.mockReturnValue(true);
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      )
+    ).toBeUndefined();
+
+    unmount();
+  });
+
+  test("hides mark sensitive data without catalog update permission", async () => {
+    mocks.hasProjectPermissionV2.mockImplementation(
+      (_project, permission) => permission !== "bb.databaseCatalogs.update"
+    );
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      )
+    ).toBeUndefined();
+
+    unmount();
+  });
+
+  test("opens the shared feature modal when marking requires data masking", async () => {
+    mocks.featureToRef.mockReturnValue({ value: false });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    click(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      ) as HTMLElement
+    );
+    await flush();
+
+    expect(container.querySelector('[data-testid="feature-modal"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="sheet-root"]')).toBeNull();
+
+    unmount();
+  });
+
+  test("continues to mark sensitive data after the trial unlocks masking", async () => {
+    mocks.featureToRef.mockReturnValue({ value: false });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+    click(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      ) as HTMLElement
+    );
+    await flush();
+
+    click(getButton(container, "unlock-feature") as HTMLElement);
+    await flush();
+
+    expect(container.querySelector('[data-testid="feature-modal"]')).toBeNull();
+    expect(container.querySelector('[data-testid="sheet-root"]')).not.toBeNull();
+    unmount();
+  });
+
+  test("marks a selected database column with a semantic type", async () => {
+    mocks.getSettingByName.mockReturnValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: { types: [] },
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    click(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      ) as HTMLElement
+    );
+    await flush();
+
+    const sheet = container.querySelector('[data-testid="sheet-root"]');
+    expect(sheet).not.toBeNull();
+
+    let selects = Array.from(sheet?.querySelectorAll("select") ?? []);
+    expect(selects).toHaveLength(4);
+    await changeSelect(selects[0] as HTMLSelectElement, "0");
+    let renderedValues = Array.from(
+      sheet?.querySelectorAll('[data-testid="select-value"]') ?? []
+    );
+    expect(renderedValues[0]?.textContent).toBe("public");
+
+    selects = Array.from(sheet?.querySelectorAll("select") ?? []);
+    await changeSelect(selects[1] as HTMLSelectElement, "0");
+    renderedValues = Array.from(
+      sheet?.querySelectorAll('[data-testid="select-value"]') ?? []
+    );
+    expect(renderedValues[1]?.textContent).toBe("book");
+
+    selects = Array.from(sheet?.querySelectorAll("select") ?? []);
+    await changeSelect(selects[2] as HTMLSelectElement, "email");
+    expect(
+      Array.from(selects[3]?.options ?? []).map((option) => option.value)
+    ).toEqual(expect.arrayContaining(["bb.default", "bb.default-partial"]));
+    await changeSelect(selects[3] as HTMLSelectElement, "bb.default");
+
+    click(
+      getButton(
+        sheet as HTMLElement,
+        "settings.sensitive-data.apply-masking"
+      ) as HTMLElement
+    );
+    await flush();
+
+    expect(mocks.updateColumnCatalog).toHaveBeenCalledWith({
+      database: "instances/inst1/databases/db1",
+      schema: "public",
+      table: "book",
+      column: "email",
+      columnCatalog: {
+        semanticType: "bb.default",
+      },
+      notification: "common.updated",
+    });
+
+    unmount();
+  });
+
+  test("offers built-in semantic types in the sensitive-column table", async () => {
+    const catalog = makeSimpleCatalog();
+    const table = catalog.schemas[0]?.tables[0];
+    if (!table || table.kind.case !== "columns") {
+      throw new Error("expected a column-backed table catalog");
+    }
+    table.kind.value.columns[0]!.semanticType = "bb.default";
+    mocks.useDatabaseCatalog.mockReturnValue(catalog);
+    mocks.getSettingByName.mockReturnValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: { types: [] },
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    const semanticTypeSelect = container.querySelector("select");
+    expect(
+      Array.from(semanticTypeSelect?.options ?? []).map(
+        (option) => option.value
+      )
+    ).toEqual(["__EMPTY__", "bb.default", "bb.default-partial"]);
+    expect(
+      container.querySelector('[data-testid="select-value"]')?.textContent
+    ).not.toBe("common.empty");
 
     unmount();
   });
@@ -593,7 +991,7 @@ describe("DatabaseCatalogPanel", () => {
     unmount();
   });
 
-  test("opens the feature dialog instead of grant access when masking feature is missing", async () => {
+  test("continues to grant access after the trial unlocks masking", async () => {
     mocks.featureToRef.mockReturnValue({ value: false });
 
     const { container, render, unmount } = renderIntoContainer(
@@ -618,10 +1016,7 @@ describe("DatabaseCatalogPanel", () => {
     );
     await flush();
 
-    expect(
-      container.querySelector('[data-testid="dialog-root"]')
-    ).not.toBeNull();
-    expect(container.textContent).toContain("common.warning");
+    expect(container.querySelector('[data-testid="feature-modal"]')).not.toBeNull();
     expect(mocks.GrantAccessDialog).toHaveBeenLastCalledWith(
       expect.objectContaining({
         open: false,
@@ -633,6 +1028,16 @@ describe("DatabaseCatalogPanel", () => {
         .querySelector('[data-testid="grant-access-dialog"]')
         ?.getAttribute("data-open")
     ).toBe("false");
+
+    click(getButton(container, "unlock-feature") as HTMLElement);
+    await flush();
+
+    expect(container.querySelector('[data-testid="feature-modal"]')).toBeNull();
+    expect(
+      container
+        .querySelector('[data-testid="grant-access-dialog"]')
+        ?.getAttribute("data-open")
+    ).toBe("true");
 
     unmount();
   });

@@ -8,6 +8,7 @@ import (
 )
 
 func TestMetadataDBConnectionCloseRunsCleanup(t *testing.T) {
+	t.Parallel()
 	cleanupCalls := 0
 	conn := &metadataDBConnection{
 		cleanup: func() error {
@@ -23,6 +24,7 @@ func TestMetadataDBConnectionCloseRunsCleanup(t *testing.T) {
 }
 
 func TestMetadataDBConnectionCloseReturnsCleanupError(t *testing.T) {
+	t.Parallel()
 	conn := &metadataDBConnection{
 		cleanup: func() error {
 			return errors.New("cleanup failed")

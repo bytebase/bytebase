@@ -13,9 +13,10 @@ import type { Permission } from "@/types";
 // `SQLEditorLayout` is a "layout as a page": the React component inspects the
 // current route itself and decides what to render. It does NOT render an
 // `<Outlet/>`, so we wrap it in a small layout-route component that renders
-// the layout alongside an `<Outlet/>`. The child routes carry no element of
-// their own — they exist only so navigation by route name resolves to a path,
-// matching the original vue `NoopRouteComponent` children.
+// the layout alongside an `<Outlet/>`. The child routes use an explicit null
+// element — they exist only so navigation by route name resolves to a path.
+// Explicit null also prevents React Router from warning that the matched leaf
+// has no element.
 const SQLEditorLayout = lazy(() =>
   import("@/modules/sql-editor/components/SQLEditorLayout").then((m) => ({
     default: m.SQLEditorLayout,
@@ -37,9 +38,8 @@ export const sqlEditorRoutes: RouteObject[] = [
     // routes are intentionally element-less and render into an empty Outlet.
     // The route-reachability test relies on this flag to allow those children.
     // `SQLEditorRouteShell` gates the editor on `route.requiredPermissions`,
-    // so the parent must carry the route permission list (ported 1:1 from the
-    // legacy vue `/sql-editor` route). The child modules inherit it via the
-    // matched-chain aggregation in `assembleRoute`.
+    // so the parent must carry the route permission list. The child modules
+    // inherit it via the matched-chain aggregation in `assembleRoute`.
     handle: {
       name: "sql-editor",
       layoutAsPage: true,
@@ -53,26 +53,32 @@ export const sqlEditorRoutes: RouteObject[] = [
     children: [
       {
         index: true,
+        element: null,
         handle: { name: SQL_EDITOR_HOME_MODULE },
       },
       {
         path: "projects/:project",
+        element: null,
         handle: { name: SQL_EDITOR_PROJECT_MODULE },
       },
       {
         path: "projects/:project/instances/:instance/databases/:database",
+        element: null,
         handle: { name: SQL_EDITOR_DATABASE_MODULE },
       },
       {
         path: "projects/:project/instances/:instance",
+        element: null,
         handle: { name: SQL_EDITOR_INSTANCE_MODULE },
       },
       {
         path: "projects/:project/savedQueries/:savedQuery",
+        element: null,
         handle: { name: SQL_EDITOR_SAVED_QUERY_MODULE },
       },
       {
         path: "projects/:project/queryHistories/:queryHistory",
+        element: null,
         handle: { name: SQL_EDITOR_QUERY_HISTORY_MODULE },
       },
     ],

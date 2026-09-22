@@ -53,6 +53,9 @@ export const extractDatabaseResourceName = (
   };
 };
 
+export const isProjectInstanceDatabase = (database: Database): boolean =>
+  extractDatabaseResourceName(database.name).instance.startsWith("projects/");
+
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.
 export const isDatabaseV1Queryable = (
   database: Database,

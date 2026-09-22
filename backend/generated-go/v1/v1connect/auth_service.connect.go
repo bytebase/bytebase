@@ -34,9 +34,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AuthServiceGetAuthenticationRestrictionProcedure is the fully-qualified name of the AuthService's
-	// GetAuthenticationRestriction RPC.
-	AuthServiceGetAuthenticationRestrictionProcedure = "/bytebase.v1.AuthService/GetAuthenticationRestriction"
+	// AuthServiceGetAuthenticationInfoProcedure is the fully-qualified name of the AuthService's
+	// GetAuthenticationInfo RPC.
+	AuthServiceGetAuthenticationInfoProcedure = "/bytebase.v1.AuthService/GetAuthenticationInfo"
 	// AuthServiceLoginProcedure is the fully-qualified name of the AuthService's Login RPC.
 	AuthServiceLoginProcedure = "/bytebase.v1.AuthService/Login"
 	// AuthServiceLogoutProcedure is the fully-qualified name of the AuthService's Logout RPC.
@@ -64,9 +64,10 @@ const (
 
 // AuthServiceClient is a client for the bytebase.v1.AuthService service.
 type AuthServiceClient interface {
-	// Gets the effective restrictions needed to render authentication flows.
+	// Gets everything the login page renders: the sign-in restrictions and the
+	// identity providers it offers.
 	// Permissions required: None
-	GetAuthenticationRestriction(context.Context, *connect.Request[v1.GetAuthenticationRestrictionRequest]) (*connect.Response[v1.AuthenticationInfo], error)
+	GetAuthenticationInfo(context.Context, *connect.Request[v1.GetAuthenticationInfoRequest]) (*connect.Response[v1.AuthenticationInfo], error)
 	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
@@ -90,6 +91,8 @@ type AuthServiceClient interface {
 	SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error)
 	// Requests a password reset email for the given email address.
 	// Always returns success to avoid leaking whether the email exists.
+	// Requires the workspace's SMTP mail delivery setting; without it the
+	// recovery route is an admin password reset.
 	// Permissions required: None
 	RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error)
 	// Resets the user's password using a password reset token from email.
@@ -97,6 +100,8 @@ type AuthServiceClient interface {
 	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error)
 	// Sends a 6-digit verification code to the email for login/signup.
 	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+	// REAUTH codes are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -112,10 +117,10 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 	baseURL = strings.TrimRight(baseURL, "/")
 	authServiceMethods := v1.File_v1_auth_service_proto.Services().ByName("AuthService").Methods()
 	return &authServiceClient{
-		getAuthenticationRestriction: connect.NewClient[v1.GetAuthenticationRestrictionRequest, v1.AuthenticationInfo](
+		getAuthenticationInfo: connect.NewClient[v1.GetAuthenticationInfoRequest, v1.AuthenticationInfo](
 			httpClient,
-			baseURL+AuthServiceGetAuthenticationRestrictionProcedure,
-			connect.WithSchema(authServiceMethods.ByName("GetAuthenticationRestriction")),
+			baseURL+AuthServiceGetAuthenticationInfoProcedure,
+			connect.WithSchema(authServiceMethods.ByName("GetAuthenticationInfo")),
 			connect.WithClientOptions(opts...),
 		),
 		login: connect.NewClient[v1.LoginRequest, v1.LoginResponse](
@@ -177,21 +182,21 @@ func NewAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // authServiceClient implements AuthServiceClient.
 type authServiceClient struct {
-	getAuthenticationRestriction *connect.Client[v1.GetAuthenticationRestrictionRequest, v1.AuthenticationInfo]
-	login                        *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	logout                       *connect.Client[v1.LogoutRequest, emptypb.Empty]
-	exchangeToken                *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
-	signup                       *connect.Client[v1.SignupRequest, v1.LoginResponse]
-	refresh                      *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
-	switchWorkspace              *connect.Client[v1.SwitchWorkspaceRequest, v1.LoginResponse]
-	requestPasswordReset         *connect.Client[v1.RequestPasswordResetRequest, emptypb.Empty]
-	resetPassword                *connect.Client[v1.ResetPasswordRequest, emptypb.Empty]
-	sendEmailLoginCode           *connect.Client[v1.SendEmailLoginCodeRequest, emptypb.Empty]
+	getAuthenticationInfo *connect.Client[v1.GetAuthenticationInfoRequest, v1.AuthenticationInfo]
+	login                 *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	logout                *connect.Client[v1.LogoutRequest, emptypb.Empty]
+	exchangeToken         *connect.Client[v1.ExchangeTokenRequest, v1.ExchangeTokenResponse]
+	signup                *connect.Client[v1.SignupRequest, v1.LoginResponse]
+	refresh               *connect.Client[v1.RefreshRequest, v1.RefreshResponse]
+	switchWorkspace       *connect.Client[v1.SwitchWorkspaceRequest, v1.LoginResponse]
+	requestPasswordReset  *connect.Client[v1.RequestPasswordResetRequest, emptypb.Empty]
+	resetPassword         *connect.Client[v1.ResetPasswordRequest, emptypb.Empty]
+	sendEmailLoginCode    *connect.Client[v1.SendEmailLoginCodeRequest, emptypb.Empty]
 }
 
-// GetAuthenticationRestriction calls bytebase.v1.AuthService.GetAuthenticationRestriction.
-func (c *authServiceClient) GetAuthenticationRestriction(ctx context.Context, req *connect.Request[v1.GetAuthenticationRestrictionRequest]) (*connect.Response[v1.AuthenticationInfo], error) {
-	return c.getAuthenticationRestriction.CallUnary(ctx, req)
+// GetAuthenticationInfo calls bytebase.v1.AuthService.GetAuthenticationInfo.
+func (c *authServiceClient) GetAuthenticationInfo(ctx context.Context, req *connect.Request[v1.GetAuthenticationInfoRequest]) (*connect.Response[v1.AuthenticationInfo], error) {
+	return c.getAuthenticationInfo.CallUnary(ctx, req)
 }
 
 // Login calls bytebase.v1.AuthService.Login.
@@ -241,9 +246,10 @@ func (c *authServiceClient) SendEmailLoginCode(ctx context.Context, req *connect
 
 // AuthServiceHandler is an implementation of the bytebase.v1.AuthService service.
 type AuthServiceHandler interface {
-	// Gets the effective restrictions needed to render authentication flows.
+	// Gets everything the login page renders: the sign-in restrictions and the
+	// identity providers it offers.
 	// Permissions required: None
-	GetAuthenticationRestriction(context.Context, *connect.Request[v1.GetAuthenticationRestrictionRequest]) (*connect.Response[v1.AuthenticationInfo], error)
+	GetAuthenticationInfo(context.Context, *connect.Request[v1.GetAuthenticationInfoRequest]) (*connect.Response[v1.AuthenticationInfo], error)
 	// Authenticates a user and returns access tokens.
 	// Permissions required: None
 	Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error)
@@ -267,6 +273,8 @@ type AuthServiceHandler interface {
 	SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error)
 	// Requests a password reset email for the given email address.
 	// Always returns success to avoid leaking whether the email exists.
+	// Requires the workspace's SMTP mail delivery setting; without it the
+	// recovery route is an admin password reset.
 	// Permissions required: None
 	RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error)
 	// Resets the user's password using a password reset token from email.
@@ -274,6 +282,8 @@ type AuthServiceHandler interface {
 	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error)
 	// Sends a 6-digit verification code to the email for login/signup.
 	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+	// REAUTH codes are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -285,10 +295,10 @@ type AuthServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	authServiceMethods := v1.File_v1_auth_service_proto.Services().ByName("AuthService").Methods()
-	authServiceGetAuthenticationRestrictionHandler := connect.NewUnaryHandler(
-		AuthServiceGetAuthenticationRestrictionProcedure,
-		svc.GetAuthenticationRestriction,
-		connect.WithSchema(authServiceMethods.ByName("GetAuthenticationRestriction")),
+	authServiceGetAuthenticationInfoHandler := connect.NewUnaryHandler(
+		AuthServiceGetAuthenticationInfoProcedure,
+		svc.GetAuthenticationInfo,
+		connect.WithSchema(authServiceMethods.ByName("GetAuthenticationInfo")),
 		connect.WithHandlerOptions(opts...),
 	)
 	authServiceLoginHandler := connect.NewUnaryHandler(
@@ -347,8 +357,8 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 	)
 	return "/bytebase.v1.AuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case AuthServiceGetAuthenticationRestrictionProcedure:
-			authServiceGetAuthenticationRestrictionHandler.ServeHTTP(w, r)
+		case AuthServiceGetAuthenticationInfoProcedure:
+			authServiceGetAuthenticationInfoHandler.ServeHTTP(w, r)
 		case AuthServiceLoginProcedure:
 			authServiceLoginHandler.ServeHTTP(w, r)
 		case AuthServiceLogoutProcedure:
@@ -376,8 +386,8 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect.HandlerOption
 // UnimplementedAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAuthServiceHandler struct{}
 
-func (UnimplementedAuthServiceHandler) GetAuthenticationRestriction(context.Context, *connect.Request[v1.GetAuthenticationRestrictionRequest]) (*connect.Response[v1.AuthenticationInfo], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.GetAuthenticationRestriction is not implemented"))
+func (UnimplementedAuthServiceHandler) GetAuthenticationInfo(context.Context, *connect.Request[v1.GetAuthenticationInfoRequest]) (*connect.Response[v1.AuthenticationInfo], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.AuthService.GetAuthenticationInfo is not implemented"))
 }
 
 func (UnimplementedAuthServiceHandler) Login(context.Context, *connect.Request[v1.LoginRequest]) (*connect.Response[v1.LoginResponse], error) {

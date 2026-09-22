@@ -20,10 +20,10 @@ const STATUS_CONFIG: Record<
   SectionStatus,
   { icon: LucideIcon; className: string }
 > = {
-  success: { icon: CheckCircle2, className: "text-green-600" },
-  error: { icon: XCircle, className: "text-red-600" },
-  running: { icon: LoaderCircle, className: "text-blue-600" },
-  pending: { icon: Circle, className: "text-gray-400" },
+  success: { icon: CheckCircle2, className: "text-success" },
+  error: { icon: XCircle, className: "text-error" },
+  running: { icon: LoaderCircle, className: "text-info" },
+  pending: { icon: Circle, className: "text-control-placeholder" },
 };
 
 export interface BuildSectionsOptions {
@@ -482,9 +482,9 @@ const buildDisplayItems = (
       time: formatTime(entry.logTime),
       relativeTime: relativeMs > 0 ? formatRelativeTime(relativeMs) : "",
       levelIndicator: entryHasError ? "\u2717" : "\u2713",
-      levelClass: entryHasError ? "text-red-600" : "text-green-600",
+      levelClass: entryHasError ? "text-error" : "text-success",
       detail: getEntryDetail(entry, sheet, sheetsMap, detailText, fileVersion),
-      detailClass: entryHasError ? "text-red-700" : "text-gray-600",
+      detailClass: entryHasError ? "text-error" : "text-control",
       affectedRows:
         entry.type === TaskRunLogEntry_Type.COMMAND_EXECUTE
           ? Number(entry.commandExecute?.response?.affectedRows ?? 0) ||

@@ -124,7 +124,7 @@ export function LabelListEditor({
                     {t("common.key")} {index + 1}
                   </span>
                   {readonly ? (
-                    <span className="leading-[34px]">{kv.key}</span>
+                    <span className="flex h-9 items-center">{kv.key}</span>
                   ) : (
                     <Input
                       value={kv.key}
@@ -140,7 +140,7 @@ export function LabelListEditor({
                   </span>
                   <div className="flex items-center gap-x-2">
                     {readonly ? (
-                      <span className="leading-[34px]">
+                      <span className="flex h-9 items-center">
                         {kv.value || (
                           <span className="text-control-placeholder">
                             {t("label.empty-label-value")}
@@ -159,14 +159,16 @@ export function LabelListEditor({
                         }
                       />
                     )}
-                    <button
+                    <Button
                       type="button"
+                      appearance="secondary"
+                      size="xs"
                       aria-label={t("common.delete")}
                       className={`ml-1 ${readonly ? "invisible" : "visible"} text-control-light hover:text-error`}
                       onClick={() => handleRemove(index)}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                   {kv.message && (
                     <div className="textinfolabel">{kv.message}</div>

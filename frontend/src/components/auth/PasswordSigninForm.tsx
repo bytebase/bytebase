@@ -69,7 +69,7 @@ export function PasswordSigninForm({
           {credentialLabel ?? t("common.email")}
           <span className="text-error ml-0.5">*</span>
         </label>
-        <div className="mt-1 rounded-md shadow-xs">
+        <div className="mt-1 rounded-sm shadow-xs">
           <Input
             id={credentialFieldID}
             type={credentialInputType}
@@ -104,7 +104,7 @@ export function PasswordSigninForm({
             </RouterLink>
           )}
         </label>
-        <div className="relative flex flex-row items-center mt-1 rounded-md shadow-xs">
+        <div className="relative flex flex-row items-center mt-1 rounded-sm shadow-xs">
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
@@ -113,9 +113,11 @@ export function PasswordSigninForm({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button
+          <Button
             type="button"
-            className="hover:cursor-pointer absolute right-3"
+            appearance="secondary"
+            size="xs"
+            className="absolute right-3 text-control-light hover:text-control"
             onClick={() => setShowPassword((v) => !v)}
             aria-label="Toggle password visibility"
           >
@@ -124,7 +126,7 @@ export function PasswordSigninForm({
             ) : (
               <EyeOff className="w-4 h-4" />
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

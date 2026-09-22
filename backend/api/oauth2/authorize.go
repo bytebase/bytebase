@@ -140,6 +140,19 @@ func (s *Service) handleAuthorizePost(c *echo.Context) error {
 		return oauth2ErrorRedirect(c, redirectURI, state, failure.code, failure.description)
 	}
 
+	// Every grant this server issues is an MCP grant, so a workspace whose MCP
+	// ceiling serves nothing must not be handed one.
+	refused, err := s.refuseConsentByCeiling(c, consentAttempt{
+		user:        consenting,
+		clientID:    clientID,
+		params:      params,
+		redirectURI: redirectURI,
+		state:       state,
+	})
+	if refused {
+		return err
+	}
+
 	code, err := generateAuthCode()
 	if err != nil {
 		return oauth2ErrorRedirect(c, redirectURI, state, "server_error", "failed to generate code")

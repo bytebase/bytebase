@@ -9,8 +9,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // WorkloadIdentityMessage is the message for a workload identity.
@@ -138,8 +138,10 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 			config
 		FROM workload_identity
 		WHERE ?
-		ORDER BY created_at ASC
 	`, where)
+
+	// created_at defaults to now() and is not unique; email is the primary key.
+	q.Space("ORDER BY workload_identity.created_at ASC, workload_identity.email ASC")
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

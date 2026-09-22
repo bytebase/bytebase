@@ -3,6 +3,7 @@ package store
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"context"
 	"database/sql"
@@ -22,7 +23,7 @@ type Store struct {
 	enableCache   bool
 
 	// Cache.
-	Secret         string
+	authSecret     atomic.Pointer[string]
 	userEmailCache *lru.Cache[string, *UserMessage]
 	instanceCache  *lru.Cache[string, *InstanceMessage]
 	databaseCache  *lru.Cache[string, *DatabaseMessage]
@@ -30,6 +31,9 @@ type Store struct {
 	policyCache    *lru.Cache[string, *PolicyMessage]
 	settingCache   *lru.Cache[string, *SettingMessage]
 
+	// projectPublishMu prevents a cache fill that read an old database snapshot
+	// from publishing after a concurrent project update invalidates the cache.
+	projectPublishMu sync.Mutex
 	// settingPublishMu serializes all setting cache publications (writer
 	// republishes, cache-miss fills, invalidations). Publishers re-read the
 	// row under the mutex, so whichever publishes last publishes current

@@ -6,7 +6,6 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -24,7 +23,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 	changedResources := model.NewChangedResources(dbMetadata)
 
 	var dmlCount, insertCount int
-	var sampleDMLs []string
+	var dmlStatements []string
 
 	// addObjectDatabase records a database-only write target for a non-table object DDL
 	// (view/function/routine/trigger) ONLY when the object's own name carries an explicit
@@ -109,19 +108,20 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 				insertCount += len(n.Values)
 				continue
 			}
-			dmlCount++
-			if len(sampleDMLs) < common.MaximumLintExplainSize {
-				sampleDMLs = append(sampleDMLs, omniStatementText(omniAST))
+			// INSERT ... SET inserts exactly one row, and EXPLAIN gives no estimate for it.
+			if len(n.SetList) > 0 {
+				insertCount++
+				continue
 			}
+			dmlCount++
+			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
 
 		case *ast.UpdateStmt:
 			for _, resource := range extractTableExprs(n.Tables, currentDatabase) {
 				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
 			}
 			dmlCount++
-			if len(sampleDMLs) < common.MaximumLintExplainSize {
-				sampleDMLs = append(sampleDMLs, omniStatementText(omniAST))
-			}
+			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
 
 		case *ast.DeleteStmt:
 			for _, resource := range extractTableExprs(n.Tables, currentDatabase) {
@@ -131,9 +131,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 				changedResources.AddTable(resource.Database, "", &storepb.ChangedResourceTable{Name: resource.Table}, false)
 			}
 			dmlCount++
-			if len(sampleDMLs) < common.MaximumLintExplainSize {
-				sampleDMLs = append(sampleDMLs, omniStatementText(omniAST))
-			}
+			dmlStatements = append(dmlStatements, omniStatementText(omniAST))
 
 		// Non-table object DDL: gate by the object's own explicit database qualifier only.
 		// CREATE TRIGGER is intentionally skipped — its AST name is unqualified (a bare string);
@@ -161,7 +159,7 @@ func extractChangedResources(currentDatabase string, _ string, dbMetadata *model
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
-		SampleDMLS:       sampleDMLs,
+		DMLStatements:    dmlStatements,
 		DMLCount:         dmlCount,
 		InsertCount:      insertCount,
 	}, nil

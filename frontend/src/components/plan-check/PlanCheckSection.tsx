@@ -107,14 +107,16 @@ export function PlanCheckSection({
 
       {hasAnyChecks ? (
         <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             aria-label={t("plan.navigator.checks")}
-            className="cursor-pointer text-left"
+            className="h-auto cursor-pointer justify-start p-0 text-left"
             onClick={() => setDrawerOpen(true)}
             type="button"
           >
             <PlanCheckSummaryRow summary={summary} />
-          </button>
+          </Button>
           {trailingSummary}
         </div>
       ) : (
@@ -217,11 +219,13 @@ function PlanCheckFilterPills({
       {entries.map(({ count, icon: Icon, label, status, textClass }) => {
         const isSelected = selectedStatus === status;
         return (
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             className={cn(
-              "flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 transition-colors",
+              "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 transition-colors",
               textClass,
-              isSelected ? "bg-gray-100" : "hover:bg-gray-100"
+              isSelected ? "bg-control-bg" : "hover:bg-control-bg"
             )}
             key={status}
             onClick={() => onSelect(isSelected ? undefined : status)}
@@ -230,7 +234,7 @@ function PlanCheckFilterPills({
             <Icon className="h-5 w-5" />
             <span>{label}</span>
             <span>{count}</span>
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -383,15 +387,17 @@ export function PlanCheckResultsDrawer({
               </div>
               {remainingCount > 0 && (
                 <div className="flex justify-center py-4">
-                  <button
-                    className="cursor-pointer text-sm text-accent hover:underline"
+                  <Button
+                    appearance="secondary"
+                    size="md"
+                    className="h-auto cursor-pointer p-0 text-sm text-accent hover:underline"
                     onClick={() =>
                       setDisplayCount((count) => count + PAGE_SIZE)
                     }
                     type="button"
                   >
                     {t("common.load-more")} ({remainingCount})
-                  </button>
+                  </Button>
                 </div>
               )}
             </>
@@ -422,7 +428,7 @@ export function PlanCheckResultCard({
   );
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-control-border bg-control-bg px-3 py-2">
+    <div className="flex items-start gap-3 rounded-sm border border-control-border bg-control-bg px-3 py-2">
       <div className="mt-0.5 shrink-0">{statusIcon(result.status)}</div>
       <div className="flex min-w-0 flex-1 flex-col gap-y-1">
         <div className="text-sm font-medium text-main">{displayTitle}</div>
@@ -440,7 +446,7 @@ export function PlanCheckResultCard({
         )}
         {affectedRows !== undefined && (
           <div className="mt-1 flex items-center gap-1 text-sm">
-            <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-xs text-control">
+            <span className="inline-flex items-center rounded-full bg-background px-2 py-0.5 text-xs text-control">
               {t("task.check-type.affected-rows.self")}
             </span>
             <span>{String(affectedRows)}</span>

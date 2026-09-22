@@ -15,6 +15,7 @@ import {
 } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
+import { createSubmittedDatabaseChangePlanViaUI } from "../framework/ui-create-plan";
 import { PlanDetailPage } from "./plan-detail.page";
 
 test.setTimeout(120_000);
@@ -49,24 +50,22 @@ test.beforeAll(async ({ browser }) => {
     requirePlanCheckNoError: false,
   });
 
-  const ts = Date.now();
-  const sheet = await env.api.createSheet(
-    env.project,
-    `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_sections_${ts} TEXT;`,
-  );
-  const plan = await env.api.createPlan(
-    env.project,
-    `E2E Sections ${ts}`,
-    [{ id: `spec-${ts}`, targets: [env.database], sheet }],
-  );
-  planId = plan.name.split("/").pop()!;
-  await env.api.createIssue(env.project, `E2E Sections ${ts}`, plan.name);
-
   sharedContext = await browser.newContext({
     storageState: ".auth/state.json",
   });
   page = await sharedContext.newPage();
   planPage = new PlanDetailPage(page, env.baseURL);
+
+  // Create + submit through the UI so a rollout auto-creates (permissive
+  // settings), which is what makes CHANGES auto-collapse — the state under test.
+  const ts = Date.now();
+  ({ planId } = await createSubmittedDatabaseChangePlanViaUI(page, {
+    baseURL: env.baseURL,
+    projectId,
+    database: env.database,
+    title: `E2E Sections ${ts}`,
+    sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_sections_${ts} TEXT;`,
+  }));
 
   await planPage.goto(projectId, planId);
   await planPage.dismissModals();

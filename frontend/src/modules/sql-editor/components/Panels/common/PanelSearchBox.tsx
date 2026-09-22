@@ -1,6 +1,7 @@
 import { Search, X } from "lucide-react";
 import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -12,14 +13,8 @@ interface PanelSearchBoxProps {
 }
 
 /**
- * 1:1 React port of `frontend/src/components/v2/Form/SearchBox.vue` for
- * the SQL Editor panels. Naive UI's NInput at `size="small"` renders at
- * 28px tall with a leading prefix icon and a clearable affordance —
- * this wrapper recreates that exactly so the panel toolbar matches the
- * pre-migration look.
- *
- * Width grows to fill the flex container, capped at 18rem (matching
- * the Vue SearchBox's `max-width: 18rem; flex: 1 1 0%`).
+ * Search box for the SQL Editor panels, with a leading search icon and a
+ * clear button. Width grows to fill the flex container, capped at 18rem.
  */
 export function PanelSearchBox({
   value,
@@ -36,20 +31,22 @@ export function PanelSearchBox({
       <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-control-placeholder pointer-events-none" />
       <Input
         size="sm"
-        className="pl-7 pr-7"
+        style={{ paddingInlineStart: "1.75rem", paddingInlineEnd: "1.75rem" }}
         value={value}
         placeholder={placeholder ?? t("common.search")}
         onChange={handleChange}
       />
       {value ? (
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           type="button"
           aria-label={t("common.clear")}
-          className="absolute right-1.5 top-1/2 -translate-y-1/2 size-5 inline-flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-control-bg"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded-xs text-control-placeholder hover:text-control hover:bg-control-bg"
           onClick={() => onChange("")}
         >
           <X className="size-3.5" />
-        </button>
+        </Button>
       ) : null}
     </div>
   );

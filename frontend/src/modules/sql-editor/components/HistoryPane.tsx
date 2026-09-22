@@ -33,7 +33,6 @@ import { extractProjectResourceName, extractQueryHistoryUID } from "@/utils";
 import { HistorySearchInput } from "./HistorySearchInput";
 
 /**
- * React migration of frontend/src/views/sql-editor/AsidePanel/HistoryPane/HistoryPane.vue.
  * Displays the query history list with search, copy, and click-to-append features.
  */
 export function HistoryPane() {
@@ -101,8 +100,8 @@ export function HistoryPane() {
   // already up-to-date by the time the event fires (`useExecuteSQL` /
   // `webTerminal` chain the emit in `.finally` after `mergeLatest`
   // resolves). The bumped reducer state triggers a render, which
-  // re-runs the Vue-bridge getter and reads the merged list —
-  // preserving any pages the user had already loaded.
+  // re-runs the `selectQueryHistoryEntry` selector and reads the merged
+  // list — preserving any pages the user had already loaded.
   useEffect(() => {
     sqlEditorEvents.on("query-executed", bumpRefresh);
     return () => {
@@ -209,8 +208,8 @@ export function HistoryPane() {
         <div className="flex items-center gap-x-1">
           <Button
             appearance="secondary"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-control-bg-hover"
+            size="xs"
+            className="w-6 p-0 hover:bg-control-bg-hover"
             data-copy-link-btn
             onClick={(e) => {
               e.stopPropagation();
@@ -225,8 +224,8 @@ export function HistoryPane() {
           </Button>
           <Button
             appearance="secondary"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-control-bg-hover"
+            size="xs"
+            className="w-6 p-0 hover:bg-control-bg-hover"
             data-copy-btn
             onClick={(e) => {
               e.stopPropagation();
@@ -268,8 +267,8 @@ export function HistoryPane() {
               </div>
               <Button
                 appearance="secondary"
-                size="sm"
-                className="h-5 w-5 p-0 text-accent hover:bg-accent/10 hover:text-accent"
+                size="xs"
+                className="w-6 p-0 text-accent hover:bg-accent/10 hover:text-accent"
                 data-dismiss-linked-history
                 onClick={() => setLinkedQueryHistory(undefined)}
                 aria-label={t("common.close")}

@@ -20,6 +20,7 @@ import {
   workspaceSwitchChannel,
 } from "@/stores/workspaceSwitchChannel";
 import { defaultAppProfile } from "@/types/appProfile";
+import { PresetRoleType } from "@/types/iam/role";
 import {
   hasFeature as checkFeature,
   hasInstanceFeature as checkInstanceFeature,
@@ -48,6 +49,7 @@ import {
   GetSubscriptionRequestSchema,
   ListPurchasePlansRequestSchema,
   PlanType,
+  StartTrialRequestSchema,
   UpdatePurchaseRequestSchema,
   UploadLicenseRequestSchema,
   VerifyCheckoutSessionRequestSchema,
@@ -85,7 +87,7 @@ const trialingDays = 14;
 
 // Stable empty profile so `getWorkspaceProfile()` can return a non-null value
 // without allocating a fresh object each call (which would break Zustand's
-// selector identity check). Mirrors the Pinia getter's default.
+// selector identity check).
 const EMPTY_WORKSPACE_PROFILE = createProto(WorkspaceProfileSettingSchema, {});
 
 function appFeaturesFromDatabaseChangeMode(mode: DatabaseChangeMode) {
@@ -144,11 +146,9 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   set,
   get
 ) => {
-  // Listen on the shared cross-tab channel (see store/workspaceSwitchChannel.ts).
-  // Using `addEventListener` rather than `onmessage = ...` allows the Vue-side
-  // store to register its own handler on the same object, and source-object
-  // exclusion correctly suppresses both handlers when a post originates from
-  // this tab (e.g. the OAuth2 consent page's in-place switch).
+  // Listen on the shared cross-tab channel (`@/stores/workspaceSwitchChannel`).
+  // Source-object exclusion suppresses this handler when a post originates
+  // from this tab (e.g. the OAuth2 consent page's in-place switch).
   if (!workspaceSwitchListenerRegistered) {
     workspaceSwitchListenerRegistered = true;
     workspaceSwitchChannel.addEventListener("message", (event) => {
@@ -173,7 +173,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
   };
 
   // Persist the ENVIRONMENT setting and re-derive the cached environment list
-  // from the server's response (mirrors the legacy Pinia env store).
+  // from the server's response.
   const writeEnvironmentSetting = async (
     environments: EnvironmentSetting_Environment[]
   ): Promise<Environment[]> => {
@@ -384,8 +384,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     refreshEnvironmentList: async () => get().loadEnvironmentList(true),
 
-    // Mirrors the Pinia `useEnvironmentV1Store().getEnvironmentByName`: maps
-    // a resource name to its environment, falling back to a synthesized
+    // Maps a resource name to its environment, falling back to a synthesized
     // entry (id-as-title) for unknown names when `fallback` is set.
     getEnvironmentByName: (name, fallback = true) => {
       if (name === NULL_ENVIRONMENT_NAME) {
@@ -403,9 +402,8 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       return environment;
     },
 
-    // Mirrors the Pinia `useSettingV1Store`: general-purpose setting cache
-    // keyed by resource name (`settings/{Setting_SettingName}`). Used for AI /
-    // workspace-profile / etc.
+    // General-purpose setting cache keyed by resource name
+    // (`settings/{Setting_SettingName}`). Used for AI, workspace profile, etc.
     getSettingByName: (name) => {
       const resourceName = `${settingNamePrefix}${Setting_SettingName[name]}`;
       return get().settingsByName[resourceName];
@@ -520,6 +518,14 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       return request;
     },
 
+    startTrial: async () => {
+      const subscription = await subscriptionServiceClientConnect.startTrial(
+        createProto(StartTrialRequestSchema, {})
+      );
+      set({ subscription, subscriptionRequest: undefined });
+      return subscription;
+    },
+
     uploadLicense: async (license) => {
       const subscription = await subscriptionServiceClientConnect.uploadLicense(
         createProto(UploadLicenseRequestSchema, { license })
@@ -535,6 +541,12 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     isFreePlan: () => get().currentPlan() === PlanType.FREE,
 
     isTrialing: () => Boolean(get().subscription?.trialing),
+
+    canStartTrial: () =>
+      get().isSaaSMode() &&
+      !!get().subscription &&
+      get().isFreePlan() &&
+      !get().isTrialing(),
 
     isExpired: () => {
       const subscription = get().subscription;
@@ -686,20 +698,29 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     activeVcsUserCount: () => get().serverInfo?.activeVcsUserCount ?? 0,
 
-    enableOnboarding: () => get().userCountInIam() === 1 && !get().isSaaSMode(),
-
-    quickStartEnabled: () => {
-      if (get().appFeatures["bb.feature.hide-quick-start"]) {
-        return false;
-      }
-      if (!get().serverInfo?.enableSample) {
-        return false;
-      }
-      return get().userCountInIam() <= 1;
+    enableOnboarding: () => {
+      const currentUserName = get().currentUser?.name;
+      return (
+        get().userCountInIam() === 1 &&
+        get().workspacePolicy !== undefined &&
+        !!currentUserName &&
+        get()
+          .getWorkspaceRolesByName(currentUserName)
+          .has(PresetRoleType.WORKSPACE_ADMIN)
+      );
     },
 
-    setupSample: async () => {
-      await actuatorServiceClientConnect.setupSample({});
+    workspaceSetupGuideEnabled: (allowMultipleMembers = false) => {
+      const currentUserName = get().currentUser?.name;
+      return (
+        !get().appFeatures["bb.feature.hide-quick-start"] &&
+        get().workspacePolicy !== undefined &&
+        (get().userCountInIam() === 1 || allowMultipleMembers) &&
+        !!currentUserName &&
+        get()
+          .getWorkspaceRolesByName(currentUserName)
+          .has(PresetRoleType.WORKSPACE_ADMIN)
+      );
     },
 
     fetchServerInfo: async () => {
@@ -708,9 +729,8 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       return info;
     },
 
-    // Always returns a profile (never undefined), mirroring the Pinia
-    // `useSettingV1Store().workspaceProfile` getter, so consumers can read
-    // fields without null checks. Reactive via Zustand's selector re-run.
+    // Always returns a profile (never undefined) so consumers can read fields
+    // without null checks. Reactive via Zustand's selector re-run.
     getWorkspaceProfile: () =>
       get().workspaceProfile ?? EMPTY_WORKSPACE_PROFILE,
 
@@ -751,7 +771,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
           profile.databaseChangeMode
         ),
       });
-      // Refresh the latest server info (mirrors the Pinia store).
+      // Refresh the latest server info.
       await get().fetchServerInfo();
     },
 

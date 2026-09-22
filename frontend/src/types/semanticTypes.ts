@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import type { TFunction } from "i18next";
 import i18n from "@/lib/i18n";
 import type { Algorithm } from "@/types/proto-es/v1/setting_service_pb";
 import {
@@ -12,21 +13,42 @@ interface BuildInSemantic {
   algorithm: Algorithm;
 }
 
-export const getSemanticTemplateList =
-  (): SemanticTypeSetting_SemanticType[] => {
-    return (buildInSemanticTypes as unknown as BuildInSemantic[]).map(
-      (buildInSemantic) => {
-        const key = buildInSemantic.id.split(".").join("-");
-        return create(SemanticTypeSetting_SemanticTypeSchema, {
-          id: buildInSemantic.id,
-          title: i18n.t(
-            `dynamic.settings.sensitive-data.semantic-types.template.${key}.title`
-          ),
-          description: i18n.t(
-            `dynamic.settings.sensitive-data.semantic-types.template.${key}.description`
-          ),
-          algorithm: buildInSemantic.algorithm,
-        });
-      }
-    );
-  };
+const builtinSemanticTypeIds = new Set(
+  (buildInSemanticTypes as unknown as BuildInSemantic[]).map(({ id }) => id)
+);
+
+export const isBuiltinSemanticTypeId = (id: string): boolean =>
+  builtinSemanticTypeIds.has(id);
+
+export const getSemanticTemplateList = (
+  t: TFunction = i18n.t
+): SemanticTypeSetting_SemanticType[] => {
+  return (buildInSemanticTypes as unknown as BuildInSemantic[]).map(
+    (buildInSemantic) => {
+      const key = buildInSemantic.id.split(".").join("-");
+      return create(SemanticTypeSetting_SemanticTypeSchema, {
+        id: buildInSemantic.id,
+        title: t(
+          `dynamic.settings.sensitive-data.semantic-types.template.${key}.title`
+        ),
+        description: t(
+          `dynamic.settings.sensitive-data.semantic-types.template.${key}.description`
+        ),
+        algorithm: buildInSemantic.algorithm,
+      });
+    }
+  );
+};
+
+export const getSemanticTypeListWithBuiltins = (
+  semanticTypeList: SemanticTypeSetting_SemanticType[],
+  t: TFunction = i18n.t
+): SemanticTypeSetting_SemanticType[] => {
+  const builtins = getSemanticTemplateList(t);
+  return [
+    ...builtins,
+    ...semanticTypeList.filter(
+      (semanticType) => !isBuiltinSemanticTypeId(semanticType.id)
+    ),
+  ];
+};

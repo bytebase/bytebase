@@ -2,10 +2,10 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
@@ -13,9 +13,9 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // ErrPlanHasRollout indicates that a plan update was rejected because rollout already started.
@@ -28,11 +28,12 @@ type PlanMessage struct {
 	Description string
 	Config      *storepb.PlanConfig
 	// output only
-	UID       int64
-	Creator   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Deleted   bool
+	UID            int64
+	Creator        string
+	LastPlanEditor *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Deleted        bool
 }
 
 // FindPlanMessage is the message to find a plan.
@@ -72,18 +73,20 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		return nil, err
 	}
 
+	lastPlanEditor := strings.ToLower(creator)
 	q := qb.Q().Space(`
 		INSERT INTO plan (
 			id,
 			creator,
+			last_plan_editor,
 			project,
 			name,
 			description,
 			config
 		) VALUES (
-			?, ?, ?, ?, ?, ?
+			?, ?, ?, ?, ?, ?, ?
 		) RETURNING created_at, updated_at
-	`, nextID, creator, plan.ProjectID, plan.Name, plan.Description, config)
+	`, nextID, creator, lastPlanEditor, plan.ProjectID, plan.Name, plan.Description, config)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -100,6 +103,7 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 
 	plan.UID = nextID
 	plan.Creator = creator
+	plan.LastPlanEditor = &lastPlanEditor
 	return plan, nil
 }
 
@@ -124,6 +128,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		SELECT
 			plan.id,
 			plan.creator,
+			plan.last_plan_editor,
 			plan.created_at,
 			plan.updated_at,
 			plan.project,
@@ -182,7 +187,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		)`)
 	}
 
-	q.Space("ORDER BY id DESC")
+	q.Space("ORDER BY plan.id DESC, plan.project DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -207,9 +212,11 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 			Config: &storepb.PlanConfig{},
 		}
 		var config []byte
+		var lastPlanEditor sql.NullString
 		if err := rows.Scan(
 			&plan.UID,
 			&plan.Creator,
+			&lastPlanEditor,
 			&plan.CreatedAt,
 			&plan.UpdatedAt,
 			&plan.ProjectID,
@@ -222,6 +229,9 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal plan config")
+		}
+		if lastPlanEditor.Valid {
+			plan.LastPlanEditor = &lastPlanEditor.String
 		}
 		plans = append(plans, &plan)
 	}
@@ -238,13 +248,9 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 		return nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.Errorf("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
@@ -348,7 +354,7 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "title":
-					return qb.Q().Space("LOWER(plan.name) LIKE ?", "%"+strValue+"%"), nil
+					return qb.Q().Space("LOWER(plan.name) LIKE ? ESCAPE '\\'", containsPattern(strValue)), nil
 				default:
 					return nil, errors.Errorf(`only "title" supports %q operator, but found %q`, celoverloads.Contains, variable)
 				}

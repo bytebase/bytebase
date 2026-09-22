@@ -15,8 +15,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // WorkspaceMessage is the message for a workspace.
@@ -142,6 +142,9 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 			DisallowSignup:         false,
 			DisallowPasswordSignin: false,
 			PasswordRestriction:    &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
+		}},
+		{storepb.SettingName_MCP, &storepb.MCPSetting{
+			Capability: storepb.MCPSetting_READ_ONLY,
 		}},
 		{storepb.SettingName_ENVIRONMENT, &storepb.EnvironmentSetting{
 			Environments: []*storepb.EnvironmentSetting_Environment{

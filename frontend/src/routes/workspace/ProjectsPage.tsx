@@ -319,17 +319,6 @@ export function ProjectsPage() {
     [searchParams]
   );
 
-  // Mark project visit on mount
-  useEffect(() => {
-    const store = useAppStore.getState();
-    if (!store.getIntroStateByKey("project.visit")) {
-      store.saveIntroStateByKey({
-        key: "project.visit",
-        newState: true,
-      });
-    }
-  }, []);
-
   // Data fetching state
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);

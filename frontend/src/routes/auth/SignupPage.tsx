@@ -135,7 +135,7 @@ export function SignupPage() {
                 {t("common.email")}
                 <span className="text-error ml-0.5">*</span>
               </label>
-              <div className="mt-1 rounded-md shadow-xs">
+              <div className="mt-1 rounded-sm shadow-xs">
                 <Input
                   id="email"
                   type="email"
@@ -163,7 +163,7 @@ export function SignupPage() {
                 {t("common.username")}
                 <span className="text-error ml-0.5">*</span>
               </label>
-              <div className="mt-1 rounded-md shadow-xs">
+              <div className="mt-1 rounded-sm shadow-xs">
                 <Input
                   id="name"
                   required
@@ -192,7 +192,7 @@ export function SignupPage() {
                     components={{
                       terms: (
                         <a
-                          href="https://www.bytebase.com/terms?source=console"
+                          href="https://www.bytebase.com/legal/terms?source=console"
                           className="text-accent"
                         />
                       ),
@@ -225,12 +225,12 @@ export function SignupPage() {
 
         {!needsInitialSetup && (
           <AuthDivider className="mt-6">
-            <span className="pl-2 bg-white text-control">
+            <span className="pl-2 bg-background text-control">
               {t("auth.sign-up.existing-user")}
             </span>
             <RouterLink
               to={{ name: AUTH_SIGNIN_MODULE, query }}
-              className="accent-link px-2 bg-white"
+              className="accent-link px-2 bg-background"
             >
               {t("common.sign-in")}
             </RouterLink>

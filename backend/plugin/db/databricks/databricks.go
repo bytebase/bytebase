@@ -14,8 +14,8 @@ import (
 	// Databricks SQL.
 	dbsql "github.com/databricks/databricks-sdk-go/service/sql"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -128,8 +128,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	// Databricks has different transaction support based on the target:
@@ -143,7 +143,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 	// For transaction mode "on", we note that Databricks will handle transactionality
 	// at the operation level for supported operations (e.g., Delta table operations).
 
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		// Execute in auto-commit mode (default Databricks behavior)
 		_, err := d.QueryConn(ctx, nil, statement, db.QueryContext{})
 		return 0, err

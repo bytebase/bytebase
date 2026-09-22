@@ -10,10 +10,7 @@ import { router } from "@/app/router";
 import { useSQLEditorAllowAdmin } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
-import {
-  getSQLEditorEditorState,
-  useSQLEditorEditorState,
-} from "@/modules/sql-editor/store/editor";
+import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import type {
   BatchQueryContext,
@@ -28,7 +25,6 @@ import {
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
   autoDatabaseRoute,
-  canCreateSavedQueryInProject,
   extractDatabaseResourceName,
   getInstanceResource,
   instanceV1HasAlterSchema,
@@ -53,8 +49,8 @@ const DEFAULT_TAB_MODE: SQLEditorTabMode = "SAVED_QUERY";
 
 /**
  * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPane/actions.tsx's `setConnection`.
- * Connects the current tab or creates a new saved query, then sets the tab
- * mode + batch-query context and flips the aside panel to `SCHEMA`.
+ * Connects the current tab or opens a local draft, then sets the tab mode +
+ * batch-query context and flips the aside panel to `SCHEMA`.
  */
 export function setConnection(options: {
   database?: Database;
@@ -72,8 +68,9 @@ export function setConnection(options: {
 
   const tabsState = getSQLEditorTabsState();
   const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
-  const { maybeUpdateSavedQuery, createSavedQuery } =
-    useSQLEditorStore.getState();
+  const nextMode = mode === "DATA_EXPLORER" ? DEFAULT_TAB_MODE : mode;
+  const shouldCreateNewTab = newTab || currentTab?.mode === "DATA_EXPLORER";
+  const { maybeUpdateSavedQuery } = useSQLEditorStore.getState();
 
   const batchQueryContext: BatchQueryContext = Object.assign(
     { databases: [] } as BatchQueryContext,
@@ -82,7 +79,12 @@ export function setConnection(options: {
   );
 
   const createOrUpdate = () => {
-    if (!newTab && currentTab) {
+    if (!shouldCreateNewTab && currentTab) {
+      if (!currentTab.savedQuery) {
+        return Promise.resolve(
+          tabsState.updateTab(currentTab.id, { connection })
+        );
+      }
       return maybeUpdateSavedQuery({
         tabId: currentTab.id,
         savedQuery: currentTab.savedQuery,
@@ -91,26 +93,23 @@ export function setConnection(options: {
         statement: currentTab.statement,
       });
     }
-    if (!canCreateSavedQueryInProject(getSQLEditorEditorState().project)) {
-      // Same fallback as the tab bar's "+": open the tab locally rather than
-      // failing the request, so the connection the user picked still opens.
-      return Promise.resolve(getSQLEditorTabsState().addTab({ connection }));
-    }
-    return createSavedQuery({
-      database: connection.database,
-    });
+    // A new connection starts as a local draft. Auto-save creates the saved
+    // query only after the user enters SQL.
+    return Promise.resolve(getSQLEditorTabsState().addTab({ connection }));
   };
 
   void createOrUpdate().then((tab) => {
     if (tab) {
-      getSQLEditorTabsState().updateTab(tab.id, { mode, batchQueryContext });
+      getSQLEditorTabsState().updateTab(tab.id, {
+        mode: nextMode,
+        batchQueryContext,
+      });
       useSQLEditorStore.getState().setAsidePanelTab("SCHEMA");
     }
   });
 }
 
 /**
- * Replaces `useDropdown` from the Vue `actions.tsx`.
  * Returns the dynamic menu items for a right-clicked tree node. Consumers
  * render the resulting items in their own context menu UI.
  */

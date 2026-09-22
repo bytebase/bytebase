@@ -137,7 +137,7 @@ export function DatabaseSelect(props: DatabaseSelectProps) {
       label: databaseName,
       description: instance,
       render: (keyword) => (
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-1">
           <DatabaseTargetDisplay
             database={database}
             keyword={keyword}

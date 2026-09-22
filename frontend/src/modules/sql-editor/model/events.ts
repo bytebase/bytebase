@@ -25,7 +25,7 @@ export type SQLEditorEvents = {
   // paths. `HistoryPane` listens and refetches. Bypasses store
   // reactivity that doesn't reliably propagate the post-exec
   // mutations into React selector subscribers.
-  "query-executed": undefined;
+  "query-executed": { database: string; project: string };
 };
 
 export const sqlEditorEvents: Emittery<SQLEditorEvents> =

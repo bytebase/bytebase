@@ -355,7 +355,7 @@ function AccessGrantRequestDrawerInner({
               // canvas into the transparent-background rule and back it with the
               // themed `bg-background` (from `sheetStyle`'s `--color-background`)
               // so it matches the active theme like the saved query editor.
-              className="border rounded-[3px] h-40 bg-background sqleditor--monaco-transparent"
+              className="border rounded-xs h-40 bg-background sqleditor--monaco-transparent"
               content={query}
               language="sql"
               autoCompleteContext={autoCompleteContext}

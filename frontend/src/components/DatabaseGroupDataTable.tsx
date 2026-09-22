@@ -39,11 +39,9 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/components/DatabaseGroup/DatabaseGroupDataTable.vue.
- * Shared React port. Columns — in order — are: optional selection, title,
- * expression, optional external-link, optional actions (kebab menu with
- * Delete). Supports optional client-side pagination for the "manage
- * groups" admin use case.
+ * Columns — in order — are: optional selection, title, expression, optional
+ * external-link, optional actions (kebab menu with Delete). Supports optional
+ * client-side pagination for the "manage groups" admin use case.
  */
 export function DatabaseGroupDataTable({
   databaseGroupList,
@@ -134,7 +132,7 @@ export function DatabaseGroupDataTable({
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-gray-50">
+              <TableRow className="bg-control-bg/50">
                 {showSelection && <TableHead className="w-10" />}
                 <TableHead className="w-64">{t("common.name")}</TableHead>
                 <TableHead>{t("database.expression")}</TableHead>
@@ -199,17 +197,19 @@ export function DatabaseGroupDataTable({
                       </TableCell>
                       {showExternalLink && (
                         <TableCell>
-                          <button
+                          <Button
                             type="button"
+                            appearance="secondary"
+                            size="xs"
                             className={cn(
-                              "flex items-center justify-end cursor-pointer size-6 p-1 opacity-60",
-                              "hover:opacity-100 hover:bg-white hover:shadow-xs rounded-sm"
+                              "flex items-center justify-end opacity-60",
+                              "hover:opacity-100 hover:bg-background hover:shadow-xs rounded-sm"
                             )}
                             onClick={(e) => handleExternalLink(e, group)}
                             aria-label={t("common.view-details")}
                           >
                             <ExternalLink className="size-4" />
-                          </button>
+                          </Button>
                         </TableCell>
                       )}
                       {showActions && (

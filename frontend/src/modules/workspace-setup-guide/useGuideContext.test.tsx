@@ -1,0 +1,849 @@
+import { create } from "@bufbuild/protobuf";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  SQL_EDITOR_DATABASE_MODULE,
+} from "@/app/router/handles";
+import { planEvents } from "@/lib/plan/events";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
+import { DatabaseCatalogSchema } from "@/types/proto-es/v1/database_catalog_service_pb";
+import {
+  DatabaseMetadataSchema,
+  SchemaMetadataSchema,
+  TableMetadataSchema,
+} from "@/types/proto-es/v1/database_service_pb";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { getGuideJourney } from "./scenarios";
+import { resolveGuide } from "./resolve";
+import { GUIDE_STEP_DEFINITIONS } from "./steps";
+import { GUIDE_PROGRESS_KEYS } from "./progress";
+import type {
+  GuideRoute,
+  GuideScenarioId,
+  GuideWorkspaceUsage,
+} from "./types";
+
+const mocks = vi.hoisted(() => ({
+  projectsByName: {} as Record<string, unknown>,
+  instancesByName: {} as Record<string, unknown>,
+  databasesByName: {} as Record<string, unknown>,
+  catalogsByName: {} as Record<string, unknown>,
+  metadataByDatabase: {} as Record<string, unknown>,
+  usersByName: {} as Record<string, unknown>,
+  fetchProjectList: vi.fn(),
+  fetchInstanceList: vi.fn(),
+  fetchDatabases: vi.fn(),
+  getOrFetchDatabaseCatalog: vi.fn(),
+  getOrFetchDatabaseMetadata: vi.fn(),
+  listUsers: vi.fn(),
+  introState: {} as Record<string, boolean>,
+  saveIntroStateByKey: vi.fn(),
+  captureMetric: vi.fn(),
+  workspaceResourceName: "workspaces/default",
+  defaultProject: "projects/default",
+  currentUserName: "users/ed@example.com",
+  isSaaS: false,
+  workspacePolicy: {
+    bindings: [
+      {
+        role: "roles/workspaceAdmin",
+        members: ["users/ed@example.com"],
+      },
+    ],
+  },
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: { captureMetric: mocks.captureMetric },
+}));
+
+vi.mock("@/hooks/useAppState", () => ({
+  useIntroStateByKey: (key: string) => mocks.introState[key] ?? false,
+}));
+
+vi.mock("@/stores/app", () => {
+  const state = () => ({
+    serverInfo: { defaultProject: mocks.defaultProject },
+    projectsByName: mocks.projectsByName,
+    instancesByName: mocks.instancesByName,
+    databasesByName: mocks.databasesByName,
+    catalogsByName: mocks.catalogsByName,
+    usersByName: mocks.usersByName,
+    workspaceResourceName: () => mocks.workspaceResourceName,
+    currentUserName: mocks.currentUserName,
+    workspacePolicy: mocks.workspacePolicy,
+    isSaaSMode: () => mocks.isSaaS,
+    getCachedDatabaseMetadata: (database: string) =>
+      mocks.metadataByDatabase[database],
+  });
+  const useAppStore = Object.assign(
+    (selector: (value: ReturnType<typeof state>) => unknown) =>
+      selector(state()),
+    {
+      getState: () => ({
+        ...state(),
+        fetchProjectList: mocks.fetchProjectList,
+        fetchInstanceList: mocks.fetchInstanceList,
+        fetchDatabases: mocks.fetchDatabases,
+        getOrFetchDatabaseCatalog: mocks.getOrFetchDatabaseCatalog,
+        getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
+        listUsers: mocks.listUsers,
+        getIntroStateByKey: (key: string) => mocks.introState[key] ?? false,
+        saveIntroStateByKey: mocks.saveIntroStateByKey,
+      }),
+    }
+  );
+  return { useAppStore };
+});
+
+import {
+  catalogHasMarkedSensitiveData,
+  hasOtherHumanWorkspaceMember,
+  useGuideContext,
+} from "./useGuideContext";
+
+const home: GuideRoute = { name: "workspace.home", params: {} };
+
+const renderGuideContext = (
+  props: {
+    enabled: boolean;
+    dismissed: boolean;
+    route: GuideRoute;
+    scenarioId?: GuideScenarioId;
+    workspaceUsage?: GuideWorkspaceUsage;
+  } = {
+    enabled: true,
+    dismissed: false,
+    route: home,
+  }
+) => renderHook((value) => useGuideContext(value), { initialProps: props });
+
+const mockDiscoveredDatabase = () => {
+  mocks.fetchProjectList.mockResolvedValue({
+    projects: [{ name: "projects/app" }],
+    nextPageToken: "",
+  });
+  mocks.fetchInstanceList.mockResolvedValue({
+    instances: [{ name: "instances/sample" }],
+    nextPageToken: "",
+  });
+  mocks.fetchDatabases.mockResolvedValue({
+    databases: [
+      {
+        name: "instances/sample/databases/employee",
+        project: "projects/app",
+      },
+    ],
+    nextPageToken: "",
+  });
+};
+
+const catalogWithColumn = (column: {
+  semanticType?: string;
+  classification?: string;
+}) =>
+  ({
+    schemas: [
+      {
+        tables: [
+          {
+            kind: { case: "columns", value: { columns: [column] } },
+          },
+        ],
+      },
+    ],
+  }) as never;
+
+describe("useGuideContext", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.introState = {};
+    mocks.projectsByName = {};
+    mocks.instancesByName = {};
+    mocks.databasesByName = {};
+    mocks.catalogsByName = {};
+    mocks.metadataByDatabase = {};
+    mocks.usersByName = {};
+    mocks.fetchProjectList.mockResolvedValue({ projects: [], nextPageToken: "" });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({ databases: [], nextPageToken: "" });
+    mocks.getOrFetchDatabaseCatalog.mockResolvedValue({ schemas: [] });
+    mocks.getOrFetchDatabaseMetadata.mockImplementation(async ({ database }) => {
+      return mocks.metadataByDatabase[database];
+    });
+    mocks.listUsers.mockResolvedValue({ users: [], nextPageToken: "" });
+    mocks.currentUserName = "users/ed@example.com";
+    mocks.isSaaS = false;
+    mocks.workspacePolicy = {
+      bindings: [
+        {
+          role: "roles/workspaceAdmin",
+          members: ["users/ed@example.com"],
+        },
+      ],
+    };
+    mocks.saveIntroStateByKey.mockImplementation(({ key, newState }) => {
+      mocks.introState[key] = newState;
+    });
+  });
+
+  test("recognizes only a non-empty column semantic type as marked sensitive data", () => {
+    expect(
+      catalogHasMarkedSensitiveData(
+        catalogWithColumn({ semanticType: "bb.default" })
+      )
+    ).toBe(true);
+    expect(
+      catalogHasMarkedSensitiveData(
+        catalogWithColumn({ classification: "classification.column" })
+      )
+    ).toBe(false);
+  });
+
+  test.each([
+    ["root", { semanticType: "bb.default" }, true],
+    [
+      "nested object field",
+      {
+        kind: {
+          case: "structKind",
+          value: {
+            properties: {
+              contact: {
+                kind: {
+                  case: "structKind",
+                  value: {
+                    properties: {
+                      email: { semanticType: "bb.default" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      true,
+    ],
+    [
+      "array element",
+      {
+        kind: {
+          case: "arrayKind",
+          value: {
+            kind: {
+              kind: {
+                case: "structKind",
+                value: {
+                  properties: {
+                    email: { semanticType: "bb.default-partial" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      true,
+    ],
+    [
+      "unmarked field",
+      {
+        kind: { case: "structKind", value: { properties: { email: {} } } },
+      },
+      false,
+    ],
+    ["empty array schema", { kind: { case: "arrayKind", value: {} } }, false],
+  ] as const)(
+    "recognizes sensitive data in %s",
+    (_name, objectSchema, expected) => {
+      const catalog = create(DatabaseCatalogSchema, {
+        schemas: [
+          { tables: [{ kind: { case: "objectSchema", value: objectSchema } }] },
+        ],
+      });
+      expect(catalogHasMarkedSensitiveData(catalog)).toBe(expected);
+    },
+  );
+
+  test("loads existing sensitive-data completion for its target database", async () => {
+    mockDiscoveredDatabase();
+    mocks.getOrFetchDatabaseCatalog.mockResolvedValue(
+      catalogWithColumn({ semanticType: "bb.default" })
+    );
+
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "mark-sensitive-data",
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    expect(mocks.getOrFetchDatabaseCatalog).toHaveBeenCalledWith({
+      database: "instances/sample/databases/employee",
+      silent: true,
+    });
+    expect(result.current.context.hasMarkedSensitiveData).toBe(true);
+  });
+
+  test("resolves the first table for the query-data action", async () => {
+    mockDiscoveredDatabase();
+    const database = "instances/sample/databases/employee";
+    mocks.metadataByDatabase[database] = create(DatabaseMetadataSchema, {
+      schemas: [
+        create(SchemaMetadataSchema, {
+          name: "public",
+          tables: [create(TableMetadataSchema, { name: "employee" })],
+        }),
+      ],
+    });
+
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "query-data",
+    });
+
+    await waitFor(() =>
+      expect(result.current.context.queryTarget).toEqual({
+        schema: "public",
+        table: "employee",
+      })
+    );
+    expect(mocks.getOrFetchDatabaseMetadata).toHaveBeenCalledWith({
+      database,
+      silent: true,
+    });
+  });
+
+  test("resolves the marked table for the masking verification action", async () => {
+    mockDiscoveredDatabase();
+    const database = "instances/sample/databases/employee";
+    mocks.metadataByDatabase[database] = create(DatabaseMetadataSchema, {
+      schemas: [
+        create(SchemaMetadataSchema, {
+          name: "public",
+          tables: [
+            create(TableMetadataSchema, { name: "employee" }),
+            create(TableMetadataSchema, { name: "salary" }),
+          ],
+        }),
+      ],
+    });
+    mocks.getOrFetchDatabaseCatalog.mockResolvedValue({
+      schemas: [
+        {
+          name: "public",
+          tables: [
+            {
+              name: "salary",
+              kind: {
+                case: "columns",
+                value: {
+                  columns: [{ name: "amount", semanticType: "bb.default" }],
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "mark-sensitive-data",
+    });
+
+    await waitFor(() =>
+      expect(result.current.context.queryTarget).toEqual({
+        schema: "public",
+        table: "salary",
+      })
+    );
+  });
+
+  test.each([
+    [undefined, "instances/other/databases/selected"],
+    ["instances/other", "instances/other/databases/selected"],
+    ["projects/app/instances/other", "projects/app/instances/other/databases/selected"],
+  ])("watches the opened database under %s instead of the discovered target", async (parent, database) => {
+    mockDiscoveredDatabase();
+    const props = {
+      enabled: true,
+      dismissed: false,
+      scenarioId: "mark-sensitive-data" as const,
+      route: {
+        name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+        params: { projectId: "app", instanceId: "other", databaseName: "selected" },
+        query: { parent },
+      },
+    };
+    mocks.databasesByName = { [database]: { name: database, project: "projects/app" } };
+    const { result, rerender } = renderGuideContext(props);
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.databaseName).toBe(database);
+    expect(result.current.context.hasMarkedSensitiveData).toBe(false);
+    mocks.catalogsByName = {
+      [`${database}/catalog`]: catalogWithColumn({ semanticType: "bb.default" }),
+    };
+    rerender(props);
+    await waitFor(() => expect(result.current.context.hasMarkedSensitiveData).toBe(true));
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: GUIDE_PROGRESS_KEYS.sensitiveDataMarked,
+      newState: true,
+    });
+  });
+
+  test.each([
+    home,
+    {
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: { projectId: "app", instanceId: "redis", databaseName: "0" },
+    },
+  ])("requires a non-Redis target before enabling the masking step on %j", async (route) => {
+    mockDiscoveredDatabase();
+    mocks.introState[GUIDE_PROGRESS_KEYS.databaseExplored] = true;
+    mocks.databasesByName = {
+      "instances/redis/databases/0": {
+        name: "instances/redis/databases/0",
+        project: "projects/app",
+        instanceResource: { engine: Engine.REDIS },
+      },
+    };
+    mocks.fetchDatabases.mockImplementation(async (request) => ({
+      databases: request.filter.excludeEngines?.includes(Engine.REDIS)
+        ? []
+        : [{ name: "instances/redis/databases/0", project: "projects/app" }],
+      nextPageToken: "",
+    }));
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route,
+      scenarioId: "mark-sensitive-data",
+    });
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(expect.objectContaining({
+      filter: { project: "projects/app", excludeEngines: [Engine.REDIS] },
+    }));
+    const guide = resolveGuide({
+      journey: getGuideJourney("mark-sensitive-data"),
+      definitions: GUIDE_STEP_DEFINITIONS,
+      context: result.current.context,
+    });
+    expect(guide.steps.find((step) => step.definition.id === "mark-sensitive-data")?.blocked).toBe(true);
+  });
+
+  test("reacts when the target catalog marks a sensitive column", async () => {
+    mockDiscoveredDatabase();
+
+    const props = {
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "mark-sensitive-data" as const,
+    };
+    const { result, rerender } = renderGuideContext(props);
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.hasMarkedSensitiveData).toBe(false);
+
+    mocks.catalogsByName = {
+      "instances/sample/databases/employee/catalog": catalogWithColumn({
+        semanticType: "bb.default",
+      }),
+    };
+    rerender(props);
+
+    await waitFor(() =>
+      expect(result.current.context.hasMarkedSensitiveData).toBe(true)
+    );
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: "workspace-setup-guide.sensitive-data-marked",
+      newState: true,
+    });
+  });
+
+  test("separates discovered resources from learning evidence", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/app" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/sample" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/sample/databases/employee",
+          project: "projects/app",
+        },
+      ],
+      nextPageToken: "",
+    });
+    const { result } = renderGuideContext();
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    expect(result.current.context).toMatchObject({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: false,
+      hasCreatedChangeIssue: false,
+      projectName: "projects/app",
+      instanceName: "instances/sample",
+      databaseName: "instances/sample/databases/employee",
+    });
+    expect(mocks.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test("loads fresh guide facts after a dismissed guide is reopened", async () => {
+    const { result, rerender } = renderGuideContext();
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    rerender({ enabled: true, dismissed: true, route: home });
+    expect(result.current.contextReady).toBe(false);
+
+    let resolveProjectList: (
+      value: { projects: []; nextPageToken: string }
+    ) => void;
+    mocks.fetchProjectList.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveProjectList = resolve;
+      })
+    );
+    rerender({ enabled: true, dismissed: false, route: home });
+
+    expect(result.current.contextReady).toBe(false);
+
+    await act(async () => {
+      resolveProjectList!({ projects: [], nextPageToken: "" });
+    });
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+  });
+
+  test.each([
+    "user:teammate@example.com",
+    "users/teammate@example.com",
+  ])("accepts another explicit human principal: %s", (member) => {
+    expect(
+      hasOtherHumanWorkspaceMember(
+        { bindings: [{ role: "roles/workspaceMember", members: [member] }] },
+        "users/ed@example.com"
+      )
+    ).toBe(true);
+  });
+
+  test.each([
+    "user:ed@example.com",
+    "users/ed@example.com",
+    "allUsers",
+    "user:allUsers",
+    "users/allUsers",
+    "group:developers@example.com",
+    "serviceAccount:bot@example.com",
+    "workloadIdentity:github@example.com",
+  ])("rejects a non-teammate principal: %s", (member) => {
+    expect(
+      hasOtherHumanWorkspaceMember(
+        { bindings: [{ role: "roles/workspaceMember", members: [member] }] },
+        "users/ed@example.com"
+      )
+    ).toBe(false);
+  });
+
+  test("lists active users only for a self-host team journey", async () => {
+    mocks.listUsers.mockResolvedValue({
+      users: [
+        { name: "users/ed@example.com" },
+        { name: "users/teammate@example.com" },
+      ],
+      nextPageToken: "",
+    });
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "query-data",
+      workspaceUsage: "team",
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    expect(mocks.listUsers).toHaveBeenCalledWith({
+      pageSize: 100,
+      filter: { state: 1 },
+    });
+    expect(result.current.context).toMatchObject({
+      isSaaS: false,
+      hasOtherHumanUser: true,
+      hasOtherWorkspaceMember: false,
+    });
+  });
+
+  test.each([
+    { isSaaS: true, workspaceUsage: "team" as const },
+    { isSaaS: false, workspaceUsage: "solo" as const },
+    { isSaaS: false, workspaceUsage: undefined },
+  ])("does not list users outside a self-host team journey: %j", async (input) => {
+    mocks.isSaaS = input.isSaaS;
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      workspaceUsage: input.workspaceUsage,
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(mocks.listUsers).not.toHaveBeenCalled();
+  });
+
+  test("uses workspace IAM as teammate completion authority", async () => {
+    mocks.workspacePolicy = {
+      bindings: [
+        {
+          role: "roles/workspaceMember",
+          members: ["user:invited@example.com"],
+        },
+      ],
+    };
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      workspaceUsage: "team",
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.hasOtherWorkspaceMember).toBe(true);
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: GUIDE_PROGRESS_KEYS.teammateAdded,
+      newState: true,
+    });
+    expect(mocks.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    {
+      route: {
+        name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+        params: {
+          projectId: "app",
+          instanceId: "sample",
+          databaseName: "employee",
+        },
+      },
+    },
+    {
+      route: {
+        name: SQL_EDITOR_DATABASE_MODULE,
+        params: { project: "app", instance: "sample", database: "employee" },
+      },
+    },
+  ])("records concrete database route evidence", async ({ route }) => {
+    renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route,
+    });
+
+    await waitFor(() =>
+      expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+        key: GUIDE_PROGRESS_KEYS.databaseExplored,
+        newState: true,
+      })
+    );
+    expect(mocks.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test("records a populated project database page as exploration", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/app" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/sample" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/sample/databases/employee",
+          project: "projects/app",
+        },
+      ],
+      nextPageToken: "",
+    });
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: {
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: { projectId: "app" },
+      },
+    });
+
+    await waitFor(() =>
+      expect(result.current.context.hasExploredDatabase).toBe(true)
+    );
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: GUIDE_PROGRESS_KEYS.databaseExplored,
+      newState: true,
+    });
+  });
+
+  test("does not record an empty project database page as exploration", async () => {
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: {
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: { projectId: "app" },
+      },
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.hasExploredDatabase).toBe(false);
+    expect(mocks.saveIntroStateByKey).not.toHaveBeenCalledWith({
+      key: GUIDE_PROGRESS_KEYS.databaseExplored,
+      newState: true,
+    });
+  });
+
+  test("completes Query Data after any statement execution", async () => {
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "query-data",
+    });
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    await act(async () => {
+      await sqlEditorEvents.emit("query-executed", {
+        database: "instances/sample/databases/employee",
+        project: "projects/app",
+      });
+    });
+
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: GUIDE_PROGRESS_KEYS.statementRun,
+      newState: true,
+    });
+    expect(result.current.context).toMatchObject({
+      hasRunStatement: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+    });
+    expect(mocks.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test("records a newly created database-change issue", async () => {
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      scenarioId: "create-database-change",
+    });
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    await act(async () => {
+      await planEvents.emit("database-change-issue-created", {
+        issue: "projects/app/issues/1",
+        project: "projects/app",
+      });
+    });
+
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: GUIDE_PROGRESS_KEYS.changeIssueCreated,
+      newState: true,
+    });
+    expect(result.current.context.hasCreatedChangeIssue).toBe(true);
+    expect(mocks.captureMetric).not.toHaveBeenCalled();
+  });
+
+  test.each([undefined, "query-data" as const])(
+    "does not record a change issue for scenario %s",
+    async (scenarioId) => {
+      renderGuideContext({
+        enabled: true,
+        dismissed: false,
+        route: home,
+        scenarioId,
+      });
+
+      await act(async () => {
+        await planEvents.emit("database-change-issue-created", {
+          issue: "projects/app/issues/1",
+          project: "projects/app",
+        });
+      });
+
+      expect(mocks.saveIntroStateByKey).not.toHaveBeenCalledWith({
+        key: GUIDE_PROGRESS_KEYS.changeIssueCreated,
+        newState: true,
+      });
+    }
+  );
+
+  test("keeps self-host user evidence false when listing users fails", async () => {
+    mocks.listUsers.mockRejectedValue(new Error("unavailable"));
+    const { result } = renderGuideContext({
+      enabled: true,
+      dismissed: false,
+      route: home,
+      workspaceUsage: "team",
+    });
+
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+    expect(result.current.context.hasOtherHumanUser).toBe(false);
+  });
+
+  test("ignores statement events without a database", async () => {
+    const { result } = renderGuideContext();
+    await waitFor(() => expect(result.current.contextReady).toBe(true));
+
+    await act(async () => {
+      await sqlEditorEvents.emit("query-executed", {
+        database: "",
+        project: "projects/app",
+      });
+    });
+
+    expect(result.current.context.hasRunStatement).toBe(false);
+  });
+
+  test.each([
+    { enabled: false, dismissed: false },
+    { enabled: true, dismissed: true },
+  ])(
+    "does not record while disabled or dismissed: $enabled/$dismissed",
+    async (state) => {
+      renderGuideContext({
+        ...state,
+        route: home,
+        scenarioId: "query-data",
+      });
+
+      await act(async () => {
+        await sqlEditorEvents.emit("query-executed", {
+          database: "instances/sample/databases/employee",
+          project: "projects/app",
+        });
+      });
+
+      expect(mocks.saveIntroStateByKey).not.toHaveBeenCalled();
+    }
+  );
+});

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -13,52 +14,52 @@ import (
 // viewLineageMetadata builds a catalog with a base table customer(id, phone,
 // name), a pass-through view customer_v, a renaming view cust_masked
 // (phone AS ph), and a view-over-view v2.
-func viewLineageMetadata() *storepb.DatabaseSchemaMetadata {
-	return &storepb.DatabaseSchemaMetadata{
+func viewLineageMetadata() *metadatapb.DatabaseSchemaMetadata {
+	return &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "customer",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "phone", Type: "varchar"},
 							{Name: "name", Type: "varchar"},
 						},
 					},
 				},
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "customer_v",
 						Definition: "SELECT id, phone, name FROM customer",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id"}, {Name: "phone"}, {Name: "name"},
 						},
 					},
 					{
 						Name:       "cust_masked",
 						Definition: "SELECT phone AS ph FROM customer",
-						Columns:    []*storepb.ColumnMetadata{{Name: "ph"}},
+						Columns:    []*metadatapb.ColumnMetadata{{Name: "ph"}},
 					},
 					{
 						Name:       "v2",
 						Definition: "SELECT phone FROM customer_v",
-						Columns:    []*storepb.ColumnMetadata{{Name: "phone"}},
+						Columns:    []*metadatapb.ColumnMetadata{{Name: "phone"}},
 					},
 					{
 						// Explicit view column list renames the projection: the
 						// definition outputs "phone" but the view column is "ph".
 						Name:       "renamed_v",
 						Definition: "SELECT phone FROM customer",
-						Columns:    []*storepb.ColumnMetadata{{Name: "ph"}},
+						Columns:    []*metadatapb.ColumnMetadata{{Name: "ph"}},
 					},
 					{
 						// A composed view column derives from two base columns.
 						Name:       "comp_v",
 						Definition: "SELECT phone || name AS token FROM customer",
-						Columns:    []*storepb.ColumnMetadata{{Name: "token"}},
+						Columns:    []*metadatapb.ColumnMetadata{{Name: "token"}},
 					},
 				},
 			},
@@ -67,7 +68,7 @@ func viewLineageMetadata() *storepb.DatabaseSchemaMetadata {
 }
 
 func viewLineageSpan(t *testing.T, sql string) *base.QuerySpan {
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{viewLineageMetadata()})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{viewLineageMetadata()})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,
@@ -162,16 +163,16 @@ func TestQuerySpan_ComposedViewColumnNotPlain(t *testing.T) {
 // catalog's column metadata): the outer statement never names catalog2, so the
 // span-catalog builder must follow the view definition transitively to load it.
 func TestQuerySpan_CrossCatalogViewResolvesToBase(t *testing.T) {
-	cat1 := &storepb.DatabaseSchemaMetadata{
+	cat1 := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog1",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Views: []*storepb.ViewMetadata{
+				Views: []*metadatapb.ViewMetadata{
 					{
 						Name:       "xcat_v",
 						Definition: "SELECT * FROM catalog2.public.customer",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id"}, {Name: "phone"}, {Name: "name"},
 						},
 					},
@@ -179,15 +180,15 @@ func TestQuerySpan_CrossCatalogViewResolvesToBase(t *testing.T) {
 			},
 		},
 	}
-	cat2 := &storepb.DatabaseSchemaMetadata{
+	cat2 := &metadatapb.DatabaseSchemaMetadata{
 		Name: "catalog2",
-		Schemas: []*storepb.SchemaMetadata{
+		Schemas: []*metadatapb.SchemaMetadata{
 			{
 				Name: "public",
-				Tables: []*storepb.TableMetadata{
+				Tables: []*metadatapb.TableMetadata{
 					{
 						Name: "customer",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "id", Type: "integer"},
 							{Name: "phone", Type: "varchar"},
 							{Name: "name", Type: "varchar"},
@@ -197,7 +198,7 @@ func TestQuerySpan_CrossCatalogViewResolvesToBase(t *testing.T) {
 			},
 		},
 	}
-	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{cat1, cat2})
+	getter, lister := buildMockDatabaseMetadataGetter([]*metadatapb.DatabaseSchemaMetadata{cat1, cat2})
 	gCtx := base.GetQuerySpanContext{
 		GetDatabaseMetadataFunc: getter,
 		ListDatabaseNamesFunc:   lister,

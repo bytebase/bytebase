@@ -10,11 +10,11 @@ import (
 	"encoding/pem"
 	"log/slog"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
@@ -25,8 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -39,20 +38,12 @@ import (
 // InstanceService implements the instance service.
 type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
-	store                 *store.Store
-	profile               *config.Profile
-	licenseService        instanceLicenseService
-	dbFactory             *dbfactory.DBFactory
-	schemaSyncer          *schemasync.Syncer
-	sampleInstanceManager *sampleinstance.Manager
-}
-
-type instanceLicenseService interface {
-	GetActivatedInstanceLimit(context.Context, string) int
-	GetInstanceLimit(context.Context, string) int
-	IsFeatureEnabledForInstance(context.Context, string, v1pb.PlanFeature, *store.InstanceMessage) error
-	IsInstanceEffectivelyActivated(context.Context, string, *store.InstanceMessage) bool
-	IsUnifiedInstanceLicense(context.Context, string) bool
+	store          *store.Store
+	profile        *config.Profile
+	licenseService *enterprise.LicenseService
+	dbFactory      *dbfactory.DBFactory
+	schemaSyncer   *schemasync.Syncer
+	sampleManager  sample.Manager
 }
 
 const (
@@ -188,7 +179,7 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 		}
 		defer driver.Close(ctx)
 		if err := driver.Ping(ctx); err != nil {
-			return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, "invalid datasource %s", dataSource.GetType())
+			return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, "failed to connect to database")
 		}
 		return nil
 	}()
@@ -198,14 +189,14 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleInstanceManager *sampleinstance.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleManager sample.Manager) *InstanceService {
 	return &InstanceService{
-		store:                 store,
-		profile:               profile,
-		licenseService:        licenseService,
-		dbFactory:             dbFactory,
-		schemaSyncer:          schemaSyncer,
-		sampleInstanceManager: sampleInstanceManager,
+		store:          store,
+		profile:        profile,
+		licenseService: licenseService,
+		dbFactory:      dbFactory,
+		schemaSyncer:   schemaSyncer,
+		sampleManager:  sampleManager,
 	}
 }
 
@@ -287,13 +278,9 @@ func validateProjectInstanceListFilter(parentProjectID *string, filter string) e
 	if parentProjectID == nil || filter == "" {
 		return nil
 	}
-	env, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return errors.Wrap(err, "failed to create CEL environment")
-	}
-	ast, issues := env.Parse(filter)
-	if issues != nil {
-		return errors.Errorf("failed to parse filter %q", filter)
+		return err
 	}
 
 	var validate func(celast.Expr) error
@@ -464,6 +451,69 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
+}
+
+// PrepareSampleProjectInstance provisions a Sample Project Instance for the
+// requested project. The lifetime entitlement itself is enforced by the
+// lifecycle manager under a workspace row lock.
+func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req *connect.Request[v1pb.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
+	projectID, err := s.getSampleProjectInstanceParent(ctx, &req.Msg.Parent)
+	if err != nil {
+		return nil, err
+	}
+	if projectID == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("Sample Project Instance parent is required"))
+	}
+	if s.sampleManager == nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance is not configured"))
+	}
+	if err := s.sampleManager.CheckAvailable(ctx); err != nil {
+		return nil, sampleProjectInstanceConnectError(err)
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+	instance, err := s.sampleManager.PrepareSampleProjectInstance(ctx, sample.PrepareRequest{
+		WorkspaceID: workspaceID,
+		ProjectID:   *projectID,
+	})
+	if err != nil {
+		return nil, sampleProjectInstanceConnectError(err)
+	}
+	return connect.NewResponse(s.convertToV1Instance(ctx, instance)), nil
+}
+
+func sampleProjectInstanceConnectError(err error) error {
+	switch sample.FailureKindOf(err) {
+	case sample.FailureFailedPrecondition:
+		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case sample.FailureUnavailable:
+		return connect.NewError(connect.CodeUnavailable, err)
+	case sample.FailureDeadlineExceeded:
+		return connect.NewError(connect.CodeDeadlineExceeded, err)
+	default:
+		return connect.NewError(connect.CodeInternal, err)
+	}
+}
+
+func (s *InstanceService) getSampleProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {
+	projectID, err := s.getProjectInstanceParent(ctx, parent)
+	if err == nil || connect.CodeOf(err) != connect.CodeNotFound || parent == nil {
+		return projectID, err
+	}
+	_, parseErr := common.GetProjectID(*parent)
+	if parseErr != nil {
+		return nil, err
+	}
+	reservation, storeErr := s.store.GetSampleInstanceSetup(ctx, common.GetWorkspaceIDFromContext(ctx))
+	if storeErr != nil {
+		return nil, connect.NewError(connect.CodeInternal, storeErr)
+	}
+	if reservation != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance entitlement is already consumed"))
+	}
+	return nil, err
 }
 
 func (s *InstanceService) getProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {
@@ -978,8 +1028,8 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	}
 
 	// Handle sample instance deletion if applicable
-	if !alreadyDeleted && s.sampleInstanceManager != nil {
-		if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID); err != nil {
+	if !alreadyDeleted && s.sampleManager != nil {
+		if err := s.sampleManager.HandleInstanceLifecycle(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID, true); err != nil {
 			slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
 		}
 	}
@@ -997,6 +1047,11 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	if !instance.Deleted {
 		result := s.convertToV1Instance(ctx, instance)
 		return connect.NewResponse(result), nil
+	}
+	if s.sampleManager != nil {
+		if err := s.sampleManager.ValidateInstanceRestore(ctx, instance.Workspace, instance.ResourceID); err != nil {
+			return nil, sampleProjectInstanceConnectError(err)
+		}
 	}
 	activeTaskRunCount, err := s.store.GetActiveTaskRunCountForInstance(ctx, instance.ResourceID)
 	if err != nil {
@@ -1025,8 +1080,8 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 
 	// Handle sample instance undelete (restart) if applicable
-	if s.sampleInstanceManager != nil {
-		if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
+	if s.sampleManager != nil {
+		if err := s.sampleManager.HandleInstanceLifecycle(ctx, ins.Workspace, ins.ResourceID, false); err != nil {
 			slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
 		}
 	}
@@ -1257,138 +1312,8 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		krb.Keytab = nil
 	}
 
-	for _, path := range req.Msg.UpdateMask.Paths {
-		switch path {
-		case "username":
-			dataSource.Username = req.Msg.DataSource.Username
-		case "password":
-			dataSource.Password = req.Msg.DataSource.Password
-		case "ssl_ca":
-			dataSource.SslCa = req.Msg.DataSource.SslCa
-		case "ssl_ca_path":
-			dataSource.SslCaPath = req.Msg.DataSource.SslCaPath
-		case "ssl_cert":
-			dataSource.SslCert = req.Msg.DataSource.SslCert
-		case "ssl_cert_path":
-			dataSource.SslCertPath = req.Msg.DataSource.SslCertPath
-		case "ssl_key":
-			dataSource.SslKey = req.Msg.DataSource.SslKey
-		case "ssl_key_path":
-			dataSource.SslKeyPath = req.Msg.DataSource.SslKeyPath
-		case "host":
-			dataSource.Host = req.Msg.DataSource.Host
-		case "port":
-			dataSource.Port = req.Msg.DataSource.Port
-		case "database":
-			dataSource.Database = req.Msg.DataSource.Database
-		case "srv":
-			dataSource.Srv = req.Msg.DataSource.Srv
-		case "authentication_database":
-			dataSource.AuthenticationDatabase = req.Msg.DataSource.AuthenticationDatabase
-		case "sid":
-			dataSource.Sid = req.Msg.DataSource.Sid
-		case "service_name":
-			dataSource.ServiceName = req.Msg.DataSource.ServiceName
-		case "ssh_host":
-			dataSource.SshHost = req.Msg.DataSource.SshHost
-		case "ssh_port":
-			dataSource.SshPort = req.Msg.DataSource.SshPort
-		case "ssh_user":
-			dataSource.SshUser = req.Msg.DataSource.SshUser
-		case "ssh_password":
-			dataSource.SshPassword = req.Msg.DataSource.SshPassword
-		case "ssh_private_key":
-			dataSource.SshPrivateKey = req.Msg.DataSource.SshPrivateKey
-		case "authentication_private_key":
-			dataSource.AuthenticationPrivateKey = req.Msg.DataSource.AuthenticationPrivateKey
-		case "authentication_private_key_passphrase":
-			dataSource.AuthenticationPrivateKeyPassphrase = req.Msg.DataSource.AuthenticationPrivateKeyPassphrase
-		case "external_secret":
-			externalSecret, err := convertV1DataSourceExternalSecret(req.Msg.DataSource.ExternalSecret)
-			if err != nil {
-				return nil, err
-			}
-			dataSource.ExternalSecret = externalSecret
-		case "sasl_config":
-			dataSource.SaslConfig = convertV1DataSourceSaslConfig(req.Msg.DataSource.SaslConfig)
-		case "authentication_type":
-			dataSource.AuthenticationType = convertV1AuthenticationType(req.Msg.DataSource.AuthenticationType)
-		case "additional_addresses":
-			dataSource.AdditionalAddresses = convertAdditionalAddresses(req.Msg.DataSource.AdditionalAddresses)
-		case "replica_set":
-			dataSource.ReplicaSet = req.Msg.DataSource.ReplicaSet
-		case "direct_connection":
-			dataSource.DirectConnection = req.Msg.DataSource.DirectConnection
-		case "region":
-			dataSource.Region = req.Msg.DataSource.Region
-		case "warehouse_id":
-			dataSource.WarehouseId = req.Msg.DataSource.WarehouseId
-		case "use_ssl":
-			dataSource.UseSsl = req.Msg.DataSource.UseSsl
-		case "verify_tls_certificate":
-			dataSource.VerifyTlsCertificate = req.Msg.DataSource.VerifyTlsCertificate
-		case "redis_type":
-			dataSource.RedisType = convertV1RedisType(req.Msg.DataSource.RedisType)
-		case "cloud_sql_ip_type":
-			dataSource.CloudSqlIpType = convertV1CloudSQLIPType(req.Msg.DataSource.CloudSqlIpType)
-		case "master_name":
-			dataSource.MasterName = req.Msg.DataSource.MasterName
-		case "master_username":
-			dataSource.MasterUsername = req.Msg.DataSource.MasterUsername
-		case "master_password":
-			dataSource.MasterPassword = req.Msg.DataSource.MasterPassword
-		case "extra_connection_parameters":
-			dataSource.ExtraConnectionParameters = req.Msg.DataSource.ExtraConnectionParameters
-		case "project_id":
-			dataSource.ProjectId = req.Msg.DataSource.ProjectId
-		case "instance_id":
-			dataSource.InstanceId = req.Msg.DataSource.InstanceId
-		case "azure_credential", "aws_credential", "gcp_credential":
-			switch req.Msg.DataSource.AuthenticationType {
-			case v1pb.DataSource_AZURE_IAM:
-				if azureCredential := req.Msg.DataSource.GetAzureCredential(); azureCredential != nil {
-					dataSource.IamExtension = &storepb.DataSource_AzureCredential_{
-						AzureCredential: &storepb.DataSource_AzureCredential{
-							TenantId:     azureCredential.TenantId,
-							ClientId:     azureCredential.ClientId,
-							ClientSecret: azureCredential.ClientSecret,
-						},
-					}
-					dataSource.AuthenticationType = storepb.DataSource_AZURE_IAM
-				} else {
-					dataSource.IamExtension = nil
-				}
-			case v1pb.DataSource_AWS_RDS_IAM:
-				if awsCredential := req.Msg.DataSource.GetAwsCredential(); awsCredential != nil {
-					dataSource.IamExtension = &storepb.DataSource_AwsCredential{
-						AwsCredential: &storepb.DataSource_AWSCredential{
-							AccessKeyId:     awsCredential.AccessKeyId,
-							SecretAccessKey: awsCredential.SecretAccessKey,
-							SessionToken:    awsCredential.SessionToken,
-							RoleArn:         awsCredential.RoleArn,
-							ExternalId:      awsCredential.ExternalId,
-						},
-					}
-					dataSource.AuthenticationType = storepb.DataSource_AWS_RDS_IAM
-				} else {
-					dataSource.IamExtension = nil
-				}
-			case v1pb.DataSource_GOOGLE_CLOUD_SQL_IAM:
-				if gcpCredential := req.Msg.DataSource.GetGcpCredential(); gcpCredential != nil {
-					dataSource.IamExtension = &storepb.DataSource_GcpCredential{
-						GcpCredential: &storepb.DataSource_GCPCredential{
-							Content: gcpCredential.Content,
-						},
-					}
-					dataSource.AuthenticationType = storepb.DataSource_GOOGLE_CLOUD_SQL_IAM
-				} else {
-					dataSource.IamExtension = nil
-				}
-			default:
-			}
-		default:
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
-		}
+	if err := applyDataSourceUpdateMask(dataSource, req.Msg.DataSource, req.Msg.UpdateMask.Paths); err != nil {
+		return nil, err
 	}
 
 	// Run on the merged result, not inside the mask loop: whether the keytab
@@ -1433,6 +1358,180 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 	}
 	result := s.convertToV1Instance(ctx, instance)
 	return connect.NewResponse(result), nil
+}
+
+// applyDataSourceUpdateMask patches dataSource in place with the fields the
+// mask names. It is the whole of what update_mask means for a data source, and
+// it is pure so it can be exercised without a store.
+func applyDataSourceUpdateMask(dataSource *storepb.DataSource, src *v1pb.DataSource, paths []string) error {
+	// The authentication type the merged result will end at: the stored one
+	// unless this request masks it. Resolved before the loop so a credential
+	// path validates the same way whichever order the paths arrive in.
+	effectiveAuthType := dataSource.GetAuthenticationType()
+	if slices.Contains(paths, "authentication_type") {
+		effectiveAuthType = convertV1AuthenticationType(src.AuthenticationType)
+	}
+
+	for _, path := range paths {
+		switch path {
+		case "username":
+			dataSource.Username = src.Username
+		case "password":
+			dataSource.Password = src.Password
+		case "ssl_ca":
+			dataSource.SslCa = src.SslCa
+		case "ssl_ca_path":
+			dataSource.SslCaPath = src.SslCaPath
+		case "ssl_cert":
+			dataSource.SslCert = src.SslCert
+		case "ssl_cert_path":
+			dataSource.SslCertPath = src.SslCertPath
+		case "ssl_key":
+			dataSource.SslKey = src.SslKey
+		case "ssl_key_path":
+			dataSource.SslKeyPath = src.SslKeyPath
+		case "host":
+			dataSource.Host = src.Host
+		case "port":
+			dataSource.Port = src.Port
+		case "database":
+			dataSource.Database = src.Database
+		case "srv":
+			dataSource.Srv = src.Srv
+		case "authentication_database":
+			dataSource.AuthenticationDatabase = src.AuthenticationDatabase
+		case "sid":
+			dataSource.Sid = src.Sid
+		case "service_name":
+			dataSource.ServiceName = src.ServiceName
+		case "ssh_host":
+			dataSource.SshHost = src.SshHost
+		case "ssh_port":
+			dataSource.SshPort = src.SshPort
+		case "ssh_user":
+			dataSource.SshUser = src.SshUser
+		case "ssh_password":
+			dataSource.SshPassword = src.SshPassword
+		case "ssh_private_key":
+			dataSource.SshPrivateKey = src.SshPrivateKey
+		case "authentication_private_key":
+			dataSource.AuthenticationPrivateKey = src.AuthenticationPrivateKey
+		case "authentication_private_key_passphrase":
+			dataSource.AuthenticationPrivateKeyPassphrase = src.AuthenticationPrivateKeyPassphrase
+		case "external_secret":
+			externalSecret, err := convertV1DataSourceExternalSecret(src.ExternalSecret)
+			if err != nil {
+				return err
+			}
+			dataSource.ExternalSecret = externalSecret
+		case "sasl_config":
+			dataSource.SaslConfig = convertV1DataSourceSaslConfig(src.SaslConfig)
+		case "authentication_type":
+			dataSource.AuthenticationType = convertV1AuthenticationType(src.AuthenticationType)
+		case "additional_addresses":
+			dataSource.AdditionalAddresses = convertAdditionalAddresses(src.AdditionalAddresses)
+		case "replica_set":
+			dataSource.ReplicaSet = src.ReplicaSet
+		case "direct_connection":
+			dataSource.DirectConnection = src.DirectConnection
+		case "region":
+			dataSource.Region = src.Region
+		case "warehouse_id":
+			dataSource.WarehouseId = src.WarehouseId
+		case "use_ssl":
+			dataSource.UseSsl = src.UseSsl
+		case "verify_tls_certificate":
+			dataSource.VerifyTlsCertificate = src.VerifyTlsCertificate
+		case "redis_type":
+			dataSource.RedisType = convertV1RedisType(src.RedisType)
+		case "cloud_sql_ip_type":
+			dataSource.CloudSqlIpType = convertV1CloudSQLIPType(src.CloudSqlIpType)
+		case "master_name":
+			dataSource.MasterName = src.MasterName
+		case "master_username":
+			dataSource.MasterUsername = src.MasterUsername
+		case "master_password":
+			dataSource.MasterPassword = src.MasterPassword
+		case "extra_connection_parameters":
+			dataSource.ExtraConnectionParameters = src.ExtraConnectionParameters
+		case "project_id":
+			dataSource.ProjectId = src.ProjectId
+		case "instance_id":
+			dataSource.InstanceId = src.InstanceId
+		case "azure_credential", "aws_credential", "gcp_credential":
+			// Dispatch on the mask path, never on the request's
+			// authentication_type: an unset one used to fall through an empty
+			// branch, so rotating a leaked credential returned 200 and wrote
+			// nothing, and a mismatched one wrote a different credential than
+			// the mask named while moving authentication_type itself.
+			if want := credentialPathAuthType[path]; want != effectiveAuthType {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(
+					`update_mask %q requires authentication_type %q, but the data source resolves to %q`,
+					path, want, effectiveAuthType))
+			}
+			applyIAMCredential(dataSource, path, src)
+		default:
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
+		}
+	}
+
+	return nil
+}
+
+// credentialPathAuthType maps each IAM credential mask path to the single
+// authentication type that owns it.
+var credentialPathAuthType = map[string]storepb.DataSource_AuthenticationType{
+	"azure_credential": storepb.DataSource_AZURE_IAM,
+	"aws_credential":   storepb.DataSource_AWS_RDS_IAM,
+	"gcp_credential":   storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+}
+
+// applyIAMCredential writes the one credential named by path. A path naming an
+// absent credential clears the extension, which is what a mask that names the
+// field with no value means.
+func applyIAMCredential(dataSource *storepb.DataSource, path string, src *v1pb.DataSource) {
+	switch path {
+	case "azure_credential":
+		azureCredential := src.GetAzureCredential()
+		if azureCredential == nil {
+			dataSource.IamExtension = nil
+			return
+		}
+		dataSource.IamExtension = &storepb.DataSource_AzureCredential_{
+			AzureCredential: &storepb.DataSource_AzureCredential{
+				TenantId:     azureCredential.TenantId,
+				ClientId:     azureCredential.ClientId,
+				ClientSecret: azureCredential.ClientSecret,
+			},
+		}
+	case "aws_credential":
+		awsCredential := src.GetAwsCredential()
+		if awsCredential == nil {
+			dataSource.IamExtension = nil
+			return
+		}
+		dataSource.IamExtension = &storepb.DataSource_AwsCredential{
+			AwsCredential: &storepb.DataSource_AWSCredential{
+				AccessKeyId:     awsCredential.AccessKeyId,
+				SecretAccessKey: awsCredential.SecretAccessKey,
+				SessionToken:    awsCredential.SessionToken,
+				RoleArn:         awsCredential.RoleArn,
+				ExternalId:      awsCredential.ExternalId,
+			},
+		}
+	case "gcp_credential":
+		gcpCredential := src.GetGcpCredential()
+		if gcpCredential == nil {
+			dataSource.IamExtension = nil
+			return
+		}
+		dataSource.IamExtension = &storepb.DataSource_GcpCredential{
+			GcpCredential: &storepb.DataSource_GCPCredential{
+				Content: gcpCredential.Content,
+			},
+		}
+	default:
+	}
 }
 
 // RemoveDataSource removes a data source to an instance.

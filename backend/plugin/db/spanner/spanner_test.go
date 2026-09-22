@@ -1,18 +1,114 @@
 package spanner
 
 import (
+	"context"
+	"fmt"
 	"math"
+	"os"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/spanner"
+	spannerdb "cloud.google.com/go/spanner/admin/database/apiv1"
+	"cloud.google.com/go/spanner/admin/database/apiv1/databasepb"
 	sppb "cloud.google.com/go/spanner/apiv1/spannerpb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
+
+// testDatabase returns the database that SPANNER_TEST_DATABASE names, as
+// projects/default/instances/default/databases/d, in the Spanner that the client
+// reaches without TLS or credentials through SPANNER_EMULATOR_HOST. CI provides
+// no Spanner, so the test is skipped without them.
+func testDatabase(t *testing.T) string {
+	t.Helper()
+	database := os.Getenv("SPANNER_TEST_DATABASE")
+	if os.Getenv("SPANNER_EMULATOR_HOST") == "" || database == "" {
+		t.Skip("set SPANNER_EMULATOR_HOST and SPANNER_TEST_DATABASE to run against Spanner")
+	}
+	return database
+}
+
+// TestExplainDMLWithoutRunningIt needs a Spanner that plans queries, which the
+// emulator does not do and Spanner Omni does.
+func TestExplainDMLWithoutRunningIt(t *testing.T) {
+	database := testDatabase(t)
+	a := require.New(t)
+	ctx := context.Background()
+
+	admin, err := spannerdb.NewDatabaseAdminClient(ctx)
+	a.NoError(err)
+	defer admin.Close()
+	table := fmt.Sprintf("ExplainDML%d", time.Now().UnixNano())
+	updateDDL := func(statement string) {
+		op, err := admin.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
+			Database:   database,
+			Statements: []string{statement},
+		})
+		a.NoError(err)
+		a.NoError(op.Wait(ctx))
+	}
+	updateDDL(fmt.Sprintf("CREATE TABLE %s (Id INT64 NOT NULL, Total INT64) PRIMARY KEY (Id)", table))
+	defer updateDDL(fmt.Sprintf("DROP TABLE %s", table))
+
+	client, err := spanner.NewClient(ctx, database)
+	a.NoError(err)
+	defer client.Close()
+	_, err = client.Apply(ctx, []*spanner.Mutation{
+		spanner.Insert(table, []string{"Id", "Total"}, []any{int64(1), int64(10)}),
+	})
+	a.NoError(err)
+
+	driver := &Driver{client: client}
+	results, err := driver.explainStatement(ctx, fmt.Sprintf(
+		"UPDATE %[1]s SET Total = Total + 1 WHERE Id = 1; SELECT Total FROM %[1]s", table,
+	))
+	a.NoError(err)
+	a.Len(results, 2)
+	for _, result := range results {
+		a.Empty(result.Error, result.Statement)
+		a.Contains(result.Rows[0].Values[0].GetStringValue(), `"planNodes"`)
+	}
+
+	row, err := client.Single().ReadRow(ctx, table, spanner.Key{int64(1)}, []string{"Total"})
+	a.NoError(err)
+	var total int64
+	a.NoError(row.Column(0, &total))
+	a.Equal(int64(10), total)
+}
+
+func TestQueryConnLimitsQueryStartingWithWith(t *testing.T) {
+	a := require.New(t)
+	ctx := context.Background()
+	client, err := spanner.NewClient(ctx, testDatabase(t))
+	a.NoError(err)
+	defer client.Close()
+
+	driver := &Driver{client: client}
+	for _, statement := range []string{
+		"WITH n AS (SELECT x FROM UNNEST([3, 1, 2]) AS x) SELECT x FROM n ORDER BY x",
+		// The rewrite keeps a non-literal LIMIT, so the driver caps the rows.
+		"WITH n AS (SELECT x FROM UNNEST([3, 1, 2]) AS x) SELECT x FROM n ORDER BY x LIMIT CAST(3 AS INT64)",
+	} {
+		results, err := driver.QueryConn(ctx, nil, statement, db.QueryContext{
+			Limit:                2,
+			MaximumSQLResultSize: math.MaxInt64,
+		})
+		a.NoError(err)
+		a.Len(results, 1)
+		a.Empty(results[0].Error, results[0].Statement)
+		var values []int64
+		for _, row := range results[0].Rows {
+			values = append(values, row.Values[0].GetInt64Value())
+		}
+		a.Equal([]int64{1, 2}, values, results[0].Statement)
+	}
+}
 
 func TestGetDatabaseFromDSN(t *testing.T) {
 	tests := []struct {

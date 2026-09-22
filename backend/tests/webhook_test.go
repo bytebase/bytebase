@@ -16,10 +16,9 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
 // webhookCollector collects webhook requests for testing.
@@ -133,25 +132,22 @@ func parseSlackWebhook(body []byte) (title, description string, err error) {
 }
 
 // TestWebhookIntegration tests webhook functionality.
+//
+//nolint:tparallel // Subtests share one server and one webhook collector.
 func TestWebhookIntegration(t *testing.T) {
-	// Allow localhost for testing
-	webhookplugin.TestOnlyAllowedDomains[storepb.WebhookType_SLACK] = []string{"127.0.0.1", "localhost", "[::1]"}
-	defer func() {
-		// Clean up after test
-		delete(webhookplugin.TestOnlyAllowedDomains, storepb.WebhookType_SLACK)
-	}()
+	t.Parallel()
+	// Localhost is allowed for SLACK and DINGTALK by TestMain, once, for the
+	// whole package. Do not set it here: ValidateWebhookURL reads that map
+	// unsynchronized from every parallel test that adds a webhook.
 
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	require.NoError(t, err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// Test webhook server.
 	//
 	// Body MUST be the literal "ok" — the Slack plugin's postMessage
 	// (backend/plugin/webhook/slack/slack.go:247-249) treats any other body as
-	// a delivery failure and triggers common.Retry (up to 3 attempts, 5s
+	// a delivery failure and triggers webhook.Retry (up to 3 attempts, 5s
 	// exponential backoff). Without an "ok" response, every webhook event
 	// would be delivered 1-3 times depending on test timing, causing
 	// nondeterministic counts in the requireWebhookCount assertions across
@@ -165,24 +161,197 @@ func TestWebhookIntegration(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	}))
-	defer webhookServer.Close()
+	// Cleanup, not defer: the parallel subtests below run after this body returns.
+	t.Cleanup(webhookServer.Close)
 
 	// Create a single instance for all tests
-	pgContainer, err := provisionPgInstance(ctx, t)
-	require.NoError(t, err)
+	pgContainer := sharedPgTarget(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "test instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "test instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	require.NoError(t, err)
 	instance := instanceResp.Msg
+
+	t.Run("TestWebhookOnASavedWebhookPostsToTheStoredURL", func(t *testing.T) {
+		// A saved webhook reads back with no URL, so the console cannot send
+		// the real one to TestWebhook: it never received it. The button has to
+		// keep working anyway, which it does by sending the webhook's name and
+		// no URL and letting the server look the stored one up. Delivery
+		// landing on this collector is what proves the lookup happened; without
+		// it the empty URL would have been rejected as invalid instead.
+		collector.reset()
+
+		project := ctl.createTestProject(ctx, t, "webhook-redacted-test")
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
+
+		projectResp, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{
+			Name: project.Name,
+		}))
+		require.NoError(t, err)
+		require.Len(t, projectResp.Msg.Webhooks, 1)
+		saved := projectResp.Msg.Webhooks[0]
+		require.Empty(t, saved.Url, "the read path must not hand the URL back")
+
+		result, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: project.Name,
+			Webhook: saved,
+		}))
+		require.NoError(t, err)
+		require.Empty(t, result.Msg.Error, "the test post has to reach the stored URL")
+		require.Eventually(t, func() bool {
+			for _, req := range collector.getRequests() {
+				if strings.Contains(string(req.Body), "Test webhook") {
+					return true
+				}
+			}
+			return false
+		}, webhookWaitTimeout, 200*time.Millisecond, "no test notification arrived at the webhook server")
+
+		// A URL the caller typed is still tested as typed, which is what the
+		// create form does before there is anything saved to look up.
+		typed, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: project.Name,
+			Webhook: &v1pb.Webhook{
+				Type:  v1pb.WebhookType_SLACK,
+				Title: "typed by hand",
+				Url:   webhookServer.URL,
+			},
+		}))
+		require.NoError(t, err)
+		require.Empty(t, typed.Msg.Error)
+	})
+
+	t.Run("TestWebhookRefusesToLookUpAWebhookItWasNotGiven", func(t *testing.T) {
+		// Looking the stored URL up is what the caller cannot do for
+		// themselves, so the three ways of asking for the wrong one are the
+		// branches worth pinning. The cross-project case is the one that
+		// matters: the ACL runs against the project in the request, not against
+		// the project in the webhook name, so without the check a caller with
+		// the permission on one project could make the server post through
+		// another project's stored webhook.
+		collector.reset()
+
+		project := ctl.createTestProject(ctx, t, "webhook-lookup-guard")
+		other := ctl.createTestProject(ctx, t, "webhook-lookup-other")
+		addWebhookForEvents(ctx, t, ctl, other, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
+
+		otherResp, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{
+			Name: other.Name,
+		}))
+		require.NoError(t, err)
+		require.Len(t, otherResp.Msg.Webhooks, 1)
+
+		for _, tc := range []struct {
+			name    string
+			webhook *v1pb.Webhook
+			code    connect.Code
+		}{
+			{
+				name:    "no URL and no name is not a request the server can complete",
+				webhook: &v1pb.Webhook{Type: v1pb.WebhookType_SLACK, Title: "nameless"},
+				code:    connect.CodeInvalidArgument,
+			},
+			{
+				name:    "a webhook belonging to another project",
+				webhook: &v1pb.Webhook{Name: otherResp.Msg.Webhooks[0].Name, Type: v1pb.WebhookType_SLACK, Title: "not mine"},
+				code:    connect.CodeInvalidArgument,
+			},
+			{
+				name: "a webhook that does not exist",
+				webhook: &v1pb.Webhook{
+					Name:  fmt.Sprintf("%s/webhooks/does-not-exist", project.Name),
+					Type:  v1pb.WebhookType_SLACK,
+					Title: "gone",
+				},
+				code: connect.CodeNotFound,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+					Project: project.Name,
+					Webhook: tc.webhook,
+				}))
+				require.Error(t, err)
+				require.Equal(t, tc.code, connect.CodeOf(err))
+			})
+		}
+
+		require.Empty(t, collector.getRequests(),
+			"none of those may reach the other project's webhook")
+
+		// The caller picks the type the stored URL gets validated against, and
+		// the validator names the URL it rejects, so a deliberate mismatch was
+		// a way of reading back a URL the read path withholds.
+		_, err = ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: other.Name,
+			Webhook: &v1pb.Webhook{
+				Name:  otherResp.Msg.Webhooks[0].Name,
+				Type:  v1pb.WebhookType_GOOGLE_CHAT,
+				Title: "tell me where you post",
+			},
+		}))
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.NotContains(t, err.Error(), "127.0.0.1",
+			"the refusal must not name the stored URL the caller cannot read")
+		require.Contains(t, err.Error(), "GOOGLE_CHAT",
+			"it names the type instead, which is the half the caller supplied")
+	})
+
+	t.Run("TestWebhookReportsAFailureWithoutTheURL", func(t *testing.T) {
+		// The posters wrap their failure with the URL they posted to, and this
+		// response is the one place that error reaches a caller. Testing a
+		// saved webhook that cannot be delivered to would otherwise read the
+		// URL back out of the error, which is the read the redaction closed.
+		// Port 1 on loopback refuses, so the failure is the transport one every
+		// poster wraps.
+		const deadURL = "http://127.0.0.1:1/services/unreachable-on-purpose"
+
+		project := ctl.createTestProject(ctx, t, "webhook-error-redaction")
+		addWebhookForEvents(ctx, t, ctl, project, deadURL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
+
+		projectResp, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{
+			Name: project.Name,
+		}))
+		require.NoError(t, err)
+		require.Len(t, projectResp.Msg.Webhooks, 1)
+
+		result, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: project.Name,
+			Webhook: projectResp.Msg.Webhooks[0],
+		}))
+		require.NoError(t, err)
+		require.NotEmpty(t, result.Msg.Error, "the post has to have failed for this to be testing anything")
+		require.NotContains(t, result.Msg.Error, "unreachable-on-purpose",
+			"the failure must not hand back the URL the read path withheld")
+		require.NotContains(t, result.Msg.Error, "127.0.0.1:1")
+		require.Equal(t, "the test notification could not be delivered to the stored webhook URL",
+			result.Msg.Error, "a transport failure has no status code to report")
+
+		// The other half: a URL the caller typed comes back with the poster's
+		// message intact, because there is nothing to withhold from the person
+		// who supplied it.
+		typedFailure, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: project.Name,
+			Webhook: &v1pb.Webhook{
+				Type:  v1pb.WebhookType_SLACK,
+				Title: "typed by hand",
+				Url:   deadURL,
+			},
+		}))
+		require.NoError(t, err)
+		require.Contains(t, typedFailure.Msg.Error, "unreachable-on-purpose")
+		require.Contains(t, typedFailure.Msg.Error, "connection refused")
+	})
 
 	t.Run("IssueWithPlanWebhookPayload", func(t *testing.T) {
 		collector.reset()
@@ -252,51 +421,12 @@ func TestWebhookIntegration(t *testing.T) {
 		require.True(t, foundCorrectWebhook, "expected a webhook whose Slack description matches the plan description")
 	})
 
-	t.Run("PipelineCompletedAfterSkippingFailedTask", func(t *testing.T) {
-		collector.reset()
-
-		project := ctl.createTestProject(ctx, t, "byt9398-c4")
-
-		// Create databases before registering the webhook so the implicit
-		// PIPELINE_COMPLETED events fired by createDatabase (which internally
-		// runs a createDatabaseConfig plan) do not pollute the collector.
-		err := ctl.createDatabase(ctx, project, instance, nil, "byt9398_c4_pass", "")
-		require.NoError(t, err)
-		err = ctl.createDatabase(ctx, project, instance, nil, "byt9398_c4_fail", "")
-		require.NoError(t, err)
-
-		collector.reset()
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED,
-			v1pb.Activity_PIPELINE_COMPLETED,
-		})
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c4_pass")},
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c4_fail")},
-		})
-		rollout := runAllTasks(ctx, t, ctl, plan)
-
-		// Phase 1: failing task → exactly one PIPELINE_FAILED, no PIPELINE_COMPLETED.
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1, rollout.Name)
-		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0, rollout.Name)
-
-		// Phase 2: skip the failed task → PIPELINE_COMPLETED fires (the fix).
-		skipFailedTasks(ctx, t, ctl, rollout)
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1, rollout.Name)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1, rollout.Name)
-	})
-
 	t.Run("PipelineCompleted_AllTasksDone", func(t *testing.T) {
-		collector.reset()
+		t.Parallel()
 		project := ctl.createTestProject(ctx, t, "byt9398-c1")
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c1_a", ""))
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c1_b", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED})
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c1_a")},
@@ -308,110 +438,13 @@ func TestWebhookIntegration(t *testing.T) {
 		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
 	})
 
-	t.Run("PipelineCompleted_DoneAndSkipped", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-c2")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c2_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c2_b", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c2_a")},
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c2_b")},
-		})
-		rollout := createRolloutOnly(ctx, t, ctl, plan)
-		skipTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c2_b"))
-		runTaskByDB(ctx, t, ctl, rollout, dbTargetName(instance, "byt9398_c2_a"))
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
-	})
-
-	t.Run("PipelineCompleted_AllSkipped", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-c5")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c5_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c5_b", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c5_a")},
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c5_b")},
-		})
-		rollout := createRolloutOnly(ctx, t, ctl, plan)
-		skipAllTasks(ctx, t, ctl, rollout)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 0)
-	})
-
-	t.Run("PipelineCompleted_DoneAndFailedThenRetriedDone", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-c3")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c3_pass", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c3_fail", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c3_pass")},
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c3_fail")},
-		})
-		rollout := runAllTasks(ctx, t, ctl, plan)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-		requireWebhookCount(t, collector, project.Name, "Rollout completed", 0)
-
-		unblockFailingTask(t, pgContainer, "byt9398_c3_fail")
-		retryFailedTasks(ctx, t, ctl, rollout)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-	})
-
-	t.Run("PipelineCompleted_AllFailedThenAllSkipped", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-c6")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c6_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c6_b", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
-
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c6_a")},
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c6_b")},
-		})
-		rollout := runAllTasks(ctx, t, ctl, plan)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-
-		skipAllTasks(ctx, t, ctl, rollout)
-		waitForWebhookCount(t, collector, project.Name, "Rollout completed", 1)
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-	})
-
 	t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
-		collector.reset()
+		t.Parallel()
 		project := ctl.createTestProject(ctx, t, "byt9398-c7")
-		for _, n := range []string{"byt9398_c7_done", "byt9398_c7_skip", "byt9398_c7_retry", "byt9398_c7_skipfailed"} {
-			require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, n, ""))
+		for _, database := range []string{"byt9398_c7_done", "byt9398_c7_skip", "byt9398_c7_retry", "byt9398_c7_skipfailed"} {
+			require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, database, ""))
 		}
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED})
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c7_done")},
@@ -442,10 +475,9 @@ func TestWebhookIntegration(t *testing.T) {
 	})
 
 	t.Run("PipelineFailed_SingleTaskFails", func(t *testing.T) {
-		collector.reset()
+		t.Parallel()
 		project := ctl.createTestProject(ctx, t, "byt9398-f1")
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f1_fail", ""))
-		collector.reset()
 		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f1_fail")},
@@ -454,32 +486,10 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
 	})
 
-	t.Run("PipelineFailed_DedupOnSecondTaskFailure", func(t *testing.T) {
-		collector.reset()
-		project := ctl.createTestProject(ctx, t, "byt9398-f2")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f2_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f2_b", ""))
-		collector.reset()
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
-		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f2_a")},
-			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f2_b")},
-		})
-		rollout := runAllTasks(ctx, t, ctl, plan)
-
-		waitForWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-		waitForAllTasksTerminal(ctx, t, ctl, rollout, 30*time.Second)
-
-		// Both tasks have failed. ClaimPipelineFailureNotification's PK collision
-		// must dedupe — assert exactly 1 even after both terminal.
-		requireWebhookCount(t, collector, project.Name, "Rollout failed", 1)
-	})
-
 	t.Run("PipelineFailed_RetryFailsAgain", func(t *testing.T) {
-		collector.reset()
+		t.Parallel()
 		project := ctl.createTestProject(ctx, t, "byt9398-f3")
 		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_f3_fail", ""))
-		collector.reset()
 		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_PIPELINE_FAILED})
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_f3_fail")},
@@ -505,7 +515,7 @@ func TestWebhookIntegration(t *testing.T) {
 		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
 		appr := provisionApprover(ctx, t, ctl, project, "i2", "roles/projectOwner")
 
-		collector.reset() // flush any creation-time webhook events
+		collector.reset()
 		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
@@ -545,6 +555,105 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForIssuePending(ctx, t, ctl, issue)
 
 		waitForWebhookCount(t, collector, project.Name, "Approval required", 1)
+	})
+
+	t.Run("IssueApprovalRequested_ExcludesLastPlanEditor", func(t *testing.T) {
+		project := ctl.createTestProject(ctx, t, "bot121-last-editor")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "bot121_last_editor_db", ""))
+		_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+			Project: &v1pb.Project{
+				Name:                        project.Name,
+				AllowLastPlanEditorApproval: false,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_last_plan_editor_approval"}},
+		}))
+		require.NoError(t, err)
+
+		clearWorkspaceApprovalRules(ctx, t, ctl)
+		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
+		editor := provisionApprover(ctx, t, ctl, project, "webhook-last-editor", "roles/projectOwner")
+		other := provisionApprover(ctx, t, ctl, project, "webhook-other", "roles/projectOwner")
+		for _, user := range []struct {
+			email string
+			phone string
+		}{
+			{editor.Email, "+8613800000001"},
+			{other.Email, "+8613800000002"},
+		} {
+			_, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
+				User:       &v1pb.User{Name: "users/" + user.email, Phone: user.phone},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"phone"}},
+			}))
+			require.NoError(t, err)
+		}
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "bot121_last_editor_db")},
+		})
+		withImpersonation(ctx, t, ctl, editor, func() {
+			resp, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+				Plan:       &v1pb.Plan{Name: plan.Name, Specs: plan.Specs},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+			}))
+			require.NoError(t, err)
+			plan = resp.Msg
+		})
+
+		dingtalkCollector := &webhookCollector{}
+		dingtalkServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := dingtalkCollector.addRequest(r); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"errcode":0}`))
+		}))
+		defer dingtalkServer.Close()
+		_, err = ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+			Project: project.Name,
+			Webhook: &v1pb.Webhook{
+				Type:              v1pb.WebhookType_DINGTALK,
+				Title:             "last-editor-recipient-test",
+				Url:               dingtalkServer.URL,
+				NotificationTypes: []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVAL_REQUESTED},
+			},
+		}))
+		require.NoError(t, err)
+
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "last editor webhook recipients")
+		waitForIssuePending(ctx, t, ctl, issue)
+		require.Eventually(t, func() bool {
+			return len(dingtalkCollector.getRequests()) == 1
+		}, webhookWaitTimeout, 100*time.Millisecond)
+
+		var payload struct {
+			Markdown struct {
+				Text string `json:"text"`
+			} `json:"markdown"`
+		}
+		require.NoError(t, json.Unmarshal(dingtalkCollector.getRequests()[0].Body, &payload))
+		require.NotContains(t, payload.Markdown.Text, "@13800000001")
+		require.Contains(t, payload.Markdown.Text, "@13800000002")
+
+		dingtalkCollector.reset()
+		_, err = ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+			Parent: project.Name,
+			Issue: &v1pb.Issue{
+				Title: "planless webhook recipients",
+				Type:  v1pb.Issue_ROLE_GRANT,
+				RoleGrant: &v1pb.RoleGrant{
+					Role: "roles/projectDeveloper",
+					User: "users/" + editor.Email,
+				},
+			},
+		}))
+		require.NoError(t, err)
+		require.Eventually(t, func() bool {
+			return len(dingtalkCollector.getRequests()) == 1
+		}, webhookWaitTimeout, 100*time.Millisecond)
+		require.NoError(t, json.Unmarshal(dingtalkCollector.getRequests()[0].Body, &payload))
+		require.Contains(t, payload.Markdown.Text, "@13800000001")
+		require.Contains(t, payload.Markdown.Text, "@13800000002")
 	})
 
 	t.Run("IssueApprovalRequested_NotFiredWhenUnused", func(t *testing.T) {

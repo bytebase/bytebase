@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"math"
 	"time"
 
@@ -11,8 +12,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // SettingMessage is the message of setting.
@@ -21,6 +22,8 @@ type SettingMessage struct {
 	Workspace string
 	Value     proto.Message
 }
+
+var errSettingValueInvalid = errors.New("the stored setting value is invalid")
 
 func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 	switch name {
@@ -42,6 +45,8 @@ func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 		return &storepb.EnvironmentSetting{}, nil
 	case storepb.SettingName_EMAIL:
 		return &storepb.EmailSetting{}, nil
+	case storepb.SettingName_MCP:
+		return &storepb.MCPSetting{}, nil
 	default:
 		return nil, errors.Errorf("unknown setting name: %v", name)
 	}
@@ -336,7 +341,12 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 		}
 		value, ok := storepb.SettingName_value[nameString]
 		if !ok {
-			return nil, errors.Errorf("invalid setting name string: %s", nameString)
+			// A replica on a newer build writes setting names this enum does
+			// not carry. Returning here would fail the list for every setting
+			// this build does know.
+			slog.Warn("skipping a setting row whose name this build does not know",
+				slog.String("name", nameString), slog.String("workspace", settingMessage.Workspace))
+			continue
 		}
 		settingMessage.Name = storepb.SettingName(value)
 
@@ -345,7 +355,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 			return nil, err
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), msg); err != nil {
-			return nil, err
+			return nil, errors.Wrapf(errSettingValueInvalid, "failed to unmarshal setting %s: %v", settingMessage.Name, err)
 		}
 		settingMessage.Value = msg
 
@@ -378,7 +388,27 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 // it runs while holding the transaction's pooled connection and the row
 // lock, and a nested read wanting a second connection is the bounded-pool
 // starvation cycle.
+//
+// A row this build cannot parse is refused: the only message this could hand
+// apply is the zero value, and a merging apply would write that back — a
+// caller that sets one field on current and returns it (RotateDirectorySyncToken)
+// would erase everything else the row held.
 func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
+	return s.writeSettingAtomic(ctx, workspace, name, func(raw string) (proto.Message, error) {
+		current, err := getSettingMessage(name)
+		if err != nil {
+			return nil, err
+		}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), current); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
+		}
+		return apply(current)
+	}, postCommit)
+}
+
+// writeSettingAtomic locks the row, asks next for the value to store, and
+// writes it in the same transaction.
+func (s *Store) writeSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, next func(raw string) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
@@ -399,20 +429,12 @@ func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name 
 		}
 		return nil, errors.Wrapf(err, "failed to lock setting %s", name)
 	}
-	current, err := getSettingMessage(name)
-	if err != nil {
-		return nil, err
-	}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), current); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
-	}
-
-	next, err := apply(current)
+	value, err := next(valueString)
 	if err != nil {
 		return nil, err
 	}
 
-	nextBytes, err := protojson.Marshal(next)
+	nextBytes, err := protojson.Marshal(value)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal setting value")
 	}
@@ -436,7 +458,7 @@ func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name 
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	s.publishSetting(ctx, workspace, name, postCommit)
-	return &SettingMessage{Name: name, Workspace: workspace, Value: next}, nil
+	return &SettingMessage{Name: name, Workspace: workspace, Value: value}, nil
 }
 
 // publishSetting refreshes the served state for a setting after a committed
@@ -548,4 +570,33 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 	defer s.settingPublishMu.Unlock()
 	s.settingCache.Remove(getSettingCacheKey(workspace, name))
 	return nil
+}
+
+// GetMCPSettingsUncached reads the workspace's stored MCP setting straight from
+// the database, bypassing the setting cache. The cache has no TTL and only
+// in-process writes refresh it, so a setting flipped out of band — direct SQL,
+// another replica — must still bite on the next request.
+//
+// Both fields come off one row, so the gate cannot admit a call that a later
+// enforcement point then judges under a different row.
+// Returns nil with any error; no caller may act on partially resolved settings.
+//
+// Existing workspaces without an MCP row retain the previous READ_WRITE
+// behavior. Workspace creation persists READ_ONLY for new workspaces. A present
+// row whose payload the store protocol cannot decode remains an error.
+func (s *Store) GetMCPSettingsUncached(ctx context.Context, workspace string) (*storepb.MCPSetting, error) {
+	stored, err := s.GetSettingUncached(ctx, workspace, storepb.SettingName_MCP)
+	if err != nil {
+		return nil, err
+	}
+	if stored == nil {
+		return &storepb.MCPSetting{
+			Capability: storepb.MCPSetting_READ_WRITE,
+		}, nil
+	}
+	setting, ok := stored.Value.(*storepb.MCPSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP)
+	}
+	return setting, nil
 }

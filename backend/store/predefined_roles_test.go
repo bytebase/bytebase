@@ -9,6 +9,7 @@ import (
 )
 
 func TestProjectOwnerInstancePermissions(t *testing.T) {
+	t.Parallel()
 	role := GetPredefinedRole(ProjectOwnerRole)
 	require.NotNil(t, role)
 
@@ -28,6 +29,7 @@ func TestProjectOwnerInstancePermissions(t *testing.T) {
 
 // Test that every permission in predefined roles is also defined in permission.yaml.
 func TestPredefinedRolesPermissionsExist(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 
 	for _, role := range PredefinedRoles {

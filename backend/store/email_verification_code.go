@@ -7,21 +7,20 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
-// EmailVerificationCodeMessage represents a row in the email_verification_code table.
+// EmailVerificationCodeMessage represents a row in the email_verification_code table:
+// a code, its expiry, and the resend cooldown. The row lives until it expires or is
+// consumed — wrong guesses are bounded by the per-identity EMAIL_CODE login_attempt
+// lockout, not by per-code state (docs/design/login-attempt-lockout.md).
 type EmailVerificationCodeMessage struct {
 	Email      string
 	Purpose    storepb.EmailVerificationCodePurpose
 	CodeHash   string
-	Attempts   int
 	ExpiresAt  time.Time
 	LastSentAt time.Time
-	// Workspace is the workspace context captured when the code was sent.
-	// Empty string means no workspace (SaaS brand-new signup).
-	Workspace string
 }
 
 // UpsertEmailVerificationCodeIfCooldownExpired inserts or updates the row for (email, purpose),
@@ -34,22 +33,16 @@ type EmailVerificationCodeMessage struct {
 // RETURNING is used (not RowsAffected) because Postgres returns unreliable counts
 // when the DO UPDATE's WHERE filters out the update.
 func (s *Store) UpsertEmailVerificationCodeIfCooldownExpired(ctx context.Context, msg *EmailVerificationCodeMessage, cooldown time.Duration) (bool, error) {
-	var workspace sql.NullString
-	if msg.Workspace != "" {
-		workspace = sql.NullString{String: msg.Workspace, Valid: true}
-	}
 	q := qb.Q().Space(`
-		INSERT INTO email_verification_code (email, purpose, code_hash, attempts, expires_at, last_sent_at, workspace)
-		VALUES (?, ?, ?, 0, ?, ?, ?)
+		INSERT INTO email_verification_code (email, purpose, code_hash, expires_at, last_sent_at)
+		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT (email, purpose) DO UPDATE SET
 			code_hash = EXCLUDED.code_hash,
-			attempts = 0,
 			expires_at = EXCLUDED.expires_at,
-			last_sent_at = EXCLUDED.last_sent_at,
-			workspace = EXCLUDED.workspace
+			last_sent_at = EXCLUDED.last_sent_at
 		WHERE email_verification_code.last_sent_at < EXCLUDED.last_sent_at - make_interval(secs => ?)
 		RETURNING 1
-	`, msg.Email, msg.Purpose.String(), msg.CodeHash, msg.ExpiresAt, msg.LastSentAt, workspace, cooldown.Seconds())
+	`, msg.Email, msg.Purpose.String(), msg.CodeHash, msg.ExpiresAt, msg.LastSentAt, cooldown.Seconds())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -69,7 +62,7 @@ func (s *Store) UpsertEmailVerificationCodeIfCooldownExpired(ctx context.Context
 // or (nil, nil) if no row exists.
 func (s *Store) GetEmailVerificationCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose) (*EmailVerificationCodeMessage, error) {
 	q := qb.Q().Space(`
-		SELECT email, purpose, code_hash, attempts, expires_at, last_sent_at, workspace
+		SELECT email, purpose, code_hash, expires_at, last_sent_at
 		FROM email_verification_code
 		WHERE email = ? AND purpose = ?
 	`, email, purpose.String())
@@ -81,9 +74,8 @@ func (s *Store) GetEmailVerificationCode(ctx context.Context, email string, purp
 
 	msg := &EmailVerificationCodeMessage{}
 	var purposeStr string
-	var workspace sql.NullString
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.Email, &purposeStr, &msg.CodeHash, &msg.Attempts, &msg.ExpiresAt, &msg.LastSentAt, &workspace,
+		&msg.Email, &purposeStr, &msg.CodeHash, &msg.ExpiresAt, &msg.LastSentAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -91,28 +83,39 @@ func (s *Store) GetEmailVerificationCode(ctx context.Context, email string, purp
 		return nil, errors.Wrap(err, "failed to get email verification code")
 	}
 	msg.Purpose = storepb.EmailVerificationCodePurpose(storepb.EmailVerificationCodePurpose_value[purposeStr])
-	if workspace.Valid {
-		msg.Workspace = workspace.String
-	}
 	return msg, nil
 }
 
-// IncrementEmailVerificationCodeAttempts increments the attempt counter for the given email and purpose.
-func (s *Store) IncrementEmailVerificationCodeAttempts(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose) error {
+// ConsumeEmailVerificationCode deletes the account's unexpired code for a
+// purpose, but only if it is the one whose hash was submitted, and reports
+// whether this call is the one that claimed it. Every condition rides on the
+// DELETE rather than on a preceding read: two requests submitting the same
+// valid code race here and exactly one observes consumed=true, so a code that
+// authorizes a credential change really is spendable once.
+//
+// RETURNING (not RowsAffected) for the same reason ConsumeOAuth2RefreshToken
+// gives. A false return means the code was wrong, already spent, or expired —
+// callers must not distinguish those to the caller.
+func (s *Store) ConsumeEmailVerificationCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, codeHash string) (bool, error) {
 	q := qb.Q().Space(`
-		UPDATE email_verification_code
-		SET attempts = attempts + 1
-		WHERE email = ? AND purpose = ?
-	`, email, purpose.String())
+		DELETE FROM email_verification_code
+		WHERE email = ? AND purpose = ? AND code_hash = ? AND expires_at > NOW()
+		RETURNING email
+	`, email, purpose.String(), codeHash)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
-		return err
+		return false, err
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrap(err, "failed to increment email verification code attempts")
+
+	var consumedEmail string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&consumedEmail); err != nil { // NOSONAR: query is parameterized via qb.Query
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "failed to consume email verification code")
 	}
-	return nil
+	return true, nil
 }
 
 // DeleteEmailVerificationCodeIfMatch deletes the row only if it still has the given code hash.

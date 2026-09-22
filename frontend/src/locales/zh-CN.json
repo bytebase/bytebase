@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "仅活跃",
+    "active-only-chats": "查看活跃对话",
     "ai-not-configured": {
       "configure": "配置",
       "contact-admin": "请联系工作区管理员配置 AI。",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "归档所有对话",
     "archive-chat": "归档对话",
-    "archived-only-chats": "仅已归档",
+    "archived-only-chats": "查看已归档对话",
     "args": "参数",
     "assistant-title": "AI 助手",
     "cancel": "取消",
@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "按审计日志操作者搜索",
+          "description": "按邮箱搜索用户。使用 serviceAccounts/ 或 workloadIdentities/ 前缀搜索这些操作者。",
           "title": "操作者"
         },
         "level": {
@@ -154,9 +154,11 @@
       "continue-with-email": "使用邮箱继续",
       "continue-with-idp": "使用 {{idp}} 继续",
       "email-code-tab": "邮箱验证码",
+      "failed": "登录失败",
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {{email}} 登录",
+      "load-failed": "无法加载登录选项，请重试。",
       "new-user": "第一次使用 Bytebase?",
       "no-method-available": {
         "description": "此工作区已禁用密码和邮箱验证码登录，且未配置身份提供商。",
@@ -186,6 +188,11 @@
       "create-admin-account": "注册管理员",
       "existing-user": "已有账号?",
       "title": "注册您的账号"
+    },
+    "sso": {
+      "invalid-authorization-url": "授权 URL 无效：必须是有效的 HTTP 或 HTTPS 地址。",
+      "no-authorization-endpoint": "身份提供商未公开授权端点，请检查其配置。",
+      "unsupported-provider-type": "该身份提供商类型不支持 SSO 跳转。"
     },
     "token-expired-description": "Token 已过期，请重新登录",
     "token-expired-title": "令牌已过期"
@@ -294,6 +301,7 @@
     "database-group": "数据库分组",
     "databases": "数据库",
     "deactivate": "禁用",
+    "deactivated": "已停用",
     "default": "默认",
     "definition": "定义",
     "delete": "删除",
@@ -310,6 +318,7 @@
     "discard-changes": "取消修改",
     "discord": "Discord",
     "dismiss": "关闭",
+    "done": "完成",
     "download": "下载",
     "draft": "草稿",
     "duplicate": "拷贝",
@@ -450,6 +459,10 @@
     "search": "搜索",
     "search-for-more": "搜索更多",
     "search-no-result": "未找到匹配的结果",
+    "search-results": "搜索结果",
+    "secret-input": {
+      "unchanged": "未更改"
+    },
     "select": "请选择",
     "select-all": "全选",
     "selected": "已选择",
@@ -480,6 +493,8 @@
     "tips": "提示信息",
     "title": "标题",
     "to": "到",
+    "toggle-password-visibility": "切换密码可见性",
+    "token": "令牌",
     "total": "总计",
     "total-n-items": "共 {{n}} 项",
     "transfer": "转移",
@@ -522,6 +537,16 @@
     "new-collection-name": "新集合名称",
     "new-database-name": "新数据库名称",
     "reserved-db-error": "{{databaseName}} 是一个预留名称"
+  },
+  "credential-proof": {
+    "code-sent": "验证码已发送，请查收邮件",
+    "email-label": "邮箱验证码",
+    "email-me-a-code": "发送验证码到邮箱",
+    "email-placeholder": "6 位数字验证码",
+    "factor-label": "验证码",
+    "factor-placeholder": "身份验证器代码或恢复代码",
+    "password-label": "当前密码",
+    "resend-in": "{{seconds}} 秒后可重新发送"
   },
   "custom-approval": {
     "approval-flow": {
@@ -622,11 +647,8 @@
     },
     "no-read-only-data-source": "没有只读数据源",
     "private-key-passphrase": "私钥密码",
-    "private-key-passphrase-placeholder": "如果私钥未加密，请留空",
     "private-key-passphrase-tip": "加密私钥的可选密码",
     "read-only": "只读",
-    "read-replica-host": "只读副本 Host",
-    "read-replica-port": "只读副本端口",
     "replica-set": "副本集",
     "select-query-data-source": "选择查询数据源",
     "snowflake-keypair-tip": "密钥对认证",
@@ -638,11 +660,7 @@
       "ssh-key": "SSH 密钥",
       "user": "用户名"
     },
-    "ssh-connection": "SSH 连接",
-    "ssh-type": {
-      "none": "不使用",
-      "tunnel-and-private-key": "隧道 + 私钥"
-    },
+    "ssh-connection": "SSH 隧道",
     "ssl": {
       "ca-cert": "CA 证书",
       "ca-path": "CA 证书路径",
@@ -669,7 +687,7 @@
       "client-key-path": "私钥路径",
       "client-key-placeholder": "输入或拖放 YOUR_CLIENT_KEY",
       "configured": "已配置",
-      "connection-security": "连接安全性",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "此引擎不支持双向 TLS。",
       "posture": {
         "disabled": "已禁用",
@@ -678,11 +696,10 @@
         "tls": "TLS"
       },
       "server-identity": "服务器身份",
-      "verification-disabled-description": "已禁用验证。连接已加密，但未验证服务器身份；CA 设置将被忽略。",
-      "verify-certificate": "验证服务器证书",
-      "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
+      "verification-disabled-description": "验证已关闭。连接仍然加密，但不会验证服务器身份，CA 设置将被忽略。这存在安全风险。请启用证书验证，仅在开发或故障排查时临时关闭。",
+      "verify-certificate": "验证服务器证书"
     },
-    "ssl-connection": "SSL 连接"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "您无权访问该数据库",
@@ -725,8 +742,10 @@
     "mixed-label-values": "混合值",
     "mixed-label-values-warning": "部分标签拥有不同的值，编辑标签将会批量应用。仅在您打算更改时再编辑这些键值对。",
     "nullable": "可为空",
+    "open-sql-editor": "打开 SQL 编辑器",
     "partition-tables": "分区表",
     "partitioned": "分区",
+    "project-instance-transfer-disabled": "项目绑定实例中的数据库无法转移或取消分配。",
     "revision": {
       "add-more-files": "添加更多",
       "available-files": "可用文件",
@@ -800,7 +819,6 @@
     "unassign": "取消分配",
     "unassign-alert-description": "选定的数据库将从项目中移除",
     "unassign-alert-title": "取消分配数据库",
-    "unassigned-databases": "未分配的数据库",
     "unique": "唯一",
     "visible": "可见"
   },
@@ -840,7 +858,14 @@
     "partitions": "分区",
     "procedures": "存储过程",
     "project-instance-synced-action": "创建数据库变更",
+    "project-instance-synced-create-change-description": "你的数据库已在此项目中就绪。请创建受管数据库变更以继续。",
+    "project-instance-synced-create-change-title": "数据库已可进行变更",
     "project-instance-synced-description": "你的数据库已在此项目中就绪。可以先在 SQL Editor 中查询数据，也可以在需要时创建受管数据库变更。",
+    "project-instance-synced-mark-sensitive-data-action": "标记敏感数据",
+    "project-instance-synced-mark-sensitive-data-description": "你的数据库已在此项目中就绪。标记敏感列以应用数据脱敏。",
+    "project-instance-synced-mark-sensitive-data-title": "数据库已可保护敏感数据",
+    "project-instance-synced-query-data-description": "你的数据库已在此项目中就绪。请打开 SQL Editor 进行查询。",
+    "project-instance-synced-query-data-title": "数据库已可查询",
     "project-instance-synced-sql-editor-action": "打开 SQL Editor",
     "project-instance-synced-title": "数据库已连接",
     "project-instance-syncing-description": "这可能需要几秒到几分钟。你可以稍后刷新此页面。",
@@ -955,6 +980,8 @@
   },
   "instance": {
     "account-locator": "账户定位符",
+    "account-locator-description": "用于标识要连接的 Snowflake 账户。",
+    "add-parameter": "添加参数",
     "advanced-search": {
       "scope": {
         "host": {
@@ -969,6 +996,7 @@
     },
     "archive-instance-instance-name": "归档实例'{{0}}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
+    "authentication": "身份验证",
     "authentication-database": "认证数据库",
     "cloud-sql-ip-type": {
       "description": "当实例没有公共 IP 且 Bytebase 运行在同一 VPC 内时，请使用私有 IP。",
@@ -979,9 +1007,10 @@
     },
     "connect-database-to-project": "连接数据库到项目",
     "connect-instance": "连接实例",
+    "connect-using": "连接方式",
     "connecting-database-to-project": "正在连接数据库...",
+    "connection-database": "连接数据库",
     "connection-info": "连接信息",
-    "connection-options": "连接选项",
     "connection-recovery": {
       "auth": {
         "description": "请检查用户名、密码、令牌或 IAM 认证配置，然后重新测试连接。",
@@ -994,10 +1023,12 @@
       },
       "docs": "打开连接指南",
       "network": {
-        "description": "请确认 Bytebase Cloud 可以访问主机和端口。检查防火墙规则、允许列表、代理、隧道，以及数据库是否只接受私有网络流量。",
+        "description-saas": "请确认 Bytebase Cloud 可以访问主机和端口。检查防火墙规则、允许列表、代理、隧道，以及数据库是否只接受私有网络流量。",
+        "description-self-hosted": "请确认部署 Bytebase 的网络可以访问主机和端口。检查防火墙规则、网络路由、代理、隧道，以及数据库是否只接受来自其他网络的流量。",
         "steps": {
           "address": "确认主机或 Socket、端口与数据库端点一致。",
-          "firewall": "如果使用 Bytebase Cloud，请在数据库防火墙中允许所需的 Cloud IP。",
+          "firewall-saas": "请在数据库防火墙中将 Bytebase Cloud IP 加入允许列表。",
+          "firewall-self-hosted": "允许来自 Bytebase 部署网络的连接。",
           "private-network": "如果数据库是私有网络，请先配置 VPN、私有网络或 SSH 隧道。"
         },
         "title": "检查网络连通性"
@@ -1012,12 +1043,14 @@
         "title": "检查数据库权限"
       },
       "timeout": {
-        "description": "数据库未及时响应。请检查防火墙规则、端口设置、网络路由，以及数据库是否允许来自 Bytebase Cloud 的连接。",
+        "description-saas": "连接测试未能在规定时间内完成。请检查防火墙规则、端口设置、网络路由，以及数据库是否允许来自 Bytebase Cloud 的连接。",
+        "description-self-hosted": "连接测试未能在规定时间内完成。请检查防火墙规则、端口设置、网络路由，以及数据库是否允许来自 Bytebase 部署网络的连接。",
         "steps": {
           "load": "确认数据库在线并接受新连接。",
           "retry": "如果数据库位于防火墙后，请先完成允许列表或隧道配置再重试。",
           "route": "检查路由、代理、隧道、端口和连接超时设置。"
         },
+        "test-title": "连接测试超时",
         "title": "检查防火墙和路由"
       },
       "tls": {
@@ -1034,7 +1067,8 @@
         "steps": {
           "fields": "检查主机、端口、用户名、密码或密钥来源，以及 SSL/TLS 模式。",
           "help": "如果数据库是私有网络，请先配置 VPN、私有网络或 SSH 隧道后再重试。",
-          "logs": "如果数据库有防火墙规则，请允许 Bytebase Cloud 或已部署的 Bytebase 网络连接。"
+          "logs-saas": "如果数据库有防火墙规则，请允许 Bytebase Cloud 连接。",
+          "logs-self-hosted": "如果数据库有防火墙规则，请允许来自 Bytebase 部署网络的连接。"
         },
         "title": "检查连接配置"
       },
@@ -1079,7 +1113,6 @@
           "role-id": "Auth role id",
           "secret-env-name": "环境变量名",
           "secret-id": "Auth secret id",
-          "secret-plain-text": "明文",
           "self": "AppRole"
         },
         "self": "认证方式",
@@ -1099,8 +1132,9 @@
       "vault-tls-config": "Vault TLS 配置（可选）",
       "vault-url": "Vault URL"
     },
-    "failed-to-connect-instance": "连接到实例失败。",
-    "failed-to-connect-instance-localhost": "如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
+    "failed-to-connect-instance": "连接测试失败。",
+    "failed-to-connect-instance-localhost": "此地址指向 Bytebase 主机。如果数据库运行在 Docker 宿主机上，请尝试使用 \"host.docker.internal\" 作为主机地址。",
+    "failed-to-connect-instance-saas-local-host": "“{{host}}”是仅限本机使用的地址，Bytebase Cloud 无法通过它访问您的数据库。请输入 Bytebase Cloud 可访问的数据库主机名或 IP 地址。",
     "filter-instance-name": "过滤实例名称",
     "find-gcp-project-id": "查看 GCP 项目 ID 的方法见",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
@@ -1108,7 +1142,7 @@
     "gcp-endpoint-tip": "可选。覆盖默认的 Google API 端点，例如 Private Service Connect 端点 {{example}}。",
     "gcp-endpoint-toggle": "设置自定义 API 端点",
     "grants": "权限",
-    "host-or-socket": "Host 或 Socket",
+    "hostname": "主机名",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1186,6 +1220,7 @@
     },
     "instance-id": "实例 ID",
     "instance-name": "实例名称",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance，可选",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "KDC 主机",
@@ -1197,14 +1232,21 @@
     "keytab-resupply-required": "该数据源现在连接到新的目标地址。请重新上传 keytab，以确认您仍持有它。",
     "keytab-upload-placeholder": "点击或拖拽 .keytab 文件到此处",
     "keytab-write-only": "Keytab 仅写入。上传新文件以替换现有 keytab。",
+    "master-name": "主节点名称",
+    "master-password": "主节点密码",
+    "master-username": "主节点用户名",
     "new-instance": "新实例",
     "no-environment": "此实例尚未绑定到环境",
     "no-extra-params-configured": "没有配置的额外连接参数",
     "no-params-yet-add-above": "尚未配置参数。\n使用上面的形式添加参数。",
-    "no-password": "无密码",
     "open-data-source": "打开该数据源，查看还需要什么。",
     "parameter-name-placeholder": "参数名称",
     "parameter-value-placeholder": "参数值",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "密码来源",
+      "stored-in-bytebase": "存储在 Bytebase 中"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1212,18 +1254,27 @@
       "external-secret-azure": "Azure Key Vault",
       "external-secret-gcp": "GCP Secret Manager",
       "external-secret-vault": "Vault (KV v2)",
+      "google-cloud-iam": "Google Cloud IAM",
       "google-iam": "Google Cloud SQL IAM",
       "password": "密码"
     },
-    "password-write-only": "YOUR_DB_PWD - 仅写入",
     "port": "端口",
+    "prepare-sample-instance-failed": "准备示例项目实例失败。",
+    "preparing-sample-instance": "正在准备示例项目实例…",
+    "project-bound-description": "此实例已绑定到该项目。其所有数据库都会自动转移到该项目，且无法转移或取消分配。",
+    "project-bound-title": "项目绑定实例",
     "project-id": "项目 ID",
     "restore-instance-instance-name-to-normal-state": "恢复实例'{{0}}'到正常状态?",
     "role-arn": "角色 ARN",
     "role-arn-description": "用于跨账户访问的 IAM 角色。同账户访问请留空。",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "示例实例已于 {{time}} 过期，即将被移除。",
+    "sample-expiration-future_one": "示例实例将在 {{count}} 天后的 {{time}} 被移除。",
+    "sample-expiration-future_other": "示例实例将在 {{count}} 天后的 {{time}} 被移除。",
+    "sample-project-instance-description": "使用示例项目实例探索 Bytebase，并在 7 天内使用预配置的数据库。",
+    "sample-project-instance-description-self-host": "使用带有预配置数据库的示例项目实例探索 Bytebase。",
+    "sample-project-instance-title": "试用示例项目实例",
     "scan-interval": {
-      "default-never": "默认（永不）",
       "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
       "min-value": "最小值 {{value}} 分钟",
       "self": "扫描间隔"
@@ -1270,7 +1321,7 @@
           "template": "创建用户 {{user}}，密码 {{password}}，warehouse 为{{warehouse}}，并授予必要权限的例子如下。"
         }
       },
-      "firewall-info": "如果您为数据库实例使用入站防火墙规则，请参阅 ByteBase Cloud Connection 文档。",
+      "firewall-info": "请在数据库防火墙中将 Bytebase Cloud IP 加入允许列表。",
       "google-cloud-sql": {
         "instance-name": "实例连接名称",
         "instance-name-tips": "实例连接名称应为 {{instance}}。",
@@ -1282,16 +1333,18 @@
         }
       },
       "host": {
-        "none-snowflake": "例如 host.docker.internal | ip | local socket"
-      },
-      "proxy": {
-        "snowflake": "对于代理服务器，加上 @PROXY_HOST，并在端口里指定 PROXY_PORT"
+        "none-snowflake": "例如 host.docker.internal | 主机 IP | 本地 Socket",
+        "saas": "例如 db.example.com | 数据库 IP"
       }
     },
+    "service-name": "服务名",
+    "service-name-placeholder": "例如 sales.example.com",
     "show-how-to-create": "如何创建",
+    "sid": "SID",
+    "sid-placeholder": "例如 ORCL",
     "snowflake-web-console": "Snowflake Web 控制台",
     "successfully-archived-instance": "成功归档实例'{{0}}'。",
-    "successfully-connected-instance": "成功连接到实例。",
+    "successfully-connected-instance": "连接成功。",
     "successfully-created-instance-createdinstance-name": "成功创建实例'{{0}}'。",
     "successfully-restored-instance": "已成功恢复实例“{{0}}”。",
     "successfully-updated-instance-instance-name": "成功更新实例'{{0}}'。",
@@ -1303,19 +1356,40 @@
     },
     "sync-databases": {
       "add-database": "+ 添加数据库，按回车键提交",
+      "all-databases": "全部数据库",
       "description": "选择要从此实例同步的数据库。",
+      "hostname-required": "请输入主机名，然后选择要同步的数据库。",
       "project-sync-all": "将所有数据库同步到此项目",
+      "required-fields": "请填写上方必填字段，然后选择要同步的数据库。",
       "search-database": "搜索数据库",
+      "selected-databases": "指定数据库",
       "self": "同步数据库",
       "sync-all": "同步所有数据库"
     },
     "syncing": "同步中 ...",
     "test-connection": "测试连接",
     "testing-connection": "测试连接中...",
-    "token-write-only": "YOUR_TOKEN - 仅写入",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
-    "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{{0}}",
+    "unable-to-connect": "Bytebase 无法使用这些设置连接数据库。请检查上方指引，或继续操作并稍后更新连接。\n\n技术详情：{{0}}",
+    "use-sample-instance": "使用示例实例（可用 7 天）",
+    "use-sample-instance-self-host": "使用示例实例",
     "users": "用户",
+    "validation": {
+      "absolute-path": "请输入以 / 开头的绝对路径。",
+      "aws-credential": "请输入访问密钥 ID 或角色 ARN。",
+      "cloud-sql-host": "请输入格式为 project:region:instance 的实例名称。",
+      "forbidden-parameter": "不允许使用 allowAllFiles 参数，因为它会暴露 Bytebase 服务器上的文件。",
+      "gcp-instance": "请使用小写字母、数字或连字符。",
+      "gcp-project": "请使用小写字母、数字、句点、冒号或连字符。",
+      "keytab-resupply": "连接目标已更改，请重新上传 keytab 文件。",
+      "oracle-service": "请输入服务名称或 SID。",
+      "pem-certificate": "请输入 PEM 格式的证书，包含 BEGIN 和 END CERTIFICATE 行。",
+      "pem-key": "请输入 PEM 格式的私钥（PKCS#1、PKCS#8 或 EC）。",
+      "required": "此字段为必填项。",
+      "specific-credential": "请提供指定凭证。Bytebase Cloud 不支持默认凭证。",
+      "tls-pair": "请同时提供客户端证书和私钥。",
+      "tls-source-conflict": "请选择 PEM 内容或文件路径，不可同时使用。"
+    },
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符"
   },
   "issue": {
@@ -1551,7 +1625,6 @@
     },
     "recovery-code": "恢复码"
   },
-  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} 正在请求访问您的账户",
@@ -1559,8 +1632,45 @@
       "error-load-failed": "加载客户端信息失败",
       "error-missing-params": "缺少必需的 OAuth2 参数",
       "error-switch-failed": "切换工作空间失败",
-      "permission-access": "使用您的权限访问您的 Bytebase 账户",
-      "permissions": "此应用程序将能够:",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "认为这里应该开启？请咨询工作空间管理员的 MCP 访问策略。",
+          "description": "工作空间管理员已关闭 {{workspace}} 的 MCP 访问。未建立任何连接。",
+          "description-no-workspace": "工作空间管理员已关闭本工作空间的 MCP 访问。未建立任何连接。",
+          "line": {
+            "no-session": "任何 AI 会话都无法连接到本工作空间",
+            "recorded": "若仍尝试连接，该次尝试会记录在审计日志中"
+          },
+          "policy-label": "工作空间策略",
+          "title": "MCP 访问已关闭"
+        },
+        "line": {
+          "audit": "被审计的操作会带上 MCP 标记，启用审计日志输出到标准输出时，策略拒绝的操作会输出到标准输出",
+          "capped-read-only": "上限取决于你自己的 Bytebase 权限，以及 Bytebase 在各数据库引擎上能确认的范围——在无法确认语句是读取的引擎上，任何查询都不会执行",
+          "capped-read-write": "上限取决于你自己的 Bytebase 权限，以及 Bytebase 对每种数据库引擎和每种操作的支持程度",
+          "masking": "你的脱敏豁免对此会话不生效",
+          "no-write": "不能变更、部署、导出或管理数据库"
+        },
+        "title": "此会话可以",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "尚未批准任何内容，也未建立任何连接"
+          },
+          "policy-label": "工作空间策略",
+          "undisclosable": {
+            "description": "本工作空间的 MCP 策略是此页面无法表述的值。它可能比您打开的页面更新，也可能不是此 Bytebase 版本支持的策略，若是后者，所有 MCP 连接都会被拒绝。",
+            "line": "请重新加载以获取当前版本。如果此页面再次出现，请让工作空间管理员设置受支持的策略",
+            "title": "此页面无法显示本工作空间的 MCP 策略允许的内容"
+          },
+          "unknown": {
+            "description": "Bytebase 目前无法读取本工作空间的 MCP 访问策略。",
+            "line": "无法显示本次会话将被允许执行的操作",
+            "retry": "重新检查",
+            "title": "无法确认 MCP 策略"
+          }
+        },
+        "write-caution": "具有写权限的 AI 会话会造成真实变更。请仅在你可控的机器上批准。"
+      },
       "title": "授权请求",
       "workspace-label": "授权访问的工作空间"
     }
@@ -1592,9 +1702,12 @@
       "configure": "配置",
       "parameters": "gh-ost 参数",
       "requirements-not-met": "以下数据库不满足 Ghost 要求：{{databases}}",
-      "reset-to-defaults": "重置为默认值"
+      "reset-to-defaults": "重置为默认值",
+      "skip-metadata-lock-check-risk": "跳过此检查可能导致切换期间的写入丢失。",
+      "skip-metadata-lock-check-why": "为什么？"
     },
     "go-to-plan-page": "前往计划页面",
+    "initial-sql-storage-failed": "无法临时保存 SQL。请清理部分浏览器存储空间后重试。",
     "isolation-level": {
       "read-committed": "已提交读",
       "read-uncommitted": "未提交读",
@@ -1678,6 +1791,7 @@
         "no-reviewers": "无审批人",
         "rejected-by": "由 {{user}} 拒绝"
       },
+      "candidate-last-changed-plan": "无法审批 — 最后修改了此计划",
       "comment-required-to-reject": "拒绝时必须填写评论",
       "footer": {
         "all-gates-passed": "所有条件已满足",
@@ -1707,11 +1821,50 @@
         "rollout-not-created": "发布未自动创建",
         "waiting-on-review": "等待审批"
       },
+      "last-plan-editor-cannot-approve": "由于您最后修改了该计划，因此无法审批此工单。请由其他审批人进行审批。",
       "rejection": {
         "guidance-prefix": "请根据反馈修改变更，或",
         "guidance-suffix": "（不做修改）",
         "re-request-review": "重新发起审批",
         "title": "被 {{user}} 拒绝"
+      },
+      "thread": {
+        "add-comment": "添加评论",
+        "add-comment-on-line": "在第 {{line}} 行添加评论",
+        "add-comment-on-lines": "在第 {{startLine}} 至 {{endLine}} 行添加评论",
+        "anchor": {
+          "line_one": "第 {{range}} 行",
+          "line_other": "第 {{range}} 行",
+          "outdated": "已过期",
+          "statement-unavailable": "语句不可用",
+          "unavailable-change": "已删除的变更",
+          "view-in-statement": "在语句中查看"
+        },
+        "comment-on-lines": "评论所选行",
+        "n-replies-hidden_one": "已隐藏 {{count}} 条回复",
+        "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
+        "n-replies_one": "{{count}} 条回复",
+        "n-replies_other": "{{count}} 条回复",
+        "publish": "发布",
+        "reopen-thread": "重新打开线程",
+        "reply": "回复",
+        "reply-placeholder": "回复...",
+        "reply-posted-status-failed": "回复已发布，但讨论状态更新失败。请重试状态操作。",
+        "resolve": "解决",
+        "resolve-thread": "解决线程",
+        "resolved": "已解决",
+        "threads-on-line_one": "此行有 {{count}} 个讨论",
+        "threads-on-line_other": "此行有 {{count}} 个讨论",
+        "walker": {
+          "count_one": "此版本有 {{count}} 个未解决的讨论",
+          "count_other": "此版本有 {{count}} 个未解决的讨论",
+          "next": "下一个未解决的讨论",
+          "position": "第 {{index}} 个，共 {{count}} 个",
+          "previous": "上一个未解决的讨论",
+          "remainder_one": "另有 {{count}} 个未在此版本显示",
+          "remainder_other": "另有 {{count}} 个未在此版本显示"
+        },
+        "write-comment": "撰写评论..."
       }
     },
     "rollback": {
@@ -1754,6 +1907,8 @@
       "n-of-m-approved": "{{n}}/{{m}} 已审批",
       "n-of-m-tasks": "{{n}}/{{m}} 任务",
       "n-passed": "{{n}} 通过",
+      "n-unresolved-threads_one": "{{count}} 个未解决的讨论",
+      "n-unresolved-threads_other": "{{count}} 个未解决的讨论",
       "n-warning": "{{n}} 警告"
     },
     "targets": {
@@ -1772,7 +1927,8 @@
       "actions": {
         "explain-code": "解释代码",
         "find-problems": "找出问题",
-        "insert-at-caret": "在光标处插入"
+        "insert-at-caret": "在光标处插入",
+        "new-chat-using-selection": "使用选中内容新建对话"
       },
       "ai-assistant": "AI 助手",
       "conversation": {
@@ -1814,7 +1970,6 @@
     }
   },
   "project": {
-    "add-database": "添加数据库",
     "add-database-empty-placeholder": "将现有实例中的数据库添加到此项目",
     "batch": {
       "archive": {
@@ -1893,29 +2048,34 @@
       },
       "revoke-role-from-member": "从 '{{member}}' 撤销 '{{role}}' 角色？"
     },
-    "overview": {
-      "info-slot-content": "Bytebase 会定时同步实例的 schema，新同步的数据库会首先被置于这里，之后您可以再将他们转移到适当的项目中。"
-    },
     "select": "选择项目",
     "settings": {
       "confirm-archive-project": "归档「{{name}}」将使其变为只读并从活跃项目列表中隐藏。所有工单、数据库和设置将被保留。您可以稍后从已归档项目列表中恢复。",
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
       "issue-related": {
         "allow-access-grants": {
-          "description": "允许项目成员为特定只读语句申请限时访问授权。",
+          "description": "允许项目成员为特定只读语句申请限时访问授权。授权还可包含导出查询结果和查看未脱敏数据。",
           "self": "允许访问授权"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "允许最后修改计划的用户审批关联的数据库变更工单。",
+          "self": "允许最后修改计划的用户审批"
         },
         "allow-request-role": {
           "description": "非项目所有者可以自行申请项目级角色",
           "self": "允许申请角色"
         },
         "allow-self-approval": {
-          "description": "允许创建者审批自己创建的工单。",
-          "self": "允许创建者审批"
+          "description": "允许工单创建者审批该工单。",
+          "self": "允许工单创建者审批自己的工单"
         },
         "approval-flow-configured": "审批流程已配置",
         "approval-flow-fallback": "使用默认审批规则",
         "approval-flow-not-configured": "未配置审批流程",
+        "approval-permissions": {
+          "description": "这些权限会同时生效。如果审批人既创建了工单又最后修改了计划，则必须同时启用这两项权限。",
+          "self": "审批权限"
+        },
         "ci-sampling-size": {
           "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。",
           "self": "CI 数据采样大小"
@@ -2025,30 +2185,14 @@
       "success-updated-prompt": "成功更新 {{name}} webhook.",
       "test-webhook": "测试 Webhook",
       "triggering-activity": "触发事件",
+      "url-hidden": "出于安全考虑已隐藏。输入新的 URL 以替换。",
       "webhook-url": "Webhook URL"
     }
   },
   "quick-action": {
-    "create-db": "创建数据库",
     "create-project": "创建项目",
     "new-project": "创建项目"
   },
-  "quick-start": {
-    "guide": "可点击步骤进行尝试",
-    "notice": {
-      "desc": "您稍后仍可以从右上角的菜单中再次打开新手任务",
-      "title": "新手任务已关闭"
-    },
-    "query-data": "查询数据",
-    "self": "快速开始",
-    "view-an-issue": "查看工单",
-    "visit-database": "访问数据库",
-    "visit-environment": "访问环境",
-    "visit-instance": "访问实例",
-    "visit-member": "访问成员",
-    "visit-project": "访问项目"
-  },
-  "refresh-remind": {},
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
@@ -2276,8 +2420,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "搜索分类",
-      "select": "选择分类"
+      "search": "搜索分类"
     }
   },
   "sensitive-data": {
@@ -2290,6 +2433,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "管理您的个人资料和登录方式。",
+      "email-managed": "如需修改登录邮箱，请联系工作空间管理员。",
+      "password-notice": "修改密码后，所有会话（包括当前会话）都会退出登录。",
+      "security": "安全",
+      "self": "账号设置",
+      "update-password": "更新密码"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2310,12 +2461,17 @@
           "enable-ai-assistant": "启用 AI 助手",
           "enabled-in-saas": "Gemini AI 在 SaaS 模式下自动启用。",
           "endpoint": {
-            "description": "提供私有化部署的 API Endpoint。",
+            "description": "请输入自定义模型的 API 端点。",
+            "openai-description": "Responses API 使用 /responses 端点，Chat Completions API 使用 /chat/completions 端点。",
             "self": "API 端点"
           },
           "model": {
-            "description": "提供私有化部署的模型名称。",
-            "self": "模型名称"
+            "custom": "自定义模型",
+            "deployment": "部署名称",
+            "deployment-description": "Azure OpenAI 的部署名称，可以与模型名称不同。",
+            "description": "选择支持的模型，或选择自定义模型以输入其他模型和端点。",
+            "name": "模型名称",
+            "self": "模型"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",
@@ -2381,7 +2537,10 @@
           "exiting": "退出中..."
         },
         "data-copy": "启用复制数据",
-        "data-export": "启用数据导出",
+        "data-export": {
+          "description": "关闭后，用户无法直接导出查询结果。在启用访问授权的项目中，用户仍可点击“申请导出”提交访问授权申请，审批通过后即可导出。",
+          "self": "允许无需审批导出数据"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
           "go-to-sql-editor": "转到 SQL 编辑器",
@@ -2463,25 +2622,6 @@
             "self": "最大 SQL 结果大小"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "此工作空间中 MCP(Model Context Protocol)会话可用的最高能力上限。变更对下一个 MCP 请求立即生效。",
-            "disabled": {
-              "description": "拒绝所有 MCP 连接。",
-              "self": "禁用"
-            },
-            "read-only": {
-              "description": "为细粒度只读控制预留,该能力尚未上线。在此之前,选择此项将完全拒绝 MCP 连接,效果与“禁用”相同。",
-              "self": "只读"
-            },
-            "read-write": {
-              "description": "MCP 会话可以读写,仍受每个用户自身权限的约束。未配置时默认为此项。",
-              "self": "读写"
-            },
-            "self": "MCP 访问"
-          },
-          "self": "MCP"
-        },
         "no-limit": "当值 <= 0 时无限制",
         "password-restriction": {
           "min-length": "密码最小长度不得少于 {{min}} 个字符",
@@ -2545,25 +2685,131 @@
       "description": "即时通讯集成用于针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
     },
     "mcp": {
-      "auth": {
-        "description": "首次连接需要 OAuth 身份验证。请确保您拥有相应的 Bytebase 权限。",
-        "title": "需要身份验证"
+      "connect": {
+        "description": "把 Bytebase 添加到你的 AI 客户端就可以开始提问。首次连接时会在浏览器中登录并批准访问。",
+        "desktop-note": "Claude Desktop 从你的 Claude 账户读取远程服务器，而不是配置文件。请在 claude.ai 的 Customize > Connectors 中将此 URL 添加为自定义连接器，随后它会出现在 Claude Desktop 中。",
+        "json-note": "这是 mcpServers 格式。各客户端的配置格式并不相同：例如 VS Code 在自己的 mcp.json 中使用 servers，此时请改用 VS Code 标签页。",
+        "title": "连接客户端"
       },
       "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
       "first-prompt": {
         "description": "连接后，尝试向 AI 助手提问：",
         "example": "列出我的 Bytebase 实例中的所有项目",
-        "title": "您的第一个提示"
+        "title": "你的第一个提示词"
       },
-      "general-config": {
-        "title": "方式一：JSON 配置"
+      "ladder": {
+        "disabled": "不允许任何操作；MCP 会话无法连接。",
+        "floor": {
+          "label": "在任何模式下都不允许：",
+          "text": "审批工单、管理工作空间、处理凭据、开启 Admin 模式会话、查看他人的查询历史。"
+        },
+        "heading": "{{mode}} 允许",
+        "hide-details": "隐藏详情",
+        "mark": {
+          "allowed": "允许",
+          "refused": "不允许"
+        },
+        "row": {
+          "export": {
+            "details": "将结果下载为文件。数据会离开 Bytebase。",
+            "title": "导出查询结果"
+          },
+          "manage": {
+            "details": "同步实例和数据库 · 数据库设置和标签 · 在项目之间移动数据库 · 数据库组 · 已保存的查询",
+            "title": "管理数据库日常维护"
+          },
+          "propose": {
+            "details": "创建工作表 · 创建和编辑 Plan 与工单 · 执行计划检查和审核 · 创建、删除和恢复发布 · 创建和删除修订 · 生成模式差异。智能体绝不会审批自己的变更；是否需要人来审批由项目的审批策略决定",
+            "title": "提议变更"
+          },
+          "read-data": {
+            "details": "执行只读查询 · 在只读模式下，除非每条语句都能被确认为返回数据的读取，否则整体拒绝该请求；能确认到多深取决于引擎，在部分引擎上没有任何语句能被确认为读取 · 你自己的查询历史 · 你有权访问的已保存查询和工作表",
+            "title": "通过执行查询读取数据"
+          },
+          "read-schemas": {
+            "details": "模式 · 数据库和实例 · 项目和数据库组 · 目录、变更历史和修订 · SQL 审核配置 · 你自己的会话和工作空间信息",
+            "title": "读取模式和元数据"
+          },
+          "read-workflow": {
+            "details": "工单和评论 · Plan 和计划检查 · 部署、任务运行和日志 · 发布 · 回滚预览",
+            "title": "读取变更流程"
+          },
+          "run-rollouts": {
+            "details": "创建部署 · 在项目审批策略之下执行、跳过或取消其任务",
+            "title": "执行部署和任务"
+          },
+          "run-statements": {
+            "details": "通过查询执行 INSERT、UPDATE、DELETE、CREATE、ALTER、DROP，以引擎和该用户自身权限允许的范围为限",
+            "title": "执行 DML 和 DDL 语句"
+          }
+        },
+        "show-details": "显示详情",
+        "stops": {
+          "read": "只读到此为止",
+          "write": "读写到此为止"
+        },
+        "summary": {
+          "read-only": "读取模式、数据和变更流程；只要请求中含有无法被确认为读取的内容就会被拒绝，也不能导出",
+          "read-write": "读取模式、数据和变更流程；提议、执行、导出和管理"
+        },
+        "tier": {
+          "read": "读取",
+          "write": "写入"
+        }
       },
-      "quick-start": {
-        "description": "或者使用以下 CLI 命令。",
-        "title": "方式二：CLI 命令"
-      },
-      "setup": {
-        "add-to-config": "将此 JSON 添加到您的 MCP 客户端配置文件。"
+      "policy": {
+        "current": "当前策略：{{mode}}",
+        "description": "MCP 会话在此最多能做的事。每个会话还受各用户自身权限的限制；启用审计日志输出到标准输出时，策略拒绝会输出到标准输出。",
+        "edit": "编辑策略",
+        "loading": "正在读取访问策略…",
+        "masking": {
+          "badge": "已忽略脱敏豁免",
+          "badge-disabled": "已忽略脱敏豁免 — MCP 已关闭",
+          "badge-unlicensed": "已忽略脱敏豁免 — 未授权脱敏功能",
+          "description": "启用后，即使用户拥有豁免或解除脱敏的授权，在 MCP 会话中被脱敏的数据仍保持脱敏。覆盖范围取决于引擎：Bytebase 本来就不脱敏的地方，这不会有任何改变。控制台不受影响。",
+          "title": "忽略脱敏豁免",
+          "unavailable": "本工作空间未授权数据脱敏功能，因此无论此项如何设置都不会脱敏。"
+        },
+        "masking-pending": {
+          "applied": "此策略将在保留脱敏豁免的状态下保存。",
+          "ignored": "此策略将在忽略脱敏豁免的状态下保存。"
+        },
+        "mode": {
+          "disabled": {
+            "best-for": "适用于：在准备好开启之前先关闭 MCP。",
+            "caption": "MCP 会话无法连接",
+            "description": "任何 MCP 会话都无法连接到本工作空间。",
+            "title": "禁用"
+          },
+          "read-only": {
+            "best-for": "适用于：使用自然语言查询和探索数据。",
+            "caption": "探索与查询",
+            "title": "只读"
+          },
+          "read-write": {
+            "best-for": "适用于：通过 AI 代理执行数据库变更，仍受每位用户自身权限的限制。",
+            "caption": "变更数据和模式",
+            "title": "读写"
+          }
+        },
+        "read-failed": {
+          "description": "请重新加载重试。如果持续失败，说明已存储的策略是 Bytebase 无法解析的，需要运维人员直接修复该行。在无法读取期间，所有 MCP 连接都会被拒绝。",
+          "title": "无法读取访问策略"
+        },
+        "save": "保存策略",
+        "saved": "策略已保存。{{mode}} 将对每个会话的下一次请求生效。",
+        "tightening": "从每个运行中会话的下一个请求起生效。",
+        "tightening-change": "{{from}} → {{to}} 从每个运行中会话的下一个请求起生效。",
+        "title": "访问策略",
+        "unreadable": {
+          "description": "本工作空间存储的能力值是当前构建无法理解的。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
+          "pick": "请选择一种模式后再保存此策略。",
+          "title": "无法读取已存储的访问策略"
+        },
+        "unserved": {
+          "description": "本工作空间存储了 {{stored}}，当前构建不支持该值。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
+          "title": "当前构建不支持已存储的访问策略"
+        }
       },
       "title": "MCP 集成"
     },
@@ -2573,6 +2819,29 @@
         "reactivate-confirm-title": "确定启用"
       },
       "add-member": "添加成员",
+      "admin": {
+        "change-email": "修改邮箱",
+        "change-email-description": "将该账号的登录邮箱从 {{email}} 修改为新邮箱。该用户需使用新邮箱登录。",
+        "create-user": "创建用户",
+        "create-user-roles-failed": "账号已创建，但角色分配失败。请在成员页面中设置。",
+        "deactivate": "停用用户",
+        "deactivate-tip": "账号数据会保留，但无法再登录。您之后可以重新启用。",
+        "edit-user": "编辑用户",
+        "email-immutable-tip": "如需更换邮箱，请关闭此面板，在该行的操作菜单中选择“修改邮箱”。",
+        "external-source": "该账号从 {{source}} 同步。此处的修改可能会被下次同步覆盖。",
+        "generate": "生成",
+        "reactivate": "启用用户",
+        "reactivate-tip": "该账号可以使用原有的凭证和角色重新登录。",
+        "reset-mfa": "重置两步验证",
+        "reset-mfa-optional": "{{user}} 将失去当前的验证器和恢复码，在重新绑定之前将不使用两步验证登录。",
+        "reset-mfa-recovery-first": "如果对方还有恢复码，可以直接用恢复码登录并自行重新绑定，无需重置。",
+        "reset-mfa-required": "{{user}} 将失去当前的验证器和恢复码。此工作空间要求两步验证，因此对方下次登录时必须重新绑定验证器。",
+        "reset-password": "重置密码",
+        "reset-password-deliver": "请通过可信渠道发送给对方。Bytebase 不会通过邮件发送。",
+        "reset-password-description": "为 {{user}} 设置新密码。该用户的所有会话都会退出登录，需要使用新密码重新登录。",
+        "reset-password-issued": "{{user}} 的新密码。仅显示一次，之后无法再次查看。",
+        "saas-read-only": "云端账号资料由账号本人管理。请在成员页面管理工作空间访问权限。"
+      },
       "all-users": "全部用户",
       "assign-role": "分配角色",
       "cannot-revoke-self": "您不能撤销自己",
@@ -2627,7 +2896,7 @@
       "select-role_other": "选择角色",
       "service-account": "服务账号",
       "service-accounts": "服务账号",
-      "service-key-copied": "Service Key 已复制，请勿泄漏",
+      "service-key-reset-and-copied": "Service Key 已重置并复制",
       "show-inactive": "显示已停用账户",
       "table": {
         "account": "账户",
@@ -2642,12 +2911,16 @@
       "workload-identity-all-branches-tags": "所有分支和标签",
       "workload-identity-allowed-branches-tags": "允许的分支/标签",
       "workload-identity-audience": "受众",
+      "workload-identity-audience-hint": "流水线请求的 audience。Bytebase 生成的工作流请求 bytebase；配置指南请求提供方默认值，如果流水线使用该值，请另起一行添加。",
       "workload-identity-branch": "分支",
       "workload-identity-branch-hint": "留空表示允许所有分支",
+      "workload-identity-config-rejected": "Bytebase 无法接受此配置：",
+      "workload-identity-generic-oidc": "通用 OIDC",
       "workload-identity-gitlab-url": "GitLab 地址",
       "workload-identity-gitlab-url-hint": "您的 GitLab 实例地址",
       "workload-identity-group": "Group / 用户名",
       "workload-identity-issuer": "发行者 URL",
+      "workload-identity-jwks-url": "JWKS URL",
       "workload-identity-owner": "组织 / 用户名",
       "workload-identity-platform": "平台",
       "workload-identity-project": "项目",
@@ -2665,6 +2938,10 @@
       "display-name": "您的姓名",
       "display-name-placeholder": "输入您的姓名",
       "email": "邮箱",
+      "enable-sample-databases": "启用示例数据库",
+      "enable-sample-databases-create-change": "启用示例数据库作为安全的变更目标",
+      "enable-sample-databases-mark-sensitive-data": "启用示例数据库以立即试用数据脱敏",
+      "enable-sample-databases-query-data": "启用示例数据库以立即开始查询",
       "password": "密码",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
@@ -2672,13 +2949,42 @@
       "password-mismatch": "新密码不匹配",
       "phone": "手机号",
       "phone-tips": "请包含国家代码前缀 +86xxxxxx",
-      "role": "角色",
       "setup-failed": "更新个人资料失败。",
       "setup-first-project": "设置第一个项目",
+      "setup-scenario": {
+        "continue": "继续",
+        "create-database-change": {
+          "description": "定义变更并创建可追踪的工单。",
+          "title": "创建数据库变更"
+        },
+        "mark-sensitive-data": {
+          "description": "识别敏感列并应用数据脱敏。",
+          "title": "标记敏感数据"
+        },
+        "outcome-title": "您想使用 Bytebase 做什么？",
+        "query-data": {
+          "description": "打开 SQL Editor 并对数据库运行一条语句。",
+          "title": "查询数据"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "我会独自使用 Bytebase。",
+            "title": "仅我自己"
+          },
+          "team": {
+            "description": "我会和其他成员一起使用。",
+            "title": "我的团队"
+          },
+          "title": "谁会和您一起使用 Bytebase？"
+        }
+      },
       "setup-skip": "稍后再说",
+      "setup-steps": {
+        "scenario": "选择目标",
+        "workspace": "设置工作空间"
+      },
+      "setup-submit": "设置我的工作空间",
       "setup-success": "个人资料已更新。",
-      "setup-title": "欢迎！设置您的工作空间",
-      "subscription": "（升级到付费方案来解锁角色管理）",
       "workspace-name": "工作空间名称",
       "workspace-name-placeholder": "输入工作空间名称"
     },
@@ -2725,6 +3031,7 @@
           "masking-type": "算法类型"
         }
       },
+      "apply-masking": "应用脱敏",
       "classification": {
         "empty-classification": "\"classification\" 字段为空",
         "guide-classification": "\"classification\" 以 ID 为键映射各分类。叶子分类必须引用级别编号，父分类省略级别。",
@@ -2735,6 +3042,7 @@
         "missing-classification": "缺少 \"classification\" 字段",
         "missing-levels": "缺少 \"levels\" 字段"
       },
+      "columns-to-mask": "要脱敏的列",
       "global-rules": {
         "condition-order": "条件序列",
         "delete-rule-tip": "删除这条规则？",
@@ -2746,10 +3054,18 @@
         "re-order": "排序"
       },
       "grant-access": "授予访问权限",
+      "mark-sensitive-data": "标记敏感数据",
+      "mark-sensitive-data-description": "选择要在查询结果中隐藏其值的列。",
       "never-expires": "无过期时间",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
+      "semantic-type-description": "语义类型对含义相同的列进行分组，以便 Bytebase 应用一致的脱敏方式。",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "没有需要保存的更改",
+          "title-required": "标题为必填项"
+        },
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
+        "masking-effect": "脱敏效果：{{effect}}",
         "select": "选择语义类型",
         "self": "语义类型",
         "table": {
@@ -2757,13 +3073,9 @@
           "description": "描述",
           "icon": "图标",
           "masking-algorithm": "脱敏算法",
-          "semantic-type": "语义类型"
-        },
-        "template": {
-          "description": "您可以从模板中应用内置语义类型。内置模板无法更改。",
-          "duplicate-warning": "语义类型“{{title}}”已存在"
-        },
-        "use-predefined-type": "使用预定义类型"
+          "semantic-type": "语义类型",
+          "title": "标题"
+        }
       }
     },
     "sidebar": {
@@ -2870,26 +3182,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "基本信息",
-    "data": {
-      "built-in": "使用内置示例",
-      "built-in-desc": "生成示例项目和实例",
-      "self-setup": "设置项目"
-    },
-    "purposes": {
-      "alter-schema": "变更 Schema",
-      "query-data": "查询数据",
-      "self": "您使用 Bytebase 的主要目的是什么？"
-    },
-    "self": "设置",
-    "skip-setup": "跳过设置",
-    "workflow": {
-      "self": "您使用数据库的工作流程是怎样的？",
-      "simple": "无需复杂的工作流程，需要 UI 工具",
-      "team": "与队友合作，需要 CI/CD 工作流"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "仅显示收藏",
@@ -2986,6 +3278,10 @@
     "copy-selected-rows-as-csv": "将选定行复制为 CSV",
     "copy-selected-rows-as-sql": "将选定行复制为 SQL",
     "copy-url": "复制 URL",
+    "data-explorer-elasticsearch-filter-placeholder": "输入查询表达式，例如 status:active",
+    "data-explorer-filter-placeholder": "输入查询条件，例如 WHERE c.id = \"1\"",
+    "data-explorer-mongodb-filter-placeholder": "输入筛选文档，例如 { \"status\": \"active\" }",
+    "data-explorer-sql-filter-placeholder": "输入查询条件，例如 WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "如需在 <environment></environment> 中执行 DDL/DML 语句，请创建变更计划以获得审批。",
     "download-as-file": "下载为 {{file}} 格式",
     "duration-day": "{{days}} 天",
@@ -2997,6 +3293,7 @@
     "expire-at": "{{time}} 过期",
     "expire-in": "{{time}} 后过期",
     "expired": "已过期",
+    "explore-data": "浏览数据",
     "export-available-via-issue": "通过工单 \"{{title}}\" 可导出",
     "export-available-via-n-grants": "通过 {{count}} 个访问授权可导出:",
     "export-enabled-by-grant": "由访问授权启用导出",
@@ -3005,7 +3302,7 @@
     "format-sql": "格式化 SQL",
     "generate-sql": "生成 SQL",
     "grant-type-export": "导出",
-    "grant-type-unmask": "脱敏豁免",
+    "grant-type-unmask": "取消脱敏",
     "hex-format": "十六进制格式",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -3014,6 +3311,7 @@
       }
     },
     "invalid-database": "数据库 {{database}} 无效",
+    "json-view": "JSON 视图",
     "last-synced": "上次同步时间：<time></time>",
     "loading-data": "加载数据中...",
     "loading-databases": "加载数据库信息...",
@@ -3029,12 +3327,113 @@
     "open-in-new-tab": "在新选项卡中打开",
     "opened-from-link": "从链接打开",
     "pending-query": "待处理查询",
-    "preview-table-data": "预览表数据",
     "previous-row": "上一行",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
     "query-history-not-found": "查询历史记录不存在或已无法访问",
+    "query-plan-load-failed": "加载查询计划失败",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "已复制",
+        "failed": "复制失败",
+        "plan": "复制计划",
+        "query": "复制查询"
+      },
+      "details": {
+        "select-node": "选择节点以查看详情。"
+      },
+      "diagram": {
+        "collapse": "折叠 {{node}} 下的 {{count}} 个节点",
+        "cost": "成本 {{cost}}",
+        "estimated-rows": "预计 {{count}} 行",
+        "expand": "展开 {{node}} 下的 {{count}} 个节点",
+        "fit": "适应视图",
+        "nodes-hidden": "已隐藏 {{count}} 个节点",
+        "plan-cost-share": "占计划成本的 {{share}}",
+        "rows": "行数 {{count}}",
+        "zoom-in": "放大",
+        "zoom-out": "缩小"
+      },
+      "error": {
+        "mssql-empty": "SQL Server 未返回此语句的查询计划。",
+        "mssql-invalid": "查询计划不是有效的 XML。需要 SHOWPLAN_XML 输出。",
+        "mssql-no-plan": "查询计划 XML 不是至少包含一条语句的 SQL Server showplan。",
+        "postgres-empty": "PostgreSQL 未返回此语句的查询计划。",
+        "postgres-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN (FORMAT JSON) 输出。",
+        "postgres-no-plan": "查询计划 JSON 不包含 \"Plan\" 对象。",
+        "spanner-empty": "Spanner 未返回此语句的查询计划。",
+        "spanner-emulator": "Spanner 未返回此语句的查询计划。Spanner 模拟器不会为任何语句返回计划，请在 Spanner 实例上执行解释以查看计划。",
+        "spanner-invalid": "查询计划不是有效的 JSON。需要 Spanner 查询计划。",
+        "spanner-no-plan": "查询计划 JSON 不包含根节点为操作符的 \"planNodes\" 列表。",
+        "too-deep": "查询计划嵌套过深，此可视化工具无法绘制。",
+        "unreadable": "无法读取此查询计划"
+      },
+      "grid": {
+        "added-cost": "新增成本",
+        "added-cost-hint": "此节点在其子节点之上增加的成本；某些引擎还会在此计入输入重复执行的成本，例如嵌套循环下的输入。条形图表示该成本占计划总成本的比例。",
+        "caption": "按规划器嵌套顺序排列的计划节点，父节点在子节点之前。",
+        "estimated-rows": "预计行数",
+        "node": "节点",
+        "rows": "行数",
+        "total-cost": "总成本",
+        "width": "宽度",
+        "width-hint": "预计行宽（字节）"
+      },
+      "highlight": {
+        "cost": "成本",
+        "cost-hint": "按节点在其子节点之上增加的成本着色",
+        "label": "高亮",
+        "off": "关闭",
+        "off-hint": "不为任何节点卡片着色",
+        "rows": "行数",
+        "rows-hint": "按预计行数着色"
+      },
+      "legend": {
+        "cost": "每张卡片的条形图表示该节点占计划预计成本的比例",
+        "rows": "边的粗细随其子节点预计返回的行数增加"
+      },
+      "metric": {
+        "added-cost": "新增成本",
+        "bytes": "{{count}} 字节",
+        "estimated-rows": "预计行数",
+        "row-width": "行宽",
+        "startup-cost": "启动成本",
+        "total-cost": "总成本"
+      },
+      "query": {
+        "missing": "此计划未记录对应语句。"
+      },
+      "summary": {
+        "added-cost": "新增成本",
+        "cost-by-operation": "按操作统计成本",
+        "cost-by-operation-description": "计划中每种节点类型及其总成本。",
+        "cost-ranges": "成本范围",
+        "cost-ranges-description": "每个节点从启动成本（返回第一行前的成本）延伸到总成本，两者都包含其下所有节点。颜色越深表示承担的计划成本越高。成本并非执行时间表：连接的两个输入会在此重叠，但实际依次执行。",
+        "costliest": "成本最高的操作符",
+        "costliest-description": "按节点在其子节点之上增加的成本排序。当输入重复执行时（如嵌套循环），某些引擎会将重复成本计入重新运行该输入的节点，而不是输入本身。",
+        "count": "数量",
+        "estimate-note": "语句已规划但未执行，因此此处所有数据都是优化器估算值，而非测量值。成本单位是任意的，只能在此计划内比较。",
+        "estimated-rows-returned": "预计返回行数",
+        "no-added-cost": "此计划中没有节点自身增加预计成本。",
+        "nodes": "节点",
+        "operation": "操作",
+        "share": "占比",
+        "timeline-node": "{{name}}，成本 {{startup}} 到 {{total}}，占计划成本的 {{share}}",
+        "total-estimated-cost": "预计总成本"
+      },
+      "tab": {
+        "diagram": "图表",
+        "grid": "网格",
+        "query": "查询",
+        "summary": "摘要",
+        "text": "文本"
+      },
+      "totals": {
+        "estimated-cost": "预计成本 {{cost}}",
+        "nodes": "{{count}} 个节点"
+      }
+    },
     "query-time": "查询时间",
     "re-request": "重新申请",
     "recent": "最近",
@@ -3046,7 +3445,11 @@
     },
     "request-aborted": "用户中止了请求",
     "request-access-grant": "申请访问授权",
+    "request-export": "申请导出",
+    "request-query": "申请查询",
+    "request-unmask": "申请取消脱敏",
     "result-detail": {
+      "cell": "单元格详情",
       "next-match": "下一个匹配项",
       "previous-match": "上一个匹配项",
       "search": "搜索详情"
@@ -3054,6 +3457,7 @@
     "result-limit": {
       "self": "结果限制"
     },
+    "result-view-mode": "结果视图模式",
     "revoke-access": "撤销",
     "revoke-confirm": "确定要撤销此访问授权吗？",
     "rows": {
@@ -3063,13 +3467,16 @@
     "rows-upper-limit": "到达查询结果条数上限",
     "save-sheet": "保存查询",
     "saved-query-share": {
+      "add-people": "添加用户或分组",
       "editor": "编辑者",
-      "granted-at-other-level": "另有 {{count}} 个成员在其他权限级别。",
+      "load-failed": "无法加载共享设置。",
       "not-shared": "尚未共享给任何人。",
       "only-users-and-groups": "只能将访问权限授予用户和用户组。",
+      "owner": "所有者",
+      "people-with-access": "拥有访问权限",
       "policy-changed": "共享设置已在别处更改，已重新加载最新配置。",
       "private-hint": "仅你和工作区管理员可以打开该已保存的查询。",
-      "shared-with": "共享给",
+      "share-title": "“{{title}}”",
       "viewer": "查看者"
     },
     "scroll-to-bottom": "滚动到底部",
@@ -3080,6 +3487,7 @@
     "search-scope-row-number-description": "输入行号跳转到指定行。",
     "search-scope-row-number-title": "行号",
     "select-a-database-to-start": "选择数据库以开始",
+    "select-a-project-to-choose-a-database": "选择项目以选择数据库",
     "select-connection": "请选择数据连接",
     "select-encoding": "选择编码",
     "self": "SQL 编辑器",
@@ -3113,7 +3521,6 @@
     "view-detail": "查看详情",
     "view-issue": "查看工单",
     "view-schema-text": "查看文本 Schema",
-    "visualize-explain": "可视化 Explain",
     "web-socket": {
       "connection-status": {
         "connected": "已连接",
@@ -3296,8 +3703,7 @@
     },
     "prior-backup": "预备份受影响数据",
     "run-immediately": {
-      "description": "点击“运行”后，任务将立即开始执行。",
-      "self": "立即运行"
+      "description": "点击“运行”后，任务将立即开始执行。"
     },
     "run-task": "运行任务 | 运行任务",
     "schedule-for-later": {
@@ -3393,6 +3799,7 @@
     },
     "self": "双重认证",
     "setup-steps": {
+      "confirm-code": "输入身份验证器中的最新代码以完成设置",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "这些代码是在您无法收到双重认证代码的情况下访问您的账户。如果您找不到这些代码，您将失去对您账户的访问。",
@@ -3424,21 +3831,35 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "创建数据库变更",
       "query": "前往 SQL Editor"
     },
+    "all-steps-completed": "所有步骤已完成",
     "descriptions": {
-      "database": "创建数据库或将数据库转移到项目中，然后查询数据。",
-      "instance": "连接实例，让 Bytebase 可以同步你的数据库。",
-      "project": "创建项目来管理数据库和变更。",
-      "sql-editor": "在 SQL Editor 中查询数据，或创建受管数据库变更。"
+      "add-teammate": "邀请团队成员并授予工作空间访问权限。",
+      "create-database-change": "定义数据库变更并创建对应工单。",
+      "database": "打开数据库，浏览其中的 schema 和表。",
+      "instance": "连接实例，以便 Bytebase 同步其中的数据库。",
+      "mark-sensitive-data": "打开所选数据库，为敏感列分配语义类型。",
+      "project": "创建项目来组织数据库和变更。",
+      "query-data": "在 SQL Editor 中打开所选数据库并运行任意语句。"
     },
     "dismiss": "关闭指南",
+    "generic": {
+      "title": "设置 Bytebase"
+    },
+    "getting-started": "入门指南",
     "intro": {
+      "create-user-description": "在此自托管工作空间中为团队成员创建账户。",
+      "create-user-title": "创建用户",
       "database-description": "在已连接的实例中创建数据库。",
       "database-title": "创建数据库",
+      "grant-access-description": "邀请团队成员并分配工作空间角色。",
+      "grant-access-title": "授予工作空间访问权限",
       "instance-description": "创建实例，让 Bytebase 可以连接到你的数据库服务器。",
       "instance-title": "连接实例",
+      "mark-sensitive-data-description": "选择一列并分配语义类型，以便 Bytebase 应用数据脱敏。",
+      "mark-sensitive-data-title": "标记敏感数据",
+      "mark-sensitive-fields-description": "打开表或集合，在其目录中为敏感字段分配语义类型。",
       "project-description": "先创建一个项目。实例连接后，数据库可以同步到该项目中。",
       "project-title": "创建项目",
       "transfer-description": "选择一个或多个数据库，然后转移到项目。",
@@ -3446,12 +3867,28 @@
     },
     "prepare-database-tip": "选择数据库并转移到项目。",
     "previous-step-required": "你需要先完成上一步。",
-    "self": "设置 Bytebase",
+    "product-model": "Bytebase 的运作方式",
+    "scenarios": {
+      "create-database-change": {
+        "title": "创建数据库变更"
+      },
+      "mark-sensitive-data": {
+        "title": "标记敏感数据"
+      },
+      "query-data": {
+        "title": "查询数据"
+      }
+    },
+    "step-progress": "第 {{current}} 步，共 {{total}} 步",
     "steps": {
-      "database": "准备数据库",
+      "add-teammate": "添加团队成员",
+      "create-database-change": "创建数据库变更",
+      "database": "浏览数据库",
       "instance": "连接实例",
+      "mark-sensitive-data": "标记敏感数据",
       "project": "创建项目",
-      "query": "查询数据"
-    }
+      "query-data": "查询数据"
+    },
+    "view-all-steps": "查看所有步骤"
   }
 }

@@ -2,9 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+import { FormField, FormFieldGroup } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetFooter,
   SheetHeader,
@@ -188,7 +190,7 @@ export function EditColumnForeignKeySheet({
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent width="wide">
+      <SheetContent width="standard">
         <SheetHeader>
           <SheetTitle>
             {foreignKey
@@ -196,70 +198,58 @@ export function EditColumnForeignKeySheet({
               : t("schema-editor.create-foreign-key")}
           </SheetTitle>
         </SheetHeader>
-        <div className="flex flex-col gap-y-4 py-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              {t("schema-editor.foreign-key.name")}
-            </label>
-            <Input
-              value={fkName}
-              autoComplete="off"
-              onChange={(e) => setFkName(e.target.value)}
-            />
-          </div>
-          {showSchemaSelector && (
-            <div>
-              <label className="mb-1 block text-sm font-medium">
-                {t("schema-editor.foreign-key.referenced-schema")}
-              </label>
+        <SheetBody>
+          <FormFieldGroup>
+            <FormField title={t("schema-editor.foreign-key.name")}>
+              <Input
+                value={fkName}
+                autoComplete="off"
+                onChange={(e) => setFkName(e.target.value)}
+              />
+            </FormField>
+            {showSchemaSelector && (
+              <FormField
+                title={t("schema-editor.foreign-key.referenced-schema")}
+              >
+                <Combobox
+                  value={refSchemaName}
+                  onChange={(val) => handleSchemaChange(val as string)}
+                  options={schemaOptions}
+                  portal
+                />
+              </FormField>
+            )}
+            <FormField title={t("schema-editor.foreign-key.referenced-table")}>
               <Combobox
-                value={refSchemaName}
-                onChange={(val) => handleSchemaChange(val as string)}
-                options={schemaOptions}
+                value={refTableName ?? ""}
+                onChange={(val) => handleTableChange((val as string) || null)}
+                options={tableOptions}
                 portal
               />
-            </div>
+            </FormField>
+            <FormField title={t("schema-editor.foreign-key.referenced-column")}>
+              <Combobox
+                value={refColumnName ?? ""}
+                onChange={(val) => setRefColumnName((val as string) || null)}
+                options={columnOptions}
+                portal
+              />
+            </FormField>
+          </FormFieldGroup>
+        </SheetBody>
+        <SheetFooter className={foreignKey ? "justify-between" : undefined}>
+          {foreignKey && (
+            <Button variant="destructive" onClick={handleDelete}>
+              {t("common.delete")}
+            </Button>
           )}
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              {t("schema-editor.foreign-key.referenced-table")}
-            </label>
-            <Combobox
-              value={refTableName ?? ""}
-              onChange={(val) => handleTableChange((val as string) || null)}
-              options={tableOptions}
-              portal
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">
-              {t("schema-editor.foreign-key.referenced-column")}
-            </label>
-            <Combobox
-              value={refColumnName ?? ""}
-              onChange={(val) => setRefColumnName((val as string) || null)}
-              options={columnOptions}
-              portal
-            />
-          </div>
-        </div>
-        <SheetFooter>
-          <div className="flex w-full items-center justify-between">
-            <div>
-              {foreignKey && (
-                <Button variant="destructive" onClick={handleDelete}>
-                  {t("common.delete")}
-                </Button>
-              )}
-            </div>
-            <div className="flex items-center gap-x-2">
-              <Button appearance="outline" onClick={onClose}>
-                {t("common.cancel")}
-              </Button>
-              <Button disabled={!allowConfirm} onClick={handleConfirm}>
-                {t("common.save")}
-              </Button>
-            </div>
+          <div className="flex items-center gap-x-2">
+            <Button appearance="outline" onClick={onClose}>
+              {t("common.cancel")}
+            </Button>
+            <Button disabled={!allowConfirm} onClick={handleConfirm}>
+              {t("common.save")}
+            </Button>
           </div>
         </SheetFooter>
       </SheetContent>

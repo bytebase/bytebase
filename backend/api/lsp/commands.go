@@ -18,8 +18,8 @@ type SetMetadataCommandParams struct {
 
 // SetMetadataCommandArguments are the arguments to the "setMetadata" command.
 type SetMetadataCommandArguments struct {
-	// The InstanceID is the instance ID to set metadata for.
-	// Format: instances/{instance}
+	// The InstanceID is the instance resource name to set metadata for.
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	InstanceID string `json:"instanceId,omitempty"`
 	// The DatabaseName is the connection database name.
 	// For PostgreSQL, it's required.

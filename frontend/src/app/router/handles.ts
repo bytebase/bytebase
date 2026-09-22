@@ -1,10 +1,9 @@
 // Route-name constants and metadata for the React Router configuration.
 
-// --- dashboard/workspaceRoutes (inlined) ---
+// --- Workspace ---
 export const WORKSPACE_ROOT_MODULE = "workspace.root";
 export const WORKSPACE_ROUTE_LANDING = "workspace.landing";
 export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
-export const WORKSPACE_ROUTE_USER_PROFILE = "workspace.user-profile";
 export const DATABASE_ROUTE_DASHBOARD = "workspace.database";
 export const INSTANCE_ROUTE_DASHBOARD = "workspace.instance";
 export const PROJECT_V1_ROUTE_DASHBOARD = "workspace.project";
@@ -35,7 +34,7 @@ export const WORKSPACE_ROUTE_MCP = `${WORKSPACE_ROUTE_INTEGRATION}.mcp`;
 export const WORKSPACE_ROUTE_403 = "error.403";
 export const WORKSPACE_ROUTE_404 = "error.404";
 
-// --- auth.ts ---
+// --- Auth ---
 export const AUTH_SIGNIN_MODULE = "auth.signin";
 export const AUTH_SIGNUP_MODULE = "auth.signup";
 export const AUTH_MFA_MODULE = "auth.mfa";
@@ -43,14 +42,11 @@ export const AUTH_PASSWORD_RESET_MODULE = "auth.password.reset";
 export const AUTH_PASSWORD_FORGOT_MODULE = "auth.password.forgot";
 export const AUTH_OAUTH_CALLBACK_MODULE = "auth.oauth.callback";
 export const AUTH_OIDC_CALLBACK_MODULE = "auth.oidc.callback";
-export const AUTH_PROFILE_SETUP_MODULE = "auth.profile.setup";
+export const AUTH_SETUP_MODULE = "auth.setup";
 export const AUTH_2FA_SETUP_MODULE = "auth.2fa.setup";
 export const OAUTH2_CONSENT_MODULE = "oauth2.consent";
 
-// --- setup.ts ---
-export const SETUP_MODULE = "setup";
-
-// --- sqlEditor.ts ---
+// --- SQL Editor ---
 export const SQL_EDITOR_HOME_MODULE = "sql-editor.home";
 export const SQL_EDITOR_PROJECT_MODULE = "sql-editor.project";
 export const SQL_EDITOR_INSTANCE_MODULE = "sql-editor.instance";
@@ -58,23 +54,23 @@ export const SQL_EDITOR_DATABASE_MODULE = "sql-editor.database";
 export const SQL_EDITOR_SAVED_QUERY_MODULE = "sql-editor.saved-query";
 export const SQL_EDITOR_QUERY_HISTORY_MODULE = "sql-editor.query-history";
 
-// --- dashboard/workspaceSetting.ts ---
+// --- Settings and account ---
 export const SETTING_ROUTE = "setting";
 export const SETTING_ROUTE_WORKSPACE = `${SETTING_ROUTE}.workspace`;
-export const SETTING_ROUTE_PROFILE = `${SETTING_ROUTE}.profile`;
-export const SETTING_ROUTE_PROFILE_TWO_FACTOR = `${SETTING_ROUTE_PROFILE}.two-factor`;
+export const ACCOUNT_ROUTE = "account";
+export const ACCOUNT_ROUTE_TWO_FACTOR = `${ACCOUNT_ROUTE}.two-factor`;
 export const SETTING_ROUTE_WORKSPACE_GENERAL = `${SETTING_ROUTE_WORKSPACE}.general`;
 export const SETTING_ROUTE_WORKSPACE_SUBSCRIPTION = `${SETTING_ROUTE_WORKSPACE}.subscription`;
 
-// --- dashboard/instance.ts ---
+// --- Instance ---
 export const INSTANCE_ROUTE_CREATE = `${INSTANCE_ROUTE_DASHBOARD}.create`;
 export const INSTANCE_ROUTE_DETAIL = `${INSTANCE_ROUTE_DASHBOARD}.detail`;
 export const INSTANCE_ROUTE_DATABASE_DETAIL = `${INSTANCE_ROUTE_DASHBOARD}.database.detail`;
 
-// --- dashboard/environmentV1.ts ---
+// --- Environment ---
 export const ENVIRONMENT_V1_ROUTE_DETAIL = `${ENVIRONMENT_V1_ROUTE_DASHBOARD}.detail`;
 
-// --- dashboard/projectV1.ts ---
+// --- Project ---
 export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.detail`;
 export const PROJECT_V1_ROUTE_INSTANCES = `${PROJECT_V1_ROUTE_DASHBOARD}.instance`;
 export const PROJECT_V1_ROUTE_INSTANCE_CREATE = `${PROJECT_V1_ROUTE_INSTANCES}.create`;
@@ -111,7 +107,7 @@ export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE = `${PROJECT_V1_ROUTE_PLAN_ROLL
 export const PROJECT_V1_ROUTE_PLAN_ROLLOUT_TASK = `${PROJECT_V1_ROUTE_PLAN_ROLLOUT_STAGE}.task`;
 export const PROJECT_V1_ROUTE_GITOPS = `${PROJECT_V1_ROUTE_DASHBOARD}.gitops`;
 
-// --- dashboard/projectV1RouteHelpers.ts ---
+// --- Project route helpers ---
 export const PLAN_DETAIL_PHASE_CHANGES = "changes";
 export const PLAN_DETAIL_PHASE_REVIEW = "review";
 export const PLAN_DETAIL_PHASE_DEPLOY = "deploy";
@@ -139,7 +135,6 @@ export const isPlanDetailPhase = (
   value === PLAN_DETAIL_PHASE_DEPLOY;
 
 // Normalize a query value (string | string[] | undefined) to a single string.
-// Ported vue-free from projectV1RouteHelpers.getRouteQueryString.
 export function getRouteQueryString(
   value?: string | string[] | undefined
 ): string | undefined {

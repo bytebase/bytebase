@@ -1,15 +1,18 @@
 import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import {
+  ACCOUNT_ROUTE,
   isSqlEditorRouteName,
-  SETTING_ROUTE_PROFILE,
-  SQL_EDITOR_HOME_MODULE,
   useCurrentRoute,
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
 import { UserAvatar } from "@/components/UserAvatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,14 +24,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { BlockTooltip } from "@/components/ui/tooltip";
 import {
-  useAppFeature,
+  useIntroStateByKey,
   useOptionalCurrentUser,
-  useQuickstartReset,
-  useServerInfo,
   useSubscription,
   useWorkspace,
+  useWorkspaceSetupGuideResume,
 } from "@/hooks/useAppState";
+import { guideCompletionAcknowledgedKey } from "@/modules/workspace-setup-guide/progress";
+import { getGuideJourney } from "@/modules/workspace-setup-guide/scenarios";
+import {
+  readGuideWorkspaceUsage,
+  readSelectedGuideScenarioId,
+} from "@/modules/workspace-setup-guide/selection";
 import { useAppStore } from "@/stores/app";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { isDev } from "@/utils/util";
@@ -46,13 +55,22 @@ export function ProfileMenuTrigger({
 }: ProfileMenuProps) {
   const { t, i18n } = useTranslation();
   const currentUser = useOptionalCurrentUser();
-  const serverInfo = useServerInfo();
   const { subscription, uploadLicense } = useSubscription();
   const workspace = useWorkspace();
   const route = useCurrentRoute();
   const navigate = useNavigate();
-  const resetQuickstartProgress = useQuickstartReset();
-  const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
+  const resumeWorkspaceSetupGuide = useWorkspaceSetupGuideResume();
+  const scenarioId = readSelectedGuideScenarioId();
+  const workspaceUsage = readGuideWorkspaceUsage();
+  const journey = getGuideJourney(scenarioId, workspaceUsage);
+  const completionAcknowledged = useIntroStateByKey(
+    guideCompletionAcknowledgedKey(journey.id)
+  );
+  const allowMultipleMembers =
+    workspaceUsage === "team" && !completionAcknowledged;
+  const workspaceSetupGuideEnabled = useAppStore((state) =>
+    state.workspaceSetupGuideEnabled(allowMultipleMembers)
+  );
   const currentPlan = subscription?.plan ?? PlanType.FREE;
   const devLicenseOptions = [
     {
@@ -71,39 +89,34 @@ export function ProfileMenuTrigger({
       plan: PlanType.ENTERPRISE,
     },
   ];
-  const quickStartEnabled =
-    !hideQuickStart &&
-    Boolean(serverInfo?.enableSample) &&
-    (serverInfo?.userCountInIam ?? 0) <= 1;
   const customLogo = workspace?.logo ?? "";
   const [open, setOpen] = useState(false);
 
   const wrapperClass = useMemo(() => {
     if (!customLogo) {
-      return "flex items-center justify-center rounded-3xl bg-gray-100";
+      return "flex items-center justify-center rounded-full bg-control-bg";
     }
     return size === "small"
-      ? "flex items-center justify-center rounded-3xl bg-gray-100 md:px-1 md:py-0.5"
-      : "flex items-center justify-center rounded-3xl bg-gray-100 md:px-2 md:py-1.5";
+      ? "flex items-center justify-center rounded-full bg-control-bg md:px-1 md:py-0.5"
+      : "flex items-center justify-center rounded-full bg-control-bg md:px-2 md:py-1.5";
   }, [customLogo, size]);
 
   const logoClass = size === "small" ? "mr-2" : "mr-4";
 
-  const sqlEditorMenuLabel = isSqlEditorRouteName(route.name)
+  const isInSQLEditor = isSqlEditorRouteName(route.name);
+  const sqlEditorMenuLabel = isInSQLEditor
     ? t("settings.general.workspace.default-landing-page.go-to-workspace")
     : t("settings.general.workspace.default-landing-page.go-to-sql-editor");
 
   const handleProfileNavigate = () => {
     if (!link) return;
     setOpen(false);
-    void navigate.push({ name: SETTING_ROUTE_PROFILE });
+    void navigate.push({ name: ACCOUNT_ROUTE });
   };
 
   const handleWorkspaceToggle = () => {
     const target = navigate.resolve({
-      name: isSqlEditorRouteName(route.name)
-        ? WORKSPACE_ROUTE_LANDING
-        : SQL_EDITOR_HOME_MODULE,
+      name: WORKSPACE_ROUTE_LANDING,
     });
     setOpen(false);
     window.open(target.fullPath, "_blank", "noopener,noreferrer");
@@ -127,7 +140,12 @@ export function ProfileMenuTrigger({
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger
           render={
-            <button type="button" className="cursor-pointer rounded-full" />
+            <Button
+              appearance="secondary"
+              size="xs"
+              type="button"
+              className="h-auto rounded-full p-0"
+            />
           }
         >
           <UserAvatar
@@ -137,22 +155,31 @@ export function ProfileMenuTrigger({
           />
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="w-56 max-h-none overflow-visible p-0">
-          <DropdownMenuItem
-            className="block w-full px-4 py-3"
-            onClick={handleProfileNavigate}
+        <DropdownMenuContent className="w-56 max-w-[calc(100vw-1rem)] max-h-none overflow-visible p-0">
+          <BlockTooltip
+            content={
+              <>
+                <div>{currentUser?.title}</div>
+                <div>{currentUser?.email}</div>
+              </>
+            }
+            popupClassName="whitespace-normal [overflow-wrap:anywhere]"
+            render={
+              <DropdownMenuItem
+                className="w-full px-4 py-3"
+                onClick={handleProfileNavigate}
+              />
+            }
           >
-            <div className="text-left">
-              <p className="flex justify-between gap-x-2 text-sm">
-                <span className="truncate font-medium text-main">
-                  {currentUser?.title}
-                </span>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-sm font-medium text-main">
+                {currentUser?.title}
               </p>
               <p className="truncate text-sm text-control">
                 {currentUser?.email}
               </p>
             </div>
-          </DropdownMenuItem>
+          </BlockTooltip>
 
           <DropdownMenuSeparator className="mx-0" />
 
@@ -227,20 +254,43 @@ export function ProfileMenuTrigger({
             </DropdownMenuSubmenu>
           ) : null}
 
-          {quickStartEnabled ? (
+          {workspaceSetupGuideEnabled ? (
             <DropdownMenuItem
               onClick={() => {
-                resetQuickstartProgress();
+                behaviorAnalytics.captureMetric(
+                  createBehaviorMetric("workspace setup guide opened", {
+                    properties: {
+                      journey: journey.id,
+                      scenario: scenarioId ?? "unselected",
+                      collaboration_type: workspaceUsage ?? "unselected",
+                    },
+                  })
+                );
+                resumeWorkspaceSetupGuide();
                 setOpen(false);
               }}
             >
-              {t("quick-start.self")}
+              {t("workspace-setup-guide.getting-started")}
             </DropdownMenuItem>
           ) : null}
 
-          <DropdownMenuItem onClick={handleWorkspaceToggle}>
-            {sqlEditorMenuLabel}
-          </DropdownMenuItem>
+          {isInSQLEditor ? (
+            <DropdownMenuItem onClick={handleWorkspaceToggle}>
+              {sqlEditorMenuLabel}
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              render={
+                <SQLEditorButton
+                  openInNewTab
+                  appearance="secondary"
+                  size="sm"
+                  className="w-full justify-start"
+                  label={sqlEditorMenuLabel}
+                />
+              }
+            />
+          )}
 
           <DropdownMenuSeparator className="mx-0" />
 
@@ -251,8 +301,8 @@ export function ProfileMenuTrigger({
           <DropdownMenuItem
             onClick={() => {
               setOpen(false);
-              // logout() computes the signin redirect itself (mirrors the
-              // legacy Pinia auth store) and hard-redirects to clear state.
+              // logout() computes the signin redirect itself and
+              // hard-redirects to clear state.
               void useAppStore.getState().logout();
             }}
           >

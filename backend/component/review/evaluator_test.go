@@ -3,19 +3,24 @@ package review
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
+
+	// Registers the BigQuery parser handlers the same way backend/server
+	// ultimate.go does for the server binary; statementTypesFromParser resolves
+	// through that registry.
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -877,11 +882,7 @@ func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {
 func setupApprovalRunnerStoreInWorkspace(ctx context.Context, t *testing.T, workspaceID string) *store.Store {
 	t.Helper()
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, "INSERT INTO workspace (resource_id) VALUES ($1)", workspaceID)
 	require.NoError(t, err)
@@ -890,13 +891,6 @@ func setupApprovalRunnerStoreInWorkspace(ctx context.Context, t *testing.T, work
 	_, err = db.ExecContext(ctx, "INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', $1, 'Project A')", workspaceID)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return s
 }
 
@@ -931,4 +925,185 @@ func setupApprovalDatabaseGroupFixture(ctx context.Context, t *testing.T, s *sto
 	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
 	require.NoError(t, err)
 	return allDatabases
+}
+
+// TestApprovalTemplateMatchesOnEngineWithoutStatementReport is the BYT-10131
+// regression. BigQuery is outside common.EngineSupportStatementReport, so no
+// SQL summary report exists and statement.sql_type used to be absent from the
+// activation; cel-go resolved it to an unknown and the rule was dropped as a
+// non-match, so the issue reported "No approval required". Both polarities are
+// covered: before the fix the DDL rule wrongly skipped approval, and the DML
+// rule would still skip it under a plain "UNKNOWN" default.
+func TestApprovalTemplateMatchesOnEngineWithoutStatementReport(t *testing.T) {
+	const ddlRule = `!(statement.sql_type in ["INSERT", "UPDATE", "DELETE"]) && resource.environment_id == "prod"`
+	const dmlRule = `statement.sql_type in ["INSERT", "UPDATE", "DELETE"] && resource.environment_id == "prod"`
+	const mergeRule = `statement.sql_type in ["INSERT", "UPDATE", "DELETE", "MERGE"] && resource.environment_id == "prod"`
+	const ddlRuleWithMerge = `!(statement.sql_type in ["INSERT", "UPDATE", "DELETE", "MERGE"]) && resource.environment_id == "prod"`
+	const mergeStatement = "MERGE INTO `users` t USING `staging` s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.name = s.name;"
+
+	tests := []struct {
+		name       string
+		expression string
+		statement  string
+		wantMatch  bool
+	}{
+		{"ddl rule matches ALTER TABLE", ddlRule, "ALTER TABLE `users` ADD COLUMN status STRING;", true},
+		{"ddl rule skips INSERT", ddlRule, "INSERT INTO `users` (id) VALUES (1);", false},
+		{"dml rule matches INSERT", dmlRule, "INSERT INTO `users` (id) VALUES (1);", true},
+		{"dml rule skips ALTER TABLE", dmlRule, "ALTER TABLE `users` ADD COLUMN status STRING;", false},
+		// MERGE writes rows, so a DML rule that names it must fire and the
+		// DDL rule must not. Only the googlesql engines emit MERGE today.
+		{"dml rule matches MERGE when named", mergeRule, mergeStatement, true},
+		{"ddl rule skips MERGE when named", ddlRuleWithMerge, mergeStatement, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			statementTypes := statementTypesFromParser(storepb.Engine_BIGQUERY, tt.statement)
+			a.NotEmpty(statementTypes, "BigQuery must classify the statement without a summary report")
+
+			celVars := expandCELVars(map[string]any{
+				common.CELAttributeResourceEnvironmentID: "prod",
+				common.CELAttributeResourceProjectID:     "project",
+				common.CELAttributeResourceDBEngine:      storepb.Engine_BIGQUERY.String(),
+				common.CELAttributeStatementText:         tt.statement,
+			}, statementTypes, nil)
+
+			template, err := getApprovalTemplate(&storepb.WorkspaceApprovalSetting{
+				Rules: []*storepb.WorkspaceApprovalSetting_Rule{
+					{
+						Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+						Condition: &expr.Expr{Expression: tt.expression},
+						Template:  &storepb.ApprovalTemplate{Title: "DDL Prod"},
+					},
+				},
+			}, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE, celVars)
+			a.NoError(err)
+			if tt.wantMatch {
+				a.NotNil(template)
+				a.Equal("DDL Prod", template.Title)
+			} else {
+				a.Nil(template)
+			}
+		})
+	}
+}
+
+// A sheet of N statements yields N type entries, all identical when the sheet
+// repeats one statement. Every rule is evaluated against every activation, so
+// without deduplication a large sheet costs tens of thousands of pointless
+// evaluations per target, multiplied again by a database group's target count.
+func TestExpandCELVarsDeduplicatesActivations(t *testing.T) {
+	a := require.New(t)
+	base := map[string]any{common.CELAttributeResourceProjectID: "project"}
+
+	repeated := make([]storepb.StatementType, 10000)
+	for i := range repeated {
+		repeated[i] = storepb.StatementType_INSERT
+	}
+	a.Len(expandCELVars(base, repeated, nil), 1)
+
+	// Distinct types survive, in first-seen order.
+	mixed := []storepb.StatementType{
+		storepb.StatementType_INSERT,
+		storepb.StatementType_ALTER_TABLE,
+		storepb.StatementType_INSERT,
+	}
+	got := expandCELVars(base, mixed, nil)
+	a.Len(got, 2)
+	a.Equal("INSERT", got[0][common.CELAttributeStatementSQLType])
+	a.Equal("ALTER_TABLE", got[1][common.CELAttributeStatementSQLType])
+
+	// Deduplication is over the (type, table) pair, not the type alone.
+	pairs := expandCELVars(base, mixed, []string{"users", "users", "orders"})
+	a.Len(pairs, 4)
+
+	// UNSPECIFIED collapses like any other value.
+	unspecified := []storepb.StatementType{
+		storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+		storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+	}
+	a.Len(expandCELVars(base, unspecified, nil), 1)
+}
+
+// OceanBase runs the statement report, so its statement.sql_type comes from the
+// report's StatementTypes that plancheck.SummaryStatementTypes produces
+// (BYT-10136). Cells cover both rule polarities, fail-closed handling of an
+// unclassified statement, first-matching-rule order on a mixed sheet, and the
+// risk level derived from the same list.
+func TestApprovalRuleMatchesOceanBaseSummaryReport(t *testing.T) {
+	const ddlRule = `!(statement.sql_type in ["INSERT", "UPDATE", "DELETE"]) && resource.db_engine == "OCEANBASE"`
+	const dmlRule = `statement.sql_type in ["INSERT", "UPDATE", "DELETE"] && resource.db_engine == "OCEANBASE"`
+	const (
+		insertStmt     = "INSERT INTO t1 (id, c1) VALUES (1, 'a');"
+		updateStmt     = "UPDATE t1 SET c1 = 'x' WHERE id = 1;"
+		alterStmt      = "ALTER TABLE t1 ADD COLUMN c2 INT;"
+		dropStmt       = "DROP TABLE t1;"
+		setSessionStmt = "SET SESSION ob_query_timeout = 10000000;"
+	)
+	ddl := &storepb.WorkspaceApprovalSetting_Rule{
+		Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+		Condition: &expr.Expr{Expression: ddlRule},
+		Template:  &storepb.ApprovalTemplate{Title: "DDL"},
+	}
+	dml := &storepb.WorkspaceApprovalSetting_Rule{
+		Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+		Condition: &expr.Expr{Expression: dmlRule},
+		Template:  &storepb.ApprovalTemplate{Title: "DML"},
+	}
+
+	tests := []struct {
+		name      string
+		statement string
+		rules     []*storepb.WorkspaceApprovalSetting_Rule
+		wantTitle string
+		wantRisk  storepb.RiskLevel
+	}{
+		{"dml rule matches UPDATE", updateStmt, []*storepb.WorkspaceApprovalSetting_Rule{dml}, "DML", storepb.RiskLevel_MODERATE},
+		{"ddl rule matches ALTER TABLE", alterStmt, []*storepb.WorkspaceApprovalSetting_Rule{ddl}, "DDL", storepb.RiskLevel_MODERATE},
+		{"dml rule skips ALTER TABLE", alterStmt, []*storepb.WorkspaceApprovalSetting_Rule{dml}, "", storepb.RiskLevel_MODERATE},
+		{"ddl rule skips UPDATE", updateStmt, []*storepb.WorkspaceApprovalSetting_Rule{ddl}, "", storepb.RiskLevel_MODERATE},
+		{"INSERT is DML and low risk", insertStmt, []*storepb.WorkspaceApprovalSetting_Rule{dml}, "DML", storepb.RiskLevel_LOW},
+		{"DROP TABLE is DDL and high risk", dropStmt, []*storepb.WorkspaceApprovalSetting_Rule{ddl}, "DDL", storepb.RiskLevel_HIGH},
+		// The MySQL-family classifier keeps UNSPECIFIED, which is outside the DML
+		// list, so the negated DML rule catches it.
+		{"unclassified SET SESSION fails closed to the ddl rule", setSessionStmt, []*storepb.WorkspaceApprovalSetting_Rule{ddl}, "DDL", storepb.RiskLevel_LOW},
+		{"unclassified SET SESSION does not pass as DML", setSessionStmt, []*storepb.WorkspaceApprovalSetting_Rule{dml}, "", storepb.RiskLevel_LOW},
+		// Rules iterate outer, activations inner: the first rule any statement of
+		// the sheet satisfies wins. Listing the DDL rule first protects a mixed
+		// sheet; listing the DML no-approval rule first lets the DDL ride along.
+		{"mixed sheet takes the DDL rule when it is listed first", updateStmt + "\n" + alterStmt, []*storepb.WorkspaceApprovalSetting_Rule{ddl, dml}, "DDL", storepb.RiskLevel_MODERATE},
+		{"mixed sheet takes the DML rule when it is listed first", updateStmt + "\n" + alterStmt, []*storepb.WorkspaceApprovalSetting_Rule{dml, ddl}, "DML", storepb.RiskLevel_MODERATE},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			stmts, err := parserbase.ParseStatements(storepb.Engine_OCEANBASE, tt.statement)
+			a.NoError(err)
+			statementTypes, err := plancheck.SummaryStatementTypes(storepb.Engine_OCEANBASE, parserbase.ExtractASTs(stmts))
+			a.NoError(err)
+			a.NotEmpty(statementTypes, "the OceanBase summary report must carry statement types")
+
+			report := &storepb.PlanCheckRunResult_Result_SqlSummaryReport{StatementTypes: statementTypes}
+			celVars := expandCELVars(map[string]any{
+				common.CELAttributeResourceEnvironmentID: "test",
+				common.CELAttributeResourceProjectID:     "project",
+				common.CELAttributeResourceDBEngine:      storepb.Engine_OCEANBASE.String(),
+				common.CELAttributeStatementText:         tt.statement,
+			}, report.StatementTypes, nil)
+
+			a.Equal(tt.wantRisk, calculateRiskLevelFromCELVars(celVars))
+
+			template, err := getApprovalTemplate(&storepb.WorkspaceApprovalSetting{Rules: tt.rules}, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE, celVars)
+			a.NoError(err)
+			if tt.wantTitle == "" {
+				a.Nil(template)
+				return
+			}
+			a.NotNil(template)
+			a.Equal(tt.wantTitle, template.Title)
+		})
+	}
 }

@@ -5,9 +5,13 @@ skip condition — check it first to avoid unnecessary work.
 
 ## 1. Determine What Changed
 
+Fetch main with an explicit destination so `origin/main` exists even in checkouts
+without remote-tracking refs. Continue with the diff only after the fetch succeeds.
+
 ```bash
-git diff main...HEAD --stat
-git diff main...HEAD
+git fetch origin +refs/heads/main:refs/remotes/origin/main
+git diff origin/main...HEAD --stat
+git diff origin/main...HEAD
 ```
 
 Use the diff output to decide which sections below apply.
@@ -41,7 +45,9 @@ cause existing users, integrations, or deployments to fail after upgrading.
 
 ## 3. Composite-PK Query Safety
 
-**Skip if:** diff does not touch `backend/store/` or `backend/migrator/`.
+**Skip if:** diff does not touch `backend/store/`, `backend/migrator/`, or `backend/tests/`.
+The CEL-to-SQL filter builders live in `backend/store/`, so a filter change is in
+scope; the collision tests in `backend/tests/` read the metadata DB raw and are too.
 
 Composite primary keys (e.g., `(project, id)`) mean that `id` alone is NOT unique.
 Filtering by `id` without `project` causes cross-project data corruption — the exact
@@ -50,12 +56,13 @@ bug class behind BYT-9259 (customer data loss from silent task re-execution).
 ### Step 3a: Identify composite-PK tables in the diff
 
 Read `backend/migrator/migration/LATEST.sql` and find every table with a multi-column
-`PRIMARY KEY`. The known project-scoped set (as of April 2026) includes:
+`PRIMARY KEY`. The known project-scoped set (as of August 2026) includes:
 
 - `plan (project, id)`
 - `plan_check_run (project, id)`
 - `plan_webhook_delivery (project, plan_id)`
 - `issue (project, id)`
+- `review_run (project, issue_id, type)`
 - `task (project, id)`
 - `task_run (project, id)`
 - `db_group (project, resource_id)`
@@ -66,6 +73,12 @@ Read `backend/migrator/migration/LATEST.sql` and find every table with a multi-c
 task run can share a `created_at` microsecond — BYT-10035), but it is equally
 project-scoped: every predicate on it must include `project` alongside
 `task_run_id`.
+
+`email_verification_code (email, purpose)` and `login_attempt (identity, kind)`
+are composite-PK but not project-scoped: the email/identity column is itself the
+scope. Their store methods must still predicate on the full PK; collision
+coverage is table-specific (`TestCollision_LoginAttempt` in `backend/tests/`)
+rather than via the shared project fixture.
 
 Always verify against LATEST.sql — tables may have been added since this list was
 last updated. Cross-reference with the tables your diff touches.
@@ -91,8 +104,13 @@ This is the exact bug pattern that caused BYT-9259. Fix the query first.
 
 If the diff adds or modifies a store method that touches a composite-PK table:
 
-1. Check if a corresponding `TestCollision*` or `TestClaim*` test exists in `backend/tests/`
-2. If not, add one using `setupCollidingProjects` and `assertProjectUnchanged` from
+1. Check that existing coverage exercises the changed behavior. Follow the root
+   [test-placement policy](../AGENTS.md#test-placement): query isolation belongs
+   in `backend/store`; runner, rollout, and audit behavior belongs in `backend/tests`.
+   Store tests must create colliding keys in distinct scopes, assert the intended
+   target effect, and prove the other scope is unchanged. Add or extend coverage
+   when the existing test does not exercise the changed method or path.
+2. For server-backed collision tests, use `setupCollidingProjects` and `assertProjectUnchanged` from
    `backend/tests/collision_helper_test.go`. The shared snapshot covers `plan`,
    `issue`, `task`, `task_run`, `plan_check_run`, `task_run_log`, `db_group`,
    `release`, and `sheet_blob_ref` (public APIs where one exists). `plan_webhook_delivery`
@@ -137,7 +155,12 @@ modified store method on a composite-PK table.** Write the tests before continui
 
 Only run after steps 3b and 3c are resolved.
 
+Run the store suite and the existing API collision suite. Run the full store
+suite because isolation tests also use behavior-specific names rather than a
+shared `TestCollision` prefix.
+
 ```bash
+go test -v -count=1 ./backend/store/ -timeout 5m
 go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m
 ```
 
@@ -152,7 +175,7 @@ If you removed `Server.StoreForTest()`, renamed `assertFooCollide`, etc.,
 grep for stale references that would now lie to the reader:
 
 ```bash
-git diff main...HEAD --name-only -- '*.go' | xargs -I{} grep -l 'OldSymbolName' AGENTS.md docs/ backend/ 2>/dev/null
+rg -n --hidden -F 'OldSymbolName' AGENTS.md CLAUDE.md docs backend frontend .claude --glob '*.md'
 ```
 
 For each match, either delete the prose or update it to reference the
@@ -161,40 +184,49 @@ spots — they document what helpers exist and what guarantees they make.
 Stale references don't break the build but they actively mislead future
 contributors and AI agents that read these docs at session start.
 
-## 4. Transaction Lock Ordering
+## 4. Pagination Ordering
+
+**Skip if:** the diff does not add or modify a paginated list query in `backend/store/`.
+
+Every offset-paginated list must sort on a total order, or its pages skip and
+repeat rows. Nothing checks this statically — this step is the gate. Read the
+canonical
+[pagination ordering](../backend/store/AGENTS.md#pagination-ordering) rules, then
+for each paginated list in the diff:
+
+- Open `LATEST.sql` and confirm the tiebreak is a primary key or a **non-partial**
+  unique key, that it is `NOT NULL`, and that every column of a composite key is
+  named
+- Confirm no join in the query can duplicate a row, which would break the
+  tiebreak's uniqueness in the result even though it holds in the table
+- Confirm a caller-supplied `order_by` still leaves the tiebreak appended
+- `EXPLAIN` the new clause against the query's real predicate shape and add a
+  migration if the tiebreak pushed it off an index
+
+**STOP — do not proceed to PR creation if a tiebreak is not provably unique under
+the query's own scope.**
+
+## 5. Transaction Lock Ordering
 
 **Skip if:** the diff does not add or modify a transaction in `backend/store/`.
 
-Read the canonical [store row-lock ordering](../backend/store/README.md#transaction-row-lock-ordering), then inspect every explicit and implicit lock in the changed transaction:
+Read the canonical [store row-lock ordering](../backend/store/AGENTS.md#transaction-row-lock-ordering), then inspect every explicit and implicit lock in the changed transaction:
 
 - Transaction-scoped advisory locks are acquired before row locks
 - Existing related rows are locked child-to-parent
 - Batches are locked in full primary-key order
-- Project-owned sibling branches follow the documented `DeleteProject` order
 - `nextProjectID` is called only after required existing-child locks
 - `nextProjectID` locks the project and requires it to be active before allocation;
   missing or deleted projects reject creation
 - `UPDATE`, `DELETE`, foreign-key checks, and conflicting upserts are included in the ordering analysis
 
-Row ordering prevents wait-for cycles on existing rows, but it cannot protect an
-absent child row. The `nextProjectID` active-project check covers only writers that
-call it, not every repository writer. For every new or modified writer of
-purge-managed data, define whether it requires an active project or merely an
-existing project, then serialize and validate that lifecycle policy against
-project deletion.
-
-If the transaction coordinates multiple rows or tables or races with project
-deletion, add deterministic real-PostgreSQL regression tests for both
-lock-acquisition directions. The tests must observe public store behavior, fail
-against the old behavior, and assert terminal outcomes. Verify that neither
-direction ends in a foreign-key failure; merely checking for the absence of
-SQLSTATE `40P01` is insufficient.
+If the transaction coordinates multiple rows or tables, add focused regression
+tests for credible ordinary contention paths and assert terminal outcomes.
 
 **STOP — do not proceed to PR creation if the transaction conflicts with the
-canonical order or lacks the required deterministic lock and lifecycle regression
-tests.**
+documented order or lacks required regression coverage.**
 
-## 5. Image Compatibility Window
+## 6. Image Compatibility Window
 
 **Skip if:** diff does not touch server version metadata, actuator compatibility
 metadata, or `bytebase-action` version/compatibility logic.
@@ -208,47 +240,21 @@ If the diff changes, narrows, or may break the compatibility window, call out
 the policy change, compatibility impact, and validation plan in the PR
 description.
 
-## 6. Lint and Format Gate
+## 7. Lint and Format Gate
 
 **Skip if:** no code changes (docs-only PR).
 
-Run the checks relevant to the files you changed:
+Complete the applicable [root verification gates](../AGENTS.md#verification)
+for Go, frontend, and proto changes. Use that section as the command source of
+truth.
 
-**Go changes:**
-```bash
-gofmt -w <changed .go files>
-golangci-lint run --allow-parallel-runners
-```
-Run golangci-lint repeatedly until zero issues (the linter has a max-issues limit).
-
-**Frontend changes:**
-```bash
-pnpm --dir frontend check
-pnpm --dir frontend type-check
-```
-
-**Proto changes:**
-```bash
-buf lint proto
-```
-
-## 7. Test Gate
+## 8. Test Gate
 
 **Skip if:** no code changes.
 
-- Run tests for every changed package
-- For store changes touching composite-PK tables, run the collision tests (section 3d)
-- For Go changes: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
-- For new migration files: update `TestLatestVersion` in `backend/migrator/migrator_test.go`
-
-## 8. SonarCloud Properties
-
-**Skip if:** no new files or directories added.
-
-Update `.sonarcloud.properties` to reflect the latest file structure:
-- `sonar.exclusions` for generated code, build artifacts, dependencies (directory paths)
-- `sonar.test.inclusions` for test file patterns (e.g., `**/*_test.go`)
-- `sonar.cpd.exclusions` to skip copy-paste detection on test files
+Confirm the root verification gates covered every changed package and affected
+behavior. For composite-key changes, also complete section 3d; for contention
+changes, complete section 5. New migrations require updating `TestLatestVersion`.
 
 ## 9. Final Verification
 

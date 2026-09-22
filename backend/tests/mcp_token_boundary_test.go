@@ -160,10 +160,7 @@ func TestMCPTokenIsRejectedOnGeneralAPI(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 
@@ -181,7 +178,7 @@ func TestMCPTokenIsRejectedOnGeneralAPI(t *testing.T) {
 	callTool := func() {
 		result, err := session.CallTool(ctx, &mcp.CallToolParams{
 			Name:      "call_api",
-			Arguments: map[string]any{"operationId": "ProjectService/ListProjects"},
+			Arguments: map[string]any{"operationId": "WorkspaceService/ListWorkspaces"},
 		})
 		a.NoError(err)
 		raw, err := json.Marshal(result.StructuredContent)
@@ -199,9 +196,9 @@ func TestMCPTokenIsRejectedOnGeneralAPI(t *testing.T) {
 	// The very same bearer on the public v1 API is refused before any identity
 	// resolution — the principal behind it is a workspace admin, so anything
 	// but Unauthenticated here would mean the token still works as an API key.
-	asMCPToken := v1connect.NewProjectServiceClient(ctl.client, ctl.rootURL,
+	asMCPToken := v1connect.NewWorkspaceServiceClient(ctl.client, ctl.rootURL,
 		connect.WithInterceptors(&authInterceptor{token: mcpToken}))
-	_, err = asMCPToken.ListProjects(ctx, connect.NewRequest(&v1pb.ListProjectsRequest{}))
+	_, err = asMCPToken.ListWorkspaces(ctx, connect.NewRequest(&v1pb.ListWorkspacesRequest{}))
 	a.Error(err, "an MCP token must not be a general API bearer")
 	a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
 	a.Contains(err.Error(), "only accepted at /mcp")

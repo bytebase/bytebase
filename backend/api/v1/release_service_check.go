@@ -9,12 +9,14 @@ import (
 	"unicode/utf8"
 
 	"connectrpc.com/connect"
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/parsercontext"
+	"github.com/bytebase/bytebase/backend/component/review"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -34,6 +36,37 @@ import (
 type releaseCheckTarget struct {
 	database *store.DatabaseMessage
 	name     string
+}
+
+// checkReleaseTargetProject refuses a database target that spells another
+// project: it asks for nothing this project could hold, so it is malformed
+// for this request rather than merely absent.
+func checkReleaseTargetProject(projectID, target string, targetProjectID *string) error {
+	if targetProjectID != nil && *targetProjectID != projectID {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
+	}
+	return nil
+}
+
+// checkReleaseDatabase refuses a target whose database is missing or belongs
+// to another project. One error for both: a distinct one would confirm what
+// lives in a project the caller cannot see.
+func checkReleaseDatabase(projectID, target string, database *store.DatabaseMessage) error {
+	if database == nil || database.ProjectID != projectID {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+	}
+	return nil
+}
+
+// checkReleaseDatabaseInstance refuses a target whose instance is gone or whose
+// name is not the database's own canonical one — a project instance's database
+// is not reachable through the workspace form. The same error as
+// checkReleaseDatabase, for the same reason.
+func checkReleaseDatabaseInstance(target string, database *store.DatabaseMessage, instance *store.InstanceMessage) error {
+	if instance == nil || instance.Deleted || database.ResourceName() != target {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+	}
+	return nil
 }
 
 func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[v1pb.CheckReleaseRequest]) (*connect.Response[v1pb.CheckReleaseResponse], error) {
@@ -78,8 +111,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	for _, target := range request.Targets {
 		// Handle database target.
 		if targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target); err == nil {
-			if targetProjectID != nil && *targetProjectID != projectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
+			if err := checkReleaseTargetProject(projectID, target, targetProjectID); err != nil {
+				return nil, err
 			}
 			database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 				Workspace:    workspaceID,
@@ -89,11 +122,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", target))
 			}
-			if database == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
-			}
-			if database.ProjectID != projectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
+			if err := checkReleaseDatabase(projectID, target, database); err != nil {
+				return nil, err
 			}
 			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 				Workspace:  workspaceID,
@@ -102,12 +132,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
-			if instance == nil || instance.Deleted {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-			}
-			if (targetProjectID == nil) != (instance.ProjectID == nil) ||
-				targetProjectID != nil && *targetProjectID != *instance.ProjectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q is not canonical for its instance", target))
+			if err := checkReleaseDatabaseInstance(target, database, instance); err != nil {
+				return nil, err
 			}
 			targets = append(targets, &releaseCheckTarget{database: database, name: target})
 			continue
@@ -328,7 +354,7 @@ loop:
 		originMetadata := model.NewDatabaseMetadata(dbMetadata.GetProto(), nil, nil, engine, store.IsObjectCaseSensitive(instance))
 
 		// Clone metadata for final to avoid modifying the original
-		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*storepb.DatabaseSchemaMetadata)
+		clonedMetadata, ok := proto.Clone(dbMetadata.GetProto()).(*metadatapb.DatabaseSchemaMetadata)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.New("failed to clone database schema metadata"))
 		}
@@ -422,17 +448,25 @@ loop:
 
 				// Get SQL summary report for the statement and target database.
 				// Including affected rows.
-				summaryReport, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
+				summaryReport, estimateWarning, err := plancheck.GetSQLSummaryReport(ctx, s.store, s.sheetManager, s.dbFactory, database, statement)
 				if err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get SQL summary report"))
 				}
 				if summaryReport != nil {
 					checkResult.AffectedRows = summaryReport.AffectedRows
 					checkResult.RiskLevel = getRiskLevelFromStatementTypes(summaryReport.StatementTypes)
-					resp.AffectedRows += summaryReport.AffectedRows
+					resp.AffectedRows = common.AddRows(resp.AffectedRows, summaryReport.AffectedRows)
 					if checkResult.RiskLevel > resp.RiskLevel {
 						resp.RiskLevel = checkResult.RiskLevel
 					}
+				}
+				if estimateWarning != "" {
+					checkResult.Advices = append(checkResult.Advices, &v1pb.Advice{
+						Status:  v1pb.Advice_WARNING,
+						Code:    code.StatementExplainQueryFailed.Int32(),
+						Title:   plancheck.AffectedRowsEstimateIncompleteTitle,
+						Content: estimateWarning,
+					})
 				}
 				if common.EngineSupportSQLReview(engine) {
 					adviceStatus, sqlReviewAdvices, err := s.runSQLReviewCheckForFile(ctx, project, originMetadata, finalMetadata, instance, database, statement)
@@ -783,7 +817,7 @@ func getRiskLevelFromStatementTypes(statementTypes []storepb.StatementType) v1pb
 	for _, statementType := range statementTypes {
 		statementTypeStrings = append(statementTypeStrings, statementType.String())
 	}
-	switch common.GetRiskLevelFromStatementTypes(statementTypeStrings) {
+	switch review.GetRiskLevelFromStatementTypes(statementTypeStrings) {
 	case storepb.RiskLevel_LOW:
 		return v1pb.RiskLevel_LOW
 	case storepb.RiskLevel_MODERATE:
@@ -877,7 +911,7 @@ func (s *ReleaseService) runSQLReviewCheckForFile(
 // COMMENT statements to declare the desired schema. ALTER SEQUENCE is allowed for
 // setting ownership (OWNED BY). CREATE TRIGGER is deliberately shared: both SDL
 // pipelines fully manage triggers — the PostgreSQL dump emits CREATE TRIGGER and the pg
-// omni differ handles OpDropTrigger with a drop advice (pg/sdl_migration_omni.go), the
+// omni differ handles OpDropTrigger with a drop advice (pg/sdl_migration.go), the
 // same as MySQL — so a declared trigger is legal SDL on both engines.
 // STATEMENT_TYPE_UNSPECIFIED is (and must stay) absent from every allowlist so that a
 // parsed-but-unclassified statement fails CLOSED as disallowed.

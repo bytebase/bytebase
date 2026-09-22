@@ -1,5 +1,10 @@
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 
+// The audience the GitOps page's generated workflows request, and the one the
+// create form presets. An identity and the pipeline that authenticates to it
+// must name the same audience, so both read it here.
+export const GENERATED_WORKFLOW_AUDIENCE = "bytebase";
+
 // Parse subject pattern and extract owner/repo/branch/refType
 export const parseWorkloadIdentitySubjectPattern = (wi: {
   workloadIdentityConfig?: {
@@ -16,8 +21,7 @@ export const parseWorkloadIdentitySubjectPattern = (wi: {
     return;
   }
 
-  const providerType = wi.workloadIdentityConfig.providerType;
-  switch (providerType) {
+  switch (wi.workloadIdentityConfig.providerType) {
     case WorkloadIdentityConfig_ProviderType.GITHUB: {
       const match = /^repo:([^/]+)\/(.*)$/.exec(pattern);
       if (!match) return;
@@ -57,13 +61,16 @@ export const parseWorkloadIdentitySubjectPattern = (wi: {
 };
 
 export const getWorkloadIdentityProviderText = (
-  providerType: WorkloadIdentityConfig_ProviderType
+  providerType: WorkloadIdentityConfig_ProviderType,
+  genericOIDCText = ""
 ) => {
   switch (providerType) {
     case WorkloadIdentityConfig_ProviderType.GITHUB:
       return "GitHub Actions";
     case WorkloadIdentityConfig_ProviderType.GITLAB:
       return "GitLab CI";
+    case WorkloadIdentityConfig_ProviderType.OIDC:
+      return genericOIDCText;
     default:
       return "";
   }

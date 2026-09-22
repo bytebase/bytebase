@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -38,7 +38,7 @@ func (*EventDisallowCreateAdvisor) Check(_ context.Context, checkCtx advisor.Con
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type eventDisallowCreateOmniRule struct {
@@ -60,7 +60,7 @@ func (r *eventDisallowCreateOmniRule) OnStatement(node ast.Node) {
 			Code:          advisorcode.DisallowCreateEvent.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("Event is forbidden, but \"%s\" creates", r.QueryText()),
-			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
+			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(n.Loc))),
 		})
 	}
 }

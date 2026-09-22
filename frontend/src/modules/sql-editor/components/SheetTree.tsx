@@ -1,7 +1,5 @@
 /**
- * SheetTree — React port of SheetTree.vue (Stage 12, Phase 3)
- *
- * Full feature parity with the Vue source (850 lines):
+ * SheetTree features:
  *  1.  Tree display
  *  2.  Click saved query → open in editor
  *  3.  Click folder → expand/collapse
@@ -65,7 +63,7 @@ import {
   useSheetContext,
   useSheetContextByView,
 } from "@/modules/sql-editor/model/Sheet";
-import { useSQLEditorStore as useSQLEditorReactStore } from "@/modules/sql-editor/store";
+import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
@@ -89,10 +87,10 @@ export type SheetTreeHandle = {
 
 type Props = {
   readonly view: SheetViewMode;
-  // Multi-select state is only wired on the "my" tree (matches the Vue
-  // v-model binding). When the callbacks are absent, the context-menu
-  // "Multi-select" action is hidden so shared/draft rows cannot populate
-  // the `my` tree's checkedNodes (which feeds Delete + Move-to-folder).
+  // Multi-select state is only wired on the "my" tree. When the callbacks
+  // are absent, the context-menu "Multi-select" action is hidden so
+  // shared/draft rows cannot populate the `my` tree's checkedNodes (which
+  // feeds Delete + Move-to-folder).
   readonly multiSelectMode?: boolean;
   readonly checkedNodes?: SavedQueryFolderNode[];
   readonly onMultiSelectModeChange?: (next: boolean) => void;
@@ -226,8 +224,8 @@ export function SheetTree({
 }: Props) {
   const { t } = useTranslation();
 
-  // ---- Pinia stores (called at top level, not inside the Vue-bridge call) ----------
-  const createSavedQuery = useSQLEditorReactStore((s) => s.createSavedQuery);
+  // ---- Stores ---------------------------------------------------------------
+  const createSavedQuery = useSQLEditorStore((s) => s.createSavedQuery);
 
   // ---- Sheet contexts -------------------------------------------------------
   const {
@@ -604,8 +602,6 @@ export function SheetTree({
   }, []);
 
   // ---- handleRenameNode (debounced via ref) ---------------------------------
-  // We can't use useDebounceFn from @vueuse/core in React, so we implement
-  // a simple debounce with useRef + setTimeout.
   const renameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const execRenameNode = useCallback(async () => {
@@ -613,7 +609,6 @@ export function SheetTree({
     if (!editing) return;
 
     const cleanup = () => {
-      // Use setTimeout to mimic nextTick
       setTimeout(() => {
         setEditingNode(undefined);
       }, 0);
@@ -987,7 +982,7 @@ export function SheetTree({
   );
 
   // ---- handleDuplicateFolderNameDrop: promise-based duplicate check for DnD --
-  // Mirrors Vue's handleDuplicateFolderName: resolves true (merge) or false (cancel).
+  // Resolves true (merge) or false (cancel).
   const handleDuplicateFolderNameDrop = useCallback(
     (parentNode: SavedQueryFolderNode, newKey: string): Promise<boolean> => {
       const sameNode = parentNode.children.find(
@@ -1008,9 +1003,9 @@ export function SheetTree({
   );
 
   // ---- handleMove (DnD via react-arborist) ---------------------------------
-  // Mirrors Vue's handleDrop. react-arborist provides the destination parentNode
-  // (always a folder — arborist resolves drop-on-leaf to its parent) and an
-  // array of dragged nodes. Only single-drag is supported (matches Vue).
+  // react-arborist provides the destination parentNode (always a folder —
+  // arborist resolves drop-on-leaf to its parent) and an array of dragged
+  // nodes. Only single-drag is supported.
   const handleMove: MoveHandler<TreeDataNode<SavedQueryFolderNode>> =
     useCallback(
       async ({ dragNodes, parentNode: arboristParent }) => {
@@ -1030,7 +1025,7 @@ export function SheetTree({
         }
         if (!parentFolderNode || parentFolderNode.loadMore) return;
 
-        // Only handle single drag (matches Vue behaviour)
+        // Only handle single drag
         const draggedTreeNode = dragNodes[0] as
           | NodeApi<TreeDataNode<SavedQueryFolderNode>>
           | undefined;
@@ -1072,7 +1067,7 @@ export function SheetTree({
           rebuildTree();
         }
 
-        // Update expanded keys (nextTick equivalent: defer to next microtask)
+        // Update expanded keys
         setTimeout(() => {
           replaceExpandedKeys({ oldKey: draggedNode.key, newKey });
           setExpandedKeys((prev) => {
@@ -1176,7 +1171,13 @@ export function SheetTree({
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (folderNode.loadMore) return;
+            if (
+              view === "draft" ||
+              folderNode.loadMore ||
+              (view === "shared" && !folderNode.savedQuery)
+            ) {
+              return;
+            }
             openMenuAtPoint(e.clientX, e.clientY, folderNode);
           }}
         >

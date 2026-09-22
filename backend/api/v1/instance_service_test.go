@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"testing"
@@ -9,11 +10,124 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestSampleInstanceLifecycleHooksWrapMetadataUpdate(t *testing.T) {
+	t.Parallel()
+	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
+	_, err := stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instanceID,
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	manager := &sampleManagerStub{}
+	manager.validate = func(ctx context.Context, workspaceID, gotInstanceID string) error {
+		require.Equal(t, "default", workspaceID)
+		require.Equal(t, instanceID, gotInstanceID)
+		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &gotInstanceID, ShowDeleted: true})
+		require.NoError(t, err)
+		require.True(t, instance.Deleted)
+		return nil
+	}
+	manager.lifecycle = func(ctx context.Context, workspaceID, gotInstanceID string, deleted bool) error {
+		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &gotInstanceID, ShowDeleted: true})
+		require.NoError(t, err)
+		require.Equal(t, deleted, instance.Deleted)
+		return nil
+	}
+	service := &InstanceService{
+		store:          stores,
+		licenseService: newInstanceServiceTestLicenseService(t, stores),
+		sampleManager:  manager,
+	}
+	instanceName := common.FormatProjectInstance(projectID, instanceID)
+
+	_, err = service.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName}))
+	require.NoError(t, err)
+	require.Equal(t, []bool{true}, manager.lifecycleCalls)
+
+	_, err = service.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
+	require.NoError(t, err)
+	require.Equal(t, 1, manager.validateCalls)
+	require.Equal(t, []bool{true, false}, manager.lifecycleCalls)
+}
+
+func TestSampleProjectInstanceConnectErrorMapsUnknownFailure(t *testing.T) {
+	t.Parallel()
+	err := sampleProjectInstanceConnectError(errors.New("unexpected manager failure"))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+}
+
+type sampleManagerStub struct {
+	instance            *store.InstanceMessage
+	prepareErr          error
+	prepareRequests     []sample.PrepareRequest
+	checkAvailableErr   error
+	checkAvailableCalls int
+	listInstancesErr    error
+	projectPurge        func(context.Context, string, string) error
+	projectPurgeCalls   []string
+	validate            func(context.Context, string, string) error
+	lifecycle           func(context.Context, string, string, bool) error
+	validateCalls       int
+	lifecycleCalls      []bool
+}
+
+func (s *sampleManagerStub) CheckAvailable(context.Context) error {
+	s.checkAvailableCalls++
+	return s.checkAvailableErr
+}
+
+func (s *sampleManagerStub) ListInstances(context.Context, string) ([]*sample.Instance, error) {
+	return nil, s.listInstancesErr
+}
+
+func (s *sampleManagerStub) HandleProjectPurge(ctx context.Context, workspaceID, projectID string) error {
+	s.projectPurgeCalls = append(s.projectPurgeCalls, projectID)
+	if s.projectPurge != nil {
+		return s.projectPurge(ctx, workspaceID, projectID)
+	}
+	return nil
+}
+
+func (*sampleManagerStub) Start(context.Context, string) error { return nil }
+
+func (*sampleManagerStub) Cleanup(context.Context) error { return nil }
+
+func (*sampleManagerStub) Stop() {}
+
+func (s *sampleManagerStub) PrepareSampleProjectInstance(_ context.Context, request sample.PrepareRequest) (*store.InstanceMessage, error) {
+	s.prepareRequests = append(s.prepareRequests, request)
+	return s.instance, s.prepareErr
+}
+
+func (s *sampleManagerStub) ValidateInstanceRestore(ctx context.Context, workspaceID, instanceID string) error {
+	s.validateCalls++
+	if s.validate != nil {
+		return s.validate(ctx, workspaceID, instanceID)
+	}
+	return nil
+}
+
+func (s *sampleManagerStub) HandleInstanceLifecycle(ctx context.Context, workspaceID, instanceID string, deleted bool) error {
+	s.lifecycleCalls = append(s.lifecycleCalls, deleted)
+	if s.lifecycle != nil {
+		return s.lifecycle(ctx, workspaceID, instanceID, deleted)
+	}
+	return nil
+}
 
 func TestValidateIAMCredentialForSaaS(t *testing.T) {
 	saas := &InstanceService{profile: &config.Profile{SaaS: true}}
@@ -124,6 +238,7 @@ func TestValidateIAMCredentialForSaaS(t *testing.T) {
 }
 
 func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T) {
+	t.Parallel()
 	err := validateExtraConnectionParameters(storepb.Engine_TIDB, map[string]string{
 		"allowAllFiles": "true",
 	})
@@ -132,6 +247,7 @@ func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T)
 }
 
 func TestValidateProjectInstanceListFilter(t *testing.T) {
+	t.Parallel()
 	projectID := "project-a"
 	tests := []struct {
 		name    string
@@ -150,6 +266,7 @@ func TestValidateProjectInstanceListFilter(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateProjectInstanceListFilter(test.parent, test.filter)
 			if test.wantErr {
 				require.Error(t, err)
@@ -161,6 +278,7 @@ func TestValidateProjectInstanceListFilter(t *testing.T) {
 }
 
 func TestClassifyConnectionFailure(t *testing.T) {
+	t.Parallel()
 	connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New("generic connect error"))
 	connectErr.Meta().Set(connectionCategoryHeader, connectionCategoryAuthFailed)
 	var typedNilConnectErr *connect.Error
@@ -187,6 +305,7 @@ func TestClassifyConnectionFailure(t *testing.T) {
 }
 
 func TestBuildInstanceConnectionLogAttrs(t *testing.T) {
+	t.Parallel()
 	instance := &store.InstanceMessage{
 		Metadata: &storepb.Instance{
 			Engine: storepb.Engine_POSTGRES,
@@ -283,4 +402,121 @@ func TestValidateExternalSecretForSaaS(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestApplyDataSourceUpdateMaskCredentials covers the T15 headline: the mask
+// path decides which IAM credential is written. The branch used to dispatch on
+// the request's authentication_type, which an AIP-134 client leaves unset when
+// it masks only the credential — so rotating a leaked key wrote nothing and
+// returned 200.
+func TestApplyDataSourceUpdateMaskCredentials(t *testing.T) {
+	gcpStored := func() *storepb.DataSource {
+		return &storepb.DataSource{
+			Id:                 "admin",
+			AuthenticationType: storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+			IamExtension: &storepb.DataSource_GcpCredential{
+				GcpCredential: &storepb.DataSource_GCPCredential{Content: "leaked"},
+			},
+		}
+	}
+
+	t.Run("rotation without authentication_type in the body", func(t *testing.T) {
+		dataSource := gcpStored()
+		err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+			IamExtension: &v1pb.DataSource_GcpCredential{
+				GcpCredential: &v1pb.DataSource_GCPCredential{Content: "rotated"},
+			},
+		}, []string{"gcp_credential"})
+		require.NoError(t, err)
+		require.Equal(t, "rotated", dataSource.GetGcpCredential().GetContent())
+	})
+
+	t.Run("credential path disagreeing with the stored type", func(t *testing.T) {
+		dataSource := gcpStored()
+		err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+			AuthenticationType: v1pb.DataSource_AWS_RDS_IAM,
+			IamExtension: &v1pb.DataSource_AwsCredential{
+				AwsCredential: &v1pb.DataSource_AWSCredential{AccessKeyId: "AKIA"},
+			},
+		}, []string{"aws_credential"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.Equal(t, "leaked", dataSource.GetGcpCredential().GetContent())
+		require.Equal(t, storepb.DataSource_GOOGLE_CLOUD_SQL_IAM, dataSource.GetAuthenticationType())
+	})
+
+	t.Run("switching type and credential together, either path order", func(t *testing.T) {
+		for _, paths := range [][]string{
+			{"authentication_type", "aws_credential"},
+			{"aws_credential", "authentication_type"},
+		} {
+			dataSource := gcpStored()
+			err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+				AuthenticationType: v1pb.DataSource_AWS_RDS_IAM,
+				IamExtension: &v1pb.DataSource_AwsCredential{
+					AwsCredential: &v1pb.DataSource_AWSCredential{AccessKeyId: "AKIA"},
+				},
+			}, paths)
+			require.NoError(t, err, paths)
+			require.Equal(t, "AKIA", dataSource.GetAwsCredential().GetAccessKeyId())
+		}
+	})
+
+	t.Run("a masked credential the body omits is cleared", func(t *testing.T) {
+		dataSource := gcpStored()
+		require.NoError(t, applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{}, []string{"gcp_credential"}))
+		require.Nil(t, dataSource.GetIamExtension())
+	})
+
+	t.Run("unknown path", func(t *testing.T) {
+		err := applyDataSourceUpdateMask(gcpStored(), &v1pb.DataSource{}, []string{"nope"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+}
+
+func newInstanceServiceTestLicenseService(t *testing.T, stores *store.Store) *enterprise.LicenseService {
+	t.Helper()
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	return licenseService
+}
+
+func setupProjectInstanceLifecycleAPITest(t *testing.T) (context.Context, *store.Store, string, string, string) {
+	t.Helper()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO project (resource_id, workspace, name) VALUES
+			('project-a', 'default', 'Project A'),
+			('project-b', 'default', 'Project B');
+	`)
+	require.NoError(t, err)
+
+	projectID := "project-a"
+	instanceID := "project-instance"
+	_, err = stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: instanceID,
+		Workspace:  "default",
+		ProjectID:  &projectID,
+		Metadata: &storepb.Instance{
+			Activation: true,
+			DataSources: []*storepb.DataSource{{
+				Id:   "admin",
+				Type: storepb.DataSourceType_ADMIN,
+			}},
+		},
+	})
+	require.NoError(t, err)
+
+	databaseName := "app"
+	_, err = stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+		ProjectID:    projectID,
+		Metadata:     &storepb.DatabaseMetadata{},
+	})
+	require.NoError(t, err)
+	return ctx, stores, projectID, instanceID, databaseName
 }

@@ -33,6 +33,7 @@ func TestResolveProfileUsesServerDataConfiguration(t *testing.T) {
 	flags.dataDir = "metadata"
 	flags.port = 9090
 	flags.ha = true
+	flags.metricsRemoteAccess = true
 	t.Setenv("PG_URL", "postgres://bytebase.example/metadata")
 
 	profile, err := resolveProfile()
@@ -43,6 +44,7 @@ func TestResolveProfileUsesServerDataConfiguration(t *testing.T) {
 	require.Equal(t, 9090, profile.Port)
 	require.Equal(t, 9092, profile.DatastorePort)
 	require.True(t, profile.HA)
+	require.True(t, profile.MetricsRemoteAccess)
 	require.Equal(t, "postgres://bytebase.example/metadata", profile.PgURL)
 }
 

@@ -247,6 +247,7 @@ export declare type CheckReleaseRequest = Message<"bytebase.v1.CheckReleaseReque
    * Format:
    * projects/{project}/databaseGroups/{databaseGroup}
    * instances/{instance}/databases/{database}
+   * projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: repeated string targets = 3;
    */
@@ -355,7 +356,8 @@ export declare type CheckReleaseResponse_CheckResult = Message<"bytebase.v1.Chec
 
   /**
    * The target that the check is performed on.
-   * Should be a database. Format: instances/{instance}/databases/{database}
+   * Should be a database.
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string target = 2;
    */

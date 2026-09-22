@@ -121,10 +121,7 @@ export function DeployPendingTasksSection({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent
-        className="w-[25rem] max-w-[calc(100vw-2rem)]"
-        width="standard"
-      >
+      <SheetContent width="narrow">
         <SheetHeader>
           <SheetTitle>{t("rollout.pending-tasks-preview.title")}</SheetTitle>
         </SheetHeader>
@@ -142,29 +139,36 @@ export function DeployPendingTasksSection({
               {t("rollout.pending-tasks-preview.no-pending-tasks")}
             </p>
           ) : (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-y-4">
               {groups.map((group) => (
-                <div key={group.environment} className="rounded-lg border">
-                  <div className="flex items-center gap-2 bg-gray-50 px-3 py-2">
-                    <button
-                      className="flex flex-1 items-center gap-2 text-left"
+                <div key={group.environment} className="rounded-sm border">
+                  <div className="flex items-center gap-2 bg-control-bg/50 px-3 py-2">
+                    <Button
+                      appearance="secondary"
+                      size="md"
+                      className="h-auto min-w-0 flex-1 items-center justify-start gap-2 p-0 text-left"
                       onClick={() => toggleEnv(group.environment)}
                       type="button"
                     >
                       {expandedEnvs.has(group.environment) ? (
-                        <ChevronDown className="h-4 w-4 text-gray-500" />
+                        <ChevronDown className="h-4 w-4 text-control-light" />
                       ) : (
-                        <ChevronRight className="h-4 w-4 text-gray-500" />
+                        <ChevronRight className="h-4 w-4 text-control-light" />
                       )}
-                      <span className="font-medium">
+                      <span
+                        className="min-w-0 flex-1 truncate font-medium"
+                        title={extractEnvironmentResourceName(
+                          group.environment
+                        )}
+                      >
                         {extractEnvironmentResourceName(group.environment)}
                       </span>
-                      <span className="text-xs text-control-light">
+                      <span className="shrink-0 text-xs text-control-light">
                         {t("rollout.pending-tasks-preview.task-count", {
                           count: group.tasks.length,
                         })}
                       </span>
-                    </button>
+                    </Button>
                     <Button
                       disabled={Boolean(creatingEnv)}
                       onClick={async () => {
@@ -207,7 +211,7 @@ export function DeployPendingTasksSection({
                     </Button>
                   </div>
                   {expandedEnvs.has(group.environment) && (
-                    <ul className="space-y-1 px-3 py-2">
+                    <ul className="flex flex-col gap-y-1 px-3 py-2">
                       {group.tasks.map((task) => (
                         <li key={`${task.target}:${task.specId}`}>
                           {isValidDatabaseName(task.target) ? (

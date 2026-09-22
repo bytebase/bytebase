@@ -44,8 +44,8 @@ OUTPUT $action, INSERTED.k, INSERTED.v;`,
 			_, err := base.ParseStatements(storepb.Engine_MSSQL, sql)
 			require.NoError(t, err, "SQL review entry must accept %q", sql)
 
-			_, err = ParseTSQLOmni(sql)
-			require.NoError(t, err, "ParseTSQLOmni must accept %q", sql)
+			_, err = ParseTSQL(sql)
+			require.NoError(t, err, "ParseTSQL must accept %q", sql)
 		})
 	}
 

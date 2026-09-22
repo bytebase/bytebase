@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { Alert } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -113,14 +114,15 @@ export function ReviewRejectionBanner({
         <span>
           {t("plan.review.rejection.guidance-prefix")}{" "}
           {isCreator && !page.readonly ? (
-            <button
-              className="font-medium text-accent hover:underline disabled:opacity-60"
+            <Button
+              appearance="link"
               disabled={reRequesting}
               onClick={() => void handleReRequest()}
+              size="xs"
               type="button"
             >
               {t("plan.review.rejection.re-request-review")}
-            </button>
+            </Button>
           ) : (
             <span>{t("plan.review.rejection.re-request-review")}</span>
           )}{" "}

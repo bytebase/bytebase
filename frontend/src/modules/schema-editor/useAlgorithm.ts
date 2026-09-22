@@ -37,7 +37,6 @@ export function useAlgorithm(
       dm.merge();
       dm.timer.printAll();
 
-      // Replace Vue's nextTick with setTimeout(0) for deferred execution.
       setTimeout(() => {
         if (resets.includes("tabs")) {
           callbacks.clearTabs();

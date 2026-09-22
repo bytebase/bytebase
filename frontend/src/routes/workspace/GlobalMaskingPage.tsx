@@ -27,6 +27,7 @@ import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import {
   factorOperatorOverrideMap,
   getClassificationLevelOptions,
@@ -123,16 +124,7 @@ function MaskingRuleConfig({
   const [dirty, setDirty] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const settingsByName = useAppStore((s) => s.settingsByName);
-  const semanticTypeOptions = useMemo(() => {
-    const setting = useAppStore
-      .getState()
-      .getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
-    if (setting?.value?.value?.case === "semanticType") {
-      return setting.value.value.value.types ?? [];
-    }
-    return [];
-  }, [settingsByName]);
+  const { semanticTypes: semanticTypeOptions } = useSemanticTypes();
 
   const resetIdRef = useRef(0);
   const resetToRule = useCallback(
@@ -213,7 +205,7 @@ function MaskingRuleConfig({
           <div className="flex items-center h-9">
             {!readonly ? (
               <Input
-                size="sm"
+                size="md"
                 className="w-64"
                 placeholder={defaultTitle}
                 value={title}
@@ -334,7 +326,7 @@ function MaskingRuleConfig({
                 {mode === "CREATE" ? t("common.create") : t("common.update")}
               </Button>
               {errorMessages.length > 0 && (
-                <div className="absolute bottom-full mb-1 right-0 bg-gray-800 text-white text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
+                <div className="absolute bottom-full mb-1 right-0 bg-main text-main-text text-xs rounded-xs px-2 py-1 hidden group-hover:block whitespace-nowrap z-10">
                   <ul className="list-disc pl-4">
                     {errorMessages.map((msg, i) => (
                       <li key={i}>{msg}</li>
@@ -645,7 +637,7 @@ export function GlobalMaskingPage() {
 
       {/* Rule list */}
       {items.map((item, index) => (
-        <div key={item.rule.id} className="flex items-start gap-x-5">
+        <div key={item.rule.id} className="flex items-start gap-x-4">
           {item.mode === "NORMAL" &&
             hasPermission &&
             hasSensitiveDataFeature && (
@@ -653,33 +645,39 @@ export function GlobalMaskingPage() {
                 {reorderRules ? (
                   <div className="pt-2 flex flex-col">
                     {index > 0 && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                        className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                         onClick={() => onReorder(item, -1)}
                       >
                         <ChevronUp className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
                     {index !== items.length - 1 && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
-                        className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                        className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                         onClick={() => onReorder(item, 1)}
                       >
                         <ChevronDown className="w-4 h-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ) : (
                   <div className="pt-2">
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       type="button"
-                      className="w-6 h-6 flex items-center justify-center rounded-xs hover:bg-gray-100"
+                      className="flex items-center justify-center rounded-xs hover:bg-control-bg"
                       onClick={() => onEdit(index)}
                     >
                       <Pencil className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

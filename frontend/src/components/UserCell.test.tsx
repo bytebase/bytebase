@@ -111,10 +111,7 @@ describe("UserCell", () => {
           title="Dev User"
           subtitle="dev@example.com"
           nameLink={{
-            to: {
-              name: "workspace.user-profile",
-              params: { principalEmail: "dev@example.com" },
-            },
+            to: { name: "workspace.groups" },
           }}
         />
       </div>
@@ -122,9 +119,7 @@ describe("UserCell", () => {
 
     const link = container.querySelector("a");
     expect(link).toBeInstanceOf(HTMLAnchorElement);
-    expect(link?.getAttribute("data-route-name")).toBe(
-      "workspace.user-profile"
-    );
+    expect(link?.getAttribute("data-route-name")).toBe("workspace.groups");
     expect(link?.textContent).toBe("Dev User");
 
     act(() => {
@@ -136,4 +131,69 @@ describe("UserCell", () => {
     expect(onRowClick).not.toHaveBeenCalled();
     unmount();
   });
+
+  test("renders subtitle actions beside the email without bubbling to row clicks", () => {
+    const onRowClick = vi.fn();
+    const onCopy = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      <div onClick={onRowClick}>
+        <UserCell
+          title="CI Bot"
+          subtitle="ci@example.com"
+          subtitleAction={
+            <button
+              type="button"
+              aria-label="Copy email"
+              onClick={onCopy}
+            />
+          }
+        />
+      </div>
+    );
+
+    const copyButton = container.querySelector('[aria-label="Copy email"]');
+    expect(copyButton?.parentElement?.previousElementSibling?.textContent).toBe(
+      "ci@example.com"
+    );
+
+    act(() => {
+      copyButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+    });
+
+    expect(onCopy).toHaveBeenCalledTimes(1);
+    expect(onRowClick).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test.each(["Enter", " "])(
+    "keeps %j activation on subtitle actions from reaching the row",
+    (key) => {
+      const onRowKeyDown = vi.fn();
+      const { container, unmount } = renderIntoContainer(
+        <div onKeyDown={onRowKeyDown}>
+          <UserCell
+            title="CI Bot"
+            subtitle="ci@example.com"
+            subtitleAction={<button type="button" aria-label="Copy email" />}
+          />
+        </div>
+      );
+
+      const copyButton = container.querySelector('[aria-label="Copy email"]');
+      act(() => {
+        copyButton?.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+
+      expect(onRowKeyDown).not.toHaveBeenCalled();
+      unmount();
+    }
+  );
 });

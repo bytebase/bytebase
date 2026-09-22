@@ -1,4 +1,4 @@
-import { act, createRef, type ReactElement } from "react";
+import { act, createRef, type ReactElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -116,6 +116,35 @@ vi.mock("@/components/PermissionGuard", () => ({
   ),
 }));
 
+vi.mock("@/components/ui/select", () => ({
+  Select: ({
+    children,
+    disabled,
+    onValueChange,
+    value,
+  }: {
+    children: ReactNode;
+    disabled?: boolean;
+    onValueChange?: (value: string) => void;
+    value?: string;
+  }) => (
+    <select
+      data-testid="theme-select"
+      disabled={disabled}
+      onChange={(event) => onValueChange?.(event.target.value)}
+      value={value}
+    >
+      {children}
+    </select>
+  ),
+  SelectContent: ({ children }: { children: ReactNode }) => <>{children}</>,
+  SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
+    <option value={value}>{children}</option>
+  ),
+  SelectTrigger: ({ children }: { children: ReactNode }) => <>{children}</>,
+  SelectValue: () => null,
+}));
+
 // The theme preview/editor import SQLEditorThemeScope etc.; render them as-is.
 
 const storeState = {
@@ -171,10 +200,15 @@ afterEach(() => {
   container.remove();
 });
 
-function querySegment(label: string): HTMLElement | undefined {
-  // Segment labels render their text; find the clickable label by text.
-  const labels = Array.from(container.querySelectorAll("label"));
-  return labels.find((l) => l.textContent?.trim() === label);
+function selectTheme(value: string) {
+  const select = container.querySelector<HTMLSelectElement>(
+    '[data-testid="theme-select"]'
+  );
+  expect(select).toBeTruthy();
+  act(() => {
+    select!.value = value;
+    select!.dispatchEvent(new Event("change", { bubbles: true }));
+  });
 }
 
 describe("SQLEditorSection theme", () => {
@@ -186,13 +220,7 @@ describe("SQLEditorSection theme", () => {
 
     expect(ref.current?.isDirty()).toBe(false);
 
-    // Pick the "dark" preset (preset.name === "Dark").
-    const darkSegment = querySegment("Default Dark");
-    expect(darkSegment).toBeTruthy();
-    const radio = darkSegment?.querySelector("input");
-    act(() => {
-      radio?.click();
-    });
+    selectTheme("dark");
 
     expect(ref.current?.isDirty()).toBe(true);
 
@@ -220,11 +248,7 @@ describe("SQLEditorSection theme", () => {
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
 
-    const darkSegment = querySegment("Default Dark");
-    expect(darkSegment).toBeTruthy();
-    act(() => {
-      darkSegment?.querySelector("input")?.click();
-    });
+    selectTheme("dark");
 
     await act(async () => {
       await ref.current?.update();
@@ -239,14 +263,7 @@ describe("SQLEditorSection theme", () => {
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
 
-    const customSegment = querySegment(
-      "settings.general.workspace.sql-editor-theme.custom"
-    );
-    expect(customSegment).toBeTruthy();
-    const radio = customSegment?.querySelector("input");
-    act(() => {
-      radio?.click();
-    });
+    selectTheme("__custom__");
 
     expect(ref.current?.isDirty()).toBe(true);
 
@@ -301,10 +318,7 @@ describe("SQLEditorSection theme", () => {
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
 
-    const darkSegment = querySegment("Default Dark");
-    act(() => {
-      darkSegment?.querySelector("input")?.click();
-    });
+    selectTheme("dark");
     expect(ref.current?.isDirty()).toBe(true);
 
     act(() => {
@@ -320,8 +334,9 @@ describe("SQLEditorSection theme", () => {
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
 
-    const lightSegment = querySegment("Default Light");
-    expect(lightSegment?.querySelector('[data-state="checked"]')).toBeTruthy();
+    expect(
+      container.querySelector<HTMLSelectElement>('[data-testid="theme-select"]')
+    ).toHaveValue("light");
     // The default selection must not register as a pending change.
     expect(ref.current?.isDirty()).toBe(false);
   });
@@ -335,10 +350,66 @@ describe("SQLEditorSection theme", () => {
       <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
     );
 
-    const group = container.querySelector('[role="radiogroup"]');
-    // SegmentedControl renders radios; when disabled they carry data-disabled.
-    const anyDisabled = container.querySelector("input[data-disabled]");
-    expect(group || anyDisabled).toBeTruthy();
-    expect(anyDisabled).toBeTruthy();
+    expect(
+      container.querySelector<HTMLSelectElement>('[data-testid="theme-select"]')
+    ).toBeDisabled();
+  });
+});
+
+// The data-export policy is stored as `disableExport`, while the control names
+// the inverse allowed state. Keep that inversion and its explanatory copy in
+// sync.
+describe("SQLEditorSection data-export policy toggle", () => {
+  function renderSection() {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+    return ref;
+  }
+
+  function exportSwitch(): HTMLElement {
+    // The switch renders inside the FormField title span, as a sibling of
+    // the label text (SQLEditorSection.tsx) — scope by that span.
+    const span = Array.from(container.querySelectorAll("span")).find((s) =>
+      s.textContent?.includes("settings.general.workspace.data-export.self")
+    );
+    expect(span).toBeTruthy();
+    const control = span?.querySelector<HTMLElement>('[role="switch"]');
+    expect(control).toBeTruthy();
+    return control as HTMLElement;
+  }
+
+  test("renders the retitled label with its description", () => {
+    renderSection();
+    expect(container.textContent).toContain(
+      "settings.general.workspace.data-export.self"
+    );
+    expect(container.textContent).toContain(
+      "settings.general.workspace.data-export.description"
+    );
+  });
+
+  test("export allowed without approval (disableExport=false) renders checked", () => {
+    mocks.policy.disableExport = false;
+    renderSection();
+    expect(exportSwitch().getAttribute("aria-checked")).toBe("true");
+  });
+
+  test("approval-gated export (disableExport=true) renders unchecked", () => {
+    mocks.policy.disableExport = true;
+    renderSection();
+    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
+  });
+
+  test("toggling the switch marks the section dirty for the Update bar", () => {
+    mocks.policy.disableExport = false;
+    const ref = renderSection();
+    expect(ref.current?.isDirty()).toBe(false);
+    act(() => {
+      exportSwitch().click();
+    });
+    expect(ref.current?.isDirty()).toBe(true);
+    expect(exportSwitch().getAttribute("aria-checked")).toBe("false");
   });
 });

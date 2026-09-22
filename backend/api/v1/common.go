@@ -9,6 +9,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -209,7 +210,12 @@ func normalizeFilter(filter string) (string, []string, error) {
 }
 
 func convertToEngine(engine storepb.Engine) v1pb.Engine {
+	// A missing arm reports as unspecified, which reads as "Bytebase does not
+	// know this engine". golangci checks only switches that ask for it
+	// (.golangci.yaml, explicit-exhaustive-switch).
+	//exhaustive:enforce
 	switch engine {
+	case storepb.Engine_ENGINE_UNSPECIFIED:
 	case storepb.Engine_CLICKHOUSE:
 		return v1pb.Engine_CLICKHOUSE
 	case storepb.Engine_MYSQL:
@@ -346,12 +352,16 @@ type pageSize struct {
 type pageOffset struct {
 	limit  int
 	offset int
+	// createTimeUpperBound is set by a list whose own reads write rows it
+	// would page over. Inclusive.
+	createTimeUpperBound *timestamppb.Timestamp
 }
 
 func (p *pageOffset) getNextPageToken() (string, error) {
 	return marshalPageToken(&storepb.PageToken{
-		Limit:  int32(p.limit),
-		Offset: int32(p.offset + p.limit),
+		Limit:                int32(p.limit),
+		Offset:               int32(p.offset + p.limit),
+		CreateTimeUpperBound: p.createTimeUpperBound,
 	})
 }
 
@@ -367,6 +377,7 @@ func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
 		}
 		offset.limit = int(size.limit)
 		offset.offset = int(token.Offset)
+		offset.createTimeUpperBound = token.CreateTimeUpperBound
 	} else {
 		offset.limit = int(size.limit)
 	}

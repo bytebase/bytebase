@@ -15,6 +15,12 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
+// ErrInvalidCredentials marks an authentication failure caused by the submitted
+// username or password — the user filter matched no one, or the directory
+// rejected the bind — as opposed to connectivity or configuration failures.
+// Callers surface it as Unauthenticated rather than Internal.
+var ErrInvalidCredentials = errors.New("invalid credentials")
+
 // IdentityProvider represents an LDAP Identity Provider.
 type IdentityProvider struct {
 	config IdentityProviderConfig
@@ -188,7 +194,7 @@ func (p *IdentityProvider) searchAndBind(username, password string, attributes [
 			slog.String("hint", "filter may be too restrictive or user does not exist in the directory"),
 		)
 		// Return generic error to prevent information disclosure
-		return nil, errors.New("invalid credentials")
+		return nil, ErrInvalidCredentials
 	} else if len(sr.Entries) > 1 {
 		// Log detailed information for admin troubleshooting
 		slog.Error("LDAP authentication failed: user filter matched multiple users",
@@ -206,9 +212,26 @@ func (p *IdentityProvider) searchAndBind(username, password string, attributes [
 	// Bind as the user to verify their password
 	err = conn.Bind(entry.DN, password)
 	if err != nil {
-		return nil, errors.Errorf("bind user: %v", err)
+		return nil, bindError(err)
 	}
 	return entry, nil
+}
+
+// bindError classifies a failed bind: a credential the directory rejected
+// becomes ErrInvalidCredentials, anything else stays a generic server error.
+// The directory's own diagnostic is logged and kept in the message — AD's
+// result 49 sub-codes distinguish a wrong password (data 52e) from an
+// expired (532), disabled (533), or locked (775) account, which login hides
+// behind a generic 401 but the admin test-sign-in flow and operators need.
+func bindError(err error) error {
+	if ldap.IsErrorWithCode(err, ldap.LDAPResultInvalidCredentials) {
+		slog.Warn("LDAP authentication failed: bind rejected",
+			slog.String("hint", "wrong password, or an expired/disabled/locked directory account — see the result data code"),
+			slog.String("error", err.Error()),
+		)
+		return errors.Wrapf(ErrInvalidCredentials, "bind user: %v", err)
+	}
+	return errors.Errorf("bind user: %v", err)
 }
 
 // mappedAttributes returns the attributes to request for the configured field

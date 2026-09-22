@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetAccountListFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -40,14 +41,14 @@ func TestGetAccountListFilter(t *testing.T) {
 		{
 			name:     "name contains",
 			filter:   `name.contains("ED")`,
-			wantSQL:  "(LOWER(name) LIKE $1)",
+			wantSQL:  "(LOWER(name) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%ed%"},
 			wantErr:  false,
 		},
 		{
 			name:     "email contains",
 			filter:   `email.contains("test")`,
-			wantSQL:  "(LOWER(email) LIKE $1)",
+			wantSQL:  "(LOWER(email) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
 		},
@@ -104,7 +105,7 @@ func TestGetAccountListFilter(t *testing.T) {
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "invalid state",
@@ -122,6 +123,7 @@ func TestGetAccountListFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result, err := GetAccountListFilter(tt.filter)
 
 			if tt.wantErr {

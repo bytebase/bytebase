@@ -37,20 +37,19 @@ interface CodeViewerProps {
   onBack?: () => void;
   /** Replaces the default back-button + title row in the header. */
   titlePrefix?: ReactNode;
-  /** Slot above the Monaco editor; mirrors Vue's `content-prefix`. */
+  /** Slot above the Monaco editor. */
   contentPrefix?: ReactNode;
   headerClassName?: string;
 }
 
 /**
- * React port of the Vue `CodeViewer`. Renders header (back button +
- * format toggle + OpenAIButton) and a read-only Monaco editor.
+ * Renders header (back button + format toggle + OpenAIButton) and a
+ * read-only Monaco editor.
  *
- * Note on AI integration: the AIChatToSQL side pane lives in
- * `Panels.vue` and is gated by `uiStore.showAIPanel && uiStore.isShowingCode`.
- * This component flips `isShowingCode` on mount so the host knows when
- * to render the AI pane next to it. Same parity as the Vue CodeViewer
- * NSplit, just hoisted one level up.
+ * Note on AI integration: the AIChatToSQL side pane lives in `Panels` and
+ * is gated by `showAIPanel && isShowingCode`. This component flips
+ * `isShowingCode` on mount so the host knows when to render the AI pane
+ * next to it.
  */
 export function CodeViewer({
   db,
@@ -113,9 +112,9 @@ export function CodeViewer({
     []
   );
 
-  // Tell Panels.vue to host the AIChatToSQL pane while a code surface is
+  // Tell `Panels` to host the AIChatToSQL pane while a code surface is
   // mounted. Cleared on unmount so navigating back to the list view drops
-  // the pane (matches Vue CodeViewer's auto-unmount on detail-clear).
+  // the pane.
   useEffect(() => {
     setIsShowingCode(true);
     return () => {
@@ -172,7 +171,8 @@ export function CodeViewer({
           {titlePrefix ?? (
             <Button
               appearance="secondary"
-              className="h-8 px-1 text-sm"
+              size="md"
+              className="px-1"
               onClick={onBack}
             >
               <ChevronLeft className="size-5" />
@@ -188,11 +188,7 @@ export function CodeViewer({
             />
             {t("sql-editor.format")}
           </label>
-          <OpenAIButton
-            size="sm"
-            actions={["explain-code"]}
-            statement={selectedStatement || content}
-          />
+          <OpenAIButton size="sm" />
         </div>
       </div>
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

@@ -1,5 +1,6 @@
 import type * as monaco from "monaco-editor";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { MonacoModule } from "@/components/monaco/types";
 import type { ChatAction } from "@/modules/ai/types";
 import { useAppStore } from "@/stores/app";
@@ -17,10 +18,9 @@ interface UseAIActionsOptions {
 }
 
 /**
- * React port of `frontend/src/plugins/ai/components/editor-actions.ts`.
  * Registers AI context-menu actions on the underlying Monaco editor.
- * Reads `aiSetting.enabled` from the same Pinia setting store the Vue
- * version uses, gating registration the same way.
+ * Registration is gated on the AI setting's `enabled` flag from the app
+ * store.
  */
 export function useAIActions({
   monaco,
@@ -28,10 +28,11 @@ export function useAIActions({
   actions,
   callback,
 }: UseAIActionsOptions) {
+  const { t } = useTranslation();
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   // Subscribe to the AI setting so the registered Monaco actions re-register
   // or unregister live when an admin toggles AI access while the editor is
-  // mounted (matches the Vue `watchEffect` behavior in `editor-actions.ts`).
+  // mounted.
   const aiEnabled = useAppStore((s) => {
     const setting = s.getSettingByName(Setting_SettingName.AI);
     return setting?.value?.value?.case === "ai"
@@ -87,7 +88,7 @@ export function useAIActions({
       subscriptions.push(
         editor.addAction({
           id: "explain-code",
-          label: "Explain code",
+          label: `[AI] ${t("plugin.ai.actions.explain-code")}`,
           precondition: "!bb.ai.contentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 1,
@@ -99,7 +100,7 @@ export function useAIActions({
       subscriptions.push(
         editor.addAction({
           id: "find-problems",
-          label: "Find problems",
+          label: `[AI] ${t("plugin.ai.actions.find-problems")}`,
           precondition: "!bb.ai.contentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 2,
@@ -111,7 +112,7 @@ export function useAIActions({
       subscriptions.push(
         editor.addAction({
           id: "new-chat-using-selection",
-          label: "New chat using selection",
+          label: `[AI] ${t("plugin.ai.actions.new-chat-using-selection")}`,
           precondition: "!bb.ai.selectedContentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 2,
@@ -122,5 +123,5 @@ export function useAIActions({
     return () => {
       subscriptions.forEach((sub) => sub.dispose());
     };
-  }, [monaco, editor, aiEnabled, actions, callback]);
+  }, [monaco, editor, aiEnabled, actions, callback, t]);
 }

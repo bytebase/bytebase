@@ -108,5 +108,8 @@ func (x *Project) Equal(y *Project) bool {
 	if x.AllowJustInTimeAccess != y.AllowJustInTimeAccess {
 		return false
 	}
+	if x.AllowLastPlanEditorApproval != y.AllowLastPlanEditorApproval {
+		return false
+	}
 	return true
 }

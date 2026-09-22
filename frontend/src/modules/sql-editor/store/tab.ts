@@ -47,7 +47,10 @@ const PERSISTENT_TAB_FIELDS = [
 export type PersistentTab = Pick<
   SQLEditorTab,
   (typeof PERSISTENT_TAB_FIELDS)[number]
->;
+> & {
+  connection?: SQLEditorTab["connection"];
+  dataExplorer?: Pick<NonNullable<SQLEditorTab["dataExplorer"]>, "filter">;
+};
 
 export interface SQLEditorTabsState {
   /** Authoritative live tab objects keyed by id. */
@@ -59,7 +62,7 @@ export interface SQLEditorTabsState {
 
   setCurrentTabId: (id: string) => void;
   /** Rewrites the persisted tab order without touching individual tabs. */
-  setOpenTabListOrder: (order: PersistentTab[]) => void;
+  setOpenTabListOrder: (order: string[]) => void;
   addTab: (payload?: Partial<SQLEditorTab>, beside?: boolean) => SQLEditorTab;
   cloneTab: (targetId: string, payload?: Partial<SQLEditorTab>) => SQLEditorTab;
   closeTab: (tabId: string) => void;
@@ -133,6 +136,19 @@ const normalizePersistedTab = (
   const mode =
     (persisted.mode as string) === "WORKSHEET" ? "SAVED_QUERY" : persisted.mode;
   const { worksheet: _legacy, ...rest } = persisted;
+  if (mode === "DATA_EXPLORER") {
+    return {
+      ...rest,
+      savedQuery: "",
+      mode,
+      dataExplorer: {
+        filter:
+          typeof persisted.dataExplorer?.filter === "string"
+            ? persisted.dataExplorer.filter
+            : "",
+      },
+    };
+  }
   return { ...rest, savedQuery, mode };
 };
 
@@ -184,6 +200,17 @@ const readOpenTabs = (
     []
   );
 
+const readCurrentTabId = (
+  wsScope: string,
+  project: string,
+  email: string
+): string =>
+  safeRead<string>(
+    storageKeySqlEditorCurrentTab(wsScope, project, email),
+    (v) => (typeof v === "string" ? v : undefined),
+    ""
+  );
+
 export const useSQLEditorTabsStore: UseBoundStore<
   StoreApi<SQLEditorTabsState>
 > = create<SQLEditorTabsState>()(
@@ -201,9 +228,13 @@ export const useSQLEditorTabsStore: UseBoundStore<
 
     setOpenTabListOrder(order) {
       set((s) => {
-        s.openTmpTabList = order;
+        const byId = new Map(s.openTmpTabList.map((tab) => [tab.id, tab]));
+        s.openTmpTabList = order.flatMap((id) => {
+          const tab = byId.get(id);
+          return tab ? [tab] : [];
+        });
       });
-      persistOpenTabs(order);
+      persistOpenTabs(get().openTmpTabList);
     },
 
     addTab(payload, beside = false) {
@@ -361,10 +392,9 @@ export const useSQLEditorTabsStore: UseBoundStore<
     updateDatabaseQueryContext({ database, contextId, context }) {
       // Resolve the tab that OWNS this context by its globally-unique id
       // rather than assuming `currentTabId`. A query that completes after
-      // the user switches tabs must still update its own tab's context —
-      // the Vue original mutated the reactive context object directly,
-      // which had the same cross-tab effect; immer freezes store objects
-      // so React must route through this action, hence the lookup.
+      // the user switches tabs must still update its own tab's context;
+      // immer freezes store objects, so callers can't mutate the context
+      // directly and must route through this action, hence the lookup.
       const owner = locateDatabaseQueryContext(
         get().tabsById,
         database,
@@ -439,6 +469,7 @@ const hydrateProjectTabs = async (project: string): Promise<void> => {
   );
 
   const storedTabs = readOpenTabs(wsScope, project, email);
+  const storedCurrentTabId = readCurrentTabId(wsScope, project, email);
 
   const hydratedTabs: SQLEditorTab[] = [];
   const validPersistent: PersistentTab[] = [];
@@ -446,6 +477,39 @@ const hydrateProjectTabs = async (project: string): Promise<void> => {
 
   for (const persisted of storedTabs) {
     if (seen.has(persisted.id)) continue;
+
+    if (persisted.mode === "DATA_EXPLORER") {
+      const connection = persisted.connection;
+      if (!connection?.instance || !connection.database || !connection.table) {
+        continue;
+      }
+      const database = await useAppStore
+        .getState()
+        .getOrFetchDatabaseByName(connection.database);
+      if (database.project !== project) continue;
+
+      const fullTab: SQLEditorTab = {
+        ...defaultSQLEditorTab(),
+        ...omitBy(persisted, isUndefined),
+        title: connection.table,
+        status: "CLEAN",
+        connection,
+        dataExplorer: {
+          filter:
+            typeof persisted.dataExplorer?.filter === "string"
+              ? persisted.dataExplorer.filter
+              : "",
+          initialized: false,
+        },
+        databaseQueryContexts: undefined,
+      };
+
+      seen.add(persisted.id);
+      validPersistent.push(persisted);
+      hydratedTabs.push(fullTab);
+      continue;
+    }
+
     if (!persisted.savedQuery) continue;
 
     const savedQuery = await useAppStore
@@ -473,10 +537,16 @@ const hydrateProjectTabs = async (project: string): Promise<void> => {
     hydratedTabs.push(fullTab);
   }
 
+  const currentTabId = validPersistent.some(
+    (tab) => tab.id === storedCurrentTabId
+  )
+    ? storedCurrentTabId
+    : (head(validPersistent)?.id ?? "");
+
   useSQLEditorTabsStore.setState({
     tabsById: new Map(hydratedTabs.map((t) => [t.id, t])),
     openTmpTabList: validPersistent,
-    currentTabId: head(validPersistent)?.id ?? "",
+    currentTabId,
   });
 
   persistOpenTabs(validPersistent);
@@ -507,9 +577,15 @@ const upsertOpenTabDraft = (
   beside: boolean
 ) => {
   const persistent = pick(tab, ...PERSISTENT_TAB_FIELDS) as PersistentTab;
+  if (tab.mode === "DATA_EXPLORER") {
+    persistent.connection = tab.connection;
+    persistent.dataExplorer = {
+      filter: tab.dataExplorer?.filter ?? "",
+    };
+  }
   const position = state.openTmpTabList.findIndex((item) => item.id === tab.id);
   if (position >= 0) {
-    Object.assign(state.openTmpTabList[position], persistent);
+    state.openTmpTabList[position] = persistent;
     return;
   }
   const currentPosition = state.openTmpTabList.findIndex(
@@ -573,12 +649,10 @@ export function useSQLEditorTabState<T>(
   return useSQLEditorTabsStore(selector);
 }
 
-// Re-hydrate tabs whenever the active project changes. Mirrors the
-// historical `watch(() => project.value, initProject)` side effect of
-// the legacy Vue SQL editor tab store. Errors are intentionally swallowed —
-// explicit callers (e.g. SQLEditorRouteShell) own user-facing failure
-// reporting and may invoke `initProject` directly with full error
-// handling.
+// Re-hydrate tabs whenever the active project changes. Errors are
+// intentionally swallowed — explicit callers (e.g. SQLEditorRouteShell) own
+// user-facing failure reporting and may invoke `initProject` directly with
+// full error handling.
 let _lastInitializedProject: string | undefined;
 subscribeSQLEditorEditorState((state) => {
   if (state.project === _lastInitializedProject) return;
@@ -637,6 +711,7 @@ export const useTabById = (tabId: string): SQLEditorTab | undefined =>
 export const isSQLEditorTabClosable = (tab: SQLEditorTab): boolean => {
   const open = getSQLEditorTabsState().openTmpTabList;
   if (open.length > 1) return true;
+  if (tab.mode === "DATA_EXPLORER") return true;
   if (open.length === 1) return !!tab.savedQuery;
   return false;
 };
@@ -657,14 +732,14 @@ export const useIsDisconnected = (): boolean =>
 export const useSupportBatchMode = (): boolean =>
   useSQLEditorTabsStore((s) => {
     const tab = s.tabsById.get(s.currentTabId);
-    return tab?.mode !== "ADMIN";
+    return tab?.mode === "SAVED_QUERY";
   });
 
 export const useIsInBatchMode = (): boolean =>
   useSQLEditorTabsStore((s) => {
     const tab = s.tabsById.get(s.currentTabId);
     if (!tab) return false;
-    if (tab.mode === "ADMIN") return false;
+    if (tab.mode !== "SAVED_QUERY") return false;
     const appStore = useAppStore.getState();
     if (!appStore.hasFeature(PlanFeature.FEATURE_BATCH_QUERY)) return false;
     const ctx = tab.batchQueryContext;

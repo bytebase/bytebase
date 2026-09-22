@@ -148,7 +148,6 @@ vi.mock("@/app/router", () => ({
   WORKSPACE_ROUTE_SEMANTIC_TYPES: "workspace.semantic-types",
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS: "workspace.service-accounts",
   WORKSPACE_ROUTE_SQL_REVIEW: "workspace.sql-review",
-  WORKSPACE_ROUTE_USER_PROFILE: "workspace.user-profile",
   WORKSPACE_ROUTE_USERS: "workspace.users",
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES: "workspace.workload-identities",
 }));

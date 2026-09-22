@@ -18,14 +18,13 @@ import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { isDev } from "@/utils";
 
-// Session-validity poll interval (1 min dev, 5 min prod), mirroring the legacy
-// AuthContext.vue.
+// Session-validity poll interval (1 min dev, 5 min prod).
 const CHECK_AUTHORIZATION_INTERVAL = isDev() ? 60 * 1000 : 60 * 1000 * 5;
 
-// Replaces AuthContext.vue: gates the app render on the authenticated session
-// (loading workspace-scoped data first), polls session validity, redirects on a
-// cross-tab user switch, and mounts the inactivity reminder. Reads session
-// state from the app store (the single source of truth).
+// Gates the app render on the authenticated session (loading workspace-scoped
+// data first), polls session validity, redirects on a cross-tab user switch,
+// and mounts the inactivity reminder. Reads session state from the app store
+// (the single source of truth).
 export function AuthGate({ children }: { children: ReactNode }) {
   const isLoggedIn = useAppStore((s) => s.isLoggedIn());
   const currentUser = useAppStore((s) => s.currentUser);
@@ -102,7 +101,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       if (!store.isLoggedIn() || store.unauthenticatedOccurred) return;
       if (isAuthRoute || isPublicRoute) return;
       void (async () => {
-        const user = await store.fetchCurrentUser();
+        const user = await store.fetchCurrentUser(true);
         if (!user || !store.isLoggedIn() || store.unauthenticatedOccurred) {
           return;
         }

@@ -363,7 +363,7 @@ describe("MonacoEditor", () => {
     unmount();
   });
 
-  test("normalizes project instance names in LSP metadata", async () => {
+  test("preserves project instance names in LSP metadata", async () => {
     const { executeCommand } = await import("./lsp-client");
 
     const { unmount } = await renderIntoContainer(
@@ -384,7 +384,7 @@ describe("MonacoEditor", () => {
       [
         expect.objectContaining({
           databaseName: "db",
-          instanceId: "instances/instance",
+          instanceId: "projects/project/instances/instance",
         }),
       ]
     );

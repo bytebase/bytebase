@@ -8,10 +8,10 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
@@ -45,7 +45,7 @@ func (*IndexPkTypeAdvisor) Check(_ context.Context, checkCtx advisor.Context) ([
 		tablesNewColumns: make(tableColumnTypes),
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type indexPkTypeOmniRule struct {
@@ -168,7 +168,7 @@ func (r *indexPkTypeOmniRule) addAdvice(tableName, columnName, columnType string
 			Code:          code.IndexPKType.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("Columns in primary key must be INT/BIGINT but `%s`.`%s` is %s", tableName, columnName, columnType),
-			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
+			StartPosition: base.ConvertANTLRLineToPosition(lineNumber),
 		})
 	}
 }

@@ -22,10 +22,22 @@ service SQLService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:query"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*}:query"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // READ here is conditional, and it is the one row in the classification
+    // where the method is not the whole story: on every engine in
+    // EngineSupportQueryNewACL this handler classifies each statement and
+    // authorizes DML with bb.sql.dml and DDL with bb.sql.ddl, so what it does
+    // is decided by its argument. That is what the SQL clamp in the handler
+    // settles: under a read-only ceiling every statement in the request must
+    // classify as a read, or the whole request is refused.
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Executes SQL with admin privileges via streaming connection.
@@ -36,6 +48,8 @@ service SQLService {
     option (bytebase.v1.permission) = "bb.sql.admin";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
 
   // Deprecated: use QueryHistoryService.SearchQueryHistories instead.
@@ -45,6 +59,7 @@ service SQLService {
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option deprecated = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Deprecated: use QueryHistoryService.ListQueryHistories instead.
@@ -55,6 +70,8 @@ service SQLService {
     option deprecated = true;
     option (bytebase.v1.permission) = "bb.queryHistories.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
   }
 
   // Deprecated: use QueryHistoryService.GetQueryHistory instead.
@@ -64,6 +81,7 @@ service SQLService {
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
     option deprecated = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Exports query results to a file format.
@@ -72,16 +90,22 @@ service SQLService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*}:export"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }
 
 message AdminExecuteRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
+  // Format: instances/{instance}/databases/{databaseName} or
+  // projects/{project}/instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -108,8 +132,9 @@ message AdminExecuteResponse {
 }
 
 message QueryRequest {
-  // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
+  // The name is the database resource name to execute the query against.
+  // Format: instances/{instance}/databases/{databaseName} or
+  // projects/{project}/instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -163,15 +188,34 @@ message QueryOption {
   }
   RedisRunCommandsOn redis_run_commands_on = 1;
 
-  enum MSSQLExplainFormat {
-    // defaults to SHOWPLAN_ALL
-    MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0;
-    // SHOWPLAN_ALL
-    MSSQL_EXPLAIN_FORMAT_ALL = 1;
-    // SHOWPLAN_XML
-    MSSQL_EXPLAIN_FORMAT_XML = 2;
+  // 2 was mssql_explain_format, replaced by the engine-neutral explain_format.
+  reserved 2;
+  reserved "mssql_explain_format";
+
+  // The output format of a query plan.
+  enum ExplainFormat {
+    // The engine's default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a
+    // result, a default the server could not resolve, as when MySQL follows the
+    // session's explain_format; read such a plan as text.
+    EXPLAIN_FORMAT_UNSPECIFIED = 0;
+    // The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
+    // SHOWPLAN_ALL.
+    TEXT = 1;
+    // The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON).
+    JSON = 2;
+    // The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
+    // SHOWPLAN_XML.
+    XML = 3;
+    // The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML).
+    YAML = 4;
   }
-  MSSQLExplainFormat mssql_explain_format = 2;
+  // Which explain output the caller wants, for an explain request.
+  //
+  // Leave it unspecified for the engine's own default, which is the only
+  // output most engines have. Naming a format an engine cannot produce is
+  // INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+  // against an engine that has no explain at all.
+  ExplainFormat explain_format = 3;
 }
 
 message QueryResult {
@@ -183,7 +227,7 @@ message QueryResult {
   repeated string column_type_names = 2;
 
   // Rows of the query result.
-  repeated QueryRow rows = 3;
+  repeated QueryRow rows = 3 [(bytebase.v1.audit_behavior) = OMIT];
 
   int64 rows_count = 4;
 
@@ -269,10 +313,22 @@ message QueryResult {
 
   // Informational or debug messages returned by the database engine during query execution.
   // Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
-  repeated Message messages = 11;
+  repeated Message messages = 11 [(bytebase.v1.audit_behavior) = OMIT];
 
   // Masking reasons for each column (empty for non-masked columns).
   repeated MaskingReason masked = 12;
+
+  // A query plan held in the result's rows.
+  message QueryPlan {
+    QueryOption.ExplainFormat format = 1;
+
+    // Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+    // does.
+    bool executed = 2;
+  }
+
+  // Set when the result is a query plan. Unset for any other result.
+  QueryPlan query_plan = 14;
 }
 
 message MaskingReason {
@@ -295,7 +351,7 @@ message MaskingReason {
   int32 classification_level = 6;
 
   // Icon associated with the semantic type (if any).
-  string semantic_type_icon = 7;
+  string semantic_type_icon = 7 [(bytebase.v1.audit_behavior) = OMIT];
 }
 
 message QueryRow {
@@ -394,8 +450,8 @@ message Advice {
 
 message ExportRequest {
   // The name is the resource name to execute the export against.
-  // Format: instances/{instance}/databases/{database}
-  // Format: instances/{instance}
+  // Format: instances/{instance}/databases/{database} or
+  // projects/{project}/instances/{instance}/databases/{database}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -415,7 +471,7 @@ message ExportRequest {
   bool admin = 5;
 
   // The zip password provide by users.
-  string password = 6;
+  string password = 6 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The id of data source.
   // If omitted, Export resolves the data source server-side by using the
@@ -435,7 +491,7 @@ message ExportRequest {
 
 message ExportResponse {
   // The export file content.
-  bytes content = 1;
+  bytes content = 1 [(bytebase.v1.audit_behavior) = OMIT];
 
   // The just-in-time access grant applied to this export, if any.
   // Format: projects/{project}/accessGrants/{accessGrant}.

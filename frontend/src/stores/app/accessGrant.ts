@@ -9,11 +9,14 @@ import {
   RevokeAccessGrantRequestSchema,
   SearchMyAccessGrantsRequestSchema,
 } from "@/types/proto-es/v1/access_grant_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 import type {
   AccessGrantFilter,
   AccessGrantSlice,
   AppSliceCreator,
 } from "./types";
+
+export const MAX_CEL_FILTER_CODE_POINTS = 100_000;
 
 export const buildAccessGrantFilter = (
   filter: AccessGrantFilter | undefined
@@ -22,40 +25,38 @@ export const buildAccessGrantFilter = (
   const parts: string[] = [];
 
   if (filter.name) {
-    parts.push(`name == "${filter.name}"`);
+    parts.push(`name == ${celString(filter.name)}`);
   }
   if (filter.status !== undefined && filter.status.length > 0) {
     const statusFilter: string[] = [];
     for (const status of filter.status) {
-      statusFilter.push(`status == "${status}"`);
+      statusFilter.push(`status == ${celString(status)}`);
     }
     parts.push(`(${statusFilter.join(" || ")})`);
   }
   if (filter.statement) {
-    parts.push(`query.contains("${filter.statement.trim()}")`);
+    parts.push(`query.contains(${celString(filter.statement.trim())})`);
   }
   if (filter.statementExact !== undefined) {
-    // Use JSON.stringify so internal quotes / backslashes / newlines in
-    // the SQL are escaped safely into the CEL string literal.
-    parts.push(`query == ${JSON.stringify(filter.statementExact.trim())}`);
+    parts.push(`query == ${celString(filter.statementExact.trim())}`);
   }
   if (filter.creator) {
-    parts.push(`creator == "${filter.creator}"`);
+    parts.push(`creator == ${celString(filter.creator)}`);
   }
   if (filter.issue) {
-    parts.push(`issue == "${filter.issue}"`);
+    parts.push(`issue == ${celString(filter.issue)}`);
   }
   if (filter.target) {
-    parts.push(`target == "${filter.target}"`);
+    parts.push(`target == ${celString(filter.target)}`);
   }
   if (filter.createdTsAfter !== undefined) {
     parts.push(
-      `create_time >= "${new Date(filter.createdTsAfter).toISOString()}"`
+      `create_time >= ${celString(new Date(filter.createdTsAfter).toISOString())}`
     );
   }
   if (filter.createdTsBefore !== undefined) {
     parts.push(
-      `create_time <= "${new Date(filter.createdTsBefore).toISOString()}"`
+      `create_time <= ${celString(new Date(filter.createdTsBefore).toISOString())}`
     );
   }
   if (filter.unmask !== undefined) {
@@ -66,6 +67,12 @@ export const buildAccessGrantFilter = (
   }
   return parts.join(" && ");
 };
+
+export const isAccessGrantFilterWithinCELLimit = (
+  filter: AccessGrantFilter
+): boolean =>
+  Array.from(buildAccessGrantFilter(filter)).length <=
+  MAX_CEL_FILTER_CODE_POINTS;
 
 const upsertAccessGrants = (
   set: Parameters<AppSliceCreator<AccessGrantSlice>>[0],

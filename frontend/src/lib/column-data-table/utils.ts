@@ -1,6 +1,5 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
-import i18n from "@/lib/i18n";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type {
@@ -25,7 +24,7 @@ export const updateColumnCatalog = async ({
   database: string;
   schema: string;
   table: string;
-  column: string;
+  column: string | string[];
   columnCatalog: Partial<ColumnCatalog>;
   notification: string;
 }) => {
@@ -60,29 +59,31 @@ export const updateColumnCatalog = async ({
   }
 
   const columns = targetTable.kind.value.columns || [];
-  const columnIndex = columns.findIndex((c) => c.name === column);
-  if (columnIndex < 0) {
-    columns.push(
-      create(ColumnCatalogSchema, {
-        name: column,
-        semanticType: columnCatalog.semanticType,
-        labels: columnCatalog.labels,
-        classification: columnCatalog.classification,
-        objectSchema: columnCatalog.objectSchema,
-      })
-    );
-  } else {
-    columns[columnIndex] = {
-      ...columns[columnIndex],
-      ...columnCatalog,
-    };
+  for (const name of Array.isArray(column) ? column : [column]) {
+    const columnIndex = columns.findIndex((c) => c.name === name);
+    if (columnIndex < 0) {
+      columns.push(
+        create(ColumnCatalogSchema, {
+          name,
+          semanticType: columnCatalog.semanticType,
+          labels: columnCatalog.labels,
+          classification: columnCatalog.classification,
+          objectSchema: columnCatalog.objectSchema,
+        })
+      );
+    } else {
+      columns[columnIndex] = {
+        ...columns[columnIndex],
+        ...columnCatalog,
+      };
+    }
   }
   await dbCatalogStore.updateDatabaseCatalog(pendingUpdateCatalog);
 
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: i18n.t(notification),
+    title: notification,
   });
 };
 
@@ -91,13 +92,13 @@ export const updateTableCatalog = async ({
   schema,
   table,
   tableCatalog,
-  notification = "common.updated",
+  notification,
 }: {
   database: string;
   schema: string;
   table: string;
   tableCatalog: Partial<TableCatalog>;
-  notification?: string;
+  notification: string;
 }) => {
   const dbCatalogStore = useAppStore.getState();
   const catalog = await dbCatalogStore.getOrFetchDatabaseCatalog({ database });
@@ -132,6 +133,6 @@ export const updateTableCatalog = async ({
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
-    title: i18n.t(notification),
+    title: notification,
   });
 };

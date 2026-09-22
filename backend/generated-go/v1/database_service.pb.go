@@ -622,7 +622,7 @@ func (x *BatchGetDatabasesRequest) GetNames() []string {
 
 type BatchGetDatabasesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The databases from the specified request.
+	// One database per requested name, in the same order as `names`.
 	Databases     []*Database `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -690,7 +690,7 @@ type ListDatabasesRequest struct {
 	// - environment: the environment full name in "environments/{id}" format, support "==" operator.
 	// - name: the database name, support ".contains()" operator.
 	// - project: the project full name in "projects/{id}" format, support "==" operator.
-	// - instance: the instance full name in "instances/{id}" format, support "==" operator.
+	// - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
 	// - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
 	// - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
 	// - table: filter by the database table, support "==" and ".contains()" operator.
@@ -701,6 +701,7 @@ type ListDatabasesRequest struct {
 	// environment == "" (find databases which environment is not set)
 	// project == "projects/{project resource id}"
 	// instance == "instances/{instance resource id}"
+	// instance == "projects/{project resource id}/instances/{instance resource id}"
 	// name.contains("database name")
 	// engine == "MYSQL"
 	// engine in ["MYSQL", "POSTGRES"]
@@ -863,10 +864,7 @@ type UpdateDatabaseRequest struct {
 	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Database *Database `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
 	// The list of fields to update.
-	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
-	// If set to true, and the database is not found, a new database will be created.
-	// In this situation, `update_mask` is ignored.
-	AllowMissing  bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
+	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -913,13 +911,6 @@ func (x *UpdateDatabaseRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
-}
-
-func (x *UpdateDatabaseRequest) GetAllowMissing() bool {
-	if x != nil {
-		return x.AllowMissing
-	}
-	return false
 }
 
 type BatchUpdateDatabasesRequest struct {
@@ -5479,12 +5470,11 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\border_by\x18\x06 \x01(\tR\aorderBy\"t\n" +
 	"\x15ListDatabasesResponse\x123\n" +
 	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xb1\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8c\x01\n" +
 	"\x15UpdateDatabaseRequest\x126\n" +
 	"\bdatabase\x18\x01 \x01(\v2\x15.bytebase.v1.DatabaseB\x03\xe0A\x02R\bdatabase\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"z\n" +
+	"updateMask\"z\n" +
 	"\x1bBatchUpdateDatabasesRequest\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12C\n" +
 	"\brequests\x18\x02 \x03(\v2\".bytebase.v1.UpdateDatabaseRequestB\x03\xe0A\x02R\brequests\"S\n" +
@@ -5958,22 +5948,22 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x17SYNC_STATUS_UNSPECIFIED\x10\x00\x12\x06\n" +
 	"\x02OK\x10\x01\x12\n" +
 	"\n" +
-	"\x06FAILED\x10\x022\x9e\x1a\n" +
-	"\x0fDatabaseService\x12\xc1\x01\n" +
-	"\vGetDatabase\x12\x1f.bytebase.v1.GetDatabaseRequest\x1a\x15.bytebase.v1.Database\"z\xdaA\x04name\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02UZ/\x12-/v1/{name=projects/*/instances/*/databases/*}\x12\"/v1/{name=instances/*/databases/*}\x12\x99\x02\n" +
-	"\x11BatchGetDatabases\x12%.bytebase.v1.BatchGetDatabasesRequest\x1a&.bytebase.v1.BatchGetDatabasesResponse\"\xb4\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x02\x82\xd3\xe4\x93\x02\x95\x01Z-\x12+/v1/{parent=instances/*}/databases:batchGetZ8\x126/v1/{parent=projects/*/instances/*}/databases:batchGet\x12*/v1/{parent=projects/*}/databases:batchGet\x12\x9d\x02\n" +
-	"\rListDatabases\x12!.bytebase.v1.ListDatabasesRequest\x1a\".bytebase.v1.ListDatabasesResponse\"\xc4\x01\xdaA\x00\x8a\xea0\x11bb.databases.list\x90\xea0\x02\x82\xd3\xe4\x93\x02\xa1\x01Z$\x12\"/v1/{parent=instances/*}/databasesZ%\x12#/v1/{parent=workspaces/*}/databasesZ/\x12-/v1/{parent=projects/*/instances/*}/databases\x12!/v1/{parent=projects/*}/databases\x12\x85\x02\n" +
-	"\x0eUpdateDatabase\x12\".bytebase.v1.UpdateDatabaseRequest\x1a\x15.bytebase.v1.Database\"\xb7\x01\xdaA\x14database,update_mask\x8a\xea0\x13bb.databases.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02{:\bdatabaseZB:\bdatabase26/v1/{database.name=projects/*/instances/*/databases/*}2+/v1/{database.name=instances/*/databases/*}\x12\x86\x02\n" +
-	"\x14BatchUpdateDatabases\x12(.bytebase.v1.BatchUpdateDatabasesRequest\x1a).bytebase.v1.BatchUpdateDatabasesResponse\"\x98\x01\x8a\xea0\x13bb.databases.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02s:\x01*Z>:\x01*\"9/v1/{parent=projects/*/instances/*}/databases:batchUpdate\"./v1/{parent=instances/*}/databases:batchUpdate\x12\xda\x01\n" +
-	"\fSyncDatabase\x12 .bytebase.v1.SyncDatabaseRequest\x1a!.bytebase.v1.SyncDatabaseResponse\"\x84\x01\x8a\xea0\x11bb.databases.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02e:\x01*Z7:\x01*\"2/v1/{name=projects/*/instances/*/databases/*}:sync\"'/v1/{name=instances/*/databases/*}:sync\x12\xf6\x01\n" +
-	"\x12BatchSyncDatabases\x12&.bytebase.v1.BatchSyncDatabasesRequest\x1a'.bytebase.v1.BatchSyncDatabasesResponse\"\x8e\x01\x8a\xea0\x11bb.databases.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02o:\x01*Z<:\x01*\"7/v1/{parent=projects/*/instances/*}/databases:batchSync\",/v1/{parent=instances/*}/databases:batchSync\x12\xeb\x01\n" +
-	"\x13GetDatabaseMetadata\x12'.bytebase.v1.GetDatabaseMetadataRequest\x1a\x1d.bytebase.v1.DatabaseMetadata\"\x8b\x01\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x02gZ8\x126/v1/{name=projects/*/instances/*/databases/*/metadata}\x12+/v1/{name=instances/*/databases/*/metadata}\x12\xe1\x01\n" +
-	"\x11GetDatabaseSchema\x12%.bytebase.v1.GetDatabaseSchemaRequest\x1a\x1b.bytebase.v1.DatabaseSchema\"\x87\x01\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x02cZ6\x124/v1/{name=projects/*/instances/*/databases/*/schema}\x12)/v1/{name=instances/*/databases/*/schema}\x12\xf0\x01\n" +
-	"\x14GetDatabaseSDLSchema\x12(.bytebase.v1.GetDatabaseSDLSchemaRequest\x1a\x1e.bytebase.v1.DatabaseSDLSchema\"\x8d\x01\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x02iZ9\x127/v1/{name=projects/*/instances/*/databases/*/sdlSchema}\x12,/v1/{name=instances/*/databases/*/sdlSchema}\x12\xed\x02\n" +
+	"\x06FAILED\x10\x022\xd2\x1a\n" +
+	"\x0fDatabaseService\x12\xc5\x01\n" +
+	"\vGetDatabase\x12\x1f.bytebase.v1.GetDatabaseRequest\x1a\x15.bytebase.v1.Database\"~\xdaA\x04name\x8a\xea0\x10bb.databases.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02UZ/\x12-/v1/{name=projects/*/instances/*/databases/*}\x12\"/v1/{name=instances/*/databases/*}\x12\x9d\x02\n" +
+	"\x11BatchGetDatabases\x12%.bytebase.v1.BatchGetDatabasesRequest\x1a&.bytebase.v1.BatchGetDatabasesResponse\"\xb8\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x95\x01Z-\x12+/v1/{parent=instances/*}/databases:batchGetZ8\x126/v1/{parent=projects/*/instances/*}/databases:batchGet\x12*/v1/{parent=projects/*}/databases:batchGet\x12\xa1\x02\n" +
+	"\rListDatabases\x12!.bytebase.v1.ListDatabasesRequest\x1a\".bytebase.v1.ListDatabasesResponse\"\xc8\x01\xdaA\x00\x8a\xea0\x11bb.databases.list\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\xa1\x01Z$\x12\"/v1/{parent=instances/*}/databasesZ%\x12#/v1/{parent=workspaces/*}/databasesZ/\x12-/v1/{parent=projects/*/instances/*}/databases\x12!/v1/{parent=projects/*}/databases\x12\x89\x02\n" +
+	"\x0eUpdateDatabase\x12\".bytebase.v1.UpdateDatabaseRequest\x1a\x15.bytebase.v1.Database\"\xbb\x01\xdaA\x14database,update_mask\x8a\xea0\x13bb.databases.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02{:\bdatabaseZB:\bdatabase26/v1/{database.name=projects/*/instances/*/databases/*}2+/v1/{database.name=instances/*/databases/*}\x12\x8a\x02\n" +
+	"\x14BatchUpdateDatabases\x12(.bytebase.v1.BatchUpdateDatabasesRequest\x1a).bytebase.v1.BatchUpdateDatabasesResponse\"\x9c\x01\x8a\xea0\x13bb.databases.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02s:\x01*Z>:\x01*\"9/v1/{parent=projects/*/instances/*}/databases:batchUpdate\"./v1/{parent=instances/*}/databases:batchUpdate\x12\xde\x01\n" +
+	"\fSyncDatabase\x12 .bytebase.v1.SyncDatabaseRequest\x1a!.bytebase.v1.SyncDatabaseResponse\"\x88\x01\x8a\xea0\x11bb.databases.sync\x90\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02e:\x01*Z7:\x01*\"2/v1/{name=projects/*/instances/*/databases/*}:sync\"'/v1/{name=instances/*/databases/*}:sync\x12\xfa\x01\n" +
+	"\x12BatchSyncDatabases\x12&.bytebase.v1.BatchSyncDatabasesRequest\x1a'.bytebase.v1.BatchSyncDatabasesResponse\"\x92\x01\x8a\xea0\x11bb.databases.sync\x90\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02o:\x01*Z<:\x01*\"7/v1/{parent=projects/*/instances/*}/databases:batchSync\",/v1/{parent=instances/*}/databases:batchSync\x12\xef\x01\n" +
+	"\x13GetDatabaseMetadata\x12'.bytebase.v1.GetDatabaseMetadataRequest\x1a\x1d.bytebase.v1.DatabaseMetadata\"\x8f\x01\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02gZ8\x126/v1/{name=projects/*/instances/*/databases/*/metadata}\x12+/v1/{name=instances/*/databases/*/metadata}\x12\xe5\x01\n" +
+	"\x11GetDatabaseSchema\x12%.bytebase.v1.GetDatabaseSchemaRequest\x1a\x1b.bytebase.v1.DatabaseSchema\"\x8b\x01\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02cZ6\x124/v1/{name=projects/*/instances/*/databases/*/schema}\x12)/v1/{name=instances/*/databases/*/schema}\x12\xf4\x01\n" +
+	"\x14GetDatabaseSDLSchema\x12(.bytebase.v1.GetDatabaseSDLSchemaRequest\x1a\x1e.bytebase.v1.DatabaseSDLSchema\"\x91\x01\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02iZ9\x127/v1/{name=projects/*/instances/*/databases/*/sdlSchema}\x12,/v1/{name=instances/*/databases/*/sdlSchema}\x12\xf1\x02\n" +
 	"\n" +
-	"DiffSchema\x12\x1e.bytebase.v1.DiffSchemaRequest\x1a\x1f.bytebase.v1.DiffSchemaResponse\"\x9d\x02\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\xfe\x01:\x01*Z=:\x01*\"8/v1/{name=projects/*/instances/*/databases/*}:diffSchemaZ?:\x01*\":/v1/{name=instances/*/databases/*/changelogs/*}:diffSchemaZJ:\x01*\"E/v1/{name=projects/*/instances/*/databases/*/changelogs/*}:diffSchema\"-/v1/{name=instances/*/databases/*}:diffSchema\x12\xf2\x01\n" +
-	"\fDiffMetadata\x12 .bytebase.v1.DiffMetadataRequest\x1a!.bytebase.v1.DiffMetadataResponse\"\x9c\x01\x8a\xea0\x19bb.databases.diffMetadata\x90\xea0\x01\x82\xd3\xe4\x93\x02u:\x01*Z?:\x01*\":/v1/{name=projects/*/instances/*/databases/*}:diffMetadata\"//v1/{name=instances/*/databases/*}:diffMetadata\x12\xf9\x01\n" +
-	"\x0fGetSchemaString\x12#.bytebase.v1.GetSchemaStringRequest\x1a$.bytebase.v1.GetSchemaStringResponse\"\x9a\x01\xdaA\x04name\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\x82\xd3\xe4\x93\x02oZ<\x12:/v1/{name=projects/*/instances/*/databases/*/schemaString}\x12//v1/{name=instances/*/databases/*/schemaString}B\xaa\x01\n" +
+	"DiffSchema\x12\x1e.bytebase.v1.DiffSchemaRequest\x1a\x1f.bytebase.v1.DiffSchemaResponse\"\xa1\x02\x8a\xea0\x10bb.databases.get\x90\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02\xfe\x01:\x01*Z=:\x01*\"8/v1/{name=projects/*/instances/*/databases/*}:diffSchemaZ?:\x01*\":/v1/{name=instances/*/databases/*/changelogs/*}:diffSchemaZJ:\x01*\"E/v1/{name=projects/*/instances/*/databases/*/changelogs/*}:diffSchema\"-/v1/{name=instances/*/databases/*}:diffSchema\x12\xf6\x01\n" +
+	"\fDiffMetadata\x12 .bytebase.v1.DiffMetadataRequest\x1a!.bytebase.v1.DiffMetadataResponse\"\xa0\x01\x8a\xea0\x19bb.databases.diffMetadata\x90\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02u:\x01*Z?:\x01*\":/v1/{name=projects/*/instances/*/databases/*}:diffMetadata\"//v1/{name=instances/*/databases/*}:diffMetadata\x12\xfd\x01\n" +
+	"\x0fGetSchemaString\x12#.bytebase.v1.GetSchemaStringRequest\x1a$.bytebase.v1.GetSchemaStringResponse\"\x9e\x01\xdaA\x04name\x8a\xea0\x16bb.databases.getSchema\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02oZ<\x12:/v1/{name=projects/*/instances/*/databases/*/schemaString}\x12//v1/{name=instances/*/databases/*/schemaString}B\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14DatabaseServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

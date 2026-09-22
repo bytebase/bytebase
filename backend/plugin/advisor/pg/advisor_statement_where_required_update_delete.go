@@ -37,7 +37,7 @@ func (*StatementWhereRequiredUpdateDeleteAdvisor) Check(_ context.Context, check
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementWhereRequiredUpdateDeleteRule struct {

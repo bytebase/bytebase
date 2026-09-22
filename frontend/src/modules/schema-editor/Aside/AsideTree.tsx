@@ -734,7 +734,7 @@ function StatusBadge({ status }: { status: EditStatus }) {
         : "destructive";
   const letter = status === "created" ? "+" : status === "updated" ? "~" : "−";
   return (
-    <Badge variant={variant} className="ml-1 h-4 px-1 text-[10px] leading-none">
+    <Badge variant={variant} className="ml-1 h-4 px-1 text-xs leading-none">
       {letter}
     </Badge>
   );

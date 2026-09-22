@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"regexp"
 	"strings"
 	"time"
 
@@ -24,6 +23,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
@@ -155,7 +155,10 @@ func (d *Driver) GetDB() *sql.DB {
 	return d.db
 }
 
-// getVersion gets the version.
+// getVersion returns the verbatim VERSION() output, e.g. "8.0.11-TiDB-v8.5.0". It is
+// stored and displayed as-is; callers that gate behavior on a version parse it
+// themselves, so a version string we do not recognize costs a feature rather than the
+// whole sync.
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
 	var version string
@@ -166,15 +169,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
 
-	return parseVersion(version)
-}
-
-func parseVersion(version string) (string, error) {
-	// Examples: 8.0.11-TiDB-v8.5.0, 8.0.11-TiDB-v7.5.2-serverless.
-	if loc := regexp.MustCompile(`v\d+\.\d+\.\d+`).FindStringIndex(version); loc != nil {
-		return version[loc[0]:loc[1]], nil
-	}
-	return "", errors.Errorf("failed to parse version %q", version)
+	return version, nil
 }
 
 func buildExecuteCommands(statement string) ([]base.Statement, error) {
@@ -205,8 +200,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	conn, err := d.db.Conn(ctx)
@@ -230,7 +225,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, conn, commands, opts, connectionID)
 	}
 	return d.executeInTransactionMode(ctx, conn, commands, opts, connectionID)
@@ -379,9 +374,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement = fmt.Sprintf("EXPLAIN %s", statement)
+			explained, err := base.ExplainStatement(storepb.Engine_TIDB, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			statement = explained
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			statement = base.StatementWithResultLimit(storepb.Engine_TIDB, statement, queryContext.Limit, "")
 		}
 		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
 

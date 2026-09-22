@@ -26,6 +26,18 @@ func validateQuery(statement string) (bool, bool, error) {
 	for _, stmt := range stmtList {
 		switch stmt := stmt.(type) {
 		case *ast.SelectStmt:
+			// INTO OUTFILE writes a file on the database server, so the
+			// statement is not a read whatever the SELECT itself does — pg
+			// refuses its own SELECT ... INTO on the same grounds.
+			//
+			// Every INTO form is refused here, not just OUTFILE, and TiDB's
+			// parser is why there is nothing more to distinguish: it rejects
+			// DUMPFILE, INTO <variable>, and INTO on a set operation outright,
+			// so OUTFILE is the only form that reaches this line today and any
+			// form a later parser accepts lands on the same refusal.
+			if stmt.SelectIntoOpt != nil {
+				return false, false, nil
+			}
 		case *ast.SetOprStmt:
 		case *ast.SetStmt:
 			hasExecute = true

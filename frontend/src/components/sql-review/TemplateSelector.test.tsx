@@ -55,9 +55,8 @@ vi.mock("@/types", () => ({
   ],
 }));
 
-// The project getters that previously lived on the Pinia `useProjectV1Store`
-// now live on the Zustand app store, accessed via both the callable selector
-// form (`useAppStore((s) => s.projectsByName)`) and `useAppStore.getState()`.
+// TemplateSelector reads the app store through both the selector form
+// (`useAppStore((s) => s.projectsByName)`) and `useAppStore.getState()`.
 const appStoreState = {
   get getOrFetchProjectByName() {
     return mocks.getOrFetchProjectByName;
@@ -147,6 +146,7 @@ describe("TemplateSelector", () => {
     );
 
     expect(reviewButton).toBeTruthy();
+    expect(reviewButton).toHaveClass("whitespace-normal");
 
     act(() => {
       reviewButton?.dispatchEvent(

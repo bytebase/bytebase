@@ -115,6 +115,9 @@ export function TreeNodeSuffix({
 
   // Folder node: only show "More" button
   if (!node.savedQuery) {
+    if (view === "shared") {
+      return null;
+    }
     return (
       <MoreHorizontal
         className="size-4 text-control shrink-0 cursor-pointer"
@@ -157,7 +160,7 @@ export function TreeNodeSuffix({
       <Star
         className={cn(
           "size-4 shrink-0",
-          savedQueryLite.starred ? "text-yellow-400" : "text-control-light"
+          savedQueryLite.starred ? "text-warning" : "text-control-light"
         )}
         onClick={(e) => {
           e.stopPropagation();

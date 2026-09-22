@@ -286,6 +286,7 @@ describe("AuthGate", () => {
     });
 
     expect(mocks.fetchCurrentUser).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchCurrentUser).toHaveBeenCalledWith(true);
     expect(mocks.fetchWorkspaceIamPolicy).toHaveBeenCalledTimes(1);
     expect(mocks.fetchWorkspaceIamPolicy).toHaveBeenCalledWith(true);
     expect(mocks.listRoles).toHaveBeenCalledTimes(1);

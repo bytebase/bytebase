@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetListProjectFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -67,29 +68,29 @@ func TestGetListProjectFilter(t *testing.T) {
 		{
 			name:     "name contains",
 			filter:   `name.contains("test")`,
-			wantSQL:  "(LOWER(project.name) LIKE $1)",
+			wantSQL:  "(LOWER(project.name) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
 		},
 		{
 			name:     "resource_id contains",
 			filter:   `resource_id.contains("prod")`,
-			wantSQL:  "(LOWER(project.resource_id) LIKE $1)",
+			wantSQL:  "(LOWER(project.resource_id) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%prod%"},
 			wantErr:  false,
 		},
 		{
 			name:     "label filter - string",
 			filter:   `labels.environment == "production"`,
-			wantSQL:  "(project.setting->'labels'->>'environment' = $1)",
-			wantArgs: []any{"production"},
+			wantSQL:  "(project.setting->'labels'->>$1::text = $2)",
+			wantArgs: []any{"environment", "production"},
 			wantErr:  false,
 		},
 		{
 			name:     "label filter - in operator",
 			filter:   `labels.environment in ["production", "staging"]`,
-			wantSQL:  "(project.setting->'labels'->>'environment' = ANY($1))",
-			wantArgs: []any{[]any{"production", "staging"}},
+			wantSQL:  "(project.setting->'labels'->>$1::text = ANY($2))",
+			wantArgs: []any{"environment", []any{"production", "staging"}},
 			wantErr:  false,
 		},
 		{
@@ -117,7 +118,7 @@ func TestGetListProjectFilter(t *testing.T) {
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "unsupported variable",
@@ -141,6 +142,7 @@ func TestGetListProjectFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListProjectFilter("test-workspace", tt.filter)
 
 			if tt.wantErr {

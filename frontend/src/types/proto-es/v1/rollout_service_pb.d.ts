@@ -295,6 +295,27 @@ export declare type ListTaskRunsRequest = Message<"bytebase.v1.ListTaskRunsReque
    * @generated from field: string parent = 1;
    */
   parent: string;
+
+  /**
+   * The maximum number of task runs to return. The service may return fewer
+   * than this value.
+   * If unspecified, at most 1000 task runs will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   *
+   * @generated from field: int32 page_size = 2;
+   */
+  pageSize: number;
+
+  /**
+   * A page token, received from a previous `ListTaskRuns` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListTaskRuns` must match
+   * the call that provided the page token.
+   *
+   * @generated from field: string page_token = 3;
+   */
+  pageToken: string;
 };
 
 /**
@@ -313,6 +334,14 @@ export declare type ListTaskRunsResponse = Message<"bytebase.v1.ListTaskRunsResp
    * @generated from field: repeated bytebase.v1.TaskRun task_runs = 1;
    */
   taskRuns: TaskRun[];
+
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   *
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken: string;
 };
 
 /**
@@ -482,8 +511,8 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
   type: Task_Type;
 
   /**
-   * Format: instances/{instance} if the task is DatabaseCreate.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate.
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string target = 6;
    */
@@ -1336,7 +1365,7 @@ export declare const TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema: G
 export declare type TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table = Message<"bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table"> & {
   /**
    * The database information.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string database = 1;
    */

@@ -9,6 +9,7 @@ import (
 )
 
 func TestGetListGroupFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -41,14 +42,14 @@ func TestGetListGroupFilter(t *testing.T) {
 		{
 			name:     "title contains",
 			filter:   `title.contains("dev")`,
-			wantSQL:  "(LOWER(name) LIKE $1)",
+			wantSQL:  "(LOWER(name) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%dev%"},
 			wantErr:  false,
 		},
 		{
 			name:     "email contains",
 			filter:   `email.contains("example")`,
-			wantSQL:  "(LOWER(email) LIKE $1)",
+			wantSQL:  "(LOWER(email) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%example%"},
 			wantErr:  false,
 		},
@@ -69,7 +70,7 @@ func TestGetListGroupFilter(t *testing.T) {
 		{
 			name:     "complex nested AND/OR",
 			filter:   `(title == "Developers" || title == "Admins") && email.contains("example")`,
-			wantSQL:  "(((name = $1 OR name = $2) AND LOWER(email) LIKE $3))",
+			wantSQL:  "(((name = $1 OR name = $2) AND LOWER(email) LIKE $3 ESCAPE '\\'))",
 			wantArgs: []any{"Developers", "Admins", "%example%"},
 			wantErr:  false,
 		},
@@ -77,7 +78,7 @@ func TestGetListGroupFilter(t *testing.T) {
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "unsupported variable",
@@ -101,6 +102,7 @@ func TestGetListGroupFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			find := &FindGroupMessage{}
 			q, err := GetListGroupFilter(find, tt.filter)
 
@@ -130,6 +132,7 @@ func TestGetListGroupFilter(t *testing.T) {
 }
 
 func TestGetListGroupFilterProject(t *testing.T) {
+	t.Parallel()
 	// Test project filter separately since it modifies the find struct
 	find := &FindGroupMessage{}
 	q, err := GetListGroupFilter(find, `project == "projects/test-project"`)
@@ -146,6 +149,7 @@ func TestGetListGroupFilterProject(t *testing.T) {
 }
 
 func TestProjectMembersGroupJoinCondition(t *testing.T) {
+	t.Parallel()
 	sql, args, err := projectMembersGroupJoinCondition().ToSQL()
 	require.NoError(t, err)
 	require.Contains(t, sql, "user_group.email")

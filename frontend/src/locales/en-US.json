@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "Active only",
+    "active-only-chats": "View active chats",
     "ai-not-configured": {
       "configure": "Configure",
       "contact-admin": "Contact your workspace admin to configure AI.",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "Archive all chats",
     "archive-chat": "Archive chat",
-    "archived-only-chats": "Archived only",
+    "archived-only-chats": "View archived chats",
     "args": "Args",
     "assistant-title": "AI Assistant",
     "cancel": "Cancel",
@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Search by the audit log actor",
+          "description": "Search users by email. Prefix with serviceAccounts/ or workloadIdentities/ to search those actors.",
           "title": "Actor"
         },
         "level": {
@@ -154,9 +154,11 @@
       "continue-with-email": "Continue with email",
       "continue-with-idp": "Continue with {{idp}}",
       "email-code-tab": "Email Code",
+      "failed": "Sign-in failed",
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
       "invited-email": "You've been invited. Please sign in with {{email}}",
+      "load-failed": "Couldn't load sign-in options. Please retry.",
       "new-user": "New to Bytebase?",
       "no-method-available": {
         "description": "Password and email-code sign-in are disabled, and no identity provider is configured for this workspace.",
@@ -186,6 +188,11 @@
       "create-admin-account": "Create admin account",
       "existing-user": "Already have an account?",
       "title": "Register your account"
+    },
+    "sso": {
+      "invalid-authorization-url": "Invalid authorization URL: it must be a valid HTTP or HTTPS URL.",
+      "no-authorization-endpoint": "The identity provider published no authorization endpoint. Check its configuration.",
+      "unsupported-provider-type": "This identity provider type does not support SSO redirect."
     },
     "token-expired-description": "Token has expired, please login again",
     "token-expired-title": "Token expired"
@@ -294,6 +301,7 @@
     "database-group": "Database Group",
     "databases": "Databases",
     "deactivate": "Deactivate",
+    "deactivated": "Deactivated",
     "default": "Default",
     "definition": "Definition",
     "delete": "Delete",
@@ -310,6 +318,7 @@
     "discard-changes": "Discard changes",
     "discord": "Discord",
     "dismiss": "Dismiss",
+    "done": "Done",
     "download": "Download",
     "draft": "Draft",
     "duplicate": "Duplicate",
@@ -450,6 +459,10 @@
     "search": "Search",
     "search-for-more": "Search for more",
     "search-no-result": "No matching result found",
+    "search-results": "Search results",
+    "secret-input": {
+      "unchanged": "Unchanged"
+    },
     "select": "Please Select",
     "select-all": "Select all",
     "selected": "selected",
@@ -480,6 +493,8 @@
     "tips": "Tips",
     "title": "Title",
     "to": "To",
+    "toggle-password-visibility": "Toggle password visibility",
+    "token": "Token",
     "total": "Total",
     "total-n-items": "Total {{n}} items",
     "transfer": "Transfer",
@@ -522,6 +537,16 @@
     "new-collection-name": "New Collection Name",
     "new-database-name": "New database name",
     "reserved-db-error": "{{databaseName}} is a reserved name"
+  },
+  "credential-proof": {
+    "code-sent": "Code sent — check your email",
+    "email-label": "Email verification code",
+    "email-me-a-code": "Email me a code",
+    "email-placeholder": "6-digit code",
+    "factor-label": "Verification code",
+    "factor-placeholder": "Authenticator code or recovery code",
+    "password-label": "Current password",
+    "resend-in": "Resend in {{seconds}}s"
   },
   "custom-approval": {
     "approval-flow": {
@@ -622,11 +647,8 @@
     },
     "no-read-only-data-source": "No read-only data source",
     "private-key-passphrase": "Private Key Passphrase",
-    "private-key-passphrase-placeholder": "Leave empty if your private key is not encrypted",
     "private-key-passphrase-tip": "Optional passphrase for encrypted private keys",
     "read-only": "RO",
-    "read-replica-host": "Read-replica Host",
-    "read-replica-port": "Read-replica Port",
     "replica-set": "Replica Set",
     "select-query-data-source": "Select query data source",
     "snowflake-keypair-tip": "Key-pair authentication",
@@ -638,11 +660,7 @@
       "ssh-key": "SSH Key",
       "user": "User"
     },
-    "ssh-connection": "SSH Connection",
-    "ssh-type": {
-      "none": "None",
-      "tunnel-and-private-key": "Tunnel + Private Key"
-    },
+    "ssh-connection": "SSH tunnel",
     "ssl": {
       "ca-cert": "CA Certificate",
       "ca-path": "CA Certificate Path",
@@ -669,7 +687,7 @@
       "client-key-path": "Private key path",
       "client-key-placeholder": "Input or drag and drop YOUR_CLIENT_KEY",
       "configured": "Configured",
-      "connection-security": "Connection security",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "Mutual TLS is not available for this engine.",
       "posture": {
         "disabled": "Disabled",
@@ -678,11 +696,10 @@
         "tls": "TLS"
       },
       "server-identity": "Server identity",
-      "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored.",
-      "verify-certificate": "Verify server certificate",
-      "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
+      "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored. This is insecure. Enable verification for secure connections; disable it only temporarily for development or troubleshooting.",
+      "verify-certificate": "Verify server certificate"
     },
-    "ssl-connection": "SSL Connection"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "You don't have the permission to access this database.",
@@ -725,8 +742,10 @@
     "mixed-label-values": "mixed values",
     "mixed-label-values-warning": "Some of the selected resources have mixed values for the same key. Only edit these key-value pairs if you intend to change them.",
     "nullable": "Nullable",
+    "open-sql-editor": "Open SQL Editor",
     "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
+    "project-instance-transfer-disabled": "Databases from a project-bound instance cannot be transferred or unassigned.",
     "revision": {
       "add-more-files": "Add More",
       "available-files": "Available Files",
@@ -800,7 +819,6 @@
     "unassign": "Unassign",
     "unassign-alert-description": "The selected databases will be removed from the project",
     "unassign-alert-title": "Unassign databases",
-    "unassigned-databases": "Unassigned databases",
     "unique": "Unique",
     "visible": "Visible"
   },
@@ -840,7 +858,14 @@
     "partitions": "Partitions",
     "procedures": "Procedures",
     "project-instance-synced-action": "Create database change",
+    "project-instance-synced-create-change-description": "Your database is ready in this project. Create a governed database change to continue.",
+    "project-instance-synced-create-change-title": "Ready to create a database change",
     "project-instance-synced-description": "Your database is ready in this project. Start by querying data in SQL Editor, or create a governed database change when needed.",
+    "project-instance-synced-mark-sensitive-data-action": "Mark sensitive data",
+    "project-instance-synced-mark-sensitive-data-description": "Your database is ready in this project. Mark a sensitive column to apply data masking.",
+    "project-instance-synced-mark-sensitive-data-title": "Ready to protect sensitive data",
+    "project-instance-synced-query-data-description": "Your database is ready in this project. Open SQL Editor to query it.",
+    "project-instance-synced-query-data-title": "Database ready to query",
     "project-instance-synced-sql-editor-action": "Open SQL Editor",
     "project-instance-synced-title": "Database connected",
     "project-instance-syncing-description": "This may take a few seconds to a few minutes. You can refresh this page later.",
@@ -955,6 +980,8 @@
   },
   "instance": {
     "account-locator": "Account Locator",
+    "account-locator-description": "Identifies the Snowflake account to connect to.",
+    "add-parameter": "Add parameter",
     "advanced-search": {
       "scope": {
         "host": {
@@ -969,6 +996,7 @@
     },
     "archive-instance-instance-name": "Archive instance '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
+    "authentication": "Authentication",
     "authentication-database": "Authentication Database",
     "cloud-sql-ip-type": {
       "description": "Use Private IP when the instance has no public IP and Bytebase runs in the same VPC.",
@@ -979,9 +1007,10 @@
     },
     "connect-database-to-project": "Connect database to project",
     "connect-instance": "Connect instance",
+    "connect-using": "Connect using",
     "connecting-database-to-project": "Connecting database...",
+    "connection-database": "Connection database",
     "connection-info": "Connection info",
-    "connection-options": "Connection Options",
     "connection-recovery": {
       "auth": {
         "description": "Verify the username, password, token, or IAM authentication settings, then test the connection again.",
@@ -994,10 +1023,12 @@
       },
       "docs": "Open connection guide",
       "network": {
-        "description": "Confirm the host and port are reachable from Bytebase Cloud. Check firewall rules, allowlists, proxies, tunnels, and whether the database only accepts private network traffic.",
+        "description-saas": "Confirm the host and port are reachable from Bytebase Cloud. Check firewall rules, allowlists, proxies, tunnels, and whether the database only accepts private network traffic.",
+        "description-self-hosted": "Confirm the host and port are reachable from your Bytebase deployment. Check firewall rules, network routing, proxies, tunnels, and whether the database only accepts traffic from another network.",
         "steps": {
           "address": "Verify the host or socket and port match the database endpoint.",
-          "firewall": "If you use Bytebase Cloud, allowlist the required Cloud IP in your database firewall.",
+          "firewall-saas": "Allowlist the Bytebase Cloud IP in your database firewall.",
+          "firewall-self-hosted": "Allow connections from the network where Bytebase is deployed.",
           "private-network": "For a private database, configure VPN, private networking, or an SSH tunnel first."
         },
         "title": "Check network reachability"
@@ -1012,12 +1043,14 @@
         "title": "Check database permissions"
       },
       "timeout": {
-        "description": "The database did not respond in time. Check firewall rules, port settings, network routing, and whether the database allows connections from Bytebase Cloud.",
+        "description-saas": "The connection test did not complete in time. Check firewall rules, port settings, network routing, and whether the database allows connections from Bytebase Cloud.",
+        "description-self-hosted": "The connection test did not complete in time. Check firewall rules, port settings, network routing, and whether the database allows connections from your Bytebase deployment.",
         "steps": {
           "load": "Confirm the database is online and accepts new connections.",
           "retry": "If the database is behind a firewall, finish the allowlist or tunnel setup before retrying.",
           "route": "Check routing, proxy, tunnel, port, and connection timeout settings."
         },
+        "test-title": "Connection test timed out",
         "title": "Check firewall and routing"
       },
       "tls": {
@@ -1034,7 +1067,8 @@
         "steps": {
           "fields": "Check host, port, username, password or secret source, and SSL/TLS mode.",
           "help": "If your database is private, configure VPN, private networking, or an SSH tunnel before retrying.",
-          "logs": "If the database has firewall rules, allow Bytebase Cloud or your deployed Bytebase network to connect."
+          "logs-saas": "If the database has firewall rules, allow Bytebase Cloud to connect.",
+          "logs-self-hosted": "If the database has firewall rules, allow connections from the network where Bytebase is deployed."
         },
         "title": "Review connection settings"
       },
@@ -1079,7 +1113,6 @@
           "role-id": "Auth role id",
           "secret-env-name": "Environment name",
           "secret-id": "Auth secret id",
-          "secret-plain-text": "Plain text",
           "self": "AppRole"
         },
         "self": "Auth type",
@@ -1099,8 +1132,9 @@
       "vault-tls-config": "Vault TLS Configuration (Optional)",
       "vault-url": "Vault URL"
     },
-    "failed-to-connect-instance": "Failed to connect instance.",
-    "failed-to-connect-instance-localhost": "If you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
+    "failed-to-connect-instance": "Connection test failed.",
+    "failed-to-connect-instance-localhost": "This address points to the Bytebase host. If the database runs on the Docker host, try \"host.docker.internal\" as the host address.",
+    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" is a local-only address that Bytebase Cloud cannot use to reach your database. Enter a database hostname or IP address reachable from Bytebase Cloud.",
     "filter-instance-name": "Filter instance name",
     "find-gcp-project-id": "To find GCP Project ID, see",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
@@ -1108,7 +1142,7 @@
     "gcp-endpoint-tip": "Optional. Overrides the default Google API endpoint, e.g. with a Private Service Connect endpoint like {{example}}.",
     "gcp-endpoint-toggle": "Set a custom API endpoint",
     "grants": "Grants",
-    "host-or-socket": "Host or Socket",
+    "hostname": "Hostname",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1186,6 +1220,7 @@
     },
     "instance-id": "Instance ID",
     "instance-name": "Instance Name",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance, optional",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "KDC host",
@@ -1197,14 +1232,21 @@
     "keytab-resupply-required": "This data source now connects somewhere new. Re-upload the keytab to confirm you still hold it.",
     "keytab-upload-placeholder": "Click or drag your .keytab file here",
     "keytab-write-only": "Keytab is write-only. Upload a new file to replace the existing one.",
+    "master-name": "Master name",
+    "master-password": "Master password",
+    "master-username": "Master username",
     "new-instance": "New Instance",
     "no-environment": "This instance has not been bound to the environment",
     "no-extra-params-configured": "No extra connection parameters configured",
     "no-params-yet-add-above": "No parameters configured yet. Add parameters using the form above.",
-    "no-password": "No password",
     "open-data-source": "Open this data source to see what it needs.",
     "parameter-name-placeholder": "Parameter name",
     "parameter-value-placeholder": "Parameter value",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "Password source",
+      "stored-in-bytebase": "Stored in Bytebase"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1212,18 +1254,27 @@
       "external-secret-azure": "Azure Key Vault",
       "external-secret-gcp": "GCP Secret Manager",
       "external-secret-vault": "Vault (KV v2)",
+      "google-cloud-iam": "Google Cloud IAM",
       "google-iam": "Google Cloud SQL IAM",
       "password": "Plain Password"
     },
-    "password-write-only": "YOUR_DB_PWD - write only",
     "port": "Port",
+    "prepare-sample-instance-failed": "Failed to prepare Sample Project Instance.",
+    "preparing-sample-instance": "Preparing Sample Project Instance…",
+    "project-bound-description": "This instance is bound to this project. All its databases are automatically transferred to the project and cannot be transferred or unassigned.",
+    "project-bound-title": "Project-bound instance",
     "project-id": "Project ID",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{{0}}' to normal state?",
     "role-arn": "Role ARN",
     "role-arn-description": "IAM role to assume for cross-account access. Leave empty for same-account access.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "The sample instance expired at {{time}} and will be removed shortly.",
+    "sample-expiration-future_one": "The sample instance will be removed in {{count}} day, at {{time}}.",
+    "sample-expiration-future_other": "The sample instance will be removed in {{count}} days, at {{time}}.",
+    "sample-project-instance-description": "Use a Sample Project Instance to explore Bytebase with a ready-to-use database for 7 days.",
+    "sample-project-instance-description-self-host": "Use a Sample Project Instance to explore Bytebase with a ready-to-use database.",
+    "sample-project-instance-title": "Try a Sample Project Instance",
     "scan-interval": {
-      "default-never": "Default (never)",
       "description": "Bytebase periodically syncs instance schema and detects anomalies.",
       "min-value": "Min value {{value}} minutes",
       "self": "Scan Interval"
@@ -1270,7 +1321,7 @@
           "template": "Below is an example to create user '{{user}}' with password {{password}} for {{warehouse}} and grant the user with the needed privileges."
         }
       },
-      "firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction.",
+      "firewall-info": "Allowlist the Bytebase Cloud IP in your database firewall.",
       "google-cloud-sql": {
         "instance-name": "Instance Connection Name",
         "instance-name-tips": "The instance connection name should look like {{instance}}.",
@@ -1282,16 +1333,18 @@
         }
       },
       "host": {
-        "none-snowflake": "e.g. host.docker.internal | host ip | local socket"
-      },
-      "proxy": {
-        "snowflake": "For proxy server, append @PROXY_HOST and specify PROXY_PORT in the port"
+        "none-snowflake": "e.g. host.docker.internal | host IP | local socket",
+        "saas": "e.g. db.example.com | database IP"
       }
     },
+    "service-name": "Service name",
+    "service-name-placeholder": "e.g. sales.example.com",
     "show-how-to-create": "Show how to create",
+    "sid": "SID",
+    "sid-placeholder": "e.g. ORCL",
     "snowflake-web-console": "Snowflake Web Console",
     "successfully-archived-instance": "Successfully archived the instance '{{0}}'.",
-    "successfully-connected-instance": "Successfully connected instance.",
+    "successfully-connected-instance": "Connection successful.",
     "successfully-created-instance-createdinstance-name": "Successfully created instance '{{0}}'.",
     "successfully-restored-instance": "Successfully restored the instance '{{0}}'.",
     "successfully-updated-instance-instance-name": "Successfully updated instance '{{0}}'.",
@@ -1303,19 +1356,40 @@
     },
     "sync-databases": {
       "add-database": "+ Add database, press enter to submit",
+      "all-databases": "All databases",
       "description": "Choose which databases to sync from this instance.",
+      "hostname-required": "Enter a hostname to choose which databases to sync.",
       "project-sync-all": "Sync all databases to this project",
+      "required-fields": "Complete the required fields above to choose which databases to sync.",
       "search-database": "Search database",
+      "selected-databases": "Selected databases",
       "self": "Sync Databases",
       "sync-all": "Sync all databases"
     },
     "syncing": "Syncing ...",
     "test-connection": "Test Connection",
     "testing-connection": "Testing Connection...",
-    "token-write-only": "YOUR_TOKEN - write only",
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
-    "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {{0}}",
+    "unable-to-connect": "Bytebase couldn't connect with these settings. Review the guidance above, or continue and update the connection later.\n\nTechnical details: {{0}}",
+    "use-sample-instance": "Use sample instance (Available for 7 days)",
+    "use-sample-instance-self-host": "Use sample instance",
     "users": "Users",
+    "validation": {
+      "absolute-path": "Enter an absolute path, starting with /.",
+      "aws-credential": "Enter an access key ID or a role ARN.",
+      "cloud-sql-host": "Enter the instance name as project:region:instance.",
+      "forbidden-parameter": "The allowAllFiles parameter is not allowed because it exposes files on the Bytebase server.",
+      "gcp-instance": "Use lowercase letters, numbers, or hyphens.",
+      "gcp-project": "Use lowercase letters, numbers, periods, colons, or hyphens.",
+      "keytab-resupply": "Upload the keytab again for the new connection destination.",
+      "oracle-service": "Enter a service name or SID.",
+      "pem-certificate": "Enter a PEM certificate, including the BEGIN and END CERTIFICATE lines.",
+      "pem-key": "Enter a PEM private key (PKCS#1, PKCS#8, or EC).",
+      "required": "This field is required.",
+      "specific-credential": "Provide specific credentials. Default credentials are unavailable in Bytebase Cloud.",
+      "tls-pair": "Provide both the client certificate and private key.",
+      "tls-source-conflict": "Use either PEM content or a file path, not both."
+    },
     "your-snowflake-account-locator": "Your Snowflake account locator"
   },
   "issue": {
@@ -1551,7 +1625,6 @@
     },
     "recovery-code": "Recovery code"
   },
-  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} is requesting access to your account",
@@ -1559,8 +1632,45 @@
       "error-load-failed": "Failed to load client information",
       "error-missing-params": "Missing required OAuth2 parameters",
       "error-switch-failed": "Failed to switch workspace",
-      "permission-access": "Access your Bytebase account with your permissions",
-      "permissions": "This application will be able to:",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "Think this should be on? Ask a workspace admin about the MCP access policy.",
+          "description": "A workspace admin has turned off MCP access for {{workspace}}. Nothing was connected.",
+          "description-no-workspace": "A workspace admin has turned off MCP access for this workspace. Nothing was connected.",
+          "line": {
+            "no-session": "No AI session can connect to this workspace",
+            "recorded": "Any attempt to connect anyway is recorded in the audit log"
+          },
+          "policy-label": "Workspace policy",
+          "title": "MCP access is turned off"
+        },
+        "line": {
+          "audit": "Audited actions carry an MCP tag, and anything the policy refuses is streamed to stdout when audit logging to stdout is enabled",
+          "capped-read-only": "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all",
+          "capped-read-write": "Capped by your own Bytebase permissions, and by what Bytebase supports for each database engine and each operation",
+          "masking": "Your masking exemptions do not apply to this session",
+          "no-write": "No changes, rollouts, exports or database management"
+        },
+        "title": "This session may",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "Nothing has been approved and nothing is connected"
+          },
+          "policy-label": "Workspace policy",
+          "undisclosable": {
+            "description": "This workspace's MCP policy is a value this page has no wording for. Either it is newer than the page you have open, or it is not a policy this Bytebase version serves, in which case every MCP connection is being refused.",
+            "line": "Reload to pick up the current version. If this page comes back, ask a workspace admin to set a supported policy",
+            "title": "This page cannot show what this workspace's MCP policy allows"
+          },
+          "unknown": {
+            "description": "Bytebase could not read this workspace's MCP access policy just now.",
+            "line": "What this session would be allowed to do cannot be shown",
+            "retry": "Check again",
+            "title": "The MCP policy could not be checked"
+          }
+        },
+        "write-caution": "An AI session with write access makes real changes. Approve only on a machine you control."
+      },
       "title": "Authorization Request",
       "workspace-label": "Granting access to workspace"
     }
@@ -1592,9 +1702,12 @@
       "configure": "Configure",
       "parameters": "gh-ost parameters",
       "requirements-not-met": "Ghost requirements not met: {{databases}}",
-      "reset-to-defaults": "Reset to defaults"
+      "reset-to-defaults": "Reset to defaults",
+      "skip-metadata-lock-check-risk": "Skipping this check can cause lost writes during cut-over.",
+      "skip-metadata-lock-check-why": "Why?"
     },
     "go-to-plan-page": "Go to plan page",
+    "initial-sql-storage-failed": "Unable to temporarily save the SQL. Clear some browser storage and try again.",
     "isolation-level": {
       "read-committed": "Read Committed",
       "read-uncommitted": "Read Uncommitted",
@@ -1678,6 +1791,7 @@
         "no-reviewers": "No reviewers",
         "rejected-by": "Rejected by {{user}}"
       },
+      "candidate-last-changed-plan": "Can't approve — last changed this plan",
       "comment-required-to-reject": "A comment is required to reject",
       "footer": {
         "all-gates-passed": "All gates passed",
@@ -1707,11 +1821,50 @@
         "rollout-not-created": "Rollout was not created automatically",
         "waiting-on-review": "Waiting on review"
       },
+      "last-plan-editor-cannot-approve": "You can't approve this issue because you were the last person to change its plan. A different reviewer must approve it.",
       "rejection": {
         "guidance-prefix": "Update your changes to address the feedback, or",
         "guidance-suffix": "without changes",
         "re-request-review": "re-request review",
         "title": "Rejected by {{user}}"
+      },
+      "thread": {
+        "add-comment": "Add comment",
+        "add-comment-on-line": "Add a comment on line {{line}}",
+        "add-comment-on-lines": "Add a comment on lines {{startLine}} to {{endLine}}",
+        "anchor": {
+          "line_one": "Line {{range}}",
+          "line_other": "Lines {{range}}",
+          "outdated": "Outdated",
+          "statement-unavailable": "Statement unavailable",
+          "unavailable-change": "Deleted change",
+          "view-in-statement": "View in Statement"
+        },
+        "comment-on-lines": "Comment on lines",
+        "n-replies-hidden_one": "{{count}} reply hidden",
+        "n-replies-hidden_other": "{{count}} replies hidden",
+        "n-replies_one": "{{count}} reply",
+        "n-replies_other": "{{count}} replies",
+        "publish": "Publish",
+        "reopen-thread": "Reopen thread",
+        "reply": "Reply",
+        "reply-placeholder": "Reply...",
+        "reply-posted-status-failed": "Reply posted, but the thread status could not be updated. Retry the status action.",
+        "resolve": "Resolve",
+        "resolve-thread": "Resolve thread",
+        "resolved": "Resolved",
+        "threads-on-line_one": "{{count}} thread on this line",
+        "threads-on-line_other": "{{count}} threads on this line",
+        "walker": {
+          "count_one": "{{count}} unresolved thread on this version",
+          "count_other": "{{count}} unresolved threads on this version",
+          "next": "Next unresolved thread",
+          "position": "Thread {{index}} of {{count}}",
+          "previous": "Previous unresolved thread",
+          "remainder_one": "{{count}} more not shown on this version",
+          "remainder_other": "{{count}} more not shown on this version"
+        },
+        "write-comment": "Write a comment..."
       }
     },
     "rollback": {
@@ -1754,6 +1907,8 @@
       "n-of-m-approved": "{{n}} of {{m}} approved",
       "n-of-m-tasks": "{{n}}/{{m}} tasks",
       "n-passed": "{{n}} passed",
+      "n-unresolved-threads_one": "{{count}} unresolved thread",
+      "n-unresolved-threads_other": "{{count}} unresolved threads",
       "n-warning": "{{n}} warning"
     },
     "targets": {
@@ -1772,7 +1927,8 @@
       "actions": {
         "explain-code": "Explain code",
         "find-problems": "Find problems",
-        "insert-at-caret": "Insert at caret"
+        "insert-at-caret": "Insert at cursor",
+        "new-chat-using-selection": "New chat using selection"
       },
       "ai-assistant": "AI Assistant",
       "conversation": {
@@ -1814,7 +1970,6 @@
     }
   },
   "project": {
-    "add-database": "Add database",
     "add-database-empty-placeholder": "Add a database in an existing instance to this project",
     "batch": {
       "archive": {
@@ -1893,29 +2048,34 @@
       },
       "revoke-role-from-member": "Revoke '{{role}}' from '{{member}}'?"
     },
-    "overview": {
-      "info-slot-content": "Bytebase periodically syncs the instance schema. Newly synced databases are first placed here. User should transfer them to the proper application project."
-    },
     "select": "Select project",
     "settings": {
       "confirm-archive-project": "Archiving \"{{name}}\" will make it read-only and hide it from active project lists. All issues, databases, and settings will be preserved. You can restore it later from the archived projects list.",
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
       "issue-related": {
         "allow-access-grants": {
-          "description": "Allow project members to request time-boxed access grants for specific read-only statements.",
+          "description": "Allow project members to request time-boxed access grants for specific read-only statements. Grants can also cover exporting results and viewing unmasked data.",
           "self": "Allow access grants"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "Allow the person who most recently changed a plan to approve its related database change issue.",
+          "self": "Allow approval by the person who last changed the plan"
         },
         "allow-request-role": {
           "description": "Allow project members to request roles.",
           "self": "Allow request role"
         },
         "allow-self-approval": {
-          "description": "Allow the issue creator to approve the issue.",
-          "self": "Allow self approval"
+          "description": "Allow the person who created an issue to approve it.",
+          "self": "Allow issue creators to approve their own issues"
         },
         "approval-flow-configured": "Approval flow configured",
         "approval-flow-fallback": "Using fallback approval flow",
         "approval-flow-not-configured": "No approval flow configured",
+        "approval-permissions": {
+          "description": "These permissions are cumulative. If a reviewer both created the issue and last changed its plan, both permissions must be enabled.",
+          "self": "Approval permissions"
+        },
         "ci-sampling-size": {
           "description": "The maximum number of databases to sample during CI data validation. When disabled (zero), full validation will be performed.",
           "self": "CI Data Sampling Size"
@@ -2025,30 +2185,14 @@
       "success-updated-prompt": "Successfully updated webhook {{name}}.",
       "test-webhook": "Test Webhook",
       "triggering-activity": "Triggering activities",
+      "url-hidden": "Hidden for security. Enter a new URL to replace it.",
       "webhook-url": "Webhook URL"
     }
   },
   "quick-action": {
-    "create-db": "Create database",
     "create-project": "Create project",
     "new-project": "New Project"
   },
-  "quick-start": {
-    "guide": "click on the step to try it out",
-    "notice": {
-      "desc": "You can still bring it back later from the top right menu",
-      "title": "Quickstart guide dismissed"
-    },
-    "query-data": "Query data",
-    "self": "Quick Start",
-    "view-an-issue": "View an issue",
-    "visit-database": "Visit Databases",
-    "visit-environment": "Visit Environments",
-    "visit-instance": "Visit Instances",
-    "visit-member": "Visit Members",
-    "visit-project": "Visit Projects"
-  },
-  "refresh-remind": {},
   "release": {
     "and-n-more-files": "and {{count}} more files",
     "change-tip": "This change is linked to a release artifact.",
@@ -2276,8 +2420,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "Search classification",
-      "select": "Select classification"
+      "search": "Search classification"
     }
   },
   "sensitive-data": {
@@ -2290,6 +2433,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "Manage your personal profile and how you sign in.",
+      "email-managed": "Contact a workspace admin to change your sign-in email.",
+      "password-notice": "Changing your password signs you out everywhere, including this session.",
+      "security": "Security",
+      "self": "Account settings",
+      "update-password": "Update password"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2310,12 +2461,17 @@
           "enable-ai-assistant": "Enable AI Assistant",
           "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode.",
           "endpoint": {
-            "description": "Supply private deployment of API Endpoint.",
+            "description": "Enter the API endpoint for the custom model.",
+            "openai-description": "Use a /responses endpoint for the Responses API or /chat/completions for the Chat Completions API.",
             "self": "API Endpoint"
           },
           "model": {
-            "description": "Supply private deployment of model name.",
-            "self": "Model Name"
+            "custom": "Custom model",
+            "deployment": "Deployment Name",
+            "deployment-description": "The Azure OpenAI deployment name. It may differ from the model.",
+            "description": "Select a supported model, or choose Custom model to enter another model and endpoint.",
+            "name": "Model Name",
+            "self": "Model"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",
@@ -2381,7 +2537,10 @@
           "exiting": "Exiting..."
         },
         "data-copy": "Enable data copying",
-        "data-export": "Enable data export",
+        "data-export": {
+          "description": "When disabled, users cannot export query results directly. In projects that allow access grants, users can still click \"Request export\" to submit an access grant request and export after approval.",
+          "self": "Allow data export without approval"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
           "go-to-sql-editor": "Go to SQL Editor",
@@ -2463,25 +2622,6 @@
             "self": "Maximum SQL result size"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "The maximum capability available to MCP (Model Context Protocol) sessions in this workspace. Changes apply to the next MCP request immediately.",
-            "disabled": {
-              "description": "All MCP connections are rejected.",
-              "self": "Disabled"
-            },
-            "read-only": {
-              "description": "Reserved for fine-grained read-only enforcement, which has not shipped yet. Until it does, choosing this refuses MCP connections entirely, the same as Disabled.",
-              "self": "Read-only"
-            },
-            "read-write": {
-              "description": "MCP sessions can read and write, still bounded by each user's own permissions. This is the default when not configured.",
-              "self": "Read-write"
-            },
-            "self": "MCP access"
-          },
-          "self": "MCP"
-        },
         "no-limit": "No limit when the value <= 0",
         "password-restriction": {
           "min-length": "Minimum length for password should no less than {{min}} characters",
@@ -2545,25 +2685,131 @@
       "description": "The IM integration will be used to push direct messages to users for specific issue events. Works with the project webhook."
     },
     "mcp": {
-      "auth": {
-        "description": "OAuth authentication is required on first connection. Ensure you have appropriate Bytebase permissions.",
-        "title": "Authentication Required"
+      "connect": {
+        "description": "Add Bytebase to your AI client and start asking. On first connection you sign in and approve access in the browser.",
+        "desktop-note": "Claude Desktop reads remote servers from your Claude account, not from the config file. Add this URL as a custom connector under Customize > Connectors on claude.ai, then it appears in Claude Desktop.",
+        "json-note": "This is the mcpServers shape. Client config formats differ: VS Code, for example, expects servers in its own mcp.json, so use the VS Code tab for that.",
+        "title": "Connect a client"
       },
       "description": "Connect AI assistants to Bytebase using the Model Context Protocol.",
       "first-prompt": {
         "description": "Once connected, try asking your AI assistant:",
         "example": "List all projects in my Bytebase instance",
-        "title": "Your First Prompt"
+        "title": "Your first prompt"
       },
-      "general-config": {
-        "title": "Option 1: JSON Configuration"
+      "ladder": {
+        "disabled": "Nothing is allowed; no MCP session can connect.",
+        "floor": {
+          "label": "Never, in any mode:",
+          "text": "approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
+        },
+        "heading": "{{mode}} allows",
+        "hide-details": "Hide details",
+        "mark": {
+          "allowed": "Allowed",
+          "refused": "Not allowed"
+        },
+        "row": {
+          "export": {
+            "details": "Download results as a file. Data leaves Bytebase.",
+            "title": "Export query results"
+          },
+          "manage": {
+            "details": "Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries",
+            "title": "Manage database housekeeping"
+          },
+          "propose": {
+            "details": "Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create, delete and restore releases · Create and delete revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must approve it.",
+            "title": "Propose changes"
+          },
+          "read-data": {
+            "details": "Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Saved queries and sheets you have access to",
+            "title": "Read data by running queries"
+          },
+          "read-schemas": {
+            "details": "Schemas · Databases and instances · Projects and database groups · Catalogs, changelogs and revisions · SQL review configs · Your own session and workspace facts",
+            "title": "Read schemas and metadata"
+          },
+          "read-workflow": {
+            "details": "Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews",
+            "title": "Read the change workflow"
+          },
+          "run-rollouts": {
+            "details": "Create a rollout · Run, skip or cancel its tasks, under the project's approval policy",
+            "title": "Run rollouts and tasks"
+          },
+          "run-statements": {
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, as far as the engine and the user's own permissions allow",
+            "title": "Run DML and DDL statements"
+          }
+        },
+        "show-details": "Show details",
+        "stops": {
+          "read": "Read-only stops here",
+          "write": "Read-write stops here"
+        },
+        "summary": {
+          "read-only": "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported",
+          "read-write": "Read schemas, data and the change workflow; propose, run, export and manage"
+        },
+        "tier": {
+          "read": "read",
+          "write": "write"
+        }
       },
-      "quick-start": {
-        "description": "Alternatively, use one of these CLI commands.",
-        "title": "Option 2: CLI Commands"
-      },
-      "setup": {
-        "add-to-config": "Add this JSON to your MCP client configuration file."
+      "policy": {
+        "current": "Current policy: {{mode}}",
+        "description": "This is the maximum any MCP session may do in this workspace. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled.",
+        "edit": "Edit policy",
+        "loading": "Reading the access policy…",
+        "masking": {
+          "badge": "Masking exemptions ignored",
+          "badge-disabled": "Masking exemptions ignored — MCP is off",
+          "badge-unlicensed": "Masking exemptions ignored — masking not licensed",
+          "description": "If enabled, masked data stays masked in MCP sessions even for users with exemptions or unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing. The console is unaffected.",
+          "title": "Ignore masking exemptions",
+          "unavailable": "Data masking is not licensed for this workspace, so nothing is masked whatever this is set to."
+        },
+        "masking-pending": {
+          "applied": "This policy will be saved with masking exemptions applied.",
+          "ignored": "This policy will be saved with masking exemptions ignored."
+        },
+        "mode": {
+          "disabled": {
+            "best-for": "Best for: keeping MCP off until you are ready to turn it on.",
+            "caption": "No sessions can connect",
+            "description": "No MCP session can connect to this workspace.",
+            "title": "Disabled"
+          },
+          "read-only": {
+            "best-for": "Best for: querying and exploring data, using natural language.",
+            "caption": "Explore and query",
+            "title": "Read-only"
+          },
+          "read-write": {
+            "best-for": "Best for: making database changes through an AI agent, still capped by each user's own permissions.",
+            "caption": "Change data and schemas",
+            "title": "Read-write"
+          }
+        },
+        "read-failed": {
+          "description": "Reload to try again. If it keeps failing, Bytebase cannot parse the stored policy and an operator must repair the row directly. Until then, every MCP connection is refused.",
+          "title": "The access policy could not be read"
+        },
+        "save": "Save policy",
+        "saved": "Policy saved. {{mode}} applies to every session's next request.",
+        "tightening": "Applies to every running session's next request.",
+        "tightening-change": "{{from}} → {{to}} applies to every running session's next request.",
+        "title": "Access policy",
+        "unreadable": {
+          "description": "This workspace stores a capability value this build does not understand. Every MCP connection is being refused. Pick a mode and save to set it right.",
+          "pick": "Pick a mode to save this policy.",
+          "title": "The stored access policy cannot be read"
+        },
+        "unserved": {
+          "description": "This workspace stores {{stored}}, which this build does not support. Every MCP connection is being refused. Pick a mode and save to correct it.",
+          "title": "The stored access policy is not supported by this build"
+        }
       },
       "title": "MCP Integration"
     },
@@ -2573,6 +2819,29 @@
         "reactivate-confirm-title": "Are you sure to reactivate"
       },
       "add-member": "Add member",
+      "admin": {
+        "change-email": "Change email",
+        "change-email-description": "Move this account from {{email}} to a new sign-in address. The user must sign in with the new address.",
+        "create-user": "Create user",
+        "create-user-roles-failed": "The account was created, but its roles could not be assigned. Set them from Members.",
+        "deactivate": "Deactivate user",
+        "deactivate-tip": "The account keeps its data but can no longer sign in. You can reactivate it later.",
+        "edit-user": "Edit user",
+        "email-immutable-tip": "To move this account to another address, close this panel and use Change email in the row menu.",
+        "external-source": "This account is synced from {{source}}. Changes made here can be overwritten by the next sync.",
+        "generate": "Generate",
+        "reactivate": "Reactivate user",
+        "reactivate-tip": "The account can sign in again with its existing credentials and roles.",
+        "reset-mfa": "Reset 2FA",
+        "reset-mfa-optional": "{{user}} loses their authenticator and recovery codes, and signs in without two-factor authentication until they enroll again.",
+        "reset-mfa-recovery-first": "If they still have a recovery code they can sign in with it and enroll again themselves, without this reset.",
+        "reset-mfa-required": "{{user}} loses their authenticator and recovery codes. This workspace requires two-factor authentication, so they must set up a new authenticator at next sign-in.",
+        "reset-password": "Reset password",
+        "reset-password-deliver": "Send this to them over a channel you trust. Bytebase does not email it.",
+        "reset-password-description": "Set a new password for {{user}}. They are signed out of every session and must sign in again with it.",
+        "reset-password-issued": "New password for {{user}}. It is shown once and cannot be retrieved later.",
+        "saas-read-only": "User profiles are owned by the account holder in the cloud. Manage workspace access from Members instead."
+      },
       "all-users": "All users",
       "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
@@ -2627,7 +2896,7 @@
       "select-role_other": "Select roles",
       "service-account": "Service Account",
       "service-accounts": "Service Accounts",
-      "service-key-copied": "Service Key copied to clipboard, please keep it in secret.",
+      "service-key-reset-and-copied": "Service key reset and copied",
       "show-inactive": "Show inactive accounts",
       "table": {
         "account": "Account",
@@ -2642,12 +2911,16 @@
       "workload-identity-all-branches-tags": "All branches and tags",
       "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
       "workload-identity-audience": "Audience",
+      "workload-identity-audience-hint": "The audience your pipeline requests. Bytebase's generated workflows request bytebase; the setup guides request the provider default, so add that line too if your pipeline uses it.",
       "workload-identity-branch": "Branch",
       "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-config-rejected": "Bytebase cannot accept this configuration:",
+      "workload-identity-generic-oidc": "Generic OIDC",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
       "workload-identity-group": "Group / Username",
       "workload-identity-issuer": "Issuer URL",
+      "workload-identity-jwks-url": "JWKS URL",
       "workload-identity-owner": "Organization / Username",
       "workload-identity-platform": "Platform",
       "workload-identity-project": "Project",
@@ -2665,6 +2938,10 @@
       "display-name": "Your name",
       "display-name-placeholder": "Enter your name",
       "email": "Email",
+      "enable-sample-databases": "Enable sample databases",
+      "enable-sample-databases-create-change": "Enable sample databases as a safe database change target",
+      "enable-sample-databases-mark-sensitive-data": "Enable sample databases to try data masking immediately",
+      "enable-sample-databases-query-data": "Enable sample databases to start querying immediately",
       "password": "Password",
       "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
@@ -2672,13 +2949,42 @@
       "password-mismatch": "New password mismatch",
       "phone": "Phone",
       "phone-tips": "Be sure to include the country code +1xxxxxx",
-      "role": "Role",
       "setup-failed": "Failed to update profile.",
       "setup-first-project": "Setup 1st project",
+      "setup-scenario": {
+        "continue": "Continue",
+        "create-database-change": {
+          "description": "Define a change and create a traceable issue.",
+          "title": "Create a database change"
+        },
+        "mark-sensitive-data": {
+          "description": "Identify sensitive columns and apply masking.",
+          "title": "Mark sensitive data"
+        },
+        "outcome-title": "What would you like to do with Bytebase?",
+        "query-data": {
+          "description": "Open SQL Editor and run a statement against a database.",
+          "title": "Query data"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "I will use Bytebase on my own.",
+            "title": "Just me"
+          },
+          "team": {
+            "description": "I will work with other people.",
+            "title": "My team"
+          },
+          "title": "Who will use Bytebase with you?"
+        }
+      },
       "setup-skip": "I'll do this later",
+      "setup-steps": {
+        "scenario": "Choose a goal",
+        "workspace": "Set up workspace"
+      },
+      "setup-submit": "Setup my workspace",
       "setup-success": "Profile updated.",
-      "setup-title": "Welcome! Set up your workspace",
-      "subscription": "(Upgrade to enable role management)",
       "workspace-name": "Workspace name",
       "workspace-name-placeholder": "Enter workspace name"
     },
@@ -2725,6 +3031,7 @@
           "masking-type": "Masking Type"
         }
       },
+      "apply-masking": "Apply masking",
       "classification": {
         "empty-classification": "The \"classification\" field is empty",
         "guide-classification": "\"classification\" maps each category by ID. Leaf categories must reference a level number; parent categories omit the level.",
@@ -2735,6 +3042,7 @@
         "missing-classification": "Missing \"classification\" field",
         "missing-levels": "Missing \"levels\" field"
       },
+      "columns-to-mask": "Columns to mask",
       "global-rules": {
         "condition-order": "Condition order",
         "delete-rule-tip": "Delete this rule?",
@@ -2746,10 +3054,18 @@
         "re-order": "Re-order"
       },
       "grant-access": "Grant Access",
+      "mark-sensitive-data": "Mark sensitive data",
+      "mark-sensitive-data-description": "Choose columns whose values should be hidden in query results.",
       "never-expires": "Never expires",
       "remove-sensitive-column-tips": "Expose this column?",
+      "semantic-type-description": "Semantic types group columns representing the same kind of data so Bytebase can apply consistent masking.",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "No changes to save",
+          "title-required": "Title is required"
+        },
         "label": "Columns having the same semantic type will use the same masking algorithms.",
+        "masking-effect": "Masking effect: {{effect}}",
         "select": "Select semantic type",
         "self": "Semantic Types",
         "table": {
@@ -2757,13 +3073,9 @@
           "description": "Description",
           "icon": "Icon",
           "masking-algorithm": "Masking Algorithm",
-          "semantic-type": "Semantic Type"
-        },
-        "template": {
-          "description": "You can apply built-in semantic types from the template. Built-in template cannot be changed.",
-          "duplicate-warning": "Semantic type \"{{title}}\" already exists"
-        },
-        "use-predefined-type": "Use Predefined Type"
+          "semantic-type": "Semantic Type",
+          "title": "Title"
+        }
       }
     },
     "sidebar": {
@@ -2870,26 +3182,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "Basic info",
-    "data": {
-      "built-in": "Use built-in sample",
-      "built-in-desc": "Generate sample project and instances",
-      "self-setup": "Setup the project"
-    },
-    "purposes": {
-      "alter-schema": "Alter schema",
-      "query-data": "Query data",
-      "self": "What's your main purpose with Bytebase?"
-    },
-    "self": "Setup",
-    "skip-setup": "Skip setup",
-    "workflow": {
-      "self": "What's your workflow with database?",
-      "simple": "No complex workflow, just need UI tools",
-      "team": "Work with teammates, need CI/CD pipeline"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "Only show starred",
@@ -2986,6 +3278,10 @@
     "copy-selected-rows-as-csv": "Copy selected rows as CSV",
     "copy-selected-rows-as-sql": "Copy selected rows as SQL",
     "copy-url": "Copy URL",
+    "data-explorer-elasticsearch-filter-placeholder": "Enter a query expression, e.g. status:active",
+    "data-explorer-filter-placeholder": "Enter a query predicate, e.g. WHERE c.id = \"1\"",
+    "data-explorer-mongodb-filter-placeholder": "Enter a filter document, e.g. { \"status\": \"active\" }",
+    "data-explorer-sql-filter-placeholder": "Enter a query predicate, e.g. WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {{file}}",
     "duration-day": "{{days}} day",
@@ -2997,6 +3293,7 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "explore-data": "Explore data",
     "export-available-via-issue": "Export available via issue \"{{title}}\"",
     "export-available-via-n-grants": "Export available via {{count}} access grants:",
     "export-enabled-by-grant": "Export enabled by access grant",
@@ -3014,6 +3311,7 @@
       }
     },
     "invalid-database": "Invalid database {{database}}",
+    "json-view": "JSON view",
     "last-synced": "Last synced: <time></time>",
     "loading-data": "Loading Data...",
     "loading-databases": "Loading Databases...",
@@ -3029,12 +3327,113 @@
     "open-in-new-tab": "Open in new tab",
     "opened-from-link": "Opened from link",
     "pending-query": "Pending query",
-    "preview-table-data": "Preview table data",
     "previous-row": "Previous Row",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."
     },
     "query-history-not-found": "Query history not found or no longer accessible",
+    "query-plan-load-failed": "Failed to load the query plan",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "Copied",
+        "failed": "Copy failed",
+        "plan": "Copy plan",
+        "query": "Copy query"
+      },
+      "details": {
+        "select-node": "Select a node to see its details."
+      },
+      "diagram": {
+        "collapse": "Collapse {{count}} nodes under {{node}}",
+        "cost": "cost {{cost}}",
+        "estimated-rows": "{{count}} estimated rows",
+        "expand": "Expand {{count}} nodes under {{node}}",
+        "fit": "Fit to view",
+        "nodes-hidden": "{{count}} nodes hidden",
+        "plan-cost-share": "{{share}} of plan cost",
+        "rows": "rows {{count}}",
+        "zoom-in": "Zoom in",
+        "zoom-out": "Zoom out"
+      },
+      "error": {
+        "mssql-empty": "SQL Server returned no query plan for this statement.",
+        "mssql-invalid": "The query plan is not valid XML. SHOWPLAN_XML output is expected.",
+        "mssql-no-plan": "The query plan XML is not a SQL Server showplan with at least one statement.",
+        "postgres-empty": "PostgreSQL returned no query plan for this statement.",
+        "postgres-invalid": "The query plan is not valid JSON. EXPLAIN (FORMAT JSON) output is expected.",
+        "postgres-no-plan": "The query plan JSON does not contain a \"Plan\" object.",
+        "spanner-empty": "Spanner returned no query plan for this statement.",
+        "spanner-emulator": "Spanner returned no query plan for this statement. The Spanner emulator returns none for any statement, so explain it on a Spanner instance to see one.",
+        "spanner-invalid": "The query plan is not valid JSON. A Spanner query plan is expected.",
+        "spanner-no-plan": "The query plan JSON does not contain a \"planNodes\" list with an operator at its root.",
+        "too-deep": "The query plan is nested too deeply for this visualizer to draw.",
+        "unreadable": "This query plan could not be read"
+      },
+      "grid": {
+        "added-cost": "Added cost",
+        "added-cost-hint": "Cost this node adds on top of its children; some engines also count an input's repeats here, as under a nested loop. The bar is that cost as a share of the plan.",
+        "caption": "Plan nodes in the order the planner nests them, parents before children.",
+        "estimated-rows": "Estimated rows",
+        "node": "Node",
+        "rows": "Rows",
+        "total-cost": "Total cost",
+        "width": "Width",
+        "width-hint": "Estimated row width in bytes"
+      },
+      "highlight": {
+        "cost": "Cost",
+        "cost-hint": "Shade by the cost a node adds on top of its children",
+        "label": "Highlight",
+        "off": "Off",
+        "off-hint": "Leave every node card unshaded",
+        "rows": "Rows",
+        "rows-hint": "Shade by the estimated row count"
+      },
+      "legend": {
+        "cost": "each card's bar is that node's share of the plan's estimated cost",
+        "rows": "an edge thickens with the rows its child is estimated to return"
+      },
+      "metric": {
+        "added-cost": "Added cost",
+        "bytes": "{{count}} bytes",
+        "estimated-rows": "Estimated rows",
+        "row-width": "Row width",
+        "startup-cost": "Startup cost",
+        "total-cost": "Total cost"
+      },
+      "query": {
+        "missing": "The statement was not captured with this plan."
+      },
+      "summary": {
+        "added-cost": "Added cost",
+        "cost-by-operation": "Cost by operation",
+        "cost-by-operation-description": "Every node type in the plan and what it costs in total.",
+        "cost-ranges": "Cost ranges",
+        "cost-ranges-description": "Each node spans its startup cost — the cost before its first row — to its total cost, both of which include everything below it. Darker spans carry more of the plan's cost. Costs are not a schedule: two inputs of a join overlap here but run one after the other.",
+        "costliest": "Costliest operators",
+        "costliest-description": "Ranked by the cost a node adds on top of its children. Where an input runs repeatedly, as under a nested loop, some engines count the repeats in the node that reruns it rather than in the input itself.",
+        "count": "Count",
+        "estimate-note": "The statement was planned but not run, so every figure here is an optimizer estimate rather than a measurement. Cost units are arbitrary and comparable only within this plan.",
+        "estimated-rows-returned": "Estimated rows returned",
+        "no-added-cost": "No node in this plan adds an estimated cost of its own.",
+        "nodes": "Nodes",
+        "operation": "Operation",
+        "share": "Share",
+        "timeline-node": "{{name}}, cost {{startup}} to {{total}}, {{share}} of plan cost",
+        "total-estimated-cost": "Total estimated cost"
+      },
+      "tab": {
+        "diagram": "Diagram",
+        "grid": "Grid",
+        "query": "Query",
+        "summary": "Summary",
+        "text": "Text"
+      },
+      "totals": {
+        "estimated-cost": "estimated cost {{cost}}",
+        "nodes": "{{count}} nodes"
+      }
+    },
     "query-time": "Query time",
     "re-request": "Re-request",
     "recent": "Recent",
@@ -3046,7 +3445,11 @@
     },
     "request-aborted": "User aborted the request",
     "request-access-grant": "Request access grant",
+    "request-export": "Request export",
+    "request-query": "Request query",
+    "request-unmask": "Request unmask",
     "result-detail": {
+      "cell": "Cell detail",
       "next-match": "Next match",
       "previous-match": "Previous match",
       "search": "Search detail"
@@ -3054,6 +3457,7 @@
     "result-limit": {
       "self": "Result limit"
     },
+    "result-view-mode": "Result view mode",
     "revoke-access": "Revoke",
     "revoke-confirm": "Are you sure you want to revoke this access grant?",
     "rows": {
@@ -3063,13 +3467,16 @@
     "rows-upper-limit": "reached the limit of query results",
     "save-sheet": "Save query",
     "saved-query-share": {
+      "add-people": "Add users or groups",
       "editor": "Editor",
-      "granted-at-other-level": "{{count}} more granted at another level.",
+      "load-failed": "Couldn't load sharing.",
       "not-shared": "Not shared with anyone.",
       "only-users-and-groups": "Only users and groups can be granted access.",
+      "owner": "Owner",
+      "people-with-access": "People with access",
       "policy-changed": "Sharing changed elsewhere. Reloaded the latest.",
       "private-hint": "Only you and workspace admins can open this saved query.",
-      "shared-with": "Shared with",
+      "share-title": "“{{title}}”",
       "viewer": "Viewer"
     },
     "scroll-to-bottom": "Scroll to the bottom",
@@ -3080,6 +3487,7 @@
     "search-scope-row-number-description": "Enter a row number to jump to that row.",
     "search-scope-row-number-title": "Row number",
     "select-a-database-to-start": "Select a database to start",
+    "select-a-project-to-choose-a-database": "Select a project to choose a database",
     "select-connection": "Please select connections",
     "select-encoding": "Select encoding",
     "self": "SQL Editor",
@@ -3113,7 +3521,6 @@
     "view-detail": "View detail",
     "view-issue": "View issue",
     "view-schema-text": "View schema text",
-    "visualize-explain": "Visualize Explain",
     "web-socket": {
       "connection-status": {
         "connected": "connected",
@@ -3296,8 +3703,7 @@
     },
     "prior-backup": "Prior backup",
     "run-immediately": {
-      "description": "Tasks will start executing as soon as you click Run. No delay or scheduling required.",
-      "self": "Run immediately"
+      "description": "Tasks will start executing as soon as you click Run. No delay or scheduling required."
     },
     "run-task": "Run task | Run tasks",
     "schedule-for-later": {
@@ -3393,6 +3799,7 @@
     },
     "self": "Two-factor authentication",
     "setup-steps": {
+      "confirm-code": "Enter a fresh code from your authenticator to finish",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "These codes are the last resort for accessing your account in case you lose your two-factor authentication code. If you cannot find these codes, you will lose access to your account.",
@@ -3424,21 +3831,35 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "Create database change",
       "query": "Go to SQL Editor"
     },
+    "all-steps-completed": "All steps completed",
     "descriptions": {
-      "database": "Create or transfer a database into a project before querying data.",
-      "instance": "Connect an instance so Bytebase can sync your databases.",
+      "add-teammate": "Invite a teammate and grant them workspace access.",
+      "create-database-change": "Define a database change and create its issue.",
+      "database": "Open a database and explore its schemas and tables.",
+      "instance": "Connect an instance so Bytebase can sync its databases.",
+      "mark-sensitive-data": "Open the selected database and assign a semantic type to a sensitive column.",
       "project": "Create a project to organize databases and changes.",
-      "sql-editor": "Query data in SQL Editor, or create a governed database change."
+      "query-data": "Open the selected database in SQL Editor and run any statement."
     },
     "dismiss": "Dismiss guide",
+    "generic": {
+      "title": "Set up Bytebase"
+    },
+    "getting-started": "Getting started",
     "intro": {
+      "create-user-description": "Create an account for a teammate in this self-hosted workspace.",
+      "create-user-title": "Create a user",
       "database-description": "Create a database in your connected instance.",
       "database-title": "Create a database",
+      "grant-access-description": "Invite a teammate and assign their workspace role.",
+      "grant-access-title": "Grant workspace access",
       "instance-description": "Create an instance so Bytebase can connect to your database server.",
       "instance-title": "Connect the instance",
+      "mark-sensitive-data-description": "Select a column and assign a semantic type so Bytebase can apply data masking.",
+      "mark-sensitive-data-title": "Mark sensitive data",
+      "mark-sensitive-fields-description": "Open a table or collection and assign semantic types to sensitive fields in its catalog.",
       "project-description": "Create a project first. Databases can be synced into it after the instance is connected.",
       "project-title": "Create a project",
       "transfer-description": "Select one or more databases, then transfer them to the project.",
@@ -3446,12 +3867,28 @@
     },
     "prepare-database-tip": "Select databases to transfer to the project.",
     "previous-step-required": "You need to finish the previous step.",
-    "self": "Set up Bytebase",
+    "product-model": "How Bytebase works",
+    "scenarios": {
+      "create-database-change": {
+        "title": "Create a database change"
+      },
+      "mark-sensitive-data": {
+        "title": "Mark sensitive data"
+      },
+      "query-data": {
+        "title": "Query Data"
+      }
+    },
+    "step-progress": "{{current}} of {{total}}",
     "steps": {
-      "database": "Prepare database",
+      "add-teammate": "Add teammate",
+      "create-database-change": "Create database change",
+      "database": "Explore database",
       "instance": "Connect instance",
+      "mark-sensitive-data": "Mark sensitive data",
       "project": "Create project",
-      "query": "Query data"
-    }
+      "query-data": "Query data"
+    },
+    "view-all-steps": "View all steps"
   }
 }

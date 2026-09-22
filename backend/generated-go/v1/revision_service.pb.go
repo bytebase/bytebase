@@ -652,12 +652,12 @@ const file_v1_revision_service_proto_rawDesc = "" +
 	"\tVERSIONED\x10\x01\x12\x0f\n" +
 	"\vDECLARATIVE\x10\x02:\xae\x01\xeaA\xaa\x01\n" +
 	"\x15bytebase.com/Revision\x12>instances/{instance}/databases/{database}/revisions/{revision}\x12Qprojects/{project}/instances/{instance}/databases/{database}/revisions/{revision}J\x04\b\n" +
-	"\x10\r2\xec\a\n" +
-	"\x0fRevisionService\x12\xee\x01\n" +
-	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"\x95\x01\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\x82\xd3\xe4\x93\x02mZ;\x129/v1/{parent=projects/*/instances/*/databases/*}/revisions\x12./v1/{parent=instances/*/databases/*}/revisions\x12\xda\x01\n" +
-	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"\x92\x01\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\x82\xd3\xe4\x93\x02mZ;\x129/v1/{name=projects/*/instances/*/databases/*/revisions/*}\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\x9f\x02\n" +
-	"\x14BatchCreateRevisions\x12(.bytebase.v1.BatchCreateRevisionsRequest\x1a).bytebase.v1.BatchCreateRevisionsResponse\"\xb1\x01\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02\x8b\x01:\x01*ZJ:\x01*\"E/v1/{parent=projects/*/instances/*/databases/*}/revisions:batchCreate\":/v1/{parent=instances/*/databases/*}/revisions:batchCreate\x12\xe8\x01\n" +
-	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"\x99\x01\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02mZ;*9/v1/{name=projects/*/instances/*/databases/*/revisions/*}*./v1/{name=instances/*/databases/*/revisions/*}B\xaa\x01\n" +
+	"\x10\r2\xfc\a\n" +
+	"\x0fRevisionService\x12\xf2\x01\n" +
+	"\rListRevisions\x12!.bytebase.v1.ListRevisionsRequest\x1a\".bytebase.v1.ListRevisionsResponse\"\x99\x01\xdaA\x06parent\x8a\xea0\x11bb.revisions.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02mZ;\x129/v1/{parent=projects/*/instances/*/databases/*}/revisions\x12./v1/{parent=instances/*/databases/*}/revisions\x12\xde\x01\n" +
+	"\vGetRevision\x12\x1f.bytebase.v1.GetRevisionRequest\x1a\x15.bytebase.v1.Revision\"\x96\x01\xdaA\x04name\x8a\xea0\x10bb.revisions.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02mZ;\x129/v1/{name=projects/*/instances/*/databases/*/revisions/*}\x12./v1/{name=instances/*/databases/*/revisions/*}\x12\xa3\x02\n" +
+	"\x14BatchCreateRevisions\x12(.bytebase.v1.BatchCreateRevisionsRequest\x1a).bytebase.v1.BatchCreateRevisionsResponse\"\xb5\x01\x8a\xea0\x13bb.revisions.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02\x8b\x01:\x01*ZJ:\x01*\"E/v1/{parent=projects/*/instances/*/databases/*}/revisions:batchCreate\":/v1/{parent=instances/*/databases/*}/revisions:batchCreate\x12\xec\x01\n" +
+	"\x0eDeleteRevision\x12\".bytebase.v1.DeleteRevisionRequest\x1a\x16.google.protobuf.Empty\"\x9d\x01\xdaA\x04name\x8a\xea0\x13bb.revisions.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02mZ;*9/v1/{name=projects/*/instances/*/databases/*/revisions/*}*./v1/{name=instances/*/databases/*/revisions/*}B\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14RevisionServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

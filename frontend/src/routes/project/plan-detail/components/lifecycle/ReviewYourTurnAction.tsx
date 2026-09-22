@@ -14,7 +14,13 @@ import {
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import { ReviewActionPopover } from "../review/ReviewActionPopover";
 
-export function ReviewYourTurnAction({ issue }: { issue: Issue }) {
+export function ReviewYourTurnAction({
+  canApprove,
+  issue,
+}: {
+  canApprove: boolean;
+  issue: Issue;
+}) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -25,7 +31,11 @@ export function ReviewYourTurnAction({ issue }: { issue: Issue }) {
         <ChevronDown className="size-4" />
       </PopoverTrigger>
       <PopoverContent align="end" className="px-4 py-4">
-        <ReviewActionPopover issue={issue} onClose={() => setOpen(false)} />
+        <ReviewActionPopover
+          canApprove={canApprove}
+          issue={issue}
+          onClose={() => setOpen(false)}
+        />
       </PopoverContent>
     </Popover>
   );

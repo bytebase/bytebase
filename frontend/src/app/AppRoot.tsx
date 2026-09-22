@@ -14,7 +14,7 @@ setRouteNameIndex(buildRouteNameIndex());
 
 // Single root-route loader: runs on every navigation (the root route matches
 // every URL). Resolves the matched leaf route's `handle.name` and delegates to
-// the faithful `beforeEach` port; a returned `redirect()` Response navigates.
+// `rootGuard`; a returned `redirect()` Response navigates.
 function rootLoader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const matched = matchRoutes(routes, url.pathname);

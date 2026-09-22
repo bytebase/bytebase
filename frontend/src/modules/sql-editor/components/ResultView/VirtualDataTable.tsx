@@ -1,5 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { head, last } from "lodash-es";
+import { ExpandIcon } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -9,6 +10,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { MaskingReasonPopover } from "@/modules/sql-editor/components/MaskingReasonPopover";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -21,7 +25,11 @@ import {
 } from "./binary-format";
 import { ColumnSortedIcon } from "./ColumnSortedIcon";
 import { getPlainValue } from "./cell-value";
-import { useBinaryFormatContext, useSelectionContext } from "./context";
+import {
+  useBinaryFormatContext,
+  useSelectionContext,
+  useSQLResultViewContext,
+} from "./context";
 import { ResultCopyContextMenu } from "./ResultCopyContextMenu";
 import { TableCell } from "./TableCell";
 import type {
@@ -44,21 +52,24 @@ export interface VirtualDataTableProps {
   rows: ResultTableRow[];
   columns: ResultTableColumn[];
   activeRowIndex: number;
-  isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
   database: Database;
   statement?: string;
   sortState?: SortState;
   search: SearchParams;
   onToggleSort: (columnIndex: number) => void;
+  onRowClick?: (rowIndex: number) => void;
+  showRowDetailAction?: boolean;
+  showCellDetailAction?: boolean;
+  allowSelection?: boolean;
+  activeRowHighlight?: "subtle" | "strong";
 }
 
 /**
- * Virtualized result-table grid. Replaces the Naive UI `NVirtualList` host
- * with `@tanstack/react-virtual`'s `useVirtualizer`. The header is a
- * separate sticky row outside the virtual scroller so it can stay fixed
- * during vertical scroll without fighting the virtualizer's internal
- * positioning.
+ * Virtualized result-table grid built on `@tanstack/react-virtual`'s
+ * `useVirtualizer`. The header is a separate sticky row outside the virtual
+ * scroller so it can stay fixed during vertical scroll without fighting the
+ * virtualizer's internal positioning.
  */
 export const VirtualDataTable = forwardRef<
   VirtualDataTableHandle,
@@ -74,9 +85,15 @@ export const VirtualDataTable = forwardRef<
     sortState,
     search,
     onToggleSort,
+    onRowClick,
+    showRowDetailAction = true,
+    showCellDetailAction = true,
+    allowSelection = true,
+    activeRowHighlight = "subtle",
   },
   ref
 ) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -100,6 +117,8 @@ export const VirtualDataTable = forwardRef<
   } = useSelectionContext();
 
   const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
+  const { setDetail } = useSQLResultViewContext();
+  const selectionEnabled = allowSelection && !selectionDisabled;
 
   const getColumnTypeByIndex = useCallback(
     (columnIndex: number) => columns[columnIndex]?.columnType ?? "",
@@ -284,7 +303,7 @@ export const VirtualDataTable = forwardRef<
             <div
               className={cn(
                 "textinfolabel pr-1 opacity-0",
-                selectionDisabled ? "pl-1" : "pl-4"
+                selectionEnabled ? "pl-4" : "pl-1"
               )}
             >
               {totalRows}
@@ -307,10 +326,14 @@ export const VirtualDataTable = forwardRef<
                 onResizeStart={(e) =>
                   tableResize.onResizeStart(columnIndex + 1, e)
                 }
-                onClick={(e) => handleSelectColumn(e, columnIndex)}
+                onClick={
+                  selectionEnabled
+                    ? (e) => handleSelectColumn(e, columnIndex)
+                    : undefined
+                }
                 className={cn(
                   "px-3 py-1.5 min-w-8 text-left text-xs font-medium text-control-light tracking-wider",
-                  !selectionDisabled &&
+                  selectionEnabled &&
                     "cursor-pointer hover:bg-control-bg-hover",
                   // NOTE: opacity may need visual tuning on dark themes
                   isSelected && "bg-accent/10!"
@@ -378,6 +401,8 @@ export const VirtualDataTable = forwardRef<
             const row = rows[rowIndex];
             if (!row) return null;
             const isActive = activeRowIndex === rowIndex;
+            const hasStrongActiveHighlight =
+              isActive && activeRowHighlight === "strong";
             const rowSelected =
               selectionState.columns.length === 0 &&
               selectionState.rows.includes(rowIndex);
@@ -385,7 +410,16 @@ export const VirtualDataTable = forwardRef<
               <div
                 key={virtualRow.key}
                 data-row-index={rowIndex}
-                className="flex absolute inset-x-0 group"
+                className={cn(
+                  "flex absolute inset-x-0 group",
+                  onRowClick && "cursor-pointer"
+                )}
+                onClickCapture={
+                  onRowClick ? () => onRowClick(rowIndex) : undefined
+                }
+                onDoubleClick={() =>
+                  setDetail({ row: rowIndex, col: 0, view: "row" })
+                }
                 style={{
                   top: 0,
                   transform: `translateY(${virtualRow.start}px)`,
@@ -398,7 +432,10 @@ export const VirtualDataTable = forwardRef<
                   className={cn(
                     "relative flex items-center shrink-0 text-sm text-control leading-5 whitespace-nowrap break-all border-block-border border-r border-b group-even:bg-control-bg/40",
                     // NOTE: opacity may need visual tuning on dark themes
-                    isActive && "bg-accent/10!",
+                    isActive &&
+                      (hasStrongActiveHighlight
+                        ? "bg-accent/20! text-accent font-medium"
+                        : "bg-accent/10!"),
                     rowSelected && "bg-accent/20!"
                   )}
                   data-col-index={0}
@@ -407,16 +444,44 @@ export const VirtualDataTable = forwardRef<
                     width: `${indexColWidth}px`,
                   }}
                 >
+                  {showRowDetailAction && (
+                    <div className="absolute left-3 top-1/2 size-7 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
+                      <Tooltip
+                        content={t("sql-editor.view-detail")}
+                        side="right"
+                      >
+                        <Button
+                          size="xs"
+                          appearance="outline"
+                          className="rounded-full shadow"
+                          aria-label={t("sql-editor.view-detail")}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (event.detail > 0) {
+                              event.currentTarget.blur();
+                            }
+                            setDetail({ row: rowIndex, col: 0, view: "row" });
+                          }}
+                        >
+                          <ExpandIcon className="size-3" />
+                        </Button>
+                      </Tooltip>
+                    </div>
+                  )}
                   <span
                     className={cn(
                       "textinfolabel pr-1 truncate",
-                      selectionDisabled ? "pl-1" : "pl-4"
+                      selectionEnabled ? "pl-4" : "pl-1",
+                      showRowDetailAction &&
+                        "group-hover:opacity-0 group-hover:pointer-events-none group-focus-within:opacity-0 group-focus-within:pointer-events-none"
                     )}
                   >
                     {rowIndex + 1}
                   </span>
-                  {!selectionDisabled && (
-                    <button
+                  {selectionEnabled && (
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       type="button"
                       aria-label={`Select row ${rowIndex + 1}`}
                       onClick={(e) => handleSelectRow(e, rowIndex)}
@@ -439,11 +504,13 @@ export const VirtualDataTable = forwardRef<
                       className={cn(
                         "relative shrink-0 text-sm text-control leading-5 whitespace-nowrap break-all border-block-border border-b group-even:bg-control-bg/40",
                         !isLastCol && "border-r",
-                        // Match the Vue version: an active (search-matched) row
-                        // highlights every cell in that row, not just the index
-                        // column.
+                        // An active (search-matched) row highlights every
+                        // cell in that row, not just the index column.
                         // NOTE: opacity may need visual tuning on dark themes
-                        isActive && "bg-accent/10!"
+                        isActive &&
+                          (hasStrongActiveHighlight
+                            ? "bg-accent/20!"
+                            : "bg-accent/10!")
                       )}
                       data-col-index={columnIndex + 1}
                       style={{
@@ -460,9 +527,9 @@ export const VirtualDataTable = forwardRef<
                           )}
                           rowIndex={rowIndex}
                           colIndex={columnIndex}
-                          allowSelect
+                          allowSelect={selectionEnabled}
                           columnType={getColumnTypeByIndex(columnIndex)}
-                          database={database}
+                          showDetailAction={showCellDetailAction}
                         />
                       </div>
                     </div>

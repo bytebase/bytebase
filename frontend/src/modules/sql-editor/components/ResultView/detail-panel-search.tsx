@@ -5,7 +5,7 @@ export const DETAIL_SEARCH_ACTIVE_MATCH_SELECTOR =
   "[data-detail-search-active-match='true']";
 
 const matchClassName =
-  "rounded-[2px] px-0.5 bg-warning-bg text-main data-[detail-search-active-match=true]:bg-accent data-[detail-search-active-match=true]:text-accent-text";
+  "rounded-xs px-0.5 bg-warning-bg text-main data-[detail-search-active-match=true]:bg-accent data-[detail-search-active-match=true]:text-accent-text";
 
 export const normalizeSearchQuery = (query: string) => query.trim();
 
@@ -67,6 +67,33 @@ export function renderTextWithSearchMatches(
   }
 
   return { nodes, count: matches.length };
+}
+
+export function renderRowFieldsWithSearchMatches(
+  fields: ReadonlyArray<{ columnName: string; value: string }>,
+  query: string,
+  activeIndex: number
+): {
+  fields: Array<{ columnName: ReactNode; value: ReactNode }>;
+  count: number;
+} {
+  let matchOffset = 0;
+  const renderedFields = fields.map((field) => {
+    const columnName = renderTextWithSearchMatches(
+      field.columnName,
+      query,
+      activeIndex - matchOffset
+    );
+    matchOffset += columnName.count;
+    const value = renderTextWithSearchMatches(
+      field.value,
+      query,
+      activeIndex - matchOffset
+    );
+    matchOffset += value.count;
+    return { columnName: columnName.nodes, value: value.nodes };
+  });
+  return { fields: renderedFields, count: matchOffset };
 }
 
 const getTextNodes = (root: Node) => {

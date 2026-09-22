@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
     (_resource: { table?: string }): string[] => []
   ),
   routerBack: vi.fn(),
+  accountSelectProps: { value: undefined as { accountParents: string[] } | undefined },
 }));
 
 vi.mock("react-i18next", () => ({
@@ -52,16 +53,21 @@ vi.mock("@/components/AccountMultiSelect", () => ({
   AccountMultiSelect: ({
     value,
     onChange,
+    accountParents,
   }: {
     value: string[];
     onChange: (value: string[]) => void;
-  }) => (
-    <button
-      data-testid="account-multi-select"
-      onClick={() => onChange([...value, "users/alice"])}
-      type="button"
-    />
-  ),
+    accountParents: string[];
+  }) => {
+    mocks.accountSelectProps.value = { accountParents };
+    return (
+      <button
+        data-testid="account-multi-select"
+        onClick={() => onChange([...value, "users/alice"])}
+        type="button"
+      />
+    );
+  },
 }));
 
 vi.mock("@/components/DatabaseResourceSelector", () => ({
@@ -106,7 +112,9 @@ vi.mock("@/components/FeatureAttention", () => ({
 }));
 
 vi.mock("@/components/FeatureBadge", () => ({
-  FeatureBadge: () => <div data-testid="feature-badge" />,
+  FeatureBadge: ({ clickable }: { clickable?: boolean }) => (
+    <div data-clickable={String(clickable)} data-testid="feature-badge" />
+  ),
 }));
 
 vi.mock("@/components/ui/feature-modal", () => ({
@@ -173,12 +181,14 @@ vi.mock("@/stores/app", () => ({
         projectsByName: Record<string, unknown>;
         settingsByName: Record<string, unknown>;
         hasFeature: () => boolean;
+        workspaceResourceName: () => string;
       }) => unknown
     ) =>
       selector({
         projectsByName: {},
         settingsByName: {},
         hasFeature: () => true,
+        workspaceResourceName: () => "workspaces/default",
       }),
     {
       getState: () => ({
@@ -253,11 +263,16 @@ const submittedExpression = (): string | undefined => {
   return arg?.policy.policy.value.exemptions[0]?.condition?.expression;
 };
 
-const clickRadio = async (container: HTMLElement, index: number) => {
-  const radios = Array.from(
-    container.querySelectorAll<HTMLElement>('[role="radio"]')
+const selectResourceMode = async (
+  container: HTMLElement,
+  value: "ALL" | "EXPRESSION" | "SELECT"
+) => {
+  const index = { ALL: 0, EXPRESSION: 1, SELECT: 2 }[value];
+  await click(
+    Array.from(container.querySelectorAll<HTMLElement>('[role="radio"]'))[
+      index
+    ]!
   );
-  await click(radios[index]!);
 };
 
 const clickConfirm = async (container: HTMLElement) => {
@@ -288,11 +303,38 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     mocks.getExpressionsForDatabaseResource.mockReset();
   });
 
+  test("keeps resource scope choices visible", () => {
+    const { container, unmount } = render();
+
+    const radios = container.querySelectorAll('[role="radio"]');
+    expect(radios).toHaveLength(3);
+    expect(radios[0]).toHaveAttribute("aria-checked", "true");
+
+    const badges = container.querySelectorAll('[data-testid="feature-badge"]');
+    expect(badges).toHaveLength(2);
+    for (const badge of badges) {
+      expect(badge.getAttribute("data-clickable")).toBe("false");
+    }
+
+    unmount();
+  });
+
+  test("discovers special accounts in the workspace and project scopes", () => {
+    const { unmount } = render();
+
+    expect(mocks.accountSelectProps.value?.accountParents).toEqual([
+      "workspaces/default",
+      "projects/proj1",
+    ]);
+
+    unmount();
+  });
+
   test("SELECT mode: wraps the OR-group so the expiration binds to every resource", async () => {
     const { container, unmount } = render();
     await flush();
 
-    await clickRadio(container, 2); // SELECT
+    await selectResourceMode(container, "SELECT");
     await click(
       container.querySelector<HTMLElement>('[data-testid="set-two-resources"]')!
     );
@@ -319,7 +361,7 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     const { container, unmount } = render();
     await flush();
 
-    await clickRadio(container, 2); // SELECT
+    await selectResourceMode(container, "SELECT");
     await click(
       container.querySelector<HTMLElement>('[data-testid="set-two-resources"]')!
     );
@@ -346,7 +388,7 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
     const { container, unmount } = render();
     await flush();
 
-    await clickRadio(container, 1); // EXPRESSION
+    await selectResourceMode(container, "EXPRESSION");
     await click(
       container.querySelector<HTMLElement>('[data-testid="set-expr"]')!
     );

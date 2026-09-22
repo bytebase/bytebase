@@ -23,8 +23,10 @@ import {
   UpdateEmailRequestSchema,
   UpdateUserRequestSchema,
 } from "@/types/proto-es/v1/user_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 import { ensureUserFullName } from "@/utils/v1/user";
 import type { AppSliceCreator, UserFilter, UserSlice } from "./types";
+import { isMissingOrForbidden } from "./utils";
 
 const UNKNOWN_PROJECT_NAME_LEGACY = "projects/-";
 
@@ -32,16 +34,17 @@ export const buildUserFilter = (params: UserFilter) => {
   const filter = [];
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
-    filter.push(`(name.contains("${search}") || email.contains("${search}"))`);
+    const value = celString(search);
+    filter.push(`(name.contains(${value}) || email.contains(${value}))`);
   }
   if (
     isValidProjectName(params.project) &&
     params.project !== UNKNOWN_PROJECT_NAME_LEGACY
   ) {
-    filter.push(`project == "${params.project}"`);
+    filter.push(`project == ${celString(params.project)}`);
   }
   if (params.state === State.DELETED) {
-    filter.push(`state == "${State[params.state]}"`);
+    filter.push(`state == ${celString(State[params.state])}`);
   }
   return filter.join(" && ");
 };
@@ -134,8 +137,16 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
               ),
             },
           }));
-        } catch {
-          // Match the legacy store: return cached users plus unknown fallbacks.
+        } catch (error) {
+          // Batch is all-or-nothing; refetch per name so one stale name isn't
+          // fatal. Other errors skip the fallback: this returns unknown users
+          // rather than throwing, so retrying each name would only amplify an
+          // outage.
+          if (isMissingOrForbidden(error)) {
+            await Promise.all(
+              missing.map((name) => get().fetchUser(name, true))
+            );
+          }
         }
       }
 
@@ -163,12 +174,16 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
     getUserByIdentifier: (identifier) => {
       if (!identifier) return undefined;
       const id = extractUserEmail(identifier);
+      // Direct map hit first: `user.name` is `users/{email}`, so the common
+      // email-shaped lookup needs no scan over the cache.
+      const direct = get().usersByName[`${userNamePrefix}${id}`];
+      if (direct) return direct;
       if (Number.isNaN(Number(id))) {
         return Object.values(get().usersByName).find(
           (user) => user.email === id
         );
       }
-      return get().usersByName[`${userNamePrefix}${id}`];
+      return undefined;
     },
 
     createUser: async (user) => {
@@ -200,9 +215,6 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
         createProto(UpdateUserRequestSchema, {
           user: request.user,
           updateMask: request.updateMask,
-          otpCode: request.otpCode,
-          regenerateTempMfaSecret: request.regenerateTempMfaSecret,
-          regenerateRecoveryCodes: request.regenerateRecoveryCodes,
           allowMissing: request.allowMissing,
         })
       );

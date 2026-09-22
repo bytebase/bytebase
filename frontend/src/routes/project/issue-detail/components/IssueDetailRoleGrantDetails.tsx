@@ -186,12 +186,11 @@ function IssueDetailDatabaseResourceTable({
       databaseResourceList.map((resource) => {
         const database =
           databasesByName[resource.databaseFullName] ?? unknownDatabase();
-        const { databaseName, instanceName } = extractDatabaseResourceName(
+        const { databaseName, instance } = extractDatabaseResourceName(
           resource.databaseFullName
         );
-        const instance = instanceName
-          ? instancesByName[`instances/${instanceName}`]
-          : database.instanceResource;
+        const instanceResource =
+          instancesByName[instance] ?? database.instanceResource;
         const environmentName =
           database.effectiveEnvironment ??
           database.instanceResource?.environment ??
@@ -202,7 +201,7 @@ function IssueDetailDatabaseResourceTable({
         return {
           databaseName,
           environmentTitle: environment.title,
-          instanceTitle: instance?.title ?? "",
+          instanceTitle: instanceResource?.title ?? "",
           resource,
         };
       }),
@@ -214,12 +213,18 @@ function IssueDetailDatabaseResourceTable({
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="bg-gray-50">{t("common.database")}</TableHead>
-            <TableHead className="bg-gray-50">{t("common.table")}</TableHead>
-            <TableHead className="bg-gray-50">
+            <TableHead className="bg-control-bg/50">
+              {t("common.database")}
+            </TableHead>
+            <TableHead className="bg-control-bg/50">
+              {t("common.table")}
+            </TableHead>
+            <TableHead className="bg-control-bg/50">
               {t("common.environment")}
             </TableHead>
-            <TableHead className="bg-gray-50">{t("common.instance")}</TableHead>
+            <TableHead className="bg-control-bg/50">
+              {t("common.instance")}
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

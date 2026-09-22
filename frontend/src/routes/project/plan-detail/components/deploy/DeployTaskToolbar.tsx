@@ -100,7 +100,7 @@ export function DeployTaskToolbar({
   return (
     <>
       <div className="sticky top-0 z-10 px-4">
-        <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-100 px-3 py-1">
+        <div className="flex items-center justify-between rounded-sm border border-info/20 bg-info/10 px-3 py-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <Tooltip
               content={
@@ -126,8 +126,8 @@ export function DeployTaskToolbar({
                 />
               </div>
             </Tooltip>
-            <span className="text-sm text-blue-900">{selectionCountText}</span>
-            <div className="flex items-center gap-x-0.5">
+            <span className="text-sm text-info">{selectionCountText}</span>
+            <div className="flex items-center gap-x-1">
               <Tooltip
                 content={
                   !hasRunnableTasks

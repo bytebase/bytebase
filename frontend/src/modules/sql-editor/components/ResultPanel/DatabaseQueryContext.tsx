@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
+import type { ResultViewPresentation } from "@/modules/sql-editor/components/ResultView";
 import { ResultView } from "@/modules/sql-editor/components/ResultView";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import type {
@@ -14,28 +15,29 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 export interface DatabaseQueryContextProps {
   database: Database;
   context: SQLEditorDatabaseQueryContext;
+  presentation?: ResultViewPresentation;
 }
 
 /**
- * React port of `DatabaseQueryContext.vue`. Three render paths:
+ * Three render paths:
  * - EXECUTING — spinner + elapsed-time + cancel button
  * - CANCELLED — re-execute button
  * - default  — `<ResultView>` with the executed result set
  *
- * Auto-runs the query when status flips to `PENDING`. Mirrors the Vue
- * watcher behavior — same `useExecuteSQL().runQuery` entrypoint that
- * `EditorMain.tsx` already uses from React.
+ * Auto-runs the query via `useExecuteSQL().runQuery` when status flips to
+ * `PENDING`.
  */
 export function DatabaseQueryContext({
   database,
   context,
+  presentation = "STANDARD",
 }: DatabaseQueryContextProps) {
   const { t } = useTranslation();
   const { runQuery } = useExecuteSQL();
   const isExecuting = context.status === "EXECUTING";
 
-  // Trigger run on status === PENDING. Pinia's reactivity already
-  // surfaces context.status changes through props; the effect dep array
+  // Trigger run on status === PENDING. Tab store updates surface
+  // context.status changes through props; the effect dep array
   // re-fires whenever the status flips back to PENDING (which the
   // re-execute button below does).
   const lastRanContextRef = useRef<string | null>(null);
@@ -107,6 +109,7 @@ export function DatabaseQueryContext({
       executeParams={context.params}
       database={database}
       resultSet={context.resultSet}
+      presentation={presentation}
     />
   );
 }

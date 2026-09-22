@@ -268,11 +268,11 @@ const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\arefresh\x18\x04 \x01(\bR\arefresh\"t\n" +
 	"\x19ListInstanceRolesResponse\x12/\n" +
 	"\x05roles\x18\x01 \x03(\v2\x19.bytebase.v1.InstanceRoleR\x05roles\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x97\x03\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9b\x03\n" +
 	"\fInstanceRole\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
-	"\trole_name\x18\x02 \x01(\tR\broleName\x12$\n" +
-	"\bpassword\x18\x03 \x01(\tB\x03\xe0A\x04H\x00R\bpassword\x88\x01\x01\x12.\n" +
+	"\trole_name\x18\x02 \x01(\tR\broleName\x12(\n" +
+	"\bpassword\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01H\x00R\bpassword\x88\x01\x01\x12.\n" +
 	"\x10connection_limit\x18\x04 \x01(\x05H\x01R\x0fconnectionLimit\x88\x01\x01\x12$\n" +
 	"\vvalid_until\x18\x05 \x01(\tH\x02R\n" +
 	"validUntil\x88\x01\x01\x12!\n" +
@@ -282,9 +282,9 @@ const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute2\xf5\x01\n" +
-	"\x13InstanceRoleService\x12\xdd\x01\n" +
-	"\x11ListInstanceRoles\x12%.bytebase.v1.ListInstanceRolesRequest\x1a&.bytebase.v1.ListInstanceRolesResponse\"y\xdaA\x06parent\x8a\xea0\x15bb.instanceRoles.list\x90\xea0\x01\x82\xd3\xe4\x93\x02MZ+\x12)/v1/{parent=projects/*/instances/*}/roles\x12\x1e/v1/{parent=instances/*}/rolesB\xae\x01\n" +
+	"_attribute2\xf9\x01\n" +
+	"\x13InstanceRoleService\x12\xe1\x01\n" +
+	"\x11ListInstanceRoles\x12%.bytebase.v1.ListInstanceRolesRequest\x1a&.bytebase.v1.ListInstanceRolesResponse\"}\xdaA\x06parent\x8a\xea0\x15bb.instanceRoles.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02MZ+\x12)/v1/{parent=projects/*/instances/*}/roles\x12\x1e/v1/{parent=instances/*}/rolesB\xae\x01\n" +
 	"\x0fcom.bytebase.v1B\x18InstanceRoleServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

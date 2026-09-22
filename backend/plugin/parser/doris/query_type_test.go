@@ -39,6 +39,18 @@ func TestGetQueryType(t *testing.T) {
 			want:      base.SelectInfoSchema,
 		},
 		{
+			statement: "(SELECT * FROM users)",
+			want:      base.Select,
+		},
+		{
+			statement: "(SELECT 1 LIMIT 1) LIMIT 2",
+			want:      base.Select,
+		},
+		{
+			statement: "(SELECT * FROM users) ORDER BY 1 LIMIT 5",
+			want:      base.Select,
+		},
+		{
 			statement: "SHOW TABLES",
 			want:      base.SelectInfoSchema,
 		},

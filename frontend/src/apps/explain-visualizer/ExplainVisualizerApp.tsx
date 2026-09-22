@@ -1,11 +1,13 @@
 import { parse } from "qs";
-import { type ReactNode, useMemo } from "react";
-import { Engine } from "@/types/proto-es/v1/common_pb";
-import { readExplainFromToken } from "@/utils/pev2";
-import { MSSQLPlanView } from "./MSSQLPlanView";
-import { PostgresPlanView } from "./PostgresPlanView";
-import { SpannerQueryPlan } from "./SpannerQueryPlan";
+import { useMemo } from "react";
+import { Alert } from "@/components/ui/alert";
+import { isVisualizerEngine, readExplainFromToken } from "@/utils/explainToken";
+import { QueryPlanView } from "./QueryPlanView";
 
+const STATUS_CLASS =
+  "flex h-full min-h-0 w-full flex-col gap-4 overflow-auto bg-background p-4";
+
+// Legacy standalone entry; the SQL Editor renders QueryPlanView inline.
 export function ExplainVisualizerApp() {
   const storedQuery = useMemo(() => {
     const query = location.search.replace(/^\?/, "");
@@ -15,43 +17,33 @@ export function ExplainVisualizerApp() {
 
   if (!storedQuery) {
     return (
-      <div className="ev-app">
-        <h1>session expired</h1>
+      <div className={STATUS_CLASS}>
+        <Alert
+          variant="warning"
+          title="Session expired"
+          description="Run the statement again to open a fresh query plan."
+        />
       </div>
     );
   }
 
-  let body: ReactNode;
-  switch (storedQuery.engine) {
-    case Engine.POSTGRES:
-      body = (
-        <PostgresPlanView
-          planSource={storedQuery.explain}
-          planQuery={storedQuery.statement}
+  if (!isVisualizerEngine(storedQuery.engine)) {
+    return (
+      <div className={STATUS_CLASS}>
+        <Alert
+          variant="warning"
+          title="Unsupported database engine"
+          description="Query plan visualization is not available for this database engine."
         />
-      );
-      break;
-    case Engine.MSSQL:
-      body = <MSSQLPlanView planXml={storedQuery.explain} />;
-      break;
-    case Engine.SPANNER:
-      body = (
-        <SpannerQueryPlan
-          planSource={storedQuery.explain}
-          planQuery={storedQuery.statement}
-        />
-      );
-      break;
-    default:
-      body = (
-        <div className="ev-unsupported">
-          <h2>Unsupported Database Engine</h2>
-          <p>
-            Query plan visualization is not available for this database engine.
-          </p>
-        </div>
-      );
+      </div>
+    );
   }
 
-  return <div className="ev-app">{body}</div>;
+  return (
+    <QueryPlanView
+      engine={storedQuery.engine}
+      planSource={storedQuery.explain}
+      planQuery={storedQuery.statement}
+    />
+  );
 }

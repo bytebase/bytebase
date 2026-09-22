@@ -469,7 +469,7 @@ describe("IssueDetailDatabaseChangeView", () => {
       "[data-testid='targets-search-wrapper']"
     );
     const targetRows =
-      targetList?.querySelectorAll(".w-full.rounded-lg.border") ?? [];
+      targetList?.querySelectorAll(".w-full.rounded-sm.border") ?? [];
 
     expect(sheetBody?.className).toContain("overflow-hidden");
     expect(searchWrapper?.getAttribute("data-wrapper-class-name")).toContain(

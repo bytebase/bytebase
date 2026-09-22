@@ -395,3 +395,13 @@ func (x *PlanLimitConfig) Equal(y *PlanLimitConfig) bool {
 	}
 	return true
 }
+
+func (x *StartTrialRequest) Equal(y *StartTrialRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}

@@ -135,7 +135,7 @@ func (h *Handler) getInstanceID() string {
 	if h.metadata == nil {
 		return ""
 	}
-	id, err := common.GetInstanceID(h.metadata.InstanceID)
+	_, id, err := common.GetInstanceResourceName(h.metadata.InstanceID)
 	if err != nil {
 		return ""
 	}
@@ -157,24 +157,57 @@ func (h *Handler) getScene() base.SceneType {
 }
 
 func (h *Handler) getEngineType(ctx context.Context) storepb.Engine {
-	instanceID := h.getInstanceID()
-	if instanceID == "" {
+	h.mu.Lock()
+	if h.metadata == nil {
+		h.mu.Unlock()
 		return storepb.Engine_ENGINE_UNSPECIFIED
 	}
+	instanceName := h.metadata.InstanceID
+	h.mu.Unlock()
 
-	instance, err := h.store.GetInstance(ctx, &store.FindInstanceMessage{
-		Workspace:  common.GetWorkspaceIDFromContext(ctx),
-		ResourceID: &instanceID,
-	})
+	instance, err := h.getMetadataInstance(ctx, instanceName)
 	if err != nil {
 		slog.Error("Failed to get instance", log.BBError(err))
 		return storepb.Engine_ENGINE_UNSPECIFIED
 	}
 	if instance == nil {
-		slog.Error("Instance not found", slog.String("instanceID", instanceID))
+		slog.Error("Instance not found", slog.String("instance", instanceName))
 		return storepb.Engine_ENGINE_UNSPECIFIED
 	}
 	return instance.Metadata.GetEngine()
+}
+
+func (h *Handler) getMetadataInstance(ctx context.Context, instanceName string) (*store.InstanceMessage, error) {
+	projectID, instanceID, err := common.GetInstanceResourceName(instanceName)
+	if err != nil {
+		return nil, err
+	}
+	instance, err := h.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:     projectID,
+		WorkspaceOnly: projectID == nil,
+		ResourceID:    &instanceID,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get instance")
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance %q not found", instanceName)
+	}
+	if instance.ProjectID == nil {
+		return instance, nil
+	}
+	project, err := h.store.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:  common.GetWorkspaceIDFromContext(ctx),
+		ResourceID: instance.ProjectID,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get instance project")
+	}
+	if project == nil || project.Deleted {
+		return nil, errors.Errorf("project %q not found", *instance.ProjectID)
+	}
+	return instance, nil
 }
 
 func (h *Handler) checkInitialized(req *jsonrpc2.Request) error {
@@ -210,17 +243,19 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 
-	// If database is specified, check database schema permission
-	if metadata.DatabaseName != "" && metadata.InstanceID != "" {
-		// Need to get database to find its project
-		instanceID, err := common.GetInstanceID(metadata.InstanceID)
-		if err != nil {
-			return err
-		}
+	if metadata.InstanceID == "" {
+		return nil
+	}
+	instance, err := h.getMetadataInstance(ctx, metadata.InstanceID)
+	if err != nil {
+		return err
+	}
 
+	// If database is specified, check database schema permission.
+	if metadata.DatabaseName != "" {
 		database, err := h.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 			Workspace:    workspaceID,
-			InstanceID:   &instanceID,
+			InstanceID:   &instance.ResourceID,
 			DatabaseName: &metadata.DatabaseName,
 		})
 		if err != nil {
@@ -238,9 +273,13 @@ func (h *Handler) checkMetadataPermissions(ctx context.Context, metadata SetMeta
 		if !ok {
 			return errors.Errorf("no permission to access database %q", metadata.DatabaseName)
 		}
-	} else if metadata.InstanceID != "" && metadata.DatabaseName == "" {
-		// If only instance is specified, check instance get permission
-		ok, err := h.iamManager.CheckPermission(ctx, permission.InstancesGet, user, workspaceID)
+	} else {
+		// If only instance is specified, check instance get permission in its scope.
+		var permissionProjectIDs []string
+		if instance.ProjectID != nil {
+			permissionProjectIDs = append(permissionProjectIDs, *instance.ProjectID)
+		}
+		ok, err := h.iamManager.CheckPermission(ctx, permission.InstancesGet, user, workspaceID, permissionProjectIDs...)
 		if err != nil {
 			return errors.Wrap(err, "failed to check permission")
 		}

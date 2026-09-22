@@ -17,6 +17,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+const testResource = "https://bb.example.com/mcp"
+
 // fakeWorkspaceResolver implements workspaceResolver for unit tests so we can
 // exercise resolveBoundWorkspace without standing up a real Postgres store.
 type fakeWorkspaceResolver struct {

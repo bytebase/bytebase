@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { isConnectedSQLEditorTab } from "@/lib/sqlEditorConnection";
 import { getValidDataSourceByPolicy } from "@/lib/sqlEditorDataSource";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
-import { useSQLEditorStore as useSQLEditorReactStore } from "@/modules/sql-editor/store";
+import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import { getSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import {
   getDatabaseQueryContext,
@@ -22,7 +22,6 @@ import type {
   SQLResultSetV1,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -34,10 +33,8 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   getDatabaseProject,
-  getInstanceResource,
   hasPermissionToCreateChangeDatabaseIssueInProject,
 } from "@/utils";
-import { flattenNoSQLResult } from "@/utils/sqlResult";
 
 // QUERY_INTERVAL_LIMIT is the minimal gap between two queries
 const QUERY_INTERVAL_LIMIT = 1000;
@@ -67,7 +64,7 @@ export const useExecuteSQL = () => {
   };
 
   const preflight = useCallback(
-    async (params: SQLEditorQueryParams) => {
+    (params: SQLEditorQueryParams) => {
       lastQueryTimeRef.current = Date.now();
 
       const tabsState = getSQLEditorTabsState();
@@ -139,31 +136,31 @@ export const useExecuteSQL = () => {
   };
 
   const preExecute = useCallback(
-    async (params: SQLEditorQueryParams) => {
+    async (params: SQLEditorQueryParams): Promise<boolean> => {
       const now = Date.now();
       if (
         lastQueryTimeRef.current &&
         now - lastQueryTimeRef.current < QUERY_INTERVAL_LIMIT
       ) {
-        return;
+        return false;
       }
 
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
       if (!tab) {
-        return;
+        return false;
       }
       const { mode } = tab;
       if (mode === "ADMIN") {
-        return;
+        return false;
       }
 
       if (!preflight(params)) {
-        return;
+        return false;
       }
 
       if (!isValidDatabaseName(params.connection.database)) {
-        return;
+        return false;
       }
 
       // Re-read the tab after preflight, which may have initialized
@@ -171,7 +168,7 @@ export const useExecuteSQL = () => {
       const freshState = getSQLEditorTabsState();
       const freshTab = freshState.tabsById.get(freshState.currentTabId);
       if (!freshTab) {
-        return;
+        return false;
       }
       const existingContexts: Map<string, SQLEditorDatabaseQueryContext[]> =
         freshTab.databaseQueryContexts ?? new Map();
@@ -238,6 +235,7 @@ export const useExecuteSQL = () => {
         .getState()
         .batchGetOrFetchDatabases([...batchQueryDatabaseSet.keys()]);
 
+      let accepted = false;
       for (const databaseName of batchQueryDatabaseSet.values()) {
         // Re-read the latest tab snapshot inside the loop so each
         // iteration sees the prior iteration's writes.
@@ -284,7 +282,9 @@ export const useExecuteSQL = () => {
         const nextMap = new Map(currentMap);
         nextMap.set(databaseName, [context, ...trimmedList]);
         loopState.updateTab(loopTab.id, { databaseQueryContexts: nextMap });
+        accepted = true;
       }
+      return accepted;
     },
     [preflight]
   );
@@ -371,7 +371,7 @@ export const useExecuteSQL = () => {
       // the HistoryPane re-renders from it (store reactivity alone
       // doesn't reliably propagate into the React subscriber, so we
       // trigger the re-render explicitly).
-      useSQLEditorReactStore
+      useSQLEditorStore
         .getState()
         .mergeLatest({
           project: getSQLEditorEditorState().project,
@@ -381,13 +381,11 @@ export const useExecuteSQL = () => {
           /* nothing */
         })
         .finally(() => {
-          void sqlEditorEvents.emit("query-executed");
+          void sqlEditorEvents.emit("query-executed", {
+            database: database.name,
+            project: database.project,
+          });
         });
-
-      const instanceResource = getInstanceResource(database);
-      if (instanceResource.engine === Engine.COSMOSDB) {
-        flattenNoSQLResult(resultSet);
-      }
 
       if (isDisallowChangeDatabaseError(resultSet)) {
         // Show a tips to navigate to issue creation

@@ -26,8 +26,9 @@ import {
 } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
+import { createSubmittedDatabaseChangePlanViaUI } from "../framework/ui-create-plan";
 import { PlanDetailPage } from "./plan-detail.page";
-import { waitForPlanChecksDone } from "./plan-helpers";
+import { resolveIssueName, waitForPlanChecksDone } from "./plan-helpers";
 
 test.setTimeout(180_000);
 
@@ -108,34 +109,30 @@ test.afterAll(async () => {
   await sharedContext?.close();
 });
 
-// Helper — create a plan + issue against env.database; run plan checks;
-// wait for them to complete; navigate to the detail page. Returns the
-// plan's resource name + id so callers can poll approval state.
+// Helper — create + submit a plan against env.database through the UI (plan +
+// draft review issue, then "Ready for Review"); wait for plan checks to
+// complete; navigate to the detail page. Returns the plan's resource name + id
+// + linked issue name (from the Plan proto's `issue` field) so callers can poll
+// approval state / approve.
 async function createIssueWithChecks(
   titlePrefix: string,
   sql: string,
 ): Promise<{ planName: string; planId: string; issueName: string }> {
-  const ts = Date.now();
-  const sheet = await env.api.createSheet(env.project, sql);
-  const plan = await env.api.createPlan(
-    env.project,
-    `${titlePrefix} ${ts}`,
-    [{ id: `spec-${ts}`, targets: [env.database], sheet }],
-  );
-  const planName = plan.name;
-  const planId = planName.split("/").pop()!;
-  const issue = await env.api.createIssue(
-    env.project,
-    `${titlePrefix} ${ts}`,
-    planName,
-  );
-  await env.api.runPlanChecks(planName);
-
+  const { planId } = await createSubmittedDatabaseChangePlanViaUI(page, {
+    baseURL: env.baseURL,
+    projectId,
+    database: env.database,
+    title: `${titlePrefix} ${Date.now()}`,
+    sql,
+  });
+  const planName = `${env.project}/plans/${planId}`;
+  const issueName = await resolveIssueName(env.api, planName);
+  await env.api.runPlanChecks(planName).catch(() => {});
   await waitForPlanChecksDone(env.api, planName);
 
   await planPage.goto(projectId, planId);
   await planPage.dismissModals();
-  return { planName, planId, issueName: issue.name };
+  return { planName, planId, issueName };
 }
 
 test.describe("Permissive settings", () => {

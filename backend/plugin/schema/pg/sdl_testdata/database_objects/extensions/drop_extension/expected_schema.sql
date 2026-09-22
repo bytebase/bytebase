@@ -1,1 +1,0 @@
--- Empty schema after dropping extension

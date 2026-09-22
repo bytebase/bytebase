@@ -5,10 +5,10 @@ import (
 	"github.com/bytebase/omni/oracle/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
-// BaseRule provides common functionality for Oracle advisor rules.
 type BaseRule struct {
 	level      storepb.Advice_Status
 	title      string
@@ -69,3 +69,39 @@ func (r *BaseRule) rawText(loc ast.Loc) string {
 
 // OnStatement is a no-op default for rules while they are migrated to omni.
 func (*BaseRule) OnStatement(_ ast.Node) {}
+
+// OmniRule defines the Oracle omni SQL review rule interface.
+type OmniRule interface {
+	OnStatement(node ast.Node)
+	Name() string
+	GetAdviceList() ([]*storepb.Advice, error)
+}
+
+// RunRules dispatches parsed Oracle omni AST nodes to rules.
+func RunRules(stmts []base.ParsedStatement, rules []OmniRule) ([]*storepb.Advice, error) {
+	for _, stmt := range stmts {
+		if stmt.AST == nil {
+			continue
+		}
+		node, ok := plsqlparser.GetOmniNode(stmt.AST)
+		if !ok {
+			continue
+		}
+		for _, rule := range rules {
+			if br, ok := rule.(interface{ SetStatement(int, string) }); ok {
+				br.SetStatement(stmt.BaseLine(), stmt.Text)
+			}
+			rule.OnStatement(node)
+		}
+	}
+
+	var adviceList []*storepb.Advice
+	for _, rule := range rules {
+		list, err := rule.GetAdviceList()
+		if err != nil {
+			return nil, err
+		}
+		adviceList = append(adviceList, list...)
+	}
+	return adviceList, nil
+}

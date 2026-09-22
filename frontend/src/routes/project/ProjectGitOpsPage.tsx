@@ -22,6 +22,7 @@ import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
+  GENERATED_WORKFLOW_AUDIENCE,
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
   parseWorkloadIdentitySubjectPattern,
@@ -87,21 +88,20 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   }, [selectedIdentityName, fetchWorkloadIdentity]);
 
   const selectedConfig = selectedIdentity?.workloadIdentityConfig;
+  const selectedProviderType =
+    selectedConfig?.providerType ??
+    WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED;
 
   // Sync active tab with selected identity provider
   useEffect(() => {
-    if (
-      selectedConfig?.providerType ===
-      WorkloadIdentityConfig_ProviderType.GITLAB
-    ) {
+    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITLAB) {
       setActiveTab("gitlab");
     } else if (
-      selectedConfig?.providerType ===
-      WorkloadIdentityConfig_ProviderType.GITHUB
+      selectedProviderType === WorkloadIdentityConfig_ProviderType.GITHUB
     ) {
       setActiveTab("github");
     }
-  }, [selectedConfig?.providerType]);
+  }, [selectedProviderType]);
 
   const parsedSubject = useMemo(() => {
     if (!selectedIdentity) return undefined;
@@ -111,17 +111,16 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const repoUrl = useMemo(() => {
     const parsed = parsedSubject;
     if (!parsed?.owner || !parsed.repo) return "";
-    const providerType = selectedConfig?.providerType;
-    if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
+    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITHUB) {
       return `https://github.com/${parsed.owner}/${parsed.repo}`;
     }
-    if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
+    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITLAB) {
       const issuer = selectedConfig?.issuerUrl ?? "https://gitlab.com";
       const base = issuer.replace(/\/$/, "");
       return `${base}/${parsed.owner}/${parsed.repo}`;
     }
     return "";
-  }, [parsedSubject, selectedConfig]);
+  }, [parsedSubject, selectedConfig, selectedProviderType]);
 
   const branch = parsedSubject?.branch || "main";
 
@@ -148,7 +147,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   }, [targetTab, selectedDatabaseGroupName, selectedDatabaseNames]);
 
   const targetsPlaceholder =
-    targetsString || "instances/{instance}/databases/{database}";
+    targetsString ||
+    `projects/${projectId}/instances/{instance}/databases/{database}`;
   const runsOn = useSelfhostRunner ? "self-hosted" : "ubuntu-latest";
 
   const handleTargetTabChange = (tab: "GROUP" | "DATABASE") => {
@@ -224,16 +224,16 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const providerMismatchGithub =
     selectedConfig &&
     activeTab === "github" &&
-    selectedConfig.providerType !== WorkloadIdentityConfig_ProviderType.GITHUB;
+    selectedProviderType !== WorkloadIdentityConfig_ProviderType.GITHUB;
   const providerMismatchGitlab =
     selectedConfig &&
     activeTab === "gitlab" &&
-    selectedConfig.providerType !== WorkloadIdentityConfig_ProviderType.GITLAB;
+    selectedProviderType !== WorkloadIdentityConfig_ProviderType.GITLAB;
 
   return (
     <ProjectPageLayout className="gap-y-1">
       {/* Section 1: What is GitOps */}
-      <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <div className="flex flex-col gap-y-1">
           <h2 className="text-lg font-medium">{t("gitops.overview.title")}</h2>
           <p className="textinfolabel">{t("gitops.overview.description")}</p>
@@ -261,7 +261,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
 
       {/* Section 2: Checks before we start */}
-      <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <h2 className="text-lg font-medium">{t("gitops.checklist.title")}</h2>
 
         <Alert
@@ -397,7 +397,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
             {targetsString && (
               <p className="text-sm text-control-light">
                 <span className="font-medium">targets:</span>{" "}
-                <code className="text-xs bg-gray-100 px-1 py-0.5 rounded-xs">
+                <code className="rounded-xs bg-control-bg px-1 py-0.5 text-xs">
                   {targetsString}
                 </code>
               </p>
@@ -409,7 +409,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
 
       {/* Section 3: Workflow file generation */}
-      <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <div className="flex flex-col gap-y-1">
           <h2 className="text-lg font-medium">{t("gitops.workflow.title")}</h2>
           <p className="text-sm text-control-light">
@@ -434,7 +434,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 className="mb-3"
                 description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
-                    selectedConfig!.providerType
+                    selectedProviderType,
+                    t("settings.members.workload-identity-generic-oidc")
                   ),
                 })}
               />
@@ -482,7 +483,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 className="mb-3"
                 description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
-                    selectedConfig!.providerType
+                    selectedProviderType,
+                    t("settings.members.workload-identity-generic-oidc")
                   ),
                 })}
               />
@@ -505,7 +507,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
       <span className="mx-auto w-0.5 h-8 bg-block-border" aria-hidden="true" />
 
       {/* Section 4: Test your first GitOps migration */}
-      <div className="border border-gray-200 rounded-sm p-6 flex flex-col gap-y-3">
+      <div className="flex flex-col gap-y-3 rounded-sm border border-block-border p-6">
         <div className="flex flex-col gap-y-1">
           <h2 className="text-lg font-medium">
             {t("gitops.test-setup.title")}
@@ -559,8 +561,7 @@ function FileHintLabel({
   repository?: string;
 }) {
   const { t } = useTranslation();
-  // Split the translated template around placeholders to render bold spans,
-  // matching the Vue <i18n-t> slot behavior.
+  // Split the translated template around placeholders to render bold spans.
   const raw = t("gitops.workflow.file-hint", {
     filePath: "\x00FP\x00",
     repository: "\x00RP\x00",
@@ -599,7 +600,7 @@ function MissingExternalURLAttention() {
 
 function CodeBlock({ code }: { code: string }) {
   return (
-    <div className="relative rounded-xs p-4 bg-gray-50">
+    <div className="relative rounded-xs bg-control-bg/50 p-4">
       <div className="absolute top-2 right-2 p-2">
         <CopyButton content={code} size="sm" />
       </div>
@@ -649,7 +650,7 @@ function StepItem({
 }) {
   return (
     <div className="flex items-start gap-x-3">
-      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-xs shrink-0 mt-0.5">
+      <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-control-bg-hover text-xs text-control">
         {number}
       </span>
       <p className="text-sm text-control-light">{children}</p>
@@ -680,7 +681,7 @@ const exchangeTokenStep = (indent: string) =>
 ${indent}  id: bytebase-auth
 ${indent}  run: |
 ${indent}    OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
-${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=bytebase" | jq -r '.value')
+${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${GENERATED_WORKFLOW_AUDIENCE}" | jq -r '.value')
 ${indent}    ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
 ${indent}      -H "Content-Type: application/json" \\
 ${indent}      -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
@@ -831,7 +832,7 @@ sql-review:
   image: bytebase/bytebase-action
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: bytebase
+      aud: ${GENERATED_WORKFLOW_AUDIENCE}
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
@@ -843,7 +844,7 @@ create-rollout:
   image: bytebase/bytebase-action
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: bytebase
+      aud: ${GENERATED_WORKFLOW_AUDIENCE}
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   script:
@@ -858,7 +859,7 @@ deploy-to-test:
   needs: [create-rollout]
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: bytebase
+      aud: ${GENERATED_WORKFLOW_AUDIENCE}
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   environment: test
@@ -873,7 +874,7 @@ deploy-to-prod:
   needs: [deploy-to-test]
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: bytebase
+      aud: ${GENERATED_WORKFLOW_AUDIENCE}
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   environment: prod

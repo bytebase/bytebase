@@ -38,7 +38,6 @@ import {
   WORKSPACE_ROUTE_SEMANTIC_TYPES,
   WORKSPACE_ROUTE_SERVICE_ACCOUNTS,
   WORKSPACE_ROUTE_SQL_REVIEW,
-  WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/app/router";
@@ -70,12 +69,6 @@ function getItemClass(item: SidebarItem, currentRouteName: string): string[] {
     item.name === currentRouteName ||
     currentRouteName.startsWith(`${item.name}.`);
   if (isActive) {
-    return ["router-link-active", "bg-link-hover"];
-  }
-  if (
-    item.name === WORKSPACE_ROUTE_USERS &&
-    currentRouteName === WORKSPACE_ROUTE_USER_PROFILE
-  ) {
     return ["router-link-active", "bg-link-hover"];
   }
   return [];
@@ -259,7 +252,7 @@ function useSidebarItems(): SidebarItem[] {
 }
 
 // ---------------------------------------------------------------------------
-// Filter logic (mirrors CommonSidebar.vue filteredSidebarList)
+// Filter logic
 // ---------------------------------------------------------------------------
 
 function filterSidebarList(items: SidebarItem[]): SidebarItem[] {
@@ -282,7 +275,7 @@ function filterSidebarList(items: SidebarItem[]): SidebarItem[] {
 // ---------------------------------------------------------------------------
 
 const parentRouteClass =
-  "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-xs text-gray-700 outline-item whitespace-nowrap text-sm!";
+  "group flex items-center px-2 py-1.5 leading-normal font-medium rounded-xs text-main outline-item whitespace-nowrap text-sm!";
 const childRouteClass =
   "group w-full flex items-center pl-9 pr-2 py-1 outline-item mb-0.5 rounded-xs whitespace-nowrap";
 
@@ -411,7 +404,7 @@ export function DashboardSidebar() {
       return (
         <div
           key={index}
-          className="border-t border-gray-300 my-2.5 mr-4 ml-2"
+          className="border-t border-control-border my-2.5 mr-4 ml-2"
         />
       );
     }
@@ -427,7 +420,7 @@ export function DashboardSidebar() {
           }}
           className={`${parentRouteClass} cursor-pointer no-underline text-inherit ${classes.join(" ")}`}
         >
-          {Icon && <Icon className="mr-2 w-5 h-5 text-gray-500" />}
+          {Icon && <Icon className="mr-2 w-5 h-5 text-control-light" />}
           {item.title}
         </RouterLink>
       );
@@ -444,10 +437,10 @@ export function DashboardSidebar() {
             className={`${parentRouteClass} cursor-pointer ${classes.join(" ")}`}
             onClick={() => onGroupClick(item, key)}
           >
-            {Icon && <Icon className="mr-2 w-5 h-5 text-gray-500" />}
+            {Icon && <Icon className="mr-2 w-5 h-5 text-control-light" />}
             {item.title}
             {hasChildren && (
-              <div className="ml-auto text-gray-500">
+              <div className="ml-auto text-control-light">
                 {isExpanded ? (
                   <ChevronDown className="w-4 h-4" />
                 ) : (

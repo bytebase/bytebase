@@ -4,6 +4,8 @@ import { DashboardLayout } from "@/app/layouts/DashboardLayout";
 import { RouteErrorPage } from "@/app/RouteErrorPage";
 import { rootGuard } from "@/app/router/guard";
 import {
+  ACCOUNT_ROUTE,
+  ACCOUNT_ROUTE_TWO_FACTOR,
   DATABASE_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_CREATE,
@@ -46,8 +48,6 @@ import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
-  SETTING_ROUTE_PROFILE,
-  SETTING_ROUTE_PROFILE_TWO_FACTOR,
   SETTING_ROUTE_WORKSPACE,
   SETTING_ROUTE_WORKSPACE_GENERAL,
   SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
@@ -73,7 +73,6 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-  WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/app/router/handles";
@@ -159,14 +158,6 @@ const workspaceLevelRoutes: RouteObject[] = [
     ),
   },
   {
-    path: "users/:principalEmail",
-    handle: { name: WORKSPACE_ROUTE_USER_PROFILE },
-    lazy: lazyPage(
-      () => import("@/routes/workspace/ProfilePage"),
-      (m) => m.ProfilePage
-    ),
-  },
-  {
     path: "403",
     handle: { name: WORKSPACE_ROUTE_403 },
     lazy: lazyPage(
@@ -236,7 +227,10 @@ const workspaceLevelRoutes: RouteObject[] = [
   {
     path: "idps",
     handle: {
-      requiredPermissionList: (): Permission[] => ["bb.identityProviders.get"],
+      requiredPermissionList: (): Permission[] => [
+        "bb.identityProviders.get",
+        "bb.identityProviders.list",
+      ],
     },
     element: <RouteGroupOutlet />,
     children: [
@@ -422,7 +416,6 @@ const workspaceLevelRoutes: RouteObject[] = [
         path: "mcp",
         handle: {
           name: WORKSPACE_ROUTE_MCP,
-          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
         },
         lazy: lazyPage(
           () => import("@/routes/workspace/MCPPage"),
@@ -433,29 +426,33 @@ const workspaceLevelRoutes: RouteObject[] = [
   },
 ];
 
-// Workspace settings routes (`/setting/**`), SettingRouteShell layout.
+// Personal account routes (`/account/**`). Separate from `/setting/**` so
+// "my account" is not a sibling of the workspace's own settings.
+const accountRoutes: RouteObject[] = [
+  {
+    path: "account",
+    handle: { name: ACCOUNT_ROUTE },
+    lazy: lazyPage(
+      () => import("@/routes/workspace/AccountSettingsPage"),
+      (m) => m.AccountSettingsPage
+    ),
+  },
+  {
+    path: "account/two-factor",
+    handle: { name: ACCOUNT_ROUTE_TWO_FACTOR },
+    lazy: lazyPage(
+      () => import("@/routes/workspace/TwoFactorSetupPage"),
+      (m) => m.TwoFactorSetupPage
+    ),
+  },
+];
+
 const workspaceSettingRoutes: RouteObject[] = [
   {
     path: "setting",
     handle: { name: SETTING_ROUTE_WORKSPACE },
     element: <RouteGroupOutlet />,
     children: [
-      {
-        path: "profile",
-        handle: { name: SETTING_ROUTE_PROFILE },
-        lazy: lazyPage(
-          () => import("@/routes/workspace/ProfilePage"),
-          (m) => m.ProfilePage
-        ),
-      },
-      {
-        path: "profile/two-factor",
-        handle: { name: SETTING_ROUTE_PROFILE_TWO_FACTOR },
-        lazy: lazyPage(
-          () => import("@/routes/workspace/TwoFactorSetupPage"),
-          (m) => m.TwoFactorSetupPage
-        ),
-      },
       {
         path: "general",
         handle: {
@@ -485,9 +482,9 @@ const workspaceSettingRoutes: RouteObject[] = [
   },
 ];
 
-// Environment detail — redirect-only route in vue (it redirected to the
-// environments dashboard with the environment name as a `#hash`). A leaf with
-// no element/lazy renders a blank body, so the redirect is the element here.
+// Environment detail is redirect-only: it goes to the environments dashboard
+// with the environment name as a `#hash`. A leaf with no element/lazy renders a
+// blank body, so the loader performs the redirect.
 const environmentV1Routes: RouteObject[] = [
   {
     path: "environments/:environmentName",
@@ -551,12 +548,12 @@ const instanceRoutes: RouteObject[] = [
 // Project routes (`/projects/:projectId/**`).
 //
 // The `requiredPermissionList` entries on the parent (`bb.projects.get`) and
-// each leaf are ported 1:1 from the legacy vue routes and aggregate via
-// `assembleRoute` into `route.requiredPermissions`. `ProjectRouteGate` (the
-// parent element) loads the project and enforces those permissions before its
-// `<Outlet/>` mounts the leaf — project-scoped checks need the loaded `Project`
-// resource, which is why `BodyLayout` routes project routes straight to this
-// gate instead of its generic workspace-level `RoutePermissionGuardShell`.
+// each leaf aggregate via `assembleRoute` into `route.requiredPermissions`.
+// `ProjectRouteGate` (the parent element) loads the project and enforces those
+// permissions before its `<Outlet/>` mounts the leaf — project-scoped checks
+// need the loaded `Project` resource, which is why `BodyLayout` routes project
+// routes straight to this gate instead of its generic workspace-level
+// `RoutePermissionGuardShell`.
 const projectV1Routes: RouteObject[] = [
   {
     path: "projects/:projectId",
@@ -569,8 +566,7 @@ const projectV1Routes: RouteObject[] = [
         index: true,
         handle: { name: PROJECT_V1_ROUTE_DETAIL },
         // The project root has no page of its own — redirect to the Issues
-        // tab (mirrors the legacy vue-router DETAIL → ISSUES redirect). `issues`
-        // is relative to the parent `projects/:projectId`.
+        // tab. `issues` is relative to the parent `projects/:projectId`.
         element: <Navigate to="issues" replace />,
       },
       {
@@ -982,8 +978,8 @@ const projectV1Routes: RouteObject[] = [
   },
 ];
 
-// `/` DashboardLayout → BodyLayout child holding the dashboard routes, plus
-// the `/issues` IssuesRouteShell route.
+// `/` DashboardLayout → BodyLayout child holding the dashboard routes,
+// including the `/issues` My Issues page.
 export const dashboardRoutes: RouteObject[] = [
   {
     path: "/",
@@ -1002,6 +998,7 @@ export const dashboardRoutes: RouteObject[] = [
             errorElement: <RouteErrorPage inline />,
             children: [
               ...workspaceLevelRoutes,
+              ...accountRoutes,
               ...workspaceSettingRoutes,
               ...environmentV1Routes,
               ...instanceRoutes,

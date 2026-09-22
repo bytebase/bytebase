@@ -136,8 +136,8 @@ export function IssueDetailAccessGrantDetails() {
               <span className="text-sm text-control-light">
                 {t("common.statement")}
               </span>
-              <div className="max-h-[30em] overflow-auto rounded-xs bg-gray-50 p-4">
-                <pre className="whitespace-pre-wrap font-mono text-sm">
+              <div className="max-h-[30em] overflow-auto rounded-xs bg-control-bg/50 p-4">
+                <pre className="wrap-anywhere whitespace-pre-wrap font-mono text-sm">
                   {accessGrant.query}
                 </pre>
               </div>

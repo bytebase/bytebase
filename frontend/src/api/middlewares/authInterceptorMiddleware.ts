@@ -119,6 +119,7 @@ export const authInterceptor: Interceptor = (next) => async (req) => {
       if (
         !silent &&
         code === Code.PermissionDenied &&
+        req.method.name !== "Login" &&
         router.currentRoute.value.name !== WORKSPACE_ROUTE_403
       ) {
         const errorDetail = extractPermissionDeniedDetail(error);

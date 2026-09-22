@@ -1,0 +1,2201 @@
+- description: Basic tables with various column types
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "posts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "title",
+                  "position": 3,
+                  "type": "varchar(200)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "content",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "published_at",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "datetime"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_user_published",
+                  "expressions": [
+                    "user_id",
+                    "published_at"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "posts_ibfk_1",
+                  "columns": [
+                    "user_id"
+                  ],
+                  "referenced_table": "users",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "CASCADE"
+                }
+              ]
+            },
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "username",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "email",
+                  "position": 3,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "age",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "updated_at",
+                  "position": 6,
+                  "default": "CURRENT_TIMESTAMP",
+                  "on_update": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "profile",
+                  "position": 7,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "json"
+                },
+                {
+                  "name": "is_active",
+                  "position": 8,
+                  "default": "'1'",
+                  "nullable": true,
+                  "type": "tinyint(1)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "username",
+                  "expressions": [
+                    "username"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_email",
+                  "expressions": [
+                    "email"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "idx_created_at",
+                  "expressions": [
+                    "created_at"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "check_constraints": [
+                {
+                  "name": "users_chk_1",
+                  "expression": "(`age` \u003e= 18)"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `posts`
+    --
+    CREATE TABLE `posts` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `user_id` int NOT NULL,
+      `title` varchar(200) NOT NULL,
+      `content` text DEFAULT NULL,
+      `published_at` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `idx_user_published` (`user_id`, `published_at`),
+      CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `users`
+    --
+    CREATE TABLE `users` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `username` varchar(50) NOT NULL,
+      `email` varchar(100) NOT NULL,
+      `age` int DEFAULT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      `profile` json,
+      `is_active` tinyint(1) DEFAULT '1',
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `username` (`username`),
+      KEY `idx_email` (`email`),
+      KEY `idx_created_at` (`created_at`),
+      CONSTRAINT `users_chk_1` CHECK (`age` >= 18)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Generated columns and complex indexes
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "inventory",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "product_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "warehouse",
+                  "position": 3,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "quantity",
+                  "position": 4,
+                  "default": "'0'",
+                  "type": "int"
+                },
+                {
+                  "name": "last_updated",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "on_update": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "uk_product_warehouse",
+                  "expressions": [
+                    "product_id",
+                    "warehouse"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "inventory_ibfk_1",
+                  "columns": [
+                    "product_id"
+                  ],
+                  "referenced_table": "products",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            },
+            {
+              "name": "products",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "price",
+                  "position": 3,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "tax_rate",
+                  "position": 4,
+                  "default": "'0.08'",
+                  "type": "decimal(5,2)"
+                },
+                {
+                  "name": "price_with_tax",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)",
+                  "generation": {
+                    "type": 2,
+                    "expression": "(`price` * ((1 + `tax_rate`)))"
+                  }
+                },
+                {
+                  "name": "description",
+                  "position": 6,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "tags",
+                  "position": 7,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "json"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "idx_fulltext",
+                  "expressions": [
+                    "name",
+                    "description"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "FULLTEXT",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `inventory`
+    --
+    CREATE TABLE `inventory` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `product_id` int NOT NULL,
+      `warehouse` varchar(50) NOT NULL,
+      `quantity` int NOT NULL DEFAULT '0',
+      `last_updated` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_product_warehouse` (`product_id`, `warehouse`),
+      CONSTRAINT `inventory_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `products`
+    --
+    CREATE TABLE `products` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `price` decimal(10,2) NOT NULL,
+      `tax_rate` decimal(5,2) NOT NULL DEFAULT '0.08',
+      `price_with_tax` decimal(10,2) GENERATED ALWAYS AS ((`price` * ((1 + `tax_rate`)))) STORED,
+      `description` text DEFAULT NULL,
+      `tags` json,
+      PRIMARY KEY (`id`),
+      FULLTEXT KEY `idx_fulltext` (`name`, `description`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Views and triggers
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "order_history",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "order_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "old_status",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "new_status",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "changed_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "order_id",
+                  "expressions": [
+                    "order_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "order_history_ibfk_1",
+                  "columns": [
+                    "order_id"
+                  ],
+                  "referenced_table": "orders",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            },
+            {
+              "name": "orders",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "order_number",
+                  "position": 2,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "customer_name",
+                  "position": 3,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "total_amount",
+                  "position": 4,
+                  "type": "decimal(10,2)"
+                },
+                {
+                  "name": "status",
+                  "position": 5,
+                  "default": "'pending'",
+                  "nullable": true,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "created_at",
+                  "position": 6,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "order_number",
+                  "expressions": [
+                    "order_number"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "triggers": [
+                {
+                  "name": "order_status_change",
+                  "event": "UPDATE",
+                  "timing": "AFTER",
+                  "body": "BEGIN\n    IF OLD.status != NEW.status THEN\n        INSERT INTO order_history (order_id, old_status, new_status)\n        VALUES (NEW.id, OLD.status, NEW.status);\n    END IF;\nEND"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "pending_orders",
+              "definition": "select `orders`.`id` AS `id`,`orders`.`order_number` AS `order_number`,`orders`.`customer_name` AS `customer_name`,`orders`.`total_amount` AS `total_amount`,`orders`.`created_at` AS `created_at` from `orders` where (`orders`.`status` = 'pending') order by `orders`.`created_at` desc"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Temporary view structure for `pending_orders`
+    --
+    -- `pending_orders` references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them
+
+    --
+    -- Table structure for `order_history`
+    --
+    CREATE TABLE `order_history` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `order_id` int NOT NULL,
+      `old_status` varchar(20) DEFAULT NULL,
+      `new_status` varchar(20) DEFAULT NULL,
+      `changed_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      KEY `order_id` (`order_id`),
+      CONSTRAINT `order_history_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `orders`
+    --
+    CREATE TABLE `orders` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `order_number` varchar(20) NOT NULL,
+      `customer_name` varchar(100) NOT NULL,
+      `total_amount` decimal(10,2) NOT NULL,
+      `status` varchar(20) DEFAULT 'pending',
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `order_number` (`order_number`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- View structure for `pending_orders`
+    --
+    CREATE OR REPLACE VIEW `pending_orders` AS select `orders`.`id` AS `id`,`orders`.`order_number` AS `order_number`,`orders`.`customer_name` AS `customer_name`,`orders`.`total_amount` AS `total_amount`,`orders`.`created_at` AS `created_at` from `orders` where (`orders`.`status` = 'pending') order by `orders`.`created_at` desc;
+
+    --
+    -- Trigger structure for `order_status_change`
+    --
+    SET character_set_client = ;
+    SET character_set_results = ;
+    SET collation_connection = ;
+    SET sql_mode = '';
+    DELIMITER ;;
+    CREATE TRIGGER `order_status_change`
+    AFTER UPDATE ON `orders` FOR EACH ROW
+    BEGIN
+        IF OLD.status != NEW.status THEN
+            INSERT INTO order_history (order_id, old_status, new_status)
+            VALUES (NEW.id, OLD.status, NEW.status);
+        END IF;
+    END;;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Stored procedures and functions
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "accounts",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "account_number",
+                  "position": 2,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "balance",
+                  "position": 3,
+                  "default": "'0.00'",
+                  "type": "decimal(15,2)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "account_number",
+                  "expressions": [
+                    "account_number"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ],
+          "functions": [
+            {
+              "name": "calculate_interest",
+              "definition": "CREATE FUNCTION `calculate_interest`(principal DECIMAL(15,2), rate DECIMAL(5,4), years INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC\nBEGIN\n    RETURN principal * POW(1 + rate, years);\nEND"
+            }
+          ],
+          "procedures": [
+            {
+              "name": "transfer_funds",
+              "definition": "CREATE PROCEDURE `transfer_funds`(IN from_account VARCHAR(20), IN to_account VARCHAR(20), IN amount DECIMAL(15,2))\nBEGIN\n    DECLARE from_balance DECIMAL(15, 2);\n\n    START TRANSACTION;\n\n    SELECT balance INTO from_balance\n    FROM accounts\n    WHERE account_number = from_account\n    FOR UPDATE;\n\n    IF from_balance \u003e= amount THEN\n        UPDATE accounts\n        SET balance = balance - amount\n        WHERE account_number = from_account;\n\n        UPDATE accounts\n        SET balance = balance + amount\n        WHERE account_number = to_account;\n\n        COMMIT;\n    ELSE\n        ROLLBACK;\n        SIGNAL SQLSTATE '45000'\n        SET MESSAGE_TEXT = 'Insufficient funds';\n    END IF;\nEND"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `accounts`
+    --
+    CREATE TABLE `accounts` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `account_number` varchar(20) NOT NULL,
+      `balance` decimal(15,2) NOT NULL DEFAULT '0.00',
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `account_number` (`account_number`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Function structure for `calculate_interest`
+    --
+    CREATE FUNCTION `calculate_interest`(principal DECIMAL(15,2), rate DECIMAL(5,4), years INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC
+    BEGIN
+        RETURN principal * POW(1 + rate, years);
+    END;;
+    DELIMITER ;
+
+    --
+    -- Procedure structure for `transfer_funds`
+    --
+    DELIMITER ;;
+    CREATE PROCEDURE `transfer_funds`(IN from_account VARCHAR(20), IN to_account VARCHAR(20), IN amount DECIMAL(15,2))
+    BEGIN
+        DECLARE from_balance DECIMAL(15, 2);
+
+        START TRANSACTION;
+
+        SELECT balance INTO from_balance
+        FROM accounts
+        WHERE account_number = from_account
+        FOR UPDATE;
+
+        IF from_balance >= amount THEN
+            UPDATE accounts
+            SET balance = balance - amount
+            WHERE account_number = from_account;
+
+            UPDATE accounts
+            SET balance = balance + amount
+            WHERE account_number = to_account;
+
+            COMMIT;
+        ELSE
+            ROLLBACK;
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Insufficient funds';
+        END IF;
+    END;;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Partitioned tables
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "customer_regions",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "customer_name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "region",
+                  "position": 3,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "sales_amount",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id",
+                    "region"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p_north",
+                  "type": 4,
+                  "expression": "region",
+                  "value": "'north','northeast','northwest'"
+                },
+                {
+                  "name": "p_south",
+                  "type": 4,
+                  "expression": "region",
+                  "value": "'south','southeast','southwest'"
+                },
+                {
+                  "name": "p_east",
+                  "type": 4,
+                  "expression": "region",
+                  "value": "'east'"
+                },
+                {
+                  "name": "p_west",
+                  "type": 4,
+                  "expression": "region",
+                  "value": "'west'"
+                },
+                {
+                  "name": "p_central",
+                  "type": 4,
+                  "expression": "region",
+                  "value": "'central'"
+                }
+              ]
+            },
+            {
+              "name": "employees",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "department_id",
+                  "position": 3,
+                  "type": "int"
+                },
+                {
+                  "name": "hired_date",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "date"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p0",
+                  "type": 5,
+                  "expression": "`id`"
+                },
+                {
+                  "name": "p1",
+                  "type": 5,
+                  "expression": "`id`"
+                },
+                {
+                  "name": "p2",
+                  "type": 5,
+                  "expression": "`id`"
+                },
+                {
+                  "name": "p3",
+                  "type": 5,
+                  "expression": "`id`"
+                }
+              ]
+            },
+            {
+              "name": "order_archive",
+              "columns": [
+                {
+                  "name": "order_id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "order_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "customer_id",
+                  "position": 3,
+                  "type": "int"
+                },
+                {
+                  "name": "status",
+                  "position": 4,
+                  "type": "varchar(20)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "total_amount",
+                  "position": 5,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "order_id",
+                    "order_date"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p_2022_q1",
+                  "type": 2,
+                  "expression": "order_date",
+                  "value": "'2022-04-01'"
+                },
+                {
+                  "name": "p_2022_q2",
+                  "type": 2,
+                  "expression": "order_date",
+                  "value": "'2022-07-01'"
+                },
+                {
+                  "name": "p_2022_q3",
+                  "type": 2,
+                  "expression": "order_date",
+                  "value": "'2022-10-01'"
+                },
+                {
+                  "name": "p_2022_q4",
+                  "type": 2,
+                  "expression": "order_date",
+                  "value": "'2023-01-01'"
+                },
+                {
+                  "name": "p_2023_and_later",
+                  "type": 2,
+                  "expression": "order_date",
+                  "value": "MAXVALUE"
+                }
+              ]
+            },
+            {
+              "name": "sales",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "product_id",
+                  "position": 3,
+                  "type": "int"
+                },
+                {
+                  "name": "quantity",
+                  "position": 4,
+                  "type": "int"
+                },
+                {
+                  "name": "amount",
+                  "position": 5,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id",
+                    "sale_date"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p2022",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2023"
+                },
+                {
+                  "name": "p2023",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2024"
+                },
+                {
+                  "name": "p2024",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "2025"
+                },
+                {
+                  "name": "p_future",
+                  "type": 1,
+                  "expression": "year(`sale_date`)",
+                  "value": "MAXVALUE"
+                }
+              ]
+            },
+            {
+              "name": "user_sessions",
+              "columns": [
+                {
+                  "name": "session_id",
+                  "position": 1,
+                  "type": "varchar(64)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "user_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "created_at",
+                  "position": 3,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                },
+                {
+                  "name": "last_activity",
+                  "position": 4,
+                  "default": "CURRENT_TIMESTAMP",
+                  "on_update": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "session_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "partitions": [
+                {
+                  "name": "p0",
+                  "type": 7,
+                  "expression": "session_id"
+                },
+                {
+                  "name": "p1",
+                  "type": 7,
+                  "expression": "session_id"
+                },
+                {
+                  "name": "p2",
+                  "type": 7,
+                  "expression": "session_id"
+                },
+                {
+                  "name": "p3",
+                  "type": 7,
+                  "expression": "session_id"
+                },
+                {
+                  "name": "p4",
+                  "type": 7,
+                  "expression": "session_id"
+                },
+                {
+                  "name": "p5",
+                  "type": 7,
+                  "expression": "session_id"
+                },
+                {
+                  "name": "p6",
+                  "type": 7,
+                  "expression": "session_id"
+                },
+                {
+                  "name": "p7",
+                  "type": 7,
+                  "expression": "session_id"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `customer_regions`
+    --
+    CREATE TABLE `customer_regions` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `customer_name` varchar(100) NOT NULL,
+      `region` varchar(20) NOT NULL,
+      `sales_amount` decimal(10,2) DEFAULT NULL,
+      PRIMARY KEY (`id`, `region`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50500 PARTITION BY LIST COLUMNS (region)
+    (PARTITION `p_north` VALUES IN ('north','northeast','northwest') ENGINE=InnoDB,
+     PARTITION `p_south` VALUES IN ('south','southeast','southwest') ENGINE=InnoDB,
+     PARTITION `p_east` VALUES IN ('east') ENGINE=InnoDB,
+     PARTITION `p_west` VALUES IN ('west') ENGINE=InnoDB,
+     PARTITION `p_central` VALUES IN ('central') ENGINE=InnoDB) */;
+
+    --
+    -- Table structure for `employees`
+    --
+    CREATE TABLE `employees` (
+      `id` int NOT NULL,
+      `name` varchar(100) NOT NULL,
+      `department_id` int NOT NULL,
+      `hired_date` date DEFAULT NULL,
+      PRIMARY KEY (`id`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50100 PARTITION BY HASH (`id`)
+    (PARTITION `p0` ENGINE=InnoDB,
+     PARTITION `p1` ENGINE=InnoDB,
+     PARTITION `p2` ENGINE=InnoDB,
+     PARTITION `p3` ENGINE=InnoDB) */;
+
+    --
+    -- Table structure for `order_archive`
+    --
+    CREATE TABLE `order_archive` (
+      `order_id` int NOT NULL,
+      `order_date` date NOT NULL,
+      `customer_id` int NOT NULL,
+      `status` varchar(20) NOT NULL,
+      `total_amount` decimal(10,2) DEFAULT NULL,
+      PRIMARY KEY (`order_id`, `order_date`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50500 PARTITION BY RANGE COLUMNS (order_date)
+    (PARTITION `p_2022_q1` VALUES LESS THAN ('2022-04-01') ENGINE=InnoDB,
+     PARTITION `p_2022_q2` VALUES LESS THAN ('2022-07-01') ENGINE=InnoDB,
+     PARTITION `p_2022_q3` VALUES LESS THAN ('2022-10-01') ENGINE=InnoDB,
+     PARTITION `p_2022_q4` VALUES LESS THAN ('2023-01-01') ENGINE=InnoDB,
+     PARTITION `p_2023_and_later` VALUES LESS THAN MAXVALUE ENGINE=InnoDB) */;
+
+    --
+    -- Table structure for `sales`
+    --
+    CREATE TABLE `sales` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `sale_date` date NOT NULL,
+      `product_id` int NOT NULL,
+      `quantity` int NOT NULL,
+      `amount` decimal(10,2) NOT NULL,
+      PRIMARY KEY (`id`, `sale_date`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50100 PARTITION BY RANGE (year(`sale_date`))
+    (PARTITION `p2022` VALUES LESS THAN (2023) ENGINE=InnoDB,
+     PARTITION `p2023` VALUES LESS THAN (2024) ENGINE=InnoDB,
+     PARTITION `p2024` VALUES LESS THAN (2025) ENGINE=InnoDB,
+     PARTITION `p_future` VALUES LESS THAN MAXVALUE ENGINE=InnoDB) */;
+
+    --
+    -- Table structure for `user_sessions`
+    --
+    CREATE TABLE `user_sessions` (
+      `session_id` varchar(64) NOT NULL,
+      `user_id` int NOT NULL,
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      `last_activity` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (`session_id`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    /*!50100 PARTITION BY KEY (session_id)
+    (PARTITION `p0` ENGINE=InnoDB,
+     PARTITION `p1` ENGINE=InnoDB,
+     PARTITION `p2` ENGINE=InnoDB,
+     PARTITION `p3` ENGINE=InnoDB,
+     PARTITION `p4` ENGINE=InnoDB,
+     PARTITION `p5` ENGINE=InnoDB,
+     PARTITION `p6` ENGINE=InnoDB,
+     PARTITION `p7` ENGINE=InnoDB) */;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Events
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "daily_stats",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "stat_date",
+                  "position": 2,
+                  "type": "date"
+                },
+                {
+                  "name": "total_orders",
+                  "position": 3,
+                  "default": "'0'",
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "total_revenue",
+                  "position": 4,
+                  "default": "'0.00'",
+                  "nullable": true,
+                  "type": "decimal(15,2)"
+                },
+                {
+                  "name": "created_at",
+                  "position": 5,
+                  "default": "CURRENT_TIMESTAMP",
+                  "nullable": true,
+                  "type": "timestamp"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "stat_date",
+                  "expressions": [
+                    "stat_date"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4"
+            }
+          ],
+          "events": [
+            {
+              "name": "update_daily_stats",
+              "definition": "CREATE DEFINER=`root`@`%` EVENT `update_daily_stats` ON SCHEDULE EVERY 1 DAY\nSTARTS CURRENT_TIMESTAMP ON COMPLETION NOT PRESERVE ENABLE DO INSERT INTO daily_stats (stat_date, total_orders, total_revenue)\n    VALUES (CURDATE() - INTERVAL 1 DAY, 0, 0.00)\n    ON DUPLICATE KEY UPDATE\n        total_orders = VALUES(total_orders),\n        total_revenue = VALUES(total_revenue)"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `daily_stats`
+    --
+    CREATE TABLE `daily_stats` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `stat_date` date NOT NULL,
+      `total_orders` int DEFAULT '0',
+      `total_revenue` decimal(15,2) DEFAULT '0.00',
+      `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `stat_date` (`stat_date`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Event structure for `update_daily_stats`
+    --
+    SET character_set_client = ;
+    SET character_set_results = ;
+    SET collation_connection = ;
+    SET sql_mode = '';
+    SET time_zone = '';
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` EVENT `update_daily_stats` ON SCHEDULE EVERY 1 DAY
+    STARTS CURRENT_TIMESTAMP ON COMPLETION NOT PRESERVE ENABLE DO INSERT INTO daily_stats (stat_date, total_orders, total_revenue)
+        VALUES (CURDATE() - INTERVAL 1 DAY, 0, 0.00)
+        ON DUPLICATE KEY UPDATE
+            total_orders = VALUES(total_orders),
+            total_revenue = VALUES(total_revenue);;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Character sets and collations
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "translations",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "language_code",
+                  "position": 2,
+                  "type": "varchar(5)",
+                  "character_set": "ascii",
+                  "collation": "ascii_general_ci"
+                },
+                {
+                  "name": "content_key",
+                  "position": 3,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_bin"
+                },
+                {
+                  "name": "translation",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "text",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_unicode_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "uk_lang_key",
+                  "expressions": [
+                    "language_code",
+                    "content_key"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_general_ci",
+              "charset": "utf8mb4"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `translations`
+    --
+    CREATE TABLE `translations` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `language_code` varchar(5) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
+      `content_key` varchar(100) COLLATE utf8mb4_bin NOT NULL,
+      `translation` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      UNIQUE KEY `uk_lang_key` (`language_code`, `content_key`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Check constraints with string literals and function with multiline parameters
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "transactions",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "type",
+                  "position": 2,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "amount",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "decimal(10,2)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "check_constraints": [
+                {
+                  "name": "c1",
+                  "expression": "((`type` = 'A') and (`amount` is not null))"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "lookup_token",
+              "definition": "CREATE FUNCTION `lookup_token`(p_a BIGINT, p_b VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC\nBEGIN\n    RETURN p_b;\nEND"
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `transactions`
+    --
+    CREATE TABLE `transactions` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `type` varchar(10) DEFAULT NULL,
+      `amount` decimal(10,2) DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      CONSTRAINT `c1` CHECK ((`type` = 'A') and (`amount` is not null))
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Function structure for `lookup_token`
+    --
+    CREATE FUNCTION `lookup_token`(p_a BIGINT, p_b VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC
+    BEGIN
+        RETURN p_b;
+    END;;
+    DELIMITER ;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Connected foreign key dependencies
+  metadata: |
+    {
+      "name": "tmp",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "department",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "parent_id",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "parent_id",
+                  "expressions": [
+                    "parent_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "department_ibfk_1",
+                  "columns": [
+                    "parent_id"
+                  ],
+                  "referenced_table": "department",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            },
+            {
+              "name": "employee",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "department_id",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "manager_id",
+                  "position": 4,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "department_id",
+                  "expressions": [
+                    "department_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "manager_id",
+                  "expressions": [
+                    "manager_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "employee_ibfk_1",
+                  "columns": [
+                    "department_id"
+                  ],
+                  "referenced_table": "department",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "NO ACTION"
+                },
+                {
+                  "name": "employee_ibfk_2",
+                  "columns": [
+                    "manager_id"
+                  ],
+                  "referenced_table": "employee",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "SET NULL",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            },
+            {
+              "name": "project",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "type": "varchar(100)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                },
+                {
+                  "name": "lead_id",
+                  "position": 3,
+                  "type": "int"
+                },
+                {
+                  "name": "department_id",
+                  "position": 4,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "lead_id",
+                  "expressions": [
+                    "lead_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                },
+                {
+                  "name": "department_id",
+                  "expressions": [
+                    "department_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "project_ibfk_1",
+                  "columns": [
+                    "lead_id"
+                  ],
+                  "referenced_table": "employee",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION"
+                },
+                {
+                  "name": "project_ibfk_2",
+                  "columns": [
+                    "department_id"
+                  ],
+                  "referenced_table": "department",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "NO ACTION",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            },
+            {
+              "name": "project_member",
+              "columns": [
+                {
+                  "name": "project_id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "employee_id",
+                  "position": 2,
+                  "type": "int"
+                },
+                {
+                  "name": "role",
+                  "position": 3,
+                  "default": "NULL",
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "character_set": "utf8mb4",
+                  "collation": "utf8mb4_0900_ai_ci"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "project_id",
+                    "employee_id"
+                  ],
+                  "key_length": [
+                    -1,
+                    -1
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                },
+                {
+                  "name": "employee_id",
+                  "expressions": [
+                    "employee_id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "BTREE",
+                  "visible": true
+                }
+              ],
+              "collation": "utf8mb4_0900_ai_ci",
+              "charset": "utf8mb4",
+              "foreign_keys": [
+                {
+                  "name": "project_member_ibfk_1",
+                  "columns": [
+                    "project_id"
+                  ],
+                  "referenced_table": "project",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION"
+                },
+                {
+                  "name": "project_member_ibfk_2",
+                  "columns": [
+                    "employee_id"
+                  ],
+                  "referenced_table": "employee",
+                  "referenced_columns": [
+                    "id"
+                  ],
+                  "on_delete": "CASCADE",
+                  "on_update": "NO ACTION"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "character_set": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `department`
+    --
+    CREATE TABLE `department` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `parent_id` int DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `parent_id` (`parent_id`),
+      CONSTRAINT `department_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `department` (`id`) ON DELETE SET NULL
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `employee`
+    --
+    CREATE TABLE `employee` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `department_id` int DEFAULT NULL,
+      `manager_id` int DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `department_id` (`department_id`),
+      KEY `manager_id` (`manager_id`),
+      CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`) ON DELETE SET NULL,
+      CONSTRAINT `employee_ibfk_2` FOREIGN KEY (`manager_id`) REFERENCES `employee` (`id`) ON DELETE SET NULL
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `project`
+    --
+    CREATE TABLE `project` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `name` varchar(100) NOT NULL,
+      `lead_id` int NOT NULL,
+      `department_id` int NOT NULL,
+      PRIMARY KEY (`id`),
+      KEY `lead_id` (`lead_id`),
+      KEY `department_id` (`department_id`),
+      CONSTRAINT `project_ibfk_1` FOREIGN KEY (`lead_id`) REFERENCES `employee` (`id`),
+      CONSTRAINT `project_ibfk_2` FOREIGN KEY (`department_id`) REFERENCES `department` (`id`)
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    --
+    -- Table structure for `project_member`
+    --
+    CREATE TABLE `project_member` (
+      `project_id` int NOT NULL,
+      `employee_id` int NOT NULL,
+      `role` varchar(50) DEFAULT NULL,
+      PRIMARY KEY (`project_id`, `employee_id`),
+      KEY `employee_id` (`employee_id`),
+      CONSTRAINT `project_member_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `project_member_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employee` (`id`) ON DELETE CASCADE
+    ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

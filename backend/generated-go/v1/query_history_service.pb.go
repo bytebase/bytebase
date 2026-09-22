@@ -96,10 +96,10 @@ type SearchQueryHistoriesRequest struct {
 	//
 	// Supported filter:
 	// - project: the project full name in "projects/{id}" format, support "==" operator.
-	// - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
-	// - instance: the instance full name in "instances/{id}" format, support "==" operator.
+	// - database: the database full name in "instances/{id}/databases/{name}" or "projects/{project}/instances/{id}/databases/{name}" format, support "==" operator.
+	// - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
 	// - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-	// - statement: the SQL statement, support ".contains()" operator.
+	// - statement: the SQL statement, support "==" and ".contains()" operators.
 	//
 	// For example:
 	// project == "projects/{project}"
@@ -107,6 +107,7 @@ type SearchQueryHistoriesRequest struct {
 	// instance == "instances/{instance}"
 	// type == "QUERY"
 	// type == "EXPORT"
+	// statement == "SELECT 1;"
 	// statement.contains("select")
 	// type == "QUERY" && statement.contains("select")
 	Filter        string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`
@@ -423,7 +424,7 @@ type QueryHistory struct {
 	// Format: projects/{project}/queryHistories/{id}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The database name to execute the query.
-	// Format: instances/{instance}/databases/{databaseName}
+	// Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
 	Database      string                 `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
 	Creator       string                 `protobuf:"bytes,3,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
@@ -562,11 +563,12 @@ const file_v1_query_history_service_proto_rawDesc = "" +
 	"\x05QUERY\x10\x01\x12\n" +
 	"\n" +
 	"\x06EXPORT\x10\x02B\b\n" +
-	"\x06_error2\x91\x04\n" +
-	"\x13QueryHistoryService\x12\xb2\x01\n" +
-	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"E\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{parent=projects/*}/queryHistories:search\x12\xbc\x01\n" +
-	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\"U\xdaA\x06parent\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/queryHistories\x12\x85\x01\n" +
-	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"2\x90\xea0\x02\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/queryHistories/*}B\xae\x01\n" +
+	"\x06_error2\xa1\x04\n" +
+	"\x13QueryHistoryService\x12\xb6\x01\n" +
+	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"I\xdaA\x06parent\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{parent=projects/*}/queryHistories:search\x12\xc4\x01\n" +
+	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\"]\xdaA\x06parent\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\n" +
+	"\x82\xd3\xe4\x93\x02(\x12&/v1/{parent=projects/*}/queryHistories\x12\x89\x01\n" +
+	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"6\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02(\x12&/v1/{name=projects/*/queryHistories/*}B\xae\x01\n" +
 	"\x0fcom.bytebase.v1B\x18QueryHistoryServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

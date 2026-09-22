@@ -1,3 +1,4 @@
+// @vitest-environment node
 import Emittery from "emittery";
 import { describe, expect, test, vi } from "vitest";
 import { sqlEditorEvents } from "./events";

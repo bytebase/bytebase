@@ -56,7 +56,16 @@ test.beforeAll(async ({ browser }) => {
     execSql(env.databaseId, pgPort, `CREATE DATABASE ${name}`);
   }
 
-  // 2. Sync the instance so Bytebase discovers them, then poll until present.
+  // 2. Widen the sample instance's sync allowlist to cover the new databases,
+  //    then sync. The project-scoped sample instance is registered with an
+  //    explicit `sync_databases` allowlist (just hr_test / hr_prod); the schema
+  //    syncer SKIPS any discovered database not on it, so without this step the
+  //    poll below can never see them (discovered, never persisted).
+  const { databases: existing } = await env.api.listDatabases(env.instance);
+  const existingShort = (existing ?? []).map((d) => d.name.split("/").pop()!);
+  await env.api.updateInstanceSyncDatabases(env.instance, [
+    ...new Set([...existingShort, ...dbShortNames]),
+  ]);
   await env.api.syncInstance(env.instance);
   await expect
     .poll(

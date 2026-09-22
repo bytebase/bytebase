@@ -1,5 +1,11 @@
 import * as stylex from "@stylexjs/stylex";
 
+export const tableStyles = stylex.create({
+  cellContent: {
+    minHeight: 24,
+  },
+});
+
 export const controlSize = {
   xs: {
     height: 24,
@@ -212,10 +218,26 @@ const formStyles = stylex.create({
     flexDirection: "column",
     rowGap: 6,
   },
+  fieldHorizontal: {
+    alignItems: "start",
+    columnGap: 16,
+    display: "grid",
+    gridTemplateColumns: "224px minmax(0, 1fr)",
+    rowGap: 0,
+  },
+  fieldControl: {
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0,
+    rowGap: 6,
+  },
   fieldGroup: {
     display: "flex",
     flexDirection: "column",
     rowGap: 24,
+  },
+  fieldGroupCompact: {
+    rowGap: 16,
   },
   fieldHeader: {
     display: "flex",
@@ -281,6 +303,14 @@ export function formFieldStyle() {
   return formStyles.field;
 }
 
+export function formFieldHorizontalStyle() {
+  return formStyles.fieldHorizontal;
+}
+
+export function formFieldControlStyle() {
+  return formStyles.fieldControl;
+}
+
 export function formLabelStyle() {
   return formStyles.label;
 }
@@ -297,8 +327,13 @@ export function formControlRowStyle() {
   return formStyles.controlRow;
 }
 
-export function formFieldGroupStyle() {
-  return formStyles.fieldGroup;
+export function formFieldGroupStyle(
+  density: "default" | "compact" = "default"
+) {
+  return [
+    formStyles.fieldGroup,
+    density === "compact" && formStyles.fieldGroupCompact,
+  ];
 }
 
 export function formFieldHeaderStyle() {
@@ -494,4 +529,33 @@ export function listRowSecondaryTextStyle() {
 
 export function interactiveRowStyle(size: RowSize = "sm") {
   return listRowStyle(size);
+}
+
+const denseFormStyles = stylex.create({
+  section: {
+    display: "flex",
+    flexDirection: "column",
+    rowGap: 16,
+    paddingBlock: 16,
+  },
+  header: { width: "100%" },
+  content: { minWidth: 0 },
+  title: {
+    color: "rgb(var(--color-main))",
+    fontSize: 16,
+    lineHeight: "24px",
+    fontWeight: 600,
+  },
+});
+export function denseFormSectionStyle() {
+  return denseFormStyles.section;
+}
+export function denseFormHeaderStyle() {
+  return denseFormStyles.header;
+}
+export function denseFormContentStyle() {
+  return denseFormStyles.content;
+}
+export function denseFormTitleStyle() {
+  return denseFormStyles.title;
 }

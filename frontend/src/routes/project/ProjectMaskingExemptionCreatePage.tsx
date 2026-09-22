@@ -48,8 +48,13 @@ export function ProjectMaskingExemptionCreatePage({
 }) {
   const { t } = useTranslation();
   const projectsByName = useAppStore((s) => s.projectsByName);
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
 
   const projectName = `${projectNamePrefix}${projectId}`;
+  const accountParents = useMemo(
+    () => [...new Set([workspaceResourceName, projectName].filter(Boolean))],
+    [workspaceResourceName, projectName]
+  );
   // subscribe to re-render on project cache change
   void projectsByName;
   const project = useProjectByName(projectName);
@@ -227,14 +232,20 @@ export function ProjectMaskingExemptionCreatePage({
 
                 <RadioGroupItem value="EXPRESSION" disabled={!project}>
                   <div className="flex items-center gap-x-1">
-                    <FeatureBadge feature={PlanFeature.FEATURE_DATA_MASKING} />
+                    <FeatureBadge
+                      feature={PlanFeature.FEATURE_DATA_MASKING}
+                      clickable={false}
+                    />
                     <span>{t("issue.role-grant.use-cel")}</span>
                   </div>
                 </RadioGroupItem>
 
                 <RadioGroupItem value="SELECT" disabled={!project}>
                   <div className="flex items-center gap-x-1">
-                    <FeatureBadge feature={PlanFeature.FEATURE_DATA_MASKING} />
+                    <FeatureBadge
+                      feature={PlanFeature.FEATURE_DATA_MASKING}
+                      clickable={false}
+                    />
                     <span>{t("issue.role-grant.manually-select")}</span>
                   </div>
                 </RadioGroupItem>
@@ -295,7 +306,11 @@ export function ProjectMaskingExemptionCreatePage({
                 <CircleHelp className="size-4 textinfolabel" />
               </Tooltip>
             </div>
-            <AccountMultiSelect value={memberList} onChange={setMemberList} />
+            <AccountMultiSelect
+              value={memberList}
+              onChange={setMemberList}
+              accountParents={accountParents}
+            />
           </div>
         </div>
       </div>

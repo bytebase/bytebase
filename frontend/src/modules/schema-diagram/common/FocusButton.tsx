@@ -1,5 +1,6 @@
 import { ScanSearch } from "lucide-react";
 import { useCallback, useMemo } from "react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { TableMetadata } from "@/types/proto-es/v1/database_service_pb";
 import { DEFAULT_PADDINGS } from "./const";
@@ -16,8 +17,6 @@ interface FocusButtonProps {
 }
 
 /**
- * React port of `frontend/src/components/SchemaDiagram/common/FocusButton.vue`.
- *
  * Toggles the `focusedTables` membership for the given table and (by
  * default) emits `set-center` so the canvas re-centers + zooms onto it.
  * Used inside Navigator tree node suffixes and on hover over each
@@ -61,7 +60,9 @@ export function FocusButton({
   );
 
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="xs"
       type="button"
       onClick={toggleFocus}
       className={cn(
@@ -72,6 +73,6 @@ export function FocusButton({
       )}
     >
       <ScanSearch className="size-4" />
-    </button>
+    </Button>
   );
 }

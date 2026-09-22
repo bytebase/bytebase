@@ -2,20 +2,20 @@ package review
 
 import (
 	"context"
+	"database/sql"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -122,6 +122,254 @@ func TestReviewIssueApproveCurrentPlan(t *testing.T) {
 		IssueApprovedEvent{},
 		CreateRolloutEvent{},
 	}, result.Events)
+}
+
+func TestLastPlanEditorApproval(t *testing.T) {
+	newIssue := func(ctx context.Context, t *testing.T, stores *store.Store, clearLastPlanEditor bool) *store.IssueMessage {
+		t.Helper()
+		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: "project-a",
+			Name:      "change database",
+			Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+		}, "reviewer@example.com")
+		require.NoError(t, err)
+		if clearLastPlanEditor {
+			_, err := stores.GetDB().ExecContext(ctx, "UPDATE plan SET last_plan_editor = NULL WHERE project = $1 AND id = $2", plan.ProjectID, plan.UID)
+			require.NoError(t, err)
+		}
+		issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+			ProjectID:    "project-a",
+			CreatorEmail: "creator@example.com",
+			Title:        "change database",
+			Type:         storepb.Issue_DATABASE_CHANGE,
+			PlanUID:      &plan.UID,
+			Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 2,
+				ApprovalTemplate:     &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+			}},
+		})
+		require.NoError(t, err)
+		return issue
+	}
+
+	for _, test := range []struct {
+		name                string
+		action              Action
+		allowLastPlanEditor bool
+		clearLastPlanEditor bool
+		wantError           ErrorCode
+	}{
+		{name: "approve blocked", action: ActionApprove, wantError: ErrorFailedPrecondition},
+		{name: "reject allowed", action: ActionReject},
+		{name: "approve allowed by setting", action: ActionApprove, allowLastPlanEditor: true},
+		{name: "legacy Plan falls back to creator", action: ActionApprove, clearLastPlanEditor: true, wantError: ErrorFailedPrecondition},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+				Workspace: "default",
+				Member:    common.FormatUserEmail("reviewer@example.com"),
+				Roles:     []string{"roles/projectOwner"},
+			})
+			require.NoError(t, err)
+			if test.allowLastPlanEditor {
+				projectID := "project-a"
+				require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+					Workspace:  "default",
+					ResourceID: projectID,
+					Setting:    &storepb.Project{AllowLastPlanEditorApproval: true},
+				}))
+			}
+			issue := newIssue(ctx, t, stores, test.clearLastPlanEditor)
+			_, err = NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     &store.UserMessage{Email: "reviewer@example.com"},
+				Action:    test.action,
+			})
+			if test.wantError == ErrorInternal {
+				require.NoError(t, err)
+				return
+			}
+			var workflowErr *Error
+			require.ErrorAs(t, err, &workflowErr)
+			require.Equal(t, test.wantError, workflowErr.Code)
+		})
+	}
+}
+
+func TestReviewIssueEvaluatesPolicyForEachApprovalStep(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	for _, email := range []string{"reviewer@example.com", "reviewer2@example.com"} {
+		_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+			Workspace: "default",
+			Member:    common.FormatUserEmail(email),
+			Roles:     []string{"roles/projectOwner"},
+		})
+		require.NoError(t, err)
+	}
+	plan, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner", "roles/projectOwner"})
+	workflow := NewWorkflow(stores)
+	lastPlanEditor := "reviewer@example.com"
+	_, err := workflow.UpdatePlan(ctx, UpdatePlanInput{
+		Workspace:      "default",
+		ProjectID:      "project-a",
+		PlanUID:        plan.UID,
+		LastPlanEditor: &lastPlanEditor,
+	})
+	require.NoError(t, err)
+
+	_, err = workflow.ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: lastPlanEditor},
+		Action:    ActionApprove,
+	})
+	var workflowErr *Error
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ErrorFailedPrecondition, workflowErr.Code)
+
+	first, err := workflow.ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: "reviewer2@example.com"},
+		Action:    ActionApprove,
+	})
+	require.NoError(t, err)
+	require.False(t, first.Approved)
+
+	_, err = workflow.ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: lastPlanEditor},
+		Action:    ActionApprove,
+	})
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ErrorFailedPrecondition, workflowErr.Code)
+
+	second, err := workflow.ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: "reviewer2@example.com"},
+		Action:    ActionApprove,
+	})
+	require.NoError(t, err)
+	require.True(t, second.Approved)
+}
+
+func TestPlanSpecsUpdateResetsApprovalAndChangesLastPlanEditor(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	for _, email := range []string{"reviewer@example.com", "reviewer2@example.com"} {
+		_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+			Workspace: "default",
+			Member:    common.FormatUserEmail(email),
+			Roles:     []string{"roles/projectOwner"},
+		})
+		require.NoError(t, err)
+	}
+	plan, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner", "roles/projectOwner"})
+	workflow := NewWorkflow(stores)
+
+	first, err := workflow.ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: "reviewer@example.com"},
+		Action:    ActionApprove,
+	})
+	require.NoError(t, err)
+	require.False(t, first.Approved)
+
+	newEditor := "reviewer2@example.com"
+	updated, err := workflow.UpdatePlanSpecs(ctx, UpdatePlanSpecsInput{
+		Workspace:      "default",
+		ProjectID:      "project-a",
+		PlanUID:        plan.UID,
+		Specs:          proto.CloneOf(plan.Config).GetSpecs(),
+		LastPlanEditor: &newEditor,
+	})
+	require.NoError(t, err)
+	require.True(t, updated.ApprovalReset)
+	require.Empty(t, updated.Events)
+	require.NotNil(t, updated.Plan.LastPlanEditor)
+	require.Equal(t, newEditor, *updated.Plan.LastPlanEditor)
+	require.Empty(t, updated.Issue.Payload.GetApproval().GetApprovers())
+	require.False(t, updated.Issue.Payload.GetApproval().GetApprovalFindingDone())
+
+	_, err = stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: updated.Plan.Config.GetApprovalInputVersion(),
+			ApprovalTemplate:     &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner", "roles/projectOwner"}}},
+		}},
+	})
+	require.NoError(t, err)
+
+	priorEditor, err := workflow.ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: "reviewer@example.com"},
+		Action:    ActionApprove,
+	})
+	require.NoError(t, err)
+	require.False(t, priorEditor.Approved)
+
+	_, err = workflow.ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: newEditor},
+		Action:    ActionApprove,
+	})
+	var workflowErr *Error
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ErrorFailedPrecondition, workflowErr.Code)
+}
+
+func TestPlanlessGrantApprovalsDoNotRequireAPlan(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: "default",
+		Member:    common.FormatUserEmail("reviewer@example.com"),
+		Roles:     []string{"roles/projectOwner"},
+	})
+	require.NoError(t, err)
+
+	for _, issueType := range []storepb.Issue_Type{storepb.Issue_ROLE_GRANT, storepb.Issue_ACCESS_GRANT} {
+		issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+			ProjectID:    "project-a",
+			CreatorEmail: "creator@example.com",
+			Title:        issueType.String(),
+			Type:         issueType,
+			Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone: true,
+				ApprovalTemplate:    &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+			}},
+		})
+		require.NoError(t, err)
+
+		result, err := NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+			Workspace: "default",
+			ProjectID: "project-a",
+			IssueUID:  issue.UID,
+			Actor:     &store.UserMessage{Email: "reviewer@example.com"},
+			Action:    ActionApprove,
+		})
+		require.NoError(t, err)
+		require.True(t, result.Approved)
+		require.Contains(t, result.Events, CompleteAccessRequestEvent{})
+	}
 }
 
 func TestReviewIssueConcurrentApprovalsHaveOneWinner(t *testing.T) {
@@ -236,6 +484,106 @@ func TestPlanUpdateMakesPendingApprovalActionStale(t *testing.T) {
 	require.Equal(t, ErrorConflict, workflowErr.Code)
 	require.False(t, planResult.Issue.Payload.GetApproval().GetApprovalFindingDone())
 	require.EqualValues(t, 3, planResult.Issue.Payload.GetApproval().GetApprovalInputVersion())
+}
+
+func TestApprovalStartedDuringPlanUpdateCannotUseStaleEditorState(t *testing.T) {
+	ctx := context.Background()
+	stores := setupWorkflowStore(ctx, t)
+	_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: "default",
+		Member:    common.FormatUserEmail("reviewer@example.com"),
+		Roles:     []string{"roles/projectOwner"},
+	})
+	require.NoError(t, err)
+	plan, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+	workflow := NewWorkflow(stores)
+	planLocked := make(chan struct{})
+	releasePlan := make(chan struct{})
+	approvalProposed := make(chan struct{})
+	workflow.beforePlanMutation = func() {
+		close(planLocked)
+		<-releasePlan
+	}
+	workflow.beforeCommit = func() {
+		close(approvalProposed)
+	}
+
+	newEditor := "reviewer@example.com"
+	type planOutcome struct {
+		result *UpdatePlanSpecsResult
+		err    error
+	}
+	planDone := make(chan planOutcome, 1)
+	go func() {
+		result, err := workflow.UpdatePlanSpecs(ctx, UpdatePlanSpecsInput{
+			Workspace:      "default",
+			ProjectID:      "project-a",
+			PlanUID:        plan.UID,
+			Specs:          []*storepb.PlanConfig_Spec{{Id: "new"}},
+			LastPlanEditor: &newEditor,
+		})
+		planDone <- planOutcome{result: result, err: err}
+	}()
+	select {
+	case <-planLocked:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Plan update did not acquire its workflow locks")
+	}
+
+	approvalDone := make(chan error, 1)
+	go func() {
+		_, err := workflow.ReviewIssue(ctx, IssueInput{
+			Workspace: "default",
+			ProjectID: "project-a",
+			IssueUID:  issue.UID,
+			Actor:     &store.UserMessage{Email: newEditor},
+			Action:    ActionApprove,
+		})
+		approvalDone <- err
+	}()
+	select {
+	case <-approvalProposed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("approval did not reach the commit seam")
+	}
+	close(releasePlan)
+
+	var updated *UpdatePlanSpecsResult
+	select {
+	case outcome := <-planDone:
+		require.NoError(t, outcome.err)
+		updated = outcome.result
+		require.True(t, updated.ApprovalReset)
+	case <-time.After(5 * time.Second):
+		t.Fatal("Plan update deadlocked with approval")
+	}
+	select {
+	case err := <-approvalDone:
+		var workflowErr *Error
+		require.ErrorAs(t, err, &workflowErr)
+		require.Equal(t, ErrorConflict, workflowErr.Code)
+	case <-time.After(5 * time.Second):
+		t.Fatal("approval deadlocked with Plan update")
+	}
+
+	_, err = stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{
+		PayloadUpsert: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+			ApprovalFindingDone:  true,
+			ApprovalInputVersion: updated.Plan.Config.GetApprovalInputVersion(),
+			ApprovalTemplate:     &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+		}},
+	})
+	require.NoError(t, err)
+	_, err = NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: newEditor},
+		Action:    ActionApprove,
+	})
+	var workflowErr *Error
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ErrorFailedPrecondition, workflowErr.Code)
 }
 
 func TestUpdatePlanResetsLinkedIssueApprovalAtomically(t *testing.T) {
@@ -935,12 +1283,15 @@ func TestPlanMutationMakesPendingApprovalFindingStale(t *testing.T) {
 
 func setupWorkflowStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
+	_, stores := setupWorkflowStoreWithDB(ctx, t)
+	return stores
+}
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+func setupWorkflowStoreWithDB(ctx context.Context, t *testing.T) (*sql.DB, *store.Store) {
+	t.Helper()
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES
@@ -952,14 +1303,7 @@ func setupWorkflowStore(ctx context.Context, t *testing.T) *store.Store {
 	`)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
-	return stores
+	return db, stores
 }
 
 func createPendingDatabaseChangeApproval(ctx context.Context, t *testing.T, stores *store.Store, roles []string) (*store.PlanMessage, *store.IssueMessage) {
@@ -988,4 +1332,83 @@ func createPendingDatabaseChangeApproval(ctx context.Context, t *testing.T, stor
 	})
 	require.NoError(t, err)
 	return plan, issue
+}
+
+func TestApproverRoleRefusalCarriesItsReason(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		actor      string
+		actorRoles []string
+		wantReason ErrorReason
+	}{
+		{
+			name:       "no approver role",
+			actor:      "reviewer@example.com",
+			wantReason: ReasonApproverRoleRequired,
+		},
+		{
+			name:       "self-approval",
+			actor:      "creator@example.com",
+			actorRoles: []string{"roles/projectOwner"},
+			wantReason: ReasonUnspecified,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			if len(test.actorRoles) > 0 {
+				_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+					Workspace: "default",
+					Member:    common.FormatUserEmail(test.actor),
+					Roles:     test.actorRoles,
+				})
+				require.NoError(t, err)
+			}
+			_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+
+			_, err := NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     &store.UserMessage{Email: test.actor},
+				Action:    ActionApprove,
+			})
+
+			var workflowErr *Error
+			require.ErrorAs(t, err, &workflowErr)
+			require.Equal(t, ErrorPermissionDenied, workflowErr.Code)
+			require.Equal(t, test.wantReason, workflowErr.Reason,
+				"only the IAM verdict is marked for the audit log; the self-approval setting is not")
+		})
+	}
+}
+
+func TestApproverRoleLookupFailureIsNotARefusal(t *testing.T) {
+	ctx := context.Background()
+	db, stores := setupWorkflowStoreWithDB(ctx, t)
+	_, issue := createPendingDatabaseChangeApproval(ctx, t, stores, []string{"roles/projectOwner"})
+
+	// A policy the store cannot parse is the cheapest stand-in for any read
+	// that fails: an outage, a permission error on the metadata database, a
+	// payload written by an older release.
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO policy (workspace, resource_type, resource, type, payload)
+		VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '{"bindings": "not a list"}');
+	`)
+	require.NoError(t, err)
+
+	_, err = NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+		Workspace: "default",
+		ProjectID: "project-a",
+		IssueUID:  issue.UID,
+		Actor:     &store.UserMessage{Email: "reviewer@example.com"},
+		Action:    ActionApprove,
+	})
+
+	var workflowErr *Error
+	require.ErrorAs(t, err, &workflowErr)
+	require.Equal(t, ErrorInternal, workflowErr.Code,
+		"a policy the store cannot read is an outage, not a verdict about the caller")
+	require.Equal(t, ReasonUnspecified, workflowErr.Reason,
+		"an outage must not be marked as a permission denial in the audit log")
 }

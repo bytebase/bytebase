@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@theme {
+  --radius-full: 9999px;
+}
+
 /*
   Colors for dark theme
   Only used by Web Terminal now
@@ -45,7 +49,7 @@
   }
   *::-webkit-scrollbar-thumb {
     background-color: #d1d5db; /* gray-300 */
-    border-radius: 3px;
+    border-radius: var(--radius-full);
   }
   *::-webkit-scrollbar-thumb:hover {
     background-color: #9ca3af; /* gray-400 */
@@ -165,6 +169,13 @@
     --color-success: 22 163 74; /* #16a34a */
     /* green-700 */
     --color-success-hover: 21 128 61; /* #15803d */
+
+    /* Classification severity scale: levels 1 through 5. */
+    --color-classification-level-1: 187 247 208; /* #bbf7d0 */
+    --color-classification-level-2: 254 240 138; /* #fef08a */
+    --color-classification-level-3: 253 186 116; /* #fdba74 */
+    --color-classification-level-4: 245 158 11; /* #f59e0b */
+    --color-classification-level-5: 239 68 68; /* #ef4444 */
 
     /* gray-200 */
     --color-link-hover: 229 231 235; /* #e5e7eb */

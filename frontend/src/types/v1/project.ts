@@ -34,7 +34,9 @@ export const defaultProject = (name: string): Project => {
   };
 };
 
-export const isValidProjectName = (name: string | undefined) => {
+export const isValidProjectName = (
+  name: string | undefined
+): name is string => {
   const projectID = name?.slice("projects/".length);
   return (
     !!name &&

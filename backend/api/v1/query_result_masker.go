@@ -2,8 +2,8 @@ package v1
 
 import (
 	"context"
-	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -39,7 +39,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		return errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, maskerWorkspaceID)
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find semantic types setting")
 	}
@@ -52,7 +52,8 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
 	loopBoundary := min(len(spans), len(results))
 	for i := 0; i < loopBoundary; i++ {
-		if strings.HasPrefix(strings.TrimSpace(results[i].Statement), "EXPLAIN") {
+		// A plan is not row data, so it has no columns to trace to a masking policy.
+		if parserbase.StartsWithExplain(results[i].Statement) {
 			continue
 		}
 		if results[i].Error == "" && spans[i].FunctionNotSupportedError != nil {
@@ -60,6 +61,13 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		}
 		if results[i].Error == "" && spans[i].NotFoundError != nil {
 			return errors.Errorf("masking error: %v", spans[i].NotFoundError)
+		}
+		// Reject before error handling or masking: results may contain both partial
+		// rows and an error, and unresolved lineage cannot safely mask those rows.
+		if maskingBlockedByUnresolvedColumns(spans[i], instance) {
+			return errors.Errorf(
+				"masking cannot be applied: %v, so the query was not returned",
+				spans[i].UnresolvedColumnsError)
 		}
 		// Skip masking for error result, but redact the error message if the
 		// statement touches masked columns — database errors can contain
@@ -70,6 +78,8 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
 			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
 				results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
+				// Structured error fields can contain sensitive values and SQL too.
+				results[i].DetailedError = nil
 			}
 			continue
 		}
@@ -81,6 +91,15 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	}
 
 	return nil
+}
+
+// maskingBlockedByUnresolvedColumns keeps the re-sync trigger and masking
+// refusal on the same condition, so stale metadata gets a chance to recover.
+func maskingBlockedByUnresolvedColumns(span *parserbase.QuerySpan, instance *store.InstanceMessage) bool {
+	if span == nil || span.UnresolvedColumnsError == nil || instance == nil {
+		return false
+	}
+	return common.EngineSupportMasking(instance.Metadata.GetEngine())
 }
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in
@@ -149,22 +168,23 @@ func getAlgorithmName(m masker.Masker) string {
 }
 
 func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
-	semanticTypeToMasker := map[string]masker.Masker{
-		"bb.default":         masker.NewDefaultFullMasker(),
-		"bb.default-partial": masker.NewDefaultRangeMasker(),
-	}
-	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
+	semanticTypeToMasker := make(map[string]masker.Masker)
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		if semanticType.GetId() == "bb.default" || semanticType.GetId() == "bb.default-partial" {
-			// Skip the built-in default semantic types.
-			continue
-		}
-		m, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
-		if err != nil {
-			return nil, err
+		var m masker.Masker
+		switch semanticType.GetId() {
+		case defaultSemanticTypeID:
+			m = masker.NewDefaultFullMasker()
+		case defaultPartialSemanticTypeID:
+			m = masker.NewDefaultRangeMasker()
+		default:
+			m, err = getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+			if err != nil {
+				return nil, err
+			}
 		}
 		// Only add semantic types that have actual masking configured (not NoneMasker)
 		if _, isNoneMasker := m.(*masker.NoneMasker); !isNoneMasker {
@@ -298,7 +318,7 @@ func (p *maskingDataProvider) getProject(projectID string) *store.ProjectMessage
 	return p.projects[projectID]
 }
 
-func (p *maskingDataProvider) getColumn(col *parserbase.ColumnResource) (*storepb.ColumnMetadata, *storepb.ColumnCatalog) {
+func (p *maskingDataProvider) getColumn(col *parserbase.ColumnResource) (*metadatapb.ColumnMetadata, *storepb.ColumnCatalog) {
 	schema := p.schemas[col.Database]
 	if schema == nil {
 		return nil, nil
@@ -421,6 +441,33 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	return maskers, masked, nil
 }
 
+// exemptionsForPrincipal is the one seam the caller's own masking provisioning
+// enters through: getMaskerForColumnResource and the MSSQL
+// getSensitiveColumnsForPredicate both reach evaluateSemanticTypeOfColumn with
+// exactly this slice. An MCP session that ignores exemptions gets an empty one,
+// which is what a user granted nothing already looks like. Filtering only the
+// output path would mask the value and still answer whether a WHERE on it
+// matched.
+func (s *QueryResultMasker) exemptionsForPrincipal(ctx context.Context, data *maskingDataProvider, projectID string, currentPrincipal *store.UserMessage) []*storepb.MaskingExemptionPolicy_Exemption {
+	if mcpIgnoresMaskingExemptions(ctx) {
+		return nil
+	}
+	policy := data.getMaskingExemptionPolicy(projectID)
+	if policy == nil {
+		return nil
+	}
+	var exemptions []*storepb.MaskingExemptionPolicy_Exemption
+	for _, e := range policy.Exemptions {
+		for _, member := range e.Members {
+			if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, currentPrincipal) {
+				exemptions = append(exemptions, e)
+				break
+			}
+		}
+	}
+	return exemptions
+}
+
 func (s *QueryResultMasker) getMaskerForColumnResource(
 	ctx context.Context,
 	m *maskingLevelEvaluator,
@@ -449,18 +496,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil, nil
 	}
 
-	// Build the filtered maskingExemptionPolicy for current principal.
-	var exemptions []*storepb.MaskingExemptionPolicy_Exemption
-	if policy := data.getMaskingExemptionPolicy(database.ProjectID); policy != nil {
-		for _, e := range policy.Exemptions {
-			for _, member := range e.Members {
-				if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, currentPrincipal) {
-					exemptions = append(exemptions, e)
-					break
-				}
-			}
-		}
-	}
+	exemptions := s.exemptionsForPrincipal(ctx, data, database.ProjectID, currentPrincipal)
 
 	evaluation, err := m.evaluateSemanticTypeOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.Setting.DataClassificationConfigId, config, exemptions)
 	if err != nil {

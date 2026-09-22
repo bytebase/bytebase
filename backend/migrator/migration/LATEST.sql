@@ -17,6 +17,21 @@ CREATE TABLE workspace (
     deleted     boolean NOT NULL DEFAULT FALSE
 );
 
+-- Tracks one sample setup lifecycle per workspace. The payload is owned by the
+-- selected sample manager implementation.
+CREATE TABLE sample_instance_setup (
+    workspace text PRIMARY KEY REFERENCES workspace(resource_id),
+    replica_id text NOT NULL,
+    payload jsonb NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    activated_at timestamptz,
+    expires_at timestamptz,
+    deleted_at timestamptz,
+    CHECK (expires_at IS NULL OR activated_at IS NOT NULL),
+    CHECK (deleted_at IS NULL OR activated_at IS NOT NULL)
+);
+
 CREATE TABLE subscription (
     workspace   text        NOT NULL REFERENCES workspace(resource_id) PRIMARY KEY,
     -- Stored as SubscriptionPayload (proto/store/store/subscription.proto)
@@ -66,7 +81,7 @@ ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 -- Setting
 CREATE TABLE setting (
     -- name: SYSTEM, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
-    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT
+    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT, EMAIL, MCP
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
     workspace text NOT NULL REFERENCES workspace(resource_id),
@@ -101,7 +116,7 @@ CREATE TABLE policy (
     resource_type text NOT NULL,
     -- resource: resource name in format like "environments/{environment}", "projects/{project}", etc.
     resource TEXT NOT NULL,
-    -- type: ROLLOUT, MASKING_EXCEPTION, QUERY_DATA, MASKING_RULE, IAM, TAG
+    -- type: ROLLOUT, MASKING_EXCEPTION, QUERY_DATA, MASKING_RULE, IAM, TAG, REVIEW_RULE
     -- Enum: Policy.Type (proto/store/store/policy.proto)
     type text NOT NULL,
     -- Stored as different types based on policy type (proto/store/store/policy.proto):
@@ -111,6 +126,7 @@ CREATE TABLE policy (
     -- MASKING_RULE: MaskingRulePolicy
     -- IAM: IamPolicy
     -- TAG: TagPolicy
+    -- REVIEW_RULE: ReviewRulePolicy (the standard review rules switched on; nearest policy wins)
     payload jsonb NOT NULL DEFAULT '{}',
     inherit_from_parent boolean NOT NULL DEFAULT TRUE,
     PRIMARY KEY (workspace, resource_type, resource, type)
@@ -268,6 +284,8 @@ CREATE TABLE plan (
     id bigint NOT NULL,
     deleted boolean NOT NULL DEFAULT FALSE,
     creator text NOT NULL,
+    -- The last actor to create or update the plan specs. Nullable for legacy plans.
+    last_plan_editor text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
@@ -342,19 +360,68 @@ CREATE INDEX idx_issue_ts_vector ON issue USING GIN(ts_vector);
 CREATE TABLE issue_comment (
     -- global unique
     resource_id text NOT NULL DEFAULT gen_random_uuid()::text,
-    creator text NOT NULL,
+    -- NULL on review results, which a reviewer posts (payload.review_metadata
+    -- names it), never a person.
+    creator text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
     issue_id integer NOT NULL,
     -- Stored as IssueCommentPayload (proto/store/store/issue_comment.proto)
     payload jsonb NOT NULL DEFAULT '{}',
+    -- The root comment of this reply's thread; NULL on root comments and
+    -- events. A reply references the root directly, never another reply.
+    parent_id text REFERENCES issue_comment(resource_id),
+    -- OPEN/RESOLVED on thread roots, the comments with a statement anchor;
+    -- NULL on plain comments, replies, and events.
+    thread_state text CHECK (thread_state IN ('OPEN', 'RESOLVED')),
     PRIMARY KEY (resource_id),
     FOREIGN KEY (project, issue_id) REFERENCES issue(project, id)
 );
 
 CREATE INDEX idx_issue_comment_issue_id ON issue_comment(project, issue_id);
 CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resource_id);
+CREATE INDEX idx_issue_comment_parent_id ON issue_comment(parent_id)
+    WHERE parent_id IS NOT NULL;
+CREATE INDEX idx_issue_comment_open_thread ON issue_comment(project, issue_id)
+    WHERE thread_state = 'OPEN';
+
+-- SQL Review V2 run status slot: one row per (issue, reviewer type), reset in
+-- place on re-run (created_at = now() on reset — the row is the current run,
+-- not the slot's history). Results live in issue comments; the run carries
+-- none. No standalone id on purpose: nothing may durably reference a run.
+CREATE TABLE review_run (
+    project text NOT NULL REFERENCES project(resource_id),
+    issue_id bigint NOT NULL,
+    -- Reviewer type: 'RULE' (standard rules) or 'GUIDELINE' (natural-language
+    -- guidelines, performed by AI). No CHECK on purpose: the reviewer-id space
+    -- is open.
+    type text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    -- Attempt number of the current run, 0-based like task_run.attempt.
+    -- Bumped on every slot reset (issue created / SQL updated / manual
+    -- re-run); it counts triggers, not completed executions. The completion
+    -- transaction is fenced on it, so a superseded execution posts zero
+    -- comments.
+    attempt integer NOT NULL DEFAULT 0,
+    status text NOT NULL CHECK (status IN ('AVAILABLE', 'RUNNING', 'DONE', 'FAILED')),
+    replica_id text,
+    -- Stored as ReviewRunPayload (proto/store/store/review_run.proto)
+    payload jsonb NOT NULL DEFAULT '{}',
+    PRIMARY KEY (project, issue_id, type),
+    FOREIGN KEY (project, issue_id) REFERENCES issue(project, id)
+);
+
+-- Most rows are terminal; schedulers scan only active rows
+-- (cf. idx_task_run_active_status_id).
+CREATE INDEX idx_review_run_active_status ON review_run(status)
+    WHERE status IN ('AVAILABLE', 'RUNNING');
+
+-- For the heartbeat reaper's dead-replica lookup
+-- (cf. idx_task_run_running_replica).
+CREATE INDEX idx_review_run_running_replica ON review_run(replica_id)
+    WHERE status = 'RUNNING' AND replica_id IS NOT NULL;
 
 -- saved_query table stores SQL Editor saved queries.
 CREATE TABLE saved_query (
@@ -386,7 +453,11 @@ CREATE TABLE saved_query (
 -- as index-only scans, and the project prefix still answers a project lookup
 -- on its own.
 CREATE INDEX idx_saved_query_project_creator_folder ON saved_query(project, creator, folder);
-CREATE INDEX idx_saved_query_creator_project ON saved_query(creator, project);
+
+-- The governance ListSavedQueries recency pull (creator filter +
+-- order_by "update_time desc") reads this index in order with no sort; it
+-- also covers every other creator-led scan via its prefix.
+CREATE INDEX idx_saved_query_creator_updated_at_resource_id ON saved_query(creator, updated_at DESC, resource_id DESC);
 
 -- "Shared with me" probes bindings once per principal in the caller's set and
 -- BitmapOrs the results. jsonb_path_ops is smaller and faster than the default
@@ -670,7 +741,9 @@ CREATE TABLE oauth2_authorization_code (
     -- access token's workspace_id claim.
     workspace text REFERENCES workspace(resource_id),
     config jsonb NOT NULL,
-    expires_at timestamptz NOT NULL
+    expires_at timestamptz NOT NULL,
+    -- When the row was issued.
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE oauth2_refresh_token (
@@ -684,11 +757,21 @@ CREATE TABLE oauth2_refresh_token (
     -- consented resource and scope, inherited from the authorization code and
     -- carried forward unchanged by every refresh.
     config jsonb NOT NULL DEFAULT '{}',
-    expires_at timestamptz NOT NULL
+    expires_at timestamptz NOT NULL,
+    -- When the row was issued.
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_oauth2_authorization_code_expires_at ON oauth2_authorization_code(expires_at);
 CREATE INDEX idx_oauth2_refresh_token_expires_at ON oauth2_refresh_token(expires_at);
+-- Referencing columns of the two foreign keys these tables carry: PostgreSQL
+-- indexes only the referenced side, so without these the ON UPDATE CASCADE
+-- from principal(email) and the ON DELETE CASCADE from oauth2_client are
+-- sequential scans.
+CREATE INDEX idx_oauth2_authorization_code_user_email ON oauth2_authorization_code(user_email);
+CREATE INDEX idx_oauth2_refresh_token_user_email ON oauth2_refresh_token(user_email);
+CREATE INDEX idx_oauth2_authorization_code_client_id ON oauth2_authorization_code(client_id);
+CREATE INDEX idx_oauth2_refresh_token_client_id ON oauth2_refresh_token(client_id);
 CREATE INDEX idx_oauth2_client_last_active_at ON oauth2_client(last_active_at);
 CREATE INDEX idx_oauth2_client_workspace ON oauth2_client(workspace);
 
@@ -696,7 +779,9 @@ CREATE INDEX idx_oauth2_client_workspace ON oauth2_client(workspace);
 CREATE TABLE web_refresh_token (
     token_hash  TEXT PRIMARY KEY,
     user_email  TEXT NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
-    expires_at  TIMESTAMPTZ NOT NULL
+    expires_at  TIMESTAMPTZ NOT NULL,
+    -- When the row was issued.
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_web_refresh_token_user_email ON web_refresh_token(user_email);
@@ -704,20 +789,32 @@ CREATE INDEX idx_web_refresh_token_expires_at ON web_refresh_token(expires_at);
 
 CREATE TABLE email_verification_code (
     email         text NOT NULL,
-    -- Stored as EmailVerificationCodePurpose enum name (proto/store/store/email_verification_code.proto)
+    -- Stored as EmailVerificationCodePurpose enum name (proto/store/store/auth.proto)
     purpose       text NOT NULL,
     code_hash     text NOT NULL,
-    attempts      int  NOT NULL DEFAULT 0,
     expires_at    timestamptz NOT NULL,
     last_sent_at  timestamptz NOT NULL,
-    -- Workspace context captured at send time. Used at verify time for gate checks
-    -- (disallow_signup, allow_email_code_signin) and for provisionWorkspaceForNewUser.
-    -- NULL for SaaS brand-new signup (no workspace exists yet — provision creates one).
-    workspace     text,
     PRIMARY KEY (email, purpose)
 );
 
 CREATE INDEX idx_email_verification_code_expires_at ON email_verification_code (expires_at);
+
+-- Attempt limits for guessable login credentials (docs/design/login-attempt-lockout.md).
+-- One row per (identity, kind): attempts since the last success, and when the latest was.
+CREATE TABLE login_attempt (
+    -- The identity under attack, server-resolved and globally unique: the normalized
+    -- email, or the identity-provider ID joined with the submitted username for LDAP.
+    -- Not a FK, so unknown identities count too (no existence oracle).
+    identity        text NOT NULL,
+    -- Stored as LoginAttemptKind enum name (proto/store/store/auth.proto):
+    -- PASSWORD | EMAIL_CODE | MFA.
+    kind            text NOT NULL,
+    attempts        int NOT NULL,
+    last_attempt_at timestamptz NOT NULL,
+    PRIMARY KEY (identity, kind)
+);
+
+CREATE INDEX idx_login_attempt_last_attempt_at ON login_attempt (last_attempt_at);
 
 -----------------------
 -- Seed data

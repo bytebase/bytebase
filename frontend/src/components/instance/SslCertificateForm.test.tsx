@@ -1,9 +1,8 @@
-import * as stylex from "@stylexjs/stylex";
 import type { ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { controlMinHeightStyle } from "@/components/ui/styles.stylex";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { SslCertificateForm } from "./SslCertificateForm";
 
@@ -62,7 +61,7 @@ describe("SslCertificateForm", () => {
     });
   });
 
-  test("renders posture-first connection security controls", () => {
+  test("renders posture-first connection security controls", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -87,38 +86,25 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).not.toContain(
       "data-source.ssl.connection-security"
     );
-    expect(container.textContent).toContain("data-source.ssl.posture.disabled");
     expect(container.textContent).toContain("data-source.ssl.posture.tls");
-    expect(container.textContent).toContain(
-      "data-source.ssl.posture.mutual-tls"
-    );
     expect(container.textContent).not.toContain("data-source.ssl.posture.self");
+    const posture = screen.getByRole("combobox", {
+      name: "data-source.ssl.posture.self",
+    });
+    fireEvent.click(posture);
     expect(
-      container.querySelector('[aria-label="data-source.ssl.posture.self"]')
-    ).not.toBeNull();
+      await screen.findByRole("option", {
+        name: "data-source.ssl.posture.disabled",
+      })
+    ).toBeTruthy();
     expect(
-      container
-        .querySelector('[aria-label="data-source.ssl.posture.self"]')
-        ?.classList.contains("self-start")
-    ).toBe(true);
-    const selectedPostureInput = container.querySelector(
-      '[aria-label="data-source.ssl.posture.self"] [aria-checked="true"]'
-    );
-    const selectedPostureLabel = selectedPostureInput?.closest("label");
+      screen.getByRole("option", { name: "data-source.ssl.posture.tls" })
+    ).toBeTruthy();
     expect(
-      Array.from(selectedPostureLabel?.classList ?? []).some((className) =>
-        /^z-\d+$/.test(className)
-      )
-    ).toBe(false);
-    expect(selectedPostureLabel?.className).toContain(
-      stylex.props(controlMinHeightStyle("sm")).className
-    );
-    expect(
-      selectedPostureLabel?.classList.contains("focus-within:ring-inset")
-    ).toBe(true);
-    expect(
-      selectedPostureLabel?.nextElementSibling?.classList.contains("border-l")
-    ).toBe(false);
+      screen.getByRole("option", {
+        name: "data-source.ssl.posture.mutual-tls",
+      })
+    ).toBeTruthy();
     expect(container.textContent).toContain("data-source.ssl.server-identity");
     expect(container.textContent).not.toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
@@ -132,7 +118,7 @@ describe("SslCertificateForm", () => {
     });
   });
 
-  test("renders client identity for mutual TLS without a None source option", () => {
+  test("renders client identity for mutual TLS without a None source option", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -159,9 +145,6 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).toContain(
       "data-source.ssl.client-cert-source.inline-pem"
     );
-    expect(container.textContent).toContain(
-      "data-source.ssl.client-cert-source.file-path"
-    );
     expect(container.textContent).not.toContain(
       "data-source.ssl.client-cert-source.none"
     );
@@ -173,25 +156,19 @@ describe("SslCertificateForm", () => {
       "data-source.ssl.client-cert-placeholder",
       "data-source.ssl.client-key-placeholder",
     ]);
-    const segmentSizeClassName =
-      stylex.props(controlMinHeightStyle("sm")).className ?? "";
-    for (const ariaLabel of [
-      "data-source.ssl.posture.self",
-      "data-source.ssl.ca-source.self",
-      "data-source.ssl.client-cert-source.self",
-    ]) {
-      const firstSegment = container
-        .querySelector(`[aria-label="${ariaLabel}"] [aria-checked]`)
-        ?.closest("label");
-      expect(firstSegment?.className).toContain(segmentSizeClassName);
-    }
+    const clientCertSource = screen.getByRole("radio", {
+      name: "data-source.ssl.client-cert-source.inline-pem",
+    });
+    expect(
+      clientCertSource
+    ).toHaveAttribute("aria-checked", "true");
 
     act(() => {
       root.unmount();
     });
   });
 
-  test("keeps CA controls visible when verification is disabled", () => {
+  test("hides CA controls when verification is disabled", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -216,7 +193,9 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).toContain(
       "data-source.ssl.verification-disabled-description"
     );
-    expect(container.textContent).toContain("data-source.ssl.ca-source.self");
+    expect(container.textContent).not.toContain(
+      "data-source.ssl.ca-source.self"
+    );
     expect(container.textContent).not.toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
     );
@@ -224,6 +203,38 @@ describe("SslCertificateForm", () => {
     act(() => {
       root.unmount();
     });
+  });
+
+  test.each(["posture", "groups"])("keeps CA drafts editable after disabling verification in %s mode", (mode) => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const render = (verify: boolean) => act(() => {
+      root.render(<SslCertificateForm
+        posture={mode === "posture" ? "TLS" : undefined}
+        onPostureChange={() => {}}
+        caSource="FILE_PATH"
+        onCaSourceChange={() => {}}
+        clientCertSource="NONE"
+        onClientCertSourceChange={() => {}}
+        useSsl={true}
+        verify={verify}
+        onVerifyChange={() => {}}
+        caPath="relative.pem"
+        onCaPathChange={() => {}}
+        engineType={Engine.POSTGRES}
+      />);
+    });
+    try {
+      render(true);
+      expect(container.querySelector('input[value="relative.pem"]')).not.toBeNull();
+      render(false);
+      const input = container.querySelector<HTMLInputElement>('input[value="relative.pem"]');
+      expect(input).not.toBeNull();
+      expect(input?.disabled).toBe(false);
+    } finally {
+      act(() => root.unmount());
+    }
   });
 
   test("falls back to legacy UI when posture source props are incomplete", () => {
@@ -258,7 +269,7 @@ describe("SslCertificateForm", () => {
     });
   });
 
-  test("disables file path source options in SaaS mode", () => {
+  test("disables file path source options in SaaS mode", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -282,16 +293,16 @@ describe("SslCertificateForm", () => {
       );
     });
 
+    fireEvent.click(
+      screen.getByRole("combobox", {
+        name: "data-source.ssl.ca-source.self",
+      })
+    );
     expect(
-      container.querySelector(
-        '[aria-label="data-source.ssl.ca-source.self"] [aria-disabled="true"][aria-checked="true"]'
-      )
-    ).not.toBeNull();
-    expect(
-      container.querySelector(
-        '[aria-label="data-source.ssl.client-cert-source.self"] [aria-disabled="true"][aria-checked="true"]'
-      )
-    ).not.toBeNull();
+      await screen.findByRole("option", {
+        name: "data-source.ssl.ca-source.file-path",
+      })
+    ).toHaveAttribute("aria-disabled", "true");
     expect(
       container.querySelector<HTMLInputElement>(
         '[data-testid="tls-ca-path-input"]'
@@ -307,16 +318,12 @@ describe("SslCertificateForm", () => {
         '[data-testid="tls-key-path-input"]'
       )?.disabled
     ).toBe(true);
-    expect(container.textContent).toContain(
-      "data-source.ssl.ca-source.file-path-unavailable-saas"
-    );
-
     act(() => {
       root.unmount();
     });
   });
 
-  test("shows disabled mutual TLS for unsupported engines", () => {
+  test("shows disabled mutual TLS for unsupported engines", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -338,17 +345,23 @@ describe("SslCertificateForm", () => {
       );
     });
 
-    expect(container.textContent).toContain(
-      "data-source.ssl.mutual-tls-unavailable-engine"
+    fireEvent.click(
+      screen.getByRole("combobox", {
+        name: "data-source.ssl.posture.self",
+      })
     );
-    expect(container.querySelector('[aria-disabled="true"]')).not.toBeNull();
+    expect(
+      await screen.findByRole("option", {
+        name: "data-source.ssl.posture.mutual-tls",
+      })
+    ).toHaveAttribute("aria-disabled", "true");
 
     act(() => {
       root.unmount();
     });
   });
 
-  test("falls back from mutual TLS for unsupported engines without saved client identity", () => {
+  test("falls back from mutual TLS for unsupported engines without saved client identity", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -370,15 +383,11 @@ describe("SslCertificateForm", () => {
       );
     });
 
-    expect(container.textContent).toContain(
-      "data-source.ssl.mutual-tls-unavailable-engine"
-    );
-    expect(container.querySelector('[aria-disabled="true"]')).not.toBeNull();
     expect(
-      container.querySelector(
-        '[aria-label="data-source.ssl.posture.self"] [aria-disabled="true"][aria-checked="true"]'
-      )
-    ).toBeNull();
+      screen.getByRole("combobox", {
+        name: "data-source.ssl.posture.self",
+      })
+    ).toHaveTextContent("data-source.ssl.posture.tls");
     expect(container.textContent).not.toContain(
       "data-source.ssl.client-identity"
     );
@@ -388,7 +397,7 @@ describe("SslCertificateForm", () => {
     });
   });
 
-  test("does not treat non-none source as saved client identity for unsupported engines", () => {
+  test("does not treat non-none source as saved client identity for unsupported engines", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -410,14 +419,11 @@ describe("SslCertificateForm", () => {
       );
     });
 
-    expect(container.textContent).toContain(
-      "data-source.ssl.mutual-tls-unavailable-engine"
-    );
     expect(
-      container.querySelector(
-        '[aria-label="data-source.ssl.posture.self"] [aria-disabled="true"][aria-checked="true"]'
-      )
-    ).toBeNull();
+      screen.getByRole("combobox", {
+        name: "data-source.ssl.posture.self",
+      })
+    ).toHaveTextContent("data-source.ssl.posture.tls");
     expect(container.textContent).not.toContain(
       "data-source.ssl.client-identity"
     );
@@ -455,10 +461,10 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).toContain("data-source.ssl.client-cert");
     expect(container.textContent).toContain("data-source.ssl.client-key");
     expect(
-      container.querySelector(
-        '[aria-label="data-source.ssl.posture.self"] [aria-checked="true"][aria-disabled="true"]'
-      )
-    ).not.toBeNull();
+      screen.getByRole("combobox", {
+        name: "data-source.ssl.posture.self",
+      })
+    ).toHaveTextContent("data-source.ssl.posture.mutual-tls");
 
     act(() => {
       root.unmount();
@@ -482,6 +488,7 @@ describe("SslCertificateForm", () => {
           hasCertPath={true}
           hasKeyPath={true}
           showKeyAndCert={true}
+          verify={true}
         />
       );
     });

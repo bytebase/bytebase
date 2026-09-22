@@ -14,6 +14,7 @@ import (
 )
 
 func TestShouldDiffSchemaViaSDL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		engine storepb.Engine
@@ -93,12 +94,14 @@ func TestShouldDiffSchemaViaSDL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.want, shouldDiffSchemaViaSDL(tt.engine, tt.req))
 		})
 	}
 }
 
 func TestFormatDatabaseResourceName(t *testing.T) {
+	t.Parallel()
 	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "app"}
 	require.Equal(t, "instances/instance-a/databases/app", formatDatabaseResourceName(&store.InstanceMessage{ResourceID: "instance-a"}, database))
 	projectID := "project-a"
@@ -109,6 +112,7 @@ func TestFormatDatabaseResourceName(t *testing.T) {
 }
 
 func TestListDatabaseFilter(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		input    string
 		wantSQL  string
@@ -131,12 +135,12 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input:    `name.contains("Employee")`,
-			wantSQL:  `(LOWER(db.name) LIKE $1)`,
+			wantSQL:  `(LOWER(db.name) LIKE $1 ESCAPE '\')`,
 			wantArgs: []any{"%employee%"},
 		},
 		{
 			input:    `table.contains("user")`,
-			wantSQL:  "(EXISTS (\n\t\t\t\t\t\tSELECT 1\n\t\t\t\t\t\tFROM json_array_elements(ds.metadata->'schemas') AS s,\n\t\t\t\t\t\t \t json_array_elements(s->'tables') AS t\n\t\t\t\t\t\tWHERE t->>'name' LIKE $1))",
+			wantSQL:  "(EXISTS (\n\t\t\t\t\t\tSELECT 1\n\t\t\t\t\t\tFROM json_array_elements(ds.metadata->'schemas') AS s,\n\t\t\t\t\t\t \t json_array_elements(s->'tables') AS t\n\t\t\t\t\t\tWHERE t->>'name' LIKE $1 ESCAPE '\\'))",
 			wantArgs: []any{"%user%"},
 		},
 		{
@@ -150,18 +154,18 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input:    `labels.region == "asia" && labels.tenant == "bytebase"`,
-			wantSQL:  `((db.metadata->'labels'->>'region' = $1 AND db.metadata->'labels'->>'tenant' = $2))`,
-			wantArgs: []any{"asia", "bytebase"},
+			wantSQL:  `((db.metadata->'labels'->>$1::text = $2 AND db.metadata->'labels'->>$3::text = $4))`,
+			wantArgs: []any{"region", "asia", "tenant", "bytebase"},
 		},
 		{
 			input:    `(labels.region == "asia" || labels.tenant == "bytebase") && exclude_unassigned == true`,
-			wantSQL:  `(((db.metadata->'labels'->>'region' = $1 OR db.metadata->'labels'->>'tenant' = $2) AND db.project != $3 AND db.project != 'default'))`,
-			wantArgs: []any{"asia", "bytebase", common.DefaultProjectID("test-workspace")},
+			wantSQL:  `(((db.metadata->'labels'->>$1::text = $2 OR db.metadata->'labels'->>$3::text = $4) AND db.project != $5 AND db.project != 'default'))`,
+			wantArgs: []any{"region", "asia", "tenant", "bytebase", common.DefaultProjectID("test-workspace")},
 		},
 		{
 			input:    `labels.region in ["asia", "europe"] && labels.tenant == "bytebase"`,
-			wantSQL:  `((db.metadata->'labels'->>'region' = ANY($1) AND db.metadata->'labels'->>'tenant' = $2))`,
-			wantArgs: []any{[]any{"asia", "europe"}, "bytebase"},
+			wantSQL:  `((db.metadata->'labels'->>$1::text = ANY($2) AND db.metadata->'labels'->>$3::text = $4))`,
+			wantArgs: []any{"region", []any{"asia", "europe"}, "tenant", "bytebase"},
 		},
 	}
 
@@ -181,6 +185,7 @@ func TestListDatabaseFilter(t *testing.T) {
 }
 
 func TestGetDatabaseMetadataFilter(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name         string
 		input        string
@@ -211,6 +216,7 @@ func TestGetDatabaseMetadataFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			filter, err := getDatabaseMetadataFilter(tc.input)
 			if tc.errContains != "" {
 				require.Error(t, err)
@@ -230,6 +236,14 @@ func TestGetDatabaseMetadataFilter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetDatabaseMetadataFilterRedactsSyntaxError(t *testing.T) {
+	t.Parallel()
+	_, err := getDatabaseMetadataFilter(`table == "sensitive SQL" &&`)
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	require.ErrorContains(t, err, "invalid filter expression")
+	require.NotContains(t, err.Error(), "sensitive SQL")
 }
 
 func ptrValue[T any](v T) *T {
@@ -264,4 +278,25 @@ func TestResolveDiffSchemaTargetSDL(t *testing.T) {
 		_, err := s.resolveDiffSchemaTargetSDL(ctx, &v1pb.DiffSchemaRequest{}, storepb.Engine_MYSQL)
 		require.ErrorContains(t, err, "target must be either schema text or changelog")
 	})
+}
+
+// TestCheckDiffSchemaTargetProject pins the gate DiffSchema puts on a changelog
+// target. The ACL interceptor authorizes request.name only, so without it a
+// changelog under another project's database would hand over that project's
+// schema. A foreign changelog is indistinguishable from one that does not
+// exist, or the error itself answers the question.
+func TestCheckDiffSchemaTargetProject(t *testing.T) {
+	t.Parallel()
+	source := &store.DatabaseMessage{ProjectID: "project-a", InstanceID: "shared-instance", DatabaseName: "app-a"}
+
+	require.NoError(t, checkDiffSchemaTargetProject(source.ProjectID, source, "instances/shared-instance/databases/app-a/changelogs/1"))
+
+	foreign := checkDiffSchemaTargetProject(source.ProjectID,
+		&store.DatabaseMessage{ProjectID: "project-b", InstanceID: "shared-instance", DatabaseName: "app-b"},
+		"instances/shared-instance/databases/app-b/changelogs/2")
+	require.Equal(t, connect.CodeNotFound, connect.CodeOf(foreign))
+	require.NotContains(t, foreign.Error(), "project-b")
+
+	missing := checkDiffSchemaTargetProject(source.ProjectID, nil, "instances/shared-instance/databases/no-such-db/changelogs/1")
+	require.Equal(t, connect.CodeOf(foreign), connect.CodeOf(missing))
 }

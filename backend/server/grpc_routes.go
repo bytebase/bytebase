@@ -27,7 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -50,7 +50,7 @@ func configureGrpcRouters(
 	webhookManager *webhook.Manager,
 	iamManager *iam.Manager,
 	secret string,
-	sampleInstanceManager *sampleinstance.Manager,
+	sampleManager sample.Manager,
 ) (http.Handler, error) {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
@@ -92,7 +92,7 @@ func configureGrpcRouters(
 	)
 	aiService := apiv1.NewAIService(stores)
 	accessGrantService := apiv1.NewAccessGrantService(stores, licenseService, webhookManager, bus)
-	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager)
+	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleManager)
 	auditLogService := apiv1.NewAuditLogService(stores, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, iamManager)
 	celService := apiv1.NewCelService()
@@ -103,11 +103,11 @@ func configureGrpcRouters(
 	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
 	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService, profile)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores)
-	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, schemaSyncer, sampleInstanceManager)
+	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, schemaSyncer, sampleManager)
 	issueService := apiv1.NewIssueService(stores, webhookManager, bus, licenseService, iamManager)
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService, iamManager)
 	planService := apiv1.NewPlanService(stores, bus, iamManager, webhookManager, licenseService)
-	projectService := apiv1.NewProjectService(stores, profile, iamManager)
+	projectService := apiv1.NewProjectService(stores, profile, iamManager, sampleManager)
 	queryHistoryService := apiv1.NewQueryHistoryService(stores)
 	releaseService := apiv1.NewReleaseService(stores, sheetManager, dbFactory, licenseService)
 	reviewConfigService := apiv1.NewReviewConfigService(stores)
@@ -118,7 +118,7 @@ func configureGrpcRouters(
 	sheetService := apiv1.NewSheetService(stores)
 	sqlService := apiv1.NewSQLService(stores, schemaSyncer, dbFactory, licenseService, iamManager, queryHistoryService)
 	subscriptionService := apiv1.NewSubscriptionService(profile, stores, licenseService)
-	userService := apiv1.NewUserService(stores, licenseService, profile, iamManager)
+	userService := apiv1.NewUserService(stores, secret, licenseService, profile, iamManager)
 	serviceAccountService := apiv1.NewServiceAccountService(stores, profile, iamManager)
 	workloadIdentityService := apiv1.NewWorkloadIdentityService(stores, profile, iamManager)
 	savedQueryService := apiv1.NewSavedQueryService(stores, iamManager)
@@ -134,13 +134,18 @@ func configureGrpcRouters(
 	// Create validation interceptor.
 	validateInterceptor := validate.NewInterceptor()
 
+	// The first-listed interceptor is outermost. Audit wraps ACL, so a call ACL
+	// refuses is still streamed to the stdout audit log. Auth stays outside
+	// audit: it populates the identity and workspace every row needs. ACL stays
+	// last on both chains, because its admission is what the audit interceptor
+	// reads as the call reaching its handler.
 	handlerOpts := connect.WithHandlerOptions(
 		connect.WithRecover(onPanic),
 		connect.WithInterceptors(
 			validateInterceptor,
 			auth.New(stores, secret, licenseService, bus, profile),
-			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 			apiv1.NewAuditInterceptor(stores, secret, profile),
+			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 		),
 	)
 
@@ -198,25 +203,16 @@ func configureGrpcRouters(
 	// chain: the credential carries identity + grant state, while authorization
 	// is re-resolved live per request.
 	//
-	// Unlike the public chain, audit sits OUTSIDE ACL (first-listed interceptor
-	// is outermost, so listing audit before ACL wraps it): an ACL denial must
-	// still produce an audit row, because a denied MCP call is exactly the
-	// event an operator investigating an agent needs to see. Methods whose
-	// annotation opts out of auditing stay unaudited for permitted and denied
-	// calls alike (needAudit gates both).
-	//
-	// The FORBIDDEN gate sits between them — inside audit, so a denial is
-	// recorded wherever the method's annotation asks for auditing at all, and
-	// outside ACL, because the class is refused whatever the caller's RBAC
-	// would have allowed. P1b's full ceiling gate takes this same slot, and
-	// brings the typed denial record for the unannotated methods with it.
+	// The order is the public chain's plus the MCP ceiling gate, which sits
+	// inside audit, so its refusals are streamed like ACL's, and outside ACL,
+	// because the ceiling refuses whatever the caller's RBAC would have allowed.
 	internalHandlerOpts := connect.WithHandlerOptions(
 		connect.WithRecover(onPanic),
 		connect.WithInterceptors(
 			validateInterceptor,
 			auth.NewInternalMCPAuthInterceptor(stores, secret, profile),
 			apiv1.NewAuditInterceptor(stores, secret, profile),
-			apiv1.NewInternalMCPForbiddenInterceptor(),
+			apiv1.NewInternalMCPGateInterceptor(stores),
 			apiv1.NewACLInterceptor(stores, secret, iamManager, profile),
 		),
 	)

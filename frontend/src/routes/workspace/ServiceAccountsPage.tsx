@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Copy, KeyRound, Plus, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { Check, Copy, KeyRound, Plus, Trash2, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import {
@@ -13,8 +13,14 @@ import { UserCell } from "@/components/UserCell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CopyButton } from "@/components/ui/copy-button";
 import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Sheet,
   SheetBody,
@@ -42,10 +48,6 @@ import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import {
-  ensureServiceAccountFullName,
-  serviceAccountToUser,
-} from "@/stores/app/serviceAccount";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import {
   getServiceAccountNameInBinding,
@@ -54,8 +56,10 @@ import {
 import { State } from "@/types/proto-es/v1/common_pb";
 import { BindingSchema } from "@/types/proto-es/v1/iam_policy_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
-import type { ServiceAccount } from "@/types/proto-es/v1/service_account_service_pb";
-import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
+import {
+  type ServiceAccount,
+  ServiceAccountSchema,
+} from "@/types/proto-es/v1/service_account_service_pb";
 import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 
 // ============================================================
@@ -63,15 +67,15 @@ import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 // ============================================================
 
 function ServiceAccountTable({
-  users,
+  serviceAccounts,
   project,
-  onUserUpdated,
-  onUserSelected,
+  onUpdated,
+  onSelected,
 }: {
-  users: User[];
+  serviceAccounts: ServiceAccount[];
   project?: Project;
-  onUserUpdated: (user: User) => void;
-  onUserSelected?: (user: User) => void;
+  onUpdated: (sa: ServiceAccount) => void;
+  onSelected?: (sa: ServiceAccount) => void;
 }) {
   const { t } = useTranslation();
   const deleteServiceAccount = useAppStore(
@@ -84,16 +88,15 @@ function ServiceAccountTable({
     (state) => state.updateServiceAccount
   );
 
-  const handleDeactivate = async (user: User) => {
+  const handleDeactivate = async (sa: ServiceAccount) => {
     const confirmed = window.confirm(
       t("settings.members.action.deactivate-confirm-title")
     );
     if (!confirmed) return;
 
     try {
-      await deleteServiceAccount(ensureServiceAccountFullName(user.email));
-      const updated = create(UserSchema, { ...user, state: State.DELETED });
-      onUserUpdated(updated);
+      await deleteServiceAccount(sa.name);
+      onUpdated(create(ServiceAccountSchema, { ...sa, state: State.DELETED }));
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -104,11 +107,10 @@ function ServiceAccountTable({
     }
   };
 
-  const handleRestore = async (user: User) => {
+  const handleRestore = async (sa: ServiceAccount) => {
     try {
-      await undeleteServiceAccount(ensureServiceAccountFullName(user.email));
-      const updated = create(UserSchema, { ...user, state: State.ACTIVE });
-      onUserUpdated(updated);
+      const updated = await undeleteServiceAccount(sa.name);
+      onUpdated(updated);
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -119,42 +121,175 @@ function ServiceAccountTable({
     }
   };
 
-  const [resetConfirmUser, setResetConfirmUser] = useState<User | undefined>();
-  const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
+  const [resetConfirmSa, setResetConfirmSa] = useState<
+    ServiceAccount | undefined
+  >();
+  const [isResetting, setIsResetting] = useState(false);
+  const [keyFeedback, setKeyFeedback] = useState<Map<string, "reset" | "copy">>(
+    new Map()
+  );
+  const copiedKeyTimers = useRef(
+    new Map<string, ReturnType<typeof setTimeout>>()
+  );
 
-  const handleResetKey = async (user: User) => {
-    setResetConfirmUser(undefined);
+  useEffect(
+    () => () => {
+      for (const timer of copiedKeyTimers.current.values()) {
+        clearTimeout(timer);
+      }
+    },
+    []
+  );
+
+  const markKeyActionComplete = (name: string, action: "reset" | "copy") => {
+    setKeyFeedback((prev) => new Map(prev).set(name, action));
+    clearTimeout(copiedKeyTimers.current.get(name));
+    copiedKeyTimers.current.set(
+      name,
+      setTimeout(() => {
+        setKeyFeedback((prev) => {
+          const next = new Map(prev);
+          next.delete(name);
+          return next;
+        });
+        copiedKeyTimers.current.delete(name);
+      }, 2000)
+    );
+  };
+
+  const redactedServiceAccount = (sa: ServiceAccount) =>
+    create(ServiceAccountSchema, { ...sa, serviceKey: "" });
+
+  const handleResetKey = async (sa: ServiceAccount) => {
+    setIsResetting(true);
     try {
-      const sa = await updateServiceAccount(
-        { name: ensureServiceAccountFullName(user.email) },
+      const updated = await updateServiceAccount(
+        { name: sa.name },
         create(FieldMaskSchema, { paths: ["service_key"] })
       );
-      const updated = serviceAccountToUser(sa);
-      onUserUpdated(updated);
-      if (
-        updated.serviceKey &&
-        (await writeTextToClipboard(updated.serviceKey))
-      ) {
-        setCopiedKeys((prev) => new Set(prev).add(updated.name));
+      setResetConfirmSa(undefined);
+      const copied =
+        !!updated.serviceKey &&
+        (await writeTextToClipboard(updated.serviceKey));
+      if (copied) {
+        onUpdated(redactedServiceAccount(updated));
+        markKeyActionComplete(updated.name, "reset");
         pushNotification({
           module: "bytebase",
-          style: "INFO",
-          title: t("settings.members.service-key-copied"),
+          style: "SUCCESS",
+          title: t("common.copied"),
         });
+        return;
       }
+
+      onUpdated(updated);
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.copy-failed"),
+      });
     } catch {
       // error shown by store
+    } finally {
+      setIsResetting(false);
     }
   };
 
-  const handleCopyKey = async (user: User) => {
-    if (!(await writeTextToClipboard(user.serviceKey))) return;
-    setCopiedKeys((prev) => new Set(prev).add(user.name));
+  const handleCopyKey = async (sa: ServiceAccount) => {
+    if (!(await writeTextToClipboard(sa.serviceKey))) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.copy-failed"),
+      });
+      return;
+    }
+    onUpdated(redactedServiceAccount(sa));
+    markKeyActionComplete(sa.name, "copy");
     pushNotification({
       module: "bytebase",
-      style: "INFO",
-      title: t("settings.members.service-key-copied"),
+      style: "SUCCESS",
+      title: t("common.copied"),
     });
+  };
+
+  const renderKeyAction = (sa: ServiceAccount) => {
+    const feedback = keyFeedback.get(sa.name);
+    if (feedback) {
+      return (
+        <Button
+          appearance="outline"
+          size="xs"
+          disabled
+          className="text-success disabled:opacity-100"
+        >
+          <Check className="h-3 w-3 mr-1" />
+          {feedback === "reset"
+            ? t("settings.members.service-key-reset-and-copied")
+            : t("common.copied")}
+        </Button>
+      );
+    }
+    if (sa.serviceKey) {
+      return (
+        <Button
+          appearance="outline"
+          size="xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCopyKey(sa);
+          }}
+        >
+          <Copy className="h-3 w-3 mr-1" />
+          {t("settings.members.copy-service-key")}
+        </Button>
+      );
+    }
+    return (
+      <Popover
+        open={resetConfirmSa?.name === sa.name}
+        onOpenChange={(open) => {
+          if (!isResetting) setResetConfirmSa(open ? sa : undefined);
+        }}
+      >
+        <PopoverTrigger
+          render={<Button appearance="outline" size="xs" />}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <KeyRound className="h-3 w-3 mr-1" />
+          {t("settings.members.reset-service-key")}
+        </PopoverTrigger>
+        <PopoverContent
+          aria-label={t("settings.members.reset-service-key")}
+          className="w-80 max-w-[calc(100vw-2rem)]"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <p className="text-control-light">
+            {t("settings.members.reset-service-key-alert")}
+          </p>
+          <div className="mt-3 flex justify-end gap-x-2">
+            <Button
+              appearance="outline"
+              size="sm"
+              disabled={isResetting}
+              onClick={() => setResetConfirmSa(undefined)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={isResetting}
+              onClick={() => void handleResetKey(sa)}
+            >
+              {t("common.reset")}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
   };
 
   return (
@@ -171,7 +306,7 @@ function ServiceAccountTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.length === 0 ? (
+          {serviceAccounts.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={2}
@@ -181,35 +316,31 @@ function ServiceAccountTable({
               </TableCell>
             </TableRow>
           ) : (
-            users.map((user) => {
-              const isDeleted = user.state === State.DELETED;
+            serviceAccounts.map((sa) => {
+              const isDeleted = sa.state === State.DELETED;
               const canOpenDetail =
-                !!onUserSelected &&
+                !!onSelected &&
                 (project
                   ? hasProjectPermissionV2(project, "bb.serviceAccounts.get")
                   : hasWorkspacePermissionV2("bb.serviceAccounts.get"));
 
               return (
                 <TableRow
-                  key={user.name}
+                  key={sa.name}
                   className={cn(
                     canOpenDetail &&
                       "cursor-pointer focus-visible:outline-none focus-visible:bg-control-bg"
                   )}
                   tabIndex={canOpenDetail ? 0 : undefined}
                   role={canOpenDetail ? "button" : undefined}
-                  aria-label={
-                    canOpenDetail ? user.title || user.email : undefined
-                  }
-                  onClick={
-                    canOpenDetail ? () => onUserSelected(user) : undefined
-                  }
+                  aria-label={canOpenDetail ? sa.title || sa.email : undefined}
+                  onClick={canOpenDetail ? () => onSelected(sa) : undefined}
                   onKeyDown={
                     canOpenDetail
                       ? (e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            onUserSelected(user);
+                            onSelected(sa);
                           }
                         }
                       : undefined
@@ -219,8 +350,9 @@ function ServiceAccountTable({
                   <TableCell>
                     <div className="flex items-center gap-x-3">
                       <UserCell
-                        title={user.title}
-                        subtitle={user.email}
+                        title={sa.title}
+                        subtitle={sa.email}
+                        subtitleAction={<CopyButton content={sa.email} />}
                         nameClassName={
                           isDeleted
                             ? "line-through !text-control-light"
@@ -234,57 +366,7 @@ function ServiceAccountTable({
                       />
                       {!isDeleted && (
                         <div className="ml-auto text-xs shrink-0">
-                          {user.serviceKey && !copiedKeys.has(user.name) ? (
-                            <Button
-                              appearance="outline"
-                              size="xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopyKey(user);
-                              }}
-                            >
-                              <Copy className="h-3 w-3 mr-1" />
-                              {t("settings.members.copy-service-key")}
-                            </Button>
-                          ) : resetConfirmUser?.name === user.name ? (
-                            <div className="flex items-center gap-x-1">
-                              <span className="text-xs text-error">
-                                {t("settings.members.reset-service-key-alert")}
-                              </span>
-                              <Button
-                                variant="destructive"
-                                size="xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleResetKey(user);
-                                }}
-                              >
-                                {t("common.reset")}
-                              </Button>
-                              <Button
-                                appearance="outline"
-                                size="xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setResetConfirmUser(undefined);
-                                }}
-                              >
-                                {t("common.cancel")}
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              appearance="outline"
-                              size="xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setResetConfirmUser(user);
-                              }}
-                            >
-                              <KeyRound className="h-3 w-3 mr-1" />
-                              {t("settings.members.reset-service-key")}
-                            </Button>
-                          )}
+                          {renderKeyAction(sa)}
                         </div>
                       )}
                     </div>
@@ -314,7 +396,7 @@ function ServiceAccountTable({
                               className="text-error hover:text-error"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleDeactivate(user);
+                                handleDeactivate(sa);
                               }}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -340,7 +422,7 @@ function ServiceAccountTable({
                               size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRestore(user);
+                                handleRestore(sa);
                               }}
                             >
                               <Undo2 className="h-4 w-4" />
@@ -549,7 +631,7 @@ function ServiceAccountForm({
     if (updateMask.length > 0) {
       updatedSa = await updateServiceAccount(
         {
-          name: ensureServiceAccountFullName(serviceAccount.email),
+          name: serviceAccount.name,
           title,
         },
         create(FieldMaskSchema, { paths: [...updateMask] })
@@ -597,7 +679,8 @@ function ServiceAccountForm({
               <Input value={serviceAccount?.email ?? ""} disabled />
             ) : (
               <div className="px-1 flex items-center border border-control-border rounded-xs overflow-hidden focus-within:border-accent">
-                <input
+                <Input
+                  size="md"
                   type="text"
                   autoComplete="off"
                   value={emailPrefix}
@@ -655,7 +738,6 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
   const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
   const projectsByName = useAppStore((s) => s.projectsByName);
   const listServiceAccounts = useAppStore((state) => state.listServiceAccounts);
-  const getServiceAccount = useAppStore((state) => state.getServiceAccount);
 
   const projectName = projectId
     ? `${projectNamePrefix}${projectId}`
@@ -682,13 +764,15 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         pageToken: params.pageToken,
         showDeleted: false,
       });
-      const list: User[] = response.serviceAccounts.map(serviceAccountToUser);
-      return { list, nextPageToken: response.nextPageToken };
+      return {
+        list: response.serviceAccounts,
+        nextPageToken: response.nextPageToken,
+      };
     },
     [listServiceAccounts, parent]
   );
 
-  const activeData = usePagedData<User>({
+  const activeData = usePagedData<ServiceAccount>({
     sessionKey: `bb.service-accounts${projectName ? `.${projectName}` : ""}.active.page-size`,
     fetchList: fetchActive,
   });
@@ -703,48 +787,49 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         showDeleted: true,
         filter: { state: State.DELETED },
       });
-      const list: User[] = response.serviceAccounts.map(serviceAccountToUser);
-      return { list, nextPageToken: response.nextPageToken };
+      return {
+        list: response.serviceAccounts,
+        nextPageToken: response.nextPageToken,
+      };
     },
     [listServiceAccounts, parent]
   );
 
-  const inactiveData = usePagedData<User>({
+  const inactiveData = usePagedData<ServiceAccount>({
     sessionKey: `bb.service-accounts${projectName ? `.${projectName}` : ""}.inactive.page-size`,
     enabled: showInactive,
     fetchList: fetchInactive,
   });
 
-  const handleActiveUserUpdated = (user: User) => {
-    if (user.state === State.DELETED) {
-      activeData.removeCache(user);
-      inactiveData.updateCache([user]);
+  const handleActiveUpdated = (sa: ServiceAccount) => {
+    if (sa.state === State.DELETED) {
+      activeData.removeCache(sa);
+      inactiveData.updateCache([sa]);
     } else {
-      activeData.updateCache([user]);
+      activeData.updateCache([sa]);
     }
   };
 
-  const handleInactiveUserUpdated = (user: User) => {
-    if (user.state === State.ACTIVE) {
-      inactiveData.removeCache(user);
-      activeData.updateCache([user]);
+  const handleInactiveUpdated = (sa: ServiceAccount) => {
+    if (sa.state === State.ACTIVE) {
+      inactiveData.removeCache(sa);
+      activeData.updateCache([sa]);
     } else {
-      inactiveData.updateCache([user]);
+      inactiveData.updateCache([sa]);
     }
   };
 
-  const handleOpenEdit = (user: User) => {
-    const sa = getServiceAccount(user.email);
+  const handleOpenEdit = (sa: ServiceAccount) => {
     setEditingSa(sa);
     setShowDrawer(true);
   };
 
   const handleCreated = (sa: ServiceAccount) => {
-    activeData.updateCache([serviceAccountToUser(sa)]);
+    activeData.updateCache([sa]);
   };
 
   const handleUpdated = (sa: ServiceAccount) => {
-    activeData.updateCache([serviceAccountToUser(sa)]);
+    activeData.updateCache([sa]);
   };
 
   const PageLayout = projectName ? ProjectPageLayout : WorkspacePageLayout;
@@ -752,11 +837,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
 
   return (
     <PageLayout>
-      {/* Header */}
-      <PageToolbar>
-        <h2 className="text-lg font-medium leading-7 text-main">
-          {t("settings.members.service-accounts")}
-        </h2>
+      <PageToolbar align="end">
         <PermissionGuard
           permissions={["bb.serviceAccounts.create"]}
           project={project}
@@ -788,10 +869,10 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         ) : (
           <>
             <ServiceAccountTable
-              users={activeData.dataList}
+              serviceAccounts={activeData.dataList}
               project={project}
-              onUserUpdated={handleActiveUserUpdated}
-              onUserSelected={handleOpenEdit}
+              onUpdated={handleActiveUpdated}
+              onSelected={handleOpenEdit}
             />
             <PagedTableFooter
               pageSize={activeData.pageSize}
@@ -805,15 +886,19 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         )}
 
         {/* Inactive toggle */}
-        <label className="flex items-center gap-x-2 text-sm cursor-pointer">
+        <div className="flex items-center gap-x-2 text-sm">
           <Checkbox
+            id="show-inactive-service-accounts"
             checked={showInactive}
             onCheckedChange={(checked) => setShowInactive(checked)}
           />
-          <span className="textinfolabel">
+          <label
+            className="cursor-pointer textinfolabel"
+            htmlFor="show-inactive-service-accounts"
+          >
             {t("settings.members.show-inactive")}
-          </span>
-        </label>
+          </label>
+        </div>
 
         {/* Inactive list */}
         {showInactive && (
@@ -829,9 +914,9 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
             ) : (
               <>
                 <ServiceAccountTable
-                  users={inactiveData.dataList}
+                  serviceAccounts={inactiveData.dataList}
                   project={project}
-                  onUserUpdated={handleInactiveUserUpdated}
+                  onUpdated={handleInactiveUpdated}
                 />
                 <PagedTableFooter
                   pageSize={inactiveData.pageSize}

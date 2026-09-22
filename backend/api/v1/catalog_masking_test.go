@@ -12,6 +12,7 @@ import (
 )
 
 func TestGetFirstSemanticTypeInPath(t *testing.T) {
+	t.Parallel()
 	containerName := "container"
 	containerNode := base.NewItemSelector(containerName)
 
@@ -135,6 +136,7 @@ func TestGetFirstSemanticTypeInPath(t *testing.T) {
 }
 
 func TestWalkAndMaskJSON(t *testing.T) {
+	t.Parallel()
 	innerMasker, err := masker.NewInnerOuterMasker(storepb.Algorithm_InnerOuterMask_INNER, 1, 1, "*")
 	require.NoError(t, err)
 
@@ -468,6 +470,7 @@ func TestWalkAndMaskJSON(t *testing.T) {
 }
 
 func TestWalkAndMaskJSONRecursiveSemanticTypeMasksJSONContainerAsString(t *testing.T) {
+	t.Parallel()
 	innerMasker, err := masker.NewInnerOuterMasker(storepb.Algorithm_InnerOuterMask_INNER, 1, 1, "*")
 	require.NoError(t, err)
 

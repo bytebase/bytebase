@@ -1,5 +1,5 @@
 // This file is auto-generated from permission.yaml. DO NOT EDIT manually.
-// Run 'pnpm run generate:permissions' or 'sh scripts/copy_config_files.sh' to regenerate.
+// Run 'sh scripts/copy-config-files.sh' to regenerate.
 
 export type Permission =
   | "bb.accessGrants.activate"
@@ -33,6 +33,7 @@ export type Permission =
   | "bb.identityProviders.create"
   | "bb.identityProviders.delete"
   | "bb.identityProviders.get"
+  | "bb.identityProviders.list"
   | "bb.identityProviders.update"
   | "bb.instances.create"
   | "bb.instances.delete"
@@ -90,6 +91,7 @@ export type Permission =
   | "bb.reviewConfigs.get"
   | "bb.reviewConfigs.list"
   | "bb.reviewConfigs.update"
+  | "bb.reviewRuns.run"
   | "bb.revisions.create"
   | "bb.revisions.delete"
   | "bb.revisions.get"

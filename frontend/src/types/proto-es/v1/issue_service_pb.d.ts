@@ -5,8 +5,9 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ApprovalStatus, IssueStatus, RiskLevel } from "./common_pb";
+import type { ApprovalStatus, IssueStatus, Position, RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
+import type { ReviewRuleType } from "./review_rule_pb";
 import type { Plan_Spec } from "./plan_service_pb";
 
 /**
@@ -820,6 +821,16 @@ export declare type ListIssueCommentsRequest = Message<"bytebase.v1.ListIssueCom
    * @generated from field: string page_token = 3;
    */
   pageToken: string;
+
+  /**
+   * CEL filter over events, root comments, and replies.
+   * Supported: root == null, root == "<comment name>", or root in ["<comment name>", ...].
+   * Root names must belong to parent. Empty and root == null return the
+   * timeline (events and root comments); other filters return replies only.
+   *
+   * @generated from field: string filter = 4;
+   */
+  filter: string;
 };
 
 /**
@@ -966,6 +977,43 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
   creator: string;
 
   /**
+   * The thread root's name, set only on replies. Immutable after creation.
+   * Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+   * Must name a thread root in the same issue, never a general comment or reply.
+   *
+   * @generated from field: optional string root = 14;
+   */
+  root?: string | undefined;
+
+  /**
+   * Present only on thread roots. Set OPEN on create to start a thread; an
+   * anchored root starts one without it. Omit root, thread_state, and
+   * statement_anchor to create a general comment.
+   * Update through the thread_state field mask to resolve or reopen.
+   * Adding a reply does not reopen a resolved thread.
+   *
+   * @generated from field: optional bytebase.v1.IssueComment.ThreadState thread_state = 15;
+   */
+  threadState?: IssueComment_ThreadState | undefined;
+
+  /**
+   * Optional source context on a root or reply. A reply's anchor must share
+   * the root's spec and sheet_sha256; it may narrow the range.
+   * Cannot be set on events. Immutable after creation.
+   *
+   * @generated from field: bytebase.v1.StatementAnchor statement_anchor = 16;
+   */
+  statementAnchor?: StatementAnchor | undefined;
+
+  /**
+   * Present on review results, the comments the review executor posts.
+   * Never accepted on create or update.
+   *
+   * @generated from field: bytebase.v1.IssueComment.ReviewMetadata review_metadata = 17;
+   */
+  reviewMetadata?: IssueComment_ReviewMetadata | undefined;
+
+  /**
    * The event associated with this comment.
    *
    * @generated from oneof bytebase.v1.IssueComment.event
@@ -1010,6 +1058,85 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
  * Use `create(IssueCommentSchema)` to create a new message.
  */
 export declare const IssueCommentSchema: GenMessage<IssueComment>;
+
+/**
+ * What a review result carries beyond its text.
+ *
+ * @generated from message bytebase.v1.IssueComment.ReviewMetadata
+ */
+export declare type IssueComment_ReviewMetadata = Message<"bytebase.v1.IssueComment.ReviewMetadata"> & {
+  /**
+   * The reviewer that posted the result.
+   *
+   * @generated from field: bytebase.v1.ReviewRun.Type run_type = 1;
+   */
+  runType: ReviewRun_Type;
+
+  /**
+   * The rule judged against. Set if and only if run_type is RULE.
+   *
+   * @generated from field: bytebase.v1.ReviewRuleType rule_type = 2;
+   */
+  ruleType: ReviewRuleType;
+
+  /**
+   * @generated from field: bytebase.v1.IssueComment.ReviewMetadata.Priority priority = 3;
+   */
+  priority: IssueComment_ReviewMetadata_Priority;
+
+  /**
+   * Every database the result applies to, sorted.
+   * Format: instances/{instance}/databases/{database}
+   *
+   * @generated from field: repeated string targets = 4;
+   */
+  targets: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.IssueComment.ReviewMetadata.
+ * Use `create(IssueComment_ReviewMetadataSchema)` to create a new message.
+ */
+export declare const IssueComment_ReviewMetadataSchema: GenMessage<IssueComment_ReviewMetadata>;
+
+/**
+ * Priority says what resolving the thread means. It has no bearing on
+ * blocking, which thread_state alone decides.
+ *
+ * @generated from enum bytebase.v1.IssueComment.ReviewMetadata.Priority
+ */
+export enum IssueComment_ReviewMetadata_Priority {
+  /**
+   * @generated from enum value: PRIORITY_UNSPECIFIED = 0;
+   */
+  PRIORITY_UNSPECIFIED = 0,
+
+  /**
+   * The SQL is wrong and must change.
+   *
+   * @generated from enum value: P0 = 1;
+   */
+  P0 = 1,
+
+  /**
+   * Dangerous but legitimate; a person must accept it.
+   *
+   * @generated from enum value: P1 = 2;
+   */
+  P1 = 2,
+
+  /**
+   * Advisory.
+   *
+   * @generated from enum value: P2 = 3;
+   */
+  P2 = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.IssueComment.ReviewMetadata.Priority.
+ */
+export declare const IssueComment_ReviewMetadata_PrioritySchema: GenEnum<IssueComment_ReviewMetadata_Priority>;
 
 /**
  * Approval event information.
@@ -1161,6 +1288,223 @@ export declare type IssueComment_PlanUpdate = Message<"bytebase.v1.IssueComment.
  * Use `create(IssueComment_PlanUpdateSchema)` to create a new message.
  */
 export declare const IssueComment_PlanUpdateSchema: GenMessage<IssueComment_PlanUpdate>;
+
+/**
+ * @generated from enum bytebase.v1.IssueComment.ThreadState
+ */
+export enum IssueComment_ThreadState {
+  /**
+   * @generated from enum value: THREAD_STATE_UNSPECIFIED = 0;
+   */
+  THREAD_STATE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: OPEN = 1;
+   */
+  OPEN = 1,
+
+  /**
+   * @generated from enum value: RESOLVED = 2;
+   */
+  RESOLVED = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.IssueComment.ThreadState.
+ */
+export declare const IssueComment_ThreadStateSchema: GenEnum<IssueComment_ThreadState>;
+
+/**
+ * The saved statement revision and range referenced by a comment.
+ * Source currency is derived by comparing the spec and hash with the current plan.
+ * Historical SQL is available through SheetService.GetSheet with this hash.
+ *
+ * @generated from message bytebase.v1.StatementAnchor
+ */
+export declare type StatementAnchor = Message<"bytebase.v1.StatementAnchor"> & {
+  /**
+   * The Plan.Spec.id in the issue's plan; may no longer resolve after deletion.
+   *
+   * @generated from field: string spec = 1;
+   */
+  spec: string;
+
+  /**
+   * SHA256 of the saved sheet, as 64 lowercase hexadecimal characters.
+   *
+   * @generated from field: string sheet_sha256 = 2;
+   */
+  sheetSha256: string;
+
+  /**
+   * One-based lines and Unicode code-point columns. When both columns are zero,
+   * the range covers whole lines, including the end line. Otherwise both columns
+   * must be positive, start_position is inclusive, and end_position is exclusive.
+   *
+   * @generated from field: bytebase.v1.Position start_position = 3;
+   */
+  startPosition?: Position | undefined;
+
+  /**
+   * @generated from field: bytebase.v1.Position end_position = 4;
+   */
+  endPosition?: Position | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.StatementAnchor.
+ * Use `create(StatementAnchorSchema)` to create a new message.
+ */
+export declare const StatementAnchorSchema: GenMessage<StatementAnchor>;
+
+/**
+ * @generated from message bytebase.v1.ReviewRun
+ */
+export declare type ReviewRun = Message<"bytebase.v1.ReviewRun"> & {
+  /**
+   * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+   * The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+   * addresses a slot, not an execution.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * Derived from the name.
+   *
+   * @generated from field: bytebase.v1.ReviewRun.Type type = 2;
+   */
+  type: ReviewRun_Type;
+
+  /**
+   * @generated from field: bytebase.v1.ReviewRun.Status status = 3;
+   */
+  status: ReviewRun_Status;
+
+  /**
+   * When the current run was triggered. Reset on every re-run.
+   *
+   * @generated from field: google.protobuf.Timestamp create_time = 4;
+   */
+  createTime?: Timestamp | undefined;
+
+  /**
+   * When the run reached a terminal status. Unset while AVAILABLE or
+   * RUNNING.
+   *
+   * @generated from field: google.protobuf.Timestamp end_time = 5;
+   */
+  endTime?: Timestamp | undefined;
+
+  /**
+   * Fatal execution error, set if and only if status is FAILED: the review
+   * failed to execute (a platform problem, never the SQL — SQL problems are
+   * review results on a DONE run).
+   *
+   * @generated from field: string error = 6;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ReviewRun.
+ * Use `create(ReviewRunSchema)` to create a new message.
+ */
+export declare const ReviewRunSchema: GenMessage<ReviewRun>;
+
+/**
+ * @generated from enum bytebase.v1.ReviewRun.Type
+ */
+export enum ReviewRun_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  TYPE_UNSPECIFIED = 0,
+
+  /**
+   * Review against the standard rules.
+   *
+   * @generated from enum value: RULE = 1;
+   */
+  RULE = 1,
+
+  /**
+   * Review against natural-language guidelines, performed by AI.
+   *
+   * @generated from enum value: GUIDELINE = 2;
+   */
+  GUIDELINE = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.ReviewRun.Type.
+ */
+export declare const ReviewRun_TypeSchema: GenEnum<ReviewRun_Type>;
+
+/**
+ * States follow task_run, minus PENDING (review needs no admission
+ * control) and minus CANCELED (runs are side-effect-free until the fenced
+ * completion transaction, so re-running supersedes instead of canceling).
+ *
+ * @generated from enum bytebase.v1.ReviewRun.Status
+ */
+export enum ReviewRun_Status {
+  /**
+   * @generated from enum value: STATUS_UNSPECIFIED = 0;
+   */
+  STATUS_UNSPECIFIED = 0,
+
+  /**
+   * Created and claimable by any replica.
+   *
+   * @generated from enum value: AVAILABLE = 1;
+   */
+  AVAILABLE = 1,
+
+  /**
+   * @generated from enum value: RUNNING = 2;
+   */
+  RUNNING = 2,
+
+  /**
+   * Every (spec, target) unit was evaluated. DONE does not mean the
+   * review passed: whether problems remain is judged from open comments.
+   *
+   * @generated from enum value: DONE = 3;
+   */
+  DONE = 3,
+
+  /**
+   * At least one unit was not evaluated; the cause is in `error`.
+   *
+   * @generated from enum value: FAILED = 4;
+   */
+  FAILED = 4,
+}
+
+/**
+ * Describes the enum bytebase.v1.ReviewRun.Status.
+ */
+export declare const ReviewRun_StatusSchema: GenEnum<ReviewRun_Status>;
+
+/**
+ * @generated from message bytebase.v1.RunReviewRequest
+ */
+export declare type RunReviewRequest = Message<"bytebase.v1.RunReviewRequest"> & {
+  /**
+   * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RunReviewRequest.
+ * Use `create(RunReviewRequestSchema)` to create a new message.
+ */
+export declare const RunReviewRequestSchema: GenMessage<RunReviewRequest>;
 
 /**
  * IssueService manages issues for tracking database changes and tasks.
@@ -1317,6 +1661,23 @@ export declare const IssueService: GenService<{
     methodKind: "unary";
     input: typeof RetryIssueApprovalRequestSchema;
     output: typeof IssueSchema;
+  },
+  /**
+   * Triggers a review run. The slot is reset unconditionally: a RUNNING
+   * execution is superseded (its completion is fenced off), the attempt
+   * number is bumped, and the returned run is AVAILABLE.
+   * Review results are not returned by this RPC and have no read RPC yet:
+   * findings will surface as issue comments once the review comment
+   * integration lands. The returned run carries execution status only.
+   * The audit log is the only record of who triggered a run.
+   * Permissions required: bb.reviewRuns.run
+   *
+   * @generated from rpc bytebase.v1.IssueService.RunReview
+   */
+  runReview: {
+    methodKind: "unary";
+    input: typeof RunReviewRequestSchema;
+    output: typeof ReviewRunSchema;
   },
 }>;
 

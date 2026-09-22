@@ -34,6 +34,7 @@ var defaultConfig = struct {
 	attemptInstantDDL                   bool
 	allowedRunningOnMaster              bool
 	concurrentCountTableRows            bool
+	skipMetadataLockCheck               bool
 	timestampOldTable                   bool
 	hooksStatusIntervalSec              int64
 	heartbeatIntervalMilliseconds       int64
@@ -50,6 +51,7 @@ var defaultConfig = struct {
 	attemptInstantDDL:                   true,  // attempt-instant-ddl
 	allowedRunningOnMaster:              true,  // allow-on-master
 	concurrentCountTableRows:            true,  // concurrent-rowcount
+	skipMetadataLockCheck:               false, // skip-metadata-lock-check
 	timestampOldTable:                   false, // doesn't have a gh-ost cli flag counterpart
 	hooksStatusIntervalSec:              60,    // hooks-status-interval
 	heartbeatIntervalMilliseconds:       100,   // heartbeat-interval-millis
@@ -80,6 +82,7 @@ type UserFlags struct {
 	throttleControlReplicas       *string
 	attemptInstantDDL             *bool
 	assumeMasterHost              *bool // use datasource host if true
+	skipMetadataLockCheck         *bool
 }
 
 var knownKeys = map[string]bool{
@@ -98,6 +101,7 @@ var knownKeys = map[string]bool{
 	"throttle-control-replicas":        true,
 	"attempt-instant-ddl":              true,
 	"assume-master-host":               true,
+	"skip-metadata-lock-check":         true,
 }
 
 func GetUserFlags(flags map[string]string) (*UserFlags, error) {
@@ -212,6 +216,13 @@ func GetUserFlags(flags map[string]string) (*UserFlags, error) {
 		}
 		f.assumeMasterHost = &assumeMasterHost
 	}
+	if v, ok := flags["skip-metadata-lock-check"]; ok {
+		skipMetadataLockCheck, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to convert skip-metadata-lock-check %q to bool", v)
+		}
+		f.skipMetadataLockCheck = &skipMetadataLockCheck
+	}
 	return f, nil
 }
 
@@ -276,6 +287,7 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 	migrationContext.AttemptInstantDDL = defaultConfig.attemptInstantDDL
 	migrationContext.AllowedRunningOnMaster = defaultConfig.allowedRunningOnMaster
 	migrationContext.ConcurrentCountTableRows = defaultConfig.concurrentCountTableRows
+	migrationContext.SkipMetadataLockCheck = defaultConfig.skipMetadataLockCheck
 	migrationContext.HooksStatusIntervalSec = defaultConfig.hooksStatusIntervalSec
 	migrationContext.CutOverType = ghostbase.CutOverAtomic
 	migrationContext.ThrottleHTTPIntervalMillis = defaultConfig.throttleHTTPIntervalMillis
@@ -390,6 +402,9 @@ func NewMigrationContext(ctx context.Context, taskID int64, database *store.Data
 		if dataSource.GetPort() != "" {
 			migrationContext.AssumeMasterHostname += ":" + dataSource.GetPort()
 		}
+	}
+	if v := userFlags.skipMetadataLockCheck; v != nil {
+		migrationContext.SkipMetadataLockCheck = *v
 	}
 	// Uses specified port. GCP, Aliyun, Azure are equivalent here.
 	migrationContext.GoogleCloudPlatform = true

@@ -71,7 +71,7 @@ describe("ProjectCreateInstancePage", () => {
     act(() => page.root.unmount());
   });
 
-  test("opens the nested detail route after creation", async () => {
+  test("opens the project databases page after creation", async () => {
     const page = await renderPage();
     const onCreated = mocks.viewProps?.onCreated as (instance: unknown) => void;
 
@@ -85,10 +85,12 @@ describe("ProjectCreateInstancePage", () => {
     });
 
     expect(mocks.push).toHaveBeenCalledWith({
-      name: "workspace.project.instance.detail",
-      params: { projectId: "app", instanceId: "prod" },
-      query: { syncingInstance: "prod" },
-      hash: "databases",
+      name: "workspace.project.database",
+      params: { projectId: "app" },
+      query: {
+        syncingInstance: "prod",
+        intro: "project-instance-synced",
+      },
     });
 
     act(() => page.root.unmount());

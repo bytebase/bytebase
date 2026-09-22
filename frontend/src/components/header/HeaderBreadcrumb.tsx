@@ -132,14 +132,14 @@ export function WorkspaceSegment({
           appearance="secondary"
           size="sm"
           onClick={(event) => onSelectWorkspace(currentWorkspaceName, event)}
-          className="h-auto px-2 py-1 text-sm gap-x-1.5"
+          className="text-sm gap-x-1.5"
         >
           <Building2 className="size-4 text-control-light shrink-0" />
           <span className="truncate max-w-40">{workspace?.title}</span>
           {label && (
             <Badge
               variant={planVariant(currentPlan)}
-              className="text-[10px] px-1.5 py-0 hidden lg:block"
+              className="text-xs px-1.5 py-0 hidden lg:block"
             >
               {label}
             </Badge>
@@ -159,7 +159,7 @@ export function WorkspaceSegment({
           {label && (
             <Badge
               variant={planVariant(currentPlan)}
-              className="text-[10px] px-1.5 py-0 hidden lg:block"
+              className="text-xs px-1.5 py-0 hidden lg:block"
             >
               {label}
             </Badge>
@@ -170,9 +170,11 @@ export function WorkspaceSegment({
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             render={
-              <button
+              <Button
                 type="button"
-                className="inline-flex items-center rounded-xs p-1 text-control-placeholder hover:bg-control-bg cursor-pointer"
+                appearance="secondary"
+                size="xs"
+                className="text-control-placeholder"
               />
             }
           >
@@ -188,11 +190,11 @@ export function WorkspaceSegment({
                 ? ws.name.slice(workspaceNamePrefix.length)
                 : ws.name;
               return (
-                <button
+                <Button
                   key={ws.name}
                   type="button"
                   className={cn(
-                    "w-full flex items-center justify-between rounded-xs px-3 py-1.5 text-sm cursor-pointer gap-x-2",
+                    "h-auto w-full flex items-center justify-between rounded-xs px-3 py-1.5 text-sm gap-x-2",
                     ws.name === currentWorkspaceName
                       ? "bg-control-bg font-medium text-accent"
                       : "text-control hover:bg-control-bg"
@@ -213,7 +215,7 @@ export function WorkspaceSegment({
                   {ws.name === currentWorkspaceName && (
                     <Check className="size-4 shrink-0" />
                   )}
-                </button>
+                </Button>
               );
             })}
           </PopoverContent>
@@ -266,7 +268,7 @@ export function ProjectSegment({
               appearance="secondary"
               size="sm"
               onClick={(event) => onSelectProject(currentProject, event)}
-              className="h-auto px-2 py-1 text-sm gap-x-1.5"
+              className="text-sm gap-x-1.5"
             >
               <FolderKanban className="size-4 text-control-light shrink-0" />
               <span className="truncate max-w-48">{currentProject.title}</span>
@@ -290,27 +292,37 @@ export function ProjectSegment({
               <span className="truncate max-w-48">{currentProject.title}</span>
             </RouterLink>
           )
-        ) : (
-          <div className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control">
-            <FolderKanban className="size-4 text-control-light shrink-0" />
-            <span className="truncate max-w-48 text-control-placeholder">
-              {t("project.select")}
-            </span>
-          </div>
-        )}
+        ) : null}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             render={
-              <Button
-                type="button"
-                appearance="secondary"
-                aria-label={t("project.select")}
-                size="xs"
-                className="size-6 p-0 text-control-placeholder"
-              />
+              hasProject && projectId ? (
+                <Button
+                  type="button"
+                  appearance="secondary"
+                  aria-label={t("project.select")}
+                  size="xs"
+                  className="text-control-placeholder"
+                />
+              ) : (
+                <Button
+                  type="button"
+                  appearance="secondary"
+                  size="sm"
+                  className="text-sm gap-x-1.5 text-control-placeholder"
+                />
+              )
             }
           >
-            <ChevronDown className="size-3.5" />
+            {hasProject && projectId ? (
+              <ChevronDown className="size-3.5" />
+            ) : (
+              <>
+                <FolderKanban className="size-4 text-control-light shrink-0" />
+                <span className="truncate max-w-48">{t("project.select")}</span>
+                <ChevronDown className="size-3.5 shrink-0" />
+              </>
+            )}
           </PopoverTrigger>
           <PopoverContent
             align="start"

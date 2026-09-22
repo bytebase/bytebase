@@ -4,7 +4,7 @@
 // library was deleted and export now goes through the backend Export RPC. A
 // workspace `DATA_QUERY` policy (`disableExport`) gates the toolbar's Export
 // button; when export is disabled but the project allows access grants,
-// a "Request access grant" affordance replaces it, and an active export grant
+// a "Request export" affordance replaces it, and an active export grant
 // for the EXACT statement re-enables the real Export button.
 //
 // One file per sub-area (the repo convention): all export CUJs live here as
@@ -16,7 +16,7 @@
 //
 // Groups (CUJ ids from the QA session):
 //   - Direct export (export allowed): C1 backend Export RPC, C9 password
-//   - Gated + JIT on: C2 Request access grant, C3/C4 drawer pre-fill (export only)
+//   - Gated + JIT on: C2 Request export, C3/C4 drawer pre-fill (export only)
 //   - Gated + JIT off: C8 no affordance
 //   - Multi-statement: C10 one affordance above the tabs
 //   - Active export grant: C7 exact-match re-enable, C5 badge, C6 filter
@@ -258,15 +258,15 @@ test.describe("Direct export when the policy allows it (C1, C9)", () => {
   });
 });
 
-// --- Gated export, JIT on → Request access grant (C2, C3, C4) -------------
+// --- Gated export, JIT on → Request export (C2, C3, C4) -------------------
 
 test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
-  test('the toolbar shows "Request access grant" instead of "Export"', async () => {
+  test('the toolbar shows "Request export" instead of "Export"', async () => {
     await applyExportState({ disableExport: true, jit: true });
     await sqlEditor.runPreparedQuery("SELECT emp_no, first_name FROM employee LIMIT 5;");
 
     await expect(
-      sqlEditor.requestAccessGrantButton.first(),
+      sqlEditor.requestExportButton.first(),
     ).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole("button", { name: /^Export$/ })).toHaveCount(0);
     await expect(
@@ -274,12 +274,12 @@ test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
     ).toBeVisible();
   });
 
-  test('the export-blocked "Request access grant" CTA opens the grant drawer pre-filled with the statement, DB, and Export checked (unmask not)', async () => {
+  test('the export-blocked "Request export" CTA opens the grant drawer pre-filled with the statement, DB, and Export checked (unmask not)', async () => {
     await applyExportState({ disableExport: true, jit: true });
     const statement = "SELECT emp_no, last_name FROM employee LIMIT 4;";
     await sqlEditor.runPreparedQuery(statement);
 
-    await sqlEditor.requestAccessGrantButton.first().click();
+    await sqlEditor.requestExportButton.first().click();
 
     const drawer = sqlEditor.accessGrantDrawer;
     await expect(drawer).toBeVisible({ timeout: 10_000 });
@@ -313,7 +313,7 @@ test.describe("Export gated by policy, JIT enabled (C2, C3, C4)", () => {
     const statement = `SELECT emp_no FROM employee WHERE emp_no = ${marker % 100000} LIMIT 1;`;
     await sqlEditor.runPreparedQuery(statement);
 
-    await sqlEditor.requestAccessGrantButton.first().click();
+    await sqlEditor.requestExportButton.first().click();
 
     const drawer = sqlEditor.accessGrantDrawer;
     await expect(drawer).toBeVisible({ timeout: 10_000 });
@@ -375,7 +375,7 @@ test.describe("Export gated by policy, JIT disabled (C8)", () => {
     ).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole("button", { name: /^Export$/ })).toHaveCount(0);
     await expect(
-      sqlEditor.requestAccessGrantButton,
+      sqlEditor.requestExportButton,
     ).toHaveCount(0);
   });
 });
@@ -394,7 +394,7 @@ test.describe("Multi-statement result export affordance (C10)", () => {
       page.getByRole("tab", { name: /Query\s*#2/ }).first(),
     ).toBeVisible();
     await expect(
-      sqlEditor.requestAccessGrantButton,
+      sqlEditor.requestExportButton,
     ).toHaveCount(1);
   });
 });
@@ -440,7 +440,7 @@ test.describe("Active export grant (C5, C6, C7)", () => {
     const exportButton = page.getByRole("button", { name: /^Export$/ }).first();
     await expect(exportButton).toBeVisible({ timeout: 10_000 });
     await expect(
-      sqlEditor.requestAccessGrantButton,
+      sqlEditor.requestExportButton,
     ).toHaveCount(0);
 
     await exportButton.hover();
@@ -472,11 +472,11 @@ test.describe("Active export grant (C5, C6, C7)", () => {
     ).toBeTruthy();
   });
 
-  test("running a DIFFERENT statement keeps export gated (Request access grant, no Export) (C7)", async () => {
+  test("running a DIFFERENT statement keeps export gated (Request export, no Export) (C7)", async () => {
     await sqlEditor.runPreparedQuery(UNGRANTED_STATEMENT);
 
     await expect(
-      sqlEditor.requestAccessGrantButton.first(),
+      sqlEditor.requestExportButton.first(),
     ).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole("button", { name: /^Export$/ })).toHaveCount(0);
   });

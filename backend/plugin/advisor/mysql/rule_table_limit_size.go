@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 func init() {
@@ -45,7 +46,7 @@ func (*MaximumTableSizeAdvisor) Check(_ context.Context, checkCtx advisor.Contex
 		dbMetadata: checkCtx.DBSchema,
 	}
 
-	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 
 	// Generate advice based on collected table information.
 	rule.generateAdvice()
@@ -57,7 +58,7 @@ type tableLimitSizeOmniRule struct {
 	OmniBaseRule
 	affectedTabNames []string
 	maxRows          int
-	dbMetadata       *storepb.DatabaseSchemaMetadata
+	dbMetadata       *metadatapb.DatabaseSchemaMetadata
 }
 
 func (*tableLimitSizeOmniRule) Name() string {
@@ -109,14 +110,14 @@ func (r *tableLimitSizeOmniRule) generateAdvice() {
 					Code:          code.TableExceedLimitSize.Int32(),
 					Title:         r.Title,
 					Content:       fmt.Sprintf("Apply DDL on large table '%s' ( %d rows ) will lock table for a long time", tabName, tableRows),
-					StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+					StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 				})
 			}
 		}
 	}
 }
 
-func getTabRowsByName(targetTabName string, tables []*storepb.TableMetadata) int64 {
+func getTabRowsByName(targetTabName string, tables []*metadatapb.TableMetadata) int64 {
 	for _, table := range tables {
 		if table.Name == targetTabName {
 			return table.RowCount

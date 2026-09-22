@@ -491,9 +491,13 @@ type Plan struct {
 	RolloutStageSummaries []*Plan_RolloutStageSummary `protobuf:"bytes,14,rep,name=rollout_stage_summaries,json=rolloutStageSummaries,proto3" json:"rollout_stage_summaries,omitempty"`
 	// The lifecycle status of the linked issue.
 	// Unspecified when no linked issue exists.
-	IssueStatus   IssueStatus `protobuf:"varint,15,opt,name=issue_status,json=issueStatus,proto3,enum=bytebase.v1.IssueStatus" json:"issue_status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	IssueStatus IssueStatus `protobuf:"varint,15,opt,name=issue_status,json=issueStatus,proto3,enum=bytebase.v1.IssueStatus" json:"issue_status,omitempty"`
+	// The user who last created or updated the Plan specs.
+	// Format: users/hello@world.com. For legacy Plans without stored attribution,
+	// this falls back to the Plan creator.
+	LastPlanEditor string `protobuf:"bytes,16,opt,name=last_plan_editor,json=lastPlanEditor,proto3" json:"last_plan_editor,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Plan) Reset() {
@@ -622,6 +626,13 @@ func (x *Plan) GetIssueStatus() IssueStatus {
 		return x.IssueStatus
 	}
 	return IssueStatus_ISSUE_STATUS_UNSPECIFIED
+}
+
+func (x *Plan) GetLastPlanEditor() string {
+	if x != nil {
+		return x.LastPlanEditor
+	}
+	return ""
 }
 
 type GetPlanCheckRunRequest struct {
@@ -1017,7 +1028,7 @@ func (*Plan_Spec_ChangeDatabaseConfig) isPlan_Spec_Config() {}
 type Plan_CreateDatabaseConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The resource name of the instance on which the database is created.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The name of the database to create.
 	Database string `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
@@ -1317,7 +1328,7 @@ type PlanCheckRun_Result struct {
 	Content string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	Code    int32                  `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
 	// Target identification for consolidated results.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Target string                   `protobuf:"bytes,7,opt,name=target,proto3" json:"target,omitempty"`
 	Type   PlanCheckRun_Result_Type `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.v1.PlanCheckRun_Result_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Report:
@@ -1574,7 +1585,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xa7\x0e\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xd6\x0e\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1593,7 +1604,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"hasRollout\x12I\n" +
 	"\x0fapproval_status\x18\r \x01(\x0e2\x1b.bytebase.v1.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12b\n" +
 	"\x17rollout_stage_summaries\x18\x0e \x03(\v2%.bytebase.v1.Plan.RolloutStageSummaryB\x03\xe0A\x03R\x15rolloutStageSummaries\x12@\n" +
-	"\fissue_status\x18\x0f \x01(\x0e2\x18.bytebase.v1.IssueStatusB\x03\xe0A\x03R\vissueStatus\x1a\xe0\x01\n" +
+	"\fissue_status\x18\x0f \x01(\x0e2\x18.bytebase.v1.IssueStatusB\x03\xe0A\x03R\vissueStatus\x12-\n" +
+	"\x10last_plan_editor\x18\x10 \x01(\tB\x03\xe0A\x03R\x0elastPlanEditor\x1a\xe0\x01\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12^\n" +
 	"\x16create_database_config\x18\x02 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +
@@ -1674,17 +1686,17 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06FAILED\x10\x03\x12\f\n" +
 	"\bCANCELED\x10\x04:L\xeaAI\n" +
-	"\x19bytebase.com/PlanCheckRun\x12,projects/{project}/plans/{plan}/planCheckRunJ\x04\b\x02\x10\x03J\x04\b\x04\x10\x062\x86\t\n" +
-	"\vPlanService\x12{\n" +
-	"\aGetPlan\x12\x1b.bytebase.v1.GetPlanRequest\x1a\x11.bytebase.v1.Plan\"@\xdaA\x04name\x8a\xea0\fbb.plans.get\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{name=projects/*/plans/*}\x12\x8f\x01\n" +
-	"\tListPlans\x12\x1d.bytebase.v1.ListPlansRequest\x1a\x1e.bytebase.v1.ListPlansResponse\"C\xdaA\x06parent\x8a\xea0\rbb.plans.list\x90\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{parent=projects/*}/plans\x12\x95\x01\n" +
+	"\x19bytebase.com/PlanCheckRun\x12,projects/{project}/plans/{plan}/planCheckRunJ\x04\b\x02\x10\x03J\x04\b\x04\x10\x062\xa2\t\n" +
+	"\vPlanService\x12\x7f\n" +
+	"\aGetPlan\x12\x1b.bytebase.v1.GetPlanRequest\x1a\x11.bytebase.v1.Plan\"D\xdaA\x04name\x8a\xea0\fbb.plans.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{name=projects/*/plans/*}\x12\x93\x01\n" +
+	"\tListPlans\x12\x1d.bytebase.v1.ListPlansRequest\x1a\x1e.bytebase.v1.ListPlansResponse\"G\xdaA\x06parent\x8a\xea0\rbb.plans.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{parent=projects/*}/plans\x12\x99\x01\n" +
 	"\n" +
-	"CreatePlan\x12\x1e.bytebase.v1.CreatePlanRequest\x1a\x11.bytebase.v1.Plan\"T\xdaA\vparent,plan\x8a\xea0\x0fbb.plans.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02%:\x04plan\"\x1d/v1/{parent=projects/*}/plans\x12\x9f\x01\n" +
+	"CreatePlan\x12\x1e.bytebase.v1.CreatePlanRequest\x1a\x11.bytebase.v1.Plan\"X\xdaA\vparent,plan\x8a\xea0\x0fbb.plans.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02%:\x04plan\"\x1d/v1/{parent=projects/*}/plans\x12\xa3\x01\n" +
 	"\n" +
-	"UpdatePlan\x12\x1e.bytebase.v1.UpdatePlanRequest\x1a\x11.bytebase.v1.Plan\"^\xdaA\x10plan,update_mask\x8a\xea0\x0fbb.plans.update\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02*:\x04plan2\"/v1/{plan.name=projects/*/plans/*}\x12\xa8\x01\n" +
-	"\x0fGetPlanCheckRun\x12#.bytebase.v1.GetPlanCheckRunRequest\x1a\x19.bytebase.v1.PlanCheckRun\"U\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.get\x90\xea0\x01\x82\xd3\xe4\x93\x02,\x12*/v1/{name=projects/*/plans/*/planCheckRun}\x12\xb5\x01\n" +
-	"\rRunPlanChecks\x12!.bytebase.v1.RunPlanChecksRequest\x1a\".bytebase.v1.RunPlanChecksResponse\"]\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/plans/*}:runPlanChecks\x12\xca\x01\n" +
-	"\x12CancelPlanCheckRun\x12&.bytebase.v1.CancelPlanCheckRunRequest\x1a'.bytebase.v1.CancelPlanCheckRunResponse\"c\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x026:\x01*\"1/v1/{name=projects/*/plans/*/planCheckRun}:cancelB\xa6\x01\n" +
+	"UpdatePlan\x12\x1e.bytebase.v1.UpdatePlanRequest\x1a\x11.bytebase.v1.Plan\"b\xdaA\x10plan,update_mask\x8a\xea0\x0fbb.plans.update\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02*:\x04plan2\"/v1/{plan.name=projects/*/plans/*}\x12\xac\x01\n" +
+	"\x0fGetPlanCheckRun\x12#.bytebase.v1.GetPlanCheckRunRequest\x1a\x19.bytebase.v1.PlanCheckRun\"Y\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02,\x12*/v1/{name=projects/*/plans/*/planCheckRun}\x12\xb9\x01\n" +
+	"\rRunPlanChecks\x12!.bytebase.v1.RunPlanChecksRequest\x1a\".bytebase.v1.RunPlanChecksResponse\"a\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/plans/*}:runPlanChecks\x12\xce\x01\n" +
+	"\x12CancelPlanCheckRun\x12&.bytebase.v1.CancelPlanCheckRunRequest\x1a'.bytebase.v1.CancelPlanCheckRunResponse\"g\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x026:\x01*\"1/v1/{name=projects/*/plans/*/planCheckRun}:cancelB\xa6\x01\n" +
 	"\x0fcom.bytebase.v1B\x10PlanServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

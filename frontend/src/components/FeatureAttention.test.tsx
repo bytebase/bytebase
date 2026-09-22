@@ -1,3 +1,4 @@
+import { Code, ConnectError } from "@connectrpc/connect";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -20,6 +21,7 @@ const mocks = vi.hoisted(() => ({
   useSubscriptionState: vi.fn(),
   useServerState: vi.fn(),
   useAppStore: vi.fn(),
+  startTrial: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
   autoSubscriptionRoute: vi.fn(() => "/subscription"),
   routerPush: vi.fn(),
@@ -95,13 +97,17 @@ const renderIntoContainer = (element: ReactElement) => {
 };
 
 beforeEach(async () => {
+  mocks.startTrial.mockReset();
+  mocks.startTrial.mockResolvedValue(undefined);
   mocks.useTranslation.mockReset();
   mocks.useTranslation.mockReturnValue({
     t: (key: string) => key,
   });
   mocks.useSubscriptionState.mockReset();
   mocks.useSubscriptionState.mockReturnValue({
+    canStartTrial: false,
     isTrialing: false,
+    startTrial: mocks.startTrial,
     trialingDays: 14,
   });
   mocks.useServerState.mockReset();
@@ -180,9 +186,97 @@ describe("FeatureAttention", () => {
     unmount();
   });
 
+  test("starts an eligible SaaS trial from the feature attention", async () => {
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      isTrialing: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_AUDIT_LOG} />
+    );
+
+    render();
+
+    const actionButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("subscription.plan.try")
+    );
+    expect(actionButton).toBeDefined();
+    await act(async () => {
+      actionButton?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true, cancelable: true })
+      );
+      await Promise.resolve();
+    });
+
+    expect(mocks.startTrial).toHaveBeenCalledOnce();
+    unmount();
+  });
+
+  test.each([
+    new ConnectError("temporarily unavailable", Code.Unavailable),
+    new ConnectError("server failure", Code.Internal),
+    new Error("network failure"),
+  ])("keeps trial activation retryable after %s", async (error) => {
+    mocks.startTrial.mockRejectedValueOnce(error);
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      isTrialing: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
+    );
+    render();
+    const button = container.querySelector("button");
+    expect(button).not.toBeNull();
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(button?.textContent).toBe("subscription.plan.try");
+    expect(button?.disabled).toBe(false);
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mocks.startTrial).toHaveBeenCalledTimes(2);
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("opens plan details after a definitive trial rejection", async () => {
+    mocks.startTrial.mockRejectedValueOnce(
+      new ConnectError("not eligible", Code.FailedPrecondition)
+    );
+    mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: true,
+      isTrialing: false,
+      startTrial: mocks.startTrial,
+      trialingDays: 14,
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <FeatureAttention feature={PlanFeature.FEATURE_DATA_MASKING} />
+    );
+    render();
+    const button = container.querySelector("button");
+    await act(async () => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(button?.textContent).toBe("common.learn-more");
+    act(() => {
+      button?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(mocks.startTrial).toHaveBeenCalledOnce();
+    expect(mocks.routerPush).toHaveBeenCalledWith("/subscription");
+    unmount();
+  });
+
   test("does not show assignment attention in unified instance license mode", () => {
     mocks.useSubscriptionState.mockReturnValue({
+      canStartTrial: false,
       isTrialing: false,
+      startTrial: mocks.startTrial,
       trialingDays: 14,
     });
     mocks.useServerState.mockReturnValue({

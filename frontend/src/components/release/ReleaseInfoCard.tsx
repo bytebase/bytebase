@@ -75,7 +75,7 @@ export function ReleaseInfoCard({
 function LoadingBlock() {
   const { t } = useTranslation();
   return (
-    <div className="rounded-md border border-control-border bg-gray-50 px-4 py-3 text-sm text-control-light">
+    <div className="rounded-sm border border-control-border bg-control-bg/50 px-4 py-3 text-sm text-control-light">
       <div className="flex items-center gap-x-2">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span>{t("common.loading")}</span>
@@ -87,7 +87,7 @@ function LoadingBlock() {
 function NotFoundBlock() {
   const { t } = useTranslation();
   return (
-    <div className="rounded-md border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+    <div className="rounded-sm border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
       {t("release.not-found")}
     </div>
   );
@@ -103,7 +103,7 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
     : undefined;
 
   return (
-    <div className="rounded-md border border-control-border bg-gray-50 px-4 py-3">
+    <div className="rounded-sm border border-control-border bg-control-bg/50 px-4 py-3">
       <div className="flex flex-col gap-y-3">
         {release.files.length > 0 && (
           <div className="flex flex-col gap-y-2">
@@ -126,19 +126,19 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
               {displayedFiles.map((file) => (
                 <div
                   key={file.path}
-                  className="flex items-center justify-between rounded-sm bg-white p-2 text-xs"
+                  className="flex items-center justify-between rounded-sm bg-background p-2 text-xs"
                 >
                   <div className="mr-2 min-w-0 flex-1">
                     <div className="truncate font-medium">{file.path}</div>
                     <div className="text-control-light">{file.version}</div>
                   </div>
-                  <div className="shrink-0 rounded-sm bg-blue-100 px-1.5 py-0.5 text-xs text-blue-800">
+                  <div className="shrink-0 rounded-sm bg-info/10 px-1.5 py-0.5 text-xs text-info">
                     {getReleaseFileTypeText(release.type, t)}
                   </div>
                 </div>
               ))}
               {release.files.length > MAX_DISPLAYED_RELEASE_FILES && (
-                <div className="flex items-center justify-center rounded-sm border border-dashed border-control-border bg-white p-2 text-xs text-control-light">
+                <div className="flex items-center justify-center rounded-sm border border-dashed border-control-border bg-background p-2 text-xs text-control-light">
                   {t("release.and-n-more-files", {
                     count: release.files.length - MAX_DISPLAYED_RELEASE_FILES,
                   })}

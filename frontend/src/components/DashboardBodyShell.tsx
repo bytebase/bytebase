@@ -7,6 +7,7 @@ import type {
 } from "@/app/dashboard-shell";
 import { MAIN_SCROLL_RESTORATION_ID } from "@/app/router/NavigationScrollRestoration";
 import { DashboardHeader } from "@/components/header/DashboardHeader";
+import { Button } from "@/components/ui/button";
 import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { cn } from "@/lib/utils";
 
@@ -56,10 +57,12 @@ export function DashboardBodyShell({
         isMobileSidebarOpen ? "" : "pointer-events-none"
       )}
     >
-      <button
+      <Button
         aria-label={t("common.close-mobile-sidebar")}
+        appearance="secondary"
+        size="xs"
         className={cn(
-          "absolute inset-0 bg-black/20 transition-opacity",
+          "absolute inset-0 h-auto bg-overlay/20 transition-opacity hover:bg-overlay/20",
           isMobileSidebarOpen ? "opacity-100" : "opacity-0"
         )}
         type="button"
@@ -104,7 +107,7 @@ export function DashboardBodyShell({
     <div className="flex h-full flex-col overflow-hidden">
       {showHeader ? (
         <nav
-          className="shrink-0 border-b border-block-border bg-white"
+          className="shrink-0 border-b border-block-border bg-background"
           data-label="bb-dashboard-header"
         >
           <div className="mx-auto max-w-full">

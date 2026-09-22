@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { databaseServiceClientConnect } from "@/api";
 import { ReadonlyMonaco } from "@/components/monaco/ReadonlyMonaco";
+import { Button } from "@/components/ui/button";
 import type {
   Database,
   DatabaseMetadata,
@@ -137,7 +138,9 @@ export function PreviewPane({ db, database, schema, table }: Props) {
           onMouseDown={handleResizeStart}
         />
       )}
-      <button
+      <Button
+        appearance="secondary"
+        size="xs"
         type="button"
         className="flex w-full items-center gap-x-1 px-4 py-1.5 text-xs font-medium text-control-light hover:text-control"
         onClick={toggleExpanded}
@@ -148,7 +151,7 @@ export function PreviewPane({ db, database, schema, table }: Props) {
           <ChevronRight className="size-3.5" />
         )}
         {t("schema-editor.preview")}
-      </button>
+      </Button>
       {expanded && (
         <div
           className="relative overflow-y-auto"

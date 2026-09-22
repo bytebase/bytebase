@@ -8,6 +8,7 @@ import (
 )
 
 func TestRenderTrain(t *testing.T) {
+	t.Parallel()
 	// Fixed time for deterministic tests: 2026-01-15 14:30:45 UTC
 	testTime := time.Date(2026, 1, 15, 14, 30, 45, 0, time.UTC)
 
@@ -114,6 +115,7 @@ func TestRenderTrain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := renderTrain(tt.template, tt.timezone, tt.time)
 			if tt.wantError {
 				require.Error(t, err)
@@ -126,6 +128,7 @@ func TestRenderTrain(t *testing.T) {
 }
 
 func TestRenderTrainTimezoneConversion(t *testing.T) {
+	t.Parallel()
 	// Test edge case: date change across timezones
 	// 2026-01-15 23:30:00 UTC
 	testTime := time.Date(2026, 1, 15, 23, 30, 0, 0, time.UTC)
@@ -164,6 +167,7 @@ func TestRenderTrainTimezoneConversion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			template := "release_{date}_{time}-RC{iteration}"
 			got, err := renderTrain(template, tt.timezone, testTime)
 			require.NoError(t, err)
@@ -174,6 +178,7 @@ func TestRenderTrainTimezoneConversion(t *testing.T) {
 }
 
 func TestValidateTemplate(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		template  string
@@ -251,6 +256,7 @@ func TestValidateTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateTemplate(tt.template)
 			if tt.wantError {
 				require.Error(t, err)

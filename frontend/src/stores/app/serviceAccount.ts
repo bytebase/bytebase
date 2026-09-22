@@ -13,7 +13,7 @@ import {
   UndeleteServiceAccountRequestSchema,
   UpdateServiceAccountRequestSchema,
 } from "@/types/proto-es/v1/service_account_service_pb";
-import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 import type {
   AccountFilter,
   AppSliceCreator,
@@ -38,22 +38,13 @@ export const buildAccountListFilter = (params: AccountFilter) => {
   const filter = [];
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
-    filter.push(`(name.contains("${search}") || email.contains("${search}"))`);
+    const value = celString(search);
+    filter.push(`(name.contains(${value}) || email.contains(${value}))`);
   }
   if (params.state === State.DELETED) {
-    filter.push(`state == "${State[params.state]}"`);
+    filter.push(`state == ${celString(State[params.state])}`);
   }
   return filter.join(" && ");
-};
-
-export const serviceAccountToUser = (sa: ServiceAccount): User => {
-  return createProto(UserSchema, {
-    name: `users/${sa.email}`,
-    email: sa.email,
-    title: sa.title,
-    state: sa.state,
-    serviceKey: sa.serviceKey,
-  });
 };
 
 export const createServiceAccountSlice: AppSliceCreator<ServiceAccountSlice> = (
@@ -74,14 +65,16 @@ export const createServiceAccountSlice: AppSliceCreator<ServiceAccountSlice> = (
           filter: buildAccountListFilter(params.filter ?? {}),
         })
       );
-    set((state) => ({
-      serviceAccountsByName: {
-        ...state.serviceAccountsByName,
-        ...Object.fromEntries(
-          response.serviceAccounts.map((sa) => [sa.name, sa])
-        ),
-      },
-    }));
+    if (!params.skipCache) {
+      set((state) => ({
+        serviceAccountsByName: {
+          ...state.serviceAccountsByName,
+          ...Object.fromEntries(
+            response.serviceAccounts.map((sa) => [sa.name, sa])
+          ),
+        },
+      }));
+    }
     return {
       serviceAccounts: response.serviceAccounts,
       nextPageToken: response.nextPageToken,

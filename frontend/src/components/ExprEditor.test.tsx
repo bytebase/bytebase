@@ -202,8 +202,8 @@ describe("ExprEditor", () => {
     await flushEffects();
 
     const deleteButtons = Array.from(
-      container.querySelectorAll('button[type="button"]')
-    ).filter((button) => button.className.includes("size-7"));
+      container.querySelectorAll("svg.lucide-trash-2")
+    ).map((icon) => icon.closest("button"));
     expect(deleteButtons).toHaveLength(2);
 
     await act(async () => {
@@ -337,6 +337,15 @@ describe("ExprEditor", () => {
     expect(input?.className).not.toContain(
       stylex.props(controlSizeStyle("sm")).className ?? ""
     );
+
+    const valueField = input?.parentElement;
+    expect(valueField?.className).toContain("w-56");
+    expect(valueField?.className).toContain("shrink-0");
+    expect(input?.className).toContain("w-full");
+    const deleteButton = container
+      .querySelector("svg.lucide-trash-2")
+      ?.closest("button");
+    expect(deleteButton?.previousElementSibling).toBe(valueField);
 
     unmount();
   });

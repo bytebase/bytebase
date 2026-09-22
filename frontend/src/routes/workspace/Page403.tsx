@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { WORKSPACE_ROUTE_LANDING } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
+import { Alert } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import type { Permission } from "@/types";
 
@@ -32,11 +33,11 @@ export function Page403() {
 
   return (
     <div className="mx-6 my-2">
-      <div className="rounded-md border border-red-200 bg-red-50 p-4">
+      <Alert variant="error" showIcon={false} className="rounded-sm p-4">
         <div className="flex items-start gap-3">
-          <ShieldAlert className="h-5 w-5 text-red-600 mt-0.5 shrink-0" />
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-error" />
           <div className="flex min-w-0 flex-1 flex-col gap-2 wrap-anywhere">
-            <div className="font-medium text-red-800">
+            <div className="font-medium">
               {t("common.missing-required-permission", { permissions: "" })}
             </div>
             {fromPath && <div>Path: {fromPath}</div>}
@@ -75,7 +76,7 @@ export function Page403() {
             </div>
           </div>
         </div>
-      </div>
+      </Alert>
     </div>
   );
 }

@@ -1,12 +1,15 @@
 package tidb
 
 import (
+	"context"
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -53,52 +56,6 @@ func TestGetTiDBConnectionRejectsAllowAllFiles(t *testing.T) {
 	require.Contains(t, err.Error(), "allowAllFiles")
 }
 
-func TestParseVersion(t *testing.T) {
-	tests := []struct {
-		version string
-		want    string
-	}{
-		{
-			version: "8.0.11-TiDB-v8.5.0",
-			want:    "v8.5.0",
-		},
-		{
-			version: "8.0.11-TiDB-v7.5.2-serverless",
-			want:    "v7.5.2",
-		},
-	}
-
-	a := require.New(t)
-	for _, tc := range tests {
-		version, err := parseVersion(tc.version)
-		a.NoError(err)
-		a.Equal(tc.want, version)
-	}
-}
-
-func TestTiDBVersionAtLeast(t *testing.T) {
-	tests := []struct {
-		version   string
-		threshold string
-		want      bool
-	}{
-		{version: "v7.1.1", threshold: "7.4.0", want: false},
-		{version: "v7.2.0", threshold: "7.4.0", want: false},
-		{version: "v7.3.0", threshold: "7.4.0", want: false},
-		{version: "v7.4.0", threshold: "7.4.0", want: true},
-		{version: "v7.5.2", threshold: "7.4.0", want: true},
-		{version: "v8.0.0", threshold: "7.4.0", want: true},
-		{version: "v8.5.0", threshold: "7.4.0", want: true},
-	}
-
-	a := require.New(t)
-	for _, tc := range tests {
-		got, err := tidbVersionAtLeast(tc.version, tc.threshold)
-		a.NoError(err)
-		a.Equal(tc.want, got, "version=%s threshold=%s", tc.version, tc.threshold)
-	}
-}
-
 func TestBuildExecuteCommandsNormalizesDelimiter(t *testing.T) {
 	statement := "DELIMITER //\nCREATE PROCEDURE p()\nBEGIN\n  SELECT 1;\nEND//\nDELIMITER ;\n"
 
@@ -133,4 +90,70 @@ func TestBuildExecuteCommandsDoesNotNormalizeDelimiterForLargeSheet(t *testing.T
 	require.NoError(t, err)
 	require.Len(t, commands, 1)
 	require.Equal(t, statement, commands[0].Text)
+}
+
+func TestExecuteCreateIndexInTransaction(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewTiDBDatabase(t)
+
+	tidbDriver := openTestDriver(ctx, t, container)
+	defer func() {
+		require.NoError(t, tidbDriver.Close(ctx))
+	}()
+
+	_, err := tidbDriver.Execute(ctx, fmt.Sprintf(`
+		USE %[1]s;
+		CREATE TABLE %[1]s.execute_create_index_in_transaction (id INT);
+		BEGIN;
+		CREATE INDEX idx_execute_create_index_in_transaction ON %[1]s.execute_create_index_in_transaction(id);
+		COMMIT;
+	`, database), db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	var count int
+	query := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM information_schema.tidb_indexes
+		WHERE table_schema = '%s'
+			AND table_name = 'execute_create_index_in_transaction'
+			AND key_name = 'idx_execute_create_index_in_transaction'
+	`, database)
+	err = tidbDriver.db.QueryRowContext(ctx, query).Scan(&count)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
+}
+
+func TestExecutePreparedStatementFlowWithCreateIndexString(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	container, database := testcontainer.NewTiDBDatabase(t)
+
+	tidbDriver := openTestDriver(ctx, t, container)
+	defer func() {
+		require.NoError(t, tidbDriver.Close(ctx))
+	}()
+
+	statement := fmt.Sprintf(`
+		USE %[1]s;
+		CREATE TABLE %[1]s.prepare_statement_flow (id INT);
+		SET @sql := 'CREATE INDEX idx_prepare_statement_flow ON %[1]s.prepare_statement_flow(id)';
+		PREPARE stmt FROM @sql;
+		EXECUTE stmt;
+		DEALLOCATE PREPARE stmt;
+	`, database)
+	_, err := tidbDriver.Execute(ctx, statement, db.ExecuteOptions{})
+	require.NoError(t, err)
+
+	var count int
+	query := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM information_schema.tidb_indexes
+		WHERE table_schema = '%s'
+			AND table_name = 'prepare_statement_flow'
+			AND key_name = 'idx_prepare_statement_flow'
+	`, database)
+	err = tidbDriver.db.QueryRowContext(ctx, query).Scan(&count)
+	require.NoError(t, err)
+	require.Equal(t, 1, count)
 }

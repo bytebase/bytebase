@@ -7,6 +7,7 @@ import {
   planServiceClientConnect,
   rolloutServiceClientConnect,
 } from "@/api";
+import { listAllTaskRuns } from "@/api/taskRun";
 import { router } from "@/app/router";
 import { WORKSPACE_ROUTE_403, WORKSPACE_ROUTE_404 } from "@/app/router/handles";
 import { buildPermissionDeniedRouteQuery } from "@/app/router/permissionDenied";
@@ -27,7 +28,6 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import {
   GetRolloutRequestSchema,
-  ListTaskRunsRequestSchema,
   type Rollout,
   Task_Status,
   type TaskRun,
@@ -176,14 +176,9 @@ const loadIssueDetailSnapshot = async (
 
   const taskRuns =
     rollout !== undefined
-      ? await rolloutServiceClientConnect
-          .listTaskRuns(
-            create(ListTaskRunsRequestSchema, {
-              parent: `${rollout.name}/stages/-/tasks/-`,
-            })
-          )
-          .then((response) => response.taskRuns)
-          .catch(() => [])
+      ? await listAllTaskRuns(`${rollout.name}/stages/-/tasks/-`).catch(
+          () => []
+        )
       : [];
 
   return {
@@ -253,14 +248,9 @@ const refreshIssueDetailSnapshot = async (
 
   const taskRuns =
     rollout !== undefined
-      ? await rolloutServiceClientConnect
-          .listTaskRuns(
-            create(ListTaskRunsRequestSchema, {
-              parent: `${rollout.name}/stages/-/tasks/-`,
-            })
-          )
-          .then((response) => response.taskRuns)
-          .catch(() => [])
+      ? await listAllTaskRuns(`${rollout.name}/stages/-/tasks/-`).catch(
+          () => []
+        )
       : [];
 
   return {

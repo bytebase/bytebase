@@ -8,10 +8,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -36,7 +36,7 @@ func (*NamingIdentifierCaseAdvisor) Check(_ context.Context, checkCtx advisor.Co
 
 	rule := NewNamingIdentifierCaseRule(level, checkCtx.Rule.Type.String(), checkCtx.CurrentDatabase, namingCasePayload.Upper)
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 }
 
 // NamingIdentifierCaseRule is the rule implementation for identifier case.
@@ -70,7 +70,7 @@ func (r *NamingIdentifierCaseRule) OnStatement(node ast.Node) {
 					r.level,
 					code.NamingCaseMismatch.Int32(),
 					fmt.Sprintf("Identifier %q should be upper case", ident.name),
-					common.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
+					base.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
 				)
 			}
 		} else if ident.name != strings.ToLower(ident.name) {
@@ -78,7 +78,7 @@ func (r *NamingIdentifierCaseRule) OnStatement(node ast.Node) {
 				r.level,
 				code.NamingCaseMismatch.Int32(),
 				fmt.Sprintf("Identifier %q should be lower case", ident.name),
-				common.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
+				base.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
 			)
 		}
 	}

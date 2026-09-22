@@ -22,6 +22,7 @@ import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Switch } from "@/components/ui/switch";
 import { usePlanFeature, useServerState } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import {
@@ -96,11 +97,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
   function AccountSection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
 
-    const listIdentityProviders = useAppStore(
-      (state) => state.listIdentityProviders
-    );
-
-    const { isSaaSMode, workspaceResourceName } = useServerState();
+    const { isSaaSMode } = useServerState();
     const hasDisallowSignupFeature = usePlanFeature(
       PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP
     );
@@ -118,7 +115,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     const [allowEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
     const existActiveIdentityProvider = useAppStore(
-      (state) => state.identityProviderList().length > 0
+      (state) => (state.authenticationInfo?.identityProviders.length ?? 0) > 0
     );
 
     // Track whether the EMAIL setting is configured (required to enable email-code signin).
@@ -127,12 +124,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       (s) => !!s.getSettingByName(Setting_SettingName.EMAIL)
     );
 
-    // Fetch identity providers after the workspace resource name is ready.
+    // Refresh the login providers that gate the disallow-password-signin
+    // toggle, which is self-hosted only.
     useEffect(() => {
-      if (workspaceResourceName) {
-        listIdentityProviders(workspaceResourceName);
-      }
-    }, [listIdentityProviders, workspaceResourceName]);
+      if (isSaaSMode) return;
+      useAppStore.getState().fetchAuthenticationInfo();
+    }, [isSaaSMode]);
 
     // Fetch EMAIL setting on mount.
     useEffect(() => {
@@ -363,7 +360,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
         updateMask: create(FieldMaskSchema, { paths: updateMaskPaths }),
       });
 
-      // Reset local state from the (now-updated) Vue store so isDirty clears
+      // Reset local state from the (now-updated) app store so isDirty clears
       // and the parent's bottom bar disappears.
       setToggleState(getInitialToggleState());
       setPasswordState(getInitialPasswordRestriction());
@@ -427,7 +424,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 <FormField
                   title={
                     <span className="flex items-center gap-x-2">
-                      <Checkbox
+                      <Switch
                         checked={toggleState.disallowSignup}
                         disabled={disabled || !hasDisallowSignupFeature}
                         onCheckedChange={(checked) =>
@@ -626,11 +623,11 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             <hr className="my-1" />
 
             {/* Sub-section 3: Require 2FA */}
-            <div className="flex flex-col gap-y-7">
+            <div className="flex flex-col gap-y-6">
               <FormField
                 title={
                   <span className="flex items-center gap-x-2">
-                    <Checkbox
+                    <Switch
                       checked={toggleState.requireMfa}
                       disabled={disabled || !has2FAFeature}
                       onCheckedChange={(checked) =>
@@ -654,7 +651,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 <FormField
                   title={
                     <span className="flex items-center gap-x-2">
-                      <Checkbox
+                      <Switch
                         checked={toggleState.disallowPasswordSignin}
                         disabled={
                           disabled ||
@@ -700,7 +697,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                 <FormField
                   title={
                     <span className="flex items-center gap-x-2">
-                      <Checkbox
+                      <Switch
                         checked={toggleState.allowEmailCodeSignin}
                         disabled={
                           disabled ||
@@ -891,7 +888,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                     setTokenState((s) => ({ ...s, inactiveTimeout: v }))
                   }
                 />
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-control-light">
                   {t(
                     "settings.general.workspace.inactive-session-timeout.hours"
                   )}

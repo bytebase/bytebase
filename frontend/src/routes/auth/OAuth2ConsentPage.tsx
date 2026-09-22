@@ -1,10 +1,12 @@
-import { Building2, Check, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Building2, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
+import { isServingMode, readConsentCeiling } from "@/components/mcp/mcpPolicy";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -14,6 +16,12 @@ import {
 } from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
+import type { MCPSetting } from "@/types/proto-es/v1/setting_service_pb";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { MCPConsentCeiling } from "./MCPConsentCeiling";
+import { MCPConsentDisabled } from "./MCPConsentDisabled";
+import type { UndisclosedReason } from "./MCPConsentUndisclosed";
+import { MCPConsentUndisclosed } from "./MCPConsentUndisclosed";
 
 const AUTHORIZE_URL = "/api/oauth2/authorize";
 
@@ -23,10 +31,24 @@ export function OAuth2ConsentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [clientName, setClientName] = useState("");
+  // What the workspace's MCP ceiling lets this session do. Every grant this
+  // server issues is an MCP grant, so the ceiling decides the POST too — this
+  // is the same answer, shown before the person presses Approve.
+  //
+  // Undefined is not "no policy": it is this page not holding one, which is
+  // the state Allow is withheld under.
+  const [mcpSetting, setMcpSetting] = useState<MCPSetting | undefined>(
+    undefined
+  );
+  const [dataMaskingAvailable, setDataMaskingAvailable] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
+  const refreshSubscription = useAppStore((state) => state.refreshSubscription);
+  const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
   const switchWorkspace = useAppStore((state) => state.switchWorkspace);
+  const hasFeature = useAppStore((state) => state.hasFeature);
 
   const isLoggedIn = useAppStore((s) => s.isLoggedIn());
   // Workspace context shown on the consent card. On SaaS, every Bytebase
@@ -55,6 +77,38 @@ export function OAuth2ConsentPage() {
   const resource = (query.resource as string) || "";
   const scope = (query.scope as string) || "";
 
+  // Silent: the interceptor's toast names a status code, not a fix, and the
+  // card this feeds says the same thing in words the person can act on.
+  const readCeiling = useCallback(async (): Promise<MCPSetting | undefined> => {
+    try {
+      const info = await refreshServerInfo();
+      return info?.mcpSetting;
+    } catch {
+      return undefined;
+    }
+  }, [refreshServerInfo]);
+
+  const readConsentDisclosure = useCallback(async () => {
+    const [mcpSetting, subscription] = await Promise.all([
+      readCeiling(),
+      refreshSubscription(),
+    ]);
+    return {
+      mcpSetting,
+      dataMaskingAvailable:
+        subscription !== undefined &&
+        hasFeature(PlanFeature.FEATURE_DATA_MASKING),
+    };
+  }, [hasFeature, readCeiling, refreshSubscription]);
+
+  const retryCeiling = async () => {
+    setRetrying(true);
+    const disclosure = await readConsentDisclosure();
+    setMcpSetting(disclosure.mcpSetting);
+    setDataMaskingAvailable(disclosure.dataMaskingAvailable);
+    setRetrying(false);
+  };
+
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
@@ -74,11 +128,6 @@ export function OAuth2ConsentPage() {
       return;
     }
 
-    // This page renders outside any shell, so the workspace bootstrap hasn't
-    // populated the app store — load server info so `isSaaSMode()` resolves
-    // and the SaaS workspace picker can render.
-    void useAppStore.getState().loadServerInfo();
-
     (async () => {
       try {
         const response = await fetch(
@@ -95,11 +144,20 @@ export function OAuth2ConsentPage() {
         const data = await response.json();
         setClientName(data.client_name || clientId);
       } catch {
+        // Same shape as the !response.ok branch above: with no client there is
+        // nothing for the policy lookup to enrich, and the render checks
+        // loading before error, so falling through would hold the spinner over
+        // an error we already have.
         setError(t("oauth2.consent.error-load-failed"));
+        setLoading(false);
+        return;
       }
+      const disclosure = await readConsentDisclosure();
+      setMcpSetting(disclosure.mcpSetting);
+      setDataMaskingAvailable(disclosure.dataMaskingAvailable);
       setLoading(false);
     })();
-  }, []);
+  }, [readConsentDisclosure]);
 
   // Prefetch workspace list on SaaS so the picker can render. This runs in
   // its own effect keyed on `isSaaSMode` because actuator's serverInfo may
@@ -136,6 +194,47 @@ export function OAuth2ConsentPage() {
     }
   };
 
+  // Rendered in BOTH branches. A disabled workspace is exactly when a SaaS
+  // user needs the switcher: another workspace may permit MCP, and without it
+  // they have to abandon the OAuth flow, switch, and start over.
+  const workspaceCard = currentWorkspace ? (
+    <div className="bg-control-bg rounded-sm p-4 flex items-center gap-3">
+      <Building2 className="size-5 text-control-light shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-control-light">
+          {t("oauth2.consent.workspace-label")}
+        </p>
+        {isSaaSMode && workspaceList.length > 1 ? (
+          <Select
+            value={currentWorkspace.name}
+            onValueChange={onSwitchWorkspace}
+            disabled={submitting}
+          >
+            <SelectTrigger size="sm" className="mt-1 w-full">
+              <SelectValue>
+                {(name) => {
+                  const ws = workspaceList.find((w) => w.name === name);
+                  return ws?.title || ws?.name || name || "";
+                }}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {workspaceList.map((ws) => (
+                <SelectItem key={ws.name} value={ws.name}>
+                  {ws.title || ws.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <p className="text-sm text-main truncate">
+            {currentWorkspace.title || currentWorkspace.name}
+          </p>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   const goBack = () => {
     router.back();
   };
@@ -166,122 +265,136 @@ export function OAuth2ConsentPage() {
     form.submit();
   };
 
-  return (
-    <div className="h-full flex flex-col justify-center mx-auto w-full max-w-sm">
-      <BytebaseLogo className="mx-auto mb-8" />
-      <div className="rounded-sm border border-control-border bg-white p-6">
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="size-6 animate-spin" />
-          </div>
-        ) : error ? (
-          <div className="text-center py-4">
-            <p className="text-error mb-4">{error}</p>
-            <Button appearance="outline" onClick={goBack}>
-              {t("common.go-back")}
+  // The way out of the one state that has one. undisclosable gets nothing:
+  // re-reading returns the same value this page has no word for, and a button
+  // that changes nothing reads as a promise that it might. Its two repairs —
+  // reload, then ask an admin — are named in its own copy instead.
+  const retryFor = (reason: UndisclosedReason): (() => void) | undefined => {
+    if (reason !== "unknown") {
+      return undefined;
+    }
+    // Wrapped rather than passed: retryCeiling is async, and handing a
+    // Promise-returning function to a `() => void` prop floats the promise
+    // (SonarCloud S6544). readCeiling swallows its own failures, so there is no
+    // rejection to route anywhere.
+    return () => {
+      void retryCeiling();
+    };
+  };
+
+  // Five branches share this slot and only the last offers a grant.
+  const consentBody = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="size-6 animate-spin" />
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="text-center py-4">
+          <p className="text-error mb-4">{error}</p>
+          <Button appearance="outline" onClick={goBack}>
+            {t("common.go-back")}
+          </Button>
+        </div>
+      );
+    }
+    // Allow renders only below this line, and only where the page holds a
+    // ceiling this bundle can name (BOT-106).
+    const ceiling = readConsentCeiling(mcpSetting);
+    if (ceiling.kind !== "mode") {
+      return (
+        <MCPConsentUndisclosed
+          reason={ceiling.kind}
+          workspaceCard={workspaceCard}
+          onRetry={retryFor(ceiling.kind)}
+          retrying={retrying}
+          // Not goBack: history leaves the client waiting on a callback that
+          // never comes. A deny POST returns access_denied to the registered
+          // redirect_uri, which is the answer the OAuth client is blocked on.
+          onDismiss={deny}
+          dismissing={submitting}
+        />
+      );
+    }
+    if (!isServingMode(ceiling.mode)) {
+      return (
+        <MCPConsentDisabled
+          workspaceTitle={
+            currentWorkspace?.title || currentWorkspace?.name || ""
+          }
+          workspaceCard={workspaceCard}
+          onDismiss={deny}
+          dismissing={submitting}
+        />
+      );
+    }
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold text-main mb-2">
+            {t("oauth2.consent.title")}
+          </h1>
+          <p className="text-control">
+            {t("oauth2.consent.description", { clientName })}
+          </p>
+        </div>
+        {workspaceCard}
+        <MCPConsentCeiling
+          mode={ceiling.mode}
+          ignoreMaskingExemptions={ceiling.ignoreMaskingExemptions}
+          dataMaskingAvailable={dataMaskingAvailable}
+        />
+        <form method="POST" action={AUTHORIZE_URL}>
+          <Input type="hidden" name="client_id" value={clientId} />
+          <Input type="hidden" name="redirect_uri" value={redirectUri} />
+          <Input type="hidden" name="state" value={oauthState} />
+          <Input type="hidden" name="code_challenge" value={codeChallenge} />
+          <Input
+            type="hidden"
+            name="code_challenge_method"
+            value={codeChallengeMethod}
+          />
+          <Input type="hidden" name="resource" value={resource} />
+          <Input type="hidden" name="scope" value={scope} />
+          <div className="flex gap-x-2">
+            <Button
+              type="button"
+              appearance="outline"
+              size="lg"
+              className="flex-1"
+              disabled={submitting}
+              onClick={deny}
+            >
+              {t("common.deny")}
+            </Button>
+            <Button
+              type="submit"
+              size="lg"
+              className="flex-1"
+              disabled={submitting}
+              name="action"
+              value="allow"
+            >
+              {t("common.allow")}
             </Button>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-xl font-semibold text-main mb-2">
-                {t("oauth2.consent.title")}
-              </h1>
-              <p className="text-control">
-                {t("oauth2.consent.description", { clientName })}
-              </p>
-            </div>
-            {currentWorkspace && (
-              <div className="bg-control-bg rounded-sm p-4 flex items-center gap-3">
-                <Building2 className="size-5 text-control-light shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-control-light">
-                    {t("oauth2.consent.workspace-label")}
-                  </p>
-                  {isSaaSMode && workspaceList.length > 1 ? (
-                    <Select
-                      value={currentWorkspace.name}
-                      onValueChange={onSwitchWorkspace}
-                      disabled={submitting}
-                    >
-                      <SelectTrigger size="sm" className="mt-1 w-full">
-                        <SelectValue>
-                          {(name) => {
-                            const ws = workspaceList.find(
-                              (w) => w.name === name
-                            );
-                            return ws?.title || ws?.name || name || "";
-                          }}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workspaceList.map((ws) => (
-                          <SelectItem key={ws.name} value={ws.name}>
-                            {ws.title || ws.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-main truncate">
-                      {currentWorkspace.title || currentWorkspace.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-            <div className="bg-control-bg rounded-sm p-4">
-              <p className="text-sm text-control-light mb-2">
-                {t("oauth2.consent.permissions")}
-              </p>
-              <ul className="text-sm text-main space-y-1">
-                <li className="flex items-center gap-2">
-                  <Check className="size-4 text-success" />
-                  {t("oauth2.consent.permission-access")}
-                </li>
-              </ul>
-            </div>
-            <form method="POST" action={AUTHORIZE_URL}>
-              <input type="hidden" name="client_id" value={clientId} />
-              <input type="hidden" name="redirect_uri" value={redirectUri} />
-              <input type="hidden" name="state" value={oauthState} />
-              <input
-                type="hidden"
-                name="code_challenge"
-                value={codeChallenge}
-              />
-              <input
-                type="hidden"
-                name="code_challenge_method"
-                value={codeChallengeMethod}
-              />
-              <input type="hidden" name="resource" value={resource} />
-              <input type="hidden" name="scope" value={scope} />
-              <div className="flex gap-x-2">
-                <Button
-                  type="button"
-                  appearance="outline"
-                  size="lg"
-                  className="flex-1"
-                  disabled={submitting}
-                  onClick={deny}
-                >
-                  {t("common.deny")}
-                </Button>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="flex-1"
-                  disabled={submitting}
-                  name="action"
-                  value="allow"
-                >
-                  {t("common.allow")}
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
+        </form>
+      </div>
+    );
+  };
+
+  return (
+    // SplashLayout's root is overflow-hidden, so this column carries its own
+    // scroll: the ceiling panel and its caution make the card taller than a
+    // short viewport, and the part that clips is Allow and Deny. The auto
+    // margins keep it centred while it still fits.
+    <div className="h-full overflow-y-auto flex flex-col mx-auto w-full max-w-sm py-8">
+      <BytebaseLogo className="mx-auto mb-8 mt-auto shrink-0" />
+      <div className="rounded-sm border border-control-border bg-background p-6 mb-auto shrink-0">
+        {consentBody()}
       </div>
     </div>
   );

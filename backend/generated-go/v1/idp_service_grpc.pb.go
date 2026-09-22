@@ -37,8 +37,15 @@ type IdentityProviderServiceClient interface {
 	// Gets an identity provider by name.
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(ctx context.Context, in *GetIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
-	// Lists all configured identity providers (public endpoint for login page).
-	// Permissions required: None
+	// Lists the identity providers configured for the caller's workspace.
+	// The login page reads AuthService.GetAuthenticationInfo instead,
+	// which publishes only the fields a browser needs to start an SSO redirect.
+	//
+	// Returns the same representation as GetIdentityProvider — secrets redacted,
+	// the rest of the configuration included — so granting
+	// bb.identityProviders.list conveys configuration read over the whole
+	// collection, not merely the names in it.
+	// Permissions required: bb.identityProviders.list
 	ListIdentityProviders(ctx context.Context, in *ListIdentityProvidersRequest, opts ...grpc.CallOption) (*ListIdentityProvidersResponse, error)
 	// Creates a new identity provider.
 	// Permissions required: bb.identityProviders.create
@@ -132,8 +139,15 @@ type IdentityProviderServiceServer interface {
 	// Gets an identity provider by name.
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(context.Context, *GetIdentityProviderRequest) (*IdentityProvider, error)
-	// Lists all configured identity providers (public endpoint for login page).
-	// Permissions required: None
+	// Lists the identity providers configured for the caller's workspace.
+	// The login page reads AuthService.GetAuthenticationInfo instead,
+	// which publishes only the fields a browser needs to start an SSO redirect.
+	//
+	// Returns the same representation as GetIdentityProvider — secrets redacted,
+	// the rest of the configuration included — so granting
+	// bb.identityProviders.list conveys configuration read over the whole
+	// collection, not merely the names in it.
+	// Permissions required: bb.identityProviders.list
 	ListIdentityProviders(context.Context, *ListIdentityProvidersRequest) (*ListIdentityProvidersResponse, error)
 	// Creates a new identity provider.
 	// Permissions required: bb.identityProviders.create

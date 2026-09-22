@@ -199,7 +199,15 @@ type ListSavedQueriesRequest struct {
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token from a previous ListSavedQueries call. Keep every other
 	// parameter the same as the call that returned it.
-	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	// Sort the results, per https://google.aip.dev/132#ordering. Supported
+	// fields: `update_time`, `create_time`, `title`; append " desc" for
+	// descending, e.g. "update_time desc" for most recently modified first.
+	// A modification is a title, content, database, or folder write; sharing
+	// and stars do not count, and a never-modified saved query counts its
+	// create time. Empty means `title` ascending. `resource_id` is always
+	// appended as a final tiebreak so pages stay stable.
+	OrderBy       string `protobuf:"bytes,5,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -258,6 +266,13 @@ func (x *ListSavedQueriesRequest) GetPageSize() int32 {
 func (x *ListSavedQueriesRequest) GetPageToken() string {
 	if x != nil {
 		return x.PageToken
+	}
+	return ""
+}
+
+func (x *ListSavedQueriesRequest) GetOrderBy() string {
+	if x != nil {
+		return x.OrderBy
 	}
 	return ""
 }
@@ -1059,7 +1074,7 @@ type SavedQuery struct {
 	// The connected database, which must belong to the saved query's own
 	// project. Empty when none is connected, or when the database no longer
 	// exists.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Database string `protobuf:"bytes,3,opt,name=database,proto3" json:"database,omitempty"`
 	// The title of the saved query.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
@@ -1201,14 +1216,15 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"savedQuery\"K\n" +
 	"\x14GetSavedQueryRequest\x123\n" +
 	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
-	"\x17bytebase.com/SavedQueryR\x04name\"\xa3\x01\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\"\xbe\x01\n" +
 	"\x17ListSavedQueriesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
 	"\x06filter\x18\x02 \x01(\tR\x06filter\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x04 \x01(\tR\tpageToken\"\x80\x01\n" +
+	"page_token\x18\x04 \x01(\tR\tpageToken\x12\x19\n" +
+	"\border_by\x18\x05 \x01(\tR\aorderBy\"\x80\x01\n" +
 	"\x18ListSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"n\n" +
@@ -1266,7 +1282,7 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"\x82\x01\n" +
 	"\x1aSearchSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8a\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8e\x04\n" +
 	"\n" +
 	"SavedQuery\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
@@ -1277,25 +1293,26 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
 	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"updateTime\x12\x1d\n" +
-	"\acontent\x18\b \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
+	"updateTime\x12!\n" +
+	"\acontent\x18\b \x01(\fB\a\xe0A\x02\xd0\xea0\x02R\acontent\x12&\n" +
 	"\fcontent_size\x18\t \x01(\x03B\x03\xe0A\x03R\vcontentSize\x12\x1d\n" +
 	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\r2\xae\x0f\n" +
-	"\x11SavedQueryService\x12\xc3\x01\n" +
-	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"p\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x84\x01\n" +
-	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"7\xdaA\x04name\x90\xea0\x02\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xb2\x01\n" +
-	"\x10ListSavedQueries\x12$.bytebase.v1.ListSavedQueriesRequest\x1a%.bytebase.v1.ListSavedQueriesResponse\"Q\xdaA\x06parent\x8a\xea0\x14bb.savedQueries.list\x90\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/savedQueries\x12\xaa\x01\n" +
-	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"C\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc0\x01\n" +
-	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"J\xdaA\x06parent\x90\xea0\x02\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xba\x01\n" +
-	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"g\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
-	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"M\xdaA\fname,starred\x90\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xca\x01\n" +
-	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"c\xdaA\"parent,source_folder,target_folder\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x8d\x01\n" +
-	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\";\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}\x12\xa8\x01\n" +
-	"\x13GetSavedQueryPolicy\x12'.bytebase.v1.GetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"I\xdaA\bresource\x90\xea0\x02\x82\xd3\xe4\x93\x024\x122/v1/{resource=projects/*/savedQueries/*}:getPolicy\x12\xb6\x01\n" +
-	"\x13SetSavedQueryPolicy\x12'.bytebase.v1.SetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"W\xdaA\x0fresource,policy\x90\xea0\x02\x98\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{resource=projects/*/savedQueries/*}:setPolicyB\xac\x01\n" +
+	"\x10\vJ\x04\b\f\x10\r2\xe6\x0f\n" +
+	"\x11SavedQueryService\x12\xc7\x01\n" +
+	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"t\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x88\x01\n" +
+	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\";\xdaA\x04name\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xba\x01\n" +
+	"\x10ListSavedQueries\x12$.bytebase.v1.ListSavedQueriesRequest\x1a%.bytebase.v1.ListSavedQueriesResponse\"Y\xdaA\x06parent\x8a\xea0\x14bb.savedQueries.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\n" +
+	"\x82\xd3\xe4\x93\x02&\x12$/v1/{parent=projects/*}/savedQueries\x12\xae\x01\n" +
+	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"G\xdaA\x06parent\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc4\x01\n" +
+	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"N\xdaA\x06parent\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xbe\x01\n" +
+	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"k\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xac\x01\n" +
+	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"Q\xdaA\fname,starred\x90\xea0\x02\xa0\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xce\x01\n" +
+	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"g\xdaA\"parent,source_folder,target_folder\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x91\x01\n" +
+	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\"?\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}\x12\xb0\x01\n" +
+	"\x13GetSavedQueryPolicy\x12'.bytebase.v1.GetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"Q\xdaA\bresource\x90\xea0\x02\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x024\x122/v1/{resource=projects/*/savedQueries/*}:getPolicy\x12\xbe\x01\n" +
+	"\x13SetSavedQueryPolicy\x12'.bytebase.v1.SetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"_\xdaA\x0fresource,policy\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{resource=projects/*/savedQueries/*}:setPolicyB\xac\x01\n" +
 	"\x0fcom.bytebase.v1B\x16SavedQueryServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

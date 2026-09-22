@@ -244,7 +244,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
         render: () => (
           <span className="inline-flex items-center gap-x-1.5">
             <span
-              className="w-5 h-5 rounded-full text-white text-xs flex items-center justify-center shrink-0"
+              className="w-5 h-5 rounded-full text-accent-text text-xs flex items-center justify-center shrink-0"
               style={{
                 backgroundColor: `hsl(${hashCode(u.title) % 360}, 55%, 55%)`,
               }}
@@ -253,7 +253,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             </span>
             <span>{u.title}</span>
             {currentUser && u.name === currentUser.name && (
-              <span className="text-xs bg-green-100 text-green-700 rounded-full px-1.5">
+              <span className="text-xs bg-success/10 text-success rounded-full px-1.5">
                 {t("common.you")}
               </span>
             )}
@@ -900,9 +900,9 @@ function DatabaseTargets({ targets }: { targets: string[] }) {
   );
 
   const inline = (
-    <div className="flex items-center truncate gap-x-0.5">
+    <div className="flex items-center truncate gap-x-1">
       {visible.map((target, i) => (
-        <span key={target} className="flex items-center gap-x-0.5">
+        <span key={target} className="flex items-center gap-x-1">
           {i > 0 && <span className="text-sm">, </span>}
           {renderLink(target)}
         </span>

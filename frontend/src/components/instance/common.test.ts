@@ -1,13 +1,22 @@
+// @vitest-environment node
 import { create, type MessageInitShape } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
+  DataSource_AuthenticationType,
   DataSourceSchema,
   KerberosConfigSchema,
   SASLConfigSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
-import { movesKeytabToNewDestination } from "./common";
+import {
+  calcDataSourceUpdateMask,
+  createDataSourceDraft,
+  type DataSourceSecretField,
+  getDataSourceSecretValue,
+  movesKeytabToNewDestination,
+  updateDataSourceSecret,
+} from "./common";
 import {
   applyLocalTlsCaSource,
   applyLocalTlsClientCertSource,
@@ -420,3 +429,68 @@ describe("Kerberos keytab resupply field classification", () => {
     ).toEqual(["krb_config"]);
   });
 });
+
+describe("secret edit intent", () => {
+  test.each([
+    ["password", "password"],
+    ["masterPassword", "master_password"],
+    ["sshPassword", "ssh_password"],
+    ["sshPrivateKey", "ssh_private_key"],
+    ["authenticationPrivateKey", "authentication_private_key"],
+    [
+      "authenticationPrivateKeyPassphrase",
+      "authentication_private_key_passphrase",
+    ],
+  ] as [DataSourceSecretField, string][])(
+    "explicitly clears %s even when the read value is redacted",
+    (field, path) => {
+      const original = create(DataSourceSchema, { id: "admin" });
+      const untouched = createDataSourceDraft(Engine.MYSQL, original);
+      expect(getDataSourceSecretValue(untouched, field)).toBeUndefined();
+      expect(
+        calcDataSourceUpdateMask(original, original, untouched)
+      ).not.toContain(path);
+      const changed = updateDataSourceSecret(untouched, field, "");
+      expect(getDataSourceSecretValue(changed, field)).toBe("");
+      expect(
+        calcDataSourceUpdateMask(
+          create(DataSourceSchema, { ...original, [field]: "" }),
+          original,
+          changed
+        )
+      ).toContain(path);
+    }
+  );
+
+  test("preserves whitespace and keeps an unrelated hidden secret out of the mask", () => {
+    const original = create(DataSourceSchema, { id: "admin" });
+    const changed = updateDataSourceSecret(
+      createDataSourceDraft(Engine.MYSQL, original),
+      "sshPassword",
+      "  secret  "
+    );
+    expect(changed.sshPassword).toBe("  secret  ");
+    expect(getDataSourceSecretValue(changed, "sshPrivateKey")).toBeUndefined();
+    expect(
+      calcDataSourceUpdateMask(
+        create(DataSourceSchema, {
+          ...original,
+          sshPassword: changed.sshPassword,
+        }),
+        original,
+        changed
+      )
+    ).toEqual(["ssh_password"]);
+  });
+});
+
+test.each([Engine.SPANNER, Engine.BIGQUERY])(
+  "initializes new GCP drafts with IAM for engine %s",
+  (engine) => {
+    const draft = createDataSourceDraft(engine);
+    expect(draft.authenticationType).toBe(
+      DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM
+    );
+    expect(draft.pendingCreate).toBe(true);
+  }
+);

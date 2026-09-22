@@ -8,10 +8,14 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
+
+// ErrTrialNotEligible means the workspace already has subscription history or a license.
+var ErrTrialNotEligible = errors.New("workspace is not eligible for a trial")
 
 // SubscriptionMessage is the message for a workspace subscription.
 type SubscriptionMessage struct {
@@ -69,4 +73,34 @@ func (s *Store) GetSubscriptionByWorkspace(ctx context.Context, workspace string
 	}
 	sub.Etag = generateEtag(sub.UpdatedAt)
 	return sub, nil
+}
+
+// CreateTrialLicense stores a trial license only when the workspace has no
+// subscription history and no existing license.
+func (s *Store) CreateTrialLicense(ctx context.Context, workspace string, license string) error {
+	existing, err := s.GetSubscriptionByWorkspace(ctx, workspace)
+	if err != nil {
+		return errors.Wrap(err, "failed to check subscription history")
+	}
+	if existing != nil {
+		return ErrTrialNotEligible
+	}
+
+	if _, err := s.UpdateSettingAtomic(ctx, workspace, storepb.SettingName_SYSTEM, func(current proto.Message) (proto.Message, error) {
+		systemSetting, ok := current.(*storepb.SystemSetting)
+		if !ok {
+			return nil, errors.Errorf("invalid system setting value type %T", current)
+		}
+		if systemSetting.License != "" {
+			return nil, ErrTrialNotEligible
+		}
+		systemSetting.License = license
+		return systemSetting, nil
+	}, nil); err != nil {
+		if errors.Is(err, ErrTrialNotEligible) {
+			return err
+		}
+		return errors.Wrap(err, "failed to update system setting")
+	}
+	return nil
 }

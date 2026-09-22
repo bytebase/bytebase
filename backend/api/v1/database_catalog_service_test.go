@@ -3,16 +3,18 @@ package v1
 import (
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestValidateCatalogSchemaNames(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		config   *storepb.DatabaseConfig
-		metadata *storepb.DatabaseSchemaMetadata
+		metadata *metadatapb.DatabaseSchemaMetadata
 		wantErr  bool
 	}{
 		{
@@ -22,9 +24,9 @@ func TestValidateCatalogSchemaNames(t *testing.T) {
 					{Name: "public", Tables: []*storepb.TableCatalog{{Name: "users"}}},
 				},
 			},
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "users"}}},
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
+					{Name: "public", Tables: []*metadatapb.TableMetadata{{Name: "users"}}},
 				},
 			},
 			wantErr: false,
@@ -36,9 +38,9 @@ func TestValidateCatalogSchemaNames(t *testing.T) {
 					{Name: "", Tables: []*storepb.TableCatalog{{Name: "users"}}},
 				},
 			},
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{Name: "public", Tables: []*storepb.TableMetadata{{Name: "users"}}},
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
+					{Name: "public", Tables: []*metadatapb.TableMetadata{{Name: "users"}}},
 				},
 			},
 			wantErr: true,
@@ -50,9 +52,9 @@ func TestValidateCatalogSchemaNames(t *testing.T) {
 					{Name: "", Tables: []*storepb.TableCatalog{{Name: "users"}}},
 				},
 			},
-			metadata: &storepb.DatabaseSchemaMetadata{
-				Schemas: []*storepb.SchemaMetadata{
-					{Name: "", Tables: []*storepb.TableMetadata{{Name: "users"}}},
+			metadata: &metadatapb.DatabaseSchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
+					{Name: "", Tables: []*metadatapb.TableMetadata{{Name: "users"}}},
 				},
 			},
 			wantErr: false,
@@ -61,6 +63,7 @@ func TestValidateCatalogSchemaNames(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateCatalogSchemaNames(tc.config, tc.metadata)
 			if tc.wantErr {
 				require.Error(t, err)
@@ -72,6 +75,7 @@ func TestValidateCatalogSchemaNames(t *testing.T) {
 }
 
 func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		config  *storepb.DatabaseConfig
@@ -105,6 +109,22 @@ func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
 			setting: &storepb.SemanticTypeSetting{
 				Types: []*storepb.SemanticTypeSetting_SemanticType{{Id: "email"}},
 			},
+		},
+		{
+			name: "built-in semantic types pass without workspace configuration",
+			config: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{{
+					Name: "public",
+					Tables: []*storepb.TableCatalog{{
+						Name: "users",
+						Columns: []*storepb.ColumnCatalog{
+							{Name: "email", SemanticType: defaultSemanticTypeID},
+							{Name: "phone", SemanticType: defaultPartialSemanticTypeID},
+						},
+					}},
+				}},
+			},
+			setting: &storepb.SemanticTypeSetting{Types: getBuiltinSemanticTypes()},
 		},
 		{
 			name: "unknown column semantic type rejected",
@@ -154,6 +174,7 @@ func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateCatalogSemanticTypeIDs(tc.config, tc.setting)
 			if tc.wantErr != "" {
 				require.EqualError(t, err, tc.wantErr)

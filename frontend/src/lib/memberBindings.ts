@@ -2,7 +2,6 @@ import { create } from "@bufbuild/protobuf";
 import { orderBy } from "lodash-es";
 import { extractGroupEmail } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { serviceAccountToUser } from "@/stores/app/serviceAccount";
 import { workloadIdentityToUser } from "@/stores/app/workloadIdentity";
 import {
   extractUserEmail,
@@ -25,9 +24,8 @@ import { convertMemberToFullname, hasWorkspacePermissionV2 } from "@/utils";
 // Lives under `@/lib/` (not `@/utils/`) so the app-store reads don't
 // drag `@/stores/app` into the `@/utils` import graph — that would
 // recreate the static ESM cycle the SQL editor connection move fixed.
-// Members surfaces are React-only, so a React-side location is natural.
 
-const getMemberBinding = (
+export const getMemberBinding = (
   member: string,
   searchText: string
 ): MemberBinding | undefined => {
@@ -66,8 +64,15 @@ const getMemberBinding = (
     let isPending = false;
     const fullname = convertMemberToFullname(member);
     if (fullname.startsWith(serviceAccountNamePrefix)) {
+      // Display-only projection: members surfaces render every principal
+      // kind through the User shape.
       const sa = appStore.getServiceAccount(fullname);
-      user = serviceAccountToUser(sa);
+      user = create(UserSchema, {
+        name: `users/${sa.email}`,
+        email: sa.email,
+        title: sa.title,
+        state: sa.state,
+      });
     } else if (fullname.startsWith(workloadIdentityNamePrefix)) {
       const wi = appStore.getWorkloadIdentity(fullname);
       user = workloadIdentityToUser(wi);

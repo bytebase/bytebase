@@ -221,7 +221,7 @@ export function PlanDetailRollbackSheet({
             </Badge>
           </div>
           {step === 1 ? (
-            <div className="space-y-3">
+            <div className="flex flex-col gap-y-3">
               <div className="text-sm text-control-light">
                 {t("task.select-task")}
               </div>
@@ -248,7 +248,7 @@ export function PlanDetailRollbackSheet({
                           });
                         }}
                       />
-                      <div className="min-w-0 space-y-1">
+                      <div className="flex min-w-0 flex-col gap-y-1">
                         <div className="min-w-0 text-sm font-medium text-main">
                           <PlanTargetDisplay
                             showEnvironment
@@ -265,7 +265,7 @@ export function PlanDetailRollbackSheet({
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-y-4">
               <Alert
                 variant="info"
                 description={t(
@@ -284,7 +284,10 @@ export function PlanDetailRollbackSheet({
                 </div>
               ) : (
                 previews.map((preview) => (
-                  <div key={preview.taskRun.name} className="space-y-2">
+                  <div
+                    key={preview.taskRun.name}
+                    className="flex flex-col gap-y-2"
+                  >
                     <div className="text-sm font-medium text-main">
                       <PlanTargetDisplay
                         showEnvironment
@@ -292,19 +295,19 @@ export function PlanDetailRollbackSheet({
                       />
                     </div>
                     {preview.error ? (
-                      <div className="rounded-md border border-error/30 bg-error/5 p-3 text-sm text-error">
+                      <div className="rounded-sm border border-error/30 bg-error/5 p-3 text-sm text-error">
                         {preview.error}
                       </div>
                     ) : preview.statement ? (
                       <ReadonlyMonaco
-                        className="relative rounded-md border border-control-border"
+                        className="relative rounded-sm border border-control-border"
                         content={preview.statement}
                         language="sql"
                         min={128}
                         max={256}
                       />
                     ) : (
-                      <div className="flex items-center justify-center rounded-md border border-control-border bg-control-bg p-8">
+                      <div className="flex items-center justify-center rounded-sm border border-control-border bg-control-bg p-8">
                         <div className="flex flex-col items-center gap-y-2 text-center">
                           <DatabaseBackup className="size-6 text-control-placeholder" />
                           <p className="text-sm text-control-light">

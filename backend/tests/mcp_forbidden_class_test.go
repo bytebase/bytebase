@@ -7,7 +7,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -33,11 +32,7 @@ func TestMCPCannotChangeOwnPasswordAndLogIn(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	// A dedicated end user drives the session: the escape is about an MCP
 	// session rewriting its OWN credentials, and using the fixture's admin
@@ -125,33 +120,11 @@ func TestMCPCannotChangeOwnPasswordAndLogIn(t *testing.T) {
 	a.NoError(err, "the user's real password must still be their real password")
 	a.NotEmpty(stillOld.Msg.Token)
 
-	// The operator's view: a denied MCP call is exactly the event worth
-	// investigating, so both denials must be on the audit page — including
-	// Login, which the handler never reached.
-	deniedRows := func(method string) []*v1pb.AuditLog {
-		var rows []*v1pb.AuditLog
-		for _, row := range deniedMCPRows(ctx, t, ctl, workspace, method) {
-			if row.User == "users/"+agentEmail {
-				rows = append(rows, row)
-			}
-		}
-		return rows
-	}
-
-	updateRows := deniedRows("/bytebase.v1.UserService/UpdateUser")
-	a.Len(updateRows, 1, "the denied password change must produce exactly one audit row")
-	a.Equal(int32(connect.CodePermissionDenied), updateRows[0].Status.GetCode(),
-		"the row must record the denial, not a success")
-	a.NotEmpty(updateRows[0].McpDelegation.GetCorrelationId(),
-		"the denial must be correlatable back to the agent session that made it")
-
-	loginRows := deniedRows("/bytebase.v1.AuthService/Login")
-	a.Len(loginRows, 2, "both refused Login attempts must be audited")
-	for _, row := range loginRows {
-		a.Equal(int32(connect.CodePermissionDenied), row.Status.GetCode())
-	}
-	a.Equal(updateRows[0].McpDelegation.GetCorrelationId(), loginRows[0].McpDelegation.GetCorrelationId(),
-		"one session, one correlation ID across the whole chain")
+	// Both refusals are streamed, never stored.
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspace, "/bytebase.v1.UserService/UpdateUser"),
+		"a gate refusal is never stored")
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspace, "/bytebase.v1.AuthService/Login"),
+		"a gate refusal is never stored")
 }
 
 // TestWebUserStillChangesPasswordAndLogsIn is the regression half: the gate
@@ -163,11 +136,7 @@ func TestWebUserStillChangesPasswordAndLogsIn(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	const webEmail = "web-user@example.com"
 	const oldPassword = "1024bytebase"
@@ -190,12 +159,16 @@ func TestWebUserStillChangesPasswordAndLogsIn(t *testing.T) {
 	a.NoError(err)
 
 	// The user's own session changes their own password, exactly as the
-	// console does.
+	// console does — proving the current one, per
+	// docs/design/reauthenticate-credential-changes.md.
 	admin := ctl.authInterceptor.token
 	ctl.authInterceptor.token = login.Msg.Token
-	_, err = ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:       &v1pb.User{Name: "users/" + webEmail, Password: newPassword},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"password"}},
+	_, err = ctl.userServiceClient.ChangePassword(ctx, connect.NewRequest(&v1pb.ChangePasswordRequest{
+		Name:        "users/" + webEmail,
+		NewPassword: newPassword,
+		Credential: &v1pb.CredentialProof{
+			Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: oldPassword},
+		},
 	}))
 	ctl.authInterceptor.token = admin
 	a.NoError(err, "a normal session must still be able to change its own password")

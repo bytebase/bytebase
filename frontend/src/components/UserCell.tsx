@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { RouteTarget } from "@/app/router";
 import { RouterLink } from "@/components/RouterLink";
+import { UserHoverCard } from "@/components/UserHoverCard";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "./UserAvatar";
@@ -23,8 +24,16 @@ interface UserCellProps {
     onClick?: () => void;
     to?: RouteTarget;
   };
+  /**
+   * Email of the person this cell names. When set, the name gains a hover card
+   * showing who they are. Used where a name is mentioned in passing and there
+   * is no page to send the reader to.
+   */
+  hoverEmail?: string;
   /** Inline badges rendered after the name. */
   badges?: ReactNode;
+  /** Inline action rendered after the subtitle. */
+  subtitleAction?: ReactNode;
   /** Extra className on the outer wrapper. */
   className?: string;
 }
@@ -37,7 +46,9 @@ export function UserCell({
   avatar,
   nameClassName,
   nameLink,
+  hoverEmail,
   badges,
+  subtitleAction,
   className,
 }: UserCellProps) {
   const nameContent = title || subtitle || "?";
@@ -77,7 +88,7 @@ export function UserCell({
   ) : (
     <span
       className={cn(
-        "font-medium text-main",
+        "font-medium text-main truncate",
         size === "sm" && "text-sm",
         nameClassName
       )}
@@ -86,17 +97,41 @@ export function UserCell({
     </span>
   );
 
+  const hoverableNameEl = hoverEmail ? (
+    <UserHoverCard email={hoverEmail} fallbackTitle={title}>
+      {nameEl}
+    </UserHoverCard>
+  ) : (
+    nameEl
+  );
+
   return (
     <div className={cn("flex items-center gap-x-3", className)}>
       {showAvatar &&
         (avatar ?? <UserAvatar title={title || subtitle || "?"} size={size} />)}
-      <div className="flex flex-col">
-        <div className="flex items-center gap-x-1.5">
-          {nameEl}
+      <div className="flex flex-col min-w-0">
+        <div className="flex items-center gap-x-1.5 min-w-0">
+          {hoverableNameEl}
           {badges}
         </div>
         {subtitle && (
-          <span className="text-control-light text-xs">{subtitle}</span>
+          <div className="flex items-center gap-x-1 min-w-0">
+            <span className="text-control-light text-xs truncate">
+              {subtitle}
+            </span>
+            {subtitleAction && (
+              <div
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.stopPropagation();
+                  }
+                }}
+              >
+                {subtitleAction}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

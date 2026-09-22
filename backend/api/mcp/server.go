@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -21,6 +20,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -51,12 +51,23 @@ type Server struct {
 type serverStore interface {
 	GetWorkspaceID(context.Context) (string, error)
 	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)
-	GetSettingUncached(context.Context, string, storepb.SettingName) (*store.SettingMessage, error)
+	GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error)
 	DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error
+	// CreateAuditLog records the connection denials this package emits itself.
+	// They happen in echo middleware, outside both connect chains, so the audit
+	// interceptor never sees them.
+	CreateAuditLog(context.Context, string, *storepb.AuditLog) error
 }
 
 // NewServer creates a new MCP server. internalAPI is the internal API handler
 // chain tool calls dispatch to in memory; it is never bound to a listener.
+// It takes the concrete store; tests reach newServerWithStore with a fake.
+//
+// The nil check is not redundant with the typed parameter. A nil *store.Store
+// assigned to the serverStore interface field produces a NON-nil interface
+// holding a nil pointer, which no later nil test catches, so without this the
+// failure moves from a returned error here to a nil-receiver panic on the first
+// ceiling read inside authMiddleware.
 func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
 	if stores == nil {
 		return nil, errors.New("store is required")
@@ -99,9 +110,27 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// the token — not network position — is the security boundary, and the
 	// rebinding threat targets unauthenticated, browser-reached localhost
 	// servers, which Bytebase is not.
+	//
+	// maxMCPRequestBodyBytes bounds the JSON-RPC envelope, which makes it the
+	// ceiling on a migration statement. It is written out rather than aliased to
+	// the SDK's default so it survives a change to that default: past
+	// common.MaxSheetCheckSize (2 MiB) SQL review and plan checks skip and prior
+	// backup refuses, and base64 inflates that by 4/3, so 4 MiB clears the
+	// largest statement worth admitting.
+	//
+	// Tripping it costs the session, not just the call: the transport answers a
+	// bare 413, which the SDK client does not count as transient, so it fails the
+	// connection and every later call on it.
+	//
+	// DEFER: no tool-level statement cap, so an oversized body is refused by the
+	// transport with no code, size or remedy; upgrade when a caller reports it,
+	// or when a multi-file CreateRelease needs more than the cap.
 	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
-	}, &mcp.StreamableHTTPOptions{DisableLocalhostProtection: true})
+	}, &mcp.StreamableHTTPOptions{
+		DisableLocalhostProtection: true,
+		MaxRequestBodyBytes:        maxMCPRequestBodyBytes,
+	})
 
 	// Refresh per-request metadata that would otherwise be frozen at session
 	// start. The SDK runs tool handlers on the initialize request's context, but
@@ -110,6 +139,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// from. Identity stays pinned to the session (see below), which is what
 	// makes trusting the live address safe: it cannot belong to another
 	// principal.
+	mcpServer.AddReceivingMiddleware(negotiateLegacyProtocol)
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
 
 	// Pin each session to the identity it was opened with. The SDK captures
@@ -119,12 +149,85 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// check is inert, and since tool handlers run on the initialize request's
 	// context, a substituted-but-valid bearer would be admitted while the tool
 	// executed under the session's original identity.
-	s.httpHandler = mcpauth.RequireBearerToken(s.verifySessionBinding, nil)(streamable)
+	s.httpHandler = mcpauth.RequireBearerToken(s.verifySessionBinding, nil)(refuseSessionlessProtocol(streamable))
 
 	return s, nil
 }
 
+// sessionlessProtocolVersion is the first MCP revision the SDK serves only on a
+// stateless transport. This one is stateful and cannot become stateless: a
+// stateless transport gives every request its own session carrying no client
+// capabilities, which breaks elicitation for every older client.
+const (
+	sessionlessProtocolVersion = "2026-07-28"
+
+	// legacyProtocolCeiling is what the SDK answers an initialize handshake
+	// with, whatever the client asks for: negotiatedVersion caps there because
+	// the newer revision is negotiated through server/discover instead.
+	legacyProtocolCeiling = "2025-11-25"
+
+	// maxMCPRequestBodyBytes is documented at the handler that applies it.
+	maxMCPRequestBodyBytes = 4 << 20
+)
+
+// negotiateLegacyProtocol keeps a session's recorded revision equal to the one
+// its handshake answered.
+//
+// The SDK records the revision the client ASKED for and answers with the one it
+// negotiated, and for a client asking beyond legacyProtocolCeiling those differ.
+// Everything downstream reads the record, so the SDK would treat such a client
+// as multi round-trip capable and hand it an input-required result in place of
+// the elicitation it agreed to, which it has no obligation to know how to
+// retry. Rewriting the request to what was negotiated makes the two agree. The
+// client sees the same initialize response either way.
+//
+// With refuseSessionlessProtocol covering the header, no session on this route
+// records a revision this transport cannot serve.
+func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if params, ok := req.GetParams().(*mcp.InitializeParams); ok &&
+			params.ProtocolVersion >= sessionlessProtocolVersion {
+			params.ProtocolVersion = legacyProtocolCeiling
+		}
+		return next(ctx, method, req)
+	}
+}
+
+// refuseSessionlessProtocol rejects requests announcing that revision or newer.
+//
+// The SDK refuses it for every method but server/discover, and answers discover
+// by opening a session: discover fills in InitializeParams, the field the
+// cleanup checks before closing a session nobody adopted, while a session ID is
+// returned only on an initialize response. The client never learns that ID and
+// never deletes it, and no SessionTimeout is set, so each connect would strand
+// one session for the process's life. Clients fall back to the initialize
+// handshake on any discover error, which is the path they take here anyway.
+//
+// DEFER: refuses the revision whole; upgrade when the transport can serve it.
+func refuseSessionlessProtocol(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if version := r.Header.Get("MCP-Protocol-Version"); version >= sessionlessProtocolVersion {
+			// Debug, not info: every go-sdk v1.7.0 client takes this branch once
+			// per connect.
+			slog.Debug("refused an MCP protocol revision this transport cannot serve",
+				slog.String("version", version))
+			http.Error(w, "Bad Request: unsupported protocol version", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // registerTools registers all MCP tools.
+//
+// The list is not filtered by the workspace's ceiling (BOT-89). It could be:
+// the SDK re-reads its server-global tool registry on every tools/list, and
+// receiving middleware can trim that result using the live request's headers,
+// the way liveRequestMetadata already reads them. It is not, because a trimmed
+// list enforces nothing the per-request ceiling check does not already enforce,
+// and it would go stale in the client's hands the moment an admin changed the
+// ceiling: the SDK can invalidate a tool list only server-wide, never for one
+// session. Revisit if it grows per-session invalidation.
 func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()
@@ -198,15 +301,6 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "invalid token: audience mismatch")
 		}
 
-		// Enforce the workspace MCP capability ceiling before dispatching to any
-		// tool. DISABLED — and, until per-tool enforcement lands in a later
-		// phase, the not-yet-enforceable READ_ONLY ceiling — reject the
-		// connection outright. Read live so an admin change takes effect on the
-		// next request without re-issuing tokens.
-		if !mcpConnectionAllowed(s.mcpCapability(c.Request().Context(), workspaceID)) {
-			return echo.NewHTTPError(http.StatusForbidden, "MCP access is disabled for this workspace by policy")
-		}
-
 		// Establish the delegated identity that carries this request's principal
 		// and grant state onto the private in-memory transport. The inbound
 		// bearer stops at this boundary: internal API requests mint their own
@@ -215,6 +309,9 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// (common.DelegatedGrant documents the empty-state semantics; P1b
 		// resolves them). Identity only, no roles: downstream authorization
 		// re-resolves live exactly as for a public request.
+		//
+		// Built before the ceiling is read so a refused request carries the same
+		// provenance an admitted one does.
 		delegated := auth.DelegatedMCPCredential{
 			Principal:     sub,
 			WorkspaceID:   workspaceID,
@@ -222,6 +319,16 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			CorrelationID: uuid.NewString(),
 			Scope:         grantScope(claims),
 			Resource:      grantResource(claims, aud),
+		}
+
+		// Enforce the workspace MCP capability ceiling before dispatching to any
+		// tool. DISABLED rejects the connection outright; READ_ONLY admits it,
+		// and what a read-only session may then do is decided per method by the
+		// gate on the internal chain and per statement by the SQL clamp in
+		// SQLService/Query. Read live so an admin change takes effect on the
+		// next request without re-issuing tokens.
+		if refusal := s.refuseByCeiling(c, delegated); refusal != nil {
+			return refusal
 		}
 
 		// Store access token and workspace ID in request context for MCP tools.
@@ -234,8 +341,8 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Normalize the resolved address onto the request so the per-request
 		// path sees it too: receiving middleware gets each request's headers,
 		// but never its peer address.
-		resolvedIP := callerIP(c.Request())
-		c.Request().Header.Set(headerRealIP, resolvedIP)
+		resolvedIP := audit.CallerIP(c.Request())
+		c.Request().Header.Set(audit.HeaderRealIP, resolvedIP)
 		ctx = withCallerIP(ctx, resolvedIP)
 		ctx = withSessionBinding(ctx, sessionBinding{
 			fingerprint: sessionFingerprint(delegated),
@@ -252,12 +359,6 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 // OAuth2 access token is minted with since P1a PR 3 (mirrors the constant of
 // the same name in the oauth2 package, which stores that URI on the grant).
 const mcpResourcePath = "/mcp"
-
-// Caller-IP headers, in the precedence the audit interceptor reads them.
-const (
-	headerRealIP       = "X-Real-IP"
-	headerForwardedFor = "X-Forwarded-For"
-)
 
 // RegisterRoutes registers the MCP server routes with Echo.
 func (s *Server) RegisterRoutes(e *echo.Echo) {
@@ -387,7 +488,7 @@ func sessionFingerprint(identity auth.DelegatedMCPCredential) string {
 func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
-			if ip := headerCallerIP(extra.Header); ip != "" {
+			if ip := audit.CallerIPFromHeaders(extra.Header); ip != "" {
 				ctx = withCallerIP(ctx, ip)
 			}
 			if token, err := auth.GetTokenFromHeaders(extra.Header); err == nil && token != "" {
@@ -396,34 +497,6 @@ func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
 		}
 		return next(ctx, method, req)
 	}
-}
-
-// headerCallerIP reads the caller IP from request headers, in the order the
-// audit interceptor applies: the proxy-set single IP first, then the standard
-// forwarding chain.
-func headerCallerIP(header http.Header) string {
-	if ip := header.Get(headerRealIP); ip != "" {
-		return ip
-	}
-	return header.Get(headerForwardedFor)
-}
-
-// callerIP resolves who made this /mcp request: the forwarding headers if
-// present, otherwise the peer address, whose port is dropped so the value reads
-// as an IP either way. Same precedence the audit interceptor applies to a
-// request that reaches the v1 API directly.
-//
-// The forwarding headers are client-controllable, exactly as they are on that
-// direct path. Reading them preserves the existing trust model rather than
-// introducing one.
-func callerIP(r *http.Request) string {
-	if ip := headerCallerIP(r.Header); ip != "" {
-		return ip
-	}
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
-	}
-	return r.RemoteAddr
 }
 
 // bearerExpiry reads the inbound token's expiry. The JWT parse upstream has
@@ -568,54 +641,6 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 		),
 	)
 	return echo.NewHTTPError(http.StatusUnauthorized, errDescription)
-}
-
-// mcpConnectionAllowed reports whether an MCP connection may proceed under the
-// resolved workspace capability ceiling. This phase enforces the connection-level
-// gate only: DISABLED is rejected, and the not-yet-enforceable
-// READ_ONLY ceiling is also rejected — a ceiling the server cannot yet
-// apply per-tool must fail closed rather than silently grant read-write. A
-// later phase turns it into allow-with-clamp. Unknown stored values (e.g. a
-// reserved number) hit the default arm and fail closed too.
-func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
-	switch capability {
-	case storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED,
-		storepb.WorkspaceProfileSetting_READ_WRITE:
-		return true
-	default:
-		return false
-	}
-}
-
-// mcpCapability resolves the workspace's effective MCP capability ceiling. An
-// unset ceiling resolves to READ_WRITE so workspaces that never configured
-// one keep working; a genuine lookup error fails closed to DISABLED so a
-// policy that cannot be read never silently permits MCP. A missing setting row
-// is treated as unset, not an error.
-//
-// The read deliberately bypasses the store's setting cache: the cache has no
-// TTL and only in-process writes refresh it, so a profile cached as unset
-// would keep admitting MCP indefinitely after the ceiling is flipped by an
-// out-of-band admin path (direct SQL, another process). A kill switch must
-// observe the stored truth on the next request.
-func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.WorkspaceProfileSetting_MCPCapability {
-	setting, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
-	if err != nil {
-		slog.Warn("failed to read MCP capability policy; failing closed",
-			slog.String("workspace", workspaceID), log.BBError(err))
-		return storepb.WorkspaceProfileSetting_DISABLED
-	}
-	if setting == nil {
-		return storepb.WorkspaceProfileSetting_READ_WRITE
-	}
-	profile, ok := setting.Value.(*storepb.WorkspaceProfileSetting)
-	if !ok {
-		return storepb.WorkspaceProfileSetting_READ_WRITE
-	}
-	if capability := profile.GetMcpCapability(); capability != storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
-		return capability
-	}
-	return storepb.WorkspaceProfileSetting_READ_WRITE
 }
 
 // buildResourceMetadataURL returns the absolute URL of the protected resource

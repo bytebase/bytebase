@@ -37,6 +37,7 @@ import {
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
 import { SingleResultView } from "./SingleResultView";
+import type { ResultViewPresentation } from "./types";
 
 export interface ResultViewProps {
   executeParams: SQLEditorQueryParams;
@@ -46,6 +47,7 @@ export interface ResultViewProps {
   // Compact layout (fixed-height result body) for the terminal / admin panel.
   // The saved query panel leaves this false to keep the flex-grow layout.
   compact?: boolean;
+  presentation?: ResultViewPresentation;
 }
 
 type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
@@ -54,8 +56,7 @@ type ViewMode = "SINGLE-RESULT" | "MULTI-RESULT" | "EMPTY" | "ERROR";
  * Top-level wrapper for one database's query result. Routes to a single
  * `SingleResultView`, a multi-tab list of them, an empty placeholder, or
  * a result-set-level error view (with optional access-request /
- * sync-database affordances). Phase 7's caller swap mounts this via
- * `<ReactPageMount page="ResultView" ...>`.
+ * sync-database affordances).
  */
 export function ResultView({
   executeParams,
@@ -63,6 +64,7 @@ export function ResultView({
   resultSet,
   loading,
   compact = false,
+  presentation = "STANDARD",
 }: ResultViewProps) {
   const { t } = useTranslation();
   const project = useSQLEditorEditorState((s) => s.project);
@@ -78,8 +80,8 @@ export function ResultView({
   const getOrFetchPolicyByParentAndType = useAppStore(
     (s) => s.getOrFetchPolicyByParentAndType
   );
-  // Settings pages populate the env policy in Pinia, but the SQL editor
-  // route doesn't fetch it on its own — self-fetch so the read above
+  // Settings pages populate the env policy in the app store, but the SQL
+  // editor route doesn't fetch it on its own — self-fetch so the read above
   // resolves to a real policy (not the empty fallback) and copy-disable
   // gates fire even on a fresh editor visit.
   useEffect(() => {
@@ -262,6 +264,7 @@ export function ResultView({
                   !showExport ? requestExportButton : undefined
                 }
                 compact={compact}
+                presentation={presentation}
               />
             ))}
 
@@ -330,10 +333,13 @@ export function ResultView({
                       params={executeParams}
                       database={database}
                       result={result}
+                      results={resultSet.results}
+                      resultIndex={resultSet.results.indexOf(result)}
                       showExport={false}
                       maximumExportCount={queryDataPolicy?.maximumResultRows}
                       onExport={handleExport}
                       compact={compact}
+                      presentation={presentation}
                     />
                   )}
                 </TabsPanel>
@@ -376,8 +382,8 @@ export function ResultView({
 }
 
 // ---------------------------------------------------------------------------
-// Inline SyncDatabaseButton — replaces frontend/src/components/DatabaseDetail/SyncDatabaseButton.vue.
-// Only used by the result-set-level "resource not found" branch above.
+// Inline SyncDatabaseButton — only used by the result-set-level
+// "resource not found" branch above.
 // ---------------------------------------------------------------------------
 
 function SyncDatabaseButton({ database }: { database: Database }) {

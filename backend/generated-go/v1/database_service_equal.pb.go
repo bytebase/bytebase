@@ -127,9 +127,6 @@ func (x *UpdateDatabaseRequest) Equal(y *UpdateDatabaseRequest) bool {
 	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
 		return false
 	}
-	if x.AllowMissing != y.AllowMissing {
-		return false
-	}
 	return true
 }
 

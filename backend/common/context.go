@@ -4,8 +4,6 @@ package common
 import (
 	"context"
 
-	"google.golang.org/protobuf/types/known/anypb"
-
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -16,42 +14,8 @@ const (
 	// UserContextKey is the key name used to store user message in the context.
 	UserContextKey ContextKey = iota
 	AuthContextKey
-	ServiceDataKey
 	WorkspaceIDContextKey
-	AuditWorkspaceIDKey
 )
-
-func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
-	return context.WithValue(ctx, ServiceDataKey, setServiceData)
-}
-
-func GetSetServiceDataFromContext(ctx context.Context) (func(a *anypb.Any), bool) {
-	setServiceData, ok := ctx.Value(ServiceDataKey).(func(*anypb.Any))
-	return setServiceData, ok
-}
-
-// WithSetAuditWorkspaceID registers a callback handlers can use to tell the
-// audit interceptor which workspace a request should be audited against. This
-// is needed for methods that run with allow_without_credential=true (e.g.
-// Login/Signup/ExchangeToken): the workspace is unknown when the interceptor
-// chain starts, but the handler learns it before returning.
-func WithSetAuditWorkspaceID(ctx context.Context, setAuditWorkspaceID func(workspaceID string)) context.Context {
-	return context.WithValue(ctx, AuditWorkspaceIDKey, setAuditWorkspaceID)
-}
-
-// SetAuditWorkspaceID records the workspace that the current request should be
-// audited against, if the audit interceptor registered a setter on the context.
-// Safe to call even when auditing is disabled for the current method.
-func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
-	if workspaceID == "" {
-		return
-	}
-	setter, ok := ctx.Value(AuditWorkspaceIDKey).(func(string))
-	if !ok {
-		return
-	}
-	setter(workspaceID)
-}
 
 // GetWorkspaceIDFromContext returns the workspace ID from the request context.
 func GetWorkspaceIDFromContext(ctx context.Context) string {
@@ -132,17 +96,19 @@ type AuthContext struct {
 	AuthMethod             AuthMethod
 	// MCPMethodClass is the method's bytebase.v1.mcp_method_class annotation.
 	// The effective authorization of an MCP session is this classification
-	// intersected with the caller's own RBAC — it only ever narrows. Only
-	// FORBIDDEN is enforced today; READ and WRITE are the serving classes
-	// P1b's ceiling modes select between, and UNSPECIFIED means "not yet
-	// classified" rather than "safe".
+	// intersected with the caller's own RBAC — it only ever narrows. The MCP
+	// gate enforces every value: READ and WRITE are the serving classes the
+	// workspace ceiling selects between, EXCLUDED and FORBIDDEN are served by
+	// no ceiling, and UNSPECIFIED means "not yet classified" rather than
+	// "safe", so it is refused too.
 	MCPMethodClass v1pb.MCPMethodClass
-	// MCPForbiddenReason is the method's bytebase.v1.mcp_forbidden_reason
-	// annotation: which mechanism made it FORBIDDEN, so the denial can say
-	// why. Meaningful only when MCPMethodClass is FORBIDDEN, and UNSPECIFIED
-	// costs wording rather than enforcement — the class is what denies.
-	MCPForbiddenReason v1pb.MCPForbiddenReason
-	Resources          []*Resource
+	// MCPDenialReason is the method's bytebase.v1.mcp_denial_reason
+	// annotation: which mechanism or scope decision refuses it, so the denial
+	// can say why. Meaningful only when MCPMethodClass is FORBIDDEN or
+	// EXCLUDED, and UNSPECIFIED costs wording rather than enforcement — the
+	// class is what denies.
+	MCPDenialReason v1pb.MCPDenialReason
+	Resources       []*Resource
 	// DelegatedGrant carries the grant state of the delegated MCP credential
 	// on internal-chain requests; nil on the public chain. Presence, not any
 	// field value, marks a request as MCP-originated.

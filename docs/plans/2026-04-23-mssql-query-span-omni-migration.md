@@ -18,7 +18,7 @@ Single extractor. No dual-parse. Omni produces the AST; extractor consumes it.
 
 ```
 GetQuerySpan
-  → ParseTSQLOmni(stmt) → []omnimssql.Statement
+  → ParseTSQL(stmt) → []omnimssql.Statement
   → pre-pass: collect DECLARE @t TABLE into gCtx.TempTables
   → omniQuerySpanExtractor.run(stmts)
       → classifyQueryType(stmts[0].AST)   (already omni)

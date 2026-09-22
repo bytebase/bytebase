@@ -4,26 +4,13 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import type { MCPSetting } from "./setting_service_pb";
 
 /**
  * Describes the file v1/actuator_service.proto.
  */
 export declare const file_v1_actuator_service: GenFile;
-
-/**
- * Request message for setting up sample data.
- *
- * @generated from message bytebase.v1.SetupSampleRequest
- */
-export declare type SetupSampleRequest = Message<"bytebase.v1.SetupSampleRequest"> & {
-};
-
-/**
- * Describes the message bytebase.v1.SetupSampleRequest.
- * Use `create(SetupSampleRequestSchema)` to create a new message.
- */
-export declare const SetupSampleRequestSchema: GenMessage<SetupSampleRequest>;
 
 /**
  * Request message for getting actuator information.
@@ -38,6 +25,61 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
  * Use `create(GetActuatorInfoRequestSchema)` to create a new message.
  */
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
+
+/**
+ * SampleInfo describes sample setup availability and provisioned resources.
+ *
+ * @generated from message bytebase.v1.SampleInfo
+ */
+export declare type SampleInfo = Message<"bytebase.v1.SampleInfo"> & {
+  /**
+   * Whether sample setup is currently available.
+   *
+   * @generated from field: bool available = 1;
+   */
+  available: boolean;
+
+  /**
+   * The provisioned sample instances.
+   *
+   * @generated from field: repeated bytebase.v1.SampleInfo.Instance instances = 2;
+   */
+  instances: SampleInfo_Instance[];
+};
+
+/**
+ * Describes the message bytebase.v1.SampleInfo.
+ * Use `create(SampleInfoSchema)` to create a new message.
+ */
+export declare const SampleInfoSchema: GenMessage<SampleInfo>;
+
+/**
+ * Instance describes one provisioned sample instance.
+ *
+ * @generated from message bytebase.v1.SampleInfo.Instance
+ */
+export declare type SampleInfo_Instance = Message<"bytebase.v1.SampleInfo.Instance"> & {
+  /**
+   * The provisioned sample instance.
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
+   *
+   * @generated from field: string instance = 1;
+   */
+  instance: string;
+
+  /**
+   * The time when the provisioned sample instance expires.
+   *
+   * @generated from field: google.protobuf.Timestamp expire_time = 2;
+   */
+  expireTime?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.SampleInfo.Instance.
+ * Use `create(SampleInfo_InstanceSchema)` to create a new message.
+ */
+export declare const SampleInfo_InstanceSchema: GenMessage<SampleInfo_Instance>;
 
 /**
  * System information and configuration for the Bytebase instance.
@@ -111,13 +153,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   totalInstanceCount: number;
 
   /**
-   * Whether sample data setup is enabled.
-   *
-   * @generated from field: bool enable_sample = 22;
-   */
-  enableSample: boolean;
-
-  /**
    * Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
    *
    * @generated from field: bool external_url_from_flag = 23;
@@ -152,6 +187,20 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: int32 active_vcs_user_count = 28;
    */
   activeVcsUserCount: number;
+
+  /**
+   * Sample setup availability and provisioned resources.
+   *
+   * @generated from field: bytebase.v1.SampleInfo sample = 29;
+   */
+  sample?: SampleInfo | undefined;
+
+  /**
+   * The MCP (Model Context Protocol) setting in the current workspace.
+   *
+   * @generated from field: bytebase.v1.MCPSetting mcp_setting = 30;
+   */
+  mcpSetting?: MCPSetting | undefined;
 };
 
 /**
@@ -177,17 +226,6 @@ export declare const ActuatorService: GenService<{
     methodKind: "unary";
     input: typeof GetActuatorInfoRequestSchema;
     output: typeof ActuatorInfoSchema;
-  },
-  /**
-   * Sets up sample data for demonstration and testing purposes.
-   * Permissions required: bb.projects.create
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.SetupSample
-   */
-  setupSample: {
-    methodKind: "unary";
-    input: typeof SetupSampleRequestSchema;
-    output: typeof EmptySchema;
   },
 }>;
 

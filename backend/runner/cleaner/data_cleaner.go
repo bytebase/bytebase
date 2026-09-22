@@ -18,6 +18,11 @@ const (
 	planCheckRunTimeout         = 10 * time.Minute
 	heartbeatRetentionPeriod    = 1 * time.Hour
 	oauth2ClientRetentionPeriod = 30 * 24 * time.Hour // 30 days of inactivity
+	// LoginAttemptRetentionPeriod must exceed every lockout window, or the
+	// purge would delete still-running locks. Exported so the auth service's
+	// TestLoginAttemptRetentionOutlivesLockouts can assert the coupling; the
+	// longest window today is ten minutes, so rows idle for an hour are dead.
+	LoginAttemptRetentionPeriod = 1 * time.Hour
 )
 
 // DataCleaner periodically cleans up expired data from the database.
@@ -52,6 +57,7 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	c.cleanup(ctx)
 	c.detectStaleTaskRuns(ctx)
 	c.detectStalePlanCheckRuns(ctx)
+	c.detectStaleReviewRuns(ctx)
 
 	for {
 		select {
@@ -68,6 +74,7 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			}
 			c.detectStaleTaskRuns(ctx)
 			c.detectStalePlanCheckRuns(ctx)
+			c.detectStaleReviewRuns(ctx)
 		case <-ctx.Done():
 			return
 		}
@@ -78,6 +85,7 @@ func (c *DataCleaner) cleanup(ctx context.Context) {
 	c.cleanupOAuth2Data(ctx)
 	c.cleanupWebRefreshTokens(ctx)
 	c.cleanupEmailVerificationCodes(ctx)
+	c.cleanupLoginAttempts(ctx)
 	c.cleanupStaleHeartbeats(ctx)
 	c.cleanupExpiredVCSProviderUsers(ctx)
 }
@@ -90,6 +98,17 @@ func (c *DataCleaner) detectStaleTaskRuns(ctx context.Context) {
 	}
 	if rowsAffected > 0 {
 		slog.Info("Marked stale task runs as failed", slog.Int64("count", rowsAffected))
+	}
+}
+
+func (c *DataCleaner) detectStaleReviewRuns(ctx context.Context) {
+	rowsAffected, err := c.store.FailStaleReviewRuns(ctx, stalenessThreshold)
+	if err != nil {
+		slog.Error("Failed to detect stale review runs", log.BBError(err))
+		return
+	}
+	if rowsAffected > 0 {
+		slog.Info("Marked stale review runs as failed", slog.Int64("count", rowsAffected))
 	}
 }
 
@@ -155,6 +174,14 @@ func (c *DataCleaner) cleanupWebRefreshTokens(ctx context.Context) {
 		slog.Error("Failed to clean up expired web refresh tokens", log.BBError(err))
 	} else if rowsAffected > 0 {
 		slog.Info("Cleaned up expired web refresh tokens", slog.Int64("count", rowsAffected))
+	}
+}
+
+func (c *DataCleaner) cleanupLoginAttempts(ctx context.Context) {
+	if rowsAffected, err := c.store.DeleteStaleLoginAttempts(ctx, LoginAttemptRetentionPeriod); err != nil {
+		slog.Error("Failed to clean up stale login attempts", log.BBError(err))
+	} else if rowsAffected > 0 {
+		slog.Info("Cleaned up stale login attempts", slog.Int64("count", rowsAffected))
 	}
 }
 

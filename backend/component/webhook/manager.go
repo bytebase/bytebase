@@ -254,7 +254,7 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 		webhookCtx.CreatedTS = time.Now().Unix()
 		webhookCtx.DirectMessage = hook.Payload.GetDirectMessage()
 		go func(webhookCtx *webhook.Context, hook *store.ProjectWebhookMessage) {
-			if err := common.Retry(ctx, func() error {
+			if err := webhook.Retry(ctx, func() error {
 				return webhook.Post(hook.Payload.GetType(), *webhookCtx)
 			}); err != nil {
 				// The external webhook endpoint might be invalid which is out of our code control, so we just emit a warning

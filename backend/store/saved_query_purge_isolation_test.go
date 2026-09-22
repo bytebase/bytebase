@@ -8,12 +8,13 @@ import (
 
 // saved_query_star is keyed (saved_query, principal) and its parent key is
 // globally unique, so it carries no project-scoped id-reuse risk. What it does
-// carry is the purge: DeleteProject is the one writer whose star predicate
+// carry is the purge: DeleteProjects is the one writer whose star predicate
 // reaches outside the project being purged, because a project principal may
 // have starred another project's saved query. This locks down that reach —
 // rows belonging to a surviving project must not be collateral.
 
 func TestDeleteProjectPurgeKeepsOtherProjectSavedQueryStars(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', 'default', 'Project B');
 		INSERT INTO service_account (name, email, workspace, service_key_hash, project)
@@ -32,8 +33,8 @@ func TestDeleteProjectPurgeKeepsOtherProjectSavedQueryStars(t *testing.T) {
 			('sq-b-user', 'user@example.com');
 	`
 
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
-	require.NoError(t, fixture.store.DeleteProject(fixture.ctx, "default", "project-a"))
+	fixture := newStorePostgresFixture(t, seedSQL)
+	require.NoError(t, fixture.store.DeleteProjects(fixture.ctx, "default", "project-a"))
 
 	savedQueryExists := func(resourceID string) bool {
 		var exists bool

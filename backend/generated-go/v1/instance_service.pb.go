@@ -136,7 +136,7 @@ func (x DataSourceExternalSecret_SecretType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceExternalSecret_SecretType.Descriptor instead.
 func (DataSourceExternalSecret_SecretType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 0}
 }
 
 type DataSourceExternalSecret_AuthType int32
@@ -188,7 +188,7 @@ func (x DataSourceExternalSecret_AuthType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceExternalSecret_AuthType.Descriptor instead.
 func (DataSourceExternalSecret_AuthType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 1}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 1}
 }
 
 type DataSourceExternalSecret_TokenType int32
@@ -246,7 +246,7 @@ func (x DataSourceExternalSecret_TokenType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSourceExternalSecret_TokenType.Descriptor instead.
 func (DataSourceExternalSecret_TokenType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 2}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 2}
 }
 
 type DataSourceExternalSecret_AppRoleAuthOption_SecretType int32
@@ -298,7 +298,7 @@ func (x DataSourceExternalSecret_AppRoleAuthOption_SecretType) Number() protoref
 
 // Deprecated: Use DataSourceExternalSecret_AppRoleAuthOption_SecretType.Descriptor instead.
 func (DataSourceExternalSecret_AppRoleAuthOption_SecretType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 0, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 0, 0}
 }
 
 type DataSource_AuthenticationType int32
@@ -353,7 +353,7 @@ func (x DataSource_AuthenticationType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSource_AuthenticationType.Descriptor instead.
 func (DataSource_AuthenticationType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 0}
 }
 
 // CloudSQLIPType selects which Cloud SQL IP to dial for Google Cloud SQL IAM connections.
@@ -406,7 +406,7 @@ func (x DataSource_CloudSQLIPType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSource_CloudSQLIPType.Descriptor instead.
 func (DataSource_CloudSQLIPType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 1}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 1}
 }
 
 type DataSource_RedisType int32
@@ -458,7 +458,7 @@ func (x DataSource_RedisType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DataSource_RedisType.Descriptor instead.
 func (DataSource_RedisType) EnumDescriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 2}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 2}
 }
 
 type GetInstanceRequest struct {
@@ -779,6 +779,52 @@ func (x *CreateInstanceRequest) GetValidateOnly() bool {
 	return false
 }
 
+type PrepareSampleProjectInstanceRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The project that owns the sample instance.
+	// Format: projects/{project}
+	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PrepareSampleProjectInstanceRequest) Reset() {
+	*x = PrepareSampleProjectInstanceRequest{}
+	mi := &file_v1_instance_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrepareSampleProjectInstanceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrepareSampleProjectInstanceRequest) ProtoMessage() {}
+
+func (x *PrepareSampleProjectInstanceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_instance_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrepareSampleProjectInstanceRequest.ProtoReflect.Descriptor instead.
+func (*PrepareSampleProjectInstanceRequest) Descriptor() ([]byte, []int) {
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *PrepareSampleProjectInstanceRequest) GetParent() string {
+	if x != nil {
+		return x.Parent
+	}
+	return ""
+}
+
 type UpdateInstanceRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The instance to update.
@@ -799,7 +845,7 @@ type UpdateInstanceRequest struct {
 
 func (x *UpdateInstanceRequest) Reset() {
 	*x = UpdateInstanceRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[4]
+	mi := &file_v1_instance_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -811,7 +857,7 @@ func (x *UpdateInstanceRequest) String() string {
 func (*UpdateInstanceRequest) ProtoMessage() {}
 
 func (x *UpdateInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[4]
+	mi := &file_v1_instance_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -824,7 +870,7 @@ func (x *UpdateInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateInstanceRequest.ProtoReflect.Descriptor instead.
 func (*UpdateInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{4}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UpdateInstanceRequest) GetInstance() *Instance {
@@ -868,7 +914,7 @@ type DeleteInstanceRequest struct {
 
 func (x *DeleteInstanceRequest) Reset() {
 	*x = DeleteInstanceRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[5]
+	mi := &file_v1_instance_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -880,7 +926,7 @@ func (x *DeleteInstanceRequest) String() string {
 func (*DeleteInstanceRequest) ProtoMessage() {}
 
 func (x *DeleteInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[5]
+	mi := &file_v1_instance_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -893,7 +939,7 @@ func (x *DeleteInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteInstanceRequest.ProtoReflect.Descriptor instead.
 func (*DeleteInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *DeleteInstanceRequest) GetName() string {
@@ -928,7 +974,7 @@ type UndeleteInstanceRequest struct {
 
 func (x *UndeleteInstanceRequest) Reset() {
 	*x = UndeleteInstanceRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[6]
+	mi := &file_v1_instance_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -940,7 +986,7 @@ func (x *UndeleteInstanceRequest) String() string {
 func (*UndeleteInstanceRequest) ProtoMessage() {}
 
 func (x *UndeleteInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[6]
+	mi := &file_v1_instance_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -953,7 +999,7 @@ func (x *UndeleteInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UndeleteInstanceRequest.ProtoReflect.Descriptor instead.
 func (*UndeleteInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *UndeleteInstanceRequest) GetName() string {
@@ -977,7 +1023,7 @@ type SyncInstanceRequest struct {
 
 func (x *SyncInstanceRequest) Reset() {
 	*x = SyncInstanceRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[7]
+	mi := &file_v1_instance_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -989,7 +1035,7 @@ func (x *SyncInstanceRequest) String() string {
 func (*SyncInstanceRequest) ProtoMessage() {}
 
 func (x *SyncInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[7]
+	mi := &file_v1_instance_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1002,7 +1048,7 @@ func (x *SyncInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncInstanceRequest.ProtoReflect.Descriptor instead.
 func (*SyncInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SyncInstanceRequest) GetName() string {
@@ -1032,7 +1078,7 @@ type ListInstanceDatabaseRequest struct {
 
 func (x *ListInstanceDatabaseRequest) Reset() {
 	*x = ListInstanceDatabaseRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[8]
+	mi := &file_v1_instance_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1044,7 +1090,7 @@ func (x *ListInstanceDatabaseRequest) String() string {
 func (*ListInstanceDatabaseRequest) ProtoMessage() {}
 
 func (x *ListInstanceDatabaseRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[8]
+	mi := &file_v1_instance_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1057,7 +1103,7 @@ func (x *ListInstanceDatabaseRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListInstanceDatabaseRequest.ProtoReflect.Descriptor instead.
 func (*ListInstanceDatabaseRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListInstanceDatabaseRequest) GetName() string {
@@ -1084,7 +1130,7 @@ type ListInstanceDatabaseResponse struct {
 
 func (x *ListInstanceDatabaseResponse) Reset() {
 	*x = ListInstanceDatabaseResponse{}
-	mi := &file_v1_instance_service_proto_msgTypes[9]
+	mi := &file_v1_instance_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1096,7 +1142,7 @@ func (x *ListInstanceDatabaseResponse) String() string {
 func (*ListInstanceDatabaseResponse) ProtoMessage() {}
 
 func (x *ListInstanceDatabaseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[9]
+	mi := &file_v1_instance_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1109,7 +1155,7 @@ func (x *ListInstanceDatabaseResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListInstanceDatabaseResponse.ProtoReflect.Descriptor instead.
 func (*ListInstanceDatabaseResponse) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListInstanceDatabaseResponse) GetDatabases() []string {
@@ -1129,7 +1175,7 @@ type SyncInstanceResponse struct {
 
 func (x *SyncInstanceResponse) Reset() {
 	*x = SyncInstanceResponse{}
-	mi := &file_v1_instance_service_proto_msgTypes[10]
+	mi := &file_v1_instance_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1141,7 +1187,7 @@ func (x *SyncInstanceResponse) String() string {
 func (*SyncInstanceResponse) ProtoMessage() {}
 
 func (x *SyncInstanceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[10]
+	mi := &file_v1_instance_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1154,7 +1200,7 @@ func (x *SyncInstanceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncInstanceResponse.ProtoReflect.Descriptor instead.
 func (*SyncInstanceResponse) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SyncInstanceResponse) GetDatabases() []string {
@@ -1179,7 +1225,7 @@ type BatchSyncInstancesRequest struct {
 
 func (x *BatchSyncInstancesRequest) Reset() {
 	*x = BatchSyncInstancesRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[11]
+	mi := &file_v1_instance_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1191,7 +1237,7 @@ func (x *BatchSyncInstancesRequest) String() string {
 func (*BatchSyncInstancesRequest) ProtoMessage() {}
 
 func (x *BatchSyncInstancesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[11]
+	mi := &file_v1_instance_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1204,7 +1250,7 @@ func (x *BatchSyncInstancesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchSyncInstancesRequest.ProtoReflect.Descriptor instead.
 func (*BatchSyncInstancesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *BatchSyncInstancesRequest) GetParent() string {
@@ -1229,7 +1275,7 @@ type BatchSyncInstancesResponse struct {
 
 func (x *BatchSyncInstancesResponse) Reset() {
 	*x = BatchSyncInstancesResponse{}
-	mi := &file_v1_instance_service_proto_msgTypes[12]
+	mi := &file_v1_instance_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1241,7 +1287,7 @@ func (x *BatchSyncInstancesResponse) String() string {
 func (*BatchSyncInstancesResponse) ProtoMessage() {}
 
 func (x *BatchSyncInstancesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[12]
+	mi := &file_v1_instance_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1254,7 +1300,7 @@ func (x *BatchSyncInstancesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchSyncInstancesResponse.ProtoReflect.Descriptor instead.
 func (*BatchSyncInstancesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{13}
 }
 
 type BatchUpdateInstancesRequest struct {
@@ -1271,7 +1317,7 @@ type BatchUpdateInstancesRequest struct {
 
 func (x *BatchUpdateInstancesRequest) Reset() {
 	*x = BatchUpdateInstancesRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[13]
+	mi := &file_v1_instance_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1283,7 +1329,7 @@ func (x *BatchUpdateInstancesRequest) String() string {
 func (*BatchUpdateInstancesRequest) ProtoMessage() {}
 
 func (x *BatchUpdateInstancesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[13]
+	mi := &file_v1_instance_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1296,7 +1342,7 @@ func (x *BatchUpdateInstancesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateInstancesRequest.ProtoReflect.Descriptor instead.
 func (*BatchUpdateInstancesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *BatchUpdateInstancesRequest) GetParent() string {
@@ -1322,7 +1368,7 @@ type BatchUpdateInstancesResponse struct {
 
 func (x *BatchUpdateInstancesResponse) Reset() {
 	*x = BatchUpdateInstancesResponse{}
-	mi := &file_v1_instance_service_proto_msgTypes[14]
+	mi := &file_v1_instance_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1334,7 +1380,7 @@ func (x *BatchUpdateInstancesResponse) String() string {
 func (*BatchUpdateInstancesResponse) ProtoMessage() {}
 
 func (x *BatchUpdateInstancesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[14]
+	mi := &file_v1_instance_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1347,7 +1393,7 @@ func (x *BatchUpdateInstancesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BatchUpdateInstancesResponse.ProtoReflect.Descriptor instead.
 func (*BatchUpdateInstancesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{14}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *BatchUpdateInstancesResponse) GetInstances() []*Instance {
@@ -1373,7 +1419,7 @@ type AddDataSourceRequest struct {
 
 func (x *AddDataSourceRequest) Reset() {
 	*x = AddDataSourceRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[15]
+	mi := &file_v1_instance_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1385,7 +1431,7 @@ func (x *AddDataSourceRequest) String() string {
 func (*AddDataSourceRequest) ProtoMessage() {}
 
 func (x *AddDataSourceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[15]
+	mi := &file_v1_instance_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1398,7 +1444,7 @@ func (x *AddDataSourceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddDataSourceRequest.ProtoReflect.Descriptor instead.
 func (*AddDataSourceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{15}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *AddDataSourceRequest) GetName() string {
@@ -1436,7 +1482,7 @@ type RemoveDataSourceRequest struct {
 
 func (x *RemoveDataSourceRequest) Reset() {
 	*x = RemoveDataSourceRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[16]
+	mi := &file_v1_instance_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1448,7 +1494,7 @@ func (x *RemoveDataSourceRequest) String() string {
 func (*RemoveDataSourceRequest) ProtoMessage() {}
 
 func (x *RemoveDataSourceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[16]
+	mi := &file_v1_instance_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1461,7 +1507,7 @@ func (x *RemoveDataSourceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveDataSourceRequest.ProtoReflect.Descriptor instead.
 func (*RemoveDataSourceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{16}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RemoveDataSourceRequest) GetName() string {
@@ -1498,7 +1544,7 @@ type UpdateDataSourceRequest struct {
 
 func (x *UpdateDataSourceRequest) Reset() {
 	*x = UpdateDataSourceRequest{}
-	mi := &file_v1_instance_service_proto_msgTypes[17]
+	mi := &file_v1_instance_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1510,7 +1556,7 @@ func (x *UpdateDataSourceRequest) String() string {
 func (*UpdateDataSourceRequest) ProtoMessage() {}
 
 func (x *UpdateDataSourceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[17]
+	mi := &file_v1_instance_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1523,7 +1569,7 @@ func (x *UpdateDataSourceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateDataSourceRequest.ProtoReflect.Descriptor instead.
 func (*UpdateDataSourceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{17}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *UpdateDataSourceRequest) GetName() string {
@@ -1570,7 +1616,7 @@ type SyncDatabases struct {
 
 func (x *SyncDatabases) Reset() {
 	*x = SyncDatabases{}
-	mi := &file_v1_instance_service_proto_msgTypes[18]
+	mi := &file_v1_instance_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1582,7 +1628,7 @@ func (x *SyncDatabases) String() string {
 func (*SyncDatabases) ProtoMessage() {}
 
 func (x *SyncDatabases) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[18]
+	mi := &file_v1_instance_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1595,7 +1641,7 @@ func (x *SyncDatabases) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncDatabases.ProtoReflect.Descriptor instead.
 func (*SyncDatabases) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{18}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *SyncDatabases) GetDatabases() []string {
@@ -1645,7 +1691,7 @@ type Instance struct {
 
 func (x *Instance) Reset() {
 	*x = Instance{}
-	mi := &file_v1_instance_service_proto_msgTypes[19]
+	mi := &file_v1_instance_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1657,7 +1703,7 @@ func (x *Instance) String() string {
 func (*Instance) ProtoMessage() {}
 
 func (x *Instance) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[19]
+	mi := &file_v1_instance_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1670,7 +1716,7 @@ func (x *Instance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Instance.ProtoReflect.Descriptor instead.
 func (*Instance) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{19}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *Instance) GetName() string {
@@ -1810,7 +1856,7 @@ type DataSourceExternalSecret struct {
 
 func (x *DataSourceExternalSecret) Reset() {
 	*x = DataSourceExternalSecret{}
-	mi := &file_v1_instance_service_proto_msgTypes[20]
+	mi := &file_v1_instance_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1822,7 +1868,7 @@ func (x *DataSourceExternalSecret) String() string {
 func (*DataSourceExternalSecret) ProtoMessage() {}
 
 func (x *DataSourceExternalSecret) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[20]
+	mi := &file_v1_instance_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1835,7 +1881,7 @@ func (x *DataSourceExternalSecret) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSourceExternalSecret.ProtoReflect.Descriptor instead.
 func (*DataSourceExternalSecret) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *DataSourceExternalSecret) GetSecretType() DataSourceExternalSecret_SecretType {
@@ -2079,7 +2125,7 @@ type DataSource struct {
 
 func (x *DataSource) Reset() {
 	*x = DataSource{}
-	mi := &file_v1_instance_service_proto_msgTypes[21]
+	mi := &file_v1_instance_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2091,7 +2137,7 @@ func (x *DataSource) String() string {
 func (*DataSource) ProtoMessage() {}
 
 func (x *DataSource) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[21]
+	mi := &file_v1_instance_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2104,7 +2150,7 @@ func (x *DataSource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource.ProtoReflect.Descriptor instead.
 func (*DataSource) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *DataSource) GetId() string {
@@ -2523,7 +2569,7 @@ type InstanceResource struct {
 
 func (x *InstanceResource) Reset() {
 	*x = InstanceResource{}
-	mi := &file_v1_instance_service_proto_msgTypes[22]
+	mi := &file_v1_instance_service_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2535,7 +2581,7 @@ func (x *InstanceResource) String() string {
 func (*InstanceResource) ProtoMessage() {}
 
 func (x *InstanceResource) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[22]
+	mi := &file_v1_instance_service_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2548,7 +2594,7 @@ func (x *InstanceResource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InstanceResource.ProtoReflect.Descriptor instead.
 func (*InstanceResource) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{22}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *InstanceResource) GetTitle() string {
@@ -2612,7 +2658,7 @@ type SASLConfig struct {
 
 func (x *SASLConfig) Reset() {
 	*x = SASLConfig{}
-	mi := &file_v1_instance_service_proto_msgTypes[23]
+	mi := &file_v1_instance_service_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2624,7 +2670,7 @@ func (x *SASLConfig) String() string {
 func (*SASLConfig) ProtoMessage() {}
 
 func (x *SASLConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[23]
+	mi := &file_v1_instance_service_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2637,7 +2683,7 @@ func (x *SASLConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SASLConfig.ProtoReflect.Descriptor instead.
 func (*SASLConfig) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{23}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *SASLConfig) GetMechanism() isSASLConfig_Mechanism {
@@ -2689,7 +2735,7 @@ type KerberosConfig struct {
 
 func (x *KerberosConfig) Reset() {
 	*x = KerberosConfig{}
-	mi := &file_v1_instance_service_proto_msgTypes[24]
+	mi := &file_v1_instance_service_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2701,7 +2747,7 @@ func (x *KerberosConfig) String() string {
 func (*KerberosConfig) ProtoMessage() {}
 
 func (x *KerberosConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[24]
+	mi := &file_v1_instance_service_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2714,7 +2760,7 @@ func (x *KerberosConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KerberosConfig.ProtoReflect.Descriptor instead.
 func (*KerberosConfig) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{24}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *KerberosConfig) GetPrimary() string {
@@ -2782,7 +2828,7 @@ type DataSourceExternalSecret_AppRoleAuthOption struct {
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) Reset() {
 	*x = DataSourceExternalSecret_AppRoleAuthOption{}
-	mi := &file_v1_instance_service_proto_msgTypes[26]
+	mi := &file_v1_instance_service_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2794,7 +2840,7 @@ func (x *DataSourceExternalSecret_AppRoleAuthOption) String() string {
 func (*DataSourceExternalSecret_AppRoleAuthOption) ProtoMessage() {}
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[26]
+	mi := &file_v1_instance_service_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2807,7 +2853,7 @@ func (x *DataSourceExternalSecret_AppRoleAuthOption) ProtoReflect() protoreflect
 
 // Deprecated: Use DataSourceExternalSecret_AppRoleAuthOption.ProtoReflect.Descriptor instead.
 func (*DataSourceExternalSecret_AppRoleAuthOption) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{20, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 0}
 }
 
 func (x *DataSourceExternalSecret_AppRoleAuthOption) GetRoleId() string {
@@ -2849,7 +2895,7 @@ type DataSource_AzureCredential struct {
 
 func (x *DataSource_AzureCredential) Reset() {
 	*x = DataSource_AzureCredential{}
-	mi := &file_v1_instance_service_proto_msgTypes[27]
+	mi := &file_v1_instance_service_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2861,7 +2907,7 @@ func (x *DataSource_AzureCredential) String() string {
 func (*DataSource_AzureCredential) ProtoMessage() {}
 
 func (x *DataSource_AzureCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[27]
+	mi := &file_v1_instance_service_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2874,7 +2920,7 @@ func (x *DataSource_AzureCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_AzureCredential.ProtoReflect.Descriptor instead.
 func (*DataSource_AzureCredential) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 0}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 0}
 }
 
 func (x *DataSource_AzureCredential) GetTenantId() string {
@@ -2915,7 +2961,7 @@ type DataSource_AWSCredential struct {
 
 func (x *DataSource_AWSCredential) Reset() {
 	*x = DataSource_AWSCredential{}
-	mi := &file_v1_instance_service_proto_msgTypes[28]
+	mi := &file_v1_instance_service_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2927,7 +2973,7 @@ func (x *DataSource_AWSCredential) String() string {
 func (*DataSource_AWSCredential) ProtoMessage() {}
 
 func (x *DataSource_AWSCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[28]
+	mi := &file_v1_instance_service_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2940,7 +2986,7 @@ func (x *DataSource_AWSCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_AWSCredential.ProtoReflect.Descriptor instead.
 func (*DataSource_AWSCredential) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 1}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 1}
 }
 
 func (x *DataSource_AWSCredential) GetAccessKeyId() string {
@@ -2987,7 +3033,7 @@ type DataSource_GCPCredential struct {
 
 func (x *DataSource_GCPCredential) Reset() {
 	*x = DataSource_GCPCredential{}
-	mi := &file_v1_instance_service_proto_msgTypes[29]
+	mi := &file_v1_instance_service_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2999,7 +3045,7 @@ func (x *DataSource_GCPCredential) String() string {
 func (*DataSource_GCPCredential) ProtoMessage() {}
 
 func (x *DataSource_GCPCredential) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[29]
+	mi := &file_v1_instance_service_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3012,7 +3058,7 @@ func (x *DataSource_GCPCredential) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_GCPCredential.ProtoReflect.Descriptor instead.
 func (*DataSource_GCPCredential) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 2}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 2}
 }
 
 func (x *DataSource_GCPCredential) GetContent() string {
@@ -3032,7 +3078,7 @@ type DataSource_Address struct {
 
 func (x *DataSource_Address) Reset() {
 	*x = DataSource_Address{}
-	mi := &file_v1_instance_service_proto_msgTypes[30]
+	mi := &file_v1_instance_service_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3044,7 +3090,7 @@ func (x *DataSource_Address) String() string {
 func (*DataSource_Address) ProtoMessage() {}
 
 func (x *DataSource_Address) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_instance_service_proto_msgTypes[30]
+	mi := &file_v1_instance_service_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3057,7 +3103,7 @@ func (x *DataSource_Address) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DataSource_Address.ProtoReflect.Descriptor instead.
 func (*DataSource_Address) Descriptor() ([]byte, []int) {
-	return file_v1_instance_service_proto_rawDescGZIP(), []int{21, 3}
+	return file_v1_instance_service_proto_rawDescGZIP(), []int{22, 3}
 }
 
 func (x *DataSource_Address) GetHost() string {
@@ -3100,7 +3146,10 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
 	"instanceId\x12#\n" +
 	"\rvalidate_only\x18\x03 \x01(\bR\fvalidateOnlyB\t\n" +
-	"\a_parentJ\x04\b\x04\x10\x05R\x18initial_database_project\"\xb1\x01\n" +
+	"\a_parentJ\x04\b\x04\x10\x05R\x18initial_database_project\"[\n" +
+	"#PrepareSampleProjectInstanceRequest\x124\n" +
+	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
+	"\x14bytebase.com/ProjectR\x06parent\"\xb1\x01\n" +
 	"\x15UpdateInstanceRequest\x126\n" +
 	"\binstance\x18\x01 \x01(\v2\x15.bytebase.v1.InstanceB\x03\xe0A\x02R\binstance\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
@@ -3182,14 +3231,15 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:Y\xeaAV\n" +
 	"\x15bytebase.com/Instance\x12\x14instances/{instance}\x12'projects/{project}/instances/{instance}B\x0e\n" +
-	"\f_environmentJ\x04\b\x02\x10\x03J\x04\b\r\x10\x0e\"\xf2\t\n" +
+	"\f_environmentJ\x04\b\x02\x10\x03J\x04\b\r\x10\x0e\"\x8a\n" +
+	"\n" +
 	"\x18DataSourceExternalSecret\x12Q\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e20.bytebase.v1.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x12K\n" +
 	"\tauth_type\x18\x03 \x01(\x0e2..bytebase.v1.DataSourceExternalSecret.AuthTypeR\bauthType\x12T\n" +
-	"\bapp_role\x18\x04 \x01(\v27.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOptionH\x00R\aappRole\x12\x1b\n" +
-	"\x05token\x18\x05 \x01(\tB\x03\xe0A\x04H\x00R\x05token\x12N\n" +
+	"\bapp_role\x18\x04 \x01(\v27.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOptionH\x00R\aappRole\x12\x1f\n" +
+	"\x05token\x18\x05 \x01(\tB\a\xe0A\x04\xd0\xea0\x01H\x00R\x05token\x12N\n" +
 	"\n" +
 	"token_type\x18\r \x01(\x0e2/.bytebase.v1.DataSourceExternalSecret.TokenTypeR\ttokenType\x12\x1f\n" +
 	"\vengine_name\x18\x06 \x01(\tR\n" +
@@ -3197,15 +3247,15 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\vsecret_name\x18\a \x01(\tR\n" +
 	"secretName\x12*\n" +
 	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x12=\n" +
-	"\x1bskip_vault_tls_verification\x18\t \x01(\bR\x18skipVaultTlsVerification\x12%\n" +
+	"\x1bskip_vault_tls_verification\x18\t \x01(\bR\x18skipVaultTlsVerification\x12)\n" +
 	"\fvault_ssl_ca\x18\n" +
-	" \x01(\tB\x03\xe0A\x04R\n" +
-	"vaultSslCa\x12)\n" +
-	"\x0evault_ssl_cert\x18\v \x01(\tB\x03\xe0A\x04R\fvaultSslCert\x12'\n" +
-	"\rvault_ssl_key\x18\f \x01(\tB\x03\xe0A\x04R\vvaultSslKey\x1a\x91\x02\n" +
-	"\x11AppRoleAuthOption\x12\x1c\n" +
-	"\arole_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x06roleId\x12 \n" +
-	"\tsecret_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bsecretId\x12V\n" +
+	" \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\n" +
+	"vaultSslCa\x12-\n" +
+	"\x0evault_ssl_cert\x18\v \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fvaultSslCert\x12+\n" +
+	"\rvault_ssl_key\x18\f \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\vvaultSslKey\x1a\x99\x02\n" +
+	"\x11AppRoleAuthOption\x12 \n" +
+	"\arole_id\x18\x01 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x06roleId\x12$\n" +
+	"\tsecret_id\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\bsecretId\x12V\n" +
 	"\x04type\x18\x03 \x01(\x0e2B.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretTypeR\x04type\x12\x1d\n" +
 	"\n" +
 	"mount_path\x18\x04 \x01(\tR\tmountPath\"E\n" +
@@ -3230,20 +3280,20 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\b\n" +
 	"\x04FILE\x10\x03B\r\n" +
-	"\vauth_option\"\xf4\x18\n" +
+	"\vauth_option\"\xc0\x19\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.DataSourceTypeR\x04type\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12\x1f\n" +
-	"\bpassword\x18\x04 \x01(\tB\x03\xe0A\x04R\bpassword\x12\x17\n" +
-	"\ause_ssl\x18\x1e \x01(\bR\x06useSsl\x12\x1a\n" +
-	"\x06ssl_ca\x18\x05 \x01(\tB\x03\xe0A\x04R\x05sslCa\x12\x1e\n" +
-	"\bssl_cert\x18\x06 \x01(\tB\x03\xe0A\x04R\asslCert\x12\x1c\n" +
-	"\assl_key\x18\a \x01(\tB\x03\xe0A\x04R\x06sslKey\x12#\n" +
-	"\vssl_ca_path\x18) \x01(\tB\x03\xe0A\x04R\tsslCaPath\x12'\n" +
-	"\rssl_cert_path\x18* \x01(\tB\x03\xe0A\x04R\vsslCertPath\x12%\n" +
-	"\fssl_key_path\x18+ \x01(\tB\x03\xe0A\x04R\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12#\n" +
+	"\bpassword\x18\x04 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\bpassword\x12\x17\n" +
+	"\ause_ssl\x18\x1e \x01(\bR\x06useSsl\x12\x1e\n" +
+	"\x06ssl_ca\x18\x05 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x05sslCa\x12\"\n" +
+	"\bssl_cert\x18\x06 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\asslCert\x12 \n" +
+	"\assl_key\x18\a \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x06sslKey\x12'\n" +
+	"\vssl_ca_path\x18) \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\tsslCaPath\x12+\n" +
+	"\rssl_cert_path\x18* \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\vsslCertPath\x12)\n" +
+	"\fssl_key_path\x18+ \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\n" +
 	"sslKeyPath\x12!\n" +
 	"\n" +
 	"ssl_ca_set\x18, \x01(\bB\x03\xe0A\x03R\bsslCaSet\x12%\n" +
@@ -3266,11 +3316,11 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\fservice_name\x18\x0e \x01(\tR\vserviceName\x12\x19\n" +
 	"\bssh_host\x18\x0f \x01(\tR\asshHost\x12\x19\n" +
 	"\bssh_port\x18\x10 \x01(\tR\asshPort\x12\x19\n" +
-	"\bssh_user\x18\x11 \x01(\tR\asshUser\x12&\n" +
-	"\fssh_password\x18\x12 \x01(\tB\x03\xe0A\x04R\vsshPassword\x12+\n" +
-	"\x0fssh_private_key\x18\x13 \x01(\tB\x03\xe0A\x04R\rsshPrivateKey\x12A\n" +
-	"\x1aauthentication_private_key\x18\x14 \x01(\tB\x03\xe0A\x04R\x18authenticationPrivateKey\x12V\n" +
-	"%authentication_private_key_passphrase\x18( \x01(\tB\x03\xe0A\x04R\"authenticationPrivateKeyPassphrase\x12N\n" +
+	"\bssh_user\x18\x11 \x01(\tR\asshUser\x12*\n" +
+	"\fssh_password\x18\x12 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\vsshPassword\x12/\n" +
+	"\x0fssh_private_key\x18\x13 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\rsshPrivateKey\x12E\n" +
+	"\x1aauthentication_private_key\x18\x14 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x18authenticationPrivateKey\x12Z\n" +
+	"%authentication_private_key_passphrase\x18( \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\"authenticationPrivateKeyPassphrase\x12N\n" +
 	"\x0fexternal_secret\x18\x15 \x01(\v2%.bytebase.v1.DataSourceExternalSecretR\x0eexternalSecret\x12[\n" +
 	"\x13authentication_type\x18\x16 \x01(\x0e2*.bytebase.v1.DataSource.AuthenticationTypeR\x12authenticationType\x12Q\n" +
 	"\x11cloud_sql_ip_type\x188 \x01(\x0e2&.bytebase.v1.DataSource.CloudSQLIPTypeR\x0ecloudSqlIpType\x12T\n" +
@@ -3285,28 +3335,28 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\fwarehouse_id\x18\x1d \x01(\tR\vwarehouseId\x12\x1f\n" +
 	"\vmaster_name\x18\x1f \x01(\tR\n" +
 	"masterName\x12'\n" +
-	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x12,\n" +
-	"\x0fmaster_password\x18! \x01(\tB\x03\xe0A\x04R\x0emasterPassword\x12@\n" +
+	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x120\n" +
+	"\x0fmaster_password\x18! \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x0emasterPassword\x12@\n" +
 	"\n" +
 	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12v\n" +
 	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x12\x1d\n" +
 	"\n" +
 	"project_id\x189 \x01(\tR\tprojectId\x12\x1f\n" +
 	"\vinstance_id\x18: \x01(\tR\n" +
-	"instanceId\x1au\n" +
+	"instanceId\x1ay\n" +
 	"\x0fAzureCredential\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
-	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12(\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x1a\xd9\x01\n" +
-	"\rAWSCredential\x12'\n" +
-	"\raccess_key_id\x18\x01 \x01(\tB\x03\xe0A\x04R\vaccessKeyId\x12/\n" +
-	"\x11secret_access_key\x18\x02 \x01(\tB\x03\xe0A\x04R\x0fsecretAccessKey\x12(\n" +
-	"\rsession_token\x18\x03 \x01(\tB\x03\xe0A\x04R\fsessionToken\x12\x1e\n" +
-	"\brole_arn\x18\x04 \x01(\tB\x03\xe0A\x04R\aroleArn\x12$\n" +
-	"\vexternal_id\x18\x05 \x01(\tB\x03\xe0A\x04R\n" +
-	"externalId\x1a.\n" +
-	"\rGCPCredential\x12\x1d\n" +
-	"\acontent\x18\x01 \x01(\tB\x03\xe0A\x04R\acontent\x1a1\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12,\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fclientSecret\x1a\xed\x01\n" +
+	"\rAWSCredential\x12+\n" +
+	"\raccess_key_id\x18\x01 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\vaccessKeyId\x123\n" +
+	"\x11secret_access_key\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x0fsecretAccessKey\x12,\n" +
+	"\rsession_token\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fsessionToken\x12\"\n" +
+	"\brole_arn\x18\x04 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\aroleArn\x12(\n" +
+	"\vexternal_id\x18\x05 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\n" +
+	"externalId\x1a2\n" +
+	"\rGCPCredential\x12!\n" +
+	"\acontent\x18\x01 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\acontent\x1a1\n" +
 	"\aAddress\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\tR\x04port\x1aL\n" +
@@ -3347,32 +3397,33 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"SASLConfig\x12<\n" +
 	"\n" +
 	"krb_config\x18\x01 \x01(\v2\x1b.bytebase.v1.KerberosConfigH\x00R\tkrbConfigB\v\n" +
-	"\tmechanism\"\xe5\x01\n" +
+	"\tmechanism\"\xe9\x01\n" +
 	"\x0eKerberosConfig\x12\x18\n" +
 	"\aprimary\x18\x01 \x01(\tR\aprimary\x12\x1a\n" +
 	"\binstance\x18\x02 \x01(\tR\binstance\x12\x14\n" +
-	"\x05realm\x18\x03 \x01(\tR\x05realm\x12\x1b\n" +
-	"\x06keytab\x18\x04 \x01(\fB\x03\xe0A\x04R\x06keytab\x12\x19\n" +
+	"\x05realm\x18\x03 \x01(\tR\x05realm\x12\x1f\n" +
+	"\x06keytab\x18\x04 \x01(\fB\a\xe0A\x04\xd0\xea0\x01R\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
 	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol*G\n" +
 	"\x0eDataSourceType\x12\x1b\n" +
 	"\x17DATA_SOURCE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ADMIN\x10\x01\x12\r\n" +
-	"\tREAD_ONLY\x10\x022\xde\x15\n" +
-	"\x0fInstanceService\x12\xa9\x01\n" +
-	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"b\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\x82\xd3\xe4\x93\x02=Z#\x12!/v1/{name=projects/*/instances/*}\x12\x16/v1/{name=instances/*}\x12\xae\x01\n" +
-	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"V\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\x82\xd3\xe4\x93\x024Z#\x12!/v1/{parent=projects/*}/instances\x12\r/v1/instances\x12\xc5\x01\n" +
-	"\x0eCreateInstance\x12\".bytebase.v1.CreateInstanceRequest\x1a\x15.bytebase.v1.Instance\"x\xdaA\binstance\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02H:\binstanceZ-:\binstance\"!/v1/{parent=projects/*}/instances\"\r/v1/instances\x12\xed\x01\n" +
-	"\x0eUpdateInstance\x12\".bytebase.v1.UpdateInstanceRequest\x1a\x15.bytebase.v1.Instance\"\x9f\x01\xdaA\x14instance,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02c:\binstanceZ6:\binstance2*/v1/{instance.name=projects/*/instances/*}2\x1f/v1/{instance.name=instances/*}\x12\xb7\x01\n" +
-	"\x0eDeleteInstance\x12\".bytebase.v1.DeleteInstanceRequest\x1a\x16.google.protobuf.Empty\"i\xdaA\x04name\x8a\xea0\x13bb.instances.delete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02=Z#*!/v1/{name=projects/*/instances/*}*\x16/v1/{name=instances/*}\x12\xcd\x01\n" +
-	"\x10UndeleteInstance\x12$.bytebase.v1.UndeleteInstanceRequest\x1a\x15.bytebase.v1.Instance\"|\x8a\xea0\x15bb.instances.undelete\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02U:\x01*Z/:\x01*\"*/v1/{name=projects/*/instances/*}:undelete\"\x1f/v1/{name=instances/*}:undelete\x12\xc1\x01\n" +
-	"\fSyncInstance\x12 .bytebase.v1.SyncInstanceRequest\x1a!.bytebase.v1.SyncInstanceResponse\"l\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02M:\x01*Z+:\x01*\"&/v1/{name=projects/*/instances/*}:sync\"\x1b/v1/{name=instances/*}:sync\x12\xe2\x01\n" +
-	"\x14ListInstanceDatabase\x12(.bytebase.v1.ListInstanceDatabaseRequest\x1a).bytebase.v1.ListInstanceDatabaseResponse\"u\x8a\xea0\x10bb.instances.get\x90\xea0\x01\x82\xd3\xe4\x93\x02W:\x01*Z0:\x01*\"+/v1/{name=projects/*/instances/*}:databases\" /v1/{name=instances/*}:databases\x12\xd4\x01\n" +
-	"\x12BatchSyncInstances\x12&.bytebase.v1.BatchSyncInstancesRequest\x1a'.bytebase.v1.BatchSyncInstancesResponse\"m\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\x82\xd3\xe4\x93\x02N:\x01*Z0:\x01*\"+/v1/{parent=projects/*}/instances:batchSync\"\x17/v1/instances:batchSync\x12\xe4\x01\n" +
-	"\x14BatchUpdateInstances\x12(.bytebase.v1.BatchUpdateInstancesRequest\x1a).bytebase.v1.BatchUpdateInstancesResponse\"w\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02R:\x01*Z2:\x01*\"-/v1/{parent=projects/*}/instances:batchUpdate\"\x19/v1/instances:batchUpdate\x12\xd0\x01\n" +
-	"\rAddDataSource\x12!.bytebase.v1.AddDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x84\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02_:\x01*Z4:\x01*\"//v1/{name=projects/*/instances/*}:addDataSource\"$/v1/{name=instances/*}:addDataSource\x12\xdc\x01\n" +
-	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x8a\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\x82\xd3\xe4\x93\x02e:\x01*Z7:\x01*\"2/v1/{name=projects/*/instances/*}:removeDataSource\"'/v1/{name=instances/*}:removeDataSource\x12\x92\x02\n" +
+	"\tREAD_ONLY\x10\x022\x95\x18\n" +
+	"\x0fInstanceService\x12\xad\x01\n" +
+	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"f\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02=Z#\x12!/v1/{name=projects/*/instances/*}\x12\x16/v1/{name=instances/*}\x12\xb2\x01\n" +
+	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"Z\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x024Z#\x12!/v1/{parent=projects/*}/instances\x12\r/v1/instances\x12\xce\x01\n" +
+	"\x0eCreateInstance\x12\".bytebase.v1.CreateInstanceRequest\x1a\x15.bytebase.v1.Instance\"\x80\x01\xdaA\binstance\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02H:\binstanceZ-:\binstance\"!/v1/{parent=projects/*}/instances\"\r/v1/instances\x12\xe2\x01\n" +
+	"\x1cPrepareSampleProjectInstance\x120.bytebase.v1.PrepareSampleProjectInstanceRequest\x1a\x15.bytebase.v1.Instance\"y\xdaA\x06parent\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02C:\x01*\">/v1/{parent=projects/*}/instances:prepareSampleProjectInstance\x12\xf5\x01\n" +
+	"\x0eUpdateInstance\x12\".bytebase.v1.UpdateInstanceRequest\x1a\x15.bytebase.v1.Instance\"\xa7\x01\xdaA\x14instance,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02c:\binstanceZ6:\binstance2*/v1/{instance.name=projects/*/instances/*}2\x1f/v1/{instance.name=instances/*}\x12\xbf\x01\n" +
+	"\x0eDeleteInstance\x12\".bytebase.v1.DeleteInstanceRequest\x1a\x16.google.protobuf.Empty\"q\xdaA\x04name\x8a\xea0\x13bb.instances.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02=Z#*!/v1/{name=projects/*/instances/*}*\x16/v1/{name=instances/*}\x12\xd6\x01\n" +
+	"\x10UndeleteInstance\x12$.bytebase.v1.UndeleteInstanceRequest\x1a\x15.bytebase.v1.Instance\"\x84\x01\x8a\xea0\x15bb.instances.undelete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02U:\x01*Z/:\x01*\"*/v1/{name=projects/*/instances/*}:undelete\"\x1f/v1/{name=instances/*}:undelete\x12\xc5\x01\n" +
+	"\fSyncInstance\x12 .bytebase.v1.SyncInstanceRequest\x1a!.bytebase.v1.SyncInstanceResponse\"p\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02M:\x01*Z+:\x01*\"&/v1/{name=projects/*/instances/*}:sync\"\x1b/v1/{name=instances/*}:sync\x12\xea\x01\n" +
+	"\x14ListInstanceDatabase\x12(.bytebase.v1.ListInstanceDatabaseRequest\x1a).bytebase.v1.ListInstanceDatabaseResponse\"}\x8a\xea0\x10bb.instances.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02W:\x01*Z0:\x01*\"+/v1/{name=projects/*/instances/*}:databases\" /v1/{name=instances/*}:databases\x12\xd8\x01\n" +
+	"\x12BatchSyncInstances\x12&.bytebase.v1.BatchSyncInstancesRequest\x1a'.bytebase.v1.BatchSyncInstancesResponse\"q\x8a\xea0\x11bb.instances.sync\x90\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02N:\x01*Z0:\x01*\"+/v1/{parent=projects/*}/instances:batchSync\"\x17/v1/instances:batchSync\x12\xec\x01\n" +
+	"\x14BatchUpdateInstances\x12(.bytebase.v1.BatchUpdateInstancesRequest\x1a).bytebase.v1.BatchUpdateInstancesResponse\"\x7f\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02R:\x01*Z2:\x01*\"-/v1/{parent=projects/*}/instances:batchUpdate\"\x19/v1/instances:batchUpdate\x12\xd8\x01\n" +
+	"\rAddDataSource\x12!.bytebase.v1.AddDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x8c\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02_:\x01*Z4:\x01*\"//v1/{name=projects/*/instances/*}:addDataSource\"$/v1/{name=instances/*}:addDataSource\x12\xe4\x01\n" +
+	"\x10RemoveDataSource\x12$.bytebase.v1.RemoveDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\x92\x01\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02e:\x01*Z7:\x01*\"2/v1/{name=projects/*/instances/*}:removeDataSource\"'/v1/{name=instances/*}:removeDataSource\x12\x92\x02\n" +
 	"\x10UpdateDataSource\x12$.bytebase.v1.UpdateDataSourceRequest\x1a\x15.bytebase.v1.Instance\"\xc0\x01\xdaA\x17data_source,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02y:\vdata_sourceZA:\vdata_source22/v1/{name=projects/*/instances/*}:updateDataSource2'/v1/{name=instances/*}:updateDataSourceB\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14InstanceServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
@@ -3389,7 +3440,7 @@ func file_v1_instance_service_proto_rawDescGZIP() []byte {
 }
 
 var file_v1_instance_service_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
-var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_v1_instance_service_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_v1_instance_service_proto_goTypes = []any{
 	(DataSourceType)(0),                                        // 0: bytebase.v1.DataSourceType
 	(DataSourceExternalSecret_SecretType)(0),                   // 1: bytebase.v1.DataSourceExternalSecret.SecretType
@@ -3403,110 +3454,113 @@ var file_v1_instance_service_proto_goTypes = []any{
 	(*ListInstancesRequest)(nil),                               // 9: bytebase.v1.ListInstancesRequest
 	(*ListInstancesResponse)(nil),                              // 10: bytebase.v1.ListInstancesResponse
 	(*CreateInstanceRequest)(nil),                              // 11: bytebase.v1.CreateInstanceRequest
-	(*UpdateInstanceRequest)(nil),                              // 12: bytebase.v1.UpdateInstanceRequest
-	(*DeleteInstanceRequest)(nil),                              // 13: bytebase.v1.DeleteInstanceRequest
-	(*UndeleteInstanceRequest)(nil),                            // 14: bytebase.v1.UndeleteInstanceRequest
-	(*SyncInstanceRequest)(nil),                                // 15: bytebase.v1.SyncInstanceRequest
-	(*ListInstanceDatabaseRequest)(nil),                        // 16: bytebase.v1.ListInstanceDatabaseRequest
-	(*ListInstanceDatabaseResponse)(nil),                       // 17: bytebase.v1.ListInstanceDatabaseResponse
-	(*SyncInstanceResponse)(nil),                               // 18: bytebase.v1.SyncInstanceResponse
-	(*BatchSyncInstancesRequest)(nil),                          // 19: bytebase.v1.BatchSyncInstancesRequest
-	(*BatchSyncInstancesResponse)(nil),                         // 20: bytebase.v1.BatchSyncInstancesResponse
-	(*BatchUpdateInstancesRequest)(nil),                        // 21: bytebase.v1.BatchUpdateInstancesRequest
-	(*BatchUpdateInstancesResponse)(nil),                       // 22: bytebase.v1.BatchUpdateInstancesResponse
-	(*AddDataSourceRequest)(nil),                               // 23: bytebase.v1.AddDataSourceRequest
-	(*RemoveDataSourceRequest)(nil),                            // 24: bytebase.v1.RemoveDataSourceRequest
-	(*UpdateDataSourceRequest)(nil),                            // 25: bytebase.v1.UpdateDataSourceRequest
-	(*SyncDatabases)(nil),                                      // 26: bytebase.v1.SyncDatabases
-	(*Instance)(nil),                                           // 27: bytebase.v1.Instance
-	(*DataSourceExternalSecret)(nil),                           // 28: bytebase.v1.DataSourceExternalSecret
-	(*DataSource)(nil),                                         // 29: bytebase.v1.DataSource
-	(*InstanceResource)(nil),                                   // 30: bytebase.v1.InstanceResource
-	(*SASLConfig)(nil),                                         // 31: bytebase.v1.SASLConfig
-	(*KerberosConfig)(nil),                                     // 32: bytebase.v1.KerberosConfig
-	nil,                                                        // 33: bytebase.v1.Instance.LabelsEntry
-	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 34: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
-	(*DataSource_AzureCredential)(nil),                         // 35: bytebase.v1.DataSource.AzureCredential
-	(*DataSource_AWSCredential)(nil),                           // 36: bytebase.v1.DataSource.AWSCredential
-	(*DataSource_GCPCredential)(nil),                           // 37: bytebase.v1.DataSource.GCPCredential
-	(*DataSource_Address)(nil),                                 // 38: bytebase.v1.DataSource.Address
-	nil,                                                        // 39: bytebase.v1.DataSource.ExtraConnectionParametersEntry
-	(*fieldmaskpb.FieldMask)(nil),                              // 40: google.protobuf.FieldMask
-	(State)(0),                                                 // 41: bytebase.v1.State
-	(Engine)(0),                                                // 42: bytebase.v1.Engine
-	(*InstanceRole)(nil),                                       // 43: bytebase.v1.InstanceRole
-	(*durationpb.Duration)(nil),                                // 44: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil),                              // 45: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),                                      // 46: google.protobuf.Empty
+	(*PrepareSampleProjectInstanceRequest)(nil),                // 12: bytebase.v1.PrepareSampleProjectInstanceRequest
+	(*UpdateInstanceRequest)(nil),                              // 13: bytebase.v1.UpdateInstanceRequest
+	(*DeleteInstanceRequest)(nil),                              // 14: bytebase.v1.DeleteInstanceRequest
+	(*UndeleteInstanceRequest)(nil),                            // 15: bytebase.v1.UndeleteInstanceRequest
+	(*SyncInstanceRequest)(nil),                                // 16: bytebase.v1.SyncInstanceRequest
+	(*ListInstanceDatabaseRequest)(nil),                        // 17: bytebase.v1.ListInstanceDatabaseRequest
+	(*ListInstanceDatabaseResponse)(nil),                       // 18: bytebase.v1.ListInstanceDatabaseResponse
+	(*SyncInstanceResponse)(nil),                               // 19: bytebase.v1.SyncInstanceResponse
+	(*BatchSyncInstancesRequest)(nil),                          // 20: bytebase.v1.BatchSyncInstancesRequest
+	(*BatchSyncInstancesResponse)(nil),                         // 21: bytebase.v1.BatchSyncInstancesResponse
+	(*BatchUpdateInstancesRequest)(nil),                        // 22: bytebase.v1.BatchUpdateInstancesRequest
+	(*BatchUpdateInstancesResponse)(nil),                       // 23: bytebase.v1.BatchUpdateInstancesResponse
+	(*AddDataSourceRequest)(nil),                               // 24: bytebase.v1.AddDataSourceRequest
+	(*RemoveDataSourceRequest)(nil),                            // 25: bytebase.v1.RemoveDataSourceRequest
+	(*UpdateDataSourceRequest)(nil),                            // 26: bytebase.v1.UpdateDataSourceRequest
+	(*SyncDatabases)(nil),                                      // 27: bytebase.v1.SyncDatabases
+	(*Instance)(nil),                                           // 28: bytebase.v1.Instance
+	(*DataSourceExternalSecret)(nil),                           // 29: bytebase.v1.DataSourceExternalSecret
+	(*DataSource)(nil),                                         // 30: bytebase.v1.DataSource
+	(*InstanceResource)(nil),                                   // 31: bytebase.v1.InstanceResource
+	(*SASLConfig)(nil),                                         // 32: bytebase.v1.SASLConfig
+	(*KerberosConfig)(nil),                                     // 33: bytebase.v1.KerberosConfig
+	nil,                                                        // 34: bytebase.v1.Instance.LabelsEntry
+	(*DataSourceExternalSecret_AppRoleAuthOption)(nil),         // 35: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
+	(*DataSource_AzureCredential)(nil),                         // 36: bytebase.v1.DataSource.AzureCredential
+	(*DataSource_AWSCredential)(nil),                           // 37: bytebase.v1.DataSource.AWSCredential
+	(*DataSource_GCPCredential)(nil),                           // 38: bytebase.v1.DataSource.GCPCredential
+	(*DataSource_Address)(nil),                                 // 39: bytebase.v1.DataSource.Address
+	nil,                                                        // 40: bytebase.v1.DataSource.ExtraConnectionParametersEntry
+	(*fieldmaskpb.FieldMask)(nil),                              // 41: google.protobuf.FieldMask
+	(State)(0),                                                 // 42: bytebase.v1.State
+	(Engine)(0),                                                // 43: bytebase.v1.Engine
+	(*InstanceRole)(nil),                                       // 44: bytebase.v1.InstanceRole
+	(*durationpb.Duration)(nil),                                // 45: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil),                              // 46: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),                                      // 47: google.protobuf.Empty
 }
 var file_v1_instance_service_proto_depIdxs = []int32{
-	27, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
-	27, // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	27, // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
-	40, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	27, // 4: bytebase.v1.ListInstanceDatabaseRequest.instance:type_name -> bytebase.v1.Instance
-	15, // 5: bytebase.v1.BatchSyncInstancesRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
-	12, // 6: bytebase.v1.BatchUpdateInstancesRequest.requests:type_name -> bytebase.v1.UpdateInstanceRequest
-	27, // 7: bytebase.v1.BatchUpdateInstancesResponse.instances:type_name -> bytebase.v1.Instance
-	29, // 8: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	29, // 9: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	29, // 10: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
-	40, // 11: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	41, // 12: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
-	42, // 13: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
-	29, // 14: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
-	43, // 15: bytebase.v1.Instance.roles:type_name -> bytebase.v1.InstanceRole
-	44, // 16: bytebase.v1.Instance.sync_interval:type_name -> google.protobuf.Duration
-	26, // 17: bytebase.v1.Instance.sync_databases:type_name -> bytebase.v1.SyncDatabases
-	45, // 18: bytebase.v1.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
-	33, // 19: bytebase.v1.Instance.labels:type_name -> bytebase.v1.Instance.LabelsEntry
+	28, // 0: bytebase.v1.ListInstancesResponse.instances:type_name -> bytebase.v1.Instance
+	28, // 1: bytebase.v1.CreateInstanceRequest.instance:type_name -> bytebase.v1.Instance
+	28, // 2: bytebase.v1.UpdateInstanceRequest.instance:type_name -> bytebase.v1.Instance
+	41, // 3: bytebase.v1.UpdateInstanceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	28, // 4: bytebase.v1.ListInstanceDatabaseRequest.instance:type_name -> bytebase.v1.Instance
+	16, // 5: bytebase.v1.BatchSyncInstancesRequest.requests:type_name -> bytebase.v1.SyncInstanceRequest
+	13, // 6: bytebase.v1.BatchUpdateInstancesRequest.requests:type_name -> bytebase.v1.UpdateInstanceRequest
+	28, // 7: bytebase.v1.BatchUpdateInstancesResponse.instances:type_name -> bytebase.v1.Instance
+	30, // 8: bytebase.v1.AddDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	30, // 9: bytebase.v1.RemoveDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	30, // 10: bytebase.v1.UpdateDataSourceRequest.data_source:type_name -> bytebase.v1.DataSource
+	41, // 11: bytebase.v1.UpdateDataSourceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	42, // 12: bytebase.v1.Instance.state:type_name -> bytebase.v1.State
+	43, // 13: bytebase.v1.Instance.engine:type_name -> bytebase.v1.Engine
+	30, // 14: bytebase.v1.Instance.data_sources:type_name -> bytebase.v1.DataSource
+	44, // 15: bytebase.v1.Instance.roles:type_name -> bytebase.v1.InstanceRole
+	45, // 16: bytebase.v1.Instance.sync_interval:type_name -> google.protobuf.Duration
+	27, // 17: bytebase.v1.Instance.sync_databases:type_name -> bytebase.v1.SyncDatabases
+	46, // 18: bytebase.v1.Instance.last_sync_time:type_name -> google.protobuf.Timestamp
+	34, // 19: bytebase.v1.Instance.labels:type_name -> bytebase.v1.Instance.LabelsEntry
 	1,  // 20: bytebase.v1.DataSourceExternalSecret.secret_type:type_name -> bytebase.v1.DataSourceExternalSecret.SecretType
 	2,  // 21: bytebase.v1.DataSourceExternalSecret.auth_type:type_name -> bytebase.v1.DataSourceExternalSecret.AuthType
-	34, // 22: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
+	35, // 22: bytebase.v1.DataSourceExternalSecret.app_role:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption
 	3,  // 23: bytebase.v1.DataSourceExternalSecret.token_type:type_name -> bytebase.v1.DataSourceExternalSecret.TokenType
 	0,  // 24: bytebase.v1.DataSource.type:type_name -> bytebase.v1.DataSourceType
-	28, // 25: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
+	29, // 25: bytebase.v1.DataSource.external_secret:type_name -> bytebase.v1.DataSourceExternalSecret
 	5,  // 26: bytebase.v1.DataSource.authentication_type:type_name -> bytebase.v1.DataSource.AuthenticationType
 	6,  // 27: bytebase.v1.DataSource.cloud_sql_ip_type:type_name -> bytebase.v1.DataSource.CloudSQLIPType
-	35, // 28: bytebase.v1.DataSource.azure_credential:type_name -> bytebase.v1.DataSource.AzureCredential
-	36, // 29: bytebase.v1.DataSource.aws_credential:type_name -> bytebase.v1.DataSource.AWSCredential
-	37, // 30: bytebase.v1.DataSource.gcp_credential:type_name -> bytebase.v1.DataSource.GCPCredential
-	31, // 31: bytebase.v1.DataSource.sasl_config:type_name -> bytebase.v1.SASLConfig
-	38, // 32: bytebase.v1.DataSource.additional_addresses:type_name -> bytebase.v1.DataSource.Address
+	36, // 28: bytebase.v1.DataSource.azure_credential:type_name -> bytebase.v1.DataSource.AzureCredential
+	37, // 29: bytebase.v1.DataSource.aws_credential:type_name -> bytebase.v1.DataSource.AWSCredential
+	38, // 30: bytebase.v1.DataSource.gcp_credential:type_name -> bytebase.v1.DataSource.GCPCredential
+	32, // 31: bytebase.v1.DataSource.sasl_config:type_name -> bytebase.v1.SASLConfig
+	39, // 32: bytebase.v1.DataSource.additional_addresses:type_name -> bytebase.v1.DataSource.Address
 	7,  // 33: bytebase.v1.DataSource.redis_type:type_name -> bytebase.v1.DataSource.RedisType
-	39, // 34: bytebase.v1.DataSource.extra_connection_parameters:type_name -> bytebase.v1.DataSource.ExtraConnectionParametersEntry
-	42, // 35: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
-	29, // 36: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
-	32, // 37: bytebase.v1.SASLConfig.krb_config:type_name -> bytebase.v1.KerberosConfig
+	40, // 34: bytebase.v1.DataSource.extra_connection_parameters:type_name -> bytebase.v1.DataSource.ExtraConnectionParametersEntry
+	43, // 35: bytebase.v1.InstanceResource.engine:type_name -> bytebase.v1.Engine
+	30, // 36: bytebase.v1.InstanceResource.data_sources:type_name -> bytebase.v1.DataSource
+	33, // 37: bytebase.v1.SASLConfig.krb_config:type_name -> bytebase.v1.KerberosConfig
 	4,  // 38: bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.type:type_name -> bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretType
 	8,  // 39: bytebase.v1.InstanceService.GetInstance:input_type -> bytebase.v1.GetInstanceRequest
 	9,  // 40: bytebase.v1.InstanceService.ListInstances:input_type -> bytebase.v1.ListInstancesRequest
 	11, // 41: bytebase.v1.InstanceService.CreateInstance:input_type -> bytebase.v1.CreateInstanceRequest
-	12, // 42: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
-	13, // 43: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
-	14, // 44: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
-	15, // 45: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
-	16, // 46: bytebase.v1.InstanceService.ListInstanceDatabase:input_type -> bytebase.v1.ListInstanceDatabaseRequest
-	19, // 47: bytebase.v1.InstanceService.BatchSyncInstances:input_type -> bytebase.v1.BatchSyncInstancesRequest
-	21, // 48: bytebase.v1.InstanceService.BatchUpdateInstances:input_type -> bytebase.v1.BatchUpdateInstancesRequest
-	23, // 49: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
-	24, // 50: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
-	25, // 51: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
-	27, // 52: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
-	10, // 53: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
-	27, // 54: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
-	27, // 55: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
-	46, // 56: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
-	27, // 57: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
-	18, // 58: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
-	17, // 59: bytebase.v1.InstanceService.ListInstanceDatabase:output_type -> bytebase.v1.ListInstanceDatabaseResponse
-	20, // 60: bytebase.v1.InstanceService.BatchSyncInstances:output_type -> bytebase.v1.BatchSyncInstancesResponse
-	22, // 61: bytebase.v1.InstanceService.BatchUpdateInstances:output_type -> bytebase.v1.BatchUpdateInstancesResponse
-	27, // 62: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
-	27, // 63: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
-	27, // 64: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
-	52, // [52:65] is the sub-list for method output_type
-	39, // [39:52] is the sub-list for method input_type
+	12, // 42: bytebase.v1.InstanceService.PrepareSampleProjectInstance:input_type -> bytebase.v1.PrepareSampleProjectInstanceRequest
+	13, // 43: bytebase.v1.InstanceService.UpdateInstance:input_type -> bytebase.v1.UpdateInstanceRequest
+	14, // 44: bytebase.v1.InstanceService.DeleteInstance:input_type -> bytebase.v1.DeleteInstanceRequest
+	15, // 45: bytebase.v1.InstanceService.UndeleteInstance:input_type -> bytebase.v1.UndeleteInstanceRequest
+	16, // 46: bytebase.v1.InstanceService.SyncInstance:input_type -> bytebase.v1.SyncInstanceRequest
+	17, // 47: bytebase.v1.InstanceService.ListInstanceDatabase:input_type -> bytebase.v1.ListInstanceDatabaseRequest
+	20, // 48: bytebase.v1.InstanceService.BatchSyncInstances:input_type -> bytebase.v1.BatchSyncInstancesRequest
+	22, // 49: bytebase.v1.InstanceService.BatchUpdateInstances:input_type -> bytebase.v1.BatchUpdateInstancesRequest
+	24, // 50: bytebase.v1.InstanceService.AddDataSource:input_type -> bytebase.v1.AddDataSourceRequest
+	25, // 51: bytebase.v1.InstanceService.RemoveDataSource:input_type -> bytebase.v1.RemoveDataSourceRequest
+	26, // 52: bytebase.v1.InstanceService.UpdateDataSource:input_type -> bytebase.v1.UpdateDataSourceRequest
+	28, // 53: bytebase.v1.InstanceService.GetInstance:output_type -> bytebase.v1.Instance
+	10, // 54: bytebase.v1.InstanceService.ListInstances:output_type -> bytebase.v1.ListInstancesResponse
+	28, // 55: bytebase.v1.InstanceService.CreateInstance:output_type -> bytebase.v1.Instance
+	28, // 56: bytebase.v1.InstanceService.PrepareSampleProjectInstance:output_type -> bytebase.v1.Instance
+	28, // 57: bytebase.v1.InstanceService.UpdateInstance:output_type -> bytebase.v1.Instance
+	47, // 58: bytebase.v1.InstanceService.DeleteInstance:output_type -> google.protobuf.Empty
+	28, // 59: bytebase.v1.InstanceService.UndeleteInstance:output_type -> bytebase.v1.Instance
+	19, // 60: bytebase.v1.InstanceService.SyncInstance:output_type -> bytebase.v1.SyncInstanceResponse
+	18, // 61: bytebase.v1.InstanceService.ListInstanceDatabase:output_type -> bytebase.v1.ListInstanceDatabaseResponse
+	21, // 62: bytebase.v1.InstanceService.BatchSyncInstances:output_type -> bytebase.v1.BatchSyncInstancesResponse
+	23, // 63: bytebase.v1.InstanceService.BatchUpdateInstances:output_type -> bytebase.v1.BatchUpdateInstancesResponse
+	28, // 64: bytebase.v1.InstanceService.AddDataSource:output_type -> bytebase.v1.Instance
+	28, // 65: bytebase.v1.InstanceService.RemoveDataSource:output_type -> bytebase.v1.Instance
+	28, // 66: bytebase.v1.InstanceService.UpdateDataSource:output_type -> bytebase.v1.Instance
+	53, // [53:67] is the sub-list for method output_type
+	39, // [39:53] is the sub-list for method input_type
 	39, // [39:39] is the sub-list for extension type_name
 	39, // [39:39] is the sub-list for extension extendee
 	0,  // [0:39] is the sub-list for field type_name
@@ -3522,21 +3576,21 @@ func file_v1_instance_service_proto_init() {
 	file_v1_instance_role_service_proto_init()
 	file_v1_instance_service_proto_msgTypes[1].OneofWrappers = []any{}
 	file_v1_instance_service_proto_msgTypes[3].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[8].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[11].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[13].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[19].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[20].OneofWrappers = []any{
+	file_v1_instance_service_proto_msgTypes[9].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[12].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[14].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[20].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[21].OneofWrappers = []any{
 		(*DataSourceExternalSecret_AppRole)(nil),
 		(*DataSourceExternalSecret_Token)(nil),
 	}
-	file_v1_instance_service_proto_msgTypes[21].OneofWrappers = []any{
+	file_v1_instance_service_proto_msgTypes[22].OneofWrappers = []any{
 		(*DataSource_AzureCredential_)(nil),
 		(*DataSource_AwsCredential)(nil),
 		(*DataSource_GcpCredential)(nil),
 	}
-	file_v1_instance_service_proto_msgTypes[22].OneofWrappers = []any{}
-	file_v1_instance_service_proto_msgTypes[23].OneofWrappers = []any{
+	file_v1_instance_service_proto_msgTypes[23].OneofWrappers = []any{}
+	file_v1_instance_service_proto_msgTypes[24].OneofWrappers = []any{
 		(*SASLConfig_KrbConfig)(nil),
 	}
 	type x struct{}
@@ -3545,7 +3599,7 @@ func file_v1_instance_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_instance_service_proto_rawDesc), len(file_v1_instance_service_proto_rawDesc)),
 			NumEnums:      8,
-			NumMessages:   32,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

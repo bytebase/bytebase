@@ -8,7 +8,7 @@ import {
 } from "@/types/proto-es/v1/query_history_service_pb";
 import { isValidDatabaseName } from "@/types/v1/database";
 import { isValidProjectName } from "@/types/v1/project";
-import { escapeCELStringLiteral } from "@/utils/v1/cel";
+import { celString } from "@/utils/v1/celLiteral";
 import type {
   QueryHistoryEntry,
   QueryHistoryFilter,
@@ -28,12 +28,10 @@ const EMPTY_RESPONSE = create(SearchQueryHistoriesResponseSchema, {});
 const getListQueryHistoryFilter = (filter: QueryHistoryFilter) => {
   const params = [`type == "QUERY"`];
   if (isValidDatabaseName(filter.database)) {
-    params.push(`database == "${filter.database}"`);
+    params.push(`database == ${celString(filter.database)}`);
   }
   if (filter.statement) {
-    params.push(
-      `statement.contains("${escapeCELStringLiteral(filter.statement)}")`
-    );
+    params.push(`statement.contains(${celString(filter.statement)})`);
   }
   return params.join(" && ");
 };

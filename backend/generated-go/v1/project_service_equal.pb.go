@@ -356,6 +356,9 @@ func (x *Project) Equal(y *Project) bool {
 	if x.AllowJustInTimeAccess != y.AllowJustInTimeAccess {
 		return false
 	}
+	if x.AllowLastPlanEditorApproval != y.AllowLastPlanEditorApproval {
+		return false
+	}
 	return true
 }
 
@@ -457,6 +460,9 @@ func (x *Webhook) Equal(y *Webhook) bool {
 		return false
 	}
 	if x.Url != y.Url {
+		return false
+	}
+	if x.UrlSupportsDirectMessage != y.UrlSupportsDirectMessage {
 		return false
 	}
 	if x.DirectMessage != y.DirectMessage {

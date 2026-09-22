@@ -59,7 +59,7 @@ function BannerDismissButton({
       type="button"
       appearance="secondary"
       size="sm"
-      className="text-white hover:bg-white/10 hover:text-white"
+      className="text-accent-text hover:bg-accent-text/10 hover:text-accent-text"
       onClick={onClick}
     >
       <span className="sr-only">{label}</span>
@@ -82,7 +82,7 @@ function BannerExternalUrl() {
       <div className="mx-auto px-3 py-3">
         <div className="flex flex-wrap items-center justify-between">
           <div className="flex w-0 flex-1 items-center">
-            <p className="ml-3 truncate font-medium text-white">
+            <p className="ml-3 truncate font-medium text-accent-text">
               {t("banner.external-url")}
             </p>
           </div>
@@ -97,12 +97,13 @@ function BannerExternalUrl() {
                 }}
                 className={buttonVariants({
                   appearance: "secondary",
+                  size: "lg",
                   className:
-                    "h-auto bg-white py-2 pr-2 pl-4 text-base font-medium text-accent shadow-xs hover:bg-indigo-50",
+                    "bg-background pr-2 text-base text-accent shadow-xs hover:bg-control-bg",
                 })}
               >
                 {t("common.configure-now")}
-                <Wrench className="ml-1 size-5" />
+                <Wrench className="size-5" />
               </RouterLink>
             </div>
           ) : null}
@@ -153,19 +154,19 @@ function BannerSubscription() {
     <div className="bg-info">
       <div className="mx-auto px-3 py-1">
         <div className="flex flex-wrap items-center justify-center gap-x-2">
-          <p className="ml-3 truncate text-base font-medium text-white">
+          <p className="ml-3 truncate text-base font-medium text-accent-text">
             {content}
           </p>
           <RouterLink
             to={{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }}
-            className="flex cursor-pointer items-center justify-center py-1 text-base font-medium text-white underline hover:opacity-80"
+            className="flex cursor-pointer items-center justify-center py-1 text-base font-medium text-accent-text underline hover:opacity-80"
           >
             {t(
               isTrialing
                 ? "subscription.purchase.subscribe"
                 : "subscription.purchase.update"
             )}
-            <ShoppingCart className="ml-1 size-5 text-white" />
+            <ShoppingCart className="ml-1 size-5 text-accent-text" />
           </RouterLink>
         </div>
       </div>
@@ -233,11 +234,11 @@ function BannerUpgradeSubscription() {
 
   return (
     <>
-      <div className="overflow-clip bg-gray-200">
+      <div className="overflow-clip bg-control-bg-hover">
         <div className="bb-banner-scroll min-h-10 w-full">
           <div className="mx-auto flex min-h-10 w-full flex-row flex-wrap items-center justify-start gap-x-2 gap-y-1 px-3 py-2 text-sm leading-5 sm:justify-center sm:py-1">
             <div className="flex min-w-0 max-w-full flex-[0_1_auto] flex-row items-start sm:items-center">
-              <AlertCircle className="mt-0.5 mr-1 h-auto w-5 shrink-0 text-gray-800 sm:mt-0" />
+              <AlertCircle className="mt-0.5 mr-1 h-auto w-5 shrink-0 text-main sm:mt-0" />
               <span data-label="bb-upgrade-banner-message" className="min-w-0">
                 <Trans
                   t={t}
@@ -248,13 +249,15 @@ function BannerUpgradeSubscription() {
                   }}
                   components={{
                     neededPlan: (
-                      <button
+                      <Button
                         type="button"
-                        className="mr-1 cursor-pointer whitespace-nowrap underline hover:opacity-60"
+                        appearance="link"
+                        size="md"
+                        className="mr-1 h-auto p-0 whitespace-nowrap text-sm text-main underline hover:opacity-60"
                         onClick={() => setShowModal(true)}
                       >
                         {neededPlanFeatures}
-                      </button>
+                      </Button>
                     ),
                   }}
                 />

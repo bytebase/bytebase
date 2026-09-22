@@ -16,7 +16,9 @@ import {
   type ValueOption,
 } from "@/components/AdvancedSearch";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeInstanceName } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import type { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -26,9 +28,12 @@ import type {
   DatabaseMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { isDefaultProject } from "@/types/v1/project";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
   supportedEngineV1List,
 } from "@/utils";
 
@@ -61,7 +66,6 @@ const tableKey = (dbName: string, schemaName: string, tableName: string) =>
   `${dbName}/schemas/${schemaName}/tables/${tableName}`;
 
 const environmentNamePrefix = "environments/";
-const instanceNamePrefix = "instances/";
 const UNKNOWN_ENVIRONMENT_ID = "-1";
 const UNKNOWN_ENVIRONMENT_NAME = `${environmentNamePrefix}${UNKNOWN_ENVIRONMENT_ID}`;
 
@@ -126,23 +130,43 @@ export function DatabaseResourceSelector({
     new Set()
   );
   const environments = useAppStore((s) => s.environmentList);
+  const project = useAppStore((s) => s.projectsByName[projectName]);
 
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const result = await useAppStore.getState().fetchInstanceList({
+      const params = {
         pageSize: 1000,
         filter: keyword.trim() ? { query: keyword } : undefined,
         silent: true,
-      });
-      return result.instances.map((instance) => {
+      };
+      const results = await Promise.all([
+        project &&
+        !isDefaultProject(projectName) &&
+        hasProjectPermissionV2(project, "bb.instances.list")
+          ? useAppStore
+              .getState()
+              .fetchInstanceList({ ...params, parent: projectName })
+          : Promise.resolve({ instances: [], nextPageToken: "" }),
+        hasWorkspacePermissionV2("bb.instances.list")
+          ? useAppStore.getState().fetchInstanceList(params)
+          : Promise.resolve({ instances: [], nextPageToken: "" }),
+      ]);
+      const instances = [
+        ...new Map(
+          results
+            .flatMap((result) => result.instances)
+            .map((instance) => [instance.name, instance])
+        ).values(),
+      ];
+      return instances.map((instance) => {
         const id = extractInstanceResourceName(instance.name);
         return {
-          value: id,
+          value: instance.name,
           keywords: [id, instance.title],
         };
       });
     },
-    []
+    [project, projectName]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(
@@ -224,7 +248,7 @@ export function DatabaseResourceSelector({
       environment: environmentId
         ? `${environmentNamePrefix}${environmentId}`
         : undefined,
-      instance: instanceId ? `${instanceNamePrefix}${instanceId}` : undefined,
+      instance: instanceId ? normalizeInstanceName(instanceId) : undefined,
       labels: labels.length > 0 ? labels : undefined,
       engines: engines.length > 0 ? engines : undefined,
       table: table || undefined,
@@ -864,7 +888,9 @@ export function DatabaseResourceSelector({
       <div className="flex" style={{ height: "min(24rem, 60vh)" }}>
         <div className="flex-1 flex flex-col border-r border-control-border min-w-0">
           <div className="flex items-center justify-between px-3 py-1.5 bg-control-bg border-b border-control-border text-xs text-control-light">
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               type="button"
               className="text-accent hover:underline cursor-pointer disabled:text-control-light disabled:no-underline disabled:cursor-not-allowed"
               onClick={toggleSelectAll}
@@ -873,7 +899,7 @@ export function DatabaseResourceSelector({
               {isAllSelected
                 ? t("common.deselect-all")
                 : t("common.select-all")}
-            </button>
+            </Button>
             <span>
               {nextPageToken
                 ? `${databases.length}+`
@@ -893,9 +919,11 @@ export function DatabaseResourceSelector({
               return (
                 <div key={db.name}>
                   <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-control-bg group">
-                    <button
+                    <Button
+                      appearance="secondary"
+                      size="xs"
                       type="button"
-                      className="shrink-0 w-4 h-4 flex items-center justify-center text-control-light hover:text-control cursor-pointer"
+                      className="shrink-0 flex items-center justify-center text-control-light hover:text-control cursor-pointer"
                       onClick={() => toggleExpandDatabase(db.name)}
                     >
                       {isExpanded ? (
@@ -903,7 +931,7 @@ export function DatabaseResourceSelector({
                       ) : (
                         <ChevronRight className="w-3.5 h-3.5" />
                       )}
-                    </button>
+                    </Button>
                     <Checkbox
                       className="shrink-0"
                       disabled={readonly}
@@ -955,9 +983,11 @@ export function DatabaseResourceSelector({
                             return (
                               <div key={schema.name}>
                                 <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-control-bg">
-                                  <button
+                                  <Button
+                                    appearance="secondary"
+                                    size="xs"
                                     type="button"
-                                    className="shrink-0 w-4 h-4 flex items-center justify-center text-control-light hover:text-control cursor-pointer"
+                                    className="shrink-0 flex items-center justify-center text-control-light hover:text-control cursor-pointer"
                                     onClick={() =>
                                       toggleExpandSchema(schemaKey)
                                     }
@@ -967,7 +997,7 @@ export function DatabaseResourceSelector({
                                     ) : (
                                       <ChevronRight className="w-3.5 h-3.5" />
                                     )}
-                                  </button>
+                                  </Button>
                                   <Checkbox
                                     className="shrink-0"
                                     disabled={readonly}
@@ -1005,16 +1035,18 @@ export function DatabaseResourceSelector({
               );
             })}
             {nextPageToken && (
-              <button
+              <Button
+                appearance="secondary"
+                size="md"
                 type="button"
-                className="w-full px-2 py-1.5 text-sm text-accent hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline"
+                className="h-auto w-full px-2 py-1.5 text-sm text-accent hover:underline cursor-pointer disabled:opacity-50 disabled:no-underline"
                 onClick={loadMore}
                 disabled={loadingMore}
               >
                 {loadingMore
                   ? `${t("common.loading")}...`
                   : t("common.load-more")}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -1039,13 +1071,15 @@ export function DatabaseResourceSelector({
                   >
                     <span className="flex-1 truncate">{resourceLabel(r)}</span>
                     {!readonly && (
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
-                        className="shrink-0 w-4 h-4 text-control-light hover:text-control opacity-0 group-hover:opacity-100 cursor-pointer"
+                        className="shrink-0 text-control-light hover:text-control opacity-0 group-hover:opacity-100 cursor-pointer"
                         onClick={() => removeResource(r)}
                       >
                         <X className="w-3.5 h-3.5" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ))}
@@ -1087,9 +1121,11 @@ function TableNode({
     <div>
       <div className="flex items-center gap-x-1 px-2 py-1 hover:bg-control-bg">
         {includeColumns && columns.length > 0 ? (
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             type="button"
-            className="shrink-0 w-4 h-4 flex items-center justify-center text-control-light hover:text-control cursor-pointer"
+            className="shrink-0 flex items-center justify-center text-control-light hover:text-control cursor-pointer"
             onClick={onToggleExpand}
           >
             {expanded ? (
@@ -1097,7 +1133,7 @@ function TableNode({
             ) : (
               <ChevronRight className="w-3.5 h-3.5" />
             )}
-          </button>
+          </Button>
         ) : (
           <span className="shrink-0 w-4" />
         )}

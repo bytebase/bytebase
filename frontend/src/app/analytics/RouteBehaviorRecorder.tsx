@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useCurrentRoute } from "@/app/router";
+import { resolveRouteName, useCurrentRoute } from "@/app/router";
 import { useAppStore } from "@/stores/app";
 import type { BehaviorRecordingDecision } from "./behavior";
 import {
@@ -36,10 +36,18 @@ export function RouteBehaviorRecorder() {
     return null;
   }
 
-  return <EnabledRouteBehaviorRecorder />;
+  return (
+    <EnabledRouteBehaviorRecorder
+      deployment={isSaaSMode ? "cloud" : "self-host"}
+    />
+  );
 }
 
-function EnabledRouteBehaviorRecorder() {
+function EnabledRouteBehaviorRecorder({
+  deployment,
+}: {
+  deployment: "cloud" | "self-host";
+}) {
   const route = useCurrentRoute();
   const currentUserName = useAppStore((state) => state.currentUserName);
   const workspaceName = useAppStore((state) => state.workspaceResourceName());
@@ -51,12 +59,14 @@ function EnabledRouteBehaviorRecorder() {
       buildBehaviorAnalyticsConfig({
         posthogKey: import.meta.env.BB_POSTHOG_KEY as string | undefined,
         posthogHost: import.meta.env.BB_POSTHOG_HOST as string | undefined,
+        deployment,
         gitCommit: import.meta.env.GIT_COMMIT as string | undefined,
         recordingSampleRate: parseRecordingSampleRate(
           import.meta.env.BB_POSTHOG_RECORDING_SAMPLE_RATE as string | undefined
         ),
+        resolveRouteId,
       }),
-    []
+    [deployment]
   );
 
   useEffect(() => {
@@ -90,20 +100,6 @@ function EnabledRouteBehaviorRecorder() {
     });
     const previousSession = pageSessionRef.current;
     endPageSession(previousSession);
-    if (
-      previousSession &&
-      decision.recording === "allow" &&
-      previousSession.decision.routeId !== decision.routeId
-    ) {
-      behaviorAnalytics.captureMetric(
-        createBehaviorMetric("page navigated", {
-          properties: {
-            from_route_id: previousSession.decision.routeId,
-            to_route_id: decision.routeId,
-          },
-        })
-      );
-    }
     pageSessionRef.current =
       decision.recording === "allow"
         ? {
@@ -168,4 +164,13 @@ function parseRecordingSampleRate(value: string | undefined): number {
     return DEFAULT_RECORDING_SAMPLE_RATE;
   }
   return Math.min(Math.max(parsed, 0), 1);
+}
+
+function resolveRouteId(url: string): string | undefined {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return resolveRouteName(parsed.pathname);
+  } catch {
+    return undefined;
+  }
 }

@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -38,7 +38,7 @@ func (*ColumnRequireCharsetAdvisor) Check(_ context.Context, checkCtx advisor.Co
 		},
 	}
 
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type columnRequireCharsetOmniRule struct {
@@ -73,7 +73,7 @@ func (r *columnRequireCharsetOmniRule) checkCreateTable(n *ast.CreateTableStmt) 
 				Code:          code.NoCharset.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("Column %s does not have a character set specified", col.Name),
-				StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(col.Loc))),
+				StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(col.Loc))),
 			})
 		}
 	}
@@ -95,7 +95,7 @@ func (r *columnRequireCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 					Code:          code.NoCharset.Int32(),
 					Title:         r.Title,
 					Content:       fmt.Sprintf("Column %s does not have a character set specified", cmd.Column.Name),
-					StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
+					StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
 				})
 			}
 		}
@@ -110,7 +110,7 @@ func (r *columnRequireCharsetOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 					Code:          code.NoCharset.Int32(),
 					Title:         r.Title,
 					Content:       fmt.Sprintf("Column %s does not have a character set specified", col.Name),
-					StartPosition: common.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
+					StartPosition: base.ConvertANTLRLineToPosition(int(r.LocToLine(cmd.Loc))),
 				})
 			}
 		}

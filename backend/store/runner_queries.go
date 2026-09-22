@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // GetProjectByResourceID gets a project by its globally unique resource ID without workspace filter.
@@ -22,6 +22,15 @@ import (
 func (s *Store) GetProjectByResourceID(ctx context.Context, resourceID string) (*ProjectMessage, error) {
 	if v, ok := s.projectCache.Get(resourceID); ok && s.enableCache {
 		return v, nil
+	}
+	if s.enableCache {
+		// Keep the database read and cache publication ordered with project
+		// invalidation for the same reason as ListProjects.
+		s.projectPublishMu.Lock()
+		defer s.projectPublishMu.Unlock()
+		if v, ok := s.projectCache.Get(resourceID); ok {
+			return v, nil
+		}
 	}
 
 	q := qb.Q().Space("SELECT resource_id, workspace, name, setting, deleted FROM project WHERE resource_id = ?", resourceID)
@@ -49,7 +58,7 @@ func (s *Store) GetProjectByResourceID(ctx context.Context, resourceID string) (
 		return nil, err
 	}
 	project.Setting = setting
-	s.storeProjectCache(&project)
+	s.projectCache.Add(project.ResourceID, &project)
 	return &project, nil
 }
 
@@ -176,17 +185,9 @@ func (s *Store) ListAllInstances(ctx context.Context, showDeleted bool) ([]*Inst
 		return nil, err
 	}
 
-	// Deobfuscate per-workspace (group by workspace to avoid redundant secret lookups).
-	byWorkspace := make(map[string][]*InstanceMessage)
-	for _, inst := range instances {
-		byWorkspace[inst.Workspace] = append(byWorkspace[inst.Workspace], inst)
+	if err := s.deobfuscateInstances(ctx, instances); err != nil {
+		return nil, err
 	}
-	for _, wsInstances := range byWorkspace {
-		if err := s.deobfuscateInstances(ctx, wsInstances); err != nil {
-			return nil, err
-		}
-	}
-
 	for _, instance := range instances {
 		s.instanceCache.Add(getInstanceCacheKey(instance.ResourceID), instance)
 	}

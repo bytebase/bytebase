@@ -7,10 +7,10 @@ import (
 
 	omniast "github.com/bytebase/omni/snowflake/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	snowsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 )
 
@@ -164,7 +164,7 @@ func (r *ColumnNoNullRule) addNullableAdvice(columnNullable map[string]int) {
 			Code:          code.ColumnCannotNull.Int32(),
 			Title:         r.title,
 			Content:       fmt.Sprintf("Column %s is nullable, which is not allowed.", normalizedColumnName),
-			StartPosition: common.ConvertANTLRLineToPosition(r.baseLine + columnNullableLine),
+			StartPosition: base.ConvertANTLRLineToPosition(r.baseLine + columnNullableLine),
 		})
 	}
 }

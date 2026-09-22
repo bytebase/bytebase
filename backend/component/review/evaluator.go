@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"maps"
 	"math"
+	"strings"
 	"sync"
 
 	"github.com/google/cel-go/cel"
@@ -148,7 +149,11 @@ func (r *Runner) processIssue(ctx context.Context, ref bus.IssueRef) {
 			return
 		}
 		if approved {
-			r.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}
+			// Give up on shutdown rather than blocking on a stopped consumer.
+			select {
+			case r.bus.RolloutCreationChan <- bus.PlanRef{ProjectID: issue.ProjectID, PlanID: *issue.PlanUID}:
+			case <-ctx.Done():
+			}
 		}
 	}
 }
@@ -177,7 +182,7 @@ func calculateRiskLevelFromCELVars(celVarsList []map[string]any) storepb.RiskLev
 		return storepb.RiskLevel_LOW
 	}
 	statementTypes := collectStatementTypes(celVarsList)
-	return common.GetRiskLevelFromStatementTypes(statementTypes)
+	return GetRiskLevelFromStatementTypes(statementTypes)
 }
 
 // injectRiskLevelIntoCELVars adds the risk level to all CEL variable maps.
@@ -703,6 +708,11 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		statementSummaryResults = buildStatementSummaryResultMap(planCheckRun.Result.GetResults())
 	}
 
+	// A database group expands one sheet across every target, so classify each
+	// (engine, sheet) once. Sheets run to common.MaxSheetCheckSize and this
+	// path is synchronous on issue submission.
+	statementTypeCache := map[statementTypeKey][]storepb.StatementType{}
+
 	var celVarsList []map[string]any
 	for _, target := range targets {
 		taskStatement := ""
@@ -738,16 +748,21 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 			DatabaseName: target.database.DatabaseName,
 			SheetSHA256:  target.sheetSha256,
 		}]
-		if !ok {
-			celVarsList = append(celVarsList, celVars)
+		if !ok || result.GetSqlSummaryReport() == nil {
+			// Set statement.sql_type wherever the engine can classify:
+			// cel-go resolves a declared-but-absent variable to an unknown,
+			// which matchRulesForSource drops as a non-match.
+			cacheKey := statementTypeKey{engine: target.database.Engine, sheetSHA256: target.sheetSha256}
+			statementTypes, cached := statementTypeCache[cacheKey]
+			if !cached {
+				statementTypes = statementTypesFromParser(target.database.Engine, taskStatement)
+				statementTypeCache[cacheKey] = statementTypes
+			}
+			celVarsList = append(celVarsList, expandCELVars(celVars, statementTypes, nil)...)
 			continue
 		}
 
 		report := result.GetSqlSummaryReport()
-		if report == nil {
-			celVarsList = append(celVarsList, celVars)
-			continue
-		}
 
 		// Calculate table rows from changed resources
 		var tableRows int64
@@ -782,7 +797,7 @@ func buildCELVariablesForRoleGrant(ctx context.Context, stores *store.Store, iss
 		return nil, false, errors.New("role grant payload not found")
 	}
 
-	factors, err := common.GetQueryExportFactors(payload.GetRoleGrant().GetCondition().GetExpression())
+	factors, err := getQueryExportFactors(payload.GetRoleGrant().GetCondition().GetExpression())
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to get query export factors")
 	}
@@ -1106,6 +1121,42 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 	}
 }
 
+// statementTypeKey covers both inputs statementTypesFromParser reads: the
+// engine, because an issue's targets can span instances of different engines,
+// and the sheet digest, which determines the statement text the caller loaded
+// from it.
+type statementTypeKey struct {
+	engine      storepb.Engine
+	sheetSHA256 string
+}
+
+// statementTypesFromParser classifies a sheet directly, for engines that never
+// produce a SQL summary report. Returns nil when the engine has no statement-type
+// handler, when the sheet does not parse, or when it is over the size guard,
+// which leaves statement.sql_type absent for those engines exactly as before.
+//
+// The size guard mirrors the statement report check, which skips sheets over
+// common.MaxSheetCheckSize; parsing runs on the approval path, so a sheet the
+// report check declined to read must not be parsed here either.
+func statementTypesFromParser(engine storepb.Engine, statement string) []storepb.StatementType {
+	if statement == "" || len(statement) > common.MaxSheetCheckSize {
+		return nil
+	}
+	stmts, err := parserbase.ParseStatements(engine, statement)
+	if err != nil {
+		return nil
+	}
+	asts := parserbase.ExtractASTs(stmts)
+	if len(asts) == 0 {
+		return nil
+	}
+	statementTypes, err := parserbase.GetStatementTypes(engine, asts)
+	if err != nil {
+		return nil
+	}
+	return statementTypes
+}
+
 // expandCELVars creates CEL variable maps for each combination of statement types and table names.
 func expandCELVars(base map[string]any, statementTypes []storepb.StatementType, tableNames []string) []map[string]any {
 	if len(statementTypes) == 0 {
@@ -1117,9 +1168,26 @@ func expandCELVars(base map[string]any, statementTypes []storepb.StatementType, 
 		tableNames = []string{""}
 	}
 
+	// Both producers return one entry per statement, so a sheet of N statements
+	// yields N identical activations for the same type. Rule matching asks
+	// whether ANY activation matches, so duplicates cannot change the answer,
+	// and every rule is evaluated against every activation: a 2 MiB sheet of
+	// short statements is tens of thousands of pointless evaluations per target.
+	type activation struct {
+		statementType storepb.StatementType
+		tableName     string
+	}
+	seen := make(map[activation]bool, len(statementTypes))
+
 	var result []map[string]any
 	for _, statementType := range statementTypes {
 		for _, tableName := range tableNames {
+			key := activation{statementType: statementType, tableName: tableName}
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+
 			vars := maps.Clone(base)
 			vars[common.CELAttributeStatementSQLType] = statementType.String()
 			if tableName != "" {
@@ -1225,6 +1293,22 @@ func NotifyApprovalRequested(ctx context.Context, stores *store.Store, webhookMa
 	if err != nil {
 		slog.Warn("failed to get approvers", log.BBError(err))
 		approvers = []webhook.User{} // Continue with empty list
+	}
+	if !project.Setting.GetAllowLastPlanEditorApproval() && issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
+		plan, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: issue.ProjectID, UID: issue.PlanUID})
+		if err != nil {
+			slog.Warn("failed to get plan for approval notification", log.BBError(err))
+		} else if plan == nil {
+			slog.Warn("plan not found for approval notification", slog.Int64("plan_uid", *issue.PlanUID))
+		} else {
+			eligibleApprovers := approvers[:0]
+			for _, approver := range approvers {
+				if !strings.EqualFold(approver.Email, effectiveLastPlanEditor(plan)) {
+					eligibleApprovers = append(eligibleApprovers, approver)
+				}
+			}
+			approvers = eligibleApprovers
+		}
 	}
 
 	// Trigger ISSUE_APPROVAL_REQUESTED webhook

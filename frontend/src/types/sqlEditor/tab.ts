@@ -10,8 +10,14 @@ export type SQLEditorTabStatus =
   | "SAVING" // auto-saving in progress
   | "CLEAN"; // saved to a remote sheet
 
-export type SQLEditorTabMode = "SAVED_QUERY" | "ADMIN";
+export type SQLEditorTabMode = "SAVED_QUERY" | "ADMIN" | "DATA_EXPLORER";
 export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "SAVED_QUERY";
+
+export type DataExplorerState = {
+  filter: string;
+  initialized: boolean;
+  selectedRowKey?: number;
+};
 export type QueryDataSourceType =
   | DataSourceType.ADMIN
   | DataSourceType.READ_ONLY;
@@ -72,6 +78,7 @@ export type SQLEditorTab = {
   statement: string; // local editing statement, might be out-of-sync to ref sheet's statement
   selectedStatement: string;
   mode: SQLEditorTabMode;
+  dataExplorer?: DataExplorerState;
 
   // SQL query related fields
   // won't be saved to localStorage

@@ -10,6 +10,7 @@ import (
 )
 
 func TestConvertWebhookTypeGoogleChat(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 
 	storeType, err := convertToStoreWebhookType(v1pb.WebhookType_GOOGLE_CHAT)

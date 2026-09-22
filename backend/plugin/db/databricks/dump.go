@@ -8,9 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 const (
@@ -27,7 +26,7 @@ var (
 	dftSchema  = "default"
 )
 
-func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ *storepb.DatabaseSchemaMetadata) error {
+func (d *Driver) Dump(ctx context.Context, writer io.Writer, _ *metadatapb.DatabaseSchemaMetadata) error {
 	catalogMap, err := d.listCatologTables(ctx, "")
 	if err != nil {
 		return err
@@ -141,7 +140,7 @@ func (d *Driver) showCreateTable(ctx context.Context, qualifiedTblName string) (
 	return rows[0][0], nil
 }
 
-func genMaterializedViewDDL(qualifiedName string, mtViewMeta *storepb.MaterializedViewMetadata, tblProperties string) (string, error) {
+func genMaterializedViewDDL(qualifiedName string, mtViewMeta *metadatapb.MaterializedViewMetadata, tblProperties string) (string, error) {
 	builder := strings.Builder{}
 	if _, err := builder.WriteString(""); err != nil {
 		return "", err

@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   createPlanWithDraftReview,
   DraftReviewIssueCreationError,
@@ -25,7 +26,6 @@ import { IssueStatus, State } from "@/types/proto-es/v1/common_pb";
 import {
   BatchUpdateIssuesStatusRequestSchema,
   IssueSchema,
-  ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -298,12 +298,9 @@ export function PlanDetailHeader() {
       // issue comments so the review timeline reflects it (like issue detail).
       await Promise.all([
         page.refreshState(),
-        useAppStore.getState().listIssueComments(
-          create(ListIssueCommentsRequestSchema, {
-            parent: issue.name,
-            pageSize: 1000,
-          })
-        ),
+        useAppStore.getState().fetchIssueCommentThreads({
+          parent: issue.name,
+        }),
       ]);
       if (pageKeyRef.current !== actionPageKey) return;
       // Land on the review section so the close/reopen system comment and the
@@ -586,7 +583,8 @@ export function PlanDetailHeader() {
           {/* Terminal status (Closed / Deployed) sits at the far left, before
               the title — a state badge, not an action. */}
           <PlanLifecycleStamp state={lifecycle} />
-          <input
+          <Input
+            size="md"
             ref={titleInputRef}
             className={cn(
               "h-9 min-w-0 flex-1 bg-transparent text-xl! font-bold text-main outline-hidden",

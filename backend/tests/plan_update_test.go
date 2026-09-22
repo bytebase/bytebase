@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -33,22 +34,30 @@ func setupPlanUpdateFixture(t *testing.T, withIssue bool) *planUpdateFixture {
 	t.Helper()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	ctl, ctx := startProject(ctx, t)
+	// The fixture creates a database through a bootstrap Plan owned and approved
+	// by the test user. Keep that setup flow independent of the feature under
+	// test; individual tests can set the project policy they need afterwards.
+	_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:                        ctl.project.Name,
+			AllowLastPlanEditorApproval: true,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_last_plan_editor_approval"}},
+	}))
 	a.NoError(err)
-	t.Cleanup(func() { _ = ctl.Close(ctx) })
 
 	instanceName := "planUpdateInstance_" + generateRandomString("inst")
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       instanceName,
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         instanceName,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -129,6 +138,164 @@ func listPlanUpdateEvents(t *testing.T, f *planUpdateFixture) []*v1pb.IssueComme
 		}
 	}
 	return out
+}
+
+func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	f := setupPlanUpdateFixture(t, false)
+	newProjectID := generateRandomString("last-editor-default")
+	newProject, err := f.ctl.projectServiceClient.CreateProject(f.ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		Project:   &v1pb.Project{Title: newProjectID},
+		ProjectId: newProjectID,
+	}))
+	a.NoError(err)
+	a.False(newProject.Msg.AllowLastPlanEditorApproval)
+	a.Equal("users/demo@example.com", f.plan.LastPlanEditor)
+	projectResp, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:                        f.ctl.project.Name,
+			AllowSelfApproval:           false,
+			AllowLastPlanEditorApproval: false,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval", "allow_last_plan_editor_approval"}},
+	}))
+	a.NoError(err)
+	a.False(projectResp.Msg.AllowLastPlanEditorApproval)
+
+	installWorkspaceApprovalRule(f.ctx, t, f.ctl, f.ctl.project, []string{"roles/projectOwner"})
+	editor := provisionApprover(f.ctx, t, f.ctl, f.ctl.project, "last-plan-editor", "roles/projectOwner")
+
+	updateSpecs := func(specs []*v1pb.Plan_Spec) *v1pb.Plan {
+		var updated *v1pb.Plan
+		withImpersonation(f.ctx, t, f.ctl, editor, func() {
+			resp, err := f.ctl.planServiceClient.UpdatePlan(f.ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+				Plan:       &v1pb.Plan{Name: f.plan.Name, Specs: specs},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+			}))
+			a.NoError(err)
+			updated = resp.Msg
+		})
+		return updated
+	}
+
+	// An identical specs update is accepted and must still attribute the editor.
+	updated := updateSpecs(f.plan.Specs)
+	a.Equal("users/"+editor.Email, updated.LastPlanEditor)
+
+	secondSpec := &v1pb.Plan_Spec{
+		Id: uuid.NewString(),
+		Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+			ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+				Targets: []string{f.database.Name},
+				Sheet:   f.sheet2.Name,
+			},
+		},
+	}
+	updated = updateSpecs(append(updated.Specs, secondSpec))
+	// Reordering specs is accepted and must also attribute the editor.
+	updated = updateSpecs([]*v1pb.Plan_Spec{updated.Specs[1], updated.Specs[0]})
+	a.Equal("users/"+editor.Email, updated.LastPlanEditor)
+
+	// Metadata and lifecycle updates must not transfer Last Plan Editor.
+	metadataEditor := provisionApprover(f.ctx, t, f.ctl, f.ctl.project, "metadata-editor", "roles/projectOwner")
+	withImpersonation(f.ctx, t, f.ctl, metadataEditor, func() {
+		resp, err := f.ctl.planServiceClient.UpdatePlan(f.ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+			Plan: &v1pb.Plan{
+				Name:        updated.Name,
+				Title:       "metadata update",
+				Description: "metadata update",
+				State:       v1pb.State_DELETED,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title", "description", "state"}},
+		}))
+		a.NoError(err)
+		a.Equal("users/"+editor.Email, resp.Msg.LastPlanEditor)
+		resp, err = f.ctl.planServiceClient.UpdatePlan(f.ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+			Plan:       &v1pb.Plan{Name: updated.Name, State: v1pb.State_ACTIVE},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"state"}},
+		}))
+		a.NoError(err)
+		a.Equal("users/"+editor.Email, resp.Msg.LastPlanEditor)
+		updated = resp.Msg
+	})
+
+	issue := createIssueForPlan(f.ctx, t, f.ctl, f.ctl.project, updated, "last plan editor approval")
+	waitForIssuePending(f.ctx, t, f.ctl, issue)
+
+	withImpersonation(f.ctx, t, f.ctl, editor, func() {
+		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))
+		a.Error(err)
+		a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+	})
+
+	renamedEmail := "renamed-" + editor.Email
+	renamed, err := f.ctl.userServiceClient.UpdateEmail(f.ctx, connect.NewRequest(&v1pb.UpdateEmailRequest{
+		Name:  common.FormatUserEmail(editor.Email),
+		Email: renamedEmail,
+	}))
+	a.NoError(err)
+	a.Equal(renamedEmail, renamed.Msg.Email)
+	editor.Email = renamedEmail
+	gotPlan, err := f.ctl.planServiceClient.GetPlan(f.ctx, connect.NewRequest(&v1pb.GetPlanRequest{Name: updated.Name}))
+	a.NoError(err)
+	a.Equal(common.FormatUserEmail(renamedEmail), gotPlan.Msg.LastPlanEditor)
+
+	withImpersonation(f.ctx, t, f.ctl, editor, func() {
+		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))
+		a.Error(err)
+		a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+		_, err = f.ctl.issueServiceClient.RejectIssue(f.ctx, connect.NewRequest(&v1pb.RejectIssueRequest{Name: issue.Name}))
+		a.NoError(err)
+	})
+
+	projectResp, err = f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:                        f.ctl.project.Name,
+			AllowLastPlanEditorApproval: true,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_last_plan_editor_approval"}},
+	}))
+	a.NoError(err)
+	a.True(projectResp.Msg.AllowLastPlanEditorApproval)
+	issueResp, err := f.ctl.issueServiceClient.GetIssue(f.ctx, connect.NewRequest(&v1pb.GetIssueRequest{Name: issue.Name}))
+	a.NoError(err)
+	a.Len(issueResp.Msg.Approvers, 1)
+	a.Equal(v1pb.Issue_Approver_REJECTED, issueResp.Msg.Approvers[0].Status)
+	requestIssueAsCreator(f.ctx, t, f.ctl, issue, "updated")
+
+	withImpersonation(f.ctx, t, f.ctl, editor, func() {
+		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))
+		a.NoError(err)
+	})
+
+	// Enabling last-editor approval does not override the self-approval rule.
+	var selfPlan *v1pb.Plan
+	var selfIssue *v1pb.Issue
+	withImpersonation(f.ctx, t, f.ctl, editor, func() {
+		planResp, err := f.ctl.planServiceClient.CreatePlan(f.ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+			Parent: f.ctl.project.Name,
+			Plan:   &v1pb.Plan{Specs: updated.Specs},
+		}))
+		a.NoError(err)
+		selfPlan = planResp.Msg
+		issueResp, err := f.ctl.issueServiceClient.CreateIssue(f.ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+			Parent: f.ctl.project.Name,
+			Issue: &v1pb.Issue{
+				Type:  v1pb.Issue_DATABASE_CHANGE,
+				Title: "self approval remains disabled",
+				Plan:  selfPlan.Name,
+			},
+		}))
+		a.NoError(err)
+		selfIssue = issueResp.Msg
+	})
+	waitForIssuePending(f.ctx, t, f.ctl, selfIssue)
+	withImpersonation(f.ctx, t, f.ctl, editor, func() {
+		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: selfIssue.Name}))
+		a.Error(err)
+		a.Equal(connect.CodePermissionDenied, connect.CodeOf(err))
+	})
 }
 
 // TestPlanSpecUpdate_SheetChange_EmitsIssueComment is the original test from

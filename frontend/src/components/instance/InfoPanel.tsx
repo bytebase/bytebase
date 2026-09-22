@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import {
   Sheet,
@@ -108,12 +109,15 @@ function PanelHeader({
       <h3 className="min-w-0 truncate text-sm font-semibold text-main">
         {title}
       </h3>
-      <button
-        className="text-control-light hover:text-main p-0.5 rounded-xs"
+      <Button
+        type="button"
+        appearance="secondary"
+        size="xs"
+        className="text-control-light hover:text-main"
         onClick={onClose}
       >
         <X className="size-4" />
-      </button>
+      </Button>
     </div>
   );
 }
@@ -143,10 +147,10 @@ export function InfoPanelContent({ engine, section }: InfoPanelContentProps) {
       {snippet.codeBlock && (
         <div className="flex flex-col gap-y-1">
           <div className="flex flex-row">
-            <pre className="flex-1 min-w-0 w-full px-3 py-2 border border-control-border bg-control-bg whitespace-pre-line rounded-l-[3px] overflow-x-auto text-[12px]">
+            <pre className="flex-1 min-w-0 w-full px-3 py-2 border border-control-border bg-control-bg whitespace-pre-line rounded-l-xs overflow-x-auto text-xs">
               <code>{snippet.codeBlock.code}</code>
             </pre>
-            <div className="flex items-center -ml-px px-2 py-2 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover rounded-r-[3px]">
+            <div className="flex items-center -ml-px px-2 py-2 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover rounded-r-xs">
               <CopyButton content={snippet.codeBlock.code} />
             </div>
           </div>

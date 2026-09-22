@@ -20,19 +20,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import { ConnectionPane } from "./ConnectionPane/ConnectionPane";
 
 /**
- * Replaces frontend/src/views/sql-editor/ConnectionPanel/ConnectionPanel.vue.
- * Right-side Sheet hosting the `ConnectionPane`. The open/close state is
- * read directly from `useSQLEditorStore(s => s.showConnectionPanel)`
- * rather than passed through `<ReactPageMount>` props —
- * funneling boolean state through Vue→React attrs proved brittle (Vue's
- * template compiler doesn't auto-translate `(v) => (ref = v)` into
- * `.value = v` outside of `v-model`, and concurrent renders can leave the
- * Sheet's `open` prop stale after a programmatic close).
- *
- * The outer Vue drawer used a dynamic `width` (50vw up to 800px, falling
- * back to `calc(100vw - 4rem)` on narrow viewports). The shadcn Sheet's
- * `wide` tier (832px) is the closest match; it clamps via max-w-[100vw]
- * so narrow viewports remain safe.
+ * Right-side Sheet hosting the `ConnectionPane`.
  */
 export function ConnectionPanel() {
   const { t } = useTranslation();
@@ -49,9 +37,9 @@ export function ConnectionPanel() {
     undefined
   );
 
-  // Vue had `:close-on-esc="false"` (mask click still closed the drawer).
-  // Mirror that by canceling Base UI's close handling when the reason is
-  // `escapeKey`; outside-press (mask click) is allowed through.
+  // Escape doesn't close the drawer, but a mask click does: cancel Base UI's
+  // close handling when the reason is `escape-key`; outside-press (mask
+  // click) is allowed through.
   const handleOpenChange = (
     next: boolean,
     eventDetails?: { reason?: string; cancel?: () => void }
@@ -75,11 +63,11 @@ export function ConnectionPanel() {
                   <Button
                     appearance="secondary"
                     size="sm"
-                    className={cn("size-7 p-1")}
+                    className={cn("w-7 p-1")}
                     aria-label={t("sql-editor.manage-connections")}
-                    // Match Vue: just navigate. The route change unmounts
-                    // the SQL editor; pre-closing the drawer added an
-                    // unnecessary close transition.
+                    // Just navigate. The route change unmounts the SQL
+                    // editor; pre-closing the drawer adds an unnecessary
+                    // close transition.
                     onClick={() => {
                       void router.push({ name: INSTANCE_ROUTE_DASHBOARD });
                     }}

@@ -14,6 +14,7 @@ import "google/type/expr.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/plan_service.proto";
+import "v1/review_rule.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -26,6 +27,7 @@ service IssueService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.issues.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new issue for database changes or tasks.
@@ -40,6 +42,22 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // WRITE covers the DATABASE_CHANGE issue this method exists for. It does
+    // not cover a ROLE_GRANT issue, which completes on creation whenever the
+    // workspace rule produces no approval template and then writes the project
+    // IAM binding for a grantee the request names — which is
+    // ProjectService/SetIamPolicy, EXCLUDED for exactly that outcome. A class
+    // annotation cannot split by request field, so the MCP gate carries a
+    // request-shape refusal for this method: it admits DATABASE_CHANGE and
+    // refuses every other type (backend/api/v1/mcp_gate.go,
+    // mcpRequestShapeRefusals). UpdateIssue reaches the same creation through
+    // allow_missing and is refused with it.
+    //
+    // An ACCESS_GRANT issue is refused by the same allow-list and does not
+    // reach this handler in the first place: buildIssueMessage has no arm for
+    // it, so the type is an invalid argument here. Those issues are written by
+    // AccessGrantService/CreateAccessGrant, which is EXCLUDED.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Lists issues in a project.
@@ -49,6 +67,7 @@ service IssueService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.issues.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
@@ -60,6 +79,7 @@ service IssueService {
     };
     option (bytebase.v1.permission) = "bb.issues.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Updates an issue's properties such as title, description, or labels.
@@ -73,6 +93,13 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // WRITE, and editing an issue is an agent's job — including an edit that
+    // resets approval finding and sends the issue back for review. What this
+    // does not cover is creation: with allow_missing set on an issue that does
+    // not exist, the handler calls CreateIssue with the request's own issue, so
+    // the MCP gate applies CreateIssue's request-shape refusal here too
+    // whenever allow_missing is set.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Lists comments on an issue.
@@ -82,6 +109,7 @@ service IssueService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.issueComments.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Adds a comment to an issue.
@@ -95,6 +123,7 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issueComments.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Updates an existing issue comment.
@@ -108,6 +137,7 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issueComments.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Updates the status of multiple issues in a single operation.
@@ -120,6 +150,7 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Approves an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -131,6 +162,8 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -142,6 +175,8 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -153,6 +188,21 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    // WRITE, not FORBIDDEN with its two siblings, because it is structurally
+    // the opposite of them. ApproveIssue and RejectIssue record the review
+    // decision — an approver role via canReview, the self-approval guard, an
+    // APPROVED or REJECTED approver appended. This action requires the issue to
+    // be ALREADY rejected, requires the actor to be the issue CREATOR, never
+    // calls canReview, and records no decision: it strips the REJECTED
+    // approvers and returns the issue to PENDING for a fresh human decision
+    // (component/review/workflow.go applyReviewAction, ActionRequest).
+    //
+    // It approves nothing, so refusing it protects nothing the other two do not
+    // already protect, and it costs the loop propose_database_change exists
+    // for: while a rejection stands Approve and Reject both hard-fail, so this
+    // is the ONLY exit from the rejected state. Forbidding it means an agent
+    // that fixes the SQL a human asked it to fix cannot resubmit.
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Re-runs approval-template finding for an issue stuck in CHECKING.
@@ -171,6 +221,28 @@ service IssueService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
+  }
+
+  // Triggers a review run. The slot is reset unconditionally: a RUNNING
+  // execution is superseded (its completion is fenced off), the attempt
+  // number is bumped, and the returned run is AVAILABLE.
+  // Review results are not returned by this RPC and have no read RPC yet:
+  // findings will surface as issue comments once the review comment
+  // integration lands. The returned run carries execution status only.
+  // The audit log is the only record of who triggered a run.
+  // Permissions required: bb.reviewRuns.run
+  rpc RunReview(RunReviewRequest) returns (ReviewRun) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/issues/*/reviewRuns/*}:run"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.reviewRuns.run";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }
 
@@ -534,6 +606,12 @@ message ListIssueCommentsRequest {
   // When paginating, all other parameters provided to `ListIssueComments` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // CEL filter over events, root comments, and replies.
+  // Supported: root == null, root == "<comment name>", or root in ["<comment name>", ...].
+  // Root names must belong to parent. Empty and root == null return the
+  // timeline (events and root comments); other filters return replies only.
+  string filter = 4;
 }
 
 message ListIssueCommentsResponse {
@@ -595,6 +673,57 @@ message IssueComment {
   // Format: users/{email}
   string creator = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The thread root's name, set only on replies. Immutable after creation.
+  // Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+  // Must name a thread root in the same issue, never a general comment or reply.
+  optional string root = 14 [(google.api.field_behavior) = IMMUTABLE];
+
+  // Present only on thread roots. Set OPEN on create to start a thread; an
+  // anchored root starts one without it. Omit root, thread_state, and
+  // statement_anchor to create a general comment.
+  // Update through the thread_state field mask to resolve or reopen.
+  // Adding a reply does not reopen a resolved thread.
+  optional ThreadState thread_state = 15;
+
+  // Optional source context on a root or reply. A reply's anchor must share
+  // the root's spec and sheet_sha256; it may narrow the range.
+  // Cannot be set on events. Immutable after creation.
+  StatementAnchor statement_anchor = 16 [(google.api.field_behavior) = IMMUTABLE];
+
+  // Present on review results, the comments the review executor posts.
+  // Never accepted on create or update.
+  ReviewMetadata review_metadata = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // What a review result carries beyond its text.
+  message ReviewMetadata {
+    // Priority says what resolving the thread means. It has no bearing on
+    // blocking, which thread_state alone decides.
+    enum Priority {
+      PRIORITY_UNSPECIFIED = 0;
+      // The SQL is wrong and must change.
+      P0 = 1;
+      // Dangerous but legitimate; a person must accept it.
+      P1 = 2;
+      // Advisory.
+      P2 = 3;
+    }
+
+    // The reviewer that posted the result.
+    ReviewRun.Type run_type = 1;
+    // The rule judged against. Set if and only if run_type is RULE.
+    ReviewRuleType rule_type = 2;
+    Priority priority = 3;
+    // Every database the result applies to, sorted.
+    // Format: instances/{instance}/databases/{database}
+    repeated string targets = 4;
+  }
+
+  enum ThreadState {
+    THREAD_STATE_UNSPECIFIED = 0;
+    OPEN = 1;
+    RESOLVED = 2;
+  }
+
   // The event associated with this comment.
   oneof event {
     // Approval event.
@@ -647,4 +776,77 @@ message IssueComment {
     repeated Plan.Spec from_specs = 1;
     repeated Plan.Spec to_specs = 2;
   }
+}
+
+// The saved statement revision and range referenced by a comment.
+// Source currency is derived by comparing the spec and hash with the current plan.
+// Historical SQL is available through SheetService.GetSheet with this hash.
+message StatementAnchor {
+  // The Plan.Spec.id in the issue's plan; may no longer resolve after deletion.
+  string spec = 1;
+  // SHA256 of the saved sheet, as 64 lowercase hexadecimal characters.
+  string sheet_sha256 = 2;
+  // One-based lines and Unicode code-point columns. When both columns are zero,
+  // the range covers whole lines, including the end line. Otherwise both columns
+  // must be positive, start_position is inclusive, and end_position is exclusive.
+  Position start_position = 3;
+  Position end_position = 4;
+}
+
+message ReviewRun {
+  option (google.api.resource) = {
+    type: "bytebase.com/ReviewRun"
+    pattern: "projects/{project}/issues/{issue}/reviewRuns/{reviewRun}"
+  };
+
+  // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+  // The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+  // addresses a slot, not an execution.
+  string name = 1;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    // Review against the standard rules.
+    RULE = 1;
+    // Review against natural-language guidelines, performed by AI.
+    GUIDELINE = 2;
+  }
+  // Derived from the name.
+  Type type = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // States follow task_run, minus PENDING (review needs no admission
+  // control) and minus CANCELED (runs are side-effect-free until the fenced
+  // completion transaction, so re-running supersedes instead of canceling).
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    // Created and claimable by any replica.
+    AVAILABLE = 1;
+    RUNNING = 2;
+    // Every (spec, target) unit was evaluated. DONE does not mean the
+    // review passed: whether problems remain is judged from open comments.
+    DONE = 3;
+    // At least one unit was not evaluated; the cause is in `error`.
+    FAILED = 4;
+  }
+  Status status = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the current run was triggered. Reset on every re-run.
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the run reached a terminal status. Unset while AVAILABLE or
+  // RUNNING.
+  google.protobuf.Timestamp end_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Fatal execution error, set if and only if status is FAILED: the review
+  // failed to execute (a platform problem, never the SQL — SQL problems are
+  // review results on a DONE run).
+  string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message RunReviewRequest {
+  // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/ReviewRun"}
+  ];
 }

@@ -1,6 +1,6 @@
 # Per-concept type metadata messages, not a unified UDT message
 
-`SchemaMetadata` (proto/store/store/database.proto) models named user-defined types as narrow per-concept messages — `EnumTypeMetadata`, `CompositeTypeMetadata`, and in the future `ObjectTypeMetadata` (Oracle), `TableTypeMetadata` (SQL Server), `DomainMetadata` (PostgreSQL) — each named by the owning engine family's official term. We rejected a unified `UserDefinedTypeMetadata`.
+`SchemaMetadata` (`proto/omni/metadata/database.proto` in [omni](https://github.com/bytebase/omni)) models named user-defined types as narrow per-concept messages — `EnumTypeMetadata`, `CompositeTypeMetadata`, and in the future `ObjectTypeMetadata` (Oracle), `TableTypeMetadata` (SQL Server), `DomainMetadata` (PostgreSQL) — each named by the owning engine family's official term. We rejected a unified `UserDefinedTypeMetadata`.
 
 Metadata is persisted as protojson in JSONB (snapshots, changelogs, releases) and unmarshaled with `DiscardUnknown`, so field names and message shapes are frozen forever once shipped: a later rename silently orphans historical data with no error. The choice therefore minimizes the probability of ever wanting to restructure.
 

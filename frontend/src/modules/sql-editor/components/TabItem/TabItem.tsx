@@ -27,7 +27,6 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/TabItem/TabItem.vue.
  * One row in the tab bar. Composes Prefix + (Label|AdminLabel) + Suffix,
  * handles left-click to select + contextmenu emit, and ties into @dnd-kit's
  * sortable for drag-reorder inside TabList.
@@ -127,11 +126,7 @@ export function TabItem({
         style={bodyStyle}
       >
         <Prefix tab={tab} />
-        {tab.mode === "SAVED_QUERY" ? (
-          <Label tab={tab} />
-        ) : (
-          <AdminLabel tab={tab} />
-        )}
+        {tab.mode === "ADMIN" ? <AdminLabel tab={tab} /> : <Label tab={tab} />}
         <Suffix tab={tab} onClose={() => onClose(tab, index)} />
       </div>
     </div>

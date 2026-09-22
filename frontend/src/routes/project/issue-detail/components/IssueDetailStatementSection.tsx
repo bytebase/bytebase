@@ -7,6 +7,7 @@ import { MonacoEditor, ReadonlyMonaco } from "@/components/monaco";
 import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useCurrentUser, useReleaseByName } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
@@ -389,13 +390,13 @@ export function IssueDetailStatementSection({
         <div
           className={cn(
             "flex items-center gap-x-1 text-base font-medium",
-            isEmpty && "text-red-600"
+            isEmpty && "text-error"
           )}
         >
           <span>{statementTitle}</span>
           {isEmpty && <span className="text-error">*</span>}
         </div>
-        <input
+        <Input
           ref={inputRef}
           accept=".sql,.txt,application/sql,text/plain"
           className="hidden"
@@ -473,7 +474,7 @@ export function IssueDetailStatementSection({
         />
       )}
       {isLoading ? (
-        <div className="rounded-md border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-background px-4 py-3 text-sm text-control-light">
           {t("common.loading")}
         </div>
       ) : statement || isEditing ? (
@@ -495,7 +496,7 @@ export function IssueDetailStatementSection({
           )}
         </div>
       ) : (
-        <div className="rounded-md border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-background px-4 py-3 text-sm text-control-light">
           {t("common.no-data")}
         </div>
       )}

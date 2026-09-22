@@ -9,10 +9,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
@@ -62,27 +62,26 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx context.Context, checkCtx adv
 				checker.handleStmt(stmt.Text, omniLine(stmt.BaseLine(), stmt.Text, n.Loc))
 			default:
 			}
-			if checker.explainCount >= common.MaximumLintExplainSize {
-				break
-			}
 		}
 	}
 
-	return checker.adviceList, nil
+	return checker.explains.AppendSkippedAdvice(checker.adviceList, checker.title, code.StatementAffectedRowExceedsLimit), nil
 }
 
 type statementAffectedRowLimitChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	maxRow     int
+	driver     *sql.DB
+	ctx        context.Context
+	explains   advisor.ExplainBudget
 }
 
 func (checker *statementAffectedRowLimitChecker) handleStmt(text string, lineNumber int) {
-	checker.explainCount++
+	if !checker.explains.Spend(base.ConvertANTLRLineToPosition(lineNumber)) {
+		return
+	}
 	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_OCEANBASE, fmt.Sprintf("EXPLAIN format=json %s", text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -90,7 +89,7 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(text string, lineNum
 			Code:          code.StatementAffectedRowExceedsLimit.Int32(),
 			Title:         checker.title,
 			Content:       fmt.Sprintf("\"%s\" dry runs failed: %s", text, err.Error()),
-			StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
+			StartPosition: base.ConvertANTLRLineToPosition(lineNumber),
 		})
 	} else {
 		rowCount, err := getEstimatedRowsFromJSON(res)
@@ -100,7 +99,7 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(text string, lineNum
 				Code:          code.Internal.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("failed to get row count for \"%s\": %s", text, err.Error()),
-				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
+				StartPosition: base.ConvertANTLRLineToPosition(lineNumber),
 			})
 		} else if rowCount > int64(checker.maxRow) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
@@ -108,7 +107,7 @@ func (checker *statementAffectedRowLimitChecker) handleStmt(text string, lineNum
 				Code:          code.StatementAffectedRowExceedsLimit.Int32(),
 				Title:         checker.title,
 				Content:       fmt.Sprintf("\"%s\" affected %d rows (estimated). The count exceeds %d.", text, rowCount, checker.maxRow),
-				StartPosition: common.ConvertANTLRLineToPosition(lineNumber),
+				StartPosition: base.ConvertANTLRLineToPosition(lineNumber),
 			})
 		}
 	}

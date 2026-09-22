@@ -5,6 +5,7 @@ import remarkGfm from "remark-gfm";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Table } from "@/components/ui/table";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
@@ -116,14 +117,14 @@ export function AgentChat({ className }: AgentChatProps) {
       {displayMessages.map((msg) =>
         msg.role === "user" ? (
           <div key={msg.id} className="flex justify-end">
-            <div className="max-w-[80%] rounded-lg bg-blue-50 px-3 py-2 text-sm">
+            <div className="max-w-[80%] rounded-sm bg-info/10 px-3 py-2 text-sm">
               {msg.content}
             </div>
           </div>
         ) : (
           <div key={msg.id} className="flex flex-col gap-y-2">
             {msg.content && (
-              <div className="max-w-[80%] rounded-lg bg-control-bg px-3 py-2 text-sm">
+              <div className="max-w-[80%] rounded-sm bg-control-bg px-3 py-2 text-sm">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -136,7 +137,7 @@ export function AgentChat({ className }: AgentChatProps) {
                       </pre>
                     ),
                     code: ({ children }) => (
-                      <code className="break-all rounded bg-control-bg-hover px-1 text-xs">
+                      <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
                         {children}
                       </code>
                     ),
@@ -174,9 +175,9 @@ export function AgentChat({ className }: AgentChatProps) {
                       </blockquote>
                     ),
                     table: ({ children }) => (
-                      <table className="my-1 border-collapse text-xs">
+                      <Table className="my-1 border-collapse text-xs">
                         {children}
-                      </table>
+                      </Table>
                     ),
                     th: ({ children }) => (
                       <th className="border border-control-border px-2 py-1">
@@ -216,7 +217,7 @@ export function AgentChat({ className }: AgentChatProps) {
       )}
 
       {showAIConfigurationRecovery ? (
-        <div className="max-w-[80%] rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+        <div className="max-w-[80%] rounded-sm border border-warning/20 bg-warning/10 px-3 py-3 text-sm text-warning">
           <div className="font-medium">
             {t("agent.ai-not-configured.title")}
           </div>
@@ -242,14 +243,14 @@ export function AgentChat({ className }: AgentChatProps) {
             </Button>
           </div>
           {!allowConfigure && (
-            <div className="mt-1 text-amber-800">
+            <div className="mt-1 text-warning">
               {t("agent.ai-not-configured.contact-admin")}
             </div>
           )}
         </div>
       ) : (
         error && (
-          <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-error">
+          <div className="rounded-sm bg-error/10 px-3 py-2 text-sm text-error">
             {error}
           </div>
         )

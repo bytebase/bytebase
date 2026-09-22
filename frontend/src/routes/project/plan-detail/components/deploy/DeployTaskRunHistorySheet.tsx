@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
 import { TaskRunLogViewer } from "@/components/task-run-log";
+import { Button } from "@/components/ui/button";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import {
   Sheet,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/taskRun";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { TaskRunErrorAlert } from "./TaskRunErrorAlert";
 
 // With this many runs or more, only the newest run starts expanded; older
 // runs collapse to header rows. Keeps the sheet scannable and avoids fetching
@@ -114,10 +116,12 @@ function TaskRunHistoryItem({
   const comment = getTaskRunComment(taskRun, t);
 
   return (
-    <div className="rounded-lg border">
-      <button
+    <div className="rounded-sm border">
+      <Button
+        appearance="secondary"
+        size="md"
         aria-expanded={isExpanded}
-        className="flex w-full items-center gap-x-2 rounded-lg px-3 py-2 text-left hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
+        className="h-auto w-full items-center justify-start gap-x-2 rounded-sm px-3 py-2 text-left whitespace-normal hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
         onClick={onToggle}
         type="button"
       >
@@ -152,9 +156,10 @@ function TaskRunHistoryItem({
             </span>
           )}
         </span>
-      </button>
+      </Button>
       {isExpanded && (
-        <div className="border-t p-3">
+        <div className="flex flex-col gap-2 border-t p-3">
+          <TaskRunErrorAlert taskRun={taskRun} />
           {/* Status is part of the key (as in the latest-run panel): a
               RUNNING -> DONE flip remounts the viewer so useTaskRunLogData's
               unmount cleanup invalidates the in-flight RUNNING log request,

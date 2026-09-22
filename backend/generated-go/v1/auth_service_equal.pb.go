@@ -3,7 +3,7 @@
 
 package v1
 
-func (x *GetAuthenticationRestrictionRequest) Equal(y *GetAuthenticationRestrictionRequest) bool {
+func (x *GetAuthenticationInfoRequest) Equal(y *GetAuthenticationInfoRequest) bool {
 	if x == y {
 		return true
 	}
@@ -29,6 +29,14 @@ func (x *AuthenticationInfo) Equal(y *AuthenticationInfo) bool {
 	if !x.Restriction.Equal(y.Restriction) {
 		return false
 	}
+	if len(x.IdentityProviders) != len(y.IdentityProviders) {
+		return false
+	}
+	for i := 0; i < len(x.IdentityProviders); i++ {
+		if !x.IdentityProviders[i].Equal(y.IdentityProviders[i]) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -53,6 +61,52 @@ func (x *Restriction) Equal(y *Restriction) bool {
 	}
 	if x.PasswordResetEnabled != y.PasswordResetEnabled {
 		return false
+	}
+	return true
+}
+
+func (x *LoginIdentityProvider) Equal(y *LoginIdentityProvider) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.Title != y.Title {
+		return false
+	}
+	if !x.AuthorizationRequest.Equal(y.AuthorizationRequest) {
+		return false
+	}
+	return true
+}
+
+func (x *AuthorizationRequest) Equal(y *AuthorizationRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Endpoint != y.Endpoint {
+		return false
+	}
+	if x.ClientId != y.ClientId {
+		return false
+	}
+	if len(x.Scopes) != len(y.Scopes) {
+		return false
+	}
+	for i := 0; i < len(x.Scopes); i++ {
+		if x.Scopes[i] != y.Scopes[i] {
+			return false
+		}
 	}
 	return true
 }

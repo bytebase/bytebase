@@ -77,6 +77,10 @@ func astQueryType(node ast.Node) (analysis.QueryType, bool) {
 	switch n := node.(type) {
 	case *ast.SelectStmt, *ast.SetOpStmt:
 		return analysis.QueryTypeSelect, true
+	case *ast.ParenSelect:
+		// (SELECT ...) at the top level wraps a query; classify by the
+		// wrapped query.
+		return astQueryType(n.Sel)
 	case *ast.ShowStmt,
 		*ast.ShowRoutineLoadStmt, *ast.ShowRoutineLoadTaskStmt,
 		*ast.ShowJobStmt, *ast.ShowJobTaskStmt,

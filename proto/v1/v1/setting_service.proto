@@ -25,6 +25,8 @@ service SettingService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.settings.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves a workspace setting by name.
@@ -34,6 +36,8 @@ service SettingService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.settings.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a workspace setting.
@@ -47,7 +51,7 @@ service SettingService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = REWRITES_SESSION_BOUNDARY;
+    option (bytebase.v1.mcp_denial_reason) = REWRITES_SESSION_BOUNDARY;
   }
 
   // Sends a test email using the provided config (without persisting).
@@ -60,7 +64,7 @@ service SettingService {
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 
@@ -116,6 +120,7 @@ message Setting {
     SEMANTIC_TYPES = 6;
     ENVIRONMENT = 7;
     EMAIL = 8;
+    MCP = 9;
   }
 
   // The resource name of the setting.
@@ -138,29 +143,45 @@ message SettingValue {
     AISetting ai = 6;
     EnvironmentSetting environment = 7;
     EmailSetting email = 8;
+    MCPSetting mcp = 9;
   }
 }
 
 message AppIMSetting {
   message Slack {
-    string token = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string token = 1 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Feishu {
     string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Wecom {
     string corp_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
     string agent_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string secret = 3 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Lark {
     string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message DingTalk {
     string client_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string client_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     string robot_code = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Teams {
@@ -169,7 +190,10 @@ message AppIMSetting {
     // Azure AD application (client) ID.
     string client_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
     // Azure AD client secret.
-    string client_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 3 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
 
   message IMSetting {
@@ -189,6 +213,9 @@ message AppIMSetting {
 
 message WorkspaceProfileSetting {
   reserved 15;
+  // 26 was mcp_capability.
+  reserved 26;
+  reserved "mcp_capability";
   // The external URL is used for sso authentication callback.
   string external_url = 1;
 
@@ -283,35 +310,53 @@ message WorkspaceProfileSetting {
   // Deprecated: use just-in-time access request flows instead.
   google.protobuf.Duration maximum_role_expiration = 25;
 
-  // MCPCapability is the maximum capability an MCP (Model Context Protocol)
-  // session may have in the workspace. It is a ceiling: a session runs at this
-  // level or lower. Unset (UNSPECIFIED) is treated as READ_WRITE so existing
-  // workspaces are unaffected.
-  enum MCPCapability {
-    MCP_CAPABILITY_UNSPECIFIED = 0;
+  // Whether a directory sync token has been generated for this workspace.
+  // The token itself is never returned; this only lets the UI decide between
+  // offering "generate" and "regenerate".
+  bool directory_sync_token_configured = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// MCPSetting is what an MCP (Model Context Protocol) session may do in this
+// workspace.
+message MCPSetting {
+  // Capability is the ceiling: a session runs at this level or lower.
+  // Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
+  // path to leave the current ceiling unchanged.
+  enum Capability {
+    CAPABILITY_UNSPECIFIED = 0;
     // MCP connections are rejected.
     DISABLED = 1;
     // Was MCP_METADATA_ONLY; the Metadata-only tier is deferred out of the design.
     reserved 2;
-    // MCP may inspect metadata and run read-only queries. Not enforceable yet:
-    // until per-tool enforcement ships, this fails closed and refuses all MCP
-    // connections, the same as DISABLED.
+    // MCP may inspect metadata and run read-only queries. A session opens, and
+    // what it may do is decided per method by the capability gate and per
+    // statement by the SQL clamp: a request holding a statement that is not a
+    // read is refused whole, and where the engine's driver has one the
+    // database session is opened read-only as well.
     READ_ONLY = 3;
     // MCP may perform mutations, still bounded by the user's RBAC.
     READ_WRITE = 4;
   }
 
-  // The maximum capability available to MCP (Model Context Protocol) sessions in
-  // this workspace, acting as an admin-set ceiling. Unset is treated as
-  // READ_WRITE for backward compatibility; DISABLED rejects all MCP
-  // connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
-  // omit the update mask path to leave the ceiling unset.
-  MCPCapability mcp_capability = 26;
+  // The maximum capability available to MCP sessions in this workspace, acting
+  // as an admin-set ceiling. Enforced server-side at three points: the /mcp
+  // endpoint decides whether a connection is admitted at all, the ceiling gate
+  // on the internal MCP chain decides, per request, which method classes are
+  // served, and under READ_ONLY the SQL clamp decides, per statement, whether
+  // it only reads.
+  Capability capability = 1;
 
-  // Whether a directory sync token has been generated for this workspace.
-  // The token itself is never returned; this only lets the UI decide between
-  // offering "generate" and "regenerate".
-  bool directory_sync_token_configured = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Whether a request that arrived over MCP stops applying the caller's own
+  // unmasking provisioning. Two mechanisms let a user see a real value and this
+  // suppresses both: the masking exemptions granted to them, and the unmask
+  // carried by an access grant. The same user in the console is untouched.
+  //
+  // It cannot force masking where there is none. Masking substitutes values in
+  // query results, so this does not reach data copied into a column carrying no
+  // masking policy, and it does nothing on the engines Bytebase does not mask.
+  // It narrows what an agent reads through the paths Bytebase masks; it is not
+  // a confidentiality boundary.
+  bool ignore_masking_exemptions = 2;
 }
 
 message SQLEditorThemeSetting {
@@ -511,7 +556,7 @@ message AISetting {
   }
   Provider provider = 2;
   string endpoint = 3;
-  string api_key = 4;
+  string api_key = 4 [(bytebase.v1.audit_behavior) = SENSITIVE];
   string model = 5;
   string version = 6;
 }
@@ -554,7 +599,10 @@ message EmailSetting {
     string host = 1;
     int32 port = 2;
     string username = 3;
-    string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+    string password = 4 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     Encryption encryption = 5;
     Authentication authentication = 6;
 

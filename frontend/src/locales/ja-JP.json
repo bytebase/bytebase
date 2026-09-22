@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "アクティブのみ",
+    "active-only-chats": "アクティブなチャットを表示",
     "ai-not-configured": {
       "configure": "設定",
       "contact-admin": "ワークスペース管理者に AI の設定を依頼してください。",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "すべてのチャットをアーカイブ",
     "archive-chat": "チャットをアーカイブ",
-    "archived-only-chats": "アーカイブ済みのみ",
+    "archived-only-chats": "アーカイブ済みのチャットを表示",
     "args": "引数",
     "assistant-title": "AI アシスタント",
     "cancel": "キャンセル",
@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "監査ログの操作者で検索",
+          "description": "メールアドレスでユーザーを検索します。サービスアカウントまたはワークロード ID を検索するには、serviceAccounts/ または workloadIdentities/ を付けます。",
           "title": "操作者"
         },
         "level": {
@@ -154,9 +154,11 @@
       "continue-with-email": "メールで続行",
       "continue-with-idp": "{{idp}} で続行",
       "email-code-tab": "メール認証コード",
+      "failed": "サインインに失敗しました",
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{{email}} でログインしてください",
+      "load-failed": "サインインオプションを読み込めませんでした。もう一度お試しください。",
       "new-user": "Bytebase を初めて使用しますか?",
       "no-method-available": {
         "description": "このワークスペースではパスワードとメール認証コードによるログインが無効で、ID プロバイダーも設定されていません。",
@@ -186,6 +188,11 @@
       "create-admin-account": "管理者アカウントを作成",
       "existing-user": "すでにアカウントをお持ちですか？",
       "title": "アカウントを登録してください"
+    },
+    "sso": {
+      "invalid-authorization-url": "認可URLが無効です。有効なHTTPまたはHTTPSのURLを指定してください。",
+      "no-authorization-endpoint": "IDプロバイダーが認可エンドポイントを公開していません。設定を確認してください。",
+      "unsupported-provider-type": "このIDプロバイダーの種類はSSOリダイレクトに対応していません。"
     },
     "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",
     "token-expired-title": "トークンの期限切れ"
@@ -294,6 +301,7 @@
     "database-group": "データベースグループ",
     "databases": "データベース",
     "deactivate": "無効化",
+    "deactivated": "無効",
     "default": "デフォルト",
     "definition": "定義",
     "delete": "消去",
@@ -310,6 +318,7 @@
     "discard-changes": "変更をキャンセルする",
     "discord": "Discord",
     "dismiss": "閉じる",
+    "done": "完了",
     "download": "ダウンロード",
     "draft": "下書き",
     "duplicate": "コピー",
@@ -450,6 +459,10 @@
     "search": "検索",
     "search-for-more": "さらに検索",
     "search-no-result": "一致する結果が見つかりません",
+    "search-results": "結果を検索",
+    "secret-input": {
+      "unchanged": "変更なし"
+    },
     "select": "選択してください",
     "select-all": "すべて選択",
     "selected": "選択済み",
@@ -480,6 +493,8 @@
     "tips": "プロンプトメッセージ",
     "title": "タイトル",
     "to": "終了",
+    "toggle-password-visibility": "パスワードの表示を切り替え",
+    "token": "トークン",
     "total": "合計",
     "total-n-items": "合計 {{n}} 件",
     "transfer": "移行",
@@ -522,6 +537,16 @@
     "new-collection-name": "新しいコレクション名",
     "new-database-name": "新しいデータベース名",
     "reserved-db-error": "{{databaseName}} は予約された名前です"
+  },
+  "credential-proof": {
+    "code-sent": "コードを送信しました。メールをご確認ください",
+    "email-label": "メール確認コード",
+    "email-me-a-code": "コードをメールで送信",
+    "email-placeholder": "6 桁のコード",
+    "factor-label": "確認コード",
+    "factor-placeholder": "認証アプリのコードまたはリカバリーコード",
+    "password-label": "現在のパスワード",
+    "resend-in": "{{seconds}} 秒後に再送信できます"
   },
   "custom-approval": {
     "approval-flow": {
@@ -622,11 +647,8 @@
     },
     "no-read-only-data-source": "読み取り専用データソースがありません",
     "private-key-passphrase": "秘密鍵のパスフレーズ",
-    "private-key-passphrase-placeholder": "秘密鍵が暗号化されていない場合は空のままにしてください",
     "private-key-passphrase-tip": "暗号化された秘密鍵のオプションパスフレーズ",
     "read-only": "読み取り専用",
-    "read-replica-host": "リードレプリカホスト",
-    "read-replica-port": "リードレプリカポート",
     "replica-set": "レプリカセット",
     "select-query-data-source": "クエリデータソースの選択",
     "snowflake-keypair-tip": "キーペア認証",
@@ -638,11 +660,7 @@
       "ssh-key": "SSHキー",
       "user": "ユーザー名"
     },
-    "ssh-connection": "SSH接続",
-    "ssh-type": {
-      "none": "なし",
-      "tunnel-and-private-key": "トンネル + 秘密鍵"
-    },
+    "ssh-connection": "SSH トンネル",
     "ssl": {
       "ca-cert": "CA証明書",
       "ca-path": "CA証明書のパス",
@@ -669,7 +687,7 @@
       "client-key-path": "秘密鍵のパス",
       "client-key-placeholder": "YOUR_CLIENT_KEYを入力またはドラッグ＆ドロップ",
       "configured": "設定済み",
-      "connection-security": "接続セキュリティ",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "このエンジンでは相互 TLS は利用できません。",
       "posture": {
         "disabled": "無効",
@@ -678,11 +696,10 @@
         "tls": "TLS"
       },
       "server-identity": "サーバー ID",
-      "verification-disabled-description": "検証は無効です。接続は暗号化されていますが、サーバーの ID は検証されず、CA 設定は無視されます。",
-      "verify-certificate": "サーバー証明書を検証",
-      "verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません"
+      "verification-disabled-description": "検証が無効です。接続は暗号化されますが、サーバーの身元は検証されず、CA 設定は無視されます。これは安全ではありません。安全な接続のために検証を有効にし、開発やトラブルシューティング時にのみ一時的に無効にしてください。",
+      "verify-certificate": "サーバー証明書を検証"
     },
-    "ssl-connection": "SSL接続"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "データベースにアクセスする権限がありません",
@@ -725,8 +742,10 @@
     "mixed-label-values": "混合値",
     "mixed-label-values-warning": "選択されたリソースの一部は、同じキーに対して異なる値を持っています。これらのキーと値のペアを変更する場合にのみ編集してください。",
     "nullable": "null も可能",
+    "open-sql-editor": "SQL エディターを開く",
     "partition-tables": "パーティションテーブル",
     "partitioned": "パーティション",
+    "project-instance-transfer-disabled": "プロジェクトに紐付けられたインスタンスのデータベースは、移管または割り当て解除できません。",
     "revision": {
       "add-more-files": "さらに追加",
       "available-files": "利用可能なファイル",
@@ -800,7 +819,6 @@
     "unassign": "割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
     "unassign-alert-title": "データベースの割り当てを解除する",
-    "unassigned-databases": "未割り当てのデータベース",
     "unique": "唯一",
     "visible": "見える"
   },
@@ -840,7 +858,14 @@
     "partitions": "パーティション",
     "procedures": "ストアドプロシージャ",
     "project-instance-synced-action": "データベース変更を作成",
+    "project-instance-synced-create-change-description": "このプロジェクトでデータベースを利用できます。管理されたデータベース変更を作成して続行してください。",
+    "project-instance-synced-create-change-title": "データベース変更の準備ができました",
     "project-instance-synced-description": "このプロジェクトでデータベースを利用できるようになりました。まず SQL Editor でデータをクエリし、必要に応じて管理されたデータベース変更を作成できます。",
+    "project-instance-synced-mark-sensitive-data-action": "機密データをマーク",
+    "project-instance-synced-mark-sensitive-data-description": "このプロジェクトでデータベースを利用できます。機密カラムをマークしてデータマスキングを適用します。",
+    "project-instance-synced-mark-sensitive-data-title": "機密データを保護する準備ができました",
+    "project-instance-synced-query-data-description": "このプロジェクトでデータベースを利用できます。SQL Editor を開いてクエリしてください。",
+    "project-instance-synced-query-data-title": "データベースをクエリする準備ができました",
     "project-instance-synced-sql-editor-action": "SQL Editor を開く",
     "project-instance-synced-title": "データベースが接続されました",
     "project-instance-syncing-description": "数秒から数分かかる場合があります。後でこのページを更新してください。",
@@ -955,6 +980,8 @@
   },
   "instance": {
     "account-locator": "アカウントロケーター",
+    "account-locator-description": "接続先の Snowflake アカウントを識別します。",
+    "add-parameter": "パラメータを追加",
     "advanced-search": {
       "scope": {
         "host": {
@@ -969,6 +996,7 @@
     },
     "archive-instance-instance-name": "インスタンス '{{0}}' をアーカイブしますか?",
     "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
+    "authentication": "認証",
     "authentication-database": "認証データベース",
     "cloud-sql-ip-type": {
       "description": "インスタンスにパブリック IP がなく、Bytebase が同じ VPC 内で実行されている場合は、プライベート IP を使用してください。",
@@ -979,9 +1007,10 @@
     },
     "connect-database-to-project": "データベースをプロジェクトに接続",
     "connect-instance": "インスタンスを接続",
+    "connect-using": "接続方式",
     "connecting-database-to-project": "データベースを接続中...",
+    "connection-database": "接続先データベース",
     "connection-info": "接続情報",
-    "connection-options": "接続オプション",
     "connection-recovery": {
       "auth": {
         "description": "ユーザー名、パスワード、トークン、または IAM 認証設定を確認してから、もう一度接続をテストしてください。",
@@ -994,10 +1023,12 @@
       },
       "docs": "接続ガイドを開く",
       "network": {
-        "description": "ホストとポートが Bytebase Cloud から到達可能か確認してください。ファイアウォールルール、許可リスト、プロキシ、トンネル、およびデータベースがプライベートネットワーク接続のみを許可していないかを確認してください。",
+        "description-saas": "ホストとポートが Bytebase Cloud から到達可能か確認してください。ファイアウォールルール、許可リスト、プロキシ、トンネル、およびデータベースがプライベートネットワーク接続のみを許可していないかを確認してください。",
+        "description-self-hosted": "ホストとポートが Bytebase のデプロイ環境から到達可能か確認してください。ファイアウォールルール、ネットワークルーティング、プロキシ、トンネル、およびデータベースが別のネットワークからの通信のみを許可していないかを確認してください。",
         "steps": {
           "address": "ホストまたはソケットとポートがデータベースエンドポイントと一致していることを確認してください。",
-          "firewall": "Bytebase Cloud を使用する場合は、必要な Cloud IP をデータベースファイアウォールの許可リストに追加してください。",
+          "firewall-saas": "Bytebase Cloud の IP をデータベースファイアウォールの許可リストに追加してください。",
+          "firewall-self-hosted": "Bytebase がデプロイされているネットワークからの接続を許可してください。",
           "private-network": "プライベートデータベースの場合は、VPN、プライベートネットワーク、または SSH トンネルを先に設定してください。"
         },
         "title": "ネットワーク到達性を確認"
@@ -1012,12 +1043,14 @@
         "title": "データベース権限を確認"
       },
       "timeout": {
-        "description": "データベースが時間内に応答しませんでした。ファイアウォールルール、ポート設定、ネットワークルーティング、および Bytebase Cloud からの接続が許可されているかを確認してください。",
+        "description-saas": "接続テストが時間内に完了しませんでした。ファイアウォールルール、ポート設定、ネットワークルーティング、および Bytebase Cloud からの接続が許可されているかを確認してください。",
+        "description-self-hosted": "接続テストが時間内に完了しませんでした。ファイアウォールルール、ポート設定、ネットワークルーティング、および Bytebase のデプロイ環境からの接続が許可されているかを確認してください。",
         "steps": {
           "load": "データベースがオンラインで、新しい接続を受け付けていることを確認してください。",
           "retry": "データベースがファイアウォールの背後にある場合は、許可リストまたはトンネル設定を完了してから再試行してください。",
           "route": "ルーティング、プロキシ、トンネル、ポート、接続タイムアウト設定を確認してください。"
         },
+        "test-title": "接続テストがタイムアウトしました",
         "title": "ファイアウォールとルーティングを確認"
       },
       "tls": {
@@ -1034,7 +1067,8 @@
         "steps": {
           "fields": "ホスト、ポート、ユーザー名、パスワードまたはシークレットソース、SSL/TLS モードを確認してください。",
           "help": "データベースがプライベートの場合は、VPN、プライベートネットワーク、または SSH トンネルを設定してから再試行してください。",
-          "logs": "データベースにファイアウォールルールがある場合は、Bytebase Cloud またはデプロイ済み Bytebase ネットワークからの接続を許可してください。"
+          "logs-saas": "データベースにファイアウォールルールがある場合は、Bytebase Cloud からの接続を許可してください。",
+          "logs-self-hosted": "データベースにファイアウォールルールがある場合は、Bytebase がデプロイされているネットワークからの接続を許可してください。"
         },
         "title": "接続設定を確認"
       },
@@ -1079,7 +1113,6 @@
           "role-id": "認証ロールID",
           "secret-env-name": "環境変数名",
           "secret-id": "認証シークレットID",
-          "secret-plain-text": "プレーンテキスト",
           "self": "AppRole"
         },
         "self": "認証タイプ",
@@ -1099,8 +1132,9 @@
       "vault-tls-config": "Vault TLS 構成 (オプション)",
       "vault-url": "ボールトの URL"
     },
-    "failed-to-connect-instance": "インスタンスへの接続に失敗しました。",
-    "failed-to-connect-instance-localhost": "Docker デプロイメントを使用している場合は、ホスト アドレスとして「host.docker.internal」を使用してみてください。",
+    "failed-to-connect-instance": "接続テストに失敗しました。",
+    "failed-to-connect-instance-localhost": "このアドレスは Bytebase ホストを指しています。データベースが Docker ホストで実行されている場合は、ホストアドレスに「host.docker.internal」を使用してください。",
+    "failed-to-connect-instance-saas-local-host": "「{{host}}」はローカル専用アドレスのため、Bytebase Cloud からデータベースへの接続には使用できません。Bytebase Cloud から到達可能なデータベースのホスト名または IP アドレスを入力してください。",
     "filter-instance-name": "インスタンス名のフィルタリング",
     "find-gcp-project-id": "GCP プロジェクト ID とインスタンス ID を表示するには、次を参照してください。",
     "find-gcp-project-id-and-instance-id": "GCP プロジェクト ID の確認方法については、次を参照してください",
@@ -1108,7 +1142,7 @@
     "gcp-endpoint-tip": "省略可能。デフォルトの Google API エンドポイントを上書きします（例：Private Service Connect エンドポイント {{example}}）。",
     "gcp-endpoint-toggle": "カスタム API エンドポイントを設定",
     "grants": "権限",
-    "host-or-socket": "ホストまたはソケット",
+    "hostname": "ホスト名",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1186,6 +1220,7 @@
     },
     "instance-id": "インスタンスID",
     "instance-name": "@:common.instance@:instance.name",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance（任意）",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "KDC ホスト",
@@ -1197,14 +1232,21 @@
     "keytab-resupply-required": "このデータソースの接続先が変わりました。keytab を再アップロードして、引き続き保持していることを確認してください。",
     "keytab-upload-placeholder": ".keytab ファイルをクリックまたはドラッグしてください",
     "keytab-write-only": "キータブは書き込み専用です。新しいファイルをアップロードすると既存のものを置き換えます。",
+    "master-name": "マスター名",
+    "master-password": "マスターパスワード",
+    "master-username": "マスターユーザー名",
     "new-instance": "新しいインスタンス",
     "no-environment": "このインスタンスは環境にバインドされていません",
     "no-extra-params-configured": "追加の接続パラメーターは構成されていません",
     "no-params-yet-add-above": "まだ構成されていません。\n上記のフォームを使用してパラメーターを追加します。",
-    "no-password": "パスワードがありません",
     "open-data-source": "このデータソースを開いて、何が必要か確認してください。",
     "parameter-name-placeholder": "パラメーター名",
     "parameter-value-placeholder": "パラメーター値",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "パスワードの取得元",
+      "stored-in-bytebase": "Bytebase に保存"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1212,18 +1254,27 @@
       "external-secret-azure": "Azure Key Vault",
       "external-secret-gcp": "GCP シークレット マネージャー",
       "external-secret-vault": "ボールト (KV v2)",
+      "google-cloud-iam": "Google Cloud IAM",
       "google-iam": "Google Cloud SQL IAM",
       "password": "パスワード"
     },
-    "password-write-only": "YOUR_DB_PWD - 書き込み専用",
     "port": "ポート",
+    "prepare-sample-instance-failed": "サンプルプロジェクトインスタンスの準備に失敗しました。",
+    "preparing-sample-instance": "サンプルプロジェクトインスタンスを準備しています…",
+    "project-bound-description": "このインスタンスはこのプロジェクトに紐付けられています。すべてのデータベースは自動的にこのプロジェクトへ移管され、移管や割り当て解除はできません。",
+    "project-bound-title": "プロジェクトに紐付けられたインスタンス",
     "project-id": "プロジェクトID",
     "restore-instance-instance-name-to-normal-state": "インスタンス '{{0}}' を通常の状態に復元しますか?",
     "role-arn": "ロール ARN",
     "role-arn-description": "クロスアカウントアクセス用の IAM ロール。同一アカウントアクセスの場合は空のままにしてください。",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "サンプルインスタンスは {{time}} に期限切れとなり、まもなく削除されます。",
+    "sample-expiration-future_one": "サンプルインスタンスは {{count}} 日後の {{time}} に削除されます。",
+    "sample-expiration-future_other": "サンプルインスタンスは {{count}} 日後の {{time}} に削除されます。",
+    "sample-project-instance-description": "すぐに使えるデータベースを備えたサンプルプロジェクトインスタンスを 7 日間使用して、Bytebase を試すことができます。",
+    "sample-project-instance-description-self-host": "すぐに使えるデータベースを備えたサンプルプロジェクトインスタンスを使用して、Bytebase を試すことができます。",
+    "sample-project-instance-title": "サンプルプロジェクトインスタンスを試す",
     "scan-interval": {
-      "default-never": "デフォルト (なし)",
       "description": "Bytebase は定期的にインスタンスのスキーマを同期し、異常検出を実行します。",
       "min-value": "最短 {{value}} 分",
       "self": "スキャン間隔"
@@ -1270,7 +1321,7 @@
           "template": "ユーザー {{user}}、パスワード {{password}}、ウェアハウス {{warehouse}} を作成し、必要な権限を付与する例は次のとおりです。"
         }
       },
-      "firewall-info": "データベースインスタンスにインバウンドファイアウォールルールを使用する場合は、ByteBase Cloud Connection命令を参照してください。",
+      "firewall-info": "Bytebase Cloud の IP をデータベースファイアウォールの許可リストに追加してください。",
       "google-cloud-sql": {
         "instance-name": "インスタンス接続名",
         "instance-name-tips": "インスタンス接続名は {{instance}} である必要があります。",
@@ -1282,16 +1333,18 @@
         }
       },
       "host": {
-        "none-snowflake": "たとえば、host.docker.internal | host ip | local socket"
-      },
-      "proxy": {
-        "snowflake": "プロキシ サーバーの場合は、@PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
+        "none-snowflake": "例: host.docker.internal | ホスト IP | ローカルソケット",
+        "saas": "例: db.example.com | データベース IP"
       }
     },
+    "service-name": "サービス名",
+    "service-name-placeholder": "例: sales.example.com",
     "show-how-to-create": "作成方法",
+    "sid": "SID",
+    "sid-placeholder": "例: ORCL",
     "snowflake-web-console": "スノーフレークウェブコンソール",
     "successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",
-    "successfully-connected-instance": "インスタンスに正常に接続されました。",
+    "successfully-connected-instance": "接続に成功しました。",
     "successfully-created-instance-createdinstance-name": "インスタンス '{{0}}' が正常に作成されました。",
     "successfully-restored-instance": "インスタンス '{{0}}' を正常に復元しました。",
     "successfully-updated-instance-instance-name": "インスタンス '{{0}}' が正常に更新されました。",
@@ -1303,19 +1356,40 @@
     },
     "sync-databases": {
       "add-database": "+ データベースを追加し、Enterキーを押して送信します",
+      "all-databases": "すべてのデータベース",
       "description": "このインスタンスから同期するデータベースを選択してください。",
+      "hostname-required": "同期するデータベースを選択するには、ホスト名を入力してください。",
       "project-sync-all": "すべてのデータベースをこのプロジェクトに同期する",
+      "required-fields": "同期するデータベースを選択するには、上の必須項目を入力してください。",
       "search-database": "データベースを検索",
+      "selected-databases": "選択したデータベース",
       "self": "データベースを同期する",
       "sync-all": "すべてのデータベースを同期する"
     },
     "syncing": "同期中 ...",
     "test-connection": "テスト接続",
     "testing-connection": "接続テスト中...",
-    "token-write-only": "YOUR_TOKEN - 書き込み専用",
     "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
-    "unable-to-connect": "Bytebase はインスタンスに接続できません。接続情報を再度確認することをお勧めします。ただし、今のところこの警告は無視してかまいません。作成後もインスタンスの詳細ページで接続情報を修正できます。\n\nエラーの詳細:{{0}}",
+    "unable-to-connect": "この設定では Bytebase から接続できませんでした。上のガイダンスを確認するか、そのまま続行して後で接続を更新してください。\n\n技術的な詳細: {{0}}",
+    "use-sample-instance": "サンプルインスタンスを使用する（7日間利用可能）",
+    "use-sample-instance-self-host": "サンプルインスタンスを使用する",
     "users": "ユーザー",
+    "validation": {
+      "absolute-path": "/ で始まる絶対パスを入力してください。",
+      "aws-credential": "アクセスキー ID またはロール ARN を入力してください。",
+      "cloud-sql-host": "インスタンス名を project:region:instance の形式で入力してください。",
+      "forbidden-parameter": "allowAllFiles パラメーターは Bytebase サーバーのファイルを公開するため使用できません。",
+      "gcp-instance": "小文字、数字、ハイフンを使用してください。",
+      "gcp-project": "小文字、数字、ピリオド、コロン、ハイフンを使用してください。",
+      "keytab-resupply": "接続先が変更されたため、keytab ファイルを再度アップロードしてください。",
+      "oracle-service": "サービス名または SID を入力してください。",
+      "pem-certificate": "BEGIN および END CERTIFICATE 行を含む PEM 形式の証明書を入力してください。",
+      "pem-key": "PEM 形式の秘密鍵（PKCS#1、PKCS#8、または EC）を入力してください。",
+      "required": "この項目は必須です。",
+      "specific-credential": "認証情報を指定してください。Bytebase Cloud ではデフォルトの認証情報を使用できません。",
+      "tls-pair": "クライアント証明書と秘密鍵の両方を指定してください。",
+      "tls-source-conflict": "PEM の内容またはファイルパスのいずれか一方を使用してください。"
+    },
     "your-snowflake-account-locator": "Snowflake アカウント ロケーター"
   },
   "issue": {
@@ -1551,7 +1625,6 @@
     },
     "recovery-code": "リカバリーコード"
   },
-  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} があなたのアカウントへのアクセスを要求しています",
@@ -1559,8 +1632,45 @@
       "error-load-failed": "クライアント情報の読み込みに失敗しました",
       "error-missing-params": "必須の OAuth2 パラメータが不足しています",
       "error-switch-failed": "ワークスペースの切り替えに失敗しました",
-      "permission-access": "あなたの権限で Bytebase アカウントにアクセス",
-      "permissions": "このアプリケーションは以下のことができます:",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "オンにすべきだと思いますか？ワークスペース管理者に MCP アクセスポリシーを確認してください。",
+          "description": "ワークスペース管理者が {{workspace}} の MCP アクセスをオフにしています。何も接続されていません。",
+          "description-no-workspace": "ワークスペース管理者がこのワークスペースの MCP アクセスをオフにしています。何も接続されていません。",
+          "line": {
+            "no-session": "このワークスペースにはどの AI セッションも接続できません",
+            "recorded": "それでも接続を試みた場合、その試行は監査ログに記録されます"
+          },
+          "policy-label": "ワークスペースポリシー",
+          "title": "MCP アクセスはオフです"
+        },
+        "line": {
+          "audit": "監査対象の操作には MCP タグが付き、監査ログの標準出力への出力が有効な場合、ポリシーが拒否したものは標準出力に出力されます",
+          "capped-read-only": "上限はあなた自身の Bytebase 権限と、Bytebase が各データベースエンジンで確認できる範囲。ステートメントが読み取りだと示せないエンジンでは、クエリは一切実行されません",
+          "capped-read-write": "上限はあなた自身の Bytebase 権限と、Bytebase が各データベースエンジンおよび各操作にどこまで対応しているか",
+          "masking": "あなたのマスキング適用除外はこのセッションには適用されません",
+          "no-write": "変更・ロールアウト・エクスポート・データベース管理はできない"
+        },
+        "title": "このセッションでできること",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "何も承認されておらず、何も接続されていません"
+          },
+          "policy-label": "ワークスペースポリシー",
+          "undisclosable": {
+            "description": "このワークスペースの MCP ポリシーは、このページが説明できない値です。開いているページより新しいか、この Bytebase バージョンが提供するポリシーではないかのいずれかです。後者の場合、MCP 接続はすべて拒否されます。",
+            "line": "再読み込みして現在のバージョンを取得してください。それでもこのページが表示される場合は、ワークスペース管理者にサポートされているポリシーの設定を依頼してください",
+            "title": "このページはこのワークスペースの MCP ポリシーが許可する内容を表示できません"
+          },
+          "unknown": {
+            "description": "Bytebase は現在、このワークスペースの MCP アクセスポリシーを読み取れませんでした。",
+            "line": "このセッションに何が許可されるかを表示できません",
+            "retry": "再確認",
+            "title": "MCP ポリシーを確認できませんでした"
+          }
+        },
+        "write-caution": "書き込み権限のある AI セッションは実際に変更を加えます。自分が管理しているマシンでのみ承認してください。"
+      },
       "title": "認証リクエスト",
       "workspace-label": "アクセスを許可するワークスペース"
     }
@@ -1592,9 +1702,12 @@
       "configure": "設定",
       "parameters": "gh-ost パラメータ",
       "requirements-not-met": "次のデータベースは Ghost の要件を満たしていません: {{databases}}",
-      "reset-to-defaults": "デフォルトに戻す"
+      "reset-to-defaults": "デフォルトに戻す",
+      "skip-metadata-lock-check-risk": "このチェックをスキップすると、カットオーバー時に書き込みが失われる可能性があります。",
+      "skip-metadata-lock-check-why": "理由"
     },
     "go-to-plan-page": "プランページへ移動",
+    "initial-sql-storage-failed": "SQL を一時保存できませんでした。ブラウザーのストレージを空けて、もう一度お試しください。",
     "isolation-level": {
       "read-committed": "コミット済み読み取り",
       "read-uncommitted": "未コミット読み取り",
@@ -1678,6 +1791,7 @@
         "no-reviewers": "レビュアーなし",
         "rejected-by": "{{user}} が却下"
       },
+      "candidate-last-changed-plan": "承認不可 — このプランを最後に変更",
       "comment-required-to-reject": "却下するにはコメントが必要です",
       "footer": {
         "all-gates-passed": "すべての条件を満たしました",
@@ -1707,11 +1821,50 @@
         "rollout-not-created": "ロールアウトは自動作成されませんでした",
         "waiting-on-review": "レビュー待ち"
       },
+      "last-plan-editor-cannot-approve": "この Issue を承認できません。最後にプランを変更したユーザーであるためです。別のレビュー担当者による承認が必要です。",
       "rejection": {
         "guidance-prefix": "フィードバックに対応して変更を更新するか、変更なしで",
         "guidance-suffix": "こともできます",
         "re-request-review": "レビューを再依頼する",
         "title": "{{user}} に却下されました"
+      },
+      "thread": {
+        "add-comment": "コメントを追加",
+        "add-comment-on-line": "{{line}} 行目にコメントを追加",
+        "add-comment-on-lines": "{{startLine}}～{{endLine}} 行目にコメントを追加",
+        "anchor": {
+          "line_one": "{{range}} 行目",
+          "line_other": "{{range}} 行",
+          "outdated": "最新ではありません",
+          "statement-unavailable": "ステートメントは利用できません",
+          "unavailable-change": "削除された変更",
+          "view-in-statement": "ステートメントで表示"
+        },
+        "comment-on-lines": "選択行にコメント",
+        "n-replies-hidden_one": "{{count}} 件の返信が非表示",
+        "n-replies-hidden_other": "{{count}} 件の返信が非表示",
+        "n-replies_one": "{{count}} 件の返信",
+        "n-replies_other": "{{count}} 件の返信",
+        "publish": "公開",
+        "reopen-thread": "スレッドを再開",
+        "reply": "返信",
+        "reply-placeholder": "返信...",
+        "reply-posted-status-failed": "返信は投稿されましたが、スレッドの状態を更新できませんでした。状態の変更を再試行してください。",
+        "resolve": "解決",
+        "resolve-thread": "スレッドを解決",
+        "resolved": "解決済み",
+        "threads-on-line_one": "この行に {{count}} 件のスレッド",
+        "threads-on-line_other": "この行に {{count}} 件のスレッド",
+        "walker": {
+          "count_one": "このバージョンに未解決のスレッドが {{count}} 件",
+          "count_other": "このバージョンに未解決のスレッドが {{count}} 件",
+          "next": "次の未解決スレッド",
+          "position": "{{count}} 件中 {{index}} 件目",
+          "previous": "前の未解決スレッド",
+          "remainder_one": "他に {{count}} 件がこのバージョンでは表示されません",
+          "remainder_other": "他に {{count}} 件がこのバージョンでは表示されません"
+        },
+        "write-comment": "コメントを書く..."
       }
     },
     "rollback": {
@@ -1754,6 +1907,8 @@
       "n-of-m-approved": "{{m}} 件中 {{n}} 件承認済み",
       "n-of-m-tasks": "{{n}}/{{m}} タスク",
       "n-passed": "{{n}} 件合格",
+      "n-unresolved-threads_one": "未解決のスレッド {{count}} 件",
+      "n-unresolved-threads_other": "未解決のスレッド {{count}} 件",
       "n-warning": "{{n}} 件の警告"
     },
     "targets": {
@@ -1772,7 +1927,8 @@
       "actions": {
         "explain-code": "コードの説明",
         "find-problems": "問題を見つける",
-        "insert-at-caret": "キャレットに挿入"
+        "insert-at-caret": "カーソル位置に挿入",
+        "new-chat-using-selection": "選択範囲を使用して新しいチャットを開始"
       },
       "ai-assistant": "AI アシスタント",
       "conversation": {
@@ -1814,7 +1970,6 @@
     }
   },
   "project": {
-    "add-database": "データベースを追加",
     "add-database-empty-placeholder": "既存のインスタンスのデータベースをこのプロジェクトに追加します",
     "batch": {
       "archive": {
@@ -1893,29 +2048,34 @@
       },
       "revoke-role-from-member": "'{{member}}' から '{{role}}' を取り消しますか？"
     },
-    "overview": {
-      "info-slot-content": "Bytebase はインスタンスのスキーマを定期的に同期します。新しく同期されたデータベースは最初にここに配置され、その後、それらを適切なプロジェクトに転送できます。"
-    },
     "select": "プロジェクトを選択",
     "settings": {
       "confirm-archive-project": "\"{{name}}\" をアーカイブすると、読み取り専用になり、アクティブなプロジェクト一覧から非表示になります。すべての Issue、データベース、設定は保持されます。後でアーカイブ済みプロジェクト一覧から復元できます。",
       "confirm-delete-project": "\"{{name}}\" を削除すると、Issue、設定、履歴を含むプロジェクトとそれに関連するすべてのデータが完全に削除されます。このプロジェクト内のすべてのデータベースはデフォルトプロジェクトに移動されます。この操作は元に戻せません。",
       "issue-related": {
         "allow-access-grants": {
-          "description": "プロジェクトメンバーが特定の読み取り専用ステートメントに対して期限付きのアクセス付与をリクエストできるようにします。",
+          "description": "プロジェクトメンバーが特定の読み取り専用ステートメントに対して期限付きのアクセス付与をリクエストできるようにします。付与には結果のエクスポートやマスク解除データの閲覧を含めることもできます。",
           "self": "アクセス付与を許可"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "プランを最後に変更したユーザーが、関連するデータベース変更 Issue を承認できるようにします。",
+          "self": "プランを最後に変更したユーザーによる承認を許可"
         },
         "allow-request-role": {
           "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます",
           "self": "ロールリクエストを許可"
         },
         "allow-self-approval": {
-          "description": "イシューの作成者がイシューを承認できるようにします。",
-          "self": "自己承認を許可する"
+          "description": "Issue の作成者がその Issue を承認できるようにします。",
+          "self": "Issue 作成者による自己承認を許可"
         },
         "approval-flow-configured": "承認フローが設定済み",
         "approval-flow-fallback": "フォールバック承認ルールを使用中",
         "approval-flow-not-configured": "承認フローが未設定",
+        "approval-permissions": {
+          "description": "これらの権限は累積して適用されます。レビュー担当者が Issue の作成者であり、かつプランを最後に変更したユーザーでもある場合、両方の権限を有効にする必要があります。",
+          "self": "承認権限"
+        },
         "ci-sampling-size": {
           "description": "CIデータ検証中にサンプリングするデータベースの最大数。\n無効（ゼロ）の場合、完全な検証が実行されます。",
           "self": "CIデータサンプリングサイズ"
@@ -2025,30 +2185,14 @@
       "success-updated-prompt": "{{name}} Webhook が正常に更新されました。",
       "test-webhook": "Webhook のテスト",
       "triggering-activity": "トリガーイベント",
+      "url-hidden": "セキュリティのため非表示です。変更するには新しい URL を入力してください。",
       "webhook-url": "Webhook URL"
     }
   },
   "quick-action": {
-    "create-db": "データベースの作成",
     "create-project": "プロジェクトを作成",
     "new-project": "作成するプロジェクト"
   },
-  "quick-start": {
-    "guide": "クリックしてステップを試してみましょう",
-    "notice": {
-      "desc": "後から右上のメニューから元に戻すことができます",
-      "title": "クイックスタートガイドを終了しました"
-    },
-    "query-data": "クエリデータ",
-    "self": "クイックスタート",
-    "view-an-issue": "イシューを表示する",
-    "visit-database": "データベースにアクセスする",
-    "visit-environment": "環境にアクセスする",
-    "visit-instance": "インスタンスにアクセスする",
-    "visit-member": "メンバーにアクセスする",
-    "visit-project": "プロジェクトにアクセスする"
-  },
-  "refresh-remind": {},
   "release": {
     "and-n-more-files": "他 {{count}} 件のファイル",
     "change-tip": "この変更はリリースアーティファクトにリンクされています。",
@@ -2276,8 +2420,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "カテゴリを検索する",
-      "select": "分類を選択"
+      "search": "カテゴリを検索する"
     }
   },
   "sensitive-data": {
@@ -2290,6 +2433,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "プロフィールとサインイン方法を管理します。",
+      "email-managed": "サインイン用メールアドレスの変更はワークスペース管理者にご連絡ください。",
+      "password-notice": "パスワードを変更すると、現在のセッションを含むすべてのセッションからサインアウトされます。",
+      "security": "セキュリティ",
+      "self": "アカウント設定",
+      "update-password": "パスワードを更新"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2310,12 +2461,17 @@
           "enable-ai-assistant": "AIアシスタントを有効にする",
           "enabled-in-saas": "Gemini AI は SaaS モードで自動的に有効になります。",
           "endpoint": {
-            "description": "プライベート展開用の API エンドポイントを提供します。",
+            "description": "カスタムモデルの API エンドポイントを入力します。",
+            "openai-description": "Responses API には /responses、Chat Completions API には /chat/completions のエンドポイントを使用します。",
             "self": "API エンドポイント"
           },
           "model": {
-            "description": "供給プライベートデプロイメントのモデル名。",
-            "self": "モデル名"
+            "custom": "カスタムモデル",
+            "deployment": "デプロイ名",
+            "deployment-description": "Azure OpenAI のデプロイ名です。モデル名と異なる場合があります。",
+            "description": "対応モデルを選択するか、カスタムモデルを選択して別のモデルとエンドポイントを入力します。",
+            "name": "モデル名",
+            "self": "モデル"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",
@@ -2381,7 +2537,10 @@
           "exiting": "退出中..."
         },
         "data-copy": "データのコピーを有効にする",
-        "data-export": "データのエクスポートを有効にする",
+        "data-export": {
+          "description": "無効にすると、ユーザーはクエリ結果を直接エクスポートできません。アクセス付与が有効なプロジェクトでは、「エクスポートをリクエスト」からアクセス付与をリクエストし、承認後にエクスポートできます。",
+          "self": "承認なしのデータエクスポートを許可"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "ワークスペースのデフォルト ビューが SQL エディターに変更されました。",
           "go-to-sql-editor": "SQLエディタに移動",
@@ -2463,25 +2622,6 @@
             "self": "最大SQL結果サイズ"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "このワークスペースで MCP(Model Context Protocol)セッションに許可される最大の権限です。変更は次の MCP リクエストから直ちに適用されます。",
-            "disabled": {
-              "description": "すべての MCP 接続を拒否します。",
-              "self": "無効"
-            },
-            "read-only": {
-              "description": "きめ細かな読み取り専用制御のために予約されています(未提供)。提供されるまでは、これを選択すると MCP 接続は完全に拒否され、「無効」と同じ動作になります。",
-              "self": "読み取り専用"
-            },
-            "read-write": {
-              "description": "MCP セッションは読み書きできますが、各ユーザー自身の権限の範囲内に制限されます。未設定の場合のデフォルトです。",
-              "self": "読み書き"
-            },
-            "self": "MCP アクセス"
-          },
-          "self": "MCP"
-        },
         "no-limit": "値が0以下の場合、制限なし",
         "password-restriction": {
           "min-length": "パスワードの最小文字数は {{min}} 文字以上である必要があります",
@@ -2545,9 +2685,11 @@
       "description": "IM 連携は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
     },
     "mcp": {
-      "auth": {
-        "description": "初回接続時に OAuth 認証が必要です。適切な Bytebase 権限があることを確認してください。",
-        "title": "認証が必要"
+      "connect": {
+        "description": "Bytebase を AI クライアントに追加すれば、すぐに質問を始められます。初回接続時にはブラウザーでサインインし、アクセスを承認します。",
+        "desktop-note": "Claude Desktop はリモートサーバーを設定ファイルではなく Claude アカウントから読み込みます。claude.ai の Customize > Connectors でこの URL をカスタムコネクタとして追加すると、Claude Desktop に表示されます。",
+        "json-note": "これは mcpServers 形式です。クライアントごとに設定形式が異なります。たとえば VS Code は独自の mcp.json で servers を使うため、その場合は VS Code タブを使ってください。",
+        "title": "クライアントを接続"
       },
       "description": "Model Context Protocol を使用して、AI アシスタントを Bytebase に接続します。",
       "first-prompt": {
@@ -2555,15 +2697,119 @@
         "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする",
         "title": "最初のプロンプト"
       },
-      "general-config": {
-        "title": "方法 1：JSON 設定"
+      "ladder": {
+        "disabled": "何も許可されません。MCP セッションは接続できません。",
+        "floor": {
+          "label": "どのモードでも決してできないこと：",
+          "text": "Issue の承認、ワークスペースの管理、認証情報の取り扱い、Admin モードのセッションの開始、他人のクエリ履歴の閲覧。"
+        },
+        "heading": "{{mode}} で許可されること",
+        "hide-details": "詳細を隠す",
+        "mark": {
+          "allowed": "許可",
+          "refused": "不許可"
+        },
+        "row": {
+          "export": {
+            "details": "結果をファイルとしてダウンロードします。データが Bytebase の外に出ます。",
+            "title": "クエリ結果をエクスポートする"
+          },
+          "manage": {
+            "details": "インスタンスとデータベースの同期 · データベースの設定とラベル · データベースをプロジェクト間で移動 · データベースグループ · 保存済みクエリ",
+            "title": "データベースの運用設定を管理する"
+          },
+          "propose": {
+            "details": "シートの作成 · Plan と Issue の作成・編集 · プランチェックとレビューの実行 · リリースの作成・削除・復元 · リビジョンの作成・削除 · スキーマ差分の生成。エージェントが自分の変更を承認することはありません。人の承認が必要かどうかはプロジェクトの承認ポリシーが決めます",
+            "title": "変更を提案する"
+          },
+          "read-data": {
+            "details": "読み取り専用のクエリを実行 · 読み取り専用では、すべてのステートメントがデータを返す読み取りだと確認できない限りリクエスト全体を拒否します。どこまで確認できるかはエンジンによって異なり、どのステートメントも読み取りだと確認できないエンジンもあります · 自分のクエリ履歴 · アクセス権のある保存済みクエリとシート",
+            "title": "クエリを実行してデータを読み取る"
+          },
+          "read-schemas": {
+            "details": "スキーマ · データベースとインスタンス · プロジェクトとデータベースグループ · カタログ・変更履歴・リビジョン · SQL レビュー設定 · 自分のセッションとワークスペースの情報",
+            "title": "スキーマとメタデータの読み取り"
+          },
+          "read-workflow": {
+            "details": "Issue とコメント · Plan とプランチェック · ロールアウト・タスク実行・ログ · リリース · ロールバックのプレビュー",
+            "title": "変更ワークフローの読み取り"
+          },
+          "run-rollouts": {
+            "details": "ロールアウトの作成 · プロジェクトの承認ポリシーのもとでタスクを実行・スキップ・キャンセル",
+            "title": "ロールアウトとタスクを実行する"
+          },
+          "run-statements": {
+            "details": "クエリを通じた INSERT・UPDATE・DELETE・CREATE・ALTER・DROP。エンジンとそのユーザー自身の権限が許す範囲で行われます",
+            "title": "DML と DDL のステートメントを実行する"
+          }
+        },
+        "show-details": "詳細を表示",
+        "stops": {
+          "read": "読み取り専用はここまで",
+          "write": "読み書きはここまで"
+        },
+        "summary": {
+          "read-only": "スキーマ・データ・変更ワークフローの読み取り。読み取りだと確認できないものを含むリクエストは拒否され、エクスポートもできません",
+          "read-write": "スキーマ・データ・変更ワークフローの読み取り。提案・実行・エクスポート・管理"
+        },
+        "tier": {
+          "read": "読み取り",
+          "write": "書き込み"
+        }
       },
-      "quick-start": {
-        "description": "または、以下の CLI コマンドを使用してください。",
-        "title": "方法 2：CLI コマンド"
-      },
-      "setup": {
-        "add-to-config": "この JSON を MCP クライアント設定ファイルに追加してください。"
+      "policy": {
+        "current": "現在のポリシー：{{mode}}",
+        "description": "このワークスペースで MCP セッションが実行できる操作の上限です。各セッションは接続ユーザー自身の権限によっても制限され、監査ログの標準出力への出力が有効な場合、ポリシーによる拒否は標準出力に出力されます。",
+        "edit": "ポリシーを編集",
+        "loading": "アクセスポリシーを読み込んでいます…",
+        "masking": {
+          "badge": "適用除外を無視中",
+          "badge-disabled": "マスキング適用除外を無視 — MCP は無効",
+          "badge-unlicensed": "マスキング適用除外を無視 — マスキングは未ライセンス",
+          "description": "有効にすると、適用除外やマスク解除の権限を持つユーザーであっても、MCP セッションではマスクされたデータがマスクされたままになります。範囲はエンジンによって異なり、Bytebase がマスクしないところでは何も変わりません。コンソールには影響しません。",
+          "title": "マスキングの適用除外を無視する",
+          "unavailable": "このワークスペースではデータマスキングのライセンスがないため、この設定にかかわらず何もマスクされません。"
+        },
+        "masking-pending": {
+          "applied": "このポリシーは、マスキング適用除外を有効にしたまま保存されます。",
+          "ignored": "このポリシーは、マスキング適用除外を無視した状態で保存されます。"
+        },
+        "mode": {
+          "disabled": {
+            "best-for": "適する場面：有効にする準備が整うまで MCP をオフにしておきたいとき。",
+            "caption": "MCP セッションは接続できません",
+            "description": "このワークスペースにはどの MCP セッションも接続できません。",
+            "title": "無効"
+          },
+          "read-only": {
+            "best-for": "適する場面：自然言語を使ったデータの照会と探索。",
+            "caption": "探索と照会",
+            "title": "読み取り専用"
+          },
+          "read-write": {
+            "best-for": "適する場面：AI エージェント経由でのデータベース変更。各ユーザー自身の権限による制限は残ります。",
+            "caption": "データとスキーマの変更",
+            "title": "読み書き"
+          }
+        },
+        "read-failed": {
+          "description": "再読み込みしてやり直してください。失敗が続く場合、保存されたポリシーは Bytebase が解釈できないもので、運用担当者が行を直接修復する必要があります。読み取れない間、MCP 接続はすべて拒否されます。",
+          "title": "アクセスポリシーを読み取れませんでした"
+        },
+        "save": "ポリシーを保存",
+        "saved": "ポリシーを保存しました。{{mode}} はすべてのセッションの次のリクエストから適用されます。",
+        "tightening": "実行中のすべてのセッションの次のリクエストから適用されます。",
+        "tightening-change": "{{from}} → {{to}} は、実行中のすべてのセッションの次のリクエストから適用されます。",
+        "title": "アクセスポリシー",
+        "unreadable": {
+          "description": "このワークスペースには、このビルドが解釈できない機能レベルの値が保存されています。MCP 接続はすべて拒否されています。モードを選択して保存し、修正してください。",
+          "pick": "このポリシーを保存するにはモードを選んでください。",
+          "title": "保存されたアクセスポリシーを読み取れません"
+        },
+        "unserved": {
+          "description": "このワークスペースには {{stored}} が保存されていますが、このビルドは対応していません。MCP 接続はすべて拒否されています。モードを選択して保存し、修正してください。",
+          "title": "保存されたアクセスポリシーはこのビルドではサポートされていません"
+        }
       },
       "title": "MCP 連携"
     },
@@ -2573,6 +2819,29 @@
         "reactivate-confirm-title": "[OK] を有効にします"
       },
       "add-member": "メンバーを追加",
+      "admin": {
+        "change-email": "メールアドレスを変更",
+        "change-email-description": "このアカウントのサインインアドレスを {{email}} から変更します。ユーザーは新しいアドレスでサインインします。",
+        "create-user": "ユーザーを作成",
+        "create-user-roles-failed": "アカウントは作成されましたが、ロールを割り当てられませんでした。メンバー画面で設定してください。",
+        "deactivate": "ユーザーを無効化",
+        "deactivate-tip": "データは保持されますが、サインインできなくなります。後で再度有効化できます。",
+        "edit-user": "ユーザーを編集",
+        "email-immutable-tip": "アドレスを変更するには、このパネルを閉じて、行のメニューから「メールアドレスを変更」を使用してください。",
+        "external-source": "このアカウントは {{source}} から同期されています。ここでの変更は次回の同期で上書きされる場合があります。",
+        "generate": "生成",
+        "reactivate": "ユーザーを有効化",
+        "reactivate-tip": "既存の認証情報とロールで再びサインインできます。",
+        "reset-mfa": "2要素認証をリセット",
+        "reset-mfa-optional": "{{user}} は現在の認証アプリとリカバリコードを失い、再登録するまで2要素認証なしでサインインします。",
+        "reset-mfa-recovery-first": "リカバリコードが残っていれば、本人がそれでサインインして再登録できます。リセットは不要です。",
+        "reset-mfa-required": "{{user}} は現在の認証アプリとリカバリコードを失います。このワークスペースは2要素認証が必須のため、次回サインイン時に認証アプリの再設定が必要です。",
+        "reset-password": "パスワードをリセット",
+        "reset-password-deliver": "信頼できる方法で本人に伝えてください。Bytebase はメールを送信しません。",
+        "reset-password-description": "{{user}} に新しいパスワードを設定します。すべてのセッションからサインアウトされ、新しいパスワードで再度サインインする必要があります。",
+        "reset-password-issued": "{{user}} の新しいパスワードです。一度しか表示されず、後から確認することはできません。",
+        "saas-read-only": "クラウドではアカウント情報は本人が管理します。ワークスペースのアクセス権はメンバー画面で管理してください。"
+      },
       "all-users": "すべてのユーザー",
       "assign-role": "ロールを割り当て",
       "cannot-revoke-self": "自分自身を取り消すことはできません",
@@ -2627,7 +2896,7 @@
       "select-role_other": "ロールを選択",
       "service-account": "サービスアカウント",
       "service-accounts": "サービスアカウント",
-      "service-key-copied": "サービスキーはコピーされています。公開しないでください",
+      "service-key-reset-and-copied": "サービスキーをリセットしてコピーしました",
       "show-inactive": "非アクティブなアカウントを表示",
       "table": {
         "account": "アカウント",
@@ -2642,12 +2911,16 @@
       "workload-identity-all-branches-tags": "すべてのブランチとタグ",
       "workload-identity-allowed-branches-tags": "許可するブランチ/タグ",
       "workload-identity-audience": "Audience",
+      "workload-identity-audience-hint": "パイプラインが要求する audience。Bytebase が生成するワークフローは bytebase を要求します。セットアップガイドはプロバイダーの既定値を要求するため、パイプラインがそちらを使う場合は行を追加してください。",
       "workload-identity-branch": "ブランチ",
       "workload-identity-branch-hint": "すべてのブランチを対象とする場合は空欄にしてください",
+      "workload-identity-config-rejected": "Bytebase はこの設定を受け付けられません:",
+      "workload-identity-generic-oidc": "汎用 OIDC",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "GitLab インスタンスの URL",
       "workload-identity-group": "グループ / ユーザー名",
       "workload-identity-issuer": "Issuer URL",
+      "workload-identity-jwks-url": "JWKS URL",
       "workload-identity-owner": "組織 / ユーザー名",
       "workload-identity-platform": "プラットフォーム",
       "workload-identity-project": "プロジェクト",
@@ -2665,6 +2938,10 @@
       "display-name": "あなたの名前",
       "display-name-placeholder": "名前を入力してください",
       "email": "メールアドレス",
+      "enable-sample-databases": "サンプルデータベースを有効にする",
+      "enable-sample-databases-create-change": "安全な変更対象としてサンプルデータベースを有効にする",
+      "enable-sample-databases-mark-sensitive-data": "データマスキングをすぐに試せるようサンプルデータベースを有効にする",
+      "enable-sample-databases-query-data": "すぐにクエリを試せるようサンプルデータベースを有効にする",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
@@ -2672,13 +2949,42 @@
       "password-mismatch": "新しいパスワードが一致しません",
       "phone": "電話番号",
       "phone-tips": "国コードを必ず含めてください +81xxxxxx",
-      "role": "ロール",
       "setup-failed": "プロフィールの更新に失敗しました。",
       "setup-first-project": "最初のプロジェクトを設定",
+      "setup-scenario": {
+        "continue": "続行",
+        "create-database-change": {
+          "description": "変更を定義し、追跡可能なイシューを作成します。",
+          "title": "データベース変更を作成"
+        },
+        "mark-sensitive-data": {
+          "description": "機密カラムを特定してデータマスキングを適用します。",
+          "title": "機密データをマーク"
+        },
+        "outcome-title": "Bytebase で何をしたいですか？",
+        "query-data": {
+          "description": "SQL Editor を開き、データベースでステートメントを実行します。",
+          "title": "データをクエリ"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "自分だけで Bytebase を使用します。",
+            "title": "自分だけ"
+          },
+          "team": {
+            "description": "他のメンバーと一緒に使用します。",
+            "title": "チームで使用"
+          },
+          "title": "Bytebase を誰と使用しますか？"
+        }
+      },
       "setup-skip": "後で設定する",
+      "setup-steps": {
+        "scenario": "目標を選択",
+        "workspace": "ワークスペースを設定"
+      },
+      "setup-submit": "ワークスペースをセットアップ",
       "setup-success": "プロフィールが更新されました。",
-      "setup-title": "ようこそ！ワークスペースを設定してください",
-      "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)",
       "workspace-name": "ワークスペース名",
       "workspace-name-placeholder": "ワークスペース名を入力"
     },
@@ -2725,6 +3031,7 @@
           "masking-type": "アルゴリズムの種類"
         }
       },
+      "apply-masking": "マスキングを適用",
       "classification": {
         "empty-classification": "「classification」フィールドが空です",
         "guide-classification": "「classification」は各カテゴリを ID でマッピングします。リーフカテゴリはレベル番号を参照する必要があり、親カテゴリはレベルを省略します。",
@@ -2735,6 +3042,7 @@
         "missing-classification": "「classification」フィールドがありません",
         "missing-levels": "「levels」フィールドがありません"
       },
+      "columns-to-mask": "マスキングするカラム",
       "global-rules": {
         "condition-order": "条件付きシーケンス",
         "delete-rule-tip": "このルールを削除しますか?",
@@ -2746,10 +3054,18 @@
         "re-order": "並び替え"
       },
       "grant-access": "アクセスを許可する",
+      "mark-sensitive-data": "機密データをマークする",
+      "mark-sensitive-data-description": "クエリ結果で値を非表示にするカラムを選択します。",
       "never-expires": "有効期限なし",
       "remove-sensitive-column-tips": "このデータ列を表示しますか？",
+      "semantic-type-description": "セマンティックタイプは同じ種類のデータを表すカラムをグループ化し、Bytebase が一貫したマスキングを適用できるようにします。",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "保存する変更はありません",
+          "title-required": "タイトルは必須です"
+        },
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
+        "masking-effect": "マスキング効果: {{effect}}",
         "select": "セマンティックタイプの選択",
         "self": "セマンティックタイプ",
         "table": {
@@ -2757,13 +3073,9 @@
           "description": "説明",
           "icon": "アイコン",
           "masking-algorithm": "マスキングアルゴリズム",
-          "semantic-type": "セマンティックタイプ"
-        },
-        "template": {
-          "description": "テンプレートから組み込みのセマンティック タイプを適用できます。組み込みテンプレートは変更できません。",
-          "duplicate-warning": "セマンティック タイプ \"{{title}}\" は既に存在します"
-        },
-        "use-predefined-type": "事前定義されたタイプを使用する"
+          "semantic-type": "セマンティックタイプ",
+          "title": "タイトル"
+        }
       }
     },
     "sidebar": {
@@ -2870,26 +3182,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "基本情報",
-    "data": {
-      "built-in": "組み込みサンプルを使用する",
-      "built-in-desc": "サンプルプロジェクトとインスタンスを生成する",
-      "self-setup": "プロジェクトのセットアップ"
-    },
-    "purposes": {
-      "alter-schema": "スキーマの変更",
-      "query-data": "クエリデータ",
-      "self": "Bytebase の主な目的は何ですか?"
-    },
-    "self": "設定",
-    "skip-setup": "セットアップをスキップ",
-    "workflow": {
-      "self": "データベースのワークフローは何ですか?",
-      "simple": "複雑なワークフローは不要、UIツールだけが必要です",
-      "team": "チームメイトと協力し、CI/CD パイプラインが必要"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "スター付きのみ表示",
@@ -2986,6 +3278,10 @@
     "copy-selected-rows-as-csv": "選択した行を CSV としてコピー",
     "copy-selected-rows-as-sql": "選択した行を SQL としてコピー",
     "copy-url": "URLをコピー",
+    "data-explorer-elasticsearch-filter-placeholder": "クエリ式を入力（例: status:active）",
+    "data-explorer-filter-placeholder": "クエリ条件を入力（例: WHERE c.id = \"1\"）",
+    "data-explorer-mongodb-filter-placeholder": "フィルタードキュメントを入力（例: { \"status\": \"active\" }）",
+    "data-explorer-sql-filter-placeholder": "クエリ条件を入力（例: WHERE id = 1）",
     "ddl-dml-requires-data-change-plan": "<environment></environment> で DDL/DML ステートメントを実行するには、承認のためデータ変更プランを送信してください。",
     "download-as-file": "{{file}} 形式でダウンロード",
     "duration-day": "{{days}} 日",
@@ -2997,6 +3293,7 @@
     "expire-at": "{{time}} に期限切れ",
     "expire-in": "{{time}} 後に期限切れ",
     "expired": "期限切れ",
+    "explore-data": "データを探索",
     "export-available-via-issue": "Issue「{{title}}」によりエクスポート可能",
     "export-available-via-n-grants": "{{count}} 件のアクセス付与によりエクスポート可能:",
     "export-enabled-by-grant": "アクセス付与により有効になっています",
@@ -3014,6 +3311,7 @@
       }
     },
     "invalid-database": "無効なデータベース {{database}}",
+    "json-view": "JSON ビュー",
     "last-synced": "最終同期時間: <time></time>",
     "loading-data": "データのロード...",
     "loading-databases": "データベース情報をロードしています...",
@@ -3029,12 +3327,113 @@
     "open-in-new-tab": "新しいタブで開く",
     "opened-from-link": "リンクから開く",
     "pending-query": "保留中のクエリ",
-    "preview-table-data": "テーブルデータのプレビュー",
     "previous-row": "前の行",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
     "query-history-not-found": "クエリ履歴が見つからないか、アクセスできなくなりました",
+    "query-plan-load-failed": "クエリプランの読み込みに失敗しました",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "コピーしました",
+        "failed": "コピーに失敗しました",
+        "plan": "プランをコピー",
+        "query": "クエリをコピー"
+      },
+      "details": {
+        "select-node": "詳細を表示するノードを選択してください。"
+      },
+      "diagram": {
+        "collapse": "{{node}} 配下の {{count}} ノードを折りたたむ",
+        "cost": "コスト {{cost}}",
+        "estimated-rows": "推定 {{count}} 行",
+        "expand": "{{node}} 配下の {{count}} ノードを展開",
+        "fit": "全体を表示",
+        "nodes-hidden": "{{count}} ノードを非表示",
+        "plan-cost-share": "プランコストの {{share}}",
+        "rows": "行数 {{count}}",
+        "zoom-in": "拡大",
+        "zoom-out": "縮小"
+      },
+      "error": {
+        "mssql-empty": "SQL Server はこのステートメントのクエリプランを返しませんでした。",
+        "mssql-invalid": "クエリプランが有効な XML ではありません。SHOWPLAN_XML の出力が必要です。",
+        "mssql-no-plan": "クエリプラン XML は、1つ以上のステートメントを含む SQL Server showplan ではありません。",
+        "postgres-empty": "PostgreSQL はこのステートメントのクエリプランを返しませんでした。",
+        "postgres-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN (FORMAT JSON) の出力が必要です。",
+        "postgres-no-plan": "クエリプラン JSON に \"Plan\" オブジェクトがありません。",
+        "spanner-empty": "Spanner はこのステートメントのクエリプランを返しませんでした。",
+        "spanner-emulator": "Spanner はこのステートメントのクエリプランを返しませんでした。Spanner エミュレーターはいずれのステートメントにもプランを返さないため、Spanner インスタンスで説明を実行してください。",
+        "spanner-invalid": "クエリプランが有効な JSON ではありません。Spanner クエリプランが必要です。",
+        "spanner-no-plan": "クエリプラン JSON に、ルートがオペレーターである \"planNodes\" リストがありません。",
+        "too-deep": "クエリプランの入れ子が深すぎるため、このビジュアライザーでは描画できません。",
+        "unreadable": "このクエリプランを読み取れませんでした"
+      },
+      "grid": {
+        "added-cost": "追加コスト",
+        "added-cost-hint": "このノードが子ノードに加えて追加するコストです。一部のエンジンでは、ネストループ配下などで入力の反復実行もここに含めます。バーはプラン全体に占めるこのコストの割合です。",
+        "caption": "プランナーが入れ子にする順序で並べたプランノードです。親が子より先に表示されます。",
+        "estimated-rows": "推定行数",
+        "node": "ノード",
+        "rows": "行数",
+        "total-cost": "総コスト",
+        "width": "幅",
+        "width-hint": "推定行幅（バイト）"
+      },
+      "highlight": {
+        "cost": "コスト",
+        "cost-hint": "ノードが子ノードに加えて追加するコストで色付け",
+        "label": "ハイライト",
+        "off": "オフ",
+        "off-hint": "すべてのノードカードを色付けしない",
+        "rows": "行数",
+        "rows-hint": "推定行数で色付け"
+      },
+      "legend": {
+        "cost": "各カードのバーは、そのノードがプランの推定コストに占める割合を示します",
+        "rows": "子ノードが返すと推定される行数に応じてエッジが太くなります"
+      },
+      "metric": {
+        "added-cost": "追加コスト",
+        "bytes": "{{count}} バイト",
+        "estimated-rows": "推定行数",
+        "row-width": "行幅",
+        "startup-cost": "開始コスト",
+        "total-cost": "総コスト"
+      },
+      "query": {
+        "missing": "このプランにはステートメントが保存されていません。"
+      },
+      "summary": {
+        "added-cost": "追加コスト",
+        "cost-by-operation": "操作別コスト",
+        "cost-by-operation-description": "プラン内の各ノード種別と、その総コストです。",
+        "cost-ranges": "コスト範囲",
+        "cost-ranges-description": "各ノードは、最初の行を返す前の開始コストから、その配下のすべてを含む総コストまでを示します。濃い範囲ほどプランコストの割合が高くなります。コストは実行スケジュールではありません。結合の2つの入力はここでは重なりますが、実際には順番に実行されます。",
+        "costliest": "高コストなオペレーター",
+        "costliest-description": "ノードが子ノードに加えて追加するコスト順です。ネストループ配下などで入力が繰り返し実行される場合、一部のエンジンは反復コストを入力自体ではなく、その入力を再実行するノードに計上します。",
+        "count": "件数",
+        "estimate-note": "ステートメントはプランニングされましたが実行されていないため、ここにある数値はすべて測定値ではなくオプティマイザーの推定値です。コスト単位は任意で、このプラン内でのみ比較できます。",
+        "estimated-rows-returned": "推定返却行数",
+        "no-added-cost": "このプランには固有の推定コストを追加するノードがありません。",
+        "nodes": "ノード",
+        "operation": "操作",
+        "share": "割合",
+        "timeline-node": "{{name}}、コスト {{startup}} から {{total}}、プランコストの {{share}}",
+        "total-estimated-cost": "推定総コスト"
+      },
+      "tab": {
+        "diagram": "ダイアグラム",
+        "grid": "グリッド",
+        "query": "クエリ",
+        "summary": "概要",
+        "text": "テキスト"
+      },
+      "totals": {
+        "estimated-cost": "推定コスト {{cost}}",
+        "nodes": "{{count}} ノード"
+      }
+    },
     "query-time": "クエリ時間",
     "re-request": "再申請",
     "recent": "最近",
@@ -3046,7 +3445,11 @@
     },
     "request-aborted": "ユーザーがリクエストを中止しました",
     "request-access-grant": "アクセス付与をリクエスト",
+    "request-export": "エクスポートをリクエスト",
+    "request-query": "クエリをリクエスト",
+    "request-unmask": "マスク解除をリクエスト",
     "result-detail": {
+      "cell": "セルの詳細",
       "next-match": "次の一致",
       "previous-match": "前の一致",
       "search": "詳細を検索"
@@ -3054,6 +3457,7 @@
     "result-limit": {
       "self": "結果の制限"
     },
+    "result-view-mode": "結果表示モード",
     "revoke-access": "取り消し",
     "revoke-confirm": "このアクセス付与を取り消してもよろしいですか？",
     "rows": {
@@ -3063,13 +3467,16 @@
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "save-sheet": "クエリを保存",
     "saved-query-share": {
+      "add-people": "ユーザーまたはグループを追加",
       "editor": "編集者",
-      "granted-at-other-level": "他のレベルで {{count}} 件付与されています。",
+      "load-failed": "共有設定を読み込めませんでした。",
       "not-shared": "誰にも共有されていません。",
       "only-users-and-groups": "アクセス権を付与できるのはユーザーとグループのみです。",
+      "owner": "オーナー",
+      "people-with-access": "アクセスできるユーザー",
       "policy-changed": "共有設定が別の場所で変更されました。最新の状態を再読み込みしました。",
       "private-hint": "この保存済みクエリを開けるのは、あなたとワークスペース管理者のみです。",
-      "shared-with": "共有先",
+      "share-title": "「{{title}}」",
       "viewer": "閲覧者"
     },
     "scroll-to-bottom": "末尾へスクロール",
@@ -3080,6 +3487,7 @@
     "search-scope-row-number-description": "行番号を入力してその行にジャンプします。",
     "search-scope-row-number-title": "行番号",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
+    "select-a-project-to-choose-a-database": "データベースを選択するにはプロジェクトを選択してください",
     "select-connection": "データ接続を選択してください",
     "select-encoding": "エンコーディングの選択",
     "self": "SQLエディタ",
@@ -3113,7 +3521,6 @@
     "view-detail": "詳細を見る",
     "view-issue": "Issue を表示",
     "view-schema-text": "テキストの表示 スキーマ",
-    "visualize-explain": "視覚化の説明",
     "web-socket": {
       "connection-status": {
         "connected": "接続済み",
@@ -3296,8 +3703,7 @@
     },
     "prior-backup": "影響を受けるデータの事前バックアップ",
     "run-immediately": {
-      "description": "「実行」をクリックするとすぐにタスクの実行が開始されます。遅延やスケジュール設定は必要ありません。",
-      "self": "すぐに実行"
+      "description": "「実行」をクリックするとすぐにタスクの実行が開始されます。遅延やスケジュール設定は必要ありません。"
     },
     "run-task": "タスクを実行 | タスクを実行",
     "schedule-for-later": {
@@ -3393,6 +3799,7 @@
     },
     "self": "二要素認証",
     "setup-steps": {
+      "confirm-code": "認証アプリの最新のコードを入力して完了します",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "これらのコードは、2 要素認証コードを受信できない場合にアカウントにアクセスするために使用されます。これらのコードが見つからない場合は、アカウントにアクセスできなくなります。",
@@ -3424,21 +3831,35 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "データベース変更を作成",
       "query": "SQL Editor に移動"
     },
+    "all-steps-completed": "すべてのステップが完了しました",
     "descriptions": {
-      "database": "データをクエリする前に、データベースを作成するかプロジェクトに転送します。",
-      "instance": "インスタンスを接続して、Bytebase がデータベースを同期できるようにします。",
+      "add-teammate": "チームメンバーを招待し、ワークスペースへのアクセスを付与します。",
+      "create-database-change": "データベース変更を定義し、そのイシューを作成します。",
+      "database": "データベースを開き、スキーマとテーブルを確認します。",
+      "instance": "Bytebase がデータベースを同期できるようにインスタンスを接続します。",
+      "mark-sensitive-data": "選択したデータベースを開き、機密カラムにセマンティックタイプを割り当てます。",
       "project": "データベースと変更を整理するプロジェクトを作成します。",
-      "sql-editor": "SQL Editor でデータをクエリするか、ガバナンス付きデータベース変更を作成します。"
+      "query-data": "選択したデータベースを SQL Editor で開き、任意のステートメントを実行します。"
     },
     "dismiss": "ガイドを閉じる",
+    "generic": {
+      "title": "Bytebase をセットアップ"
+    },
+    "getting-started": "はじめに",
     "intro": {
+      "create-user-description": "このセルフホスト型ワークスペースにチームメンバーのアカウントを作成します。",
+      "create-user-title": "ユーザーを作成",
       "database-description": "接続済みインスタンスにデータベースを作成します。",
       "database-title": "データベースを作成",
+      "grant-access-description": "チームメンバーを招待し、ワークスペースロールを割り当てます。",
+      "grant-access-title": "ワークスペースアクセスを付与",
       "instance-description": "Bytebase がデータベースサーバーに接続できるようにインスタンスを作成します。",
       "instance-title": "インスタンスを接続",
+      "mark-sensitive-data-description": "カラムを選択してセマンティックタイプを割り当て、Bytebase がデータマスキングを適用できるようにします。",
+      "mark-sensitive-data-title": "機密データをマーク",
+      "mark-sensitive-fields-description": "テーブルまたはコレクションを開き、カタログ内の機密フィールドにセマンティックタイプを割り当てます。",
       "project-description": "まずプロジェクトを作成します。インスタンス接続後、データベースをそのプロジェクトに同期できます。",
       "project-title": "プロジェクトを作成",
       "transfer-description": "1つ以上のデータベースを選択し、プロジェクトに転送します。",
@@ -3446,12 +3867,28 @@
     },
     "prepare-database-tip": "プロジェクトに転送するデータベースを選択します。",
     "previous-step-required": "前のステップを先に完了する必要があります。",
-    "self": "Bytebase をセットアップ",
+    "product-model": "Bytebase の仕組み",
+    "scenarios": {
+      "create-database-change": {
+        "title": "データベース変更を作成"
+      },
+      "mark-sensitive-data": {
+        "title": "機密データをマーク"
+      },
+      "query-data": {
+        "title": "データをクエリ"
+      }
+    },
+    "step-progress": "{{total}} 件中 {{current}} 件目",
     "steps": {
-      "database": "データベースを準備",
+      "add-teammate": "メンバーを追加",
+      "create-database-change": "データベース変更を作成",
+      "database": "データベースを確認",
       "instance": "インスタンスを接続",
+      "mark-sensitive-data": "機密データをマーク",
       "project": "プロジェクトを作成",
-      "query": "データをクエリ"
-    }
+      "query-data": "データをクエリ"
+    },
+    "view-all-steps": "すべてのステップを表示"
   }
 }

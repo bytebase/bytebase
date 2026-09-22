@@ -39,6 +39,7 @@ service SavedQueryService {
     option (bytebase.v1.permission) = "bb.savedQueries.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Get a saved query with its full content.
@@ -48,11 +49,13 @@ service SavedQueryService {
     option (google.api.http) = {get: "/v1/{name=projects/*/savedQueries/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // List saved queries for auditing. The permission alone grants reading
   // every matched saved query with full content, private ones included;
   // bindings are ignored. Use parent "projects/-" for all projects.
+  // Results default to title ascending; see `order_by`.
   // Permissions required: bb.savedQueries.list on the project, or on the
   // workspace when the parent is "projects/-"
   rpc ListSavedQueries(ListSavedQueriesRequest) returns (ListSavedQueriesResponse) {
@@ -60,6 +63,8 @@ service SavedQueryService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.savedQueries.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
   }
 
   // Search saved queries in one project. Returns content previews of the
@@ -72,6 +77,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Search folder paths. A path is returned when it holds at least one saved
@@ -84,6 +90,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Update a saved query. `database` must belong to the saved query's project.
@@ -97,6 +104,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "saved_query,update_mask";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Star or unstar a saved query for the caller. Stars are personal: nobody
@@ -112,6 +120,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "name,starred";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Move the caller's saved queries filed under `source_folder`, descendants
@@ -128,6 +137,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "parent,source_folder,target_folder";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Delete a saved query and every user's stars on it. An EDITOR binding
@@ -139,6 +149,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Get a saved query's sharing policy: who it is shared with, at what level.
@@ -148,6 +159,8 @@ service SavedQueryService {
     option (google.api.http) = {get: "/v1/{resource=projects/*/savedQueries/*}:getPolicy"};
     option (google.api.method_signature) = "resource";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Replace a saved query's sharing policy in full. `policy.etag` must match
@@ -162,6 +175,8 @@ service SavedQueryService {
     option (google.api.method_signature) = "resource,policy";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 }
 
@@ -209,6 +224,15 @@ message ListSavedQueriesRequest {
   // A page token from a previous ListSavedQueries call. Keep every other
   // parameter the same as the call that returned it.
   string page_token = 4;
+
+  // Sort the results, per https://google.aip.dev/132#ordering. Supported
+  // fields: `update_time`, `create_time`, `title`; append " desc" for
+  // descending, e.g. "update_time desc" for most recently modified first.
+  // A modification is a title, content, database, or folder write; sharing
+  // and stars do not count, and a never-modified saved query counts its
+  // create time. Empty means `title` ascending. `resource_id` is always
+  // appended as a final tiebreak so pages stay stable.
+  string order_by = 5;
 }
 
 message ListSavedQueriesResponse {
@@ -423,7 +447,7 @@ message SavedQuery {
   // The connected database, which must belong to the saved query's own
   // project. Empty when none is connected, or when the database no longer
   // exists.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   string database = 3;
 
   // The title of the saved query.
@@ -442,7 +466,10 @@ message SavedQuery {
 
   // The SQL text. SearchSavedQueries returns a truncated preview;
   // GetSavedQuery returns the full text.
-  bytes content = 8 [(google.api.field_behavior) = REQUIRED];
+  bytes content = 8 [
+    (google.api.field_behavior) = REQUIRED,
+    (bytebase.v1.audit_behavior) = OMIT
+  ];
 
   // The full size of the content, which may exceed the `content` returned.
   int64 content_size = 9 [(google.api.field_behavior) = OUTPUT_ONLY];

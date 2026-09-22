@@ -43,7 +43,7 @@ func (*ColumnNoNullAdvisor) Check(_ context.Context, checkCtx advisor.Context) (
 		nullableColumns:  make(columnMap),
 	}
 
-	// Manually iterate statements instead of using RunOmniRules because
+	// Manually iterate statements instead of using RunRules because
 	// generateAdvice must be called AFTER all statements have been processed.
 	for _, stmt := range checkCtx.ParsedStatements {
 		if stmt.AST == nil {

@@ -38,7 +38,7 @@ func (*TableNoForeignKeyAdvisor) Check(_ context.Context, checkCtx advisor.Conte
 		tableBaseLine: make(map[string]int),
 	}
 
-	advice := RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule})
+	advice := RunRules(checkCtx.ParsedStatements, []OmniRule{rule})
 	advice = append(advice, rule.generateFinalAdvice()...)
 	return advice, nil
 }

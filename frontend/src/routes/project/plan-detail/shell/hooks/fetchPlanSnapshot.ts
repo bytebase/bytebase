@@ -8,6 +8,7 @@ import {
   userServiceClientConnect,
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
+import { listAllTaskRuns } from "@/api/taskRun";
 import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   GetIssueRequestSchema,
@@ -25,7 +26,6 @@ import {
 } from "@/types/proto-es/v1/project_service_pb";
 import {
   GetRolloutRequestSchema,
-  ListTaskRunsRequestSchema,
   type Rollout,
   type TaskRun,
 } from "@/types/proto-es/v1/rollout_service_pb";
@@ -61,14 +61,9 @@ const requestRollout = (rolloutName: string) =>
   );
 
 const requestRolloutTaskRuns = (rolloutName: string) =>
-  rolloutServiceClientConnect
-    .listTaskRuns(
-      create(ListTaskRunsRequestSchema, {
-        parent: `${rolloutName}/stages/-/tasks/-`,
-      }),
-      { contextValues: createContextValues().set(silentContextKey, true) }
-    )
-    .then((response) => response.taskRuns);
+  listAllTaskRuns(`${rolloutName}/stages/-/tasks/-`, {
+    contextValues: createContextValues().set(silentContextKey, true),
+  });
 
 const requestRolloutState = async (rolloutName: string) => {
   const [rollout, taskRuns] = await Promise.all([

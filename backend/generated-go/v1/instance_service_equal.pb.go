@@ -92,6 +92,19 @@ func (x *CreateInstanceRequest) Equal(y *CreateInstanceRequest) bool {
 	return true
 }
 
+func (x *PrepareSampleProjectInstanceRequest) Equal(y *PrepareSampleProjectInstanceRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Parent != y.Parent {
+		return false
+	}
+	return true
+}
+
 func (x *UpdateInstanceRequest) Equal(y *UpdateInstanceRequest) bool {
 	if x == y {
 		return true

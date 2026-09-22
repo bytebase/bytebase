@@ -8,6 +8,7 @@ import (
 )
 
 func TestGetListPlanFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -15,7 +16,6 @@ func TestGetListPlanFilter(t *testing.T) {
 		wantArgs    []any
 		wantErr     bool
 		errContains string
-		skipTest    bool // Skip tests that require database access
 	}{
 		{
 			name:     "empty filter",
@@ -60,7 +60,7 @@ func TestGetListPlanFilter(t *testing.T) {
 		{
 			name:     "title contains",
 			filter:   `title.contains("test")`,
-			wantSQL:  "(LOWER(plan.name) LIKE $1)",
+			wantSQL:  "(LOWER(plan.name) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
 		},
@@ -126,17 +126,17 @@ func TestGetListPlanFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:        "creator filter requires database",
-			filter:      `creator == "users/test@example.com"`,
-			skipTest:    true,
-			wantErr:     false, // Would work with database
-			errContains: "",
+			name:     "creator filter",
+			filter:   `creator == "users/test@example.com"`,
+			wantSQL:  "(plan.creator = $1)",
+			wantArgs: []any{"test@example.com"},
+			wantErr:  false,
 		},
 		{
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "unsupported variable",
@@ -178,10 +178,7 @@ func TestGetListPlanFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.skipTest {
-				t.Skip("Test requires database connection")
-			}
-
+			t.Parallel()
 			q, err := GetListPlanFilter(tt.filter)
 
 			if tt.wantErr {

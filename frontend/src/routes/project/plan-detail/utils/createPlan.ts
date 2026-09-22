@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { head } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
-import { keyValueStorage } from "@/lib/keyValueStorage";
+import { consumeInitialSQL } from "@/lib/plan/initialSQLStorage";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import {
   Plan_ChangeDatabaseConfigSchema,
@@ -61,15 +61,15 @@ const maybeSetInitialSQLForSpec = (spec: Plan_Spec, initialSQL: InitialSQL) => {
   setLocalSheetStatement(getLocalSheetByName(sheet), sql);
 };
 
-const extractInitialSQLFromQuery = async (
+const extractInitialSQLFromQuery = (
   query: Record<string, string>
-): Promise<InitialSQL> => {
+): InitialSQL => {
   if (query.sql) {
     return { sql: query.sql };
   }
   if (query.sqlStorageKey) {
     return {
-      sql: (await keyValueStorage.get<string>(query.sqlStorageKey)) || "",
+      sql: consumeInitialSQL<string>(query.sqlStorageKey) || "",
     };
   }
   const sqlMapText = query.sqlMap;
@@ -86,9 +86,7 @@ const extractInitialSQLFromQuery = async (
   if (query.sqlMapStorageKey) {
     return {
       sqlMap:
-        (await keyValueStorage.get<Record<string, string>>(
-          query.sqlMapStorageKey
-        )) || {},
+        consumeInitialSQL<Record<string, string>>(query.sqlMapStorageKey) || {},
     };
   }
   return {};
@@ -105,7 +103,7 @@ export const createPlanSkeleton = async (
   const targets = query.databaseGroupName
     ? [query.databaseGroupName]
     : databaseNameList;
-  const initialSQL = await extractInitialSQLFromQuery(query);
+  const initialSQL = extractInitialSQLFromQuery(query);
   const plan = create(PlanSchema, {
     description: query.description,
     name: `${project.name}/plans/${getNextLocalSheetUID()}`,

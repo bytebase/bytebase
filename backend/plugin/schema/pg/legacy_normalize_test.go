@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	omnipg "github.com/bytebase/omni/pg"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
@@ -204,13 +204,13 @@ func TestIndexEmissionParses(t *testing.T) {
 			{"parenthesized (canonical for expressions)", "(" + expr + ")"},
 		}
 		for _, shape := range shapes {
-			meta := &storepb.DatabaseSchemaMetadata{
+			meta := &metadatapb.DatabaseSchemaMetadata{
 				Name: "db",
-				Schemas: []*storepb.SchemaMetadata{{
+				Schemas: []*metadatapb.SchemaMetadata{{
 					Name: "public",
-					Tables: []*storepb.TableMetadata{{
+					Tables: []*metadatapb.TableMetadata{{
 						Name: "t",
-						Columns: []*storepb.ColumnMetadata{
+						Columns: []*metadatapb.ColumnMetadata{
 							{Name: "a", Position: 1, Type: "integer"},
 							{Name: "b", Position: 2, Type: "integer"},
 							{Name: "name", Position: 3, Type: "text"},
@@ -219,7 +219,7 @@ func TestIndexEmissionParses(t *testing.T) {
 							{Name: "tags", Position: 6, Type: "text[]"},
 							{Name: "payload", Position: 7, Type: "jsonb"},
 						},
-						Indexes: []*storepb.IndexMetadata{{
+						Indexes: []*metadatapb.IndexMetadata{{
 							Name:        "idx",
 							Type:        "btree",
 							Expressions: []string{shape.stored},
@@ -243,30 +243,30 @@ func TestIndexEmissionParses(t *testing.T) {
 // TablePartitionMetadata.Indexes (including nested Subpartitions) and
 // MaterializedViewMetadata.Indexes — which are structurally easy to miss.
 func TestNormalizeLegacyMetadata_PartitionAndMV(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "t",
-				Partitions: []*storepb.TablePartitionMetadata{{
+				Partitions: []*metadatapb.TablePartitionMetadata{{
 					Name: "t_p1",
-					Indexes: []*storepb.IndexMetadata{{
+					Indexes: []*metadatapb.IndexMetadata{{
 						Name:        "partition_idx",
 						Expressions: []string{"payload ->> 'k'::text"}, // legacy: no parens
 					}},
-					Subpartitions: []*storepb.TablePartitionMetadata{{
+					Subpartitions: []*metadatapb.TablePartitionMetadata{{
 						Name: "t_p1_sub",
-						Indexes: []*storepb.IndexMetadata{{
+						Indexes: []*metadatapb.IndexMetadata{{
 							Name:        "subpartition_idx",
 							Expressions: []string{"a + b"}, // legacy: no parens
 						}},
 					}},
 				}},
 			}},
-			MaterializedViews: []*storepb.MaterializedViewMetadata{{
+			MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
 				Name: "mv",
-				Indexes: []*storepb.IndexMetadata{{
+				Indexes: []*metadatapb.IndexMetadata{{
 					Name:        "mv_idx",
 					Expressions: []string{"lower(name)"}, // canonical: bare func call
 				}},
@@ -299,35 +299,35 @@ func TestNormalizeLegacyMetadata_PartitionAndMV(t *testing.T) {
 // through GetMultiFileDatabaseDefinition, which has its own entry point and
 // was previously missing the normalization pass (Codex review, PR #20009).
 func TestGetMultiFileDatabaseDefinition_LegacyIndexExpressionsParse(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "t",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "a", Position: 1, Type: "integer"},
 					{Name: "b", Position: 2, Type: "integer"},
 					{Name: "payload", Position: 3, Type: "jsonb"},
 				},
-				Indexes: []*storepb.IndexMetadata{{
+				Indexes: []*metadatapb.IndexMetadata{{
 					Name:        "t_legacy_idx",
 					Type:        "btree",
 					Expressions: []string{"payload ->> 'k'::text"}, // legacy
 				}},
-				Partitions: []*storepb.TablePartitionMetadata{{
+				Partitions: []*metadatapb.TablePartitionMetadata{{
 					Name: "t_p1",
-					Indexes: []*storepb.IndexMetadata{{
+					Indexes: []*metadatapb.IndexMetadata{{
 						Name:        "t_p1_legacy_idx",
 						Type:        "btree",
 						Expressions: []string{"a + b"}, // legacy
 					}},
 				}},
 			}},
-			MaterializedViews: []*storepb.MaterializedViewMetadata{{
+			MaterializedViews: []*metadatapb.MaterializedViewMetadata{{
 				Name:       "mv",
 				Definition: "SELECT 1 AS x",
-				Indexes: []*storepb.IndexMetadata{{
+				Indexes: []*metadatapb.IndexMetadata{{
 					Name:        "mv_legacy_idx",
 					Type:        "btree",
 					Expressions: []string{"payload ->> 'k'::text"}, // legacy
@@ -360,16 +360,16 @@ func TestGetMultiFileDatabaseDefinition_LegacyIndexExpressionsParse(t *testing.T
 // top of GetDatabaseDefinition. The caller's metadata (often a shared pointer
 // from store.dbSchemaCache) must not be altered by the normalization pass.
 func TestGetDatabaseDefinition_DoesNotMutateInput(t *testing.T) {
-	meta := &storepb.DatabaseSchemaMetadata{
+	meta := &metadatapb.DatabaseSchemaMetadata{
 		Name: "db",
-		Schemas: []*storepb.SchemaMetadata{{
+		Schemas: []*metadatapb.SchemaMetadata{{
 			Name: "public",
-			Tables: []*storepb.TableMetadata{{
+			Tables: []*metadatapb.TableMetadata{{
 				Name: "t",
-				Columns: []*storepb.ColumnMetadata{
+				Columns: []*metadatapb.ColumnMetadata{
 					{Name: "payload", Position: 1, Type: "jsonb"},
 				},
-				Indexes: []*storepb.IndexMetadata{{
+				Indexes: []*metadatapb.IndexMetadata{{
 					Name: "idx",
 					Type: "btree",
 					// Deliberately non-canonical: the normalizer would rewrite this.

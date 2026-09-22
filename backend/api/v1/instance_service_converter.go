@@ -54,10 +54,20 @@ func convertInstanceRoles(instance *store.InstanceMessage, roles []*storepb.Inst
 	b.Grow(len(common.InstanceNamePrefix) + len(instance.ResourceID) + 1 + len(common.RolePrefix) + 20)
 
 	for _, role := range roles {
+		// We don't return the credential in the role attribute on reads. On
+		// MariaDB the attribute is raw SHOW GRANTS text, which carries the
+		// account's password hash inline. The grant list around it is what the
+		// console renders, so the field stays and the credential is masked
+		// inside it; see redactRoleAttribute for what the mask takes with it.
+		var attribute *string
+		if role.Attribute != nil {
+			redacted := redactRoleAttribute(*role.Attribute)
+			attribute = &redacted
+		}
 		v1Roles = append(v1Roles, &v1pb.InstanceRole{
 			Name:      buildRoleName(&b, instance.ResourceID, instance.ProjectID, role.Name),
 			RoleName:  role.Name,
-			Attribute: role.Attribute,
+			Attribute: attribute,
 		})
 	}
 	return v1Roles

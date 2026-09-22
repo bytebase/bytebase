@@ -1,11 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { cloneDeep, isEqual } from "lodash-es";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
 import { INSTANCE_ROUTE_DETAIL } from "@/app/router/handles";
+import { useHasInvalidSecretInputs } from "@/components/SecretInput";
 import {
   PREPARE_DATABASE_PRODUCT_INTRO,
   PREPARE_DATABASE_TRANSFER_TIP,
@@ -14,7 +15,6 @@ import {
 } from "@/lib/productIntro";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import type {
   DataSource,
   Instance,
@@ -24,12 +24,7 @@ import {
   InstanceSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import {
-  convertKVListToLabels,
-  extractInstanceResourceName,
-  isValidBigQueryDataSource,
-  isValidSpannerDataSource,
-} from "@/utils";
+import { convertKVListToLabels, extractInstanceResourceName } from "@/utils";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -39,6 +34,7 @@ import {
 } from "../ui/alert-dialog";
 import { Button } from "../ui/button";
 import { StickyActionFooter } from "../ui/sticky-action-footer";
+import { isIAMAuthentication } from "./authentication";
 import {
   type ConnectionFailureCategory,
   ConnectionRecovery,
@@ -73,6 +69,7 @@ export function InstanceFormButtons({
 }: InstanceFormButtonsProps) {
   const { t } = useTranslation();
 
+  const hasInvalidSecretInputs = useHasInvalidSecretInputs();
   const context = useInstanceFormContext();
   const {
     state,
@@ -88,6 +85,8 @@ export function InstanceFormButtons({
     editingDataSource,
     readonlyDataSourceList,
     setDataSourceEditState,
+    resetDataSource,
+    emitDataSourceReset,
     hasReadonlyReplicaFeature,
     setMissingFeature,
     testConnection,
@@ -111,11 +110,16 @@ export function InstanceFormButtons({
   const [connectionFailureResolver, setConnectionFailureResolver] = useState<
     ((confirmed: boolean) => void) | undefined
   >();
+  const [testConnectionFailure, setTestConnectionFailure] = useState<
+    ConnectionFailureDialogState | undefined
+  >();
 
   const checkExternalSecretFeature = (dataSources: DataSource[]) => {
     if (hasExternalSecretFeature) return true;
     return dataSources.every(
-      (ds) => !ds.externalSecret && !/^{{.+}}$/.test(ds.password)
+      (ds) =>
+        isIAMAuthentication(ds.authenticationType) ||
+        (!ds.externalSecret && !/^{{.+}}$/.test(ds.password))
     );
   };
 
@@ -136,32 +140,18 @@ export function InstanceFormButtons({
     return readonlyDataSourceList.every(checkOne);
   };
 
-  const allowUpdate = useMemo((): boolean => {
-    if (!valueChanged) return false;
-    if (basicInfo.engine === Engine.SPANNER) {
-      if (!isValidSpannerDataSource(adminDataSource)) return false;
-      if (readonlyDataSourceList.length > 0) {
-        if (readonlyDataSourceList.some((ds) => !isValidSpannerDataSource(ds)))
-          return false;
-      }
-      return !!basicInfo.title.trim();
-    }
-    if (basicInfo.engine === Engine.BIGQUERY) {
-      if (!isValidBigQueryDataSource(adminDataSource)) return false;
-      if (readonlyDataSourceList.length > 0) {
-        if (readonlyDataSourceList.some((ds) => !isValidBigQueryDataSource(ds)))
-          return false;
-      }
-      return !!basicInfo.title.trim();
-    }
-    return checkDataSource([adminDataSource, ...readonlyDataSourceList]);
-  }, [
-    valueChanged,
-    basicInfo,
-    adminDataSource,
-    readonlyDataSourceList,
-    checkDataSource,
-  ]);
+  const allowUpdate =
+    !hasInvalidSecretInputs &&
+    valueChanged &&
+    !!basicInfo.title.trim() &&
+    context.labelErrors.length === 0 &&
+    checkDataSource([adminDataSource, ...readonlyDataSourceList]);
+
+  const allowTestConnection =
+    !hasInvalidSecretInputs &&
+    allowEdit &&
+    !!editingDataSource &&
+    checkDataSource([editingDataSource]);
 
   const hasConfiguredConnectionOptions = (ds: EditDataSource): boolean => {
     const hasExtraParameters =
@@ -214,10 +204,7 @@ export function InstanceFormButtons({
   const resetChanges = () => {
     const original = getOriginalEditState();
     setBasicInfo(cloneDeep(original.basicInfo));
-    setDataSourceEditState((prev) => ({
-      ...prev,
-      dataSources: cloneDeep(original.dataSources),
-    }));
+    resetDataSource();
   };
 
   const buildCreateInstance = (): Instance => {
@@ -237,7 +224,7 @@ export function InstanceFormButtons({
   };
 
   const doCreate = async () => {
-    if (!isCreating) return;
+    if (!isCreating || !allowCreate || hasInvalidSecretInputs) return;
 
     const payload = buildCreateInstance();
     if (!checkExternalSecretFeature(payload.dataSources)) {
@@ -287,6 +274,7 @@ export function InstanceFormButtons({
   };
 
   const tryCreate = async () => {
+    if (!allowCreate || hasInvalidSecretInputs) return;
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("instance create clicked", {
         routeId: router.currentRoute.value.name?.toString(),
@@ -329,7 +317,7 @@ export function InstanceFormButtons({
 
   const doUpdate = async () => {
     const inst = instance;
-    if (!inst) return;
+    if (!inst || !allowUpdate) return;
 
     if (!checkRODataSourceFeature(inst)) {
       setMissingFeature(PlanFeature.FEATURE_INSTANCE_READ_ONLY_CONNECTION);
@@ -490,6 +478,7 @@ export function InstanceFormButtons({
         .getState()
         .getInstanceByName(inst.name);
       updateEditState(updatedInstance);
+      emitDataSourceReset();
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -508,6 +497,7 @@ export function InstanceFormButtons({
 
   const testConnectionForCurrentEditingDS = async () => {
     if (!editingDataSource) return;
+    setTestConnectionFailure(undefined);
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("instance connection test clicked", {
         routeId: router.currentRoute.value.name?.toString(),
@@ -516,11 +506,29 @@ export function InstanceFormButtons({
 
     const testResult = await testConnection(editingDataSource, false);
     if (!testResult.success) {
+      setTestConnectionFailure({
+        open: false,
+        message: testResult.message,
+        failureCategory: testResult.failureCategory,
+      });
       maybeOpenConnectionOptions(editingDataSource);
     }
   };
 
+  const testConnectionFeedback = testConnectionFailure && (
+    <div className="border-t border-block-border px-4 py-3 sm:px-6">
+      <ConnectionRecovery
+        category={testConnectionFailure.failureCategory}
+        className="max-w-3xl"
+      />
+      <p className="mt-2 whitespace-pre-wrap break-all text-sm text-error">
+        {testConnectionFailure.message}
+      </p>
+    </div>
+  );
+
   const cancel = () => {
+    resetDataSource();
     onDismiss?.();
   };
 
@@ -534,7 +542,9 @@ export function InstanceFormButtons({
       }}
     >
       <AlertDialogContent className="max-w-2xl">
-        <AlertDialogTitle>{t("common.warning")}</AlertDialogTitle>
+        <AlertDialogTitle>
+          {t("instance.failed-to-connect-instance")}
+        </AlertDialogTitle>
         <ConnectionRecovery
           category={connectionFailureDialogState.failureCategory}
           className="my-2"
@@ -563,6 +573,7 @@ export function InstanceFormButtons({
     return (
       <>
         {connectionFailureDialog}
+        {testConnectionFeedback}
         <StickyActionFooter
           className={className}
           left={
@@ -577,20 +588,38 @@ export function InstanceFormButtons({
             ) : undefined
           }
           right={
-            <Button
-              disabled={
-                !allowCreate || state.isRequesting || state.isTestingConnection
-              }
-              onClick={tryCreate}
-            >
-              {state.isRequesting
-                ? parent
-                  ? t("instance.connecting-database-to-project")
-                  : t("common.creating")
-                : parent
-                  ? t("instance.connect-database-to-project")
-                  : t("common.create")}
-            </Button>
+            <>
+              <Button
+                appearance="secondary"
+                disabled={
+                  !allowTestConnection ||
+                  state.isRequesting ||
+                  state.isTestingConnection
+                }
+                onClick={testConnectionForCurrentEditingDS}
+              >
+                {state.isTestingConnection
+                  ? t("instance.testing-connection")
+                  : t("instance.test-connection")}
+              </Button>
+              <Button
+                disabled={
+                  !allowCreate ||
+                  hasInvalidSecretInputs ||
+                  state.isRequesting ||
+                  state.isTestingConnection
+                }
+                onClick={tryCreate}
+              >
+                {state.isRequesting
+                  ? parent
+                    ? t("instance.connecting-database-to-project")
+                    : t("common.creating")
+                  : parent
+                    ? t("instance.connect-database-to-project")
+                    : t("common.create")}
+              </Button>
+            </>
           }
         />
       </>
@@ -598,11 +627,12 @@ export function InstanceFormButtons({
   }
 
   if (!instance) return null;
-  if (!valueChanged || !allowEdit) return null;
+  if ((!valueChanged && !hasInvalidSecretInputs) || !allowEdit) return null;
 
   return (
     <>
       {connectionFailureDialog}
+      {testConnectionFeedback}
       <StickyActionFooter
         className={className}
         left={
@@ -618,7 +648,11 @@ export function InstanceFormButtons({
           <>
             <Button
               appearance="secondary"
-              disabled={!allowUpdate || state.isRequesting || !allowEdit}
+              disabled={
+                !allowTestConnection ||
+                state.isRequesting ||
+                state.isTestingConnection
+              }
               onClick={testConnectionForCurrentEditingDS}
             >
               {state.isTestingConnection

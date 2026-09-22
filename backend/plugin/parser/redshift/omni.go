@@ -28,8 +28,8 @@ func (a *OmniAST) ASTStartPosition() *storepb.Position {
 	return a.StartPosition
 }
 
-// ParseRedshiftOmni parses SQL using omni's parser.
-func ParseRedshiftOmni(sql string) ([]omniredshift.Statement, error) {
+// ParseRedshift parses SQL using omni's parser.
+func ParseRedshift(sql string) ([]omniredshift.Statement, error) {
 	return omniredshift.Parse(sql)
 }
 

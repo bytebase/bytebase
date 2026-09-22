@@ -102,22 +102,22 @@ export function IssueDetailTaskRunTable({
         <Table className="table-fixed">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="sticky top-0 z-10 w-9 bg-gray-50 px-2" />
+              <TableHead className="sticky top-0 z-10 w-9 bg-control-bg/50 px-2" />
               {showDatabaseColumn && (
-                <TableHead className="sticky top-0 z-10 w-64 bg-gray-50">
+                <TableHead className="sticky top-0 z-10 w-64 bg-control-bg/50">
                   {t("common.database")}
                 </TableHead>
               )}
-              <TableHead className="sticky top-0 z-10 bg-gray-50">
+              <TableHead className="sticky top-0 z-10 bg-control-bg/50">
                 {t("common.detail")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-36 bg-gray-50">
+              <TableHead className="sticky top-0 z-10 w-36 bg-control-bg/50">
                 {t("task.created")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-36 bg-gray-50">
+              <TableHead className="sticky top-0 z-10 w-36 bg-control-bg/50">
                 {t("task.started")}
               </TableHead>
-              <TableHead className="sticky top-0 z-10 w-28 bg-gray-50 pr-6 whitespace-nowrap text-sm">
+              <TableHead className="sticky top-0 z-10 w-28 bg-control-bg/50 pr-6 whitespace-nowrap text-sm">
                 {t("task.execution-time")}
               </TableHead>
             </TableRow>
@@ -172,7 +172,7 @@ function IssueDetailTaskRunComment({ taskRun }: { taskRun: TaskRun }) {
   const comment = getTaskRunComment(taskRun, t);
 
   return (
-    <div className="flex flex-col gap-y-0.5 xl:flex-row xl:items-center xl:gap-x-1">
+    <div className="flex flex-col gap-y-1 xl:flex-row xl:items-center xl:gap-x-1">
       <div className="min-w-0 flex-1">
         <EllipsisText className="line-clamp-1" text={comment} />
       </div>

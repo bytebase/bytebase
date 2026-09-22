@@ -23,15 +23,19 @@ service QueryHistoryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // ListQueryHistories lists query histories of all users in a project.
+  // Results are ordered by create time descending (newest first).
   // Permissions required: bb.queryHistories.list
   rpc ListQueryHistories(ListQueryHistoriesRequest) returns (ListQueryHistoriesResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/queryHistories"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.queryHistories.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
   }
 
   // GetQueryHistory gets a single query history for the caller.
@@ -39,6 +43,7 @@ service QueryHistoryService {
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
     option (google.api.http) = {get: "/v1/{name=projects/*/queryHistories/*}"};
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 
@@ -64,10 +69,10 @@ message SearchQueryHistoriesRequest {
   //
   // Supported filter:
   // - project: the project full name in "projects/{id}" format, support "==" operator.
-  // - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
-  // - instance: the instance full name in "instances/{id}" format, support "==" operator.
+  // - database: the database full name in "instances/{id}/databases/{name}" or "projects/{project}/instances/{id}/databases/{name}" format, support "==" operator.
+  // - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
   // - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-  // - statement: the SQL statement, support ".contains()" operator.
+  // - statement: the SQL statement, support "==" and ".contains()" operators.
   //
   // For example:
   // project == "projects/{project}"
@@ -75,6 +80,7 @@ message SearchQueryHistoriesRequest {
   // instance == "instances/{instance}"
   // type == "QUERY"
   // type == "EXPORT"
+  // statement == "SELECT 1;"
   // statement.contains("select")
   // type == "QUERY" && statement.contains("select")
   string filter = 3;
@@ -144,7 +150,7 @@ message QueryHistory {
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The database name to execute the query.
-  // Format: instances/{instance}/databases/{databaseName}
+  // Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
   string database = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -13,6 +13,7 @@ import (
 	"github.com/alexmullins/zip"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -22,21 +23,18 @@ import (
 // project-scoped database name for a database on a project instance and
 // rejects cross-project and workspace-form names for the same database.
 func TestProjectInstanceExport(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pg := sharedPgTarget(t)
 	const instanceID = "bot37-export-instance"
-	const databaseID = "bot37_export_database"
+	databaseID := uniqueDB("bot37_export_database")
 	createPgDatabase(t, pg, databaseID)
 
-	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, instanceID, "export project instance", pg)
-	_, err = ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
+	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, instanceID, "export project instance", pg, databaseID)
+	_, err := ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
 	a.NoError(err)
 	databaseName := fmt.Sprintf("%s/databases/%s", instance.Name, databaseID)
 	database, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: databaseName}))
@@ -102,21 +100,18 @@ func TestProjectInstanceExport(t *testing.T) {
 // canonical project-scoped database name for databases on a project instance
 // and reject cross-project references.
 func TestProjectInstanceSavedQuery(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pg := sharedPgTarget(t)
 	const instanceID = "bot37-saved-query-instance"
-	const databaseID = "bot37_saved_query_database"
+	databaseID := uniqueDB("bot37_saved_query_database")
 	createPgDatabase(t, pg, databaseID)
 
-	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, instanceID, "saved query project instance", pg)
-	_, err = ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
+	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, instanceID, "saved query project instance", pg, databaseID)
+	_, err := ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
 	a.NoError(err)
 	databaseName := fmt.Sprintf("%s/databases/%s", instance.Name, databaseID)
 	_, err = ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: databaseName}))
@@ -163,27 +158,44 @@ func TestProjectInstanceSavedQuery(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 	a.Contains(err.Error(), fmt.Sprintf("database name %q is not canonical for its instance", workspaceFormName))
+
+	// The database reference is a soft link. Once the instance is purged, an
+	// autosave that re-sends the stored, now dangling, value must not fail
+	// validation — that would brick content saves — while an explicit change
+	// to a database that does not exist still fails hard.
+	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instance.Name}))
+	a.NoError(err)
+	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instance.Name, Purge: true}))
+	a.NoError(err)
+	updated, err := ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{Name: created.Name, Database: databaseName, Content: []byte("SELECT 2;")},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"database", "content"}},
+	}))
+	a.NoError(err)
+	a.Equal(databaseName, updated.Msg.Database)
+	_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{Name: created.Name, Database: "instances/another-missing/databases/db"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"database"}},
+	}))
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 }
 
 // TestProjectInstanceAccessGrant verifies that access grants targeting a
 // project-instance database work inside the owning project and are rejected
 // across projects.
 func TestProjectInstanceAccessGrant(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pg := sharedPgTarget(t)
 	const instanceID = "bot37-grant-instance"
-	const databaseID = "bot37_grant_database"
+	databaseID := uniqueDB("bot37_grant_database")
 	createPgDatabase(t, pg, databaseID)
 
-	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, instanceID, "grant project instance", pg)
-	_, err = ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
+	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, instanceID, "grant project instance", pg, databaseID)
+	_, err := ctl.instanceServiceClient.SyncInstance(ctx, connect.NewRequest(&v1pb.SyncInstanceRequest{Name: instance.Name}))
 	a.NoError(err)
 	databaseName := fmt.Sprintf("%s/databases/%s", instance.Name, databaseID)
 	_, err = ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{Name: databaseName}))
@@ -246,15 +258,12 @@ func TestProjectInstanceAccessGrant(t *testing.T) {
 // invalid members with zero side effects, and retained workspace batch
 // behavior.
 func TestBatchSyncInstancesCompatibility(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pg := sharedPgTarget(t)
 	const (
 		workspaceInstanceID = "bot37-batch-workspace-instance"
 		projectInstanceID   = "bot37-batch-project-instance"
@@ -263,14 +272,15 @@ func TestBatchSyncInstancesCompatibility(t *testing.T) {
 		projectDB           = "bot37_batch_proj_db"
 		projectNewDB        = "bot37_batch_proj_new_db"
 	)
+	databases := []string{workspaceDB, workspaceNewDB, projectDB, projectNewDB}
 	// Create both instances while the server has no physical databases yet:
 	// instance creation itself discovers databases, so the "zero side
 	// effects" probes below rely on databases created after both instances.
-	workspaceInstance := createProjectInstanceTestInstance(ctx, t, ctl, nil, workspaceInstanceID, "batch workspace instance", pg)
+	workspaceInstance := createProjectInstanceTestInstance(ctx, t, ctl, nil, workspaceInstanceID, "batch workspace instance", pg, databases...)
 	a.Equal("instances/"+workspaceInstanceID, workspaceInstance.Name)
-	projectInstance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, projectInstanceID, "batch project instance", pg)
+	projectInstance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, projectInstanceID, "batch project instance", pg, databases...)
 	a.Equal(fmt.Sprintf("%s/instances/%s", ctl.project.Name, projectInstanceID), projectInstance.Name)
-	for _, database := range []string{workspaceDB, workspaceNewDB, projectDB, projectNewDB} {
+	for _, database := range databases {
 		createPgDatabase(t, pg, database)
 	}
 
@@ -297,7 +307,7 @@ func TestBatchSyncInstancesCompatibility(t *testing.T) {
 
 	// A project instance is not in the workspace collection: the mixed batch is
 	// rejected before any member is synced.
-	err = batchSync(nil, workspaceInstance.Name, projectInstance.Name)
+	err := batchSync(nil, workspaceInstance.Name, projectInstance.Name)
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 	a.Contains(err.Error(), fmt.Sprintf("instance %q is not in its requested collection", projectInstance.Name))

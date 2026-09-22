@@ -1,4 +1,6 @@
 import { create } from "@bufbuild/protobuf";
+import { fireEvent } from "@testing-library/react";
+import { Code, ConnectError } from "@connectrpc/connect";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -8,23 +10,55 @@ import type { DataSource } from "@/types/proto-es/v1/instance_service_pb";
 import {
   DataSource_AuthenticationType,
   DataSource_AWSCredentialSchema,
+  DataSourceExternalSecret_SecretType,
   DataSourceSchema,
   DataSourceType,
   InstanceSchema,
+  SyncDatabasesSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import { ProjectSchema } from "@/types/proto-es/v1/project_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
 import type { EditDataSource } from "./common";
-import { wrapEditDataSource } from "./common";
+import { createDataSourceDraft } from "./common";
 import {
   InstanceFormProvider,
   useInstanceFormContext,
 } from "./InstanceFormContext";
 
 const mocks = vi.hoisted(() => ({
+  translate: (key: string) => key,
   hasInstancePermission: vi.fn(() => true),
+  pushNotification: vi.fn(),
+  createInstance: vi.fn(),
+  isSaaSMode: false,
+  hasSSL: false,
+  hasExtraParameters: false,
+  listInstanceDatabases: vi.fn(async () => ({
+    databases: ["app", "analytics"],
+  })),
 }));
+
+vi.mock("@/components/EngineIcon", () => ({ EngineIcon: () => null }));
+vi.mock("@/components/EnvironmentSelect", () => ({
+  EnvironmentSelect: ({ className }: { className?: string }) => (
+    <div data-testid="environment-select" className={className} />
+  ),
+}));
+vi.mock("@/components/FeatureBadge", () => ({ FeatureBadge: () => null }));
+vi.mock("@/components/LabelListEditor", () => ({
+  LabelListEditor: () => <div data-testid="label-list-editor" />,
+}));
+vi.mock("@/components/LearnMoreLink", () => ({ LearnMoreLink: () => null }));
+vi.mock("@/components/ResourceIdField", () => ({
+  ResourceIdField: () => null,
+}));
+vi.mock("@/components/RouterLink", () => ({ RouterLink: () => null }));
+vi.mock("./DataSourceForm", () => ({
+  DataSourceForm: () => null,
+  RedisSentinelFields: () => null,
+}));
+vi.mock("./DataSourceSection", () => ({ DataSourceSection: () => null }));
 
 vi.mock("./permission", () => ({
   hasInstancePermission: mocks.hasInstancePermission,
@@ -32,13 +66,13 @@ vi.mock("./permission", () => ({
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string) => key,
+    t: mocks.translate,
   }),
 }));
 
 vi.mock("@/lib/i18n", () => ({
   default: {
-    t: (key: string) => key,
+    t: mocks.translate,
   },
 }));
 
@@ -50,7 +84,10 @@ vi.mock(
 );
 
 vi.mock("@/types", () => ({
+  DATASOURCE_ADMIN_USER_NAME: "bytebase",
+  UNKNOWN_ID: "-",
   UNKNOWN_INSTANCE_NAME: "instances/-",
+  isValidEnvironmentName: () => true,
   unknownDataSource: () => ({
     id: "admin",
     type: 1,
@@ -65,7 +102,7 @@ vi.mock("@/types", () => ({
 }));
 
 vi.mock("@/stores", () => ({
-  pushNotification: vi.fn(),
+  pushNotification: mocks.pushNotification,
 }));
 
 let mockEnvironmentList: { id: string; name: string }[] = [];
@@ -73,13 +110,16 @@ let mockEnvironmentList: { id: string; name: string }[] = [];
 vi.mock("@/stores/app", () => {
   const appState = () => ({
     createDataSource: vi.fn(),
-    createInstance: vi.fn(),
+    createInstance: mocks.createInstance,
+    listInstanceDatabases: mocks.listInstanceDatabases,
     updateDataSource: vi.fn(),
+    hasUnifiedInstanceLicense: () => false,
     getEnvironmentByName: (name: string) => ({ name }),
     hasInstanceFeature: () => false,
     instanceLicenseCount: () => 1,
     activatedInstanceCount: () => 0,
     currentPlan: () => 1,
+    isSaaSMode: () => mocks.isSaaSMode,
     environmentList: mockEnvironmentList,
   });
   return {
@@ -91,19 +131,27 @@ vi.mock("@/stores/app", () => {
 });
 
 vi.mock("@/utils", () => ({
+  MAX_LABEL_VALUE_LENGTH: 63,
   calcUpdateMask: () => [],
   convertKVListToLabels: (list: { key: string; value: string }[]) =>
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
   convertLabelsToKVList: (labels: Record<string, string>) =>
     Object.entries(labels).map(([key, value]) => ({ key, value })),
+  engineNameV1: () => "PostgreSQL",
+  extractInstanceResourceName: () => "instance",
   hasWorkspacePermissionV2: () => true,
-  instanceV1HasExtraParameters: () => false,
+  instanceV1HasExtraParameters: () => mocks.hasExtraParameters,
   instanceV1HasSSH: () => false,
-  instanceV1HasSSL: () => false,
+  instanceV1HasSSL: () => mocks.hasSSL,
   isValidSpannerDataSource: (ds: { projectId: string; instanceId: string }) =>
     ds.projectId !== "" && ds.instanceId !== "",
   isValidBigQueryDataSource: (ds: { projectId: string }) =>
     ds.projectId !== "",
+  onlyAllowNumber: (value: string) => value,
+  RE_GCP_INSTANCE_ID: /^[a-z]+$/,
+  RE_GCP_PROJECT_ID: /^[a-z]+$/,
+  supportedEngineV1List: () => [],
+  urlfy: (value: string) => value,
 }));
 
 vi.mock("@/utils/connect", () => ({
@@ -158,6 +206,43 @@ const Probe = () => {
   );
 };
 
+const ConnectionProbe = ({
+  host,
+  silent = false,
+  onResult,
+}: {
+  host: string;
+  silent?: boolean;
+  onResult?: (result: { message: string; failureCategory: string }) => void;
+}) => {
+  const ctx = useInstanceFormContext();
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        const result = await ctx.testConnection(
+          { ...ctx.adminDataSource, host },
+          silent
+        );
+        onResult?.(result);
+      }}
+    >
+      Test
+    </button>
+  );
+};
+
+const DataSourceResetProbe = () => {
+  const ctx = useInstanceFormContext();
+  return (
+    <button
+      type="button"
+      data-reset-event={String(ctx.dataSourceResetEvent)}
+      onClick={ctx.resetDataSource}
+    />
+  );
+};
+
 const renderIntoContainer = () => {
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -181,8 +266,371 @@ describe("InstanceFormProvider", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.hasInstancePermission.mockReturnValue(true);
+    mocks.isSaaSMode = false;
+    mocks.hasSSL = false;
+    mocks.hasExtraParameters = false;
+    mocks.createInstance.mockResolvedValue(create(InstanceSchema, {}));
     mockEnvironmentList = [];
     vi.useRealTimers();
+  });
+
+  test.each([0, 1])(
+    "keeps the database list mounted when toggling database %i",
+    async (index) => {
+      const { SyncDatabases } = await import("./InstanceFormBody");
+      const Selector = () => {
+        const { basicInfo, setBasicInfo } = useInstanceFormContext();
+        return (
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={basicInfo.syncDatabases}
+            onSyncDatabasesChange={(databases, syncAll) => {
+              setBasicInfo((prev) => ({
+                ...prev,
+                syncDatabases: syncAll
+                  ? undefined
+                  : create(SyncDatabasesSchema, { databases }),
+              }));
+            }}
+          />
+        );
+      };
+      vi.useFakeTimers();
+      const harness = renderIntoContainer();
+      try {
+        await harness.render(
+          <InstanceFormProvider
+            instance={create(InstanceSchema, {
+              name: "instances/prod",
+              engine: Engine.POSTGRES,
+              syncDatabases: { databases: ["app"] },
+            })}
+          >
+            <Probe />
+            <Selector />
+          </InstanceFormProvider>
+        );
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(300);
+        });
+        const checkbox =
+          harness.container.querySelectorAll<HTMLElement>('[role="checkbox"]')[
+            index
+          ];
+        expect(checkbox).toBeDefined();
+        mocks.listInstanceDatabases.mockClear();
+        mocks.listInstanceDatabases.mockImplementation(
+          () => new Promise(() => {})
+        );
+        await act(async () => {
+          checkbox.click();
+        });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(300);
+        });
+
+        expect(harness.container.contains(checkbox)).toBe(true);
+        expect(harness.container.textContent).not.toContain("common.loading");
+        expect(mocks.listInstanceDatabases).not.toHaveBeenCalled();
+        expect(
+          harness.container.firstElementChild?.getAttribute(
+            "data-value-changed"
+          )
+        ).toBe("true");
+
+        await act(async () => {
+          checkbox.click();
+        });
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(300);
+        });
+        expect(harness.container.contains(checkbox)).toBe(true);
+        expect(mocks.listInstanceDatabases).not.toHaveBeenCalled();
+        expect(
+          harness.container.firstElementChild?.getAttribute(
+            "data-value-changed"
+          )
+        ).toBe("false");
+      } finally {
+        harness.unmount();
+        vi.useRealTimers();
+        mocks.listInstanceDatabases.mockResolvedValue({
+          databases: ["app", "analytics"],
+        });
+      }
+    }
+  );
+
+  test("updates the sync database selection after the instance loads", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    const instance = create(InstanceSchema, {
+      name: "instances/production",
+      engine: Engine.POSTGRES,
+    });
+    const selectedDatabases = create(SyncDatabasesSchema, {
+      databases: ["app"],
+    });
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider instance={instance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={undefined}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+
+      await harness.render(
+        <InstanceFormProvider instance={instance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={selectedDatabases}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+
+      expect(harness.container.querySelector('[role="switch"]')).toHaveAttribute(
+        "aria-checked",
+        "false"
+      );
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("lists selected databases before unselected databases", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    mocks.listInstanceDatabases.mockResolvedValue({
+      databases: ["analytics", "app", "warehouse"],
+    });
+    const instance = create(InstanceSchema, {
+      name: "instances/production",
+      engine: Engine.POSTGRES,
+      syncDatabases: { databases: ["app"] },
+    });
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider instance={instance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={instance.syncDatabases}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(
+        Array.from(harness.container.querySelectorAll('[role="checkbox"]')).map(
+          (checkbox) => checkbox.parentElement?.textContent
+        )
+      ).toEqual(["app", "analytics", "warehouse"]);
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("finishes loading after an equivalent instance refresh", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    let resolveDatabases: (value: { databases: string[] }) => void;
+    mocks.listInstanceDatabases.mockImplementation(
+      () =>
+        new Promise<{ databases: string[] }>((resolve) => {
+          resolveDatabases = resolve;
+        })
+    );
+    const instance = create(InstanceSchema, {
+      name: "instances/production",
+      engine: Engine.POSTGRES,
+      syncDatabases: { databases: ["app"] },
+    });
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider instance={instance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={instance.syncDatabases}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+      expect(harness.container.textContent).toContain("common.loading");
+
+      const refreshedInstance = create(InstanceSchema, {
+        name: instance.name,
+        engine: instance.engine,
+        syncDatabases: instance.syncDatabases,
+      });
+      expect(refreshedInstance).not.toBe(instance);
+      await harness.render(
+        <InstanceFormProvider instance={refreshedInstance}>
+          <SyncDatabases
+            isCreating={false}
+            showLabel={false}
+            allowEdit
+            syncDatabases={refreshedInstance.syncDatabases}
+            onSyncDatabasesChange={() => undefined}
+          />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        resolveDatabases!({ databases: ["app"] });
+      });
+
+      expect(harness.container.textContent).not.toContain("common.loading");
+    } finally {
+      harness.unmount();
+      mocks.listInstanceDatabases.mockResolvedValue({
+        databases: ["app", "analytics"],
+      });
+    }
+  });
+
+  test("does not reload the database preview when selection changes during creation", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    const CreateSelector = () => {
+      const { basicInfo, setBasicInfo } = useInstanceFormContext();
+      return (
+        <SyncDatabases
+          isCreating
+          showLabel={false}
+          allowEdit
+          syncDatabases={basicInfo.syncDatabases}
+          onSyncDatabasesChange={(databases, syncAll) => {
+            setBasicInfo((prev) => ({
+              ...prev,
+              syncDatabases: syncAll
+                ? undefined
+                : create(SyncDatabasesSchema, { databases }),
+            }));
+          }}
+        />
+      );
+    };
+    vi.useFakeTimers();
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <CreateSelector />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        const syncScope = harness.container.querySelector<HTMLElement>(
+          '[role="switch"]'
+        );
+        expect(syncScope).not.toBeNull();
+        syncScope!.click();
+        await vi.advanceTimersByTimeAsync(600);
+      });
+
+      const checkbox = harness.container.querySelector<HTMLElement>(
+        '[role="checkbox"]'
+      );
+      expect(checkbox).not.toBeNull();
+      mocks.listInstanceDatabases.mockClear();
+      mocks.listInstanceDatabases.mockImplementation(
+        () => new Promise(() => {})
+      );
+
+      await act(async () => {
+        checkbox!.click();
+        await vi.advanceTimersByTimeAsync(300);
+      });
+
+      expect(mocks.listInstanceDatabases).not.toHaveBeenCalled();
+      expect(harness.container.textContent).not.toContain("common.loading");
+    } finally {
+      harness.unmount();
+      vi.useRealTimers();
+      mocks.listInstanceDatabases.mockResolvedValue({
+        databases: ["app", "analytics"],
+      });
+    }
+  });
+
+  test("refreshes database previews when the create connection changes", async () => {
+    const { SyncDatabases } = await import("./InstanceFormBody");
+    const CreateSelector = () => {
+      const { setDataSourceEditState } = useInstanceFormContext();
+      return (
+        <>
+          <button
+            type="button"
+            data-testid="change-host"
+            onClick={() => {
+              setDataSourceEditState((prev) => ({
+                ...prev,
+                dataSources: prev.dataSources.map((ds) => ({
+                  ...ds,
+                  host: "new-host",
+                })),
+              }));
+            }}
+          >
+            Change host
+          </button>
+          <SyncDatabases
+            isCreating
+            showLabel={false}
+            allowEdit
+            syncDatabases={create(SyncDatabasesSchema, {})}
+            onSyncDatabasesChange={() => {}}
+          />
+        </>
+      );
+    };
+    vi.useFakeTimers();
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <CreateSelector />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      mocks.listInstanceDatabases.mockClear();
+      await act(async () => {
+        harness.container
+          .querySelector<HTMLButtonElement>('[data-testid="change-host"]')
+          ?.click();
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      expect(mocks.listInstanceDatabases).toHaveBeenCalledTimes(1);
+      expect(mocks.listInstanceDatabases).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          dataSources: [expect.objectContaining({ host: "new-host" })],
+        })
+      );
+    } finally {
+      harness.unmount();
+      vi.useRealTimers();
+    }
   });
 
   test("uses project ownership for create names and permissions", async () => {
@@ -219,6 +667,187 @@ describe("InstanceFormProvider", () => {
 
     const probe = harness.container.firstElementChild as HTMLElement;
     expect(probe.dataset.environment).toBe("environments/dev");
+
+    harness.unmount();
+  });
+
+  test("emits a data source reset event for consumers with local form state", async () => {
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider>
+        <DataSourceResetProbe />
+      </InstanceFormProvider>
+    );
+
+    const trigger = harness.container.firstElementChild as HTMLButtonElement;
+    expect(trigger.dataset.resetEvent).toBe("0");
+
+    await act(async () => {
+      trigger.click();
+    });
+
+    expect(trigger.dataset.resetEvent).toBe("1");
+    harness.unmount();
+  });
+
+  test.each([
+    ["HTTP 504", Code.Unavailable, false, false],
+    ["HTTP 504", Code.Unavailable, true, false],
+    ["the operation timed out", Code.DeadlineExceeded, false, false],
+    ["HTTP 504", Code.Unavailable, false, true],
+  ])(
+    "explains %s (code %s, cloud %s, silent %s)",
+    async (message, code, cloud, silent) => {
+      mocks.isSaaSMode = cloud;
+      mocks.createInstance.mockRejectedValue(new ConnectError(message, code));
+      const onResult = vi.fn();
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider>
+          <ConnectionProbe
+            host="db.example.com"
+            silent={silent}
+            onResult={onResult}
+          />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        (harness.container.firstElementChild as HTMLButtonElement).click();
+      });
+
+      expect(onResult).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          failureCategory: "timeout",
+          message: expect.stringContaining(message),
+        })
+      );
+      if (silent) {
+        expect(mocks.pushNotification).not.toHaveBeenCalled();
+      } else {
+        expect(mocks.pushNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "instance.connection-recovery.timeout.test-title",
+            description: expect.stringContaining(
+              cloud
+                ? "instance.connection-recovery.timeout.description-saas"
+                : "instance.connection-recovery.timeout.description-self-hosted"
+            ),
+          })
+        );
+        expect(mocks.pushNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            description: expect.stringContaining(
+              `error-page.error-details: ${message}`
+            ),
+          })
+        );
+      }
+      harness.unmount();
+    }
+  );
+
+  test.each([
+    ["HTTP 503", Code.Unavailable, undefined, "unknown"],
+    ["invalid password", Code.Unauthenticated, "auth_failed", "auth_failed"],
+    ["HTTP 504", Code.Unavailable, "ssl_tls_failed", "ssl_tls_failed"],
+  ])(
+    "preserves the category for %s (code %s, metadata %s)",
+    async (message, code, category, expected) => {
+      mocks.createInstance.mockRejectedValue(
+        new ConnectError(
+          message,
+          code,
+          category
+            ? {
+                "bytebase-connection-failure-category": category,
+              }
+            : undefined
+        )
+      );
+      const onResult = vi.fn();
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider>
+          <ConnectionProbe host="db.example.com" onResult={onResult} />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        (harness.container.firstElementChild as HTMLButtonElement).click();
+      });
+      expect(onResult).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureCategory: expected,
+          message,
+        })
+      );
+      expect(mocks.pushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "instance.failed-to-connect-instance",
+          description: message,
+        })
+      );
+      harness.unmount();
+    }
+  );
+
+  test("explains local-only hosts in Bytebase Cloud without Docker advice", async () => {
+    mocks.isSaaSMode = true;
+    mocks.createInstance.mockRejectedValue(new Error("connection refused"));
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider>
+        <ConnectionProbe host="127.1.2.3" />
+      </InstanceFormProvider>
+    );
+    await act(async () => {
+      (harness.container.firstElementChild as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: expect.stringContaining(
+          "instance.failed-to-connect-instance-saas-local-host"
+        ),
+      })
+    );
+    expect(mocks.pushNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: expect.stringContaining(
+          "instance.failed-to-connect-instance-localhost"
+        ),
+      })
+    );
+
+    harness.unmount();
+  });
+
+  test("keeps Docker host advice for self-hosted local connections", async () => {
+    mocks.createInstance.mockRejectedValue(new Error("connection refused"));
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider>
+        <ConnectionProbe host="0.0.0.0" />
+      </InstanceFormProvider>
+    );
+    await act(async () => {
+      (harness.container.firstElementChild as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: expect.stringContaining(
+          "instance.failed-to-connect-instance-localhost"
+        ),
+      })
+    );
 
     harness.unmount();
   });
@@ -380,13 +1009,321 @@ describe("InstanceFormProvider", () => {
     harness.unmount();
   });
 
+  test.each([
+    DataSource_AuthenticationType.AWS_RDS_IAM,
+    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+    DataSource_AuthenticationType.AZURE_IAM,
+  ])("omits inactive password sources from IAM payloads for method %s", async (authenticationType) => {
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Capture = () => { context = useInstanceFormContext(); return null; };
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
+      const draft = createDataSourceDraft(Engine.MYSQL, create(DataSourceSchema, {
+        authenticationType,
+        host: "project:region:instance",
+        region: "us-east-1",
+        password: "{{inactive-password}}",
+        externalSecret: { secretType: DataSourceExternalSecret_SecretType.AZURE_KEY_VAULT },
+      }));
+      expect(context.checkDataSource([draft])).toBe(true);
+      const payload = context.extractDataSourceFromEdit(Engine.MYSQL, draft);
+      expect(payload.externalSecret).toBeUndefined();
+      expect(payload.password).toBe("");
+      expect(draft.externalSecret).toBeDefined();
+      expect(draft.password).toBe("{{inactive-password}}");
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test.each([
+    DataSource_AuthenticationType.AWS_RDS_IAM,
+    DataSource_AuthenticationType.GOOGLE_CLOUD_SQL_IAM,
+    DataSource_AuthenticationType.AZURE_IAM,
+  ])(
+    "keeps TLS drafts editable after switching to IAM method %s",
+    async (authenticationType) => {
+      mocks.hasSSL = true;
+      const { DataSourceForm } = await vi.importActual<
+        typeof import("./DataSourceForm")
+      >("./DataSourceForm");
+      let context!: ReturnType<typeof useInstanceFormContext>;
+      const Editor = () => {
+        context = useInstanceFormContext();
+        return (
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            onDataSourceChange={(ds) =>
+              context.setDataSourceEditState((state) => ({
+                ...state,
+                dataSources: [ds],
+              }))
+            }
+            optionsOnly
+          />
+        );
+      };
+      const harness = renderIntoContainer();
+      try {
+        await harness.render(
+          <InstanceFormProvider><Editor /></InstanceFormProvider>
+        );
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{
+              ...context.adminDataSource,
+              authenticationType: DataSource_AuthenticationType.PASSWORD,
+              useSsl: true,
+              verifyTlsCertificate: true,
+              sslCaPath: "relative.pem",
+              updateSsl: undefined,
+            }],
+          }));
+        });
+        const caInput = () => harness.container.querySelector<HTMLInputElement>(
+          'input[value="relative.pem"]'
+        );
+        expect(caInput()).not.toBeNull();
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{ ...context.adminDataSource, authenticationType }],
+          }));
+        });
+        expect(caInput()).not.toBeNull();
+        expect(caInput()?.disabled).toBe(false);
+        expect(context.extractDataSourceFromEdit(
+          Engine.MYSQL, context.adminDataSource
+        ).useSsl).toBe(true);
+      } finally {
+        harness.unmount();
+      }
+    }
+  );
+
+  test.each(["add", "rename"])(
+    "shows forbidden parameter feedback immediately after %s",
+    async (operation) => {
+      mocks.hasExtraParameters = true;
+      const { DataSourceForm } = await vi.importActual<
+        typeof import("./DataSourceForm")
+      >("./DataSourceForm");
+      let context!: ReturnType<typeof useInstanceFormContext>;
+      const Editor = () => {
+        context = useInstanceFormContext();
+        return (
+          <DataSourceForm
+            dataSource={context.adminDataSource}
+            onDataSourceChange={(ds) => context.setDataSourceEditState((state) => ({
+              ...state, dataSources: [ds],
+            }))}
+            optionsOnly
+          />
+        );
+      };
+      const harness = renderIntoContainer();
+      const button = (text: string) => Array.from(
+        harness.container.querySelectorAll("button")
+      ).find((element) => element.textContent === text)!;
+      const input = (value: string) => Array.from(
+        harness.container.querySelectorAll<HTMLInputElement>(
+          'input[aria-label="instance.parameter-name-placeholder"]'
+        )
+      ).find((element) => element.value === value)!;
+      try {
+        await harness.render(
+          <InstanceFormProvider><Editor /></InstanceFormProvider>
+        );
+        await act(async () => {
+          context.setDataSourceEditState((state) => ({
+            ...state,
+            dataSources: [{ ...context.adminDataSource, host: "db.example.com" }],
+          }));
+        });
+        expect(context.checkDataSource([context.adminDataSource])).toBe(true);
+        await act(async () => { button("instance.add-parameter").click(); });
+        await act(async () => {
+          fireEvent.change(input(""), {
+            target: { value: operation === "add" ? "allowAllFiles" : "timeout" },
+          });
+        });
+        await act(async () => { button("common.add").click(); });
+        if (operation === "rename") {
+          await act(async () => {
+            fireEvent.change(input("timeout"), { target: { value: "allowAllFiles" } });
+          });
+        }
+        expect(context.checkDataSource([context.adminDataSource])).toBe(false);
+        expect(harness.container.textContent).toContain("instance.validation.forbidden-parameter");
+        expect(input("allowAllFiles").getAttribute("aria-invalid")).toBe("true");
+        const errorId = input("allowAllFiles").getAttribute("aria-describedby");
+        expect(errorId).toBeTruthy();
+        expect(harness.container.querySelector(`[id="${errorId}"]`)?.textContent).toBe(
+          "instance.validation.forbidden-parameter"
+        );
+        await act(async () => {
+          fireEvent.change(input("allowAllFiles"), { target: { value: "timeout" } });
+        });
+        expect(context.checkDataSource([context.adminDataSource])).toBe(true);
+        expect(harness.container.textContent).not.toContain("instance.validation.forbidden-parameter");
+      } finally {
+        harness.unmount();
+      }
+    }
+  );
+
+  test("places add parameter in the extra parameters form field", async () => {
+    mocks.hasExtraParameters = true;
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    const Editor = () => {
+      const context = useInstanceFormContext();
+      return (
+        <DataSourceForm
+          dataSource={context.adminDataSource}
+          onDataSourceChange={() => undefined}
+          optionsOnly
+        />
+      );
+    };
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <Editor />
+        </InstanceFormProvider>
+      );
+
+      const addParameter = Array.from(
+        harness.container.querySelectorAll("button")
+      ).find((element) => element.textContent === "instance.add-parameter");
+      const field = addParameter?.closest('[data-slot="form-field"]');
+
+      expect(field).not.toBeNull();
+      expect(
+        field?.querySelector('[data-slot="form-field-title"]')?.textContent
+      ).toBe("data-source.extra-params.self");
+      expect(addParameter?.className).toContain("h-7");
+      expect(addParameter?.className).toContain("self-start");
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("keeps the optional username info icon close to its title", async () => {
+    const { DataSourceForm } = await vi.importActual<
+      typeof import("./DataSourceForm")
+    >("./DataSourceForm");
+    const Editor = () => {
+      const context = useInstanceFormContext();
+      return (
+        <DataSourceForm
+          dataSource={context.adminDataSource}
+          onDataSourceChange={() => undefined}
+          onOpenInfoPanel={() => undefined}
+        />
+      );
+    };
+    const harness = renderIntoContainer();
+
+    try {
+      await harness.render(
+        <InstanceFormProvider>
+          <Editor />
+        </InstanceFormProvider>
+      );
+
+      const usernameTitle = Array.from(
+        harness.container.querySelectorAll('[data-slot="form-field-title"]')
+      ).find((title) => title.textContent?.includes("common.username"));
+      const infoButton = usernameTitle?.querySelector<HTMLButtonElement>(
+        'button[aria-label="instance.authentication"]'
+      );
+
+      expect(infoButton).not.toBeNull();
+      expect(infoButton?.className).toContain("w-6");
+      expect(infoButton?.className).not.toContain("h-auto");
+      expect(infoButton?.className).toContain("-ml-1");
+      expect(infoButton?.parentElement?.className).toContain("gap-x-1");
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test("clears errors when deleting the final invalid label unmounts its editor", async () => {
+    const { LabelListEditor } = await vi.importActual<
+      typeof import("@/components/LabelListEditor")
+    >("@/components/LabelListEditor");
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Labels = () => {
+      context = useInstanceFormContext();
+      return context.labelKVList.length > 0 ? (
+        <LabelListEditor
+          kvList={context.labelKVList}
+          onChange={context.setLabelKVList}
+          onErrorsChange={context.setLabelErrors}
+          readonly={false}
+          showErrors
+        />
+      ) : null;
+    };
+    const harness = renderIntoContainer();
+    try {
+      await harness.render(
+        <InstanceFormProvider
+          instance={create(InstanceSchema, {
+            name: "instances/prod",
+            labels: { team: "platform" },
+            engine: Engine.POSTGRES,
+          })}
+        >
+          <Labels />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        context.setLabelKVList([{ key: "team", value: "" }]);
+      });
+      expect(context.labelErrors).toEqual(["label.error.value-necessary"]);
+      const remove = harness.container.querySelector<HTMLButtonElement>("button")!;
+      await act(async () => { remove.click(); });
+      expect(context.labelKVList).toEqual([]);
+      expect(harness.container.querySelector("input")).toBeNull();
+      expect(context.labelErrors).toEqual([]);
+    } finally {
+      harness.unmount();
+    }
+  });
+
+  test.each([Engine.BIGQUERY, Engine.SPANNER])("requires resource ID and valid labels when creating GCP engine %s", async (engine) => {
+    let context!: ReturnType<typeof useInstanceFormContext>;
+    const Capture = () => { context = useInstanceFormContext(); return null; };
+    const harness = renderIntoContainer();
+    await harness.render(<InstanceFormProvider><Capture /></InstanceFormProvider>);
+    await act(async () => {
+      context.setBasicInfo((previous) => ({ ...previous, engine, title: "Production" }));
+      context.setDataSourceEditState((previous) => ({ ...previous, dataSources: [{ ...createDataSourceDraft(engine), id: "admin", type: DataSourceType.ADMIN, projectId: "valid-project", instanceId: "valid-instance" }] }));
+    });
+    expect(context.allowCreate).toBe(false);
+    await act(async () => { context.setResourceIdValidated(true); });
+    expect(context.allowCreate).toBe(true);
+    await act(async () => { context.setLabelErrors(["invalid label"]); });
+    expect(context.allowCreate).toBe(false);
+    harness.unmount();
+  });
+
   describe("checkDataSource AWS region requirement", () => {
     const awsDataSource = (region: string, withCredential: boolean) => {
-      const ds = wrapEditDataSource(
+      const ds = createDataSourceDraft(
+        Engine.MYSQL,
         create(DataSourceSchema, {
           id: "admin",
           type: DataSourceType.ADMIN,
           authenticationType: DataSource_AuthenticationType.AWS_RDS_IAM,
+          host: "db.example.com",
           region,
         })
       );
@@ -485,7 +1422,7 @@ describe("InstanceFormProvider", () => {
     });
 
     const editedDataSource = (edit: (ds: EditDataSource) => void) => {
-      const ds = wrapEditDataSource(storedDataSource);
+      const ds = createDataSourceDraft(Engine.HIVE, storedDataSource);
       edit(ds);
       return ds;
     };
@@ -596,7 +1533,7 @@ describe("InstanceFormProvider", () => {
       });
       expect(
         await renderWithStored([withoutPort], () =>
-          wrapEditDataSource(withoutPort)
+          createDataSourceDraft(Engine.HIVE, withoutPort)
         )
       ).toBe("true");
     });
@@ -609,7 +1546,7 @@ describe("InstanceFormProvider", () => {
       });
       expect(
         await renderWithStored([withTunnel], () =>
-          wrapEditDataSource(withTunnel)
+          createDataSourceDraft(Engine.HIVE, withTunnel)
         )
       ).toBe("true");
     });
@@ -625,12 +1562,12 @@ describe("InstanceFormProvider", () => {
       });
       expect(
         await renderWithStored([storedDataSource, readonlyDataSource], () =>
-          wrapEditDataSource(readonlyDataSource)
+          createDataSourceDraft(Engine.HIVE, readonlyDataSource)
         )
       ).toBe("false");
       expect(
         await renderWithStored([storedDataSource, readonlyDataSource], () => {
-          const ds = wrapEditDataSource(readonlyDataSource);
+          const ds = createDataSourceDraft(Engine.HIVE, readonlyDataSource);
           ds.host = "hive-replica-2.example.com";
           return ds;
         })

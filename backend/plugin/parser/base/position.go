@@ -1,6 +1,7 @@
 package base
 
 import (
+	"math"
 	"unicode/utf8"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -82,5 +83,24 @@ func byteOffsetToRunePosition(sql string, byteOffset int) *storepb.Position {
 	return &storepb.Position{
 		Line:   line,
 		Column: runeCol + 1,
+	}
+}
+
+func safeIntToInt32(v int) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+	return int32(v)
+}
+
+func ConvertANTLRLineToPosition(line int) *storepb.Position {
+	// ANTLR line numbers are 1-based, and Position uses 1-based line numbering.
+	// Just pass through the value, handling the 0 case for safety.
+	positionLine := max(line, 1)
+	return &storepb.Position{
+		Line: safeIntToInt32(positionLine),
 	}
 }

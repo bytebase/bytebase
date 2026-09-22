@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/tooltip";
 import type { WorkspaceProfileSetting_PasswordRestriction } from "@/types/proto-es/v1/setting_service_pb";
@@ -56,6 +57,11 @@ interface UserPasswordSectionProps {
   onPasswordConfirmChange: (value: string) => void;
   passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction;
   disabled?: boolean;
+  /**
+   * Marks the fields as required. False on a standalone "change password"
+   * surface, where leaving both fields empty simply means "don't change it".
+   */
+  required?: boolean;
 }
 
 export function UserPasswordSection({
@@ -65,6 +71,7 @@ export function UserPasswordSection({
   onPasswordConfirmChange,
   passwordRestriction,
   disabled,
+  required = true,
 }: UserPasswordSectionProps) {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
@@ -128,8 +135,8 @@ export function UserPasswordSection({
       <div>
         <div>
           <label className="block text-sm font-medium leading-5 text-control">
-            {t("settings.profile.password")}{" "}
-            <span className="text-error">*</span>
+            {t("settings.profile.password")}
+            {required && <span className="ml-0.5 text-error">*</span>}
           </label>
           <span
             className={`flex items-center gap-x-1 text-sm ${
@@ -143,9 +150,9 @@ export function UserPasswordSection({
                   {passwordChecks.map((check, i) => (
                     <li key={i} className="flex gap-x-1 items-center">
                       {check.matched ? (
-                        <CircleCheck className="w-4 text-green-400" />
+                        <CircleCheck className="w-4 text-success" />
                       ) : (
-                        <CircleAlert className="w-4 text-red-400" />
+                        <CircleAlert className="w-4 text-error" />
                       )}
                       {check.text}
                     </li>
@@ -168,7 +175,9 @@ export function UserPasswordSection({
               className={passwordHint ? "border-error focus:ring-error" : ""}
               onChange={(e) => onPasswordChange(e.target.value)}
             />
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               type="button"
               tabIndex={-1}
               className="hover:cursor-pointer absolute right-3"
@@ -179,7 +188,7 @@ export function UserPasswordSection({
               ) : (
                 <EyeOff className="w-4 h-4" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -187,8 +196,8 @@ export function UserPasswordSection({
       {/* Confirm field */}
       <div>
         <label className="block text-sm font-medium leading-5 text-control">
-          {t("settings.profile.password-confirm")}{" "}
-          <span className="text-error">*</span>
+          {t("settings.profile.password-confirm")}
+          {required && <span className="ml-0.5 text-error">*</span>}
         </label>
         <div className="w-full mt-1 flex flex-col justify-start items-start">
           <div className="w-full relative flex flex-row items-center">
@@ -203,7 +212,9 @@ export function UserPasswordSection({
               }
               onChange={(e) => onPasswordConfirmChange(e.target.value)}
             />
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               type="button"
               tabIndex={-1}
               className="hover:cursor-pointer absolute right-3"
@@ -214,7 +225,7 @@ export function UserPasswordSection({
               ) : (
                 <EyeOff className="w-4 h-4" />
               )}
-            </button>
+            </Button>
           </div>
           {passwordMismatch && (
             <span className="text-error text-sm mt-1 pl-1">

@@ -18,10 +18,16 @@ import {
   getAvailableEditorThemes,
 } from "@/components/monaco/editorThemes";
 import { PermissionGuard } from "@/components/PermissionGuard";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { NumberInput } from "@/components/ui/number-input";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { usePlanFeature, useWorkspaceResourceName } from "@/hooks/useAppState";
 import {
   deriveThemeFromAnchors,
@@ -421,17 +427,20 @@ export const SQLEditorSection = forwardRef<
           <FormField
             title={
               <span className="w-full inline-flex items-center gap-x-2">
-                <Checkbox
+                <Switch
                   checked={!state.disableExport}
                   disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
                   onCheckedChange={(checked) =>
                     handleToggle("disableExport", !checked)
                   }
                 />
-                {t("settings.general.workspace.data-export")}
+                {t("settings.general.workspace.data-export.self")}
                 <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
               </span>
             }
+            description={t(
+              "settings.general.workspace.data-export.description"
+            )}
           />
         </PermissionGuard>
 
@@ -440,7 +449,7 @@ export const SQLEditorSection = forwardRef<
           <FormField
             title={
               <span className="w-full inline-flex items-center gap-x-2">
-                <Checkbox
+                <Switch
                   checked={!state.disableCopyData}
                   disabled={!canUpdatePolicy || !hasRestrictCopyingDataFeature}
                   onCheckedChange={(checked) =>
@@ -461,7 +470,7 @@ export const SQLEditorSection = forwardRef<
           <FormField
             title={
               <span className="w-full inline-flex items-center gap-x-2">
-                <Checkbox
+                <Switch
                   checked={state.allowAdminDataSource}
                   disabled={!canUpdatePolicy || !hasQueryPolicyFeature}
                   onCheckedChange={(checked) =>
@@ -609,24 +618,36 @@ export const SQLEditorSection = forwardRef<
               "settings.general.workspace.sql-editor-theme.description"
             )}
           >
-            <SegmentedControl
-              ariaLabel={t("settings.general.workspace.sql-editor-theme.self")}
+            <Select
               disabled={!canSetWorkspaceProfile}
               value={isCustomSelected ? CUSTOM_THEME_OPTION : selectedThemeId}
-              onValueChange={handleSelectTheme}
-              options={[
-                ...PRESETS.map((preset) => ({
-                  value: preset.id,
-                  label: preset.name,
-                })),
-                {
-                  value: CUSTOM_THEME_OPTION,
-                  label: t(
-                    "settings.general.workspace.sql-editor-theme.custom"
-                  ),
-                },
-              ]}
-            />
+              onValueChange={(value) => {
+                if (value) handleSelectTheme(value);
+              }}
+            >
+              <SelectTrigger
+                aria-label={t(
+                  "settings.general.workspace.sql-editor-theme.self"
+                )}
+                className="w-full sm:w-80"
+              >
+                <SelectValue>
+                  {isCustomSelected
+                    ? t("settings.general.workspace.sql-editor-theme.custom")
+                    : PRESET_BY_ID[selectedThemeId]?.name}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {PRESETS.map((preset) => (
+                  <SelectItem key={preset.id} value={preset.id}>
+                    {preset.name}
+                  </SelectItem>
+                ))}
+                <SelectItem value={CUSTOM_THEME_OPTION}>
+                  {t("settings.general.workspace.sql-editor-theme.custom")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
 
             {isCustomSelected && customDraft && (
               <ThemeAnchorEditor

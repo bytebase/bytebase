@@ -46,8 +46,17 @@ func (in *ACLInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		err := in.doACLCheck(ctx, req.Any(), req.Spec().Procedure)
 		if err != nil {
+			// Keyed on the code because inside doACLCheck only a permission
+			// verdict answers PermissionDenied.
+			if connect.CodeOf(err) == connect.CodePermissionDenied {
+				setPermissionDenied(ctx)
+			}
 			return nil, err
 		}
+		// ACL is the last interceptor on both chains, so admission here is the
+		// call reaching its handler. It is set here, not in doACLCheck, because
+		// the skipped-authentication return admits too.
+		setHandlerReached(ctx)
 		return next(ctx, req)
 	}
 }
@@ -151,11 +160,11 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	// workspace BEFORE publishing them on the AuthContext. Project, instance,
 	// and database ownership is already validated in populateRawResources via
 	// workspace-filtered store lookups; here we validate workspace resources.
-	// Publishing only validated entries matters on the internal MCP chain,
-	// where the audit interceptor runs outside ACL and derives a denied row's
-	// parents from Resources — an entry that failed this check must never
-	// become an audit parent (the denial would be filed under the foreign
-	// workspace the request named, not under the caller).
+	// Publishing only validated entries matters because the audit interceptor
+	// runs outside ACL and derives a refused call's parents from Resources —
+	// an entry that failed this check must never become an audit parent (the
+	// refusal would be filed under the foreign workspace the request named, not
+	// under the caller).
 	// Runs after authentication so unauthenticated requests get 401 first,
 	// preventing resource existence probing.
 	for _, resource := range resources {
@@ -185,10 +194,12 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return err
 	}
 
-	// Check allow_missing secondary permission if applicable
-	// This handles Update methods that can create resources via allow_missing=true
-	// When allow_missing is set, we additionally require create permission
-	if hasAllowMissingEnabled(request) {
+	// An Update that creates via allow_missing=true also needs the create permission.
+	// IAM only: doIAMPermissionCheck returns true for every other auth method, so
+	// running this on a CUSTOM method would verify nothing while reading as
+	// protection. CUSTOM handlers check for themselves, pinned by
+	// TestAllowMissingCreatePermission.
+	if authContext.AuthMethod == common.AuthMethodIAM && hasAllowMissingEnabled(request) {
 		// Derive create permission by replacing ".update" with ".create"
 		// Example: "bb.roles.update" -> "bb.roles.create"
 		createPerm := strings.Replace(string(authContext.Permission), ".update", ".create", 1)
@@ -364,10 +375,11 @@ func resolveRawResourceWithArchivedProject(ctx context.Context, stores *store.St
 	}
 
 	parts := strings.Split(name, "/")
-	if allowArchivedProject && getResourceRoute(parts) == (resourceRoute{projectCollection, instanceCollection}) {
+	route := getResourceRoute(parts)
+	if allowArchivedProject && route == (resourceRoute{projectCollection, instanceCollection}) {
 		return resolveProjectInstanceResourceForLifecycle(ctx, stores, parts)
 	}
-	_, resolver, ok := findResourceResolver(getResourceRoute(parts))
+	_, resolver, ok := findResourceResolver(route)
 	if !ok {
 		return workspaceFallback(ctx), nil
 	}
@@ -579,7 +591,8 @@ func resolveProjectInstanceResourceForLifecycle(ctx context.Context, stores *sto
 }
 
 func allowsArchivedProjectResourceResolution(method string) bool {
-	return method == v1connect.InstanceServiceDeleteInstanceProcedure || method == v1connect.InstanceServiceUndeleteInstanceProcedure
+	return method == v1connect.InstanceServiceDeleteInstanceProcedure ||
+		method == v1connect.InstanceServiceUndeleteInstanceProcedure
 }
 
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {
@@ -597,13 +610,31 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 
 	var resources []string
 
-	if r, ok := request.(*v1pb.CreateInstanceRequest); ok && r.Parent != nil {
+	switch r := request.(type) {
+	case *v1pb.CreateInstanceRequest:
+		if r.Parent == nil {
+			break
+		}
 		projectID, err := common.GetProjectID(*r.Parent)
 		if err == nil && common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
 			// Default projects cannot own instances. Authorize at workspace scope so
 			// InstanceService can return its canonical invalid-argument response.
 			return []string{""}, nil
 		}
+	case *v1pb.PrepareSampleProjectInstanceRequest:
+		projectID, err := common.GetProjectID(r.GetParent())
+		if err == nil && common.IsDefaultProject(common.GetWorkspaceIDFromContext(ctx), projectID) {
+			// Keep the default-project rejection in InstanceService, consistent
+			// with ordinary project instance creation.
+			return []string{""}, nil
+		}
+	default:
+	}
+	if r, ok := request.(*v1pb.UpdateDatabaseCatalogRequest); ok {
+		// The catalog is in `catalog`, not the `database_catalog` the Update
+		// convention below derives from the method name. Without this it
+		// resolves nothing and falls back to workspace scope.
+		return []string{r.GetCatalog().GetName()}, nil
 	}
 	if r, ok := request.(*v1pb.UpdateInstanceRequest); ok && r.AllowMissing && r.Instance != nil {
 		if projectID, _, err := common.GetProjectIDInstanceID(r.Instance.Name); err == nil {
@@ -626,6 +657,11 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 			resources = append(resources, getResourceFromSingleRequest(updateRequest.ProtoReflect(), "UpdateInstance"))
 		}
 		return resources, nil
+	}
+	if r, ok := request.(*v1pb.BatchSyncDatabasesRequest); ok {
+		// Batch schema sync has the same project-scoped authorization semantics
+		// as SyncDatabase. Resolve every database name to its owning project.
+		return r.Names, nil
 	}
 
 	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
@@ -675,18 +711,22 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) && mr.Has(parentDesc) {
 			resources = append(resources, mr.Get(parentDesc).String())
 		}
-		// Handle batch get requests.
-		if strings.HasPrefix(shortMethod, "BatchGet") {
-			namesDesc := mr.Descriptor().Fields().ByName("names")
-			if namesDesc != nil {
-				namesValue := mr.Get(namesDesc)
-				namesValueList := namesValue.List()
-				for i := 0; i < namesValueList.Len(); i++ {
-					v := namesValueList.Get(i)
-					resources = append(resources, v.String())
-				}
-				return resources, nil
+		// Every Batch* verb authorizes the targets in `names`, not just BatchGet:
+		// BatchDeleteProjects has no parent, requests or name, so it resolved
+		// nothing and checked bb.projects.delete against the workspace.
+		namesDesc := mr.Descriptor().Fields().ByName("names")
+		if namesDesc != nil && proto.HasExtension(namesDesc.Options(), annotationsproto.E_ResourceReference) {
+			namesValueList := mr.Get(namesDesc).List()
+			for i := 0; i < namesValueList.Len(); i++ {
+				resources = append(resources, namesValueList.Get(i).String())
 			}
+			if len(resources) == 0 {
+				// An empty batch authorizes nothing; the workspace fallback lets
+				// the handler answer instead of doIAMPermissionCheck erroring on
+				// an empty resource list.
+				return []string{""}, nil
+			}
+			return resources, nil
 		}
 
 		requestsDesc := mr.Descriptor().Fields().ByName("requests")

@@ -24,7 +24,7 @@ export function DashboardFrameShell({ onReady }: DashboardFrameShellProps) {
       </div>
       <div ref={bodyRef} className="min-h-0 flex-1" />
       {!initialized ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background">
           <LoaderCircle className="size-6 animate-spin text-accent" />
         </div>
       ) : null}

@@ -69,7 +69,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 	ddlRule := &statementDisallowMixDMLOmniRule{
 		OmniBaseRule: OmniBaseRule{Level: level, Title: title},
 	}
-	RunOmniRules(checkCtx.ParsedStatements, []OmniRule{ddlRule})
+	RunRules(checkCtx.ParsedStatements, []OmniRule{ddlRule})
 
 	if ddlRule.hasDDL {
 		adviceList = append(adviceList, &storepb.Advice{

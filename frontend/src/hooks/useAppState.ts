@@ -38,8 +38,8 @@ export function useCurrentUser() {
   const user = useOptionalCurrentUser();
   // Stabilize the fallback identity: a fresh unknownUser() each render would
   // change identity while the user is unresolved, retriggering identity-keyed
-  // effects in callers (e.g. ProfilePage, TwoFactorSetupPage) and risking a
-  // render loop.
+  // effects in callers (e.g. AccountSettingsPage, TwoFactorSetupPage) and
+  // risking a render loop.
   return useMemo(() => user ?? unknownUser(), [user]);
 }
 
@@ -82,6 +82,8 @@ export function useSubscriptionState() {
   const currentPlan = useAppStore((state) => state.currentPlan());
   const isFreePlan = useAppStore((state) => state.isFreePlan());
   const isTrialing = useAppStore((state) => state.isTrialing());
+  const canStartTrial = useAppStore((state) => state.canStartTrial());
+  const startTrial = useAppStore((state) => state.startTrial);
   const isExpired = useAppStore((state) => state.isExpired());
   const daysBeforeExpire = useAppStore((state) => state.daysBeforeExpire());
   const trialingDays = useAppStore((state) => state.trialingDays());
@@ -104,6 +106,8 @@ export function useSubscriptionState() {
     currentPlan,
     isFreePlan,
     isTrialing,
+    canStartTrial,
+    startTrial,
     isExpired,
     daysBeforeExpire,
     trialingDays,
@@ -484,8 +488,8 @@ export function useNotify() {
   return useAppStore((state) => state.notify);
 }
 
-export function useQuickstartReset() {
-  return useAppStore((state) => state.resetQuickstartProgress);
+export function useWorkspaceSetupGuideResume() {
+  return useAppStore((state) => state.resumeWorkspaceSetupGuide);
 }
 
 export function useIntroStateByKey(key: string) {

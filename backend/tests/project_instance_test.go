@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -19,13 +20,9 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pg := provisionPgInstance(t)
 	const databaseID = "bot35_project_database"
 	createPgDatabase(t, pg, databaseID)
 
@@ -63,6 +60,20 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	a.NoError(err)
 	a.Equal(databaseName, database.Msg.Name)
 	a.Equal(ctl.project.Name, database.Msg.Project)
+	workspaceDatabaseName := fmt.Sprintf("%s/databases/%s", workspace.Name, databaseID)
+	currentWorkspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
+	a.NoError(err)
+	workspaceDatabases, err := ctl.databaseServiceClient.ListDatabases(ctx, connect.NewRequest(&v1pb.ListDatabasesRequest{
+		Parent:   currentWorkspace.Msg.Name,
+		PageSize: 1000,
+	}))
+	a.NoError(err)
+	listedWorkspaceDatabases := make([]string, 0, len(workspaceDatabases.Msg.Databases))
+	for _, listed := range workspaceDatabases.Msg.Databases {
+		listedWorkspaceDatabases = append(listedWorkspaceDatabases, listed.Name)
+	}
+	a.Contains(listedWorkspaceDatabases, workspaceDatabaseName)
+	a.Contains(listedWorkspaceDatabases, databaseName)
 	_, err = ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{Name: databaseName}))
 	a.NoError(err)
 	query, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
@@ -72,6 +83,33 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.Len(query.Msg.Results, 1)
+
+	// A batch validates every target before scheduling any: one name that
+	// cannot be resolved fails the whole request.
+	_, err = ctl.databaseServiceClient.BatchSyncDatabases(ctx, connect.NewRequest(&v1pb.BatchSyncDatabasesRequest{
+		Parent: projectInstance.Name,
+		Names:  []string{databaseName, "invalid"},
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	// The history row carries the project-scoped database name, so the
+	// `instance ==` filter must accept the project-scoped instance name
+	// (T18c-ii); the workspace form of the same ID names no instance here.
+	byInstance, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf("instance == \"%s\"", projectInstance.Name),
+	}))
+	a.NoError(err)
+	a.NotEmpty(byInstance.Msg.QueryHistories)
+	for _, history := range byInstance.Msg.QueryHistories {
+		a.True(strings.HasPrefix(history.Database, projectInstance.Name+"/databases/"), history.Database)
+	}
+	byWorkspaceForm, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf("instance == \"instances/%s\"", projectID),
+	}))
+	a.NoError(err)
+	a.Empty(byWorkspaceForm.Msg.QueryHistories)
 
 	for _, name := range []string{
 		projectInstance.Name + "/databases/missing",
@@ -254,7 +292,7 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	a.True(foundCanonicalAuditResource, "audit logs must retain the canonical instance name after purge")
 
 	physicalDatabaseCount := 0
-	a.NoError(pg.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM pg_database WHERE datname = $1", databaseID).Scan(&physicalDatabaseCount))
+	a.NoError(pg.GetDB().QueryRowContext(ctx, "SELECT COUNT(*) FROM pg_database WHERE datname = $1", databaseID).Scan(&physicalDatabaseCount))
 	a.Equal(1, physicalDatabaseCount, "Bytebase purge must not delete the physical database")
 	reused := createProjectInstanceTestInstance(ctx, t, ctl, &projectParent, projectID, "reused project instance", pg)
 	a.Equal(projectInstance.Name, reused.Name)
@@ -295,13 +333,9 @@ func TestBatchUpdateProjectInstanceAllowMissing(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
-	pg, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pg := provisionPgInstance(t)
 
 	const instanceID = "bot35-batch-allow-missing"
 	parent := ctl.project.Name
@@ -329,10 +363,7 @@ func TestProjectInstanceValidation(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startWorkspace(ctx, t)
 
 	for _, parent := range []string{"projects/missing-bot35", "projects/default"} {
 		parent := parent
@@ -353,7 +384,7 @@ func TestProjectInstanceValidation(t *testing.T) {
 	}
 
 	deletedProject := createProjectForProjectInstanceTest(ctx, t, ctl, "bot35-deleted-project")
-	_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: deletedProject.Name}))
+	_, err := ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: deletedProject.Name}))
 	a.NoError(err)
 	_, err = ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		Parent:     &deletedProject.Name,
@@ -374,25 +405,32 @@ func createProjectForProjectInstanceTest(ctx context.Context, t *testing.T, ctl 
 	return project.Msg
 }
 
-func createProjectInstanceTestInstance(ctx context.Context, t *testing.T, ctl *controller, parent *string, instanceID, title string, pg *Container) *v1pb.Instance {
+func createProjectInstanceTestInstance(ctx context.Context, t *testing.T, ctl *controller, parent *string, instanceID, title string, pg *Container, syncDatabases ...string) *v1pb.Instance {
 	t.Helper()
 	instance, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		Parent:     parent,
 		InstanceId: instanceID,
-		Instance:   projectInstanceTestSpec(title, pg),
+		Instance:   projectInstanceTestSpec(title, pg, syncDatabases...),
 	}))
 	require.NoError(t, err)
 	return instance.Msg
 }
 
-func projectInstanceTestSpec(title string, pg *Container) *v1pb.Instance {
-	return &v1pb.Instance{
+// projectInstanceTestSpec names the databases the instance may sync when it
+// sits on the shared target, and syncs everything when it has a container of
+// its own.
+func projectInstanceTestSpec(title string, pg *Container, syncDatabases ...string) *v1pb.Instance {
+	spec := &v1pb.Instance{
 		Title:       title,
 		Engine:      v1pb.Engine_POSTGRES,
 		Environment: new("environments/prod"),
 		Activation:  true,
 		DataSources: []*v1pb.DataSource{pg.adminDataSource()},
 	}
+	if len(syncDatabases) > 0 {
+		spec.SyncDatabases = &v1pb.SyncDatabases{Databases: syncDatabases}
+	}
+	return spec
 }
 
 func projectInstanceTestInstanceNames(instances []*v1pb.Instance) []string {
@@ -401,4 +439,31 @@ func projectInstanceTestInstanceNames(instances []*v1pb.Instance) []string {
 		names = append(names, instance.Name)
 	}
 	return names
+}
+
+// TestUndeleteProjectInstanceChecksActivationLimit pins that restoring an
+// archived, activated project instance counts against the plan's activated
+// instance limit the way creating one does: with the license gone it is
+// refused, and it comes back once the license is.
+func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	pg := provisionPgInstance(t)
+	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, "bot35-activation-limit", "activated project instance", pg)
+	a.True(instance.Activation)
+
+	_, err := ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instance.Name}))
+	a.NoError(err)
+
+	a.NoError(ctl.removeLicense(ctx))
+	_, err = ctl.instanceServiceClient.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instance.Name}))
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+
+	a.NoError(ctl.setLicense(ctx))
+	restored, err := ctl.instanceServiceClient.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instance.Name}))
+	a.NoError(err)
+	a.True(restored.Msg.Activation)
 }

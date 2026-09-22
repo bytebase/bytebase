@@ -7,11 +7,11 @@ type Props = {
 };
 
 /**
- * Replaces `HoverPanel/InfoItem.vue`. A 2-column grid row: gray title on
- * the left, value (right-aligned, ellipsis on overflow) on the right.
+ * A 2-column grid row: gray title on the left, value (right-aligned,
+ * ellipsis on overflow) on the right.
  *
- * Mirrors the Vue layout — `grid-template-columns: auto 1fr` + 16px gap
- * — so the title hugs its content and the value column truncates.
+ * `grid-template-columns: auto 1fr` + 16px gap so the title hugs its
+ * content and the value column truncates.
  */
 export function InfoItem({ title, titleSlot, children }: Props) {
   return (
@@ -23,7 +23,7 @@ export function InfoItem({ title, titleSlot, children }: Props) {
         {titleSlot ?? title}
       </div>
       <div className="text-right flex items-center justify-end min-w-0">
-        <span className="truncate flex items-center leading-[20px] h-[20px]">
+        <span className="truncate flex h-5 items-center leading-5">
           {children}
         </span>
       </div>

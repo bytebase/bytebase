@@ -156,11 +156,11 @@ export function DiffMonaco({
     <div className={cn("relative", className)}>
       <div
         ref={containerRef}
-        className="w-full overflow-clip rounded-md border text-sm"
+        className="w-full overflow-clip rounded-sm border text-sm"
         style={{ height }}
       />
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-md border bg-background/70">
+        <div className="absolute inset-0 flex items-center justify-center rounded-sm border bg-background/70">
           <Loader2 className="h-5 w-5 animate-spin text-control-light" />
         </div>
       )}

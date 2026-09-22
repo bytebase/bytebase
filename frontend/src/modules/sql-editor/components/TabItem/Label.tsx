@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { tabListEvents } from "@/modules/sql-editor/model/TabList/events";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
@@ -14,11 +15,10 @@ type Props = {
 };
 
 /**
- * Replaces frontend/src/views/sql-editor/TabList/TabItem/Label.vue.
  * Tab title with:
  *  - Double-click to enter in-place rename.
  *  - Listens for external `rename-tab` events (fired from the context menu)
- *    so right-click → Rename still works during the Vue → React migration.
+ *    so right-click → Rename works.
  *  - Ellipsis + native tooltip via EllipsisText.
  */
 export function Label({ tab }: Props) {
@@ -28,7 +28,8 @@ export function Label({ tab }: Props) {
   const [draft, setDraft] = useState(tab.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const readonly = tab.viewState.view !== "CODE";
+  const readonly =
+    tab.mode === "DATA_EXPLORER" || tab.viewState.view !== "CODE";
   const displayTitle = tab.title || t("common.untitled");
   // Captures whether the tab was already current at mousedown time, before
   // the parent TabItem's onMouseDown handler runs and switches activation.
@@ -86,8 +87,9 @@ export function Label({ tab }: Props) {
   }, [tab.title, editing]);
 
   // Respond to external rename-tab events (fired from the context menu).
-  // `readonly` + `tab.id` are the only closure values we care about; the
-  // other helpers are referentially stable via the Pinia store singletons.
+  // `tab.id`, `tab.title`, and `readonly` are the only closure values we care
+  // about; the other helpers (store accessor, state setters) are
+  // referentially stable.
   useEffect(() => {
     const unsubscribe = tabListEvents.on("rename-tab", ({ data: payload }) => {
       if (payload.tab.id !== tab.id) return;
@@ -144,10 +146,11 @@ export function Label({ tab }: Props) {
         />
       )}
       {editing && (
-        <input
+        <Input
+          size="xs"
           ref={inputRef}
           type="text"
-          className="absolute inset-0 border-0 border-b p-0 text-sm leading-5 bg-background"
+          className="absolute inset-0 h-auto border-0 border-b p-0 text-sm leading-5 bg-background"
           value={draft}
           placeholder={t("common.untitled")}
           onChange={(e) => setDraft(e.target.value)}

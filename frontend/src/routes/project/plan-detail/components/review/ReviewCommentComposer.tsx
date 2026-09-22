@@ -63,17 +63,20 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
       <div className="flex items-center gap-x-3">
         <div className="shrink-0 pl-0.5">
           <UserAvatar
+            colorSeed={currentUser.email}
             size="sm"
             title={currentUser.title || currentUser.email}
           />
         </div>
-        <button
-          className="min-w-0 flex-1 rounded-md border px-3 py-1.5 text-left text-sm text-control-placeholder hover:border-control-border"
+        <Button
+          appearance="outline"
+          className="min-w-0 flex-1 justify-start text-control-placeholder"
           onClick={() => setExpanded(true)}
+          size="md"
           type="button"
         >
           {t("plan.review.activity.add-a-comment")}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -81,7 +84,11 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
   return (
     <div className="flex items-start gap-x-3">
       <div className="shrink-0 pl-0.5 pt-1">
-        <UserAvatar size="sm" title={currentUser.title || currentUser.email} />
+        <UserAvatar
+          colorSeed={currentUser.email}
+          size="sm"
+          title={currentUser.title || currentUser.email}
+        />
       </div>
       <div className="min-w-0 flex-1">
         <MarkdownEditor

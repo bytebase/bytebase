@@ -1,5 +1,3 @@
-This file provides guidance to AI coding assistants when working with code in this repository.
-
 ## Design Principles
 
 Bytebase is the standard for database development. Every product and engineering decision serves that goal, built on three principles:
@@ -8,279 +6,71 @@ Bytebase is the standard for database development. Every product and engineering
 2. **Govern change and access as code.** Reviewed, enforced, and recorded by policy, not by discipline.
 3. **Make the safe path the easy path.** Safe by default, simple by design — so no one routes around it.
 
-## Agent skills
+## Read before working
 
-### Issue tracker
+- Before exploring domain behavior, read [domain guidance](docs/agents/domain.md).
+- For frontend work, read [frontend/AGENTS.md](frontend/AGENTS.md); before changing UI, also read the [UX contract](docs/agents/frontend-ux.md).
+- Before adding or modifying metadata SQL, pagination, or multi-row transactions anywhere in the repo, read [backend/store/AGENTS.md](backend/store/AGENTS.md). This includes CEL-to-SQL filters and raw reads in tests.
+- Before changing metadata/DDL conversions or their golden fixtures, read [backend/plugin/schema/AGENTS.md](backend/plugin/schema/AGENTS.md). It covers what these packages test and the `record` process for regenerating fixtures.
+- For issue operations, read [issue-tracker.md](docs/agents/issue-tracker.md). Linear is the tracker; agent-created issues go to team `BOT`. For triage, also read [triage-labels.md](docs/agents/triage-labels.md).
+- Before creating a PR, complete [docs/pre-pr-checklist.md](docs/pre-pr-checklist.md).
+- `AGENTS.md` files are the instruction source of truth; `CLAUDE.md` files import them.
 
-Issues are tracked in Linear via Linear MCP when available, falling back to `linctl`; agent-created issues go to Linear team `BOT`; GitHub PRs may link back to Linear issues, but GitHub Issues and PRs are not the triage surface. See `docs/agents/issue-tracker.md`.
+## Metadata and API conventions
 
-### Triage labels
+- The metadata schema is `backend/migrator/migration/LATEST.sql`; migrations live in `backend/migrator/migration/<major.minor>/`.
+- New migrations require updating `TestLatestVersion` in `backend/migrator/migrator_test.go`; DDL changes also update `LATEST.sql`.
+- Metadata JSONB uses `protojson.Marshal`: keys are camelCase (`taskRun`), not proto snake_case (`task_run`).
+- Follow Google language style guides and AIPs for API/proto design. AIPs take precedence over the proto guide. Enum values use `HELLO`, not `TYPE_HELLO`.
+- Use American English. Avoid collection names ending in `List`.
+- Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the MCP Access policy page promises, and nothing enforces that. Before changing one, read [mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md#keeping-the-rows-true).
 
-Triage roles use the default canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+## Code comments
 
-### Domain docs
+- Use names and structure to explain what code does. Reserve comments for non-obvious intent, invariants, ordering constraints, external behavior, and public API contracts.
+- Default to one or two sentences. Longer comments must explain a constraint a maintainer needs to change the code safely.
+- Keep implementation history, rejected approaches, review discussions, and follow-up inventories in PRs or issues. For a workaround, keep only the current limitation and a relevant issue reference beside the code.
+- Explain each constraint once, where it is enforced. In tests, let case names and assertions describe behavior; comment only on surprising fixtures or semantics.
+- Before handoff, reread added or modified comments. Remove code narration and repeated rationale, and verify the remaining claims against the implementation.
 
-This repo uses a single-context domain-doc layout. See `docs/agents/domain.md`.
+## Test placement
 
-## Project Architecture
+Test API and workflow behavior against PostgreSQL. Engine dialect and DDL fidelity tests belong in omni.
 
-- Database schema is defined in `./backend/migrator/migration/LATEST.sql`
-- Database migration files are in `./backend/migrator/<<version>>/`
-  - `TestLatestVersion` in `./backend/migrator/migrator_test.go` needs update after new migration files are added
-  - `./backend/migrator/migration/LATEST.sql` should be updated for DDL migrations
-- Files in `./backend/store` are mappings to the database tables
+- Test logic in its owning package. Use `backend/api/v1` for service behavior and `backend/store` for metadata queries, collision isolation, and transaction contention. CI runs every test with no `-short`, so never check `testing.Short()` or skip a test to park a known gap; gate a test on an environment variable only when it needs credentials or a server CI cannot provide.
+- A backend test boots a Bytebase server only when it needs a background runner, real rollout, or audit trail; these tests live in `backend/tests`. Browser E2E tests use the separate frontend harness.
+- Packages needing metadata PostgreSQL use `testcontainer.Main` and `testcontainer.NewMetadataDB`. Target-engine tests use `testcontainer.SharedPgContainer` or its siblings, with `NewPgDatabase` for a database per test. Use these shared fixtures instead of package-owned or per-test containers; a package with its own `TestMain` defers `testcontainer.CloseShared`.
+- Prefer pure functions for handler decisions and conversions. When state reads are necessary, define a narrow interface beside the handler and fake it, as `backend/api/mcp` does with `serverStore`; avoid an interface over the entire store. Every fake requires a contract test against the real store too.
+- New or modified composite-key methods require collision coverage. Prove colliding keys exist, assert the intended effect in the target scope, and assert the other scope is unchanged. Use the lowest test layer that exercises the behavior. Existing API collision tests remain regression coverage; fixture details are in the pre-PR checklist.
 
-## Development Workflow
+## Verification
 
-**ALWAYS follow these steps after making code changes:**
+During iteration, run focused checks for the changed behavior. Before handoff, run the applicable final gates below. Correct failures before rerunning; repeat when fixes expose further issues, rather than rerunning unchanged failures. Report any unavailable prerequisite or remaining failure explicitly. Inspect formatter/autofix output for unrelated edits.
 
-### Go Code Changes
+### Go changes
 
-1. **Format** — Run `gofmt -w` on modified files
-2. **Lint** — Run `golangci-lint run --allow-parallel-runners` to catch issues
-   - **Important**: Run golangci-lint repeatedly until there are no issues (the linter has a max-issues limit and may not show all issues in a single run)
-3. **Auto-fix** — Use `golangci-lint run --fix --allow-parallel-runners` to fix issues automatically
-4. **Test** — Run relevant tests before committing
-5. **Build** — `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
-6. **Tidy** — After upgrading Go dependencies, run `go mod tidy` to clean up `go.mod` and `go.sum`
+1. Run `gofmt -w` on modified Go files.
+2. Run `GOGC=off GOMEMLIMIT=10GiB golangci-lint run --fix -j 8 --allow-parallel-runners`, then the same command without `--fix` until clean after corrections. Run at repo root without filenames so package context is available. Keep the flags: on a cold cache they take the run from ~730 to ~420 CPU-seconds and hold peak RSS near 10 GB, on a box shared with two CI runners.
+3. Run tests for changed packages and affected behavior, including required collision or contention coverage.
+4. Build: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`.
+5. After dependency changes, run `go mod tidy` and recheck affected code.
 
-### Frontend Code Changes
-
-1. **Fix** — Run `pnpm --dir frontend fix` to auto-fix Biome issues (format, lint, organize imports)
-2. **Check** — Run `pnpm --dir frontend check` to validate without modifying files (for CI)
-3. **Type check** — Run `pnpm --dir frontend type-check`
-4. **Test** — Run `pnpm --dir frontend test`
-
-### Proto Changes
-
-1. **Format** — Run `buf format -w proto`
-2. **Lint** — Run `buf lint proto`
-3. **Generate** — Run `cd proto && buf generate`
-
-## Build/Test Commands
-
-### Backend
+For focused tests, quote the regex:
 
 ```bash
-# Build
-go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go
-
-# Start backend
-PG_URL=postgresql://bbdev@localhost/bbdev go run ./backend/bin/server/main.go --port 8080 --data . --debug
-
-# Run single test
-go test -v -count=1 github.com/bytebase/bytebase/backend/path/to/tests -run ^TestFunctionName$
-
-# Run multiple tests
-go test -v -count=1 github.com/bytebase/bytebase/backend/path/to/tests -run ^(TestFunctionName|TestFunctionNameTwo)$
-
-# Lint
-golangci-lint run --allow-parallel-runners
+go test -v -count=1 ./backend/store/ -run '^(TestFunctionName|TestFunctionNameTwo)$'
 ```
 
-### Frontend
+### Frontend changes
 
-```bash
-# Install dependencies
-pnpm --dir frontend i
+Run `pnpm --dir frontend fix`, then `pnpm --dir frontend test` — the single gate CI runs. To iterate, `pnpm --dir frontend vitest run <path>` runs one file; `pnpm --dir frontend run prepare` refreshes generated sources.
 
-# Dev server
-pnpm --dir frontend dev
+For browser verification, read [frontend/tests/e2e/README.md](frontend/tests/e2e/README.md); before writing tests, read its [AGENTS.md](frontend/tests/e2e/AGENTS.md).
 
-# Fix (Biome: format, lint, organize imports)
-pnpm --dir frontend fix
+### Proto changes
 
-# Check (validate without modifying, for CI)
-pnpm --dir frontend check
+Run `buf format -w proto`, `buf lint proto`, and `(cd proto && buf generate)`. Verify generated Go/frontend changes with their corresponding gates.
 
-# Type check
-pnpm --dir frontend type-check
+### Documentation changes
 
-# Test
-pnpm --dir frontend test
-```
-
-### Proto
-
-```bash
-# Format
-buf format -w proto
-
-# Lint
-buf lint proto
-
-# Generate
-cd proto && buf generate
-```
-
-### Database
-
-```bash
-# Connect to Postgres
-psql -U bbdev bbdev
-```
-
-## Code Style
-
-### General
-
-- Follow Google style guides for all languages
-  - [Go](https://google.github.io/styleguide/go/)
-  - [TypeScript](https://google.github.io/styleguide/tsguide.html) and [JavaScript](https://google.github.io/styleguide/jsguide.html)
-- Write clean, minimal code; fewer lines is better
-- Prioritize simplicity for effective and maintainable software
-- Only include comments that are essential to understanding functionality or convey non-obvious information
-
-### Go
-
-- Use standard Go error handling with detailed error messages
-- Always use `defer` for resource cleanup like `rows.Close()` (sqlclosecheck)
-- Avoid using `defer` inside loops (revive) — use IIFE or scope properly
-
-### API and Proto
-
-- Follow [AIPs](https://google.aip.dev/general)
-- When AIP and the proto guide conflict, AIP takes precedence
-- Use `HELLO` for enum names, not `TYPE_HELLO`
-
-### Frontend
-
-- Follow TypeScript style with strict type checking
-- **i18n**: All user-facing display text in the UI must be defined and maintained in locale files under `./frontend/src/locales/` using the i18n internationalization system. Do not hardcode any display strings directly in the source code
-  - **No Empty Objects**: Do not add empty JSON objects (e.g., `"key": {}`) to locale files. Remove any empty objects you encounter
-- **Button Spacing**: Use `gap-x-2` for ALL button groups (modals, drawers, toolbars, inline actions). Never use `space-x` for buttons. See `./frontend/.claude/BUTTON_SPACING_STANDARDIZATION.md` for full guidelines
-
-### React
-
-The product frontend is built in React. **All product UI code is React** — use the stack and component patterns below. The only Vue runtime is the isolated `pev2` adapter under `frontend/src/apps/explain-visualizer/`.
-
-The canonical frontend ownership map is in `./frontend/AGENTS.md`. In summary:
-
-- `frontend/src/app/` owns bootstrap, layouts, and router infrastructure.
-- `frontend/src/routes/` owns route modules and route-local code.
-- `frontend/src/modules/` owns reusable application subsystems.
-- `frontend/src/components/ui/` owns shared UI primitives; `frontend/src/components/` contains other genuinely shared product components.
-- `frontend/src/stores/`, `frontend/src/api/`, `frontend/src/hooks/`, and `frontend/src/lib/` contain cross-route infrastructure. Existing `types/` and `utils/` are compatibility surfaces, not default homes for owner-specific code.
-- Do not introduce a generic feature bucket or recreate the migration-era framework namespace.
-- Historical frontend migration plans under `docs/superpowers/` preserve the paths that existed when they were written; use `frontend/AGENTS.md`, not those plans, for current placement decisions.
-
-**Stack**: React + [Base UI](https://base-ui.com/) (`@base-ui/react`) + Tailwind CSS v4 + shadcn-style component patterns
-
-**Component patterns**:
-- Build UI components in the shadcn style — `class-variance-authority` (cva) for variant props, `clsx`/`tailwind-merge` for class merging
-- Wrap Base UI primitives (Button, Tabs, Input, etc.) with styled variants in `./frontend/src/components/ui/`
-- Use `useTranslation()` from `react-i18next` for i18n
-- Use CSS custom properties (`--color-accent`, `--color-error`, `--color-control-border`, etc.) for theme tokens, defined in `./frontend/src/assets/css/tailwind.css`
-
-**Shared UI primitives**:
-- For React UI code, prefer shared components from `./frontend/src/components/ui/` over native HTML controls or ad hoc styled elements
-- Before adding or modifying an interactive UI element, first check whether a matching component already exists in `./frontend/src/components/ui/`
-- Use shared UI components for common controls such as buttons, inputs, selects, dialogs, dropdowns, tooltips, tabs, checkboxes, radios, switches, tables, and form controls when available
-- Do not hand-roll native controls with Tailwind classes when a shared component exists
-- Native HTML controls are allowed only when the shared component does not support the required browser behavior, accessibility behavior, or integration pattern
-- When touching existing React UI, opportunistically replace nearby native or ad hoc controls with shared UI components if behavior remains equivalent and the scope stays reasonable
-
-**Tailwind CSS v4**:
-- CSS-first config in `./frontend/src/assets/css/tailwind.css` — no JS config file
-- Custom utilities use `@utility`, design tokens use `@theme`
-- Default border color is `currentcolor` (compat shim in `tailwind.css` preserves v3 behavior)
-
-**State & build**:
-- React app state lives under `./frontend/src/stores/` — the core slices are in `stores/app/`, consumed via the `useAppStore` hook. Routing helpers live in `./frontend/src/app/router/`
-- React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked with `tsc --build` via `pnpm --dir frontend type-check`
-
-## Naming
-
-- Use American English
-- Avoid plurals like "xxxList" for simplicity and to prevent singular/plural ambiguity stemming from poor design
-
-## Composite Primary Keys
-
-Several tables use composite primary keys (e.g., `(project, id)`). Check
-`backend/migrator/migration/LATEST.sql` for the full list — any table with a
-multi-column PRIMARY KEY. `task_run_log` deliberately has no primary key (it is
-an append-only log whose entries can share a `created_at` microsecond,
-BYT-10035) but is equally project-scoped, so the same predicate rules apply to
-it.
-
-When writing or modifying queries on these tables:
-- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include every
-  project/tenant scope column. Identify rows with either the full primary key or
-  a full declared non-partial UNIQUE key that contains the same scope columns;
-  verify alternate keys in `LATEST.sql`. Never filter by `id` or another locally
-  unique identifier alone
-- When adding a new store method touching a composite-PK table, add a corresponding
-  `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
-  fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,
-  `plan_check_run`, `task_run_log`, `db_group`, `release`, and `sheet_blob_ref` (the
-  snapshot reads the last four through public APIs where one exists). `plan_webhook_delivery`
-  has no public read API and uses a table-specific raw metadata-DB read; its rows are
-  claimed asynchronously after rollout completion, so raw-read collision tests
-  must stabilize before snapshotting and compare the table separately (see
-  `backend/tests/README.md`). `sheet_blob_ref` also has no public read API and is
-  read raw, but its rows are written synchronously, so `assertProjectUnchanged`
-  compares them directly. For any future composite-PK table outside that set,
-  write table-specific seed and assertion helpers — or extend the shared helper
-  first
-- Collision tests use `setupCollidingProjects` + `fixture.completeRolloutB` for setup
-  and `snapshotProject` / `assertProjectUnchanged` for assertions — all going through
-  the public gRPC API, no store access. Run with:
-  `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
-
-## Transaction Lock Ordering
-
-Before adding or modifying a transaction that locks multiple rows or tables, follow the canonical [store row-lock ordering](backend/store/README.md#transaction-row-lock-ordering). Lock existing child rows before parents, lock batches in full primary-key order, and treat upserts as existing-row locks. Add the deterministic real-PostgreSQL regression tests required below for new multi-row or multi-table coordination paths.
-
-Row ordering prevents wait-for cycles on existing rows, but it cannot protect a
-child row that does not exist yet. `nextProjectID` closes that gap for its callers:
-it locks the project and requires the project to be active before allocating an ID,
-so creation is rejected when the project is missing or deleted. This is not a
-repository-wide purge fence because some writers bypass `nextProjectID`.
-
-Every new or modified writer of purge-managed data must define whether its
-lifecycle policy requires an active project or merely an existing project, then
-serialize and validate that policy against project deletion. Add deterministic
-real-PostgreSQL tests for both lock-acquisition directions. Assert the terminal
-outcomes, including that neither direction ends in a foreign-key failure; merely
-checking for the absence of SQLSTATE `40P01` is insufficient.
-
-### Imports
-
-- Use organized imports (sorted by the import path)
-
-### Formatting
-
-- Use linting/formatting tools before committing
-
-### Error Handling
-
-- Be explicit but concise about error cases
-
-## Pull Request Guidelines
-
-**Before running `gh pr create`, walk through [`docs/pre-pr-checklist.md`](docs/pre-pr-checklist.md).** It covers the breaking-change review, composite-PK query safety, lint/test gates, and SonarCloud properties — the checks that lint and CI can't catch on their own.
-
-- **Code Review** — Follow [Google's Code Review Guideline](https://google.github.io/eng-practices/)
-- **Author Responsibility** — Authors are responsible for driving discussions, resolving comments, and promptly merging pull requests
-- **Description** — Clearly describe what the PR changes and why
-- **Testing** — Include information about how the changes were tested
-
-## Common Go Lint Rules
-
-Always follow these guidelines to avoid common linting errors:
-
-- **Unused Parameters** — Prefix unused parameters with underscore (e.g., `func foo(_ *Bar)`)
-- **Modern Go Conventions** — Use `any` instead of `interface{}` (since Go 1.18)
-- **Confusing Naming** — Avoid similar names that differ only by capitalization
-- **Identical Branches** — Don't use if-else branches that contain identical code
-- **Unused Functions** — Mark unused functions with `// nolint:unused` comment if needed for future use
-- **Function Receivers** — Don't create unnecessary function receivers; use regular functions if receiver is unused
-- **Proper Import Ordering** — Maintain correct grouping and ordering of imports
-- **Consistency** — Keep function signatures, naming, and patterns consistent with existing code
-- **Export Rules** — Only export (capitalize) functions and types that need to be used outside the package
-- **Linting Command** — Always run `golangci-lint run --allow-parallel-runners` without appending filenames to avoid "function not defined" errors (functions are defined in other files within the package)
-
-## Miscellaneous
-
-- The database JSONB columns store JSON marshalled by `protojson.Marshal` in Go code. `protojson.Marshal` produces camelCased keys rather than the snake_case keys defined in the proto files. e.g. `task_run` becomes `taskRun`
-- When modifying multiple files, run file modification tasks in parallel whenever possible, instead of processing them sequentially
+Check local links, referenced paths/symbols, and shell examples. Code build/test gates do not apply to documentation-only changes.

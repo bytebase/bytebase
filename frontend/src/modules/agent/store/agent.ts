@@ -18,6 +18,7 @@ import {
 
 export const AGENT_STATE_KEY = "bb-agent-state-v2";
 export const AGENT_WINDOW_KEY = "bb-agent-window";
+export const AGENT_WINDOW_LAYOUT_VERSION = 3;
 
 interface PersistedAgentState {
   currentChatId: string | null;
@@ -40,7 +41,7 @@ interface AddMessageOptions extends Message {
 
 const DEFAULT_CHAT_STATUS: AgentChatStatus = "idle";
 
-// --- Pure helper functions (copied verbatim from Pinia store) ---
+// --- Pure helper functions ---
 
 const createChatRecord = (options: CreateChatOptions = {}): AgentChat => {
   const now = Date.now();
@@ -1120,6 +1121,7 @@ export const createAgentStore = () => {
           storage.setItem(
             AGENT_WINDOW_KEY,
             JSON.stringify({
+              layoutVersion: AGENT_WINDOW_LAYOUT_VERSION,
               position: state.position,
               size: state.size,
               sidebarWidth: state.sidebarWidth,
@@ -1133,12 +1135,17 @@ export const createAgentStore = () => {
           if (!saved) return;
           try {
             const state = JSON.parse(saved) as {
+              layoutVersion?: number;
               position?: { x?: number; y?: number };
               size?: { width?: number; height?: number };
               sidebarWidth?: number;
             };
+            const isCurrentLayout =
+              state.layoutVersion === AGENT_WINDOW_LAYOUT_VERSION;
+            const defaultWindowState = getInitialWindowState();
             set((draft) => {
               if (
+                isCurrentLayout &&
                 typeof state.position?.x === "number" &&
                 typeof state.position?.y === "number"
               ) {
@@ -1148,6 +1155,7 @@ export const createAgentStore = () => {
                 };
               }
               if (
+                isCurrentLayout &&
                 typeof state.size?.width === "number" &&
                 typeof state.size?.height === "number"
               ) {
@@ -1155,11 +1163,15 @@ export const createAgentStore = () => {
                   width: state.size.width,
                   height: state.size.height,
                 };
+              } else if (!isCurrentLayout) {
+                draft.position = defaultWindowState.position;
+                draft.size = defaultWindowState.size;
               }
               if (typeof state.sidebarWidth === "number") {
                 draft.sidebarWidth = state.sidebarWidth;
               }
             });
+            if (!isCurrentLayout) get().saveWindowState();
           } catch {
             storage?.removeItem(AGENT_WINDOW_KEY);
           }

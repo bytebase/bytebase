@@ -2,6 +2,8 @@ import { Filter, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { cn } from "@/lib/utils";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types/common";
@@ -61,8 +63,7 @@ interface AdvancedSearchProps {
   onParamsChange: (params: SearchParams) => void;
   /**
    * Fires on Enter while no scope/value dropdown is active. Hosts use this
-   * for "press Enter to advance to the next match" — mirrors the Vue
-   * `@keyup:enter` shortcut on the result-view search bar.
+   * for "press Enter to advance to the next match".
    */
   onEnter?: () => void;
 }
@@ -377,7 +378,6 @@ export function AdvancedSearch({
     if (id) {
       setMenuView("value");
       setMenuIndex(0);
-      // Show "scope:" prefix in the input to match Vue behavior
       setInputText(`${id}:`);
     } else {
       setMenuView("scope");
@@ -666,7 +666,7 @@ export function AdvancedSearch({
     <div ref={containerRef} className="w-full min-w-0 relative">
       {/* Input container */}
       <div
-        className="flex min-w-0 items-center h-9 overflow-hidden border border-control-border rounded-xs bg-background transition-colors dark:bg-dark-bg dark:border-zinc-700"
+        className="flex min-w-0 items-center h-9 overflow-hidden border border-control-border rounded-xs bg-background transition-colors"
         onClick={() => inputRef.current?.focus()}
       >
         {/*
@@ -697,7 +697,7 @@ export function AdvancedSearch({
                   data-search-scope-id={scope.id}
                   data-search-scope-index={originalIndex}
                   className={cn(
-                    "inline-flex h-6 max-w-[16rem] min-w-0 shrink-0 items-center gap-1 rounded-xs bg-control-bg px-1.5 text-xs whitespace-nowrap dark:bg-zinc-700 dark:text-gray-100",
+                    "inline-flex h-6 max-w-[16rem] min-w-0 shrink-0 items-center gap-1 rounded-xs bg-control-bg px-1.5 text-xs whitespace-nowrap",
                     focusedTagIndex === originalIndex && "ring-1 ring-accent"
                   )}
                   onClick={(e) => {
@@ -715,15 +715,18 @@ export function AdvancedSearch({
                   >
                     {renderTagValue(scope)}
                   </span>
-                  <button
-                    className="ml-0.5 inline-flex size-4 shrink-0 items-center justify-center hover:text-error"
+                  <Button
+                    type="button"
+                    appearance="secondary"
+                    size="xs"
+                    className="ml-0.5 shrink-0 hover:text-error"
                     onClick={(e) => {
                       e.stopPropagation();
                       removeScope(originalIndex);
                     }}
                   >
                     <X className="h-3 w-3" />
-                  </button>
+                  </Button>
                 </span>
               ))}
             </div>
@@ -754,12 +757,14 @@ export function AdvancedSearch({
          *     space, which is what made scope tags clip in panels like
          *     AccessPane.
          */}
-        <input
+        <Input
+          size="xs"
           ref={inputRef}
           className={cn(
-            "flex-1 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none dark:text-gray-100 dark:placeholder:text-gray-500",
+            "flex-1 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none",
             visibleTags.length > 0 ? "min-w-[40px]" : "min-w-[120px]"
           )}
+          autoComplete="off"
           value={inputText}
           placeholder={
             visibleTags.length > 0 ? "" : (placeholder ?? t("common.filter"))
@@ -771,15 +776,18 @@ export function AdvancedSearch({
 
         {/* Clear button */}
         {clearable && (
-          <button
-            className="p-1.5 mr-1 hover:bg-control-bg rounded-full shrink-0"
+          <Button
+            type="button"
+            appearance="secondary"
+            size="xs"
+            className="mr-1 shrink-0 rounded-full hover:bg-control-bg"
             onClick={(e) => {
               e.stopPropagation();
               handleClear();
             }}
           >
             <X className="h-3 w-3 text-control-placeholder" />
-          </button>
+          </Button>
         )}
       </div>
 

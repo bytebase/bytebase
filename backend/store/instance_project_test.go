@@ -3,15 +3,14 @@ package store_test
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -19,10 +18,7 @@ func newInstanceProjectFixture(t *testing.T) (context.Context, *sql.DB, *store.S
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name, deleted) VALUES
@@ -31,13 +27,6 @@ func newInstanceProjectFixture(t *testing.T) (context.Context, *sql.DB, *store.S
 			('deleted-project', 'default', 'Deleted Project', TRUE);
 	`)
 	require.NoError(t, err)
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return ctx, db, s
 }
 
@@ -51,6 +40,7 @@ func testInstanceMetadata() *storepb.Instance {
 }
 
 func TestCreateAndListProjectInstance(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newInstanceProjectFixture(t)
 	projectID := "project-a"
 	instance, err := s.CreateInstance(ctx, &store.InstanceMessage{
@@ -134,7 +124,32 @@ func TestCreateAndListProjectInstance(t *testing.T) {
 	require.Equal(t, &projectID, allInstances[0].ProjectID)
 }
 
+func TestListAllInstancesDeobfuscatesAcrossWorkspaces(t *testing.T) {
+	t.Parallel()
+	ctx, db, s := newInstanceProjectFixture(t)
+	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('other')`)
+	require.NoError(t, err)
+	for _, workspace := range []string{"default", "other"} {
+		metadata := testInstanceMetadata()
+		metadata.DataSources[0].Password = workspace + "-password"
+		_, err := s.CreateInstance(ctx, &store.InstanceMessage{
+			ResourceID: workspace + "-instance",
+			Workspace:  workspace,
+			Metadata:   metadata,
+		})
+		require.NoError(t, err)
+	}
+
+	instances, err := s.ListAllInstances(ctx, false)
+	require.NoError(t, err)
+	require.Len(t, instances, 2)
+	for _, instance := range instances {
+		require.Equal(t, instance.Workspace+"-password", instance.Metadata.GetDataSources()[0].GetPassword())
+	}
+}
+
 func TestUpdateInstanceWithoutWorkspace(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newInstanceProjectFixture(t)
 	instance, err := s.CreateInstance(ctx, &store.InstanceMessage{
 		ResourceID: "workspace-instance",
@@ -153,9 +168,11 @@ func TestUpdateInstanceWithoutWorkspace(t *testing.T) {
 }
 
 func TestCreateProjectInstanceRejectsDefaultDeletedAndMissingProject(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newInstanceProjectFixture(t)
 	for _, projectID := range []string{"default", "deleted-project", "missing-project"} {
 		t.Run(projectID, func(t *testing.T) {
+			t.Parallel()
 			_, err := s.CreateInstance(ctx, &store.InstanceMessage{
 				ResourceID: projectID + "-instance",
 				Workspace:  "default",
@@ -168,6 +185,7 @@ func TestCreateProjectInstanceRejectsDefaultDeletedAndMissingProject(t *testing.
 }
 
 func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newInstanceProjectFixture(t)
 	_, err := db.ExecContext(ctx, `
 		UPDATE project SET deleted = TRUE WHERE resource_id = 'project-a';
@@ -180,7 +198,7 @@ func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(
 	`)
 	require.NoError(t, err)
 
-	require.NoError(t, s.DeleteProject(ctx, "default", "project-a"))
+	require.NoError(t, s.DeleteProjects(ctx, "default", "project-a"))
 
 	var projectInstanceCount, projectDatabaseCount int
 	require.NoError(t, db.QueryRowContext(ctx, `
@@ -200,6 +218,7 @@ func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(
 }
 
 func TestDeleteProjectInstancePurgesHistory(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newInstanceProjectFixture(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO instance (resource_id, workspace, project, deleted) VALUES

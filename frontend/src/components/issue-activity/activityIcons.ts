@@ -65,11 +65,11 @@ export const ISSUE_EVENT_ICON = {
   reopened: { Icon: CircleDot, tone: "neutral" },
 } satisfies Record<string, ActivityIconSpec>;
 
-// Tone → classes. Activity badges fill the circle (white glyph on bg-tone);
+// Tone → classes. Activity badges fill the circle (on-fill glyph on bg-tone);
 // action buttons tint just the glyph (text-tone).
 export const ICON_BADGE_TONE: Record<IconTone, string> = {
-  success: "bg-success text-white",
-  error: "bg-error text-white",
+  success: "bg-success text-accent-text",
+  error: "bg-error text-accent-text",
   neutral: "bg-control-bg text-control",
 };
 

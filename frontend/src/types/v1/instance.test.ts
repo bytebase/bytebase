@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { isValidInstanceName, UNKNOWN_INSTANCE_NAME } from "./instance";
 

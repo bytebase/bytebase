@@ -10,7 +10,6 @@ function getRouteMap(router: AppRouterInstance): string[] {
     if (
       !path ||
       path.startsWith("/auth") ||
-      path === "/setup" ||
       path === "/403" ||
       path === "/404"
     ) {

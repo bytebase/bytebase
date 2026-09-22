@@ -7,7 +7,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pkg/errors"
@@ -16,7 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -28,11 +27,11 @@ import (
 // ActuatorService implements the Connect RPC interface for ActuatorService.
 type ActuatorService struct {
 	v1connect.UnimplementedActuatorServiceHandler
-	store                 *store.Store
-	profile               *config.Profile
-	licenseService        *enterprise.LicenseService
-	schemaSyncer          *schemasync.Syncer
-	sampleInstanceManager *sampleinstance.Manager
+	store          *store.Store
+	profile        *config.Profile
+	licenseService *enterprise.LicenseService
+	schemaSyncer   *schemasync.Syncer
+	sampleManager  sample.Manager
 
 	activeVCSUserCountSnapshot *expirable.LRU[string, int]
 }
@@ -45,14 +44,14 @@ func NewActuatorService(
 	profile *config.Profile,
 	schemaSyncer *schemasync.Syncer,
 	licenseService *enterprise.LicenseService,
-	sampleInstanceManager *sampleinstance.Manager,
+	sampleManager sample.Manager,
 ) *ActuatorService {
 	return &ActuatorService{
 		store:                      store,
 		profile:                    profile,
 		licenseService:             licenseService,
 		schemaSyncer:               schemaSyncer,
-		sampleInstanceManager:      sampleInstanceManager,
+		sampleManager:              sampleManager,
 		activeVCSUserCountSnapshot: expirable.NewLRU[string, int](1024, nil, activeVCSUserCountSnapshotTTL),
 	}
 }
@@ -80,30 +79,21 @@ func (s *ActuatorService) GetActuatorInfo(
 	return connect.NewResponse(info), nil
 }
 
-// SetupSample sets up the sample project and instance.
-func (s *ActuatorService) SetupSample(
-	ctx context.Context,
-	_ *connect.Request[v1pb.SetupSampleRequest],
-) (*connect.Response[emptypb.Empty], error) {
-	if s.profile.SaaS {
-		// skip sample setup in SaaS
-		slog.Debug("sample is not available for SaaS")
-		return connect.NewResponse(&emptypb.Empty{}), nil
+// actuatorMCPSetting is the MCP policy actuator info discloses: the resolution
+// the gate admitted this request under when there is one, else a fresh read.
+// The consent page derives its states from this alone, so it is the backend
+// receipt for what the page may show. A row this build cannot parse leaves the
+// setting absent rather than refusing the whole bootstrap response — the policy
+// page then withholds editing instead of showing a guessed ceiling. A ceiling
+// nobody serves arrives as the stored number: a client that has no name for it
+// is exactly the client that must not disclose it.
+func actuatorMCPSetting(ctx context.Context, reader mcpSettingsReader, workspaceID string) *v1pb.MCPSetting {
+	mcpSetting, err := mcpSettingsForCurrentWorkspace(ctx, reader, workspaceID)
+	if err != nil {
+		slog.Error("failed to read the MCP setting", slog.String("workspace", workspaceID), log.BBError(err))
+		return nil
 	}
-	user, ok := GetUserFromContext(ctx)
-	if !ok || user == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
-	}
-
-	if s.sampleInstanceManager != nil {
-		if err := s.sampleInstanceManager.GenerateOnboardingData(ctx, common.GetWorkspaceIDFromContext(ctx), user, s.schemaSyncer); err != nil {
-			// When running inside docker on mac, we sometimes get database does not exist error.
-			// This is due to the docker overlay storage incompatibility with mac OS file system.
-			// Onboarding error is not critical, so we just emit an error log.
-			slog.Error("failed to prepare onboarding data", log.BBError(err))
-		}
-	}
-	return connect.NewResponse(&emptypb.Empty{}), nil
+	return convertToMCPSetting(mcpSetting)
 }
 
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
@@ -115,10 +105,27 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 		ExternalUrlFromFlag: s.profile.ExternalURL != "",
 		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
 		ExternalUrl:         s.profile.ExternalURL,
+		Sample:              &v1pb.SampleInfo{},
 	}
 
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
+		serverInfo.McpSetting = actuatorMCPSetting(ctx, s.store, workspaceID)
+		if s.sampleManager != nil {
+			serverInfo.Sample.Available = s.sampleManager.CheckAvailable(ctx) == nil
+			instances, err := s.sampleManager.ListInstances(ctx, workspaceID)
+			if err != nil {
+				slog.Error("failed to list sample instances", log.BBError(err), slog.String("workspace", workspaceID))
+				instances = nil
+			}
+			for _, instance := range instances {
+				item := &v1pb.SampleInfo_Instance{Instance: instance.Name}
+				if instance.ExpireTime != nil {
+					item.ExpireTime = timestamppb.New(*instance.ExpireTime)
+				}
+				serverInfo.Sample.Instances = append(serverInfo.Sample.Instances, item)
+			}
+		}
 
 		defaultProjectID, err := s.store.GetDefaultProjectID(ctx, workspaceID)
 		if err != nil {
@@ -152,10 +159,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count active VCS users"))
 		}
 		serverInfo.ActiveVcsUserCount = int32(activeVCSUserCount)
-
-		// Check if sample instances are available
-		hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)
-		serverInfo.EnableSample = hasSampleInstances
 
 		setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
 		if err != nil {

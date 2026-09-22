@@ -10,6 +10,7 @@ import {
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
+import { celString, celStringList } from "@/utils/v1/celLiteral";
 import type { MaskData, SensitiveColumn } from "./types";
 
 export const getMaskDataIdentifier = (maskData: MaskData): string => {
@@ -71,27 +72,27 @@ export const getExpressionsForDatabaseResource = (
     databaseResource.databaseFullName
   );
   const expressions = [
-    `${CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID} == "${instanceName}"`,
-    `${CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME} == "${databaseName}"`,
+    `${CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID} == ${celString(instanceName)}`,
+    `${CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME} == ${celString(databaseName)}`,
   ];
   if (databaseResource.schema) {
     expressions.push(
-      `${CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME} == "${databaseResource.schema}"`
+      `${CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME} == ${celString(databaseResource.schema)}`
     );
   }
   if (databaseResource.table) {
     expressions.push(
-      `${CEL_ATTRIBUTE_RESOURCE_TABLE_NAME} == "${databaseResource.table}"`
+      `${CEL_ATTRIBUTE_RESOURCE_TABLE_NAME} == ${celString(databaseResource.table)}`
     );
   }
   if (databaseResource.columns && databaseResource.columns.length > 0) {
     if (databaseResource.columns.length === 1) {
       expressions.push(
-        `${CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME} == "${databaseResource.columns[0]}"`
+        `${CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME} == ${celString(databaseResource.columns[0])}`
       );
     } else {
       expressions.push(
-        `${CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME} in [${databaseResource.columns.map((c) => `"${c}"`)}]`
+        `${CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME} in ${celStringList(databaseResource.columns)}`
       );
     }
   }

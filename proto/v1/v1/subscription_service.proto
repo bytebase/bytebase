@@ -18,6 +18,8 @@ service SubscriptionService {
   rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {get: "/v1/subscription"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Exports active VCS users as CSV.
@@ -26,6 +28,8 @@ service SubscriptionService {
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Uploads an enterprise license (self-hosted only).
@@ -37,6 +41,21 @@ service SubscriptionService {
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+  }
+
+  // StartTrial starts a free trial for an eligible SaaS workspace.
+  rpc StartTrial(StartTrialRequest) returns (Subscription) {
+    option (google.api.http) = {
+      post: "/v1/subscription:startTrial"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.subscription.manage";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // CreatePurchase creates a new subscription purchase (SaaS only).
@@ -49,6 +68,8 @@ service SubscriptionService {
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // UpdatePurchase updates an existing subscription (SaaS only).
@@ -61,6 +82,8 @@ service SubscriptionService {
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // CancelPurchase cancels an active subscription (SaaS only).
@@ -72,6 +95,8 @@ service SubscriptionService {
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // GetPaymentInfo returns payment details for the current subscription (SaaS only).
@@ -79,6 +104,8 @@ service SubscriptionService {
     option (google.api.http) = {get: "/v1/subscription/paymentInfo"};
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
@@ -86,11 +113,15 @@ service SubscriptionService {
     option (google.api.http) = {get: "/v1/subscription/checkoutSession/{session_id}"};
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // ListPurchasePlans returns available plans for self-service purchase.
   rpc ListPurchasePlans(ListPurchasePlansRequest) returns (ListPurchasePlansResponse) {
     option (google.api.http) = {get: "/v1/subscription/plans"};
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 }
 
@@ -99,11 +130,11 @@ message GetSubscriptionRequest {}
 message ExportVCSProviderUsersRequest {}
 
 message ExportVCSProviderUsersResponse {
-  bytes content = 1;
+  bytes content = 1 [(bytebase.v1.audit_behavior) = OMIT];
 }
 
 message UploadLicenseRequest {
-  string license = 1;
+  string license = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 // Purchase messages
@@ -117,13 +148,18 @@ message CreatePurchaseRequest {
 message PurchaseResponse {
   // If set, redirect to this Stripe Checkout URL.
   // If empty, the update was applied directly using the existing payment method.
-  string payment_url = 1;
+  string payment_url = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
   // Stripe Checkout Session ID. Used to verify the session after redirect.
-  string session_id = 2;
+  string session_id = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message VerifyCheckoutSessionRequest {
-  string session_id = 1;
+  // The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
+  // the other way, so it carries the same classification. VerifyCheckoutSession
+  // is EXCLUDED, and a refusal of it streams its request to the stdout audit
+  // log, so leaving this unannotated would write the id into that line while
+  // the response that produced it was redacted.
+  string session_id = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message VerifyCheckoutSessionResponse {
@@ -350,3 +386,5 @@ message PlanLimitConfig {
   int32 maximum_seat_count = 3;
   repeated PlanFeature features = 4;
 }
+
+message StartTrialRequest {}

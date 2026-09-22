@@ -11,13 +11,15 @@ import (
 
 func TestParseChangelogFilter(t *testing.T) {
 	tests := []struct {
-		name        string
-		filter      string
-		wantStatus  *store.ChangelogStatus
-		wantAfter   *time.Time
-		wantBefore  *time.Time
-		wantErr     bool
-		errContains string
+		name               string
+		filter             string
+		wantStatus         *store.ChangelogStatus
+		wantAfter          *time.Time
+		wantBefore         *time.Time
+		wantStrictBefore   *time.Time
+		wantSchemaSnapshot bool
+		wantErr            bool
+		errContains        string
 	}{
 		{
 			name:   "empty filter",
@@ -37,6 +39,12 @@ func TestParseChangelogFilter(t *testing.T) {
 			name:       "create_time less than or equal",
 			filter:     `create_time <= "2024-12-31T23:59:59Z"`,
 			wantBefore: ptr(mustParseTime(t, "2024-12-31T23:59:59Z")),
+		},
+		{
+			name:               "schema snapshot before create time",
+			filter:             `has_schema_snapshot == true && create_time < "2024-12-31T23:59:59.123456789Z"`,
+			wantSchemaSnapshot: true,
+			wantStrictBefore:   ptr(mustParseTime(t, "2024-12-31T23:59:59.123456789Z")),
 		},
 		{
 			name:       "create_time range",
@@ -60,7 +68,7 @@ func TestParseChangelogFilter(t *testing.T) {
 			name:        "time comparison on wrong field",
 			filter:      `status >= "2024-01-01T00:00:00Z"`,
 			wantErr:     true,
-			errContains: `">=" and "<=" are only supported for "create_time"`,
+			errContains: `">=", "<=", and "<" are only supported for "create_time"`,
 		},
 		{
 			name:        "unsupported variable",
@@ -102,6 +110,11 @@ func TestParseChangelogFilter(t *testing.T) {
 				require.NotNil(t, find.CreatedAtBefore)
 				require.Equal(t, *tt.wantBefore, *find.CreatedAtBefore)
 			}
+			if tt.wantStrictBefore != nil {
+				require.NotNil(t, find.CreatedAtStrictlyBefore)
+				require.Equal(t, *tt.wantStrictBefore, *find.CreatedAtStrictlyBefore)
+			}
+			require.Equal(t, tt.wantSchemaSnapshot, find.HasSyncHistory)
 		})
 	}
 }

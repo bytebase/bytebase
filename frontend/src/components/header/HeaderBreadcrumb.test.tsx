@@ -22,6 +22,10 @@ const mocks = vi.hoisted(() => ({
   resolve: vi.fn(({ name }: { name: string }) => ({
     fullPath: `/${name}`,
   })),
+  project: {
+    name: "projects/recent-project",
+    title: "Recent Project",
+  } as { name: string; title: string } | undefined,
   projectSwitchPanelProps: undefined as
     | { excludeDefaultProject?: boolean }
     | undefined,
@@ -55,10 +59,7 @@ vi.mock("@/app/router", () => ({
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
-  useProject: () => ({
-    name: "projects/recent-project",
-    title: "Recent Project",
-  }),
+  useProject: () => mocks.project,
   useRecentVisit: () => ({
     record: mocks.record,
   }),
@@ -172,6 +173,10 @@ const renderIntoContainer = (element: ReactElement) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.project = {
+    name: "projects/recent-project",
+    title: "Recent Project",
+  };
   mocks.projectSwitchPanelProps = undefined;
   mocks.workspaceList = [
     {
@@ -217,6 +222,29 @@ describe("HeaderBreadcrumb", () => {
     unmount();
   });
 
+  test("opens project switcher from the empty project placeholder", () => {
+    mocks.project = undefined;
+    const { container, render, unmount } = renderIntoContainer(
+      <HeaderBreadcrumb />
+    );
+
+    render();
+
+    const projectSelector = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button")
+    ).find((button) => button.textContent?.includes("Select project"));
+    expect(projectSelector).not.toBeUndefined();
+
+    act(() => {
+      projectSelector?.click();
+    });
+    expect(
+      container.querySelector('[data-testid="project-switch-panel"]')
+    ).not.toBeNull();
+
+    unmount();
+  });
+
   test("uses custom project selection when clicking the project title", () => {
     const onSelectProject = vi.fn();
     const { container, render, unmount } = renderIntoContainer(
@@ -232,6 +260,8 @@ describe("HeaderBreadcrumb", () => {
       (button) => button.textContent?.includes("Recent Project")
     );
     expect(projectButton).not.toBeUndefined();
+    expect(projectButton?.classList.contains("h-7")).toBe(true);
+    expect(projectButton?.classList.contains("h-auto")).toBe(false);
 
     act(() => {
       projectButton?.click();
@@ -261,6 +291,8 @@ describe("HeaderBreadcrumb", () => {
       container.querySelectorAll("button")
     ).find((button) => button.textContent?.includes("Default Workspace"));
     expect(workspaceButton).not.toBeUndefined();
+    expect(workspaceButton?.classList.contains("h-7")).toBe(true);
+    expect(workspaceButton?.classList.contains("h-auto")).toBe(false);
 
     act(() => {
       workspaceButton?.click();

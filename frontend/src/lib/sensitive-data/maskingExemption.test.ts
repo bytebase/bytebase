@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { emptySimpleExpr, wrapAsGroup } from "@/modules/cel";
 import type { DatabaseResource } from "@/types";

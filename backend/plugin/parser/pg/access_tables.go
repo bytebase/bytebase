@@ -129,7 +129,7 @@ func (a *accessTableExtractor) processRangeVar(rv *ast.RangeVar) {
 		if databaseMetadata == nil {
 			return
 		}
-		schemaName, name := databaseMetadata.SearchObject(searchPath, resource.Table)
+		schemaName, name := databaseMetadata.SearchRelation(searchPath, resource.Table)
 		if schemaName == "" && name == "" {
 			return
 		}

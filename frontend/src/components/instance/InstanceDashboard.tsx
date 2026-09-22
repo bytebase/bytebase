@@ -67,6 +67,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TableCellContent } from "@/components/ui/table-cell-content";
 import {
   WorkspacePageContent,
   WorkspacePageFooter,
@@ -599,17 +600,6 @@ export function InstanceDashboard({
     [searchParams]
   );
 
-  // Mark instance visit on mount
-  useEffect(() => {
-    const store = useAppStore.getState();
-    if (!store.getIntroStateByKey("instance.visit")) {
-      store.saveIntroStateByKey({
-        key: "instance.visit",
-        newState: true,
-      });
-    }
-  }, []);
-
   // Instance count warning
   const instanceCountLimit = useAppStore((s) => s.instanceCountLimit());
   const totalInstanceCount = useAppStore((s) => s.totalInstanceCount());
@@ -906,7 +896,7 @@ export function InstanceDashboard({
     id: CREATE_INSTANCE_PRODUCT_INTRO,
     title: t("workspace-setup-guide.intro.instance-title"),
     description: t("workspace-setup-guide.intro.instance-description"),
-    disabled: layout === "project" || !canCreate,
+    disabled: !canCreate,
   });
   const allSelected =
     instances.length > 0 && selectedNames.size === instances.length;
@@ -925,7 +915,6 @@ export function InstanceDashboard({
         />
       ),
       defaultWidth: 48,
-      cellClassName: "px-4 py-2",
       onCellClick: (instance, e) => {
         e.stopPropagation();
         toggleSelection(instance.name);
@@ -994,7 +983,7 @@ export function InstanceDashboard({
         const isExpanded = expandedDataSources.has(instance.name);
         const hasMultipleDS = instance.dataSources.length > 1;
         return (
-          <div className="flex items-start gap-x-2">
+          <div className="flex items-center gap-x-2 min-w-0">
             <span className="truncate">
               {isExpanded
                 ? instance.dataSources.map((ds, idx) => (
@@ -1007,7 +996,7 @@ export function InstanceDashboard({
                 type="button"
                 appearance="secondary"
                 size="xs"
-                className="size-5 shrink-0 p-0"
+                className="w-6 shrink-0 p-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleDataSource(instance.name);
@@ -1043,7 +1032,10 @@ export function InstanceDashboard({
       title: "",
       defaultWidth: 50,
       render: (instance) => (
-        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex w-full justify-end"
+          onClick={(e) => e.stopPropagation()}
+        >
           <InstanceActionDropdown
             instance={instance}
             project={project}
@@ -1176,7 +1168,9 @@ export function InstanceDashboard({
                           : undefined
                       }
                     >
-                      {col.render(instance)}
+                      <TableCellContent>
+                        {col.render(instance)}
+                      </TableCellContent>
                     </TableCell>
                   ))}
                 </TableRow>

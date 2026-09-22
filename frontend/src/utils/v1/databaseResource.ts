@@ -187,28 +187,42 @@ export const flattenTreeOptions = (
 export const parseStringToResource = (
   key: string
 ): DatabaseResource | undefined => {
-  // The key should in instances/{instance resource id}/databases/{database resource id}/schemas/{schema}/tables/{table}/columns/{column}
+  // The key starts with either instances/{instance} or
+  // projects/{project}/instances/{instance}, followed by a database and
+  // optional schema/table/column descendants.
   const sections = key.split("/");
   const resource: DatabaseResource = {
     databaseFullName: "",
   };
+  let projectName = "";
+  let instanceName = "";
 
   while (sections.length > 0) {
-    const keyword = sections.shift() as DatabaseResourceType | "instances";
+    const keyword = sections.shift() as
+      | DatabaseResourceType
+      | "projects"
+      | "instances";
     const data = sections.shift() || "";
 
     switch (keyword) {
+      case "projects":
+        if (!data) return;
+        projectName = `projects/${data}`;
+        break;
       case "instances": {
         resource.instanceResourceId = data;
+        instanceName = projectName
+          ? `${projectName}/instances/${data}`
+          : `${instanceNamePrefix}${data}`;
         if (resource.databaseResourceId) {
-          resource.databaseFullName = `${instanceNamePrefix}${resource.instanceResourceId}/${databaseNamePrefix}${resource.databaseResourceId}`;
+          resource.databaseFullName = `${instanceName}/${databaseNamePrefix}${resource.databaseResourceId}`;
         }
         break;
       }
       case "databases": {
         resource.databaseResourceId = data;
-        if (resource.instanceResourceId) {
-          resource.databaseFullName = `${instanceNamePrefix}${resource.instanceResourceId}/${databaseNamePrefix}${resource.databaseResourceId}`;
+        if (instanceName) {
+          resource.databaseFullName = `${instanceName}/${databaseNamePrefix}${resource.databaseResourceId}`;
         }
         break;
       }

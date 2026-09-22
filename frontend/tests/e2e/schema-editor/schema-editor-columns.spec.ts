@@ -42,10 +42,10 @@ let planId: string;
 test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
-  ({ projectId, planId } = await createSchemaEditorPlan(env, "E2E SchemaEditor Columns"));
   ctx = await browser.newContext({ storageState: ".auth/state.json" });
   page = await ctx.newPage();
   se = new SchemaEditorPage(page, env.baseURL);
+  ({ projectId, planId } = await createSchemaEditorPlan(env, page, "E2E SchemaEditor Columns"));
 });
 
 test.afterAll(async () => {
@@ -185,7 +185,7 @@ test.describe("column editing", () => {
 // mockedMetadata memo (keyed on editStatus.version) never recomputes, so the
 // DDL Preview stays frozen at the table's creation state. Existing-table edits
 // DO refresh the preview (they mark the column "updated" → version bumps).
-test.describe("created-table edit reactivity (BUG BYT-9802-preview)", () => {
+test.describe("created-table edit reactivity (BYT-9802-preview)", () => {
   test.describe.configure({ mode: "serial" });
 
   test.beforeEach(async () => {
@@ -198,21 +198,20 @@ test.describe("created-table edit reactivity (BUG BYT-9802-preview)", () => {
     await se.close();
   });
 
-  // Repro: create table (id integer) → change id's type → preview still shows
-  // "integer" even though the grid cell (and the inserted SQL) reflect "bigint".
-  test.fail("changing a column type updates the preview DDL", async () => {
+  // BYT-9802-preview (FIXED): create table (id integer) → change id's type →
+  // the preview DDL now reflects the new type ("bigint"). Previously the preview
+  // stayed "integer" (stale) even though the grid cell + inserted SQL updated.
+  // Was a test.fail() lock until the fix landed; now a normal passing guard.
+  test("changing a column type updates the preview DDL", async () => {
     await newTable();
-    // Wait for the initial (async) preview to load, so the failure below is on
-    // the stale type, not a not-yet-rendered preview.
+    // Wait for the initial (async) preview to load before mutating the type.
     await expect.poll(async () => await se.previewText()).toContain("integer");
 
     await se.selectColumnType(0, "bigint");
     await expect(se.columnTypeInputs().nth(0)).toHaveValue("bigint"); // control
 
-    // Bug: the preview should reflect the new type but stays "integer". Poll
-    // (don't read once) so that when the bug is fixed the preview's async
-    // schema-string refresh is given time to land — turning this into an
-    // *unexpected pass* that signals the fix, rather than racing the refresh.
+    // The preview's async schema-string refresh now reflects the new type. Poll
+    // (don't read once) to allow the refresh to land.
     await expect
       .poll(async () => await se.previewText())
       .toContain("bigint");

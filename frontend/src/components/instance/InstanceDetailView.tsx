@@ -32,8 +32,10 @@ import {
   InstanceSyncButton,
   useInstanceFormContext,
 } from "@/components/instance";
+import { SampleExpirationAlert } from "@/components/SampleExpirationAlert";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { ResponsiveFormLayout } from "@/components/ui/form";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import type { DatabaseFilter } from "@/lib/databaseFilter";
@@ -64,6 +66,7 @@ import {
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { unknownInstance } from "@/types/v1/instance";
 import {
+  engineNameV1,
   extractInstanceResourceName,
   extractProjectResourceName,
   getDefaultPagination,
@@ -565,9 +568,20 @@ export function InstanceDetailView({
     <div className="p-4 flex flex-col gap-y-2">
       {/* Archive banner */}
       {instance.state === State.DELETED && (
-        <div className="bg-gray-700 text-white text-center py-2 rounded-sm text-sm font-medium">
+        <div className="bg-main-hover text-main-text text-center py-2 rounded-sm text-sm font-medium">
           {t("common.archived")}
         </div>
+      )}
+
+      <SampleExpirationAlert instanceName={instanceName} />
+
+      {isProjectOwned && (
+        <Alert
+          variant="info"
+          className="mb-4"
+          title={t("instance.project-bound-title")}
+          description={t("instance.project-bound-description")}
+        />
       )}
 
       {/* No environment warning */}
@@ -580,12 +594,20 @@ export function InstanceDetailView({
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-x-2">
-          <EngineIcon engine={instance.engine} className="h-6 w-6" />
-          <span className="text-lg font-medium">
-            {instanceV1Name(instance)}
-          </span>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-2">
+          <EngineIcon engine={instance.engine} className="size-6 shrink-0" />
+          <div className="min-w-0">
+            <h1 className="text-lg font-medium break-words">
+              {instanceV1Name(instance)}
+            </h1>
+            {cachedInstance && (
+              <p className="text-sm text-control-light break-words">
+                {engineNameV1(instance.engine)}
+                {instance.engineVersion && ` · ${instance.engineVersion}`}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-x-2">
           {instance.state === State.ACTIVE && (
@@ -615,9 +637,11 @@ export function InstanceDetailView({
 
         <TabsPanel value="overview">
           <InstanceFormProvider instance={instance} project={project}>
-            <InstanceFormBody />
-            <InstanceFormButtons />
-            <UnsavedChangesGuard />
+            <ResponsiveFormLayout>
+              <InstanceFormBody />
+              <InstanceFormButtons />
+              <UnsavedChangesGuard />
+            </ResponsiveFormLayout>
           </InstanceFormProvider>
         </TabsPanel>
 

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { ExprSchema } from "@/types/proto-es/google/type/expr_pb";

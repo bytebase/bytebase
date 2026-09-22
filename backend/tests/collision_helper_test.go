@@ -78,27 +78,27 @@ func setupCollidingProjects(
 	}))
 	a.NoError(err)
 
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("col-inst"),
 		Instance: &v1pb.Instance{
-			Title:       "collision-instance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         "collision-instance",
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	dbNameA := "collision_db_a"
+	dbNameA := uniqueDB("collision_db_a")
 	err = ctl.createDatabase(ctx, projectA.Msg, instance, nil, dbNameA, "")
 	a.NoError(err)
 
-	dbNameB := "collision_db_b"
+	dbNameB := uniqueDB("collision_db_b")
 	err = ctl.createDatabase(ctx, projectB.Msg, instance, nil, dbNameB, "")
 	a.NoError(err)
 
@@ -190,6 +190,8 @@ func setupCollidingProjects(
 	}))
 	a.NoError(err)
 
+	waitPlanCheckRunSettled(ctx, t, ctl, planB.Msg.Name)
+
 	f := &collisionFixture{
 		ProjectA:  projectA.Msg,
 		ProjectB:  projectB.Msg,
@@ -236,14 +238,14 @@ func setupCollidingProjectsSeparateInstances(
 	instA := createPgInstance(ctx, t, ctl, "col-inst-a")
 	instB := createPgInstance(ctx, t, ctl, "col-inst-b")
 
-	const dbNameA = "collision_db_a"
+	dbNameA := uniqueDB("collision_db_a")
 	a.NoError(ctl.createDatabase(ctx, projectA.Msg, instA, nil, dbNameA, ""))
 	dbA, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instA.Name, dbNameA),
 	}))
 	a.NoError(err)
 
-	const dbNameB = "collision_db_b"
+	dbNameB := uniqueDB("collision_db_b")
 	a.NoError(ctl.createDatabase(ctx, projectB.Msg, instB, nil, dbNameB, ""))
 	dbB, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
 		Name: fmt.Sprintf("%s/databases/%s", instB.Name, dbNameB),
@@ -257,6 +259,8 @@ func setupCollidingProjectsSeparateInstances(
 	baselineA := snapshotProject(ctx, t, ctl, projectA.Msg)
 
 	planB, issueB := createPlanAndIssue(ctx, t, ctl, projectB.Msg, dbB.Msg, "Collision test B")
+
+	waitPlanCheckRunSettled(ctx, t, ctl, planB.Name)
 
 	f := &collisionFixture{
 		ProjectA:  projectA.Msg,
@@ -460,16 +464,16 @@ func listTaskRunAndTaskUIDs(ctx context.Context, t *testing.T, ctl *controller, 
 func createPgInstance(ctx context.Context, t *testing.T, ctl *controller, titlePrefix string) *v1pb.Instance {
 	t.Helper()
 	a := require.New(t)
-	pgContainer, err := provisionPgInstance(ctx, t)
-	a.NoError(err)
+	pgContainer := sharedPgTarget(t)
 	resp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString(titlePrefix),
 		Instance: &v1pb.Instance{
-			Title:       titlePrefix,
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+			SyncDatabases: &v1pb.SyncDatabases{},
+			Title:         titlePrefix,
+			Engine:        v1pb.Engine_POSTGRES,
+			Environment:   new("environments/prod"),
+			Activation:    true,
+			DataSources:   []*v1pb.DataSource{pgContainer.adminDataSource()},
 		},
 	}))
 	a.NoError(err)
@@ -529,6 +533,37 @@ func createPlanIssueRollout(ctx context.Context, t *testing.T, ctl *controller, 
 	return plan, issue, rollout.Msg
 }
 
+// waitPlanCheckRunSettled blocks until the plan's check run leaves the
+// scheduler's hands, so a snapshot of the project is a stable oracle.
+//
+// CreatePlan writes the check run synchronously but the plancheck runner
+// executes it in the background, walking AVAILABLE -> RUNNING -> DONE.
+// Project A settles on its own because the fixture waits out its rollout;
+// project B, whose rollout the caller drives, would otherwise still be
+// mid-flight when a test takes its "before" snapshot. The status then
+// advances during the test and assertProjectUnchanged reads project B's own
+// scheduler as a cross-project write.
+//
+// A plan with no check run is a steady state, not something to wait for.
+func waitPlanCheckRunSettled(ctx context.Context, t *testing.T, ctl *controller, planName string) {
+	t.Helper()
+	a := require.New(t)
+	var last v1pb.PlanCheckRun_Status
+	a.Eventually(func() bool {
+		resp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+			Name: planName + "/planCheckRun",
+		}))
+		if err != nil {
+			return connect.CodeOf(err) == connect.CodeNotFound
+		}
+		last = resp.Msg.Status
+		return last == v1pb.PlanCheckRun_DONE ||
+			last == v1pb.PlanCheckRun_FAILED ||
+			last == v1pb.PlanCheckRun_CANCELED
+	}, 120*time.Second, 200*time.Millisecond,
+		"plan check run for %s never settled (last status %v)", planName, last)
+}
+
 // projectSnapshot captures the state of a project's composite-PK rows as
 // observed through the public gRPC API. Each slice's rows are keyed by the
 // UID parsed from their resource name.
@@ -559,8 +594,8 @@ type projectSnapshot struct {
 
 // planWebhookDelivery is one row of the plan_webhook_delivery table, which
 // has no public gRPC read API. The collision suite snapshots it with the
-// table-specific direct DB read below (see AGENTS.md's allowance for
-// tables without public read APIs).
+// table-specific direct DB read below (see backend/store/AGENTS.md's
+// allowance for tables without public read APIs).
 type planWebhookDelivery struct {
 	PlanID      int64
 	EventType   string

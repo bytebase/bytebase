@@ -35,6 +35,14 @@ func TestGetQueryType(t *testing.T) {
 			want:      base.DDL,
 		},
 		{
+			statement: "((SELECT * FROM users))",
+			want:      base.Select,
+		},
+		{
+			statement: "(SELECT * FROM users) LIMIT 5",
+			want:      base.Select,
+		},
+		{
 			statement: "SHOW DATABASES",
 			want:      base.SelectInfoSchema,
 		},

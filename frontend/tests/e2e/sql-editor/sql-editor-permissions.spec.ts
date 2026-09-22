@@ -229,14 +229,14 @@ test.describe("INSERT is denied with an inline error for sqlEditorReadUser", () 
     // The error pane renders the permission detail somewhere in the
     // result region. We accept any of the common shapes: an explicit
     // "permission" mention, the role name, or the request-role /
-    // request-access-grant CTA.
+    // request-query CTA.
     // The strong assertion is that the row-count footer DID NOT appear
     // (Run reached an error state) AND a request affordance is offered.
     const permissionMention = rc.page.getByText(
       /(permission denied|no.*permission|bb\.sql\.(update|delete|create|admin|insert)|missing.*permission)/i,
     );
     const requestCTA = rc.sqlEditor.requestRoleButton.or(
-      rc.sqlEditor.requestAccessGrantButton,
+      rc.sqlEditor.requestQueryButton,
     );
     const anySignal = permissionMention.or(requestCTA).first();
     await expect(anySignal).toBeVisible({ timeout: 10_000 });
@@ -287,7 +287,7 @@ test.describe("Request-role CTA respects project.allowRequestRole", () => {
 
     // Neither label should appear — the component returned null.
     await expect(rc.sqlEditor.requestRoleButton).toHaveCount(0);
-    await expect(rc.sqlEditor.requestAccessGrantButton).toHaveCount(0);
+    await expect(rc.sqlEditor.requestQueryButton).toHaveCount(0);
   });
 
   test("with allowRequestRole=true, projectViewer running a forbidden SELECT sees the 'Request role' button", async () => {
@@ -309,6 +309,6 @@ test.describe("Request-role CTA respects project.allowRequestRole", () => {
     // Access-grant variant must NOT show — this project has
     // allowJustInTimeAccess=false (its default), so `useJIT` resolves
     // to false and the label switch picks the non-JIT side.
-    await expect(rc.sqlEditor.requestAccessGrantButton).toHaveCount(0);
+    await expect(rc.sqlEditor.requestQueryButton).toHaveCount(0);
   });
 });

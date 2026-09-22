@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var _ advisor.Advisor = (*StatementDisallowTruncateAdvisor)(nil)
@@ -30,7 +30,7 @@ func (*StatementDisallowTruncateAdvisor) Check(_ context.Context, checkCtx advis
 	rule := &statementDisallowTruncateOmniRule{
 		OmniBaseRule: OmniBaseRule{Level: level, Title: checkCtx.Rule.Type.String()},
 	}
-	return RunOmniRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
+	return RunRules(checkCtx.ParsedStatements, []OmniRule{rule}), nil
 }
 
 type statementDisallowTruncateOmniRule struct{ OmniBaseRule }
@@ -74,7 +74,7 @@ func (r *statementDisallowTruncateOmniRule) emitTable(tbl *ast.TableRef, loc ast
 		Code:          code.StatementDisallowTruncate.Int32(),
 		Title:         r.Title,
 		Content:       fmt.Sprintf(`TRUNCATE TABLE %q is not allowed: TRUNCATE auto-commits (breaking surrounding transactional work), bypasses triggers, and resets AUTO_INCREMENT. Prior-backup treats this as DDL and does not produce row-level snapshots.`, qualifyMySQLName(tbl)),
-		StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
+		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
 	})
 }
 
@@ -84,7 +84,7 @@ func (r *statementDisallowTruncateOmniRule) emitPartition(tbl *ast.TableRef, par
 		Code:          code.StatementDisallowTruncate.Int32(),
 		Title:         r.Title,
 		Content:       fmt.Sprintf(`ALTER TABLE %q TRUNCATE PARTITION %q is not allowed: partition truncate shares the auto-commit and prior-backup gaps of TRUNCATE TABLE on MySQL.`, qualifyMySQLName(tbl), partition),
-		StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
+		StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.LocToLine(loc))),
 	})
 }
 

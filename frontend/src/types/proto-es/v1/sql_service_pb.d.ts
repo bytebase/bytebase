@@ -19,7 +19,8 @@ export declare const file_v1_sql_service: GenFile;
 export declare type AdminExecuteRequest = Message<"bytebase.v1.AdminExecuteRequest"> & {
   /**
    * The name is the instance name to execute the query against.
-   * Format: instances/{instance}/databases/{databaseName}
+   * Format: instances/{instance}/databases/{databaseName} or
+   * projects/{project}/instances/{instance}/databases/{databaseName}
    *
    * @generated from field: string name = 1;
    */
@@ -85,8 +86,9 @@ export declare const AdminExecuteResponseSchema: GenMessage<AdminExecuteResponse
  */
 export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
   /**
-   * The name is the instance name to execute the query against.
-   * Format: instances/{instance}/databases/{databaseName}
+   * The name is the database resource name to execute the query against.
+   * Format: instances/{instance}/databases/{databaseName} or
+   * projects/{project}/instances/{instance}/databases/{databaseName}
    *
    * @generated from field: string name = 1;
    */
@@ -189,9 +191,16 @@ export declare type QueryOption = Message<"bytebase.v1.QueryOption"> & {
   redisRunCommandsOn: QueryOption_RedisRunCommandsOn;
 
   /**
-   * @generated from field: bytebase.v1.QueryOption.MSSQLExplainFormat mssql_explain_format = 2;
+   * Which explain output the caller wants, for an explain request.
+   *
+   * Leave it unspecified for the engine's own default, which is the only
+   * output most engines have. Naming a format an engine cannot produce is
+   * INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+   * against an engine that has no explain at all.
+   *
+   * @generated from field: bytebase.v1.QueryOption.ExplainFormat explain_format = 3;
    */
-  mssqlExplainFormat: QueryOption_MSSQLExplainFormat;
+  explainFormat: QueryOption_ExplainFormat;
 };
 
 /**
@@ -232,35 +241,55 @@ export enum QueryOption_RedisRunCommandsOn {
 export declare const QueryOption_RedisRunCommandsOnSchema: GenEnum<QueryOption_RedisRunCommandsOn>;
 
 /**
- * @generated from enum bytebase.v1.QueryOption.MSSQLExplainFormat
+ * The output format of a query plan.
+ *
+ * @generated from enum bytebase.v1.QueryOption.ExplainFormat
  */
-export enum QueryOption_MSSQLExplainFormat {
+export enum QueryOption_ExplainFormat {
   /**
-   * defaults to SHOWPLAN_ALL
+   * The engine's default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a
+   * result, a default the server could not resolve, as when MySQL follows the
+   * session's explain_format; read such a plan as text.
    *
-   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0;
+   * @generated from enum value: EXPLAIN_FORMAT_UNSPECIFIED = 0;
    */
-  MSSQL_EXPLAIN_FORMAT_UNSPECIFIED = 0,
+  EXPLAIN_FORMAT_UNSPECIFIED = 0,
 
   /**
-   * SHOWPLAN_ALL
+   * The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server:
+   * SHOWPLAN_ALL.
    *
-   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_ALL = 1;
+   * @generated from enum value: TEXT = 1;
    */
-  MSSQL_EXPLAIN_FORMAT_ALL = 1,
+  TEXT = 1,
 
   /**
-   * SHOWPLAN_XML
+   * The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON).
    *
-   * @generated from enum value: MSSQL_EXPLAIN_FORMAT_XML = 2;
+   * @generated from enum value: JSON = 2;
    */
-  MSSQL_EXPLAIN_FORMAT_XML = 2,
+  JSON = 2,
+
+  /**
+   * The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server:
+   * SHOWPLAN_XML.
+   *
+   * @generated from enum value: XML = 3;
+   */
+  XML = 3,
+
+  /**
+   * The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML).
+   *
+   * @generated from enum value: YAML = 4;
+   */
+  YAML = 4,
 }
 
 /**
- * Describes the enum bytebase.v1.QueryOption.MSSQLExplainFormat.
+ * Describes the enum bytebase.v1.QueryOption.ExplainFormat.
  */
-export declare const QueryOption_MSSQLExplainFormatSchema: GenEnum<QueryOption_MSSQLExplainFormat>;
+export declare const QueryOption_ExplainFormatSchema: GenEnum<QueryOption_ExplainFormat>;
 
 /**
  * @generated from message bytebase.v1.QueryResult
@@ -357,6 +386,13 @@ export declare type QueryResult = Message<"bytebase.v1.QueryResult"> & {
    * @generated from field: repeated bytebase.v1.MaskingReason masked = 12;
    */
   masked: MaskingReason[];
+
+  /**
+   * Set when the result is a query plan. Unset for any other result.
+   *
+   * @generated from field: bytebase.v1.QueryResult.QueryPlan query_plan = 14;
+   */
+  queryPlan?: QueryResult_QueryPlan | undefined;
 };
 
 /**
@@ -614,6 +650,32 @@ export enum QueryResult_Message_Level {
  * Describes the enum bytebase.v1.QueryResult.Message.Level.
  */
 export declare const QueryResult_Message_LevelSchema: GenEnum<QueryResult_Message_Level>;
+
+/**
+ * A query plan held in the result's rows.
+ *
+ * @generated from message bytebase.v1.QueryResult.QueryPlan
+ */
+export declare type QueryResult_QueryPlan = Message<"bytebase.v1.QueryResult.QueryPlan"> & {
+  /**
+   * @generated from field: bytebase.v1.QueryOption.ExplainFormat format = 1;
+   */
+  format: QueryOption_ExplainFormat;
+
+  /**
+   * Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+   * does.
+   *
+   * @generated from field: bool executed = 2;
+   */
+  executed: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.QueryResult.QueryPlan.
+ * Use `create(QueryResult_QueryPlanSchema)` to create a new message.
+ */
+export declare const QueryResult_QueryPlanSchema: GenMessage<QueryResult_QueryPlan>;
 
 /**
  * @generated from message bytebase.v1.MaskingReason
@@ -1000,8 +1062,8 @@ export declare const Advice_RuleTypeSchema: GenEnum<Advice_RuleType>;
 export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
   /**
    * The name is the resource name to execute the export against.
-   * Format: instances/{instance}/databases/{database}
-   * Format: instances/{instance}
+   * Format: instances/{instance}/databases/{database} or
+   * projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string name = 1;
    */

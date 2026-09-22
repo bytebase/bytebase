@@ -97,6 +97,43 @@ func TestNewMigrationContextTrimsTrailingSemicolon(t *testing.T) {
 	}
 }
 
+func TestNewMigrationContextSkipMetadataLockCheck(t *testing.T) {
+	ctx := context.Background()
+	database := &store.DatabaseMessage{DatabaseName: "ghostdb"}
+	dataSource := &storepb.DataSource{
+		Host:               "127.0.0.1",
+		Port:               "3306",
+		Username:           "root",
+		AuthenticationType: storepb.DataSource_PASSWORD,
+	}
+
+	testCases := []struct {
+		name  string
+		flags map[string]string
+		want  bool
+	}{
+		{
+			name: "disabled by default",
+			want: false,
+		},
+		{
+			name: "enabled by user flag",
+			flags: map[string]string{
+				"skip-metadata-lock-check": "true",
+			},
+			want: true,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			migrationContext, cleanup, err := NewMigrationContext(ctx, 1, database, dataSource, "t", "_suffix", "ALTER TABLE t ADD COLUMN c INT", false, tc.flags, 0)
+			require.NoError(t, err)
+			t.Cleanup(cleanup)
+			require.Equal(t, tc.want, migrationContext.SkipMetadataLockCheck)
+		})
+	}
+}
+
 func TestNewMigrationContextWritesTLSMaterialToTempFiles(t *testing.T) {
 	certPEM, keyPEM := generateSelfSignedPEM(t)
 

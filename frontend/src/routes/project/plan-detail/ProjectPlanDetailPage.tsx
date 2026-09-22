@@ -23,6 +23,9 @@ import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
+import { useUnresolvedThreadTotal } from "./components/threads/useUnresolvedThreadCounts";
+import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
+import { usePlacementSync } from "./hooks/usePlacementSync";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
@@ -105,6 +108,14 @@ function ProjectPlanDetailPageInner({
     specId,
     stageId,
     taskId,
+  });
+  useIssueCommentThreadsSync(page.issue);
+  const unresolvedThreads = useUnresolvedThreadTotal(page.issue?.name);
+  usePlacementSync({
+    issueName: page.issue?.name,
+    projectId,
+    ready: page.ready,
+    specs: page.plan.specs,
   });
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
@@ -253,7 +264,7 @@ function ProjectPlanDetailPageInner({
       <div
         ref={setPageHost}
         data-testid="plan-detail-page"
-        className="relative min-h-full overflow-x-clip bg-gray-50"
+        className="relative min-h-full overflow-x-clip bg-control-bg/50"
       >
         <div
           className={cn(
@@ -268,7 +279,7 @@ function ProjectPlanDetailPageInner({
               only when stuck, so the row is flat at the top. */}
           <header
             className={cn(
-              "sticky top-0 z-20 shrink-0 bg-white",
+              "sticky top-0 z-20 shrink-0 bg-background",
               headerStuck && "border-b"
             )}
           >
@@ -309,7 +320,7 @@ function ProjectPlanDetailPageInner({
                   onSelect={() => selectPhase("review")}
                   status={phaseConfigs.review.status}
                   onToggle={() => page.togglePhase("review")}
-                  summary={buildReviewSummary(page.issue, t)}
+                  summary={buildReviewSummary(page.issue, t, unresolvedThreads)}
                   future={
                     <p className="mt-0.5 text-sm text-control-placeholder">
                       {t("plan.phase.review-description")}
@@ -351,7 +362,7 @@ function ProjectPlanDetailPageInner({
         </div>
 
         {!page.ready && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-white">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-y-3 bg-background">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
             <div className="text-sm text-control-light">
               {t("common.loading")}
@@ -427,11 +438,11 @@ function PhaseSection({
   const { t } = useTranslation();
   const dotClass =
     status === "completed"
-      ? "bg-success text-white ring-[3px] ring-success/15 md:ring-4"
+      ? "bg-success text-accent-text ring-[3px] ring-success/15 md:ring-4"
       : status === "closed"
-        ? "bg-control-placeholder text-white"
+        ? "bg-control-placeholder text-accent-text"
         : status === "active"
-          ? "bg-accent text-white ring-[3px] ring-accent/15 md:ring-4"
+          ? "bg-accent text-accent-text ring-[3px] ring-accent/15 md:ring-4"
           : "border-2 border-dashed border-control-border text-control-placeholder";
 
   return (
@@ -474,7 +485,7 @@ function PhaseSection({
               <span className="textlabel uppercase">{label}</span>
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
-              <span className="shrink-0 text-[11px] text-control-placeholder">
+              <span className="shrink-0 text-xs text-control-placeholder">
                 {t("plan.phase.show-details")}
               </span>
             </div>
@@ -489,13 +500,13 @@ function PhaseSection({
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
               <span
-                className="shrink-0 cursor-pointer text-[11px] text-control-placeholder hover:text-control"
+                className="shrink-0 cursor-pointer text-xs text-control-placeholder hover:text-control"
                 onClick={onToggle}
               >
                 {t("plan.phase.hide-details")}
               </span>
             </div>
-            <div className="mt-1 overflow-hidden rounded-lg border bg-white">
+            <div className="mt-1 overflow-hidden rounded-sm border bg-background">
               {children}
             </div>
           </div>

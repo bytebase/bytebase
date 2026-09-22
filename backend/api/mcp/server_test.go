@@ -122,9 +122,52 @@ func TestMCPAuthMiddleware(t *testing.T) {
 	}
 }
 
+// TestNewServerRequiresStore keeps the constructor's nil check honest. A nil
+// *store.Store assigned to the serverStore interface produces a NON-nil
+// interface holding a nil pointer, so no later nil test catches it and the
+// failure would surface as a nil-receiver panic on the first ceiling read
+// inside authMiddleware.
 func TestNewServerRequiresStore(t *testing.T) {
 	_, err := NewServer(nil, &config.Profile{}, "test-secret", nil)
 	require.Error(t, err)
+}
+
+// TestMCPCeilingFailuresRefuseTheConnectionDifferently pins the split the
+// connection gate makes on the two ways a ceiling can be unusable. Both refuse.
+// They must not describe themselves as each other: telling an operator their
+// admin disabled MCP during a database blip sends them to the wrong place, and
+// telling a client to retry a mistyped stored value promises something no
+// retry delivers.
+//
+// This covers the arm above the stored-value cases.
+func TestMCPReadFailureRefusesTheConnectionAsUnavailable(t *testing.T) {
+	secret := "test-secret-key"
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+
+	statusFor := func(t *testing.T, capabilityErr error) int {
+		t.Helper()
+		fake := newTestServerStore()
+		fake.capabilityErr = capabilityErr
+		s, err := newServerWithStore(fake, profile, secret, nil)
+		require.NoError(t, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+tokenForWorkspace(t, secret, fake.workspaceID))
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		handler := s.authMiddleware(func(c *echo.Context) error {
+			return c.String(http.StatusOK, "success")
+		})
+		if err := handler(c); err != nil {
+			echo.DefaultHTTPErrorHandler(true)(c, err)
+		}
+		return rec.Code
+	}
+
+	require.Equal(t, http.StatusServiceUnavailable, statusFor(t, errors.New("db unreachable")),
+		"a failed read is an outage; the session is still refused, and the client may retry")
 }
 
 func TestMCPAuthFailsExplicitlyWithoutExternalURL(t *testing.T) {
@@ -523,6 +566,25 @@ func generateTokenWithWrongAudience(t *testing.T, secret string) string {
 		"sub":          "test@example.com",
 		"aud":          "wrong.audience",
 		"workspace_id": "ws-test",
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = "v1"
+	tokenStr, err := token.SignedString([]byte(secret))
+	require.NoError(t, err)
+	return tokenStr
+}
+
+// tokenForWorkspace mints a legacy-audience MCP token for a workspace, the
+// shape the boundary still admits while such tokens live.
+func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
+	t.Helper()
+	claims := jwt.MapClaims{
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          auth.OAuth2AccessTokenAudience,
+		"workspace_id": workspaceID,
 		"exp":          time.Now().Add(time.Hour).Unix(),
 		"iat":          time.Now().Unix(),
 	}

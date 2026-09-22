@@ -3,17 +3,34 @@ package oracle
 import (
 	"strings"
 
+	metadatapb "github.com/bytebase/omni/metadata"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
+// Two of GetSchemaString's object types are deliberately left unregistered.
+//
+// SCHEMA: an Oracle schema is a user, one per database, so its definition is the
+// database definition GetDatabaseDefinition already renders. Only pg registers a
+// schema definition; MSSQL, MySQL and TiDB have real schemas and do not.
+//
+// SEQUENCE: getSequences in backend/plugin/db/oracle/sync.go selects only
+// SEQUENCE_NAME, so synced sequences carry no Start, Increment, MaxValue or
+// Cycle. Rendering one would emit a bare CREATE SEQUENCE that silently drops the
+// real increment and bounds. Registering it has to wait for the sync to read
+// those columns.
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_ORACLE, GetDatabaseDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_ORACLE, GetTableDefinition)
+	schema.RegisterGetViewDefinition(storepb.Engine_ORACLE, GetViewDefinition)
+	schema.RegisterGetMaterializedViewDefinition(storepb.Engine_ORACLE, GetMaterializedViewDefinition)
+	schema.RegisterGetFunctionDefinition(storepb.Engine_ORACLE, GetFunctionDefinition)
+	schema.RegisterGetProcedureDefinition(storepb.Engine_ORACLE, GetProcedureDefinition)
 }
 
-func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *metadatapb.DatabaseSchemaMetadata) (string, error) {
 	if len(to.Schemas) == 0 {
 		return "", nil
 	}
@@ -35,11 +52,11 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 
 	// Build dependency graph for topological sorting
 	graph := base.NewGraph()
-	tableMap := make(map[string]*storepb.TableMetadata)
-	viewMap := make(map[string]*storepb.ViewMetadata)
-	materializedViewMap := make(map[string]*storepb.MaterializedViewMetadata)
-	functionMap := make(map[string]*storepb.FunctionMetadata)
-	procedureMap := make(map[string]*storepb.ProcedureMetadata)
+	tableMap := make(map[string]*metadatapb.TableMetadata)
+	viewMap := make(map[string]*metadatapb.ViewMetadata)
+	materializedViewMap := make(map[string]*metadatapb.MaterializedViewMetadata)
+	functionMap := make(map[string]*metadatapb.FunctionMetadata)
+	procedureMap := make(map[string]*metadatapb.ProcedureMetadata)
 
 	// Add tables to graph
 	for _, table := range schema.Tables {
@@ -168,7 +185,7 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 	return buf.String(), nil
 }
 
-func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
+func GetTableDefinition(_ string, table *metadatapb.TableMetadata, _ []*metadatapb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeTable(&buf, table); err != nil {
 		return "", err
@@ -177,7 +194,47 @@ func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.Seq
 	return buf.String(), nil
 }
 
-func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
+// The single-object definitions below all ignore the schema argument: Oracle has
+// one schema per database and the writers emit unqualified names, matching
+// GetTableDefinition and the whole-database output.
+
+func GetViewDefinition(_ string, view *metadatapb.ViewMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeView(&buf, view); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetMaterializedViewDefinition(_ string, view *metadatapb.MaterializedViewMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeMaterializedView(&buf, view); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetFunctionDefinition(_ string, function *metadatapb.FunctionMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeFunction(&buf, function); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetProcedureDefinition(_ string, procedure *metadatapb.ProcedureMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeProcedure(&buf, procedure); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func writeTable(buf *strings.Builder, table *metadatapb.TableMetadata) error {
 	if _, err := buf.WriteString(`CREATE TABLE "`); err != nil {
 		return err
 	}
@@ -250,17 +307,10 @@ func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
-	// Write triggers for this table
-	for _, trigger := range table.Triggers {
-		if err := writeTrigger(buf, trigger); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return writeTriggers(buf, table.Triggers)
 }
 
-func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
+func writeIndex(buf *strings.Builder, table string, index *metadatapb.IndexMetadata) error {
 	if _, err := buf.WriteString(`CREATE`); err != nil {
 		return err
 	}
@@ -369,7 +419,7 @@ func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata
 	return nil
 }
 
-func writeForeignKey(buf *strings.Builder, fk *storepb.ForeignKeyMetadata) error {
+func writeForeignKey(buf *strings.Builder, fk *metadatapb.ForeignKeyMetadata) error {
 	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -437,7 +487,7 @@ func writeForeignKey(buf *strings.Builder, fk *storepb.ForeignKeyMetadata) error
 	return err
 }
 
-func writeCheckConstraint(buf *strings.Builder, check *storepb.CheckConstraintMetadata) error {
+func writeCheckConstraint(buf *strings.Builder, check *metadatapb.CheckConstraintMetadata) error {
 	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -457,7 +507,7 @@ func writeCheckConstraint(buf *strings.Builder, check *storepb.CheckConstraintMe
 	return err
 }
 
-func writeConstraint(buf *strings.Builder, constraint *storepb.IndexMetadata) error {
+func writeConstraint(buf *strings.Builder, constraint *metadatapb.IndexMetadata) error {
 	if _, err := buf.WriteString(`CONSTRAINT "`); err != nil {
 		return err
 	}
@@ -521,7 +571,7 @@ func writeConstraint(buf *strings.Builder, constraint *storepb.IndexMetadata) er
 	return nil
 }
 
-func writeColumn(buf *strings.Builder, column *storepb.ColumnMetadata) error {
+func writeColumn(buf *strings.Builder, column *metadatapb.ColumnMetadata) error {
 	if _, err := buf.WriteString(`"`); err != nil {
 		return err
 	}
@@ -574,7 +624,7 @@ func writeColumn(buf *strings.Builder, column *storepb.ColumnMetadata) error {
 	return nil
 }
 
-func writeSequence(buf *strings.Builder, sequence *storepb.SequenceMetadata) error {
+func writeSequence(buf *strings.Builder, sequence *metadatapb.SequenceMetadata) error {
 	if _, err := buf.WriteString("CREATE SEQUENCE \""); err != nil {
 		return err
 	}
@@ -634,13 +684,20 @@ func getObjectID(schema, objectName string) string {
 }
 
 // writeView writes a CREATE VIEW statement
-func writeView(buf *strings.Builder, view *storepb.ViewMetadata) error {
+func writeView(buf *strings.Builder, view *metadatapb.ViewMetadata) error {
 	if _, err := buf.WriteString(`CREATE VIEW "`); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(view.Name); err != nil {
 		return err
 	}
+	// The synced column names are deliberately not written back as an explicit
+	// list. They would restore the aliases of CREATE VIEW V (RENAMED) AS SELECT
+	// BASE ..., which ALL_VIEWS.TEXT does not carry, but getTableColumns drops
+	// invisible columns (COLUMN_ID IS NULL, sync.go:485) while the query keeps
+	// their expressions -- so a view with an invisible column would get fewer
+	// names than output columns and fail with ORA-01730. Losing an alias beats
+	// emitting DDL that cannot run.
 	if _, err := buf.WriteString(`" AS `); err != nil {
 		return err
 	}
@@ -655,11 +712,14 @@ func writeView(buf *strings.Builder, view *storepb.ViewMetadata) error {
 	if _, err := buf.WriteString("\n\n"); err != nil {
 		return err
 	}
-	return nil
+
+	// An INSTEAD OF trigger carries the view's DML behavior, so it belongs with
+	// the view the way writeTable emits a table's triggers.
+	return writeTriggers(buf, view.Triggers)
 }
 
 // writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
-func writeMaterializedView(buf *strings.Builder, view *storepb.MaterializedViewMetadata) error {
+func writeMaterializedView(buf *strings.Builder, view *metadatapb.MaterializedViewMetadata) error {
 	if _, err := buf.WriteString(`CREATE MATERIALIZED VIEW "`); err != nil {
 		return err
 	}
@@ -680,11 +740,12 @@ func writeMaterializedView(buf *strings.Builder, view *storepb.MaterializedViewM
 	if _, err := buf.WriteString("\n\n"); err != nil {
 		return err
 	}
-	return nil
+
+	return writeTriggers(buf, view.Triggers)
 }
 
 // writeFunction writes a CREATE FUNCTION statement
-func writeFunction(buf *strings.Builder, function *storepb.FunctionMetadata) error {
+func writeFunction(buf *strings.Builder, function *metadatapb.FunctionMetadata) error {
 	definition := function.Definition
 	// If the definition doesn't start with CREATE, add the CREATE OR REPLACE prefix
 	if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(definition)), "CREATE") {
@@ -707,7 +768,7 @@ func writeFunction(buf *strings.Builder, function *storepb.FunctionMetadata) err
 }
 
 // writeProcedure writes a CREATE PROCEDURE statement
-func writeProcedure(buf *strings.Builder, procedure *storepb.ProcedureMetadata) error {
+func writeProcedure(buf *strings.Builder, procedure *metadatapb.ProcedureMetadata) error {
 	definition := procedure.Definition
 	// If the definition doesn't start with CREATE, add the CREATE OR REPLACE prefix
 	if !strings.HasPrefix(strings.ToUpper(strings.TrimSpace(definition)), "CREATE") {
@@ -729,8 +790,18 @@ func writeProcedure(buf *strings.Builder, procedure *storepb.ProcedureMetadata) 
 	return nil
 }
 
+// writeTriggers writes the CREATE TRIGGER statements owned by a table or view.
+func writeTriggers(buf *strings.Builder, triggers []*metadatapb.TriggerMetadata) error {
+	for _, trigger := range triggers {
+		if err := writeTrigger(buf, trigger); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // writeTrigger writes a CREATE TRIGGER statement
-func writeTrigger(buf *strings.Builder, trigger *storepb.TriggerMetadata) error {
+func writeTrigger(buf *strings.Builder, trigger *metadatapb.TriggerMetadata) error {
 	// The trigger body should already contain the full CREATE TRIGGER statement
 	if _, err := buf.WriteString(trigger.Body); err != nil {
 		return err

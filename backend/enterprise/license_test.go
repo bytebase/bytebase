@@ -6,20 +6,19 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -137,18 +136,101 @@ func TestCreateLicenseUsesEqualInstanceClaims(t *testing.T) {
 	}
 }
 
+func TestNewLicenseClaimsPropagatesTrialing(t *testing.T) {
+	trial := newLicenseClaims(&LicenseParams{Plan: v1pb.PlanType_TEAM.String(), Trialing: true})
+	require.True(t, trial.Trialing)
+
+	paid := newLicenseClaims(&LicenseParams{Plan: v1pb.PlanType_TEAM.String()})
+	require.False(t, paid.Trialing)
+}
+
+func TestParseLicenseExpiredIsInvalid(t *testing.T) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	service := &LicenseService{
+		config: &Config{
+			PublicKey:  &privateKey.PublicKey,
+			PrivateKey: privateKey,
+			Version:    keyID,
+			Issuer:     issuer,
+			Audience:   audience,
+		},
+	}
+	license, err := service.CreateLicense(&LicenseParams{
+		Plan:      v1pb.PlanType_TEAM.String(),
+		ExpiresAt: time.Now().Add(-time.Hour),
+	})
+	require.NoError(t, err)
+
+	err = service.validateLicense(license, "test-workspace")
+	require.Equal(t, common.Invalid, common.ErrorCode(err))
+}
+
+func TestLoadSubscriptionFromDB(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	t.Cleanup(cancel)
+	_, stores, _ := testcontainer.NewMetadataDBWithCache(t, true)
+
+	_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
+	require.NoError(t, err)
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_SYSTEM,
+		Workspace: "default",
+		Value:     &storepb.SystemSetting{},
+	})
+	require.NoError(t, err)
+
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	service := &LicenseService{
+		store: stores,
+		config: &Config{
+			PublicKey:  &privateKey.PublicKey,
+			PrivateKey: privateKey,
+			Version:    keyID,
+			Issuer:     issuer,
+			Audience:   audience,
+		},
+		cache: expirable.NewLRU[string, *v1pb.Subscription](8, nil, time.Minute),
+	}
+
+	stored, err := service.LoadSubscriptionFromDB(ctx, "default")
+	require.NoError(t, err)
+	require.Nil(t, stored)
+	require.Equal(t, v1pb.PlanType_FREE, service.LoadEffectiveSubscription(ctx, "default").Plan)
+
+	expiresAt := time.Now().Add(-time.Hour).UTC().Truncate(time.Second)
+	license, err := service.CreateLicense(&LicenseParams{
+		Plan:        v1pb.PlanType_TEAM.String(),
+		WorkspaceID: "default",
+		Trialing:    true,
+		ExpiresAt:   expiresAt,
+	})
+	require.NoError(t, err)
+	require.NoError(t, stores.UpdateLicense(ctx, "default", license))
+	service.InvalidateCache("default")
+
+	stored, err = service.LoadSubscriptionFromDB(ctx, "default")
+	require.NoError(t, err)
+	require.Equal(t, v1pb.PlanType_TEAM, stored.Plan)
+	require.True(t, stored.Trialing)
+	require.Equal(t, expiresAt, stored.ExpiresTime.AsTime())
+
+	effective := service.LoadEffectiveSubscription(ctx, "default")
+	require.Equal(t, v1pb.PlanType_FREE, effective.Plan)
+	require.Equal(t, expiresAt, effective.ExpiresTime.AsTime())
+
+	require.NoError(t, stores.UpdateLicense(ctx, "default", "not-a-license"))
+	service.InvalidateCache("default")
+	_, err = service.LoadSubscriptionFromDB(ctx, "default")
+	require.Error(t, err)
+	require.Equal(t, v1pb.PlanType_FREE, service.LoadEffectiveSubscription(ctx, "default").Plan)
+}
+
 func TestGetUserLimitUncached(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	_, s, _ := testcontainer.NewMetadataDB(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort())
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
 	t.Cleanup(func() { s.Close() })
 
 	// Sign licenses with a test-only keypair so finite and expired licenses can
@@ -198,6 +280,11 @@ func TestGetUserLimitUncached(t *testing.T) {
 	limit, err = licenseService.GetUserLimitUncached(ctx, "ws-a")
 	require.NoError(t, err)
 	require.Equal(t, 100, limit)
+	state, err := licenseService.GetVerifiedStateUncached(ctx, "ws-a")
+	require.NoError(t, err)
+	require.Nil(t, state.ExpiresAt)
+	require.Equal(t, 100, state.UserLimit)
+	require.Equal(t, math.MaxInt, state.InstanceLimit)
 
 	// Legacy Enterprise license without a seat claim: unlimited.
 	storeLicense(t, &LicenseParams{
@@ -208,11 +295,21 @@ func TestGetUserLimitUncached(t *testing.T) {
 	require.Equal(t, math.MaxInt, limit)
 
 	// Expired Enterprise license: falls back to the Free plan limit.
+	expiresAt := time.Now().Add(-time.Hour)
 	storeLicense(t, &LicenseParams{
 		Plan: v1pb.PlanType_ENTERPRISE.String(), Seats: 100, WorkspaceID: "ws-a",
-		ExpiresAt: time.Now().Add(-time.Hour),
+		ExpiresAt: expiresAt,
 	})
 	limit, err = licenseService.GetUserLimitUncached(ctx, "ws-a")
 	require.NoError(t, err)
 	require.Equal(t, userLimitValues[v1pb.PlanType_FREE], limit)
+	state, err = licenseService.GetVerifiedStateUncached(ctx, "ws-a")
+	require.NoError(t, err)
+	require.WithinDuration(t, expiresAt, *state.ExpiresAt, time.Second)
+	require.Equal(t, userLimitValues[v1pb.PlanType_FREE], state.UserLimit)
+	require.Equal(t, instanceLimitValues[v1pb.PlanType_FREE], state.InstanceLimit)
+
+	require.NoError(t, s.UpdateLicense(ctx, "ws-a", "not-a-license"))
+	_, err = licenseService.GetVerifiedStateUncached(ctx, "ws-a")
+	require.Error(t, err)
 }

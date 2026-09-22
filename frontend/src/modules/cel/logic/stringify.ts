@@ -2,6 +2,7 @@ import type {
   Constant,
   Expr,
 } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
+import { celString } from "@/utils/v1/celLiteral";
 
 function stringifyExpr(expr: Expr): string {
   if (expr.exprKind?.case === "constExpr") {
@@ -79,7 +80,7 @@ function stringifyConstant(constant: Constant): string {
   } else if (constant.constantKind?.case === "doubleValue") {
     return constant.constantKind.value.toString();
   } else if (constant.constantKind?.case === "stringValue") {
-    return `"${constant.constantKind.value}"`;
+    return celString(constant.constantKind.value);
   } else if (constant.constantKind?.case === "bytesValue") {
     return `b'${constant.constantKind.value.toString()}'`;
   } else if (constant.constantKind?.case === "durationValue") {

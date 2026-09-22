@@ -14,15 +14,12 @@ type Props = {
 };
 
 /**
- * React port of `plugins/ai/components/ChatView/Markdown/Markdown.vue`.
- *
  * Parses the message content with `remark-parse` + `remark-gfm` and
  * walks the AST via `AstToReact`. Three slots customize rendering:
  *   - `code` (block-level fenced code) → `<CodeBlock>` (interactive,
  *     SQL editor with Run/Insert/Copy)
- *   - `inlineCode` → plain styled `<code>` (the Vue version used
- *     `HighlightCodeBlock`; for parity we render the same gray pill
- *     without syntax highlighting — short snippets rarely benefit)
+ *   - `inlineCode` → plain styled `<code>` without syntax highlighting
+ *     (short snippets rarely benefit)
  *   - `image` → unstyled `<img>`
  */
 export function Markdown({ content, codeBlockProps }: Props) {
@@ -37,11 +34,15 @@ export function Markdown({ content, codeBlockProps }: Props) {
           "code",
           {
             className:
-              "inline-block rounded-xs bg-control-bg-hover px-0.5 mx-0.5 text-control",
+              "inline-block max-w-full wrap-anywhere whitespace-normal rounded-xs bg-control-bg-hover px-0.5 mx-0.5 text-control",
           },
           node.value.replace(/\r?\n|\r/g, " ")
         ),
-      image: (node) => createElement("img", { src: node.url }),
+      image: (node) =>
+        createElement("img", {
+          src: node.url,
+          className: "h-auto max-w-full",
+        }),
     }),
     [codeBlockProps]
   );

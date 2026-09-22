@@ -204,9 +204,9 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
             >
               <div>
                 <div
-                  className={`flex justify-center border-2 border-gray-300 border-dashed rounded-xs relative h-48 transition-all ${
-                    dropActive ? "bg-gray-300 opacity-100" : ""
-                  } ${uploadDisabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-gray-100"}`}
+                  className={`flex justify-center border-2 border-control-border border-dashed rounded-xs relative h-48 transition-all ${
+                    dropActive ? "bg-control-bg-hover opacity-100" : ""
+                  } ${uploadDisabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-control-bg"}`}
                   onClick={() => {
                     if (!uploadDisabled) fileInputRef.current?.click();
                   }}
@@ -226,26 +226,26 @@ export const BrandingSection = forwardRef<SectionHandle, BrandingSectionProps>(
                   <div
                     className={`flex flex-col gap-y-1 text-center justify-center items-center absolute top-0 bottom-0 left-0 right-0 ${
                       logoUrl
-                        ? "opacity-0 hover:opacity-80 hover:bg-gray-100"
+                        ? "opacity-0 hover:opacity-80 hover:bg-control-bg"
                         : ""
                     }`}
                   >
-                    <div className="text-sm text-gray-600 inline-flex pointer-events-none">
-                      <span className="relative cursor-pointer rounded-xs font-medium text-indigo-600 hover:text-indigo-500">
+                    <div className="text-sm text-control inline-flex pointer-events-none">
+                      <span className="relative cursor-pointer rounded-xs font-medium text-accent hover:text-accent-hover">
                         {t("settings.general.workspace.select-logo")}
                       </span>
                       <p className="pl-1">
                         {t("settings.general.workspace.drag-logo")}
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500 pointer-events-none">
+                    <p className="text-xs text-control-light pointer-events-none">
                       {t("settings.general.workspace.logo-upload-tip", {
                         extension: SUPPORT_IMAGE_EXTENSIONS.join(", "),
                         size: MAX_FILE_SIZE_MIB,
                       })}
                     </p>
                   </div>
-                  <input
+                  <Input
                     ref={fileInputRef}
                     type="file"
                     accept={SUPPORT_IMAGE_EXTENSIONS.join(",")}

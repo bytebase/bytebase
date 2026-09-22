@@ -10,7 +10,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -134,7 +133,7 @@ func (c *Context) GetMetaList() []Meta {
 		})
 		m = append(m, Meta{
 			Name:  "Issue Description",
-			Value: common.TruncateStringWithDescription(c.Issue.Description),
+			Value: TruncateStringWithDescription(c.Issue.Description),
 		})
 	} else if c.Rollout != nil {
 		if c.Rollout.Title != "" {
@@ -178,7 +177,7 @@ func (c *Context) GetMetaListZh() []Meta {
 		})
 		m = append(m, Meta{
 			Name:  "工单描述",
-			Value: common.TruncateStringWithDescription(c.Issue.Description),
+			Value: TruncateStringWithDescription(c.Issue.Description),
 		})
 	} else if c.Rollout != nil {
 		if c.Rollout.Title != "" {

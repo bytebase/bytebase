@@ -14,6 +14,7 @@ import { AIChatToSQL, AIContextProvider } from "@/modules/ai/components";
 import { aiContextEvents } from "@/modules/ai/logic";
 import { resizeHandleClass } from "@/modules/schema-editor/resize";
 import { DatabaseChooser } from "@/modules/sql-editor/components/DatabaseChooser";
+import { DataExplorerPanel } from "@/modules/sql-editor/components/DataExplorer/DataExplorerPanel";
 import { DiagramPanel } from "@/modules/sql-editor/components/DiagramPanel";
 import { ExternalTablesPanel } from "@/modules/sql-editor/components/ExternalTablesPanel";
 import { FunctionsPanel } from "@/modules/sql-editor/components/FunctionsPanel";
@@ -53,25 +54,16 @@ const AIPaneFallback = () => (
 );
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/Panels.vue`.
- *
- * The host shell beneath `<EditorPanel>`. Two render modes:
+ * The host shell beneath the `<TabList>` in `SQLEditorHomePage`'s main
+ * column. Two render modes:
  * - `viewState.view === "CODE"` (or no viewState) — shows the saved query
  *   editor (`<StandardPanel>`) or terminal (`<TerminalPanel>`) based on
- *   the active tab's mode. The Vue version did this selection in
- *   `EditorPanel.vue` and passed the result into `<Panels>` via a named
- *   slot; React inlines it here since slots-as-children don't survive
- *   the cross-framework boundary cleanly.
+ *   the active tab's mode.
  * - any other `viewState.view` — shows a metadata browser surface
  *   (info / tables / views / functions / etc.) with the schema-select
  *   toolbar above. The AI pane mounts to the right via a horizontal
  *   resizable split when the user has both the AI panel and a
- *   "code-viewer" surface open (matches the Vue `isShowingCode`
- *   gate that previously hoisted the AI pane up from `CodeViewer.vue`).
- *
- * The Vue version's `availableActions` computation lives in
- * `useAvailableActions` (already React-side); the schema-sync watchers
- * move into React `useEffect`s here.
+ *   "code-viewer" surface open (`isShowingCode`).
  */
 export function Panels() {
   const { t } = useTranslation();
@@ -81,12 +73,6 @@ export function Panels() {
   const { database } = useConnectionOfCurrentSQLEditorTab();
 
   const tab = useCurrentSQLEditorTab();
-  // Subscribe to `mode` as its own primitive — Pinia's tabStore mutates
-  // the tab proxy in place via `Object.assign`, so `() => tabStore
-  // .currentTab` only fires Vue's watch on tab-switches (proxy
-  // reference changes), not on `mode` flipping between "SAVED_QUERY" and
-  // "ADMIN" within the same tab. Without this, clicking the admin-mode
-  // button doesn't swap to the `TerminalPanel`.
   const tabMode = useSQLEditorTabState(
     (s) => s.tabsById.get(s.currentTabId)?.mode
   );
@@ -99,13 +85,11 @@ export function Panels() {
   const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
 
   const showAIPaneAlongsidePanel = showAIPanel && isShowingCode;
+  const effectiveView = tabMode === "DATA_EXPLORER" ? "CODE" : view;
   const { setSchema, updateViewState } = useViewStateNav();
   const { execute } = useExecuteSQL();
 
-  // AI plugin "run-statement" handler — mirrors Vue's
-  // `useEmitteryEventListener(AIEvents, "run-statement", ...)`. The
-  // event bus is a module-level singleton so we don't need to traverse
-  // a Vue provide chain to access it.
+  // Run statements the AI chat sends via the "run-statement" event.
   useEffect(() => {
     const off = aiContextEvents.on(
       "run-statement",
@@ -140,8 +124,7 @@ export function Panels() {
   });
 
   // Pin the active schema to a sensible default whenever the tab,
-  // database metadata, or current schema changes (mirrors the Vue
-  // immediate watcher).
+  // database metadata, or current schema changes.
   const tabId = tab?.id;
   const currentSchema = tab?.viewState?.schema;
   useEffect(() => {
@@ -169,6 +152,9 @@ export function Panels() {
     if (tabMode === "ADMIN") {
       return <TerminalPanel key={`terminal-${tab.id}`} />;
     }
+    if (tabMode === "DATA_EXPLORER") {
+      return <DataExplorerPanel key={`data-explorer-${tab.id}`} />;
+    }
     return (
       <Alert variant="error" className="m-2" key={`no-permission-${tab.id}`}>
         <ShieldAlert className="size-5 shrink-0 mt-0.5" />
@@ -177,7 +163,9 @@ export function Panels() {
     );
   }, [tab, tabMode, t]);
 
-  const subPanel = view ? renderSubPanel(view, tab?.id) : null;
+  const subPanel = effectiveView
+    ? renderSubPanel(effectiveView, tab?.id)
+    : null;
 
   const handleAiResize = (sizePct: number) => {
     if (!Number.isFinite(sizePct)) return;
@@ -187,8 +175,8 @@ export function Panels() {
   return (
     <div className="flex-1 flex items-stretch overflow-hidden">
       <div className="flex-1 overflow-y-hidden overflow-x-auto">
-        {(!view || view === "CODE") && codePanel}
-        {view && view !== "CODE" && (
+        {(!effectiveView || effectiveView === "CODE") && codePanel}
+        {effectiveView && effectiveView !== "CODE" && (
           <div className="h-full flex flex-col">
             <div className="py-2 px-2 w-full flex flex-row gap-x-2 justify-between items-center">
               <div className="flex items-center justify-start gap-2">

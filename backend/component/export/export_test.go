@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/stretchr/testify/assert"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -320,6 +321,47 @@ func TestExportJSON(t *testing.T) {
 	}
 }
 
+func TestExportCSV(t *testing.T) {
+	tests := []struct {
+		result *v1pb.QueryResult
+		want   string
+	}{
+		{
+			// Byte values render as quoted hex. This was only ever asserted through a
+			// MySQL BIT column in backend/tests; it belongs here, where the rendering
+			// lives, and covers every engine that returns bytes.
+			result: &v1pb.QueryResult{
+				ColumnNames: []string{"gender", "height"},
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte{0x00}}},
+							{Kind: &v1pb.RowValue_BytesValue{BytesValue: []byte{0x7f}}},
+						},
+					},
+				},
+			},
+			want: "gender,height\n\"0x00\",\"0x7f\"",
+		},
+		{
+			result: &v1pb.QueryResult{
+				ColumnNames: []string{"a"},
+				Rows: []*v1pb.QueryRow{
+					{Values: []*v1pb.RowValue{{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}}}},
+				},
+			},
+			want: "a\n1",
+		},
+	}
+	a := assert.New(t)
+
+	for _, test := range tests {
+		got, err := CSV(test.result)
+		a.NoError(err)
+		a.Equal(test.want, string(got))
+	}
+}
+
 func TestGetResourcesTiDB(t *testing.T) {
 	a := assert.New(t)
 	ctx := context.Background()
@@ -333,15 +375,15 @@ func TestGetResourcesTiDB(t *testing.T) {
 
 	getDatabaseMetadataFunc := func(_ context.Context, _ string, _ string) (string, *model.DatabaseMetadata, error) {
 		dbMeta := model.NewDatabaseMetadata(
-			&storepb.DatabaseSchemaMetadata{
+			&metadatapb.DatabaseSchemaMetadata{
 				Name: "",
-				Schemas: []*storepb.SchemaMetadata{
+				Schemas: []*metadatapb.SchemaMetadata{
 					{
 						Name: "",
-						Tables: []*storepb.TableMetadata{
+						Tables: []*metadatapb.TableMetadata{
 							{
 								Name: "cbt_plans",
-								Columns: []*storepb.ColumnMetadata{
+								Columns: []*metadatapb.ColumnMetadata{
 									{Name: "id", Type: "bigint"},
 								},
 							},

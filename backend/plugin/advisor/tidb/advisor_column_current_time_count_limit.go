@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 const (
@@ -153,7 +153,7 @@ func generateCurrentTimeAdvice(tableSet map[string]currentTimeTableData, level s
 				Code:          code.DefaultCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("Table `%s` has %d DEFAULT CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.defaultCurrentTimeCount, maxDefaultCurrentTimeColumCount),
-				StartPosition: common.ConvertANTLRLineToPosition(table.line),
+				StartPosition: base.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 		if table.onUpdateCurrentTimeCount > maxOnUpdateCurrentTimeColumnCount {
@@ -162,7 +162,7 @@ func generateCurrentTimeAdvice(tableSet map[string]currentTimeTableData, level s
 				Code:          code.OnUpdateCurrentTimeColumnCountExceedsLimit.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("Table `%s` has %d ON UPDATE CURRENT_TIMESTAMP() columns. The count greater than %d.", table.tableName, table.onUpdateCurrentTimeCount, maxOnUpdateCurrentTimeColumnCount),
-				StartPosition: common.ConvertANTLRLineToPosition(table.line),
+				StartPosition: base.ConvertANTLRLineToPosition(table.line),
 			})
 		}
 	}

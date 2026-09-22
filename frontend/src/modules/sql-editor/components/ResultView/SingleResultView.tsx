@@ -3,9 +3,10 @@ import { isEmpty } from "lodash-es";
 import {
   ArrowDownIcon,
   ArrowUpIcon,
-  ChevronDownIcon,
+  BracesIcon,
   CopyIcon,
   InfoIcon,
+  Table2Icon,
   XIcon,
 } from "lucide-react";
 import {
@@ -18,11 +19,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import {
-  AdvancedSearch,
-  type ScopeOption,
-  type SearchParams,
-} from "@/components/AdvancedSearch";
+import { AdvancedSearch } from "@/components/AdvancedSearch";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import {
   DataExportButton,
@@ -30,20 +27,15 @@ import {
 } from "@/components/DataExportButton";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
+import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
-import { useAppStore } from "@/stores/app";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -51,28 +43,45 @@ import type {
 import { Engine, ExportFormat } from "@/types/proto-es/v1/common_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
-  QueryOption_MSSQLExplainFormat,
+  QueryOption_ExplainFormat,
   QueryOptionSchema,
   type QueryResult,
-  type RowValue,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { createExplainToken } from "@/utils/pev2";
+import {
+  isVisualizerEngine,
+  VISUALIZER_EXPLAIN_FORMATS,
+  type VisualizerEngine,
+} from "@/utils/explainToken";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
+  formatNoSQLQueryResultAsJSON,
+  isNoSQLQueryResult,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
-import { isNullOrUndefined } from "@/utils/util";
 import { getInstanceResource } from "@/utils/v1/database";
 import { compareQueryRowValues, extractSQLRowValuePlain } from "@/utils/v1/sql";
-import { SQLResultViewProvider, useSelectionContext } from "./context";
-import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
+import { CopyAllButton } from "./CopyAllButton";
+import { SQLResultViewProvider } from "./context";
+import { DataExplorerResultView } from "./DataExplorerResultView";
 import { DetailPanel } from "./DetailPanel";
+import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
-import { ResultStatusBar } from "./ResultStatusBar";
+import {
+  type InlineQueryPlan,
+  QueryPlanResultView,
+} from "./QueryPlanResultView";
+import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
-import type { ResultTableColumn, ResultTableRow, SortState } from "./types";
+import { TextSearchControl } from "./TextSearchControl";
+import type {
+  ResultTableColumn,
+  ResultTableRow,
+  ResultViewPresentation,
+  SortState,
+} from "./types";
+import { useResultTableSearch } from "./useResultTableSearch";
 import {
   VirtualDataBlock,
   type VirtualDataBlockHandle,
@@ -87,6 +96,10 @@ export interface SingleResultViewProps {
   params: SQLEditorQueryParams;
   database: Database;
   result: QueryResult;
+  // Every result of the run, and which one this view shows. Visualize uses
+  // earlier results to decide whether replaying this statement is safe.
+  results?: QueryResult[];
+  resultIndex?: number;
   showExport: boolean;
   // Optional tooltip shown on the export button — used to explain when the
   // export is enabled by a JIT access grant despite the policy disabling it.
@@ -99,9 +112,11 @@ export interface SingleResultViewProps {
   // Compact layout (fixed-height, non-growing body) used by the terminal /
   // admin result panel. Defaults to the flex-grow saved query layout.
   compact?: boolean;
+  presentation?: ResultViewPresentation;
 }
 
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
+type DocumentViewMode = "TABLE" | "JSON";
 
 /**
  * Per-result-set view. Owns the per-mount `<SQLResultViewProvider>` plus
@@ -120,6 +135,8 @@ export function SingleResultView(props: SingleResultViewProps) {
     STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW,
     true
   );
+  const [documentViewMode, setDocumentViewMode] =
+    useState<DocumentViewMode>("JSON");
   // Sort state lives at this level (not inside the inner component) so the
   // sorted `rows` we feed into the provider are the same array the user
   // sees in the table. The provider's selection-copy logic dereferences
@@ -127,18 +144,36 @@ export function SingleResultView(props: SingleResultViewProps) {
   // the table rendered sorted rows, Cmd+C would copy the wrong row.
   const [sortState, setSortState] = useState<SortState | undefined>();
 
+  const isDocumentEngine =
+    engine === Engine.COSMOSDB || engine === Engine.MONGODB;
+  const supportsDocumentJSONView = useMemo(
+    () => isDocumentEngine && isNoSQLQueryResult(result),
+    [isDocumentEngine, result]
+  );
+  const activeDocumentViewMode =
+    props.presentation === "DATA_EXPLORER"
+      ? "TABLE"
+      : supportsDocumentJSONView
+        ? documentViewMode
+        : "TABLE";
   const flattened = useMemo(() => {
     if (engine === Engine.ELASTICSEARCH) {
       return flattenElasticsearchSearchResult(result);
     }
-    if (engine === Engine.MONGODB) {
+    if (isDocumentEngine && activeDocumentViewMode === "TABLE") {
       return flattenNoSQLQueryResult(result);
     }
     return undefined;
-  }, [engine, result]);
-  const supportsTableViewToggle = flattened !== undefined;
-  const activeResult =
-    supportsTableViewToggle && noSQLTableView ? flattened : result;
+  }, [activeDocumentViewMode, engine, isDocumentEngine, result]);
+  const supportsTableViewToggle =
+    engine === Engine.ELASTICSEARCH && flattened !== undefined;
+  const activeResult = isDocumentEngine
+    ? (flattened ?? result)
+    : supportsTableViewToggle && noSQLTableView
+      ? flattened
+      : result;
+  const flattenedTableView =
+    flattened !== undefined && activeResult === flattened;
 
   const columns: ResultTableColumn[] = useMemo(
     () =>
@@ -173,11 +208,11 @@ export function SingleResultView(props: SingleResultViewProps) {
     });
   }, [baseRows, sortState, columns]);
 
-  // Reset sort whenever the user toggles the NoSQL table-view switch:
+  // Reset sort whenever the user toggles a NoSQL view:
   // column indices don't carry over between flattened/raw shapes.
   useEffect(() => {
     setSortState(undefined);
-  }, [noSQLTableView]);
+  }, [activeDocumentViewMode, noSQLTableView]);
 
   const toggleSort = useCallback((columnIndex: number) => {
     setSortState((current) => {
@@ -199,32 +234,49 @@ export function SingleResultView(props: SingleResultViewProps) {
       rows={rows}
       columns={columns}
     >
-      <SingleResultViewInner
-        {...props}
-        engine={engine}
-        activeResult={activeResult}
-        columns={columns}
-        rows={rows}
-        sortState={sortState}
-        toggleSort={toggleSort}
-        supportsTableViewToggle={supportsTableViewToggle}
-        noSQLTableView={noSQLTableView}
-        setNoSQLTableView={setNoSQLTableView}
-      />
+      {props.presentation === "DATA_EXPLORER" ? (
+        <DataExplorerResultView
+          rows={rows}
+          columns={columns}
+          database={database}
+          result={result}
+          sortState={sortState}
+          onToggleSort={toggleSort}
+        />
+      ) : (
+        <SingleResultViewInner
+          {...props}
+          engine={engine}
+          columns={columns}
+          rows={rows}
+          sortState={sortState}
+          toggleSort={toggleSort}
+          flattenedTableView={flattenedTableView}
+          supportsTableViewToggle={supportsTableViewToggle}
+          noSQLTableView={noSQLTableView}
+          setNoSQLTableView={setNoSQLTableView}
+          supportsDocumentJSONView={supportsDocumentJSONView}
+          documentViewMode={activeDocumentViewMode}
+          setDocumentViewMode={setDocumentViewMode}
+        />
+      )}
     </SQLResultViewProvider>
   );
 }
 
 interface SingleResultViewInnerProps extends SingleResultViewProps {
   engine: Engine;
-  activeResult: QueryResult;
   columns: ResultTableColumn[];
   rows: ResultTableRow[];
   sortState: SortState | undefined;
   toggleSort: (columnIndex: number) => void;
+  flattenedTableView: boolean;
   supportsTableViewToggle: boolean;
   noSQLTableView: boolean;
   setNoSQLTableView: (next: boolean) => void;
+  supportsDocumentJSONView: boolean;
+  documentViewMode: DocumentViewMode;
+  setDocumentViewMode: (mode: DocumentViewMode) => void;
 }
 
 function SingleResultViewInner({
@@ -232,20 +284,25 @@ function SingleResultViewInner({
   params,
   database,
   result,
+  results = [],
+  resultIndex = 0,
   showExport,
   exportTooltip,
   maximumExportCount,
   onExport,
   requestExportSlot,
   engine,
-  activeResult: _activeResult,
   columns,
   rows,
   sortState,
   toggleSort,
+  flattenedTableView,
   supportsTableViewToggle,
   noSQLTableView,
   setNoSQLTableView,
+  supportsDocumentJSONView,
+  documentViewMode,
+  setDocumentViewMode,
   compact = false,
 }: SingleResultViewInnerProps) {
   const { t } = useTranslation();
@@ -257,7 +314,6 @@ function SingleResultViewInner({
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
   const policyMaxRows = queryDataPolicy.maximumResultRows;
   const { runQuery } = useExecuteSQL();
-  const { copy, canCopyAsInsert } = useSelectionContext();
 
   const supportFormats = useMemo(
     () => [
@@ -274,23 +330,39 @@ function SingleResultViewInner({
   >(null);
 
   const [vertical, setVertical] = useState(false);
-  const [searchParams, setSearchParams] = useState<SearchParams>({
-    query: "",
-    scopes: [],
-  });
-  const [searchCandidateActiveIndex, setSearchCandidateActiveIndex] =
-    useState(-1);
-  const [searchCandidateRowIndexs, setSearchCandidateRowIndexs] = useState<
-    number[]
-  >([]);
+  const {
+    params: searchParams,
+    setParams: setSearchParams,
+    scopeOptions: searchScopeOptions,
+    candidateActiveIndex: searchCandidateActiveIndex,
+    candidateRowIndexes: searchCandidateRowIndexes,
+    activeRowIndex,
+    next: scrollToNextCandidate,
+    previous: scrollToPreviousCandidate,
+    clear: clearSearchCandidate,
+  } = useResultTableSearch(rows, columns, noSQLTableView);
+  const [documentSearchQuery, setDocumentSearchQuery] = useState("");
+  const [documentSearchActiveIndex, setDocumentSearchActiveIndex] = useState(0);
+  const [documentSearchMatchCount, setDocumentSearchMatchCount] = useState(0);
 
-  // Reset search state when toggling NoSQL table view (sort reset is
-  // handled by the wrapper, where sortState lives).
   useEffect(() => {
-    setSearchParams({ query: "", scopes: [] });
-    setSearchCandidateActiveIndex(-1);
-    setSearchCandidateRowIndexs([]);
-  }, [noSQLTableView]);
+    setDocumentSearchQuery("");
+    setDocumentSearchActiveIndex(0);
+    setDocumentSearchMatchCount(0);
+  }, [result]);
+
+  useEffect(() => {
+    setDocumentSearchActiveIndex(0);
+  }, [documentSearchQuery]);
+
+  useEffect(() => {
+    setDocumentSearchActiveIndex((current) => {
+      if (documentSearchMatchCount === 0) {
+        return 0;
+      }
+      return Math.min(current, documentSearchMatchCount - 1);
+    });
+  }, [documentSearchMatchCount]);
 
   const viewMode: ViewMode = useMemo(() => {
     if (result.error && rows.length === 0) return "ERROR";
@@ -302,97 +374,6 @@ function SingleResultViewInner({
     return "RESULT";
   }, [result, rows.length]);
 
-  const searchScopeOptions: ScopeOption[] = useMemo(() => {
-    const opts: ScopeOption[] = [
-      {
-        id: "row-number",
-        title: t("sql-editor.search-scope-row-number-title"),
-        description: t("sql-editor.search-scope-row-number-description"),
-      },
-    ];
-    for (const column of columns) {
-      opts.push({
-        id: column.id,
-        title: column.name,
-        description: t("sql-editor.search-scope-column-description", {
-          type: column.columnType,
-        }),
-      });
-    }
-    return opts;
-  }, [columns, t]);
-
-  // Recompute candidates when search params change.
-  const cellValueMatches = useCallback(
-    (cell: RowValue, query: string): boolean => {
-      const value = extractSQLRowValuePlain(cell);
-      if (isNullOrUndefined(value)) return false;
-      return String(value).toLowerCase().includes(query.toLowerCase());
-    },
-    []
-  );
-
-  const getNextCandidateRowIndex = useCallback(
-    (from: number, sp: SearchParams): number => {
-      if (sp.scopes.length === 0 && !sp.query) return -1;
-      for (let i = from; i < rows.length; i++) {
-        const row = rows[i];
-        const scopeOk = sp.scopes.every((scope) => {
-          if (!scope.value) return false;
-          if (scope.id === "row-number") {
-            return i + 1 === Number.parseInt(scope.value, 10);
-          }
-          const columnIndex = columns.findIndex((c) => c.name === scope.id);
-          if (columnIndex < 0) return false;
-          return cellValueMatches(row.item.values[columnIndex], scope.value);
-        });
-        if (!scopeOk) continue;
-        if (sp.query) {
-          const queryOk = row.item.values.some((cell) =>
-            cellValueMatches(cell, sp.query)
-          );
-          if (!queryOk) continue;
-        }
-        return i;
-      }
-      return -1;
-    },
-    [rows, columns, cellValueMatches]
-  );
-
-  // Tracks whether the previous searchParams already resolved to the
-  // "active search, zero matches" state. Used to fire the no-results
-  // notification only on the transition into that state — typing extra
-  // characters that keep the match set empty must not re-notify.
-  const wasInNoResultsRef = useRef(false);
-
-  useEffect(() => {
-    const next = getNextCandidateRowIndex(0, searchParams);
-    const indexes: number[] = [];
-    if (next >= 0) {
-      indexes.push(next);
-      const another = getNextCandidateRowIndex(next + 1, searchParams);
-      if (another >= 0) indexes.push(another);
-    }
-    setSearchCandidateRowIndexs(indexes);
-    setSearchCandidateActiveIndex(0);
-
-    const searchActive =
-      searchParams.query.trim().length > 0 || searchParams.scopes.length > 0;
-    const isNoResults = searchActive && indexes.length === 0;
-    if (isNoResults && !wasInNoResultsRef.current) {
-      useAppStore.getState().notify({
-        module: "bytebase",
-        style: "INFO",
-        title: t("sql-editor.search-no-result"),
-      });
-    }
-    wasInNoResultsRef.current = isNoResults;
-  }, [searchParams, getNextCandidateRowIndex, t]);
-
-  const activeRowIndex =
-    searchCandidateRowIndexs[searchCandidateActiveIndex] ?? -1;
-
   const scrollToRow = useCallback((index: number | undefined) => {
     if (index === undefined || index < 0) return;
     requestAnimationFrame(() => dataTableRef.current?.scrollTo(index));
@@ -403,51 +384,13 @@ function SingleResultViewInner({
     scrollToRow(activeRowIndex);
   }, [activeRowIndex, vertical, scrollToRow]);
 
-  const scrollToNextCandidate = () => {
-    if (searchCandidateActiveIndex >= searchCandidateRowIndexs.length - 1) {
-      return;
-    }
-    const next = searchCandidateActiveIndex + 1;
-    setSearchCandidateActiveIndex(next);
-    if (next === searchCandidateRowIndexs.length - 1) {
-      const cur = searchCandidateRowIndexs[next];
-      const more = getNextCandidateRowIndex(cur + 1, searchParams);
-      if (more >= 0) {
-        setSearchCandidateRowIndexs((prev) => [...prev, more]);
-      }
-    }
-  };
-
-  const scrollToPreviousCandidate = () => {
-    if (searchCandidateActiveIndex <= 0) return;
-    setSearchCandidateActiveIndex(searchCandidateActiveIndex - 1);
-  };
-
-  const clearSearchCandidate = () => {
-    setSearchParams({ query: "", scopes: [] });
-  };
-
   const reachQueryLimit =
     currentTabMode !== "ADMIN" &&
     (rows.length === resultRowsLimit || rows.length === policyMaxRows);
 
-  const isSensitiveColumn = useCallback(
-    (columnIndex: number): boolean => {
-      if (supportsTableViewToggle && noSQLTableView) return false;
-      const reason = result.masked?.[columnIndex];
-      return (
-        reason !== null &&
-        reason !== undefined &&
-        reason.semanticTypeId !== undefined &&
-        reason.semanticTypeId !== ""
-      );
-    },
-    [result.masked, supportsTableViewToggle, noSQLTableView]
-  );
-
   const getMaskingReason = useCallback(
     (columnIndex: number) => {
-      if (supportsTableViewToggle && noSQLTableView) return undefined;
+      if (flattenedTableView) return undefined;
       if (!result.masked || columnIndex >= result.masked.length) {
         return undefined;
       }
@@ -455,50 +398,73 @@ function SingleResultViewInner({
       if (!reason || !reason.semanticTypeId) return undefined;
       return reason;
     },
-    [result.masked, supportsTableViewToggle, noSQLTableView]
+    [flattenedTableView, result.masked]
   );
 
-  const showVisualizeButton =
-    (engine === Engine.POSTGRES ||
-      engine === Engine.MSSQL ||
-      engine === Engine.SPANNER) &&
-    !!params.explain;
+  const plan = result.queryPlan;
+  const planInRows =
+    isVisualizerEngine(engine) &&
+    plan?.format ===
+      QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
+  const resultPlan = useMemo(() => getInlineQueryPlan(result), [result]);
+  // Replaying this statement is safe only when every earlier statement was
+  // itself a non-executing plan and could not change session state.
+  const canReplay =
+    isVisualizerEngine(engine) &&
+    plan?.format === QueryOption_ExplainFormat.TEXT &&
+    !plan.executed &&
+    results
+      .slice(0, resultIndex)
+      .every((earlier) => earlier.queryPlan && !earlier.queryPlan.executed);
+  // Multi-column plans (SQL Server SHOWPLAN_ALL) keep their table unless the
+  // XML plan can be loaded for the visualizer.
+  const showInlinePlan =
+    !!plan && (result.columnNames.length === 1 || canReplay);
+  const loadPlan = useCallback(
+    () =>
+      isVisualizerEngine(engine)
+        ? getInlineQueryPlanForStatement(
+            database,
+            params,
+            result.statement,
+            runQuery,
+            engine
+          )
+        : Promise.resolve(undefined),
+    [database, engine, params, result.statement, runQuery]
+  );
 
-  const visualizeExplain = async () => {
-    let token: string | undefined;
-    try {
-      if (engine === Engine.POSTGRES || engine === Engine.SPANNER) {
-        token = getExplainTokenFromResult(result, engine);
-      } else if (engine === Engine.MSSQL) {
-        token = await getExplainTokenForMSSQL(database, params, runQuery);
-      }
-      if (!token) return;
-      window.open(`/explain-visualizer.html?token=${token}`, "_blank");
-    } catch {
-      // ignore
-    }
-  };
-
-  const queryTime = useMemo(() => {
-    const { latency } = result;
-    if (!latency) return "-";
-    const totalSeconds = Number(latency.seconds) + latency.nanos / 1e9;
-    if (totalSeconds < 1) {
-      return `${Math.round(totalSeconds * 1000)} ms`;
-    }
-    return `${totalSeconds.toFixed(2)} s`;
-  }, [result]);
+  const queryTime = formatQueryTime(result.latency);
 
   const resultRowsText = `${rows.length} ${t("sql-editor.rows.self")}`;
+  const isJSONView = supportsDocumentJSONView && documentViewMode === "JSON";
+  const moveDocumentSearchMatch = (offset: number) => {
+    if (documentSearchMatchCount === 0) {
+      return;
+    }
+    setDocumentSearchActiveIndex(
+      (current) =>
+        (current + offset + documentSearchMatchCount) % documentSearchMatchCount
+    );
+  };
 
   const handleExport = (req: DataExportRequest) => {
     // Forward the user-typed query (`params.statement`) rather than
     // `result.statement`. The backend may rewrite the result statement
     // with an auto-appended LIMIT for non-admin reads — re-running that
     // rewritten SQL on the export path silently caps the exported rows
-    // even when the user asks for more. This matches the Vue
-    // multi-result export, which already used `executeParams.statement`.
+    // even when the user asks for more.
     onExport?.({ ...req, statement: params.statement });
+  };
+
+  const handleCopyJSON = () => {
+    if (disallowCopyingData) {
+      return;
+    }
+    const content = formatNoSQLQueryResultAsJSON(result);
+    if (content) {
+      void writeTextToClipboard(content);
+    }
   };
 
   // ---- Render branches by viewMode ----
@@ -534,7 +500,32 @@ function SingleResultViewInner({
         </>
       )}
 
-      {viewMode === "RESULT" && (
+      {viewMode === "RESULT" && showInlinePlan && (
+        <>
+          <div
+            className={cn(
+              "flex flex-col",
+              compact ? "h-80 overflow-hidden" : "flex-1 min-h-0"
+            )}
+          >
+            <QueryPlanResultView
+              key={`${database.name}\n${engine}\n${result.statement}`}
+              rawPlan={resultPlan?.source ?? ""}
+              initialPlan={planInRows ? resultPlan : undefined}
+              engine={isVisualizerEngine(engine) ? engine : undefined}
+              loadPlan={canReplay ? loadPlan : undefined}
+              disallowCopyingData={disallowCopyingData}
+            />
+          </div>
+          <ResultStatusBar
+            database={database}
+            statement={result.statement ?? ""}
+            queryTime={queryTime}
+          />
+        </>
+      )}
+
+      {viewMode === "RESULT" && !showInlinePlan && (
         <>
           {result.error && (
             <Alert variant="error" className="w-full mb-2">
@@ -545,13 +536,23 @@ function SingleResultViewInner({
           {/* Toolbar */}
           <div className="result-toolbar relative w-full shrink-0 flex flex-row gap-x-4 justify-between items-center mb-2 hide-scrollbar">
             <div className="flex flex-row justify-start items-center gap-x-2 mr-2 flex-1">
-              <AdvancedSearch
-                params={searchParams}
-                scopeOptions={searchScopeOptions}
-                placeholder=""
-                onParamsChange={setSearchParams}
-                onEnter={scrollToNextCandidate}
-              />
+              {isJSONView ? (
+                <TextSearchControl
+                  query={documentSearchQuery}
+                  activeMatchIndex={documentSearchActiveIndex}
+                  matchCount={documentSearchMatchCount}
+                  onQueryChange={setDocumentSearchQuery}
+                  onMove={moveDocumentSearchMatch}
+                />
+              ) : (
+                <AdvancedSearch
+                  params={searchParams}
+                  scopeOptions={searchScopeOptions}
+                  placeholder=""
+                  onParamsChange={setSearchParams}
+                  onEnter={scrollToNextCandidate}
+                />
+              )}
               <Tooltip
                 content={
                   reachQueryLimit ? t("sql-editor.rows-upper-limit") : ""
@@ -566,7 +567,42 @@ function SingleResultViewInner({
               </Tooltip>
             </div>
             <div className="flex justify-between items-center shrink-0 gap-x-2">
-              {supportsTableViewToggle && (
+              {supportsDocumentJSONView ? (
+                <SegmentedControl<DocumentViewMode>
+                  value={documentViewMode}
+                  options={[
+                    {
+                      value: "TABLE",
+                      label: (
+                        <span className="flex h-[26px] w-7 items-center justify-center">
+                          <Table2Icon className="size-4" aria-hidden />
+                          <span className="sr-only">
+                            {t("sql-editor.table-view")}
+                          </span>
+                        </span>
+                      ),
+                      tooltip: t("sql-editor.table-view"),
+                    },
+                    {
+                      value: "JSON",
+                      label: (
+                        <span className="flex h-[26px] w-7 items-center justify-center">
+                          <BracesIcon className="size-4" aria-hidden />
+                          <span className="sr-only">
+                            {t("sql-editor.json-view")}
+                          </span>
+                        </span>
+                      ),
+                      tooltip: t("sql-editor.json-view"),
+                    },
+                  ]}
+                  onValueChange={setDocumentViewMode}
+                  ariaLabel={t("sql-editor.result-view-mode")}
+                  appearance="soft"
+                  className="flex-nowrap"
+                  size="xs"
+                />
+              ) : supportsTableViewToggle ? (
                 <div className="flex items-center gap-x-1">
                   <Switch
                     checked={noSQLTableView}
@@ -576,61 +612,28 @@ function SingleResultViewInner({
                     {t("sql-editor.table-view")}
                   </span>
                 </div>
-              )}
-              <div className="flex items-center gap-x-1">
-                <Switch checked={vertical} onCheckedChange={setVertical} />
-                <span className="whitespace-nowrap text-sm text-control-light">
-                  {t("sql-editor.vertical-display")}
-                </span>
-              </div>
-              {!disallowCopyingData && rows.length > 0 && (
-                // Split button: the main action copies as plain text (TSV); the
-                // dropdown caret (hover) offers CSV and, for SQL engines, SQL.
-                <div className="flex items-center">
-                  <Button
-                    size="sm"
-                    appearance="outline"
-                    className="h-7 px-2 rounded-r-none border-r-0 text-control border-control-border hover:bg-control-bg-hover"
-                    onClick={() => copy("all", formatAsText)}
-                  >
-                    <CopyIcon className="size-4" />
-                    {t("common.copy-all")}
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      openOnHover
-                      delay={100}
-                      render={
-                        <Button
-                          size="sm"
-                          appearance="outline"
-                          aria-label={t("common.copy")}
-                          className="h-7 w-6 px-0 rounded-l-none text-control border-control-border hover:bg-control-bg-hover"
-                        >
-                          <ChevronDownIcon className="size-4" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end" className="min-w-0">
-                      <DropdownMenuItem
-                        onClick={() => copy("all", formatAsCSV)}
-                        className="px-2 py-1 text-xs gap-x-1.5"
-                      >
-                        <CopyIcon className="size-3" />
-                        {t("sql-editor.copy-all-rows-as-csv")}
-                      </DropdownMenuItem>
-                      {canCopyAsInsert && (
-                        <DropdownMenuItem
-                          onClick={() => copy("all", formatAsSQL)}
-                          className="px-2 py-1 text-xs gap-x-1.5"
-                        >
-                          <CopyIcon className="size-3" />
-                          {t("sql-editor.copy-all-rows-as-sql")}
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+              ) : null}
+              {!isJSONView && (
+                <div className="flex items-center gap-x-1">
+                  <Switch checked={vertical} onCheckedChange={setVertical} />
+                  <span className="whitespace-nowrap text-sm text-control-light">
+                    {t("sql-editor.vertical-display")}
+                  </span>
                 </div>
+              )}
+              {!disallowCopyingData && rows.length > 0 && isJSONView && (
+                <Button
+                  size="sm"
+                  appearance="outline"
+                  className="px-2 text-control border-control-border hover:bg-control-bg-hover"
+                  onClick={handleCopyJSON}
+                >
+                  <CopyIcon className="size-4" />
+                  {t("common.copy-all")}
+                </Button>
+              )}
+              {!disallowCopyingData && rows.length > 0 && !isJSONView && (
+                <CopyAllButton />
               )}
               {showExport ? (
                 <DataExportButton
@@ -648,123 +651,139 @@ function SingleResultViewInner({
                 requestExportSlot
               )}
             </div>
-            <SelectionCopyTooltips />
+            {!isJSONView && <SelectionCopyTooltips />}
           </div>
 
           {/* Body */}
-          <div
-            className={cn(
-              "w-full flex flex-col relative",
-              compact
-                ? "h-80 overflow-hidden"
-                : "flex-1 min-h-0 overflow-y-auto"
-            )}
-          >
-            {vertical ? (
-              <VirtualDataBlock
-                ref={dataTableRef as React.RefObject<VirtualDataBlockHandle>}
-                rows={rows}
-                columns={columns}
-                isSensitiveColumn={isSensitiveColumn}
-                getMaskingReason={getMaskingReason}
-                database={database}
-                statement={params.statement}
-                activeRowIndex={activeRowIndex}
-                search={searchParams}
-              />
-            ) : (
-              <VirtualDataTable
-                ref={dataTableRef as React.RefObject<VirtualDataTableHandle>}
-                rows={rows}
-                columns={columns}
-                isSensitiveColumn={isSensitiveColumn}
-                getMaskingReason={getMaskingReason}
-                database={database}
-                statement={params.statement}
-                sortState={sortState}
-                activeRowIndex={activeRowIndex}
-                search={searchParams}
-                onToggleSort={toggleSort}
-              />
-            )}
-
-            {/* Floating buttons */}
-            <div className="absolute bottom-2 right-4 flex items-end gap-x-2">
-              {searchCandidateRowIndexs.length > 0 && (
-                <div className="flex flex-row gap-x-2 border shadow rounded bg-background py-1 px-2">
-                  <Button
-                    size="sm"
-                    appearance="secondary"
-                    disabled={searchCandidateActiveIndex <= 0}
-                    onClick={scrollToPreviousCandidate}
-                  >
-                    <ArrowUpIcon className="size-4" />
-                    {t("sql-editor.previous-row")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    appearance="secondary"
-                    disabled={
-                      searchCandidateActiveIndex >=
-                      searchCandidateRowIndexs.length - 1
-                    }
-                    onClick={scrollToNextCandidate}
-                  >
-                    <ArrowDownIcon className="size-4" />
-                    {t("sql-editor.next-row")}
-                  </Button>
-                  <Button
-                    size="sm"
-                    appearance="secondary"
-                    className="size-7 p-0"
-                    onClick={clearSearchCandidate}
-                  >
-                    <XIcon className="size-4" />
-                  </Button>
-                </div>
+          {isJSONView ? (
+            <DocumentJSONView
+              result={result}
+              disallowCopyingData={disallowCopyingData}
+              compact={compact}
+              searchQuery={documentSearchQuery}
+              activeMatchIndex={documentSearchActiveIndex}
+              onMatchCountChange={setDocumentSearchMatchCount}
+            />
+          ) : (
+            <div
+              className={cn(
+                "w-full flex flex-col relative",
+                compact
+                  ? "h-80 overflow-hidden"
+                  : "flex-1 min-h-0 overflow-y-auto"
+              )}
+            >
+              {vertical ? (
+                <VirtualDataBlock
+                  ref={dataTableRef as React.RefObject<VirtualDataBlockHandle>}
+                  rows={rows}
+                  columns={columns}
+                  getMaskingReason={getMaskingReason}
+                  database={database}
+                  statement={params.statement}
+                  activeRowIndex={activeRowIndex}
+                  search={searchParams}
+                />
+              ) : (
+                <VirtualDataTable
+                  ref={dataTableRef as React.RefObject<VirtualDataTableHandle>}
+                  rows={rows}
+                  columns={columns}
+                  getMaskingReason={getMaskingReason}
+                  database={database}
+                  statement={params.statement}
+                  sortState={sortState}
+                  activeRowIndex={activeRowIndex}
+                  search={searchParams}
+                  onToggleSort={toggleSort}
+                />
               )}
 
-              <div className="flex flex-col gap-y-2 result-scroll-buttons">
-                <Tooltip content={t("sql-editor.scroll-to-top")}>
-                  <div className="rounded-full shadow bg-background">
+              {/* Floating buttons */}
+              <div className="absolute bottom-2 right-4 flex items-end gap-x-2">
+                {searchCandidateRowIndexes.length > 0 && (
+                  <div className="flex flex-row gap-x-2 border shadow rounded-sm bg-background py-1 px-2">
                     <Button
                       size="sm"
                       appearance="secondary"
-                      className="size-9 p-0 rounded-full"
-                      onClick={() => scrollToRow(0)}
+                      disabled={searchCandidateActiveIndex <= 0}
+                      onClick={scrollToPreviousCandidate}
                     >
                       <ArrowUpIcon className="size-4" />
+                      {t("sql-editor.previous-row")}
                     </Button>
-                  </div>
-                </Tooltip>
-                <Tooltip content={t("sql-editor.scroll-to-bottom")}>
-                  <div className="rounded-full shadow bg-background">
                     <Button
                       size="sm"
                       appearance="secondary"
-                      className="size-9 p-0 rounded-full"
-                      onClick={() => scrollToRow(rows.length - 1)}
+                      disabled={
+                        searchCandidateActiveIndex >=
+                        searchCandidateRowIndexes.length - 1
+                      }
+                      onClick={scrollToNextCandidate}
                     >
                       <ArrowDownIcon className="size-4" />
+                      {t("sql-editor.next-row")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      appearance="secondary"
+                      className="w-7 p-0"
+                      onClick={clearSearchCandidate}
+                    >
+                      <XIcon className="size-4" />
                     </Button>
                   </div>
-                </Tooltip>
+                )}
+
+                <div className="flex flex-col gap-y-2 result-scroll-buttons">
+                  <Tooltip content={t("sql-editor.scroll-to-top")}>
+                    <div className="rounded-full shadow bg-background">
+                      <Button
+                        size="md"
+                        appearance="secondary"
+                        className="w-9 p-0 rounded-full"
+                        onClick={() => scrollToRow(0)}
+                      >
+                        <ArrowUpIcon className="size-4" />
+                      </Button>
+                    </div>
+                  </Tooltip>
+                  <Tooltip content={t("sql-editor.scroll-to-bottom")}>
+                    <div className="rounded-full shadow bg-background">
+                      <Button
+                        size="md"
+                        appearance="secondary"
+                        className="w-9 p-0 rounded-full"
+                        onClick={() => scrollToRow(rows.length - 1)}
+                      >
+                        <ArrowDownIcon className="size-4" />
+                      </Button>
+                    </div>
+                  </Tooltip>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Status bar */}
           <ResultStatusBar
             database={database}
             statement={result.statement ?? ""}
             queryTime={queryTime}
-            showVisualizeButton={showVisualizeButton}
-            onVisualizeExplain={visualizeExplain}
           />
         </>
       )}
 
-      <DetailPanel rows={rows} columns={columns} />
+      {!isJSONView && !showInlinePlan && (
+        <DetailPanel
+          rows={rows}
+          columns={columns}
+          database={database}
+          result={result}
+          statement={result.statement}
+          getMaskingReason={getMaskingReason}
+        />
+      )}
     </>
   );
 }
@@ -811,38 +830,43 @@ function DatabaseInfo({ database }: { database: Database }) {
   );
 }
 
-function getExplainTokenFromResult(
-  result: QueryResult,
-  engine: Engine
-): string | undefined {
+function getInlineQueryPlan(result: QueryResult): InlineQueryPlan | undefined {
   const { statement } = result;
   if (!statement) return undefined;
   const lines = result.rows.map((row) =>
     row.values.map((value) => String(extractSQLRowValuePlain(value)))
   );
-  const explain = lines.map((line) => line[0]).join("\n");
-  if (!explain) return undefined;
-  return createExplainToken({ statement, explain, engine });
+  // Multi-column plans keep every column, tab-separated under a header.
+  const source =
+    result.columnNames.length > 1
+      ? [result.columnNames, ...lines].map((line) => line.join("\t")).join("\n")
+      : lines.map((line) => line[0]).join("\n");
+  if (!source) return undefined;
+  return { statement, source };
 }
 
-async function getExplainTokenForMSSQL(
+async function getInlineQueryPlanForStatement(
   database: Database,
   params: SQLEditorQueryParams,
-  runQuery: ReturnType<typeof useExecuteSQL>["runQuery"]
-): Promise<string | undefined> {
+  statement: string,
+  runQuery: ReturnType<typeof useExecuteSQL>["runQuery"],
+  engine: VisualizerEngine
+): Promise<InlineQueryPlan | undefined> {
+  if (!statement) return undefined;
+  const explainFormat =
+    QueryOption_ExplainFormat[VISUALIZER_EXPLAIN_FORMATS[engine]];
   const context: SQLEditorDatabaseQueryContext = {
     id: uuidv4(),
     params: {
       ...params,
-      queryOption: create(QueryOptionSchema, {
-        mssqlExplainFormat:
-          QueryOption_MSSQLExplainFormat.MSSQL_EXPLAIN_FORMAT_XML,
-      }),
+      statement,
+      explain: true,
+      queryOption: create(QueryOptionSchema, { explainFormat }),
     },
     status: "PENDING",
   };
   await runQuery(database, context);
   const result = context.resultSet?.results[0];
   if (!result) return undefined;
-  return getExplainTokenFromResult(result, Engine.MSSQL);
+  return getInlineQueryPlan(result);
 }

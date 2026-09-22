@@ -41,7 +41,11 @@ import {
 import { protobufJsonRegistry } from "@/types/protobufJsonRegistry";
 import { isDev } from "@/utils/util";
 
-const address = import.meta.env.BB_GRPC_LOCAL || window.location.origin;
+// Read defensively: this module is imported at the top of many module
+// graphs, including from tests that run without a DOM.
+const address =
+  import.meta.env.BB_GRPC_LOCAL ||
+  (typeof window === "undefined" ? "http://localhost" : window.location.origin);
 
 // Registry for decoding google.protobuf.Any fields in JSON responses
 const transport = createConnectTransport({

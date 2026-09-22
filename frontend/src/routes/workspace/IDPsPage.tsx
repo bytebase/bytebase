@@ -1,12 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
+import { cva } from "class-variance-authority";
 import {
   ArrowRight,
-  Building,
   Database,
-  GitBranch,
-  GitFork,
-  Globe,
   Info,
   Key,
   Plus,
@@ -25,10 +22,17 @@ import {
   type ResourceIdFieldRef,
 } from "@/components/ResourceIdField";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { CopyButton } from "@/components/ui/copy-button";
 import { FormField, FormFieldGroup, FormTitle } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetBody,
@@ -38,6 +42,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { StepIndicator } from "@/components/ui/step-indicator";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -52,7 +57,6 @@ import {
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
 import { useIdentityProviderList } from "@/hooks/useAppState";
-import { writeTextToClipboard } from "@/lib/clipboard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -128,6 +132,22 @@ interface FieldMappingState {
   groups: string;
 }
 
+const selectionCardVariants = cva(
+  "block rounded-sm border p-4 transition-colors",
+  {
+    variants: {
+      selected: {
+        true: "border-accent bg-accent/10",
+        false: "border-block-border hover:border-control-border",
+      },
+      disabled: {
+        true: "cursor-not-allowed opacity-50",
+        false: "cursor-pointer",
+      },
+    },
+  }
+);
+
 // ============================================================
 // ExternalURLInfo
 // ============================================================
@@ -149,29 +169,19 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
 
   if (!redirectUrl) return null;
 
-  const handleCopy = async () => {
-    if (await writeTextToClipboard(redirectUrl)) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.copied"),
-      });
-    }
-  };
-
   return (
-    <div className="p-4 rounded-sm border border-gray-200 bg-gray-50">
+    <div className="rounded-sm border border-block-border bg-control-bg p-4">
       <div className="flex items-start gap-x-3">
-        <Info className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
+        <Info className="mt-0.5 size-5 shrink-0 text-info" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 mb-2">
+          <p className="mb-2 font-medium text-main text-sm">
             {t("settings.sso.form.identity-provider-needed-information")}
           </p>
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="mb-3 text-control-light text-sm">
             {t("settings.sso.form.redirect-url-description")}
           </p>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="mb-1 block font-medium text-control text-sm">
               {t("settings.sso.form.redirect-url")}
             </label>
             <div className="flex items-center gap-x-2">
@@ -180,9 +190,11 @@ function ExternalURLInfo({ type }: { type: IdentityProviderType }) {
                 readOnly
                 className="flex-1 font-mono"
               />
-              <Button appearance="outline" size="sm" onClick={handleCopy}>
-                {t("common.copy")}
-              </Button>
+              <CopyButton
+                content={redirectUrl}
+                appearance="outline"
+                size="sm"
+              />
             </div>
           </div>
         </div>
@@ -363,7 +375,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.in-parameters")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-control-light text-sm">
                   {t("settings.sso.form.in-parameters-description")}
                 </div>
               </div>
@@ -377,7 +389,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.in-header")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-control-light text-sm">
                   {t("settings.sso.form.in-header-description")}
                 </div>
               </div>
@@ -387,7 +399,7 @@ function ProviderConfigForm({
 
         <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForOAuth2.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateOAuth2({
@@ -506,7 +518,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.in-parameters")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-control-light text-sm">
                   {t("settings.sso.form.in-parameters-description")}
                 </div>
               </div>
@@ -520,7 +532,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.in-header")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-control-light text-sm">
                   {t("settings.sso.form.in-header-description")}
                 </div>
               </div>
@@ -530,7 +542,7 @@ function ProviderConfigForm({
 
         <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForOIDC.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateOIDC({
@@ -697,7 +709,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.starttls")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-control-light text-sm">
                   {t("settings.sso.form.starttls-description")}
                 </div>
               </div>
@@ -711,7 +723,7 @@ function ProviderConfigForm({
                 <div className="font-medium">
                   {t("settings.sso.form.ldaps")}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-control-light text-sm">
                   {t("settings.sso.form.ldaps-description")}
                 </div>
               </div>
@@ -725,7 +737,7 @@ function ProviderConfigForm({
             >
               <div>
                 <div className="font-medium">{t("settings.sso.form.none")}</div>
-                <div className="text-sm text-gray-600">
+                <div className="text-control-light text-sm">
                   {t("settings.sso.form.none-description")}
                 </div>
               </div>
@@ -735,7 +747,7 @@ function ProviderConfigForm({
 
         <FormField title={<>{t("settings.sso.form.security-options")}</>}>
           <label className="flex items-center gap-x-2 cursor-pointer">
-            <Checkbox
+            <Switch
               checked={configForLDAP.skipTlsVerify}
               onCheckedChange={(checked) =>
                 onUpdateLDAP({
@@ -784,15 +796,15 @@ function FieldMappingForm({
             placeholder={t("settings.sso.form.identifier-placeholder")}
           />
           <div className="flex items-center text-base">
-            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-            <p className="flex items-center font-semibold text-gray-800">
+            <ArrowRight className="mx-2 size-5 text-control-placeholder" />
+            <p className="flex items-center font-semibold text-control">
               {t("settings.sso.form.identifier")}
               <span className="ml-0.5 text-error">*</span>
               <span
                 className="ml-1"
                 title={t("settings.sso.form.identifier-tips")}
               >
-                <Info className="w-4 h-4 text-blue-500" />
+                <Info className="size-4 text-info" />
               </span>
             </p>
           </div>
@@ -809,8 +821,8 @@ function FieldMappingForm({
             placeholder={t("settings.sso.form.display-name-placeholder")}
           />
           <div className="flex items-center text-base">
-            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-            <p className="font-semibold text-gray-800">
+            <ArrowRight className="mx-2 size-5 text-control-placeholder" />
+            <p className="font-semibold text-control">
               {t("settings.sso.form.display-name")}
             </p>
           </div>
@@ -827,8 +839,8 @@ function FieldMappingForm({
             placeholder={t("settings.sso.form.phone-placeholder")}
           />
           <div className="flex items-center text-base">
-            <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-            <p className="font-semibold text-gray-800">
+            <ArrowRight className="mx-2 size-5 text-control-placeholder" />
+            <p className="font-semibold text-control">
               {t("settings.sso.form.phone")}
             </p>
           </div>
@@ -846,8 +858,8 @@ function FieldMappingForm({
               placeholder={t("settings.sso.form.groups-placeholder")}
             />
             <div className="flex items-center text-base">
-              <ArrowRight className="mx-2 h-5 w-5 text-gray-400" />
-              <p className="font-semibold text-gray-800">
+              <ArrowRight className="mx-2 size-5 text-control-placeholder" />
+              <p className="font-semibold text-control">
                 {t("settings.sso.form.groups")}
               </p>
             </div>
@@ -1004,21 +1016,6 @@ function getProviderIcon(type: IdentityProviderType) {
       return ShieldCheck;
     case IdentityProviderType.LDAP:
       return Database;
-    default:
-      return Key;
-  }
-}
-
-function getTemplateIcon(title: string) {
-  switch (title.toLowerCase()) {
-    case "google":
-      return Globe;
-    case "github":
-      return GitBranch;
-    case "gitlab":
-      return GitFork;
-    case "microsoft entra":
-      return Building;
     default:
       return Key;
   }
@@ -1384,7 +1381,7 @@ function CreateWizardDrawer({
 
   return (
     <Sheet open onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <SheetContent width="large" className="bg-white">
+      <SheetContent width="large">
         <SheetHeader>
           <SheetTitle>{t("identity-provider.self")}</SheetTitle>
         </SheetHeader>
@@ -1399,15 +1396,15 @@ function CreateWizardDrawer({
             />
 
             {/* Step content */}
-            <div className="bg-white rounded-sm border border-gray-200 px-6 pt-6 pb-10">
+            <div className="rounded-sm border border-block-border bg-background px-6 pt-6 pb-10">
               {/* Step 1: Select provider type */}
               {currentStep === 1 && (
                 <div className="flex flex-col gap-y-6">
                   <div className="text-center flex flex-col gap-y-2">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="font-bold text-2xl text-main">
                       {t("settings.sso.form.type")}
                     </h2>
-                    <p className="text-gray-600">
+                    <p className="text-control-light">
                       {t("settings.sso.form.type-description")}
                     </p>
                   </div>
@@ -1434,11 +1431,10 @@ function CreateWizardDrawer({
                       return (
                         <div
                           key={item.type}
-                          className={`block border rounded-sm p-4 transition-colors cursor-pointer ${
-                            selectedType === item.type
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300"
-                          } ${!hasFeature ? "opacity-50 cursor-not-allowed" : ""}`}
+                          className={selectionCardVariants({
+                            selected: selectedType === item.type,
+                            disabled: !hasFeature,
+                          })}
                           onClick={() => {
                             if (hasFeature) {
                               handleTypeChange(item.type);
@@ -1455,16 +1451,16 @@ function CreateWizardDrawer({
                               radioClassName="mt-1.5"
                             />
                             <Icon
-                              className="w-6 h-6 mt-1 shrink-0"
+                              className="mt-1 size-6 shrink-0"
                               strokeWidth={1.5}
                             />
                             <div className="flex-1">
                               <div className="flex items-center gap-x-2">
-                                <span className="text-lg font-medium text-gray-900">
+                                <span className="font-medium text-lg text-main">
                                   {identityProviderTypeToString(item.type)}
                                 </span>
                               </div>
-                              <p className="text-sm text-gray-600 mt-1">
+                              <p className="mt-1 text-control-light text-sm">
                                 {getProviderDescription(item.type)}
                               </p>
                             </div>
@@ -1480,15 +1476,14 @@ function CreateWizardDrawer({
               {currentStep === 2 && isOAuth2 && (
                 <div className="flex flex-col gap-y-6">
                   <div className="text-center flex flex-col gap-y-2">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="font-bold text-2xl text-main">
                       {t("settings.sso.form.use-template")}
                     </h2>
-                    <p className="text-gray-600">
+                    <p className="text-control-light">
                       {t("settings.sso.form.template-description")}
                     </p>
                   </div>
-                  <RadioGroup
-                    className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4"
+                  <Select
                     value={selectedTemplate?.title ?? ""}
                     onValueChange={(value) => {
                       const template = templateList.find(
@@ -1502,48 +1497,30 @@ function CreateWizardDrawer({
                       }
                     }}
                   >
-                    {templateList.map((tmpl) => {
-                      const Icon = getTemplateIcon(tmpl.title);
-                      const hasFeature = useAppStore
-                        .getState()
-                        .hasFeature(tmpl.feature);
-                      return (
-                        <div
+                    <SelectTrigger className="mx-auto w-full max-w-3xl">
+                      <SelectValue placeholder={t("common.select")}>
+                        {selectedTemplate?.title}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {templateList.map((tmpl) => (
+                        <SelectItem
                           key={tmpl.title}
-                          className={`block border rounded-sm p-4 transition-colors cursor-pointer ${
-                            selectedTemplate?.title === tmpl.title
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300"
-                          } ${!hasFeature ? "opacity-50 cursor-not-allowed" : ""}`}
-                          onClick={() => {
-                            if (hasFeature) {
-                              applyTemplate(tmpl);
-                            }
-                          }}
+                          value={tmpl.title}
+                          disabled={
+                            !useAppStore.getState().hasFeature(tmpl.feature)
+                          }
                         >
-                          <div className="flex items-center gap-x-3">
-                            <RadioGroupItem
-                              value={tmpl.title}
-                              aria-label={tmpl.title}
-                              disabled={!hasFeature}
-                            />
-                            <Icon
-                              className="w-8 h-8 shrink-0"
-                              strokeWidth={1}
-                            />
-                            <div className="flex-1">
-                              <span className="text-base font-medium text-gray-900">
-                                {tmpl.title}
-                              </span>
-                              <p className="text-sm text-gray-600">
-                                {getTemplateDescription(tmpl.title)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </RadioGroup>
+                          {tmpl.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedTemplate && (
+                    <p className="mx-auto w-full max-w-3xl text-sm text-control-light">
+                      {getTemplateDescription(selectedTemplate.title)}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -1551,10 +1528,10 @@ function CreateWizardDrawer({
               {currentStep === basicInfoStep && (
                 <div className="flex flex-col gap-y-6">
                   <div className="text-center flex flex-col gap-y-2">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="font-bold text-2xl text-main">
                       {t("common.general")}
                     </h2>
-                    <p className="text-gray-600">
+                    <p className="text-control-light">
                       {t("settings.sso.form.general-setting-description")}
                     </p>
                   </div>
@@ -1607,10 +1584,10 @@ function CreateWizardDrawer({
               {currentStep === configStep && (
                 <div className="flex flex-col gap-y-6">
                   <div className="text-center flex flex-col gap-y-2">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="font-bold text-2xl text-main">
                       {t("settings.sso.form.configuration")}
                     </h2>
-                    <p className="text-gray-600">
+                    <p className="text-control-light">
                       {t("settings.sso.form.configuration-description")}
                     </p>
                   </div>
@@ -1640,10 +1617,10 @@ function CreateWizardDrawer({
               {currentStep === mappingStep && (
                 <div className="flex flex-col gap-y-6">
                   <div className="text-center flex flex-col gap-y-2">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                    <h2 className="font-bold text-2xl text-main">
                       {t("settings.sso.form.user-information-mapping")}
                     </h2>
-                    <p className="text-gray-600">
+                    <p className="text-control-light">
                       {t(
                         "settings.sso.form.user-information-mapping-description"
                       )}{" "}
@@ -1696,8 +1673,8 @@ function CreateWizardDrawer({
         </SheetFooter>
 
         {isCreating && (
-          <div className="absolute inset-0 z-10 bg-white/50 flex items-center justify-center">
-            <div className="animate-spin h-6 w-6 border-2 border-accent border-t-transparent rounded-full" />
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50">
+            <div className="size-6 animate-spin rounded-full border-2 border-accent border-t-transparent" />
           </div>
         )}
       </SheetContent>
@@ -1776,8 +1753,8 @@ export function IDPsPage() {
             <FeatureBadge
               feature={PlanFeature.FEATURE_GOOGLE_AND_GITHUB_SSO}
               clickable={false}
-              className="mr-1 text-white inline-flex"
-              fallback={<Plus className="h-4 w-4 mr-1" />}
+              className="inline-flex text-accent-text"
+              fallback={<Plus className="size-4" />}
             />
             {t("common.create")}
           </Button>

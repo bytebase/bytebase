@@ -88,6 +88,11 @@ const mocks = vi.hoisted(() => {
       .mockResolvedValue({ databases: [], nextPageToken: "" }),
     databasesByName: {} as Record<string, unknown>,
   };
+  const prepareDatabases = vi.fn().mockResolvedValue(undefined);
+  const searchParams = {
+    query: "",
+    scopes: [] as { id: string; value: string }[],
+  };
   const currentUser = { email: "u@b.com" };
   return {
     tabStore,
@@ -97,6 +102,8 @@ const mocks = vi.hoisted(() => {
     databaseStore,
     project,
     treeStore,
+    prepareDatabases,
+    searchParams,
     appStore,
     currentUser,
     pushNotification: vi.fn(),
@@ -189,10 +196,6 @@ vi.mock("@/modules/sql-editor/store", () => ({
     }),
 }));
 
-vi.mock("@/lib/resourceName", () => ({
-  instanceNamePrefix: "instances/",
-}));
-
 vi.mock("@/modules/sql-editor/model/events", () => ({
   sqlEditorEvents: {
     emit: vi.fn(),
@@ -253,7 +256,10 @@ vi.mock("@/utils", () => ({
   }),
   getConnectionForSQLEditorTab: () => ({ database: undefined }),
   getInstanceResource: () => ({ engine: "MYSQL" }),
-  getValueFromSearchParams: () => "",
+  getValueFromSearchParams: (
+    params: { scopes: { id: string; value: string }[] },
+    id: string
+  ) => params.scopes.find((scope) => scope.id === id)?.value ?? "",
   getValuesFromSearchParams: () => [],
   instanceV1Name: (i: { title: string }) => i.title,
 }));
@@ -286,7 +292,7 @@ vi.mock("@/components/ui/separator", () => ({
 
 vi.mock("@/components/AdvancedSearch", () => ({
   AdvancedSearch: () => <div data-testid="advanced-search" />,
-  emptySearchParams: () => ({ query: "", scopes: [] }),
+  emptySearchParams: () => mocks.searchParams,
 }));
 
 vi.mock("@/components/useCommonSearchScopeOptions", () => ({
@@ -402,7 +408,7 @@ vi.mock("./tree", () => ({
     expandedState: { initialized: true, expandedKeys: [] },
     setExpandedKeys: vi.fn(),
     buildTree: vi.fn(),
-    prepareDatabases: vi.fn().mockResolvedValue(undefined),
+    prepareDatabases: mocks.prepareDatabases,
     fetchDatabases: vi.fn().mockResolvedValue(undefined),
     fetchDataState: { loading: false },
   }),
@@ -444,10 +450,34 @@ beforeEach(async () => {
     connection: { database: "", instance: "" },
     batchQueryContext: { databases: [], databaseGroups: [] },
   };
+  mocks.searchParams.query = "";
+  mocks.searchParams.scopes = [];
   ({ ConnectionPane } = await import("./ConnectionPane"));
 });
 
 describe("ConnectionPane", () => {
+  test.each([
+    ["prod", "instances/prod"],
+    [
+      "projects/project-a/instances/prod",
+      "projects/project-a/instances/prod",
+    ],
+  ])("preserves the instance filter scope for %s", async (value, expected) => {
+    mocks.searchParams.scopes = [{ id: "instance", value }];
+    const { render, unmount } = renderIntoContainer(
+      <ConnectionPane show={true} onMissingFeature={() => {}} />
+    );
+    render();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mocks.prepareDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({ instance: expected })
+    );
+    unmount();
+  });
+
   test("renders DATABASE tab content when show=true and no selection", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ConnectionPane show={true} onMissingFeature={() => {}} />

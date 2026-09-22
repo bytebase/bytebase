@@ -868,6 +868,11 @@ export enum StatementType {
    * @generated from enum value: DELETE = 62;
    */
   DELETE = 62,
+
+  /**
+   * @generated from enum value: MERGE = 63;
+   */
+  MERGE = 63,
 }
 
 /**

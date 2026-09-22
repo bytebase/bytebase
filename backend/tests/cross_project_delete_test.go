@@ -18,16 +18,14 @@ import (
 // Scope: covers plan, issue, task_run, plan_check_run isolation via the
 // gRPC snapshot. Tables NOT covered here (currently): task, task_run_log,
 // plan_webhook_delivery. Add targeted tests if a future change touches
-// their DELETE paths.
+// their DELETE paths. review_run is covered by the targeted purge test in
+// review_run_collision_test.go.
 func TestCollisionDeleteProjectCascade(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -39,7 +37,7 @@ func TestCollisionDeleteProjectCascade(t *testing.T) {
 	a.Greater(len(beforeB.Issues), 0, "project B should have issues")
 
 	// Project purge is an explicit archive-then-purge lifecycle.
-	_, err = ctl.projectServiceClient.DeleteProject(ctx,
+	_, err := ctl.projectServiceClient.DeleteProject(ctx,
 		connect.NewRequest(&v1pb.DeleteProjectRequest{Name: fixture.ProjectA.Name}))
 	a.NoError(err)
 	_, err = ctl.projectServiceClient.DeleteProject(ctx,
@@ -95,10 +93,7 @@ func TestCollisionDeleteInstanceNoCrossProjectCorruption(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjects(ctx, t, ctl)
 
@@ -139,10 +134,7 @@ func TestCollisionDeleteInstanceCrossProjectIsolation(t *testing.T) {
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
+	ctl, ctx := startProject(ctx, t)
 
 	fixture := setupCollidingProjectsSeparateInstances(ctx, t, ctl)
 

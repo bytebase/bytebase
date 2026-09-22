@@ -3,7 +3,7 @@
 
 package v1
 
-func (x *SetupSampleRequest) Equal(y *SetupSampleRequest) bool {
+func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	if x == y {
 		return true
 	}
@@ -13,12 +13,39 @@ func (x *SetupSampleRequest) Equal(y *SetupSampleRequest) bool {
 	return true
 }
 
-func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
+func (x *SampleInfo_Instance) Equal(y *SampleInfo_Instance) bool {
 	if x == y {
 		return true
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
+	}
+	if x.Instance != y.Instance {
+		return false
+	}
+	if p, q := x.ExpireTime, y.ExpireTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	return true
+}
+
+func (x *SampleInfo) Equal(y *SampleInfo) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Available != y.Available {
+		return false
+	}
+	if len(x.Instances) != len(y.Instances) {
+		return false
+	}
+	for i := 0; i < len(x.Instances); i++ {
+		if !x.Instances[i].Equal(y.Instances[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -62,9 +89,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.TotalInstanceCount != y.TotalInstanceCount {
 		return false
 	}
-	if x.EnableSample != y.EnableSample {
-		return false
-	}
 	if x.ExternalUrlFromFlag != y.ExternalUrlFromFlag {
 		return false
 	}
@@ -78,6 +102,12 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 		return false
 	}
 	if x.ActiveVcsUserCount != y.ActiveVcsUserCount {
+		return false
+	}
+	if !x.Sample.Equal(y.Sample) {
+		return false
+	}
+	if !x.McpSetting.Equal(y.McpSetting) {
 		return false
 	}
 	return true

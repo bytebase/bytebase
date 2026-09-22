@@ -30,6 +30,7 @@ permissions:
   - bb.identityProviders.create
   - bb.identityProviders.delete
   - bb.identityProviders.get
+  - bb.identityProviders.list
   - bb.identityProviders.update
   - bb.instances.create
   - bb.instances.delete
@@ -87,6 +88,7 @@ permissions:
   - bb.reviewConfigs.get
   - bb.reviewConfigs.list
   - bb.reviewConfigs.update
+  - bb.reviewRuns.run
   - bb.revisions.create
   - bb.revisions.delete
   - bb.revisions.get

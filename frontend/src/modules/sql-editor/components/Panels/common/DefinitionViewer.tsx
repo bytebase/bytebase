@@ -18,21 +18,14 @@ interface DefinitionViewerProps {
   db: Database;
   code: string;
   format?: boolean;
-  onSelectContent?: (content: string) => void;
 }
 
 /**
- * React port of `frontend/src/views/sql-editor/EditorPanel/Panels/ViewsPanel/DefinitionViewer.vue`.
  * Bare Monaco read-only viewer; `format` is owned by the parent (the
- * ViewsPanel detail header has the toggle). Sets `uiStore.isShowingCode`
- * on mount so `Panels.vue` renders the AIChatToSQL pane next to it.
+ * ViewsPanel detail header has the toggle). Sets `isShowingCode` on mount
+ * so `Panels` renders the AIChatToSQL pane next to it.
  */
-export function DefinitionViewer({
-  db,
-  code,
-  format,
-  onSelectContent,
-}: DefinitionViewerProps) {
+export function DefinitionViewer({ db, code, format }: DefinitionViewerProps) {
   const setIsShowingCode = useSQLEditorStore((s) => s.setIsShowingCode);
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const engine = useMemo(() => getInstanceResource(db).engine, [db]);
@@ -105,15 +98,13 @@ export function DefinitionViewer({
       const model = editor.getModel();
       if (!selection || !model) {
         setSelectedStatement("");
-        onSelectContent?.("");
         return;
       }
       const selected = model.getValueInRange(selection);
       setSelectedStatement(selected);
-      onSelectContent?.(selected);
     });
     return () => sub.dispose();
-  }, [editor, onSelectContent]);
+  }, [editor]);
 
   return (
     <ReadonlyMonaco

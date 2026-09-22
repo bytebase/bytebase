@@ -3,15 +3,14 @@ package store
 import (
 	"strings"
 
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	celoverloads "github.com/google/cel-go/common/overloads"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // AccountListFilter contains the filter query for service accounts and workload identities.
@@ -26,13 +25,9 @@ func GetAccountListFilter(filter string) (*AccountListFilter, error) {
 		return &AccountListFilter{}, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, errors.Errorf("failed to create cel env")
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String())
+		return nil, err
 	}
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
@@ -115,7 +110,7 @@ func GetAccountListFilter(filter string) (*AccountListFilter, error) {
 				if !ok {
 					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
 				}
-				return qb.Q().Space("LOWER("+variable+") LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				return qb.Q().Space("LOWER("+variable+") LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}

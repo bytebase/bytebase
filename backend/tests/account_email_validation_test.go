@@ -22,16 +22,15 @@ func getCurrentWorkspace(ctx context.Context, t *testing.T, ctl *controller) str
 }
 
 func TestServiceAccountEmailValidation(t *testing.T) {
+	t.Parallel()
 	t.Run("create rejects invalid generated email", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		ctx := context.Background()
-		ctl := &controller{}
-		ctx, err := ctl.StartServerWithExternalPg(ctx)
-		a.NoError(err)
-		defer ctl.Close(ctx)
+		ctl, ctx := startProject(ctx, t)
 
 		workspace := getCurrentWorkspace(ctx, t, ctl)
-		_, err = ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
+		_, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
 			Parent:           workspace,
 			ServiceAccountId: "Bot",
 			ServiceAccount: &v1pb.ServiceAccount{
@@ -43,14 +42,12 @@ func TestServiceAccountEmailValidation(t *testing.T) {
 	})
 
 	t.Run("get rejects malformed resource email", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		ctx := context.Background()
-		ctl := &controller{}
-		ctx, err := ctl.StartServerWithExternalPg(ctx)
-		a.NoError(err)
-		defer ctl.Close(ctx)
+		ctl, ctx := startProject(ctx, t)
 
-		_, err = ctl.serviceAccountServiceClient.GetServiceAccount(ctx, connect.NewRequest(&v1pb.GetServiceAccountRequest{
+		_, err := ctl.serviceAccountServiceClient.GetServiceAccount(ctx, connect.NewRequest(&v1pb.GetServiceAccountRequest{
 			Name: "serviceAccounts/Bad@service.bytebase.com",
 		}))
 		a.Error(err)
@@ -59,16 +56,15 @@ func TestServiceAccountEmailValidation(t *testing.T) {
 }
 
 func TestWorkloadIdentityEmailValidation(t *testing.T) {
+	t.Parallel()
 	t.Run("create rejects invalid generated email", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		ctx := context.Background()
-		ctl := &controller{}
-		ctx, err := ctl.StartServerWithExternalPg(ctx)
-		a.NoError(err)
-		defer ctl.Close(ctx)
+		ctl, ctx := startProject(ctx, t)
 
 		workspace := getCurrentWorkspace(ctx, t, ctl)
-		_, err = ctl.workloadIdentityServiceClient.CreateWorkloadIdentity(ctx, connect.NewRequest(&v1pb.CreateWorkloadIdentityRequest{
+		_, err := ctl.workloadIdentityServiceClient.CreateWorkloadIdentity(ctx, connect.NewRequest(&v1pb.CreateWorkloadIdentityRequest{
 			Parent:             workspace,
 			WorkloadIdentityId: "Bot",
 			WorkloadIdentity: &v1pb.WorkloadIdentity{
@@ -80,14 +76,12 @@ func TestWorkloadIdentityEmailValidation(t *testing.T) {
 	})
 
 	t.Run("get rejects malformed resource email", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		ctx := context.Background()
-		ctl := &controller{}
-		ctx, err := ctl.StartServerWithExternalPg(ctx)
-		a.NoError(err)
-		defer ctl.Close(ctx)
+		ctl, ctx := startProject(ctx, t)
 
-		_, err = ctl.workloadIdentityServiceClient.GetWorkloadIdentity(ctx, connect.NewRequest(&v1pb.GetWorkloadIdentityRequest{
+		_, err := ctl.workloadIdentityServiceClient.GetWorkloadIdentity(ctx, connect.NewRequest(&v1pb.GetWorkloadIdentityRequest{
 			Name: "workloadIdentities/Bad@workload.bytebase.com",
 		}))
 		a.Error(err)

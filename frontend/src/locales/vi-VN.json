@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "Chỉ hoạt động",
+    "active-only-chats": "Xem các cuộc trò chuyện đang hoạt động",
     "ai-not-configured": {
       "configure": "Cấu hình",
       "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI.",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "Lưu trữ tất cả cuộc trò chuyện",
     "archive-chat": "Lưu trữ cuộc trò chuyện",
-    "archived-only-chats": "Chỉ đã lưu trữ",
+    "archived-only-chats": "Xem các cuộc trò chuyện đã lưu trữ",
     "args": "Tham số",
     "assistant-title": "Trợ lý AI",
     "cancel": "Hủy",
@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Tìm kiếm theo người thực hiện",
+          "description": "Tìm người dùng theo email. Thêm tiền tố serviceAccounts/ hoặc workloadIdentities/ để tìm các tác nhân đó.",
           "title": "Người thực hiện"
         },
         "level": {
@@ -154,9 +154,11 @@
       "continue-with-email": "Tiếp tục bằng email",
       "continue-with-idp": "Tiếp tục bằng {{idp}}",
       "email-code-tab": "Mã qua email",
+      "failed": "Đăng nhập thất bại",
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
+      "load-failed": "Không thể tải các tùy chọn đăng nhập. Vui lòng thử lại.",
       "new-user": "Mới sử dụng Bytebase?",
       "no-method-available": {
         "description": "Đăng nhập bằng mật khẩu và mã email đã bị tắt, đồng thời chưa có nhà cung cấp danh tính nào được cấu hình cho không gian làm việc này.",
@@ -186,6 +188,11 @@
       "create-admin-account": "Tạo tài khoản quản trị",
       "existing-user": "Đã có tài khoản?",
       "title": "Đăng ký tài khoản của bạn"
+    },
+    "sso": {
+      "invalid-authorization-url": "URL ủy quyền không hợp lệ: phải là URL HTTP hoặc HTTPS hợp lệ.",
+      "no-authorization-endpoint": "Nhà cung cấp danh tính không công bố điểm cuối ủy quyền. Hãy kiểm tra cấu hình.",
+      "unsupported-provider-type": "Loại nhà cung cấp danh tính này không hỗ trợ chuyển hướng SSO."
     },
     "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",
     "token-expired-title": "Mã thông báo đã hết hạn"
@@ -294,6 +301,7 @@
     "database-group": "Nhóm cơ sở dữ liệu",
     "databases": "Cơ sở dữ liệu",
     "deactivate": "Hủy kích hoạt",
+    "deactivated": "Đã vô hiệu hóa",
     "default": "Mặc định",
     "definition": "Định nghĩa",
     "delete": "Xóa",
@@ -310,6 +318,7 @@
     "discard-changes": "Hủy thay đổi",
     "discord": "Discord",
     "dismiss": "Loại bỏ",
+    "done": "Xong",
     "download": "Tải xuống",
     "draft": "Bản nháp",
     "duplicate": "Nhân bản",
@@ -450,6 +459,10 @@
     "search": "Tìm kiếm",
     "search-for-more": "Tìm kiếm thêm",
     "search-no-result": "Không tìm thấy kết quả phù hợp",
+    "search-results": "Tìm kiếm kết quả",
+    "secret-input": {
+      "unchanged": "Không thay đổi"
+    },
     "select": "Vui lòng chọn",
     "select-all": "Chọn tất cả",
     "selected": "đã chọn",
@@ -480,6 +493,8 @@
     "tips": "Mẹo",
     "title": "Tiêu đề",
     "to": "Đến",
+    "toggle-password-visibility": "Bật/tắt hiển thị mật khẩu",
+    "token": "Mã token",
     "total": "Tổng",
     "total-n-items": "Tổng {{n}} mục",
     "transfer": "Chuyển",
@@ -522,6 +537,16 @@
     "new-collection-name": "Tên bộ sưu tập mới",
     "new-database-name": "Tên cơ sở dữ liệu mới",
     "reserved-db-error": "{{databaseName}} là một tên dành riêng"
+  },
+  "credential-proof": {
+    "code-sent": "Đã gửi mã — kiểm tra email của bạn",
+    "email-label": "Mã xác minh qua email",
+    "email-me-a-code": "Gửi mã qua email",
+    "email-placeholder": "Mã 6 chữ số",
+    "factor-label": "Mã xác minh",
+    "factor-placeholder": "Mã ứng dụng xác thực hoặc mã khôi phục",
+    "password-label": "Mật khẩu hiện tại",
+    "resend-in": "Gửi lại sau {{seconds}} giây"
   },
   "custom-approval": {
     "approval-flow": {
@@ -622,11 +647,8 @@
     },
     "no-read-only-data-source": "Không có nguồn dữ liệu chỉ đọc",
     "private-key-passphrase": "Mật khẩu khóa riêng",
-    "private-key-passphrase-placeholder": "Để trống nếu khóa riêng của bạn không được mã hóa",
     "private-key-passphrase-tip": "Mật khẩu tùy chọn cho khóa riêng được mã hóa",
     "read-only": "Chỉ đọc",
-    "read-replica-host": "Máy chủ bản sao đọc",
-    "read-replica-port": "Cổng bản sao đọc",
     "replica-set": "Bộ bản sao",
     "select-query-data-source": "Chọn nguồn dữ liệu truy vấn",
     "snowflake-keypair-tip": "Xác thực cặp khóa",
@@ -638,11 +660,7 @@
       "ssh-key": "Khóa SSH",
       "user": "Người dùng"
     },
-    "ssh-connection": "Kết nối SSH",
-    "ssh-type": {
-      "none": "Không có",
-      "tunnel-and-private-key": "Đường hầm + Khóa riêng"
-    },
+    "ssh-connection": "Đường hầm SSH",
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
       "ca-path": "Đường dẫn chứng chỉ CA",
@@ -669,7 +687,7 @@
       "client-key-path": "Đường dẫn khóa riêng",
       "client-key-placeholder": "Nhập hoặc kéo thả YOUR_CLIENT_KEY",
       "configured": "Đã cấu hình",
-      "connection-security": "Bảo mật kết nối",
+      "connection-security": "TLS",
       "mutual-tls-unavailable-engine": "TLS lẫn nhau không khả dụng cho engine này.",
       "posture": {
         "disabled": "Đã tắt",
@@ -678,11 +696,10 @@
         "tls": "TLS"
       },
       "server-identity": "Danh tính máy chủ",
-      "verification-disabled-description": "Đã tắt xác minh. Kết nối được mã hóa, nhưng danh tính máy chủ không được xác minh; cài đặt CA sẽ bị bỏ qua.",
-      "verify-certificate": "Xác minh chứng chỉ máy chủ",
-      "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
+      "verification-disabled-description": "Xác minh đã tắt. Kết nối vẫn được mã hóa nhưng danh tính máy chủ không được xác minh; cài đặt CA bị bỏ qua. Điều này không an toàn. Hãy bật xác minh để bảo đảm kết nối an toàn; chỉ tạm tắt khi phát triển hoặc khắc phục sự cố.",
+      "verify-certificate": "Xác minh chứng chỉ máy chủ"
     },
-    "ssl-connection": "Kết nối SSL"
+    "ssl-connection": "TLS"
   },
   "database": {
     "access-denied": "Bạn không có quyền truy cập cơ sở dữ liệu này.",
@@ -725,8 +742,10 @@
     "mixed-label-values": "giá trị hỗn hợp",
     "mixed-label-values-warning": "Một số tài nguyên đã chọn có các giá trị khác nhau cho cùng một khóa. Chỉ chỉnh sửa các cặp khóa-giá trị này nếu bạn muốn thay đổi chúng.",
     "nullable": "Có thể null",
+    "open-sql-editor": "Mở trình soạn thảo SQL",
     "partition-tables": "Bảng phân vùng",
     "partitioned": "Đã phân vùng",
+    "project-instance-transfer-disabled": "Không thể chuyển hoặc hủy gán cơ sở dữ liệu thuộc phiên bản gắn với dự án.",
     "revision": {
       "add-more-files": "Thêm nữa",
       "available-files": "Các tập tin có sẵn",
@@ -800,7 +819,6 @@
     "unassign": "Hủy gán",
     "unassign-alert-description": "Các cơ sở dữ liệu đã chọn sẽ bị xóa khỏi dự án",
     "unassign-alert-title": "Hủy gán cơ sở dữ liệu",
-    "unassigned-databases": "Cơ sở dữ liệu chưa được gán",
     "unique": "Duy nhất",
     "visible": "Hiển thị"
   },
@@ -840,7 +858,14 @@
     "partitions": "Phân vùng",
     "procedures": "Thủ tục",
     "project-instance-synced-action": "Tạo thay đổi cơ sở dữ liệu",
+    "project-instance-synced-create-change-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy tạo một thay đổi cơ sở dữ liệu được quản trị để tiếp tục.",
+    "project-instance-synced-create-change-title": "Cơ sở dữ liệu đã sẵn sàng để thay đổi",
     "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng cách truy vấn dữ liệu trong SQL Editor, hoặc tạo thay đổi cơ sở dữ liệu được quản trị khi cần.",
+    "project-instance-synced-mark-sensitive-data-action": "Đánh dấu dữ liệu nhạy cảm",
+    "project-instance-synced-mark-sensitive-data-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Đánh dấu một cột nhạy cảm để áp dụng che dữ liệu.",
+    "project-instance-synced-mark-sensitive-data-title": "Sẵn sàng bảo vệ dữ liệu nhạy cảm",
+    "project-instance-synced-query-data-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy mở SQL Editor để truy vấn.",
+    "project-instance-synced-query-data-title": "Cơ sở dữ liệu đã sẵn sàng để truy vấn",
     "project-instance-synced-sql-editor-action": "Mở SQL Editor",
     "project-instance-synced-title": "Đã kết nối cơ sở dữ liệu",
     "project-instance-syncing-description": "Quá trình này có thể mất vài giây đến vài phút. Bạn có thể làm mới trang này sau.",
@@ -955,6 +980,8 @@
   },
   "instance": {
     "account-locator": "Định vị tài khoản",
+    "account-locator-description": "Xác định tài khoản Snowflake cần kết nối.",
+    "add-parameter": "Thêm tham số",
     "advanced-search": {
       "scope": {
         "host": {
@@ -969,6 +996,7 @@
     },
     "archive-instance-instance-name": "Lưu trữ phiên bản '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
+    "authentication": "Xác thực",
     "authentication-database": "Cơ sở dữ liệu xác thực",
     "cloud-sql-ip-type": {
       "description": "Dùng IP riêng khi instance không có IP công khai và Bytebase chạy trong cùng một VPC.",
@@ -979,9 +1007,10 @@
     },
     "connect-database-to-project": "Kết nối cơ sở dữ liệu với dự án",
     "connect-instance": "Kết nối instance",
+    "connect-using": "Kết nối bằng",
     "connecting-database-to-project": "Đang kết nối cơ sở dữ liệu...",
+    "connection-database": "Cơ sở dữ liệu kết nối",
     "connection-info": "Thông tin kết nối",
-    "connection-options": "Tùy chọn kết nối",
     "connection-recovery": {
       "auth": {
         "description": "Kiểm tra tên người dùng, mật khẩu, token hoặc cấu hình xác thực IAM, rồi kiểm tra kết nối lại.",
@@ -994,10 +1023,12 @@
       },
       "docs": "Mở hướng dẫn kết nối",
       "network": {
-        "description": "Xác nhận host và port có thể truy cập từ Bytebase Cloud. Kiểm tra firewall, allowlist, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng mạng riêng hay không.",
+        "description-saas": "Xác nhận host và port có thể truy cập từ Bytebase Cloud. Kiểm tra firewall, allowlist, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng mạng riêng hay không.",
+        "description-self-hosted": "Xác nhận host và port có thể truy cập từ môi trường triển khai Bytebase. Kiểm tra firewall, định tuyến mạng, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng từ mạng khác hay không.",
         "steps": {
           "address": "Xác minh host hoặc socket và port khớp với endpoint cơ sở dữ liệu.",
-          "firewall": "Nếu dùng Bytebase Cloud, hãy thêm IP Cloud bắt buộc vào allowlist của firewall cơ sở dữ liệu.",
+          "firewall-saas": "Thêm IP của Bytebase Cloud vào allowlist của firewall cơ sở dữ liệu.",
+          "firewall-self-hosted": "Cho phép kết nối từ mạng nơi Bytebase được triển khai.",
           "private-network": "Với cơ sở dữ liệu riêng tư, hãy cấu hình VPN, mạng riêng hoặc SSH tunnel trước."
         },
         "title": "Kiểm tra khả năng truy cập mạng"
@@ -1012,12 +1043,14 @@
         "title": "Kiểm tra quyền cơ sở dữ liệu"
       },
       "timeout": {
-        "description": "Cơ sở dữ liệu không phản hồi kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ Bytebase Cloud hay không.",
+        "description-saas": "Kiểm tra kết nối không hoàn tất kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ Bytebase Cloud hay không.",
+        "description-self-hosted": "Kiểm tra kết nối không hoàn tất kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ môi trường triển khai Bytebase hay không.",
         "steps": {
           "load": "Xác nhận cơ sở dữ liệu đang online và nhận kết nối mới.",
           "retry": "Nếu cơ sở dữ liệu nằm sau firewall, hãy hoàn tất allowlist hoặc tunnel trước khi thử lại.",
           "route": "Kiểm tra định tuyến, proxy, tunnel, port và cấu hình timeout kết nối."
         },
+        "test-title": "Kiểm tra kết nối đã hết thời gian chờ",
         "title": "Kiểm tra firewall và định tuyến"
       },
       "tls": {
@@ -1034,7 +1067,8 @@
         "steps": {
           "fields": "Kiểm tra host, port, username, password hoặc nguồn secret và chế độ SSL/TLS.",
           "help": "Nếu cơ sở dữ liệu là riêng tư, hãy cấu hình VPN, mạng riêng hoặc SSH tunnel trước khi thử lại.",
-          "logs": "Nếu cơ sở dữ liệu có firewall, hãy cho phép Bytebase Cloud hoặc mạng Bytebase đã triển khai kết nối."
+          "logs-saas": "Nếu cơ sở dữ liệu có firewall, hãy cho phép Bytebase Cloud kết nối.",
+          "logs-self-hosted": "Nếu cơ sở dữ liệu có firewall, hãy cho phép kết nối từ mạng nơi Bytebase được triển khai."
         },
         "title": "Kiểm tra cấu hình kết nối"
       },
@@ -1079,7 +1113,6 @@
           "role-id": "ID vai trò xác thực",
           "secret-env-name": "Tên môi trường",
           "secret-id": "ID bí mật xác thực",
-          "secret-plain-text": "Văn bản thuần",
           "self": "AppRole"
         },
         "self": "Loại xác thực",
@@ -1099,8 +1132,9 @@
       "vault-tls-config": "Cấu hình Vault TLS (Tùy chọn)",
       "vault-url": "URL Vault"
     },
-    "failed-to-connect-instance": "Không kết nối được với phiên bản.",
-    "failed-to-connect-instance-localhost": "Nếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" cho địa chỉ máy chủ.",
+    "failed-to-connect-instance": "Kiểm tra kết nối thất bại.",
+    "failed-to-connect-instance-localhost": "Địa chỉ này trỏ đến máy chủ Bytebase. Nếu cơ sở dữ liệu chạy trên máy chủ Docker, hãy thử dùng \"host.docker.internal\" làm địa chỉ host.",
+    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" là địa chỉ chỉ dùng cục bộ nên Bytebase Cloud không thể dùng để truy cập cơ sở dữ liệu. Hãy nhập hostname hoặc địa chỉ IP của cơ sở dữ liệu mà Bytebase Cloud có thể truy cập.",
     "filter-instance-name": "Lọc tên phiên bản",
     "find-gcp-project-id": "Để tìm ID dự án GCP, xem",
     "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, xem",
@@ -1108,7 +1142,7 @@
     "gcp-endpoint-tip": "Tùy chọn. Ghi đè điểm cuối Google API mặc định, ví dụ: điểm cuối Private Service Connect như {{example}}.",
     "gcp-endpoint-toggle": "Thiết lập điểm cuối API tùy chỉnh",
     "grants": "Quyền",
-    "host-or-socket": "Máy chủ hoặc Socket",
+    "hostname": "Tên máy chủ",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1186,6 +1220,7 @@
     },
     "instance-id": "ID phiên bản",
     "instance-name": "Tên phiên bản",
+    "kerberos": "Kerberos",
     "kerberos-instance-placeholder": "instance, tùy chọn",
     "kerberos-kdc": "KDC",
     "kerberos-kdc-host-placeholder": "Máy chủ KDC",
@@ -1197,14 +1232,21 @@
     "keytab-resupply-required": "Nguồn dữ liệu này hiện kết nối tới một đích đến mới. Hãy tải lên lại keytab để xác nhận bạn vẫn giữ nó.",
     "keytab-upload-placeholder": "Nhấp hoặc kéo tệp .keytab của bạn vào đây",
     "keytab-write-only": "Keytab chỉ ghi. Tải lên tệp mới để thay thế keytab hiện có.",
+    "master-name": "Tên nút chính",
+    "master-password": "Mật khẩu nút chính",
+    "master-username": "Tên người dùng nút chính",
     "new-instance": "Phiên bản mới",
     "no-environment": "Trường hợp này không bị ràng buộc với môi trường",
     "no-extra-params-configured": "Không có thông số kết nối bổ sung được cấu hình",
     "no-params-yet-add-above": "Chưa có thông số nào được cấu hình. \nThêm tham số bằng cách sử dụng biểu mẫu trên.",
-    "no-password": "Không có mật khẩu",
     "open-data-source": "Mở nguồn dữ liệu này để xem nó cần gì.",
     "parameter-name-placeholder": "Tên tham số",
     "parameter-value-placeholder": "Giá trị tham số",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "Nguồn mật khẩu",
+      "stored-in-bytebase": "Được lưu trong Bytebase"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1212,18 +1254,27 @@
       "external-secret-azure": "Azure Key Vault",
       "external-secret-gcp": "GCP Secret Manager",
       "external-secret-vault": "Vault (KV v2)",
+      "google-cloud-iam": "Google Cloud IAM",
       "google-iam": "Google Cloud SQL IAM",
       "password": "Mật khẩu"
     },
-    "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "port": "Cổng",
+    "prepare-sample-instance-failed": "Không thể chuẩn bị Phiên bản dự án mẫu.",
+    "preparing-sample-instance": "Đang chuẩn bị Phiên bản dự án mẫu…",
+    "project-bound-description": "Phiên bản này được gắn với dự án này. Tất cả cơ sở dữ liệu của phiên bản sẽ tự động được chuyển vào dự án và không thể chuyển hoặc hủy gán.",
+    "project-bound-title": "Phiên bản gắn với dự án",
     "project-id": "ID dự án",
     "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{{0}}' về trạng thái bình thường?",
     "role-arn": "ARN vai trò",
     "role-arn-description": "Vai trò IAM để đảm nhận cho truy cập xuyên tài khoản. Để trống cho truy cập cùng tài khoản.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "Phiên bản mẫu đã hết hạn vào {{time}} và sẽ sớm bị xóa.",
+    "sample-expiration-future_one": "Phiên bản mẫu sẽ bị xóa sau {{count}} ngày, vào {{time}}.",
+    "sample-expiration-future_other": "Phiên bản mẫu sẽ bị xóa sau {{count}} ngày, vào {{time}}.",
+    "sample-project-instance-description": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng trong 7 ngày.",
+    "sample-project-instance-description-self-host": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng.",
+    "sample-project-instance-title": "Dùng thử Phiên bản dự án mẫu",
     "scan-interval": {
-      "default-never": "Mặc định (không bao giờ)",
       "description": "Bytebase định kỳ đồng bộ lược đồ phiên bản và phát hiện bất thường.",
       "min-value": "Giá trị nhỏ nhất {{value}} phút",
       "self": "Khoảng thời gian quét"
@@ -1270,7 +1321,7 @@
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} cho {{warehouse}} và cấp cho người dùng các đặc quyền cần thiết."
         }
       },
-      "firewall-info": "Nếu bạn sử dụng các quy tắc tường lửa gửi đến cho thể hiện cơ sở dữ liệu của mình, vui lòng tham khảo Hướng dẫn kết nối đám mây Bytebase.",
+      "firewall-info": "Thêm IP của Bytebase Cloud vào allowlist của firewall cơ sở dữ liệu.",
       "google-cloud-sql": {
         "instance-name": "Tên kết nối phiên bản",
         "instance-name-tips": "Tên kết nối phiên bản phải giống như {{instance}}.",
@@ -1282,16 +1333,18 @@
         }
       },
       "host": {
-        "none-snowflake": "ví dụ: host.docker.internal | địa chỉ IP máy chủ | local socket"
-      },
-      "proxy": {
-        "snowflake": "Đối với máy chủ proxy, thêm @PROXY_HOST và chỉ định PROXY_PORT trong cổng"
+        "none-snowflake": "ví dụ: host.docker.internal | IP máy chủ | local socket",
+        "saas": "ví dụ: db.example.com | IP cơ sở dữ liệu"
       }
     },
+    "service-name": "Tên dịch vụ",
+    "service-name-placeholder": "Ví dụ: sales.example.com",
     "show-how-to-create": "Hiển thị cách tạo",
+    "sid": "SID",
+    "sid-placeholder": "Ví dụ: ORCL",
     "snowflake-web-console": "Bảng điều khiển web Snowflake",
     "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{{0}}'.",
-    "successfully-connected-instance": "Đã kết nối thành công với phiên bản.",
+    "successfully-connected-instance": "Kết nối thành công.",
     "successfully-created-instance-createdinstance-name": "Đã tạo thành công phiên bản '{{0}}'.",
     "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{{0}}'.",
     "successfully-updated-instance-instance-name": "Đã cập nhật thành công phiên bản '{{0}}'.",
@@ -1303,19 +1356,40 @@
     },
     "sync-databases": {
       "add-database": "+ Thêm cơ sở dữ liệu, nhấn enter để gửi",
+      "all-databases": "Tất cả cơ sở dữ liệu",
       "description": "Chọn cơ sở dữ liệu cần đồng bộ từ instance này.",
+      "hostname-required": "Nhập tên máy chủ để chọn cơ sở dữ liệu cần đồng bộ.",
       "project-sync-all": "Đồng bộ tất cả cơ sở dữ liệu vào dự án này",
+      "required-fields": "Điền các trường bắt buộc ở trên để chọn cơ sở dữ liệu cần đồng bộ.",
       "search-database": "Tìm kiếm cơ sở dữ liệu",
+      "selected-databases": "Cơ sở dữ liệu được chọn",
       "self": "Đồng bộ cơ sở dữ liệu",
       "sync-all": "Đồng bộ tất cả cơ sở dữ liệu"
     },
     "syncing": "Đang đồng bộ hóa ...",
     "test-connection": "Kiểm tra kết nối",
     "testing-connection": "Đang kiểm tra kết nối...",
-    "token-write-only": "YOUR_TOKEN - chỉ ghi",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
-    "unable-to-connect": "Bytebase không thể kết nối với phiên bản. Chúng tôi khuyên bạn nên xem xét lại thông tin kết nối. Nhưng bạn có thể bỏ qua cảnh báo này ngay bây giờ. Bạn vẫn có thể sửa thông tin kết nối từ trang chi tiết phiên bản sau khi tạo.\n\nChi tiết lỗi: {{0}}",
+    "unable-to-connect": "Bytebase không thể kết nối với các cài đặt này. Hãy xem hướng dẫn ở trên hoặc tiếp tục và cập nhật kết nối sau.\n\nChi tiết kỹ thuật: {{0}}",
+    "use-sample-instance": "Sử dụng phiên bản mẫu (Có sẵn trong 7 ngày)",
+    "use-sample-instance-self-host": "Sử dụng phiên bản mẫu",
     "users": "Người dùng",
+    "validation": {
+      "absolute-path": "Nhập đường dẫn tuyệt đối bắt đầu bằng /.",
+      "aws-credential": "Nhập ID khóa truy cập hoặc ARN của vai trò.",
+      "cloud-sql-host": "Nhập tên phiên bản theo định dạng project:region:instance.",
+      "forbidden-parameter": "Tham số allowAllFiles không được phép vì làm lộ các tệp trên máy chủ Bytebase.",
+      "gcp-instance": "Sử dụng chữ thường, số hoặc dấu gạch nối.",
+      "gcp-project": "Sử dụng chữ thường, số, dấu chấm, dấu hai chấm hoặc dấu gạch nối.",
+      "keytab-resupply": "Tải lại tệp keytab cho đích kết nối mới.",
+      "oracle-service": "Nhập tên dịch vụ hoặc SID.",
+      "pem-certificate": "Nhập chứng chỉ PEM, bao gồm các dòng BEGIN và END CERTIFICATE.",
+      "pem-key": "Nhập khóa riêng PEM (PKCS#1, PKCS#8 hoặc EC).",
+      "required": "Trường này là bắt buộc.",
+      "specific-credential": "Cung cấp thông tin xác thực cụ thể. Bytebase Cloud không hỗ trợ thông tin xác thực mặc định.",
+      "tls-pair": "Cung cấp cả chứng chỉ máy khách và khóa riêng.",
+      "tls-source-conflict": "Sử dụng nội dung PEM hoặc đường dẫn tệp, không dùng cả hai."
+    },
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },
   "issue": {
@@ -1551,7 +1625,6 @@
     },
     "recovery-code": "Mã khôi phục"
   },
-  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} đang yêu cầu truy cập vào tài khoản của bạn",
@@ -1559,8 +1632,45 @@
       "error-load-failed": "Tải thông tin client thất bại",
       "error-missing-params": "Thiếu các tham số OAuth2 bắt buộc",
       "error-switch-failed": "Chuyển workspace thất bại",
-      "permission-access": "Truy cập tài khoản Bytebase của bạn với quyền hạn của bạn",
-      "permissions": "Ứng dụng này sẽ có thể:",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "Bạn nghĩ nên bật? Hãy hỏi quản trị viên không gian làm việc về chính sách truy cập MCP.",
+          "description": "Quản trị viên không gian làm việc đã tắt truy cập MCP cho {{workspace}}. Không có gì được kết nối.",
+          "description-no-workspace": "Quản trị viên đã tắt truy cập MCP cho không gian làm việc này. Không có gì được kết nối.",
+          "line": {
+            "no-session": "Không phiên AI nào có thể kết nối tới không gian làm việc này",
+            "recorded": "Mọi lần vẫn cố kết nối đều được ghi vào nhật ký kiểm toán"
+          },
+          "policy-label": "Chính sách không gian làm việc",
+          "title": "Truy cập MCP đang tắt"
+        },
+        "line": {
+          "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối được ghi vào đầu ra chuẩn khi bật ghi nhật ký kiểm toán vào đầu ra chuẩn",
+          "capped-read-only": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì Bytebase có thể kiểm tra trên từng engine — nơi không thể chứng minh một câu lệnh là đọc, không truy vấn nào chạy",
+          "capped-read-write": "Giới hạn bởi quyền Bytebase của chính bạn và bởi mức hỗ trợ của Bytebase cho từng loại cơ sở dữ liệu và từng thao tác",
+          "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
+          "no-write": "Không thay đổi, triển khai, xuất dữ liệu hay quản trị cơ sở dữ liệu"
+        },
+        "title": "Phiên này có thể",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "Chưa có gì được phê duyệt và chưa có gì được kết nối"
+          },
+          "policy-label": "Chính sách không gian làm việc",
+          "undisclosable": {
+            "description": "Chính sách MCP của không gian làm việc này là một giá trị mà trang này không có cách diễn đạt. Nó hoặc mới hơn trang bạn đang mở, hoặc không phải là chính sách mà phiên bản Bytebase này phục vụ, trong trường hợp đó mọi kết nối MCP đều bị từ chối.",
+            "line": "Hãy tải lại để lấy phiên bản hiện tại. Nếu trang này xuất hiện lại, hãy nhờ quản trị viên không gian làm việc đặt một chính sách được hỗ trợ",
+            "title": "Trang này không thể hiển thị những gì chính sách MCP của không gian làm việc này cho phép"
+          },
+          "unknown": {
+            "description": "Bytebase hiện chưa đọc được chính sách truy cập MCP của không gian làm việc này.",
+            "line": "Không thể hiển thị những gì phiên này sẽ được phép làm",
+            "retry": "Kiểm tra lại",
+            "title": "Không kiểm tra được chính sách MCP"
+          }
+        },
+        "write-caution": "Phiên AI có quyền ghi sẽ tạo ra thay đổi thật. Chỉ phê duyệt trên máy bạn kiểm soát."
+      },
       "title": "Yêu cầu ủy quyền",
       "workspace-label": "Cấp quyền truy cập vào workspace"
     }
@@ -1592,9 +1702,12 @@
       "configure": "Cấu hình",
       "parameters": "Tham số gh-ost",
       "requirements-not-met": "Các cơ sở dữ liệu sau không đáp ứng yêu cầu Ghost: {{databases}}",
-      "reset-to-defaults": "Đặt lại về mặc định"
+      "reset-to-defaults": "Đặt lại về mặc định",
+      "skip-metadata-lock-check-risk": "Bỏ qua bước kiểm tra này có thể làm mất các thao tác ghi trong quá trình cut-over.",
+      "skip-metadata-lock-check-why": "Tại sao?"
     },
     "go-to-plan-page": "Đi tới trang kế hoạch",
+    "initial-sql-storage-failed": "Không thể lưu tạm thời SQL. Hãy giải phóng dung lượng lưu trữ của trình duyệt rồi thử lại.",
     "isolation-level": {
       "read-committed": "Đọc đã cam kết",
       "read-uncommitted": "Đọc chưa cam kết",
@@ -1678,6 +1791,7 @@
         "no-reviewers": "Không có người xét duyệt",
         "rejected-by": "Bị từ chối bởi {{user}}"
       },
+      "candidate-last-changed-plan": "Không thể phê duyệt — là người thay đổi kế hoạch gần đây nhất",
       "comment-required-to-reject": "Cần có bình luận để từ chối",
       "footer": {
         "all-gates-passed": "Đã đạt mọi điều kiện",
@@ -1707,11 +1821,50 @@
         "rollout-not-created": "Bản triển khai chưa được tạo tự động",
         "waiting-on-review": "Đang chờ xét duyệt"
       },
+      "last-plan-editor-cannot-approve": "Bạn không thể phê duyệt issue này vì bạn là người thay đổi kế hoạch gần đây nhất. Một người xét duyệt khác phải phê duyệt issue này.",
       "rejection": {
         "guidance-prefix": "Cập nhật thay đổi để xử lý phản hồi, hoặc",
         "guidance-suffix": "mà không thay đổi",
         "re-request-review": "yêu cầu xét duyệt lại",
         "title": "Bị {{user}} từ chối"
+      },
+      "thread": {
+        "add-comment": "Thêm bình luận",
+        "add-comment-on-line": "Thêm bình luận vào dòng {{line}}",
+        "add-comment-on-lines": "Thêm bình luận vào các dòng từ {{startLine}} đến {{endLine}}",
+        "anchor": {
+          "line_one": "Dòng {{range}}",
+          "line_other": "Dòng {{range}}",
+          "outdated": "Đã lỗi thời",
+          "statement-unavailable": "Câu lệnh không khả dụng",
+          "unavailable-change": "Thay đổi đã xóa",
+          "view-in-statement": "Xem trong câu lệnh"
+        },
+        "comment-on-lines": "Bình luận các dòng đã chọn",
+        "n-replies-hidden_one": "{{count}} phản hồi bị ẩn",
+        "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
+        "n-replies_one": "{{count}} phản hồi",
+        "n-replies_other": "{{count}} phản hồi",
+        "publish": "Đăng",
+        "reopen-thread": "Mở lại luồng",
+        "reply": "Trả lời",
+        "reply-placeholder": "Trả lời...",
+        "reply-posted-status-failed": "Đã đăng phản hồi nhưng không thể cập nhật trạng thái chủ đề. Hãy thử lại thao tác cập nhật trạng thái.",
+        "resolve": "Giải quyết",
+        "resolve-thread": "Giải quyết luồng",
+        "resolved": "Đã giải quyết",
+        "threads-on-line_one": "{{count}} chủ đề trên dòng này",
+        "threads-on-line_other": "{{count}} chủ đề trên dòng này",
+        "walker": {
+          "count_one": "{{count}} luồng chưa giải quyết ở phiên bản này",
+          "count_other": "{{count}} luồng chưa giải quyết ở phiên bản này",
+          "next": "Luồng chưa giải quyết tiếp theo",
+          "position": "Luồng {{index}} trên {{count}}",
+          "previous": "Luồng chưa giải quyết trước đó",
+          "remainder_one": "Còn {{count}} luồng không hiển thị ở phiên bản này",
+          "remainder_other": "Còn {{count}} luồng không hiển thị ở phiên bản này"
+        },
+        "write-comment": "Viết bình luận..."
       }
     },
     "rollback": {
@@ -1754,6 +1907,8 @@
       "n-of-m-approved": "{{n}} trên {{m}} đã được phê duyệt",
       "n-of-m-tasks": "{{n}}/{{m}} tác vụ",
       "n-passed": "{{n}} đã vượt qua",
+      "n-unresolved-threads_one": "{{count}} luồng chưa giải quyết",
+      "n-unresolved-threads_other": "{{count}} luồng chưa giải quyết",
       "n-warning": "{{n}} cảnh báo"
     },
     "targets": {
@@ -1772,7 +1927,8 @@
       "actions": {
         "explain-code": "Giải thích mã",
         "find-problems": "Tìm vấn đề",
-        "insert-at-caret": "Chèn vào con trỏ"
+        "insert-at-caret": "Chèn tại con trỏ",
+        "new-chat-using-selection": "Cuộc trò chuyện mới bằng nội dung đã chọn"
       },
       "ai-assistant": "Trợ lý AI",
       "conversation": {
@@ -1814,7 +1970,6 @@
     }
   },
   "project": {
-    "add-database": "Thêm cơ sở dữ liệu",
     "add-database-empty-placeholder": "Thêm cơ sở dữ liệu trong một phiên bản hiện có vào dự án này",
     "batch": {
       "archive": {
@@ -1893,29 +2048,34 @@
       },
       "revoke-role-from-member": "Thu hồi '{{role}}' từ '{{member}}'?"
     },
-    "overview": {
-      "info-slot-content": "Bytebase định kỳ đồng bộ hóa lược đồ phiên bản. Các cơ sở dữ liệu mới được đồng bộ hóa trước tiên được đặt ở đây. Người dùng nên chuyển chúng đến dự án ứng dụng thích hợp."
-    },
     "select": "Chọn dự án",
     "settings": {
       "confirm-archive-project": "Việc lưu trữ \"{{name}}\" sẽ khiến nó trở thành chỉ đọc và ẩn khỏi danh sách dự án đang hoạt động. Tất cả issue, cơ sở dữ liệu và cài đặt sẽ được giữ lại. Bạn có thể khôi phục lại sau từ danh sách dự án đã lưu trữ.",
       "confirm-delete-project": "Việc xóa \"{{name}}\" sẽ xóa vĩnh viễn dự án và tất cả dữ liệu liên quan bao gồm issue, cấu hình và lịch sử. Tất cả cơ sở dữ liệu trong dự án này sẽ được chuyển sang dự án mặc định. Hành động này không thể hoàn tác.",
       "issue-related": {
         "allow-access-grants": {
-          "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể.",
+          "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể. Quyền được cấp cũng có thể bao gồm xuất kết quả và xem dữ liệu chưa che.",
           "self": "Cho phép cấp quyền truy cập"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "Cho phép người thay đổi kế hoạch gần đây nhất phê duyệt issue thay đổi cơ sở dữ liệu liên quan.",
+          "self": "Cho phép người thay đổi kế hoạch gần đây nhất phê duyệt"
         },
         "allow-request-role": {
           "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án",
           "self": "Cho phép yêu cầu vai trò"
         },
         "allow-self-approval": {
-          "description": "Cho phép người tạo vấn đề phê duyệt vấn đề.",
-          "self": "Cho phép tự phê duyệt"
+          "description": "Cho phép người tạo issue phê duyệt issue đó.",
+          "self": "Cho phép người tạo issue tự phê duyệt"
         },
         "approval-flow-configured": "Quy trình phê duyệt đã được cấu hình",
         "approval-flow-fallback": "Đang sử dụng quy tắc phê duyệt mặc định",
         "approval-flow-not-configured": "Chưa cấu hình quy trình phê duyệt",
+        "approval-permissions": {
+          "description": "Các quyền này được áp dụng đồng thời. Nếu một người xét duyệt vừa tạo issue vừa là người thay đổi kế hoạch gần đây nhất, cả hai quyền phải được bật.",
+          "self": "Quyền phê duyệt"
+        },
         "ci-sampling-size": {
           "description": "Số lượng cơ sở dữ liệu tối đa để lấy mẫu trong quá trình xác thực dữ liệu CI. \nKhi bị vô hiệu hóa (không), xác thực đầy đủ sẽ được thực hiện.",
           "self": "Kích thước lấy mẫu dữ liệu CI"
@@ -2025,30 +2185,14 @@
       "success-updated-prompt": "Đã cập nhật thành công webhook {{name}}.",
       "test-webhook": "Kiểm tra Webhook",
       "triggering-activity": "Hoạt động kích hoạt",
+      "url-hidden": "Đã ẩn vì lý do bảo mật. Nhập URL mới để thay thế.",
       "webhook-url": "URL Webhook"
     }
   },
   "quick-action": {
-    "create-db": "Tạo cơ sở dữ liệu",
     "create-project": "Tạo dự án",
     "new-project": "Mới Dự án"
   },
-  "quick-start": {
-    "guide": "nhấp vào bước để thử",
-    "notice": {
-      "desc": "Bạn vẫn có thể mang nó trở lại sau từ menu trên cùng bên phải",
-      "title": "Đã bỏ qua hướng dẫn bắt đầu nhanh"
-    },
-    "query-data": "Truy vấn dữ liệu",
-    "self": "Bắt đầu nhanh",
-    "view-an-issue": "Xem một vấn đề",
-    "visit-database": "Truy cập Cơ sở dữ liệu",
-    "visit-environment": "Truy cập Môi trường",
-    "visit-instance": "Truy cập Phiên bản",
-    "visit-member": "Truy cập Thành viên",
-    "visit-project": "Truy cập Dự án"
-  },
-  "refresh-remind": {},
   "release": {
     "and-n-more-files": "và {{count}} tệp khác",
     "change-tip": "Thay đổi này được liên kết với một artifact phát hành.",
@@ -2276,8 +2420,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "Tìm kiếm phân loại",
-      "select": "Chọn phân loại"
+      "search": "Tìm kiếm phân loại"
     }
   },
   "sensitive-data": {
@@ -2290,6 +2433,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "Quản lý hồ sơ cá nhân và cách bạn đăng nhập.",
+      "email-managed": "Liên hệ quản trị viên workspace để đổi email đăng nhập.",
+      "password-notice": "Đổi mật khẩu sẽ đăng xuất bạn khỏi mọi phiên, kể cả phiên hiện tại.",
+      "security": "Bảo mật",
+      "self": "Cài đặt tài khoản",
+      "update-password": "Cập nhật mật khẩu"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2310,12 +2461,17 @@
           "enable-ai-assistant": "Bật Trợ lý AI",
           "enabled-in-saas": "Gemini AI được bật tự động trong chế độ SaaS.",
           "endpoint": {
-            "description": "Cung cấp triển khai riêng của Điểm cuối API.",
+            "description": "Nhập endpoint API cho model tùy chỉnh.",
+            "openai-description": "Dùng endpoint /responses cho Responses API hoặc /chat/completions cho Chat Completions API.",
             "self": "Điểm cuối API"
           },
           "model": {
-            "description": "Cung cấp triển khai riêng của tên mô hình.",
-            "self": "Tên mô hình"
+            "custom": "Model tùy chỉnh",
+            "deployment": "Tên triển khai",
+            "deployment-description": "Tên triển khai Azure OpenAI. Có thể khác với model.",
+            "description": "Chọn model được hỗ trợ hoặc chọn model tùy chỉnh để nhập model và endpoint khác.",
+            "name": "Tên model",
+            "self": "Model"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",
@@ -2381,7 +2537,10 @@
           "exiting": "Đang rời..."
         },
         "data-copy": "Bật sao chép dữ liệu",
-        "data-export": "Bật xuất dữ liệu",
+        "data-export": {
+          "description": "Khi tắt, người dùng không thể xuất trực tiếp kết quả truy vấn. Trong các dự án cho phép cấp quyền truy cập, người dùng vẫn có thể nhấn \"Yêu cầu xuất dữ liệu\" để gửi yêu cầu cấp quyền truy cập và xuất sau khi được phê duyệt.",
+          "self": "Cho phép xuất dữ liệu mà không cần phê duyệt"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành SQL Editor.",
           "go-to-sql-editor": "Đi tới Trình soạn thảo SQL",
@@ -2463,25 +2622,6 @@
             "self": "Kích thước kết quả SQL tối đa"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "Khả năng tối đa dành cho các phiên MCP (Model Context Protocol) trong không gian làm việc này. Thay đổi áp dụng ngay cho yêu cầu MCP tiếp theo.",
-            "disabled": {
-              "description": "Từ chối tất cả kết nối MCP.",
-              "self": "Tắt"
-            },
-            "read-only": {
-              "description": "Dành cho cơ chế kiểm soát chỉ đọc chi tiết, hiện chưa được phát hành. Cho đến khi đó, chọn tùy chọn này sẽ từ chối hoàn toàn các kết nối MCP, giống như Tắt.",
-              "self": "Chỉ đọc"
-            },
-            "read-write": {
-              "description": "Các phiên MCP có thể đọc và ghi, vẫn bị giới hạn bởi quyền của từng người dùng. Đây là mặc định khi chưa cấu hình.",
-              "self": "Đọc và ghi"
-            },
-            "self": "Truy cập MCP"
-          },
-          "self": "MCP"
-        },
         "no-limit": "Không giới hạn khi giá trị <= 0",
         "password-restriction": {
           "min-length": "Độ dài tối thiểu cho mật khẩu không được ít hơn {{min}} ký tự",
@@ -2545,25 +2685,131 @@
       "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
     },
     "mcp": {
-      "auth": {
-        "description": "Xác thực OAuth được yêu cầu khi kết nối lần đầu. Đảm bảo bạn có quyền Bytebase phù hợp.",
-        "title": "Yêu cầu xác thực"
+      "connect": {
+        "description": "Thêm Bytebase vào ứng dụng AI của bạn và bắt đầu hỏi. Ở lần kết nối đầu tiên, bạn đăng nhập và phê duyệt quyền truy cập trong trình duyệt.",
+        "desktop-note": "Claude Desktop đọc máy chủ từ xa từ tài khoản Claude của bạn, không phải từ tệp cấu hình. Hãy thêm URL này làm trình kết nối tùy chỉnh tại Customize > Connectors trên claude.ai, sau đó nó sẽ xuất hiện trong Claude Desktop.",
+        "json-note": "Đây là định dạng mcpServers. Mỗi client có định dạng cấu hình khác nhau: ví dụ VS Code dùng servers trong mcp.json của nó, nên hãy dùng tab VS Code cho trường hợp đó.",
+        "title": "Kết nối một client"
       },
       "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
       "first-prompt": {
         "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
         "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi",
-        "title": "Prompt đầu tiên của bạn"
+        "title": "Lời nhắc đầu tiên của bạn"
       },
-      "general-config": {
-        "title": "Cách 1: Cấu hình JSON"
+      "ladder": {
+        "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
+        "floor": {
+          "label": "Không bao giờ, ở mọi chế độ:",
+          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
+        },
+        "heading": "{{mode}} cho phép",
+        "hide-details": "Ẩn chi tiết",
+        "mark": {
+          "allowed": "Được phép",
+          "refused": "Không được phép"
+        },
+        "row": {
+          "export": {
+            "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
+            "title": "Xuất kết quả truy vấn"
+          },
+          "manage": {
+            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Cài đặt và nhãn cơ sở dữ liệu · Chuyển cơ sở dữ liệu giữa các dự án · Nhóm cơ sở dữ liệu · Truy vấn đã lưu",
+            "title": "Quản lý vận hành cơ sở dữ liệu"
+          },
+          "propose": {
+            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
+            "title": "Đề xuất thay đổi"
+          },
+          "read-data": {
+            "details": "Chạy truy vấn chỉ đọc · Ở chế độ Chỉ đọc, toàn bộ yêu cầu bị từ chối trừ khi mọi câu lệnh đều được chứng minh là một truy vấn đọc có trả về dữ liệu; mức độ kiểm tra tùy theo engine, và trên một số engine không câu lệnh nào có thể được chứng minh là đọc · Lịch sử truy vấn của riêng bạn · Truy vấn đã lưu và sheet mà bạn có quyền truy cập",
+            "title": "Đọc dữ liệu bằng cách chạy truy vấn"
+          },
+          "read-schemas": {
+            "details": "Lược đồ · Cơ sở dữ liệu và phiên bản · Dự án và nhóm cơ sở dữ liệu · Danh mục, nhật ký thay đổi và bản sửa đổi · Cấu hình rà soát SQL · Thông tin phiên và không gian làm việc của chính bạn",
+            "title": "Đọc lược đồ và siêu dữ liệu"
+          },
+          "read-workflow": {
+            "details": "Issue và bình luận · Plan và kiểm tra plan · Triển khai, lần chạy tác vụ và nhật ký · Bản phát hành · Xem trước khôi phục",
+            "title": "Đọc quy trình thay đổi"
+          },
+          "run-rollouts": {
+            "details": "Tạo một triển khai · Chạy, bỏ qua hoặc hủy các tác vụ của nó, theo chính sách phê duyệt của dự án",
+            "title": "Chạy triển khai và tác vụ"
+          },
+          "run-statements": {
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong phạm vi engine và quyền của chính người dùng cho phép",
+            "title": "Chạy câu lệnh DML và DDL"
+          }
+        },
+        "show-details": "Hiện chi tiết",
+        "stops": {
+          "read": "Chỉ đọc dừng ở đây",
+          "write": "Đọc và ghi dừng ở đây"
+        },
+        "summary": {
+          "read-only": "Đọc lược đồ, dữ liệu và quy trình thay đổi; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
+          "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, chạy, xuất và quản lý"
+        },
+        "tier": {
+          "read": "đọc",
+          "write": "ghi"
+        }
       },
-      "quick-start": {
-        "description": "Hoặc sử dụng một trong các lệnh CLI sau.",
-        "title": "Cách 2: Lệnh CLI"
-      },
-      "setup": {
-        "add-to-config": "Thêm JSON này vào tệp cấu hình MCP client của bạn."
+      "policy": {
+        "current": "Chính sách hiện tại: {{mode}}",
+        "description": "Mức tối đa mà bất kỳ phiên MCP nào có thể làm ở đây. Các phiên còn bị giới hạn bởi quyền của từng người dùng, và những lần từ chối theo chính sách được ghi vào đầu ra chuẩn khi bật ghi nhật ký kiểm toán vào đầu ra chuẩn.",
+        "edit": "Sửa chính sách",
+        "loading": "Đang đọc chính sách truy cập…",
+        "masking": {
+          "badge": "Đã bỏ qua miễn trừ che dữ liệu",
+          "badge-disabled": "Bỏ qua miễn trừ che dữ liệu — MCP đang tắt",
+          "badge-unlicensed": "Bỏ qua miễn trừ che dữ liệu — chưa có bản quyền che dữ liệu",
+          "description": "Nếu bật, dữ liệu đã che vẫn được che trong phiên MCP kể cả với người dùng có miễn trừ hoặc quyền bỏ che. Phạm vi phụ thuộc vào engine: ở nơi Bytebase không che, điều này không thay đổi gì. Console không bị ảnh hưởng.",
+          "title": "Bỏ qua miễn trừ che dữ liệu",
+          "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
+        },
+        "masking-pending": {
+          "applied": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu được áp dụng.",
+          "ignored": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu bị bỏ qua."
+        },
+        "mode": {
+          "disabled": {
+            "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",
+            "caption": "Không phiên MCP nào có thể kết nối",
+            "description": "Không phiên MCP nào có thể kết nối tới không gian làm việc này.",
+            "title": "Tắt"
+          },
+          "read-only": {
+            "best-for": "Phù hợp khi: truy vấn và khám phá dữ liệu bằng ngôn ngữ tự nhiên.",
+            "caption": "Khám phá và truy vấn",
+            "title": "Chỉ đọc"
+          },
+          "read-write": {
+            "best-for": "Phù hợp khi: thực hiện thay đổi cơ sở dữ liệu qua tác nhân AI, vẫn bị giới hạn bởi quyền của từng người dùng.",
+            "caption": "Thay đổi dữ liệu và lược đồ",
+            "title": "Đọc và ghi"
+          }
+        },
+        "read-failed": {
+          "description": "Hãy tải lại để thử lần nữa. Nếu vẫn lỗi, chính sách đã lưu là loại Bytebase không phân tích được và cần người vận hành sửa trực tiếp bản ghi. Trong lúc chưa đọc được, mọi kết nối MCP đều bị từ chối.",
+          "title": "Không đọc được chính sách truy cập"
+        },
+        "save": "Lưu chính sách",
+        "saved": "Đã lưu chính sách. {{mode}} áp dụng cho yêu cầu kế tiếp của mọi phiên.",
+        "tightening": "Áp dụng cho yêu cầu tiếp theo của mọi phiên đang chạy.",
+        "tightening-change": "{{from}} → {{to}} áp dụng cho yêu cầu tiếp theo của mọi phiên đang chạy.",
+        "title": "Chính sách truy cập",
+        "unreadable": {
+          "description": "Không gian làm việc này lưu một giá trị năng lực mà bản dựng hiện tại không hiểu. Mọi kết nối MCP đều bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
+          "pick": "Hãy chọn một chế độ để lưu chính sách này.",
+          "title": "Không đọc được chính sách truy cập đã lưu"
+        },
+        "unserved": {
+          "description": "Không gian làm việc này lưu {{stored}}, nhưng bản dựng này không hỗ trợ giá trị đó. Mọi kết nối MCP đều bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
+          "title": "Bản dựng này không hỗ trợ chính sách truy cập đã lưu"
+        }
       },
       "title": "Tích hợp MCP"
     },
@@ -2573,6 +2819,29 @@
         "reactivate-confirm-title": "Bạn có chắc muốn kích hoạt lại?"
       },
       "add-member": "Thêm thành viên",
+      "admin": {
+        "change-email": "Đổi email",
+        "change-email-description": "Chuyển địa chỉ đăng nhập của tài khoản này từ {{email}} sang địa chỉ mới. Người dùng phải đăng nhập bằng địa chỉ mới.",
+        "create-user": "Tạo người dùng",
+        "create-user-roles-failed": "Tài khoản đã được tạo nhưng không gán được vai trò. Hãy thiết lập trong mục Thành viên.",
+        "deactivate": "Vô hiệu hóa người dùng",
+        "deactivate-tip": "Tài khoản vẫn giữ dữ liệu nhưng không thể đăng nhập. Bạn có thể kích hoạt lại sau.",
+        "edit-user": "Sửa người dùng",
+        "email-immutable-tip": "Để chuyển tài khoản sang địa chỉ khác, hãy đóng bảng này và dùng Đổi email trong menu của hàng.",
+        "external-source": "Tài khoản này được đồng bộ từ {{source}}. Thay đổi ở đây có thể bị ghi đè ở lần đồng bộ tiếp theo.",
+        "generate": "Tạo",
+        "reactivate": "Kích hoạt lại người dùng",
+        "reactivate-tip": "Tài khoản có thể đăng nhập lại với thông tin đăng nhập và vai trò hiện có.",
+        "reset-mfa": "Đặt lại 2FA",
+        "reset-mfa-optional": "{{user}} sẽ mất trình xác thực và mã khôi phục hiện tại, và đăng nhập không có xác thực hai bước cho tới khi đăng ký lại.",
+        "reset-mfa-recovery-first": "Nếu họ vẫn còn mã khôi phục, họ có thể đăng nhập bằng mã đó và tự đăng ký lại mà không cần đặt lại.",
+        "reset-mfa-required": "{{user}} sẽ mất trình xác thực và mã khôi phục hiện tại. Không gian làm việc này yêu cầu xác thực hai bước, nên họ phải thiết lập trình xác thực mới ở lần đăng nhập tới.",
+        "reset-password": "Đặt lại mật khẩu",
+        "reset-password-deliver": "Hãy gửi cho họ qua kênh bạn tin tưởng. Bytebase không gửi qua email.",
+        "reset-password-description": "Đặt mật khẩu mới cho {{user}}. Mọi phiên đăng nhập sẽ bị đăng xuất và họ phải đăng nhập lại bằng mật khẩu này.",
+        "reset-password-issued": "Mật khẩu mới của {{user}}. Chỉ hiển thị một lần và không thể xem lại.",
+        "saas-read-only": "Trên bản cloud, hồ sơ tài khoản do chủ tài khoản quản lý. Hãy quản lý quyền truy cập workspace ở trang Thành viên."
+      },
       "all-users": "Tất cả người dùng",
       "assign-role": "Gán vai trò",
       "cannot-revoke-self": "Bạn không thể thu hồi chính mình",
@@ -2627,7 +2896,7 @@
       "select-role_other": "Chọn vai trò",
       "service-account": "Tài khoản dịch vụ",
       "service-accounts": "Tài khoản dịch vụ",
-      "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
+      "service-key-reset-and-copied": "Đã đặt lại và sao chép khóa dịch vụ",
       "show-inactive": "Hiển thị tài khoản không hoạt động",
       "table": {
         "account": "Tài khoản",
@@ -2642,12 +2911,16 @@
       "workload-identity-all-branches-tags": "Tất cả branch và tag",
       "workload-identity-allowed-branches-tags": "Branch/Tag được phép",
       "workload-identity-audience": "Audience",
+      "workload-identity-audience-hint": "Audience mà pipeline của bạn yêu cầu. Các workflow do Bytebase tạo yêu cầu bytebase; hướng dẫn thiết lập yêu cầu giá trị mặc định của nhà cung cấp, vì vậy hãy thêm dòng đó nếu pipeline của bạn dùng nó.",
       "workload-identity-branch": "Branch",
       "workload-identity-branch-hint": "Để trống cho tất cả branch",
+      "workload-identity-config-rejected": "Bytebase không thể chấp nhận cấu hình này:",
+      "workload-identity-generic-oidc": "OIDC chung",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "URL phiên bản GitLab của bạn",
       "workload-identity-group": "Nhóm / Tên người dùng",
       "workload-identity-issuer": "Issuer URL",
+      "workload-identity-jwks-url": "URL JWKS",
       "workload-identity-owner": "Tổ chức / Tên người dùng",
       "workload-identity-platform": "Nền tảng",
       "workload-identity-project": "Dự án",
@@ -2665,6 +2938,10 @@
       "display-name": "Tên của bạn",
       "display-name-placeholder": "Nhập tên của bạn",
       "email": "Email",
+      "enable-sample-databases": "Bật cơ sở dữ liệu mẫu",
+      "enable-sample-databases-create-change": "Bật cơ sở dữ liệu mẫu làm đích thay đổi an toàn",
+      "enable-sample-databases-mark-sensitive-data": "Bật cơ sở dữ liệu mẫu để thử che dữ liệu ngay",
+      "enable-sample-databases-query-data": "Bật cơ sở dữ liệu mẫu để bắt đầu truy vấn ngay",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
       "password-confirm-placeholder": "Xác nhận mật khẩu mới",
@@ -2672,13 +2949,42 @@
       "password-mismatch": "Mật khẩu mới không khớp",
       "phone": "Điện thoại",
       "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
-      "role": "Vai trò",
       "setup-failed": "Cập nhật hồ sơ thất bại.",
       "setup-first-project": "Thiết lập dự án đầu tiên",
+      "setup-scenario": {
+        "continue": "Tiếp tục",
+        "create-database-change": {
+          "description": "Xác định thay đổi và tạo issue có thể theo dõi.",
+          "title": "Tạo thay đổi cơ sở dữ liệu"
+        },
+        "mark-sensitive-data": {
+          "description": "Xác định các cột nhạy cảm và áp dụng che dữ liệu.",
+          "title": "Đánh dấu dữ liệu nhạy cảm"
+        },
+        "outcome-title": "Bạn muốn làm gì với Bytebase?",
+        "query-data": {
+          "description": "Mở SQL Editor và chạy một câu lệnh trên cơ sở dữ liệu.",
+          "title": "Truy vấn dữ liệu"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "Tôi sẽ tự sử dụng Bytebase.",
+            "title": "Chỉ mình tôi"
+          },
+          "team": {
+            "description": "Tôi sẽ làm việc cùng những người khác.",
+            "title": "Nhóm của tôi"
+          },
+          "title": "Ai sẽ sử dụng Bytebase cùng bạn?"
+        }
+      },
       "setup-skip": "Để sau",
+      "setup-steps": {
+        "scenario": "Chọn mục tiêu",
+        "workspace": "Thiết lập không gian làm việc"
+      },
+      "setup-submit": "Thiết lập không gian làm việc của tôi",
       "setup-success": "Hồ sơ đã được cập nhật.",
-      "setup-title": "Chào mừng! Thiết lập không gian làm việc của bạn",
-      "subscription": "(Nâng cấp để kích hoạt quản lý vai trò)",
       "workspace-name": "Tên không gian làm việc",
       "workspace-name-placeholder": "Nhập tên không gian làm việc"
     },
@@ -2725,6 +3031,7 @@
           "masking-type": "Loại che"
         }
       },
+      "apply-masking": "Áp dụng che dữ liệu",
       "classification": {
         "empty-classification": "Trường \"classification\" đang trống",
         "guide-classification": "\"classification\" ánh xạ mỗi danh mục theo ID. Danh mục lá phải tham chiếu một số cấp độ; danh mục cha bỏ qua cấp độ.",
@@ -2735,6 +3042,7 @@
         "missing-classification": "Thiếu trường \"classification\"",
         "missing-levels": "Thiếu trường \"levels\""
       },
+      "columns-to-mask": "Các cột cần che",
       "global-rules": {
         "condition-order": "Thứ tự điều kiện",
         "delete-rule-tip": "Xóa quy tắc này?",
@@ -2746,10 +3054,18 @@
         "re-order": "Sắp xếp lại"
       },
       "grant-access": "Cấp Quyền truy cập",
+      "mark-sensitive-data": "Đánh dấu dữ liệu nhạy cảm",
+      "mark-sensitive-data-description": "Chọn các cột có giá trị cần được ẩn trong kết quả truy vấn.",
       "never-expires": "Không bao giờ hết hạn",
       "remove-sensitive-column-tips": "Hiển thị cột này?",
+      "semantic-type-description": "Kiểu ngữ nghĩa nhóm các cột biểu thị cùng một loại dữ liệu để Bytebase áp dụng cách che nhất quán.",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "Không có thay đổi để lưu",
+          "title-required": "Tiêu đề là bắt buộc"
+        },
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
+        "masking-effect": "Hiệu ứng che: {{effect}}",
         "select": "Chọn loại ngữ nghĩa",
         "self": "Loại ngữ nghĩa",
         "table": {
@@ -2757,13 +3073,9 @@
           "description": "Mô tả",
           "icon": "Biểu tượng",
           "masking-algorithm": "Thuật toán che",
-          "semantic-type": "Loại ngữ nghĩa"
-        },
-        "template": {
-          "description": "Bạn có thể áp dụng các loại ngữ nghĩa tích hợp từ mẫu. Mẫu tích hợp không thể thay đổi.",
-          "duplicate-warning": "Loại ngữ nghĩa \"{{title}}\" đã tồn tại"
-        },
-        "use-predefined-type": "Sử dụng Loại định nghĩa trước"
+          "semantic-type": "Loại ngữ nghĩa",
+          "title": "Tiêu đề"
+        }
       }
     },
     "sidebar": {
@@ -2870,26 +3182,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "Thông tin cơ bản",
-    "data": {
-      "built-in": "Sử dụng mẫu tích hợp",
-      "built-in-desc": "Tạo dự án mẫu và các trường hợp",
-      "self-setup": "Thiết lập dự án"
-    },
-    "purposes": {
-      "alter-schema": "Thay đổi lược đồ",
-      "query-data": "Truy vấn dữ liệu",
-      "self": "Mục đích chính của bạn khi sử dụng Bytebase là gì?"
-    },
-    "self": "Thiết lập",
-    "skip-setup": "Bỏ qua thiết lập",
-    "workflow": {
-      "self": "Quy trình làm việc của bạn với cơ sở dữ liệu là gì?",
-      "simple": "Không có quy trình làm việc phức tạp, chỉ cần các công cụ UI",
-      "team": "Làm việc với đồng đội, cần có đường ống CI/CD"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "Chỉ hiển thị có dấu sao",
@@ -2986,6 +3278,10 @@
     "copy-selected-rows-as-csv": "Sao chép các hàng đã chọn dưới dạng CSV",
     "copy-selected-rows-as-sql": "Sao chép các hàng đã chọn dưới dạng SQL",
     "copy-url": "Sao chép URL",
+    "data-explorer-elasticsearch-filter-placeholder": "Nhập biểu thức truy vấn, ví dụ status:active",
+    "data-explorer-filter-placeholder": "Nhập điều kiện truy vấn, ví dụ WHERE c.id = \"1\"",
+    "data-explorer-mongodb-filter-placeholder": "Nhập tài liệu bộ lọc, ví dụ { \"status\": \"active\" }",
+    "data-explorer-sql-filter-placeholder": "Nhập điều kiện truy vấn, ví dụ WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "download-as-file": "Tải xuống dưới dạng {{file}}",
     "duration-day": "{{days}} ngày",
@@ -2997,6 +3293,7 @@
     "expire-at": "Hết hạn lúc {{time}}",
     "expire-in": "Hết hạn sau {{time}}",
     "expired": "Đã hết hạn",
+    "explore-data": "Khám phá dữ liệu",
     "export-available-via-issue": "Xuất khả dụng qua issue \"{{title}}\"",
     "export-available-via-n-grants": "Xuất khả dụng qua {{count}} cấp quyền truy cập:",
     "export-enabled-by-grant": "Xuất được kích hoạt bởi cấp quyền truy cập",
@@ -3014,6 +3311,7 @@
       }
     },
     "invalid-database": "Cơ sở dữ liệu không hợp lệ {{database}}",
+    "json-view": "Chế độ xem JSON",
     "last-synced": "Đã đồng bộ lần cuối: <time></time>",
     "loading-data": "Đang tải Dữ liệu...",
     "loading-databases": "Đang tải Cơ sở dữ liệu...",
@@ -3029,12 +3327,113 @@
     "open-in-new-tab": "Mở trong tab mới",
     "opened-from-link": "Mở từ liên kết",
     "pending-query": "Đang chờ truy vấn",
-    "preview-table-data": "Xem trước dữ liệu bảng",
     "previous-row": "Dòng trước",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
     "query-history-not-found": "Không tìm thấy lịch sử truy vấn hoặc không còn truy cập được",
+    "query-plan-load-failed": "Không tải được kế hoạch truy vấn",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "Đã sao chép",
+        "failed": "Sao chép thất bại",
+        "plan": "Sao chép kế hoạch",
+        "query": "Sao chép truy vấn"
+      },
+      "details": {
+        "select-node": "Chọn một nút để xem chi tiết."
+      },
+      "diagram": {
+        "collapse": "Thu gọn {{count}} nút bên dưới {{node}}",
+        "cost": "chi phí {{cost}}",
+        "estimated-rows": "{{count}} hàng ước tính",
+        "expand": "Mở rộng {{count}} nút bên dưới {{node}}",
+        "fit": "Vừa với khung nhìn",
+        "nodes-hidden": "Đã ẩn {{count}} nút",
+        "plan-cost-share": "{{share}} chi phí kế hoạch",
+        "rows": "hàng {{count}}",
+        "zoom-in": "Phóng to",
+        "zoom-out": "Thu nhỏ"
+      },
+      "error": {
+        "mssql-empty": "SQL Server không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "mssql-invalid": "Kế hoạch truy vấn không phải XML hợp lệ. Cần đầu ra SHOWPLAN_XML.",
+        "mssql-no-plan": "XML của kế hoạch truy vấn không phải showplan SQL Server có ít nhất một câu lệnh.",
+        "postgres-empty": "PostgreSQL không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "postgres-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN (FORMAT JSON).",
+        "postgres-no-plan": "JSON của kế hoạch truy vấn không chứa đối tượng \"Plan\".",
+        "spanner-empty": "Spanner không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "spanner-emulator": "Spanner không trả về kế hoạch truy vấn cho câu lệnh này. Trình giả lập Spanner không trả về kế hoạch cho bất kỳ câu lệnh nào; hãy giải thích câu lệnh trên một phiên bản Spanner để xem kế hoạch.",
+        "spanner-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần một kế hoạch truy vấn Spanner.",
+        "spanner-no-plan": "JSON của kế hoạch truy vấn không chứa danh sách \"planNodes\" có toán tử ở gốc.",
+        "too-deep": "Kế hoạch truy vấn lồng quá sâu để trình trực quan hóa này có thể vẽ.",
+        "unreadable": "Không thể đọc kế hoạch truy vấn này"
+      },
+      "grid": {
+        "added-cost": "Chi phí thêm",
+        "added-cost-hint": "Chi phí mà nút này thêm ngoài các nút con; một số máy cơ sở dữ liệu cũng tính số lần lặp của đầu vào tại đây, chẳng hạn trong vòng lặp lồng nhau. Thanh thể hiện tỷ lệ chi phí này trong kế hoạch.",
+        "caption": "Các nút kế hoạch theo thứ tự lồng nhau của bộ lập kế hoạch, nút cha đứng trước nút con.",
+        "estimated-rows": "Số hàng ước tính",
+        "node": "Nút",
+        "rows": "Hàng",
+        "total-cost": "Tổng chi phí",
+        "width": "Độ rộng",
+        "width-hint": "Độ rộng hàng ước tính theo byte"
+      },
+      "highlight": {
+        "cost": "Chi phí",
+        "cost-hint": "Tô màu theo chi phí mà nút thêm ngoài các nút con",
+        "label": "Làm nổi bật",
+        "off": "Tắt",
+        "off-hint": "Không tô màu các thẻ nút",
+        "rows": "Hàng",
+        "rows-hint": "Tô màu theo số hàng ước tính"
+      },
+      "legend": {
+        "cost": "thanh trên mỗi thẻ thể hiện tỷ lệ chi phí ước tính của nút trong kế hoạch",
+        "rows": "cạnh dày hơn theo số hàng mà nút con dự kiến trả về"
+      },
+      "metric": {
+        "added-cost": "Chi phí thêm",
+        "bytes": "{{count}} byte",
+        "estimated-rows": "Số hàng ước tính",
+        "row-width": "Độ rộng hàng",
+        "startup-cost": "Chi phí khởi động",
+        "total-cost": "Tổng chi phí"
+      },
+      "query": {
+        "missing": "Câu lệnh không được lưu cùng kế hoạch này."
+      },
+      "summary": {
+        "added-cost": "Chi phí thêm",
+        "cost-by-operation": "Chi phí theo thao tác",
+        "cost-by-operation-description": "Mỗi loại nút trong kế hoạch và tổng chi phí của nó.",
+        "cost-ranges": "Khoảng chi phí",
+        "cost-ranges-description": "Mỗi nút trải từ chi phí khởi động — chi phí trước hàng đầu tiên — đến tổng chi phí, cả hai đều bao gồm mọi thứ bên dưới. Khoảng tối hơn chiếm nhiều chi phí kế hoạch hơn. Chi phí không phải lịch thực thi: hai đầu vào của phép nối chồng lên nhau ở đây nhưng chạy lần lượt.",
+        "costliest": "Toán tử tốn kém nhất",
+        "costliest-description": "Xếp hạng theo chi phí mà một nút thêm ngoài các nút con. Khi một đầu vào chạy lặp lại, như trong vòng lặp lồng nhau, một số máy cơ sở dữ liệu tính số lần lặp vào nút chạy lại đầu vào thay vì chính đầu vào.",
+        "count": "Số lượng",
+        "estimate-note": "Câu lệnh đã được lập kế hoạch nhưng chưa chạy, vì vậy mọi số liệu ở đây là ước tính của bộ tối ưu hóa chứ không phải phép đo. Đơn vị chi phí là tùy ý và chỉ có thể so sánh trong kế hoạch này.",
+        "estimated-rows-returned": "Số hàng trả về ước tính",
+        "no-added-cost": "Không có nút nào trong kế hoạch này tự thêm chi phí ước tính.",
+        "nodes": "Nút",
+        "operation": "Thao tác",
+        "share": "Tỷ lệ",
+        "timeline-node": "{{name}}, chi phí từ {{startup}} đến {{total}}, {{share}} chi phí kế hoạch",
+        "total-estimated-cost": "Tổng chi phí ước tính"
+      },
+      "tab": {
+        "diagram": "Sơ đồ",
+        "grid": "Lưới",
+        "query": "Truy vấn",
+        "summary": "Tóm tắt",
+        "text": "Văn bản"
+      },
+      "totals": {
+        "estimated-cost": "chi phí ước tính {{cost}}",
+        "nodes": "{{count}} nút"
+      }
+    },
     "query-time": "Thời gian truy vấn",
     "re-request": "Yêu cầu lại",
     "recent": "Gần đây",
@@ -3046,7 +3445,11 @@
     },
     "request-aborted": "Người dùng đã hủy yêu cầu",
     "request-access-grant": "Yêu cầu cấp quyền truy cập",
+    "request-export": "Yêu cầu xuất dữ liệu",
+    "request-query": "Yêu cầu truy vấn",
+    "request-unmask": "Yêu cầu bỏ che",
     "result-detail": {
+      "cell": "Chi tiết ô",
       "next-match": "Kết quả tiếp theo",
       "previous-match": "Kết quả trước",
       "search": "Tìm trong chi tiết"
@@ -3054,6 +3457,7 @@
     "result-limit": {
       "self": "Giới hạn kết quả"
     },
+    "result-view-mode": "Chế độ xem kết quả",
     "revoke-access": "Thu hồi",
     "revoke-confirm": "Bạn có chắc chắn muốn thu hồi cấp quyền truy cập này không?",
     "rows": {
@@ -3063,13 +3467,16 @@
     "rows-upper-limit": "đã đạt đến giới hạn kết quả truy vấn",
     "save-sheet": "Lưu truy vấn",
     "saved-query-share": {
+      "add-people": "Thêm người dùng hoặc nhóm",
       "editor": "Người chỉnh sửa",
-      "granted-at-other-level": "Còn {{count}} mục được cấp ở mức khác.",
+      "load-failed": "Không thể tải chia sẻ.",
       "not-shared": "Chưa chia sẻ với ai.",
       "only-users-and-groups": "Chỉ có thể cấp quyền cho người dùng và nhóm.",
+      "owner": "Chủ sở hữu",
+      "people-with-access": "Người có quyền truy cập",
       "policy-changed": "Cài đặt chia sẻ đã thay đổi ở nơi khác. Đã tải lại bản mới nhất.",
       "private-hint": "Chỉ bạn và quản trị viên workspace có thể mở truy vấn đã lưu này.",
-      "shared-with": "Được chia sẻ với",
+      "share-title": "“{{title}}”",
       "viewer": "Người xem"
     },
     "scroll-to-bottom": "Cuộn xuống cuối",
@@ -3080,6 +3487,7 @@
     "search-scope-row-number-description": "Nhập số dòng để chuyển đến dòng đó.",
     "search-scope-row-number-title": "Số dòng",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
+    "select-a-project-to-choose-a-database": "Chọn một dự án để chọn cơ sở dữ liệu",
     "select-connection": "Vui lòng chọn kết nối",
     "select-encoding": "Chọn mã hóa",
     "self": "Trình soạn thảo SQL",
@@ -3113,7 +3521,6 @@
     "view-detail": "Xem chi tiết",
     "view-issue": "Xem Issue",
     "view-schema-text": "Xem văn bản lược đồ",
-    "visualize-explain": "Trực quan hóa Giải thích",
     "web-socket": {
       "connection-status": {
         "connected": "đã kết nối",
@@ -3296,8 +3703,7 @@
     },
     "prior-backup": "Sao lưu trước",
     "run-immediately": {
-      "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch.",
-      "self": "Chạy ngay lập tức"
+      "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch."
     },
     "run-task": "Chạy tác vụ | Chạy tác vụ",
     "schedule-for-later": {
@@ -3393,6 +3799,7 @@
     },
     "self": "Xác thực hai yếu tố",
     "setup-steps": {
+      "confirm-code": "Nhập mã mới từ ứng dụng xác thực để hoàn tất",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "Các mã này là phương sách cuối cùng để truy cập tài khoản của bạn trong trường hợp bạn mất mã xác thực hai yếu tố. Nếu bạn không thể tìm thấy các mã này, bạn sẽ mất quyền truy cập vào tài khoản của mình.",
@@ -3424,21 +3831,35 @@
   },
   "workspace-setup-guide": {
     "actions": {
-      "change": "Tạo thay đổi cơ sở dữ liệu",
       "query": "Đi tới SQL Editor"
     },
+    "all-steps-completed": "Đã hoàn thành tất cả các bước",
     "descriptions": {
-      "database": "Tạo hoặc chuyển cơ sở dữ liệu vào dự án trước khi truy vấn dữ liệu.",
-      "instance": "Kết nối instance để Bytebase có thể đồng bộ cơ sở dữ liệu của bạn.",
-      "project": "Tạo dự án để quản lý cơ sở dữ liệu và thay đổi.",
-      "sql-editor": "Truy vấn dữ liệu trong SQL Editor hoặc tạo thay đổi cơ sở dữ liệu được quản trị."
+      "add-teammate": "Mời một thành viên và cấp quyền truy cập không gian làm việc.",
+      "create-database-change": "Xác định thay đổi cơ sở dữ liệu và tạo issue cho thay đổi đó.",
+      "database": "Mở một cơ sở dữ liệu và khám phá schema cùng các bảng của cơ sở dữ liệu đó.",
+      "instance": "Kết nối một instance để Bytebase có thể đồng bộ các cơ sở dữ liệu.",
+      "mark-sensitive-data": "Mở cơ sở dữ liệu đã chọn và gán kiểu ngữ nghĩa cho một cột nhạy cảm.",
+      "project": "Tạo một dự án để tổ chức cơ sở dữ liệu và các thay đổi.",
+      "query-data": "Mở cơ sở dữ liệu đã chọn trong SQL Editor và chạy bất kỳ câu lệnh nào."
     },
     "dismiss": "Đóng hướng dẫn",
+    "generic": {
+      "title": "Thiết lập Bytebase"
+    },
+    "getting-started": "Bắt đầu",
     "intro": {
+      "create-user-description": "Tạo tài khoản cho một thành viên trong không gian làm việc tự lưu trữ này.",
+      "create-user-title": "Tạo người dùng",
       "database-description": "Tạo cơ sở dữ liệu trong instance đã kết nối.",
       "database-title": "Tạo cơ sở dữ liệu",
+      "grant-access-description": "Mời một thành viên và gán vai trò không gian làm việc cho họ.",
+      "grant-access-title": "Cấp quyền truy cập không gian làm việc",
       "instance-description": "Tạo instance để Bytebase có thể kết nối tới máy chủ cơ sở dữ liệu của bạn.",
       "instance-title": "Kết nối instance",
+      "mark-sensitive-data-description": "Chọn một cột và gán kiểu ngữ nghĩa để Bytebase có thể áp dụng che dữ liệu.",
+      "mark-sensitive-data-title": "Đánh dấu dữ liệu nhạy cảm",
+      "mark-sensitive-fields-description": "Mở bảng hoặc bộ sưu tập và gán kiểu ngữ nghĩa cho các trường nhạy cảm trong catalog.",
       "project-description": "Tạo một dự án trước. Cơ sở dữ liệu có thể được đồng bộ vào dự án đó sau khi instance được kết nối.",
       "project-title": "Tạo dự án",
       "transfer-description": "Chọn một hoặc nhiều cơ sở dữ liệu, sau đó chuyển chúng vào dự án.",
@@ -3446,12 +3867,28 @@
     },
     "prepare-database-tip": "Chọn cơ sở dữ liệu để chuyển vào dự án.",
     "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
-    "self": "Thiết lập Bytebase",
+    "product-model": "Cách Bytebase hoạt động",
+    "scenarios": {
+      "create-database-change": {
+        "title": "Tạo thay đổi cơ sở dữ liệu"
+      },
+      "mark-sensitive-data": {
+        "title": "Đánh dấu dữ liệu nhạy cảm"
+      },
+      "query-data": {
+        "title": "Truy vấn dữ liệu"
+      }
+    },
+    "step-progress": "{{current}} / {{total}}",
     "steps": {
-      "database": "Chuẩn bị cơ sở dữ liệu",
+      "add-teammate": "Thêm thành viên",
+      "create-database-change": "Tạo thay đổi cơ sở dữ liệu",
+      "database": "Khám phá cơ sở dữ liệu",
       "instance": "Kết nối instance",
+      "mark-sensitive-data": "Đánh dấu dữ liệu nhạy cảm",
       "project": "Tạo dự án",
-      "query": "Truy vấn dữ liệu"
-    }
+      "query-data": "Truy vấn dữ liệu"
+    },
+    "view-all-steps": "Xem tất cả các bước"
   }
 }
