@@ -9,17 +9,22 @@ export const humanizeTsStub = () => ({
     tsMs,
     mode = "queue",
     className,
+    truncate = false,
   }: {
     tsMs: number | undefined;
     mode?: string;
     className?: string;
+    truncate?: boolean;
   }) =>
     // Nothing at all without an instant, as the component does: a stub that
-    // left an empty box behind would hide a row that kept its separator. The
-    // class lands on the same span it does in the component, since that is
-    // where a caller asks a narrowed date to ellipsize rather than wrap.
+    // left an empty box behind would hide a row that kept its separator.
     tsMs === undefined ? null : (
-      <span data-testid="humanize-ts" data-mode={mode} className={className}>
+      <span
+        data-testid="humanize-ts"
+        data-mode={mode}
+        data-truncate={truncate}
+        className={className}
+      >
         {tsMs}
       </span>
     ),
@@ -35,3 +40,7 @@ export const shownTimestampModes = (root: ParentNode) =>
 /** The instant each timestamp was given, in document order. */
 export const shownTimestampInstants = (root: ParentNode) =>
   shown(root).map((node) => node.textContent);
+
+/** Whether each timestamp was asked to fit its box, in document order. */
+export const shownTimestampTruncates = (root: ParentNode) =>
+  shown(root).map((node) => node.dataset.truncate === "true");

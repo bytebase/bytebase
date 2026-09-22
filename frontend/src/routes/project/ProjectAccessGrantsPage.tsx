@@ -792,21 +792,13 @@ export function AccessGrantRow({
     ),
     expiration:
       expireTimeMs !== undefined ? (
-        <HumanizeTs
-          className="block truncate"
-          mode="operational"
-          tsMs={expireTimeMs}
-        />
+        <HumanizeTs mode="operational" truncate tsMs={expireTimeMs} />
       ) : (
         "-"
       ),
     created:
       createdTimeMs !== undefined ? (
-        <HumanizeTs
-          className="block truncate"
-          mode="operational"
-          tsMs={createdTimeMs}
-        />
+        <HumanizeTs mode="operational" truncate tsMs={createdTimeMs} />
       ) : (
         "-"
       ),

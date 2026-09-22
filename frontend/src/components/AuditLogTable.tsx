@@ -448,8 +448,8 @@ function useColumnDefs(): ColumnDef[] {
         render: (log: AuditLog) =>
           log.createTime ? (
             <HumanizeTs
-              className="block truncate"
               mode="datetime"
+              truncate
               tsMs={getTimeForPbTimestampProtoEs(log.createTime)}
             />
           ) : (

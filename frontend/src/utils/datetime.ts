@@ -113,6 +113,13 @@ export function formatAbsoluteDateTime(timestampMs: number): string {
   }).format(timestampMs);
 }
 
+const formatDateWithYear = (timestampMs: number): string =>
+  dateTimeFormatter("dateWithYear", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(timestampMs);
+
 function formatAbsoluteDate(timestampMs: number): string {
   if (new Date(timestampMs).getFullYear() === new Date().getFullYear()) {
     return dateTimeFormatter("date", {
@@ -120,11 +127,7 @@ function formatAbsoluteDate(timestampMs: number): string {
       day: "numeric",
     }).format(timestampMs);
   }
-  return dateTimeFormatter("dateWithYear", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(timestampMs);
+  return formatDateWithYear(timestampMs);
 }
 
 function formatQueueTime(timestampMs: number): string {
@@ -153,6 +156,36 @@ function formatOperationalDateTime(timestampMs: number): string {
     minute: "2-digit",
     timeZoneName: "short",
   }).format(timestampMs);
+}
+
+/**
+ * A date-time label as its date and the rest, so a narrowed cell can keep
+ * the day. `rest` is the time, any zone, and what separates them from the
+ * date, on the side the locale writes them.
+ */
+export type DateTimeSegments = {
+  date: string;
+  rest: string;
+  dateFirst: boolean;
+};
+
+/**
+ * Splits a date-time label of `timestampMs` around the date as the locale
+ * writes a date alone, or returns undefined when the label neither begins nor
+ * ends with it.
+ */
+export function dateTimeSegments(
+  label: string,
+  timestampMs: number
+): DateTimeSegments | undefined {
+  const date = formatDateWithYear(timestampMs);
+  if (label.startsWith(date)) {
+    return { date, rest: label.slice(date.length), dateFirst: true };
+  }
+  if (label.endsWith(date)) {
+    return { date, rest: label.slice(0, -date.length), dateFirst: false };
+  }
+  return undefined;
 }
 
 function relativeTimeChangeAt(timestampMs: number, nowMs: number): number {

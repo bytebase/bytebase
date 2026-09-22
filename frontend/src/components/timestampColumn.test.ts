@@ -9,7 +9,9 @@ import {
 // zone, the five shipped locales, and every month and local hour of a year,
 // at 14px in the macOS system font, plus 32px of cell padding.
 const MEASURED_FORM = { compact: 191, operational: 269, datetime: 291 };
-const MEASURED_DATE = 140;
+// The date on every day of a year, the space before the time, and an
+// ellipsis, at its widest.
+const MEASURED_NARROWEST = 154;
 
 const forms = Object.keys(MEASURED_FORM) as (keyof typeof MEASURED_FORM)[];
 
@@ -23,8 +25,10 @@ describe("timestamp column widths", () => {
     }
   );
 
-  test("never narrow a column past the date", () => {
-    expect(TIMESTAMP_COLUMN_MIN_WIDTH).toBeGreaterThanOrEqual(MEASURED_DATE);
+  test("never narrow a column past the date and a sign of the time", () => {
+    expect(TIMESTAMP_COLUMN_MIN_WIDTH).toBeGreaterThanOrEqual(
+      MEASURED_NARROWEST
+    );
   });
 
   test.each(forms)("let a reader narrow a %s column at all", (form) => {

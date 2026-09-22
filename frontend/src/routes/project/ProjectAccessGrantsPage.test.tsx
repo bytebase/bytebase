@@ -11,6 +11,7 @@ import { distributeColumnWidths } from "@/hooks/useColumnWidths";
 import {
   shownTimestampInstants,
   shownTimestampModes,
+  shownTimestampTruncates,
 } from "@/test-utils/humanizeTs";
 import {
   AccessGrant_Status,
@@ -158,7 +159,7 @@ describe("AccessGrantRow", () => {
     expect(cell("actions").textContent).toBe("sql-editor.revoke-access");
   });
 
-  test("dates a grant's creation and expiry in one form, each ellipsizing", () => {
+  test("dates a grant's creation and expiry in one form, each fitting its box", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
     roots.push(root);
@@ -186,15 +187,10 @@ describe("AccessGrantRow", () => {
       )
     );
 
-    const dates = container.querySelectorAll<HTMLElement>(
-      "[data-testid=humanize-ts]"
-    );
     expect(shownTimestampModes(container)).toEqual([
       "operational",
       "operational",
     ]);
-    for (const date of dates) {
-      expect(date.className).toContain("truncate");
-    }
+    expect(shownTimestampTruncates(container)).toEqual([true, true]);
   });
 });
