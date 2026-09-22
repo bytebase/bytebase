@@ -1,3 +1,4 @@
+import { ExternalLink } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { router } from "@/app/router";
@@ -21,7 +22,7 @@ import type {
   LoginRequest,
 } from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
-import { openWindowForSSO, SsoConfigError } from "@/utils";
+import { openWindowForSSO } from "@/utils";
 
 export type SigninPageProps = {
   readonly redirect?: boolean;
@@ -30,6 +31,25 @@ export type SigninPageProps = {
   readonly hideFooter?: boolean;
   readonly footerOverride?: React.ReactNode;
 };
+
+type SSOFailure = {
+  idpName: string;
+};
+
+const ADMIN_RECOVERY_URL =
+  "https://docs.bytebase.com/administration/admin-recovery?source=console";
+const SUPPORT_URL =
+  "https://docs.bytebase.com/faq#how-to-reach-us?source=console";
+
+function queryString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function queryFailure(query: Record<string, unknown>): SSOFailure | undefined {
+  const idpName = queryString(query.failedIdpName);
+  if (!idpName) return undefined;
+  return { idpName };
+}
 
 export function SigninPage(props: SigninPageProps) {
   const {
@@ -42,11 +62,16 @@ export function SigninPage(props: SigninPageProps) {
   const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const query = router.currentRoute.value.query;
+  const initialSSOFailure = queryFailure(query);
+  const [ssoFailure, setSSOFailure] = useState<SSOFailure | undefined>(
+    initialSSOFailure
+  );
 
   const authenticationInfo = useAppStore((s) => s.authenticationInfo);
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
   const identityProviders = authenticationInfo?.identityProviders ?? [];
 
-  const query = router.currentRoute.value.query;
   const invitedEmail = (query.email as string | undefined) ?? "";
 
   const disallowSignup =
@@ -88,11 +113,9 @@ export function SigninPage(props: SigninPageProps) {
         module: "bytebase",
         style: "CRITICAL",
         title: "Request error occurred",
-        description:
-          error instanceof SsoConfigError
-            ? t(error.i18nKey)
-            : (error as Error).message,
+        description: (error as Error).message,
       });
+      setSSOFailure({ idpName: idp.name });
     }
   };
 
@@ -215,6 +238,49 @@ export function SigninPage(props: SigninPageProps) {
     allowSignupProp &&
     !authenticationInfo?.restriction?.disallowSignup;
   const showTerms = allowSignupProp && emailCodeEnabled;
+  const disallowPasswordSignin =
+    !!authenticationInfo?.restriction?.disallowPasswordSignin;
+  const hasNoPasswordFallback =
+    disallowPasswordSignin &&
+    !authenticationInfo?.restriction?.allowEmailCodeSignin;
+  const noSigninMethodAvailable =
+    hasNoPasswordFallback && identityProviders.length === 0;
+  const failedIdp = ssoFailure
+    ? identityProviders.find((idp) => idp.name === ssoFailure.idpName)
+    : undefined;
+  const failedIdpTitle =
+    failedIdp?.title ?? ssoFailure?.idpName.replace(idpNamePrefix, "") ?? "";
+  const recoveryLinks = (
+    <ul className="mt-2 list-disc pl-5">
+      <li>{t("auth.sign-in.sso-failure.contact-administrator")}</li>
+      <li>
+        {isSaaSMode ? (
+          <a
+            href={SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium underline"
+          >
+            {t("auth.sign-in.sso-failure.contact-support")}
+            <ExternalLink className="ml-1 inline size-3" />
+          </a>
+        ) : (
+          <>
+            {t("auth.sign-in.sso-failure.administrators")}{" "}
+            <a
+              href={ADMIN_RECOVERY_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium underline"
+            >
+              {t("auth.sign-in.sso-failure.recovery-guide")}
+              <ExternalLink className="ml-1 inline size-3" />
+            </a>
+          </>
+        )}
+      </li>
+    </ul>
+  );
 
   return (
     <>
@@ -234,6 +300,39 @@ export function SigninPage(props: SigninPageProps) {
               email: invitedEmail,
             })}
           />
+        )}
+
+        {noSigninMethodAvailable && (
+          <Alert
+            variant="info"
+            className="mb-4"
+            title={t("auth.sign-in.no-method-available.title")}
+            description={t("auth.sign-in.no-method-available.description")}
+          >
+            {recoveryLinks}
+          </Alert>
+        )}
+
+        {ssoFailure && (
+          <Alert
+            variant="warning"
+            className="mb-4"
+            title={t("auth.sign-in.sso-failure.title", {
+              idp: failedIdpTitle,
+            })}
+            description={t("auth.sign-in.sso-failure.description")}
+          >
+            {disallowPasswordSignin && (
+              <div className="mt-2">
+                <p>
+                  {hasNoPasswordFallback
+                    ? t("auth.sign-in.sso-failure.no-fallback")
+                    : t("auth.sign-in.sso-failure.password-disabled")}
+                </p>
+                {recoveryLinks}
+              </div>
+            )}
+          </Alert>
         )}
 
         {separatedIdps.length > 0 && (
