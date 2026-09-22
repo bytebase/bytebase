@@ -467,4 +467,12 @@ describe("distributeColumnWidths with a yield order", () => {
     // Spare width still goes to the columns that grow, not the date.
     expect(distributeColumnWidths(columns, preferred + 300)[0]).toBe(270);
   });
+
+  test("raises a column whose default is under its floor, and takes that from the next", () => {
+    const narrowDefault = [
+      { defaultWidth: 100, minWidth: 120, yieldOrder: 1 },
+      { defaultWidth: 300, minWidth: 100, yieldOrder: 2 },
+    ];
+    expect(distributeColumnWidths(narrowDefault, 350)).toEqual([120, 230]);
+  });
 });
