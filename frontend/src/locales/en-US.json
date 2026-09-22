@@ -2787,7 +2787,7 @@
             "title": "Read-write"
           }
         },
-        "new-workspace": "New workspaces start at Read-only. A workspace created before this default existed runs at Read-write until an admin saves a policy.",
+        "new-workspace": "New workspaces start at {{readOnly}}. A workspace created before this default existed runs at {{readWrite}} until a policy is saved.",
         "read-failed": {
           "description": "Reload to try again. If it keeps failing, Bytebase cannot parse the stored policy and an operator must repair the row directly. Until then, every MCP connection is refused.",
           "title": "The access policy could not be read"

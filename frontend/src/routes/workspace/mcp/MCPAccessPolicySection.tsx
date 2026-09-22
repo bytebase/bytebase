@@ -419,7 +419,10 @@ export function MCPAccessPolicySection() {
           })}
         </p>
         <p className="textinfolabel">
-          {t("settings.mcp.policy.new-workspace")}
+          {t("settings.mcp.policy.new-workspace", {
+            readOnly: t("settings.mcp.policy.mode.read-only.title"),
+            readWrite: t("settings.mcp.policy.mode.read-write.title"),
+          })}
         </p>
       </div>
 

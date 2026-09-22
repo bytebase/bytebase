@@ -414,6 +414,9 @@ reference.
 
 ## States
 
+The heading block, the description and the new-workspace note, sits above the body and is present
+in every state below.
+
 | State | What the section shows |
 |---|---|
 | View · Read-only or Read-write | Chip line with Edit policy, plus the masking chip when the flag is stored (D7); the disclosure line as the description, collapsed on every visit (D1). |
@@ -433,6 +436,14 @@ under
 `oauth2.consent.mcp.*` values.
 
 - Section description: "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are streamed to stdout when audit logging to stdout is enabled."
+- New-workspace note, a second paragraph under the description, present in every state: "New
+  workspaces start at {readOnly}. A workspace created before this default existed runs at
+  {readWrite} until a policy is saved." The mode names are interpolated from the mode titles. It
+  quotes two backend facts: workspace creation seeds READ_ONLY (`backend/store/workspace.go`), and
+  a workspace with no stored MCP row resolves to READ_WRITE (`backend/store/setting.go`). It exists
+  because 3.23.0 is the first release that shows this page, so an admin upgrading a workspace
+  created before the seed sees Read-write that nobody chose, and the page cannot tell an inherited
+  Read-write from a saved one. Changing either default means rereading this sentence.
 - Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
   Read-write: "Read schemas, data and the change workflow; propose, run, export and manage".
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".

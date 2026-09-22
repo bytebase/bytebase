@@ -155,40 +155,8 @@ describe("MCPAccessPolicySection", () => {
     expect(container.textContent).toContain(
       "settings.mcp.policy.description(settings.mcp.policy.bound,settings.mcp.policy.audit)"
     );
+    expect(container.textContent).toContain("settings.mcp.policy.new-workspace");
     unmount();
-  });
-
-  test("the new-workspace sentence shows in every state of the section", async () => {
-    const key = "settings.mcp.policy.new-workspace";
-
-    const read = renderIntoContainer(<MCPAccessPolicySection />);
-    read.render();
-    await flush();
-    expect(read.container.textContent).toContain(
-      "settings.mcp.policy.mode.read-only.title"
-    );
-    expect(read.container.textContent).toContain(key);
-    read.unmount();
-
-    const pending = Promise.withResolvers<undefined>();
-    mocks.serverInfo.value = undefined;
-    mocks.loadServerInfo.mockReturnValue(pending.promise);
-    const loading = renderIntoContainer(<MCPAccessPolicySection />);
-    loading.render();
-    await flush();
-    expect(loading.container.textContent).toContain("settings.mcp.policy.loading");
-    expect(loading.container.textContent).toContain(key);
-    loading.unmount();
-
-    mocks.loadServerInfo.mockResolvedValue(undefined);
-    const failed = renderIntoContainer(<MCPAccessPolicySection />);
-    failed.render();
-    await flush();
-    expect(failed.container.textContent).toContain(
-      "settings.mcp.policy.read-failed.title"
-    );
-    expect(failed.container.textContent).toContain(key);
-    failed.unmount();
   });
 
   test("registers unsaved edits with the navigation guard", async () => {
@@ -229,9 +197,8 @@ describe("MCPAccessPolicySection", () => {
     expect(container.textContent).toContain(
       "settings.mcp.policy.read-failed.title"
     );
-    expect(container.textContent).not.toContain(
-      "settings.mcp.policy.mode.read-only.title"
-    );
+    expect(container.textContent).not.toContain("settings.mcp.policy.current(");
+    expect(container.textContent).toContain("settings.mcp.policy.new-workspace");
     unmount();
   });
 
@@ -264,9 +231,7 @@ describe("MCPAccessPolicySection", () => {
     expect(container.textContent).toContain(
       "settings.mcp.policy.unreadable.title"
     );
-    expect(container.textContent).not.toContain(
-      "settings.mcp.policy.mode.read-only.title"
-    );
+    expect(container.textContent).not.toContain("settings.mcp.policy.current(");
 
     clickText(container, "settings.mcp.policy.edit");
     await flush();
@@ -304,10 +269,9 @@ describe("MCPAccessPolicySection", () => {
     await flush();
 
     expect(container.textContent).toContain("settings.mcp.policy.loading");
-    expect(container.textContent).not.toContain(
-      "settings.mcp.policy.mode.read-only.title"
-    );
+    expect(container.textContent).not.toContain("settings.mcp.policy.current(");
     expect(container.textContent).not.toContain("settings.mcp.policy.edit");
+    expect(container.textContent).toContain("settings.mcp.policy.new-workspace");
 
     unmount();
   });

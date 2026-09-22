@@ -147,6 +147,13 @@ test.describe("MCP access policy capability ladder", () => {
 
     await expect(chip(page, "Read-only")).toBeVisible();
     await expect(page.getByText(READ_ONLY_SUMMARY)).toBeVisible();
+    await expect(
+      page.getByText(
+        COPY.policy["new-workspace"]
+          .replace("{{readOnly}}", COPY.policy.mode["read-only"].title)
+          .replace("{{readWrite}}", COPY.policy.mode["read-write"].title)
+      )
+    ).toBeVisible();
 
     // The chip names the policy without an "In force" label, and the audit
     // fact belongs to the section description rather than to the current state.
@@ -155,7 +162,6 @@ test.describe("MCP access policy capability ladder", () => {
       page.getByText(/^MCP policy denials are streamed to stdout/)
     ).toHaveCount(0);
     await expect(page.getByText(COPY.policy.description)).toBeVisible();
-    await expect(page.getByText(COPY.policy["new-workspace"])).toBeVisible();
     // Pinned as a literal, not read from the locale: this description carries
     // the page's only audit disclosure, so the claim has to survive a copy edit
     // that keeps the sentence and drops the clause.

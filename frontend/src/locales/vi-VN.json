@@ -2787,7 +2787,7 @@
             "title": "Đọc và ghi"
           }
         },
-        "new-workspace": "Không gian làm việc mới bắt đầu ở chế độ Chỉ đọc. Không gian làm việc được tạo trước khi có chế độ mặc định này thì vẫn ở chế độ Đọc và ghi cho đến khi quản trị viên lưu chính sách.",
+        "new-workspace": "Không gian làm việc mới bắt đầu ở chế độ {{readOnly}}. Không gian làm việc được tạo trước khi có chế độ mặc định này thì vẫn ở chế độ {{readWrite}} cho đến khi chính sách được lưu.",
         "read-failed": {
           "description": "Hãy tải lại để thử lần nữa. Nếu vẫn lỗi, chính sách đã lưu là loại Bytebase không phân tích được và cần người vận hành sửa trực tiếp bản ghi. Trong lúc chưa đọc được, mọi kết nối MCP đều bị từ chối.",
           "title": "Không đọc được chính sách truy cập"
