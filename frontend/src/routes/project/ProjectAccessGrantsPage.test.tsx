@@ -35,33 +35,45 @@ import { AccessGrantRow, grantColumns } from "./ProjectAccessGrantsPage";
 describe("grantColumns", () => {
   const columns = grantColumns((key) => key);
   const at = (key: string) => columns.findIndex((column) => column.key === key);
+  const preferred = columns.reduce((sum, c) => sum + c.defaultWidth, 0);
+  const floors = columns.reduce(
+    (sum, c) => sum + (c.resizable === false ? c.defaultWidth : c.minWidth),
+    0
+  );
+  const full = (widths: number[], key: string) =>
+    widths[at(key)] === columns[at(key)].defaultWidth;
+  const floored = (widths: number[], key: string) =>
+    widths[at(key)] === columns[at(key)].minWidth;
 
-  test.each([1100, 1300, 1500, 1800])(
-    "opens both dates whole in a %ipx table",
-    (containerWidth) => {
-      const widths = distributeColumnWidths(columns, containerWidth);
+  test("opens both dates whole once the table holds every column", () => {
+    for (const width of [preferred, preferred + 300]) {
+      const widths = distributeColumnWidths(columns, width);
       expect(widths[at("created")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
       expect(widths[at("expiration")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
     }
-  );
+  });
 
-  test("fits the container exactly at every width that holds its floors", () => {
-    const floors = columns.reduce(
-      (sum, column) =>
-        sum +
-        (column.resizable === false || column.grow === false
-          ? column.defaultWidth
-          : column.minWidth),
-      0
-    );
-    for (let containerWidth = floors; containerWidth <= 1800; containerWidth++) {
-      const widths = distributeColumnWidths(columns, containerWidth);
-      expect(widths.reduce((sum, w) => sum + w, 0)).toBe(containerWidth);
+  test("gives way dates first, then statement, then creator, then databases", () => {
+    for (let width = floors; width < preferred; width++) {
+      const widths = distributeColumnWidths(columns, width);
+      expect(widths.reduce((sum, w) => sum + w, 0)).toBe(width);
       columns.forEach((column, i) => {
         expect(widths[i]).toBeGreaterThanOrEqual(column.minWidth);
       });
-      expect(widths[at("created")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
-      expect(widths[at("expiration")]).toBe(TIMESTAMP_COLUMN_WIDTH.operational);
+      if (!full(widths, "statement")) {
+        expect(floored(widths, "created") && floored(widths, "expiration")).toBe(
+          true
+        );
+      }
+      if (!full(widths, "creator")) {
+        expect(floored(widths, "statement")).toBe(true);
+      }
+      if (!full(widths, "databases")) {
+        expect(floored(widths, "creator")).toBe(true);
+      }
+      if (!full(widths, "status")) {
+        expect(floored(widths, "databases")).toBe(true);
+      }
     }
   });
 

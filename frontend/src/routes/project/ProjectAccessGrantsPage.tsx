@@ -103,6 +103,7 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
     defaultWidth: 200,
     minWidth: 128,
     sortKey: "creator",
+    yieldOrder: 3,
   },
   {
     key: "created",
@@ -111,6 +112,7 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
     minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
     grow: false,
     sortKey: "create_time",
+    yieldOrder: 1,
   },
   {
     key: "expiration",
@@ -119,18 +121,21 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
     minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
     grow: false,
     sortKey: "expire_time",
+    yieldOrder: 1,
   },
   {
     key: "statement",
     title: t("common.statement"),
     defaultWidth: 400,
     minWidth: 180,
+    yieldOrder: 2,
   },
   {
     key: "databases",
     title: t("common.databases"),
     defaultWidth: 240,
     minWidth: 128,
+    yieldOrder: 4,
   },
   // Trailing actions column — no title (blank header), fixed
   // width sized for two ghost buttons + "View issue".

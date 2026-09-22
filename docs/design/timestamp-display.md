@@ -138,17 +138,18 @@ compact.**
 (`TIMESTAMP_COLUMN_WIDTH`), measured over every time zone and shipped locale: 192, 270 and 292 for
 the compact, operational and full date-time forms. Moving a surface off relative wording lengthens
 its value, so a column sized for the old wording breaks the new one across two lines or cuts it
-off. The columns this design sizes never open narrower than their form's width, so nothing is cut
-unless the reader chooses it. The work-queue form has no sized column here; its widest reading is
-Spanish in the future tense, 183px, so a queue-form column elsewhere may be sized for the past
-tense alone. How the width is kept depends on the table. Where the browser spreads spare width
-across every sized column, the open-ended column — a title, a run's detail — is left unsized to
-take it, so the date neither wraps nor swells; the audit log does not do this yet, and its date
-grows with the rest. Where a table fits its columns to the container itself, a date column does
-not grow, so its minimum floors a drag without also flooring the width it opens at, and a column
-raised to its floor takes that width from the others rather than overrunning the container. That
-minimum is one value for every form, room for the date; narrower than its form a cell ellipsizes,
-and one drag gives the rest back.
+off. A column this design sizes opens at its form's width, so nothing is cut unless the reader
+chooses it or the table has ruled which columns give way first when it is narrower than every
+default — the access grants have, and their dates give way first. The work-queue form has no sized
+column here; its widest reading is Spanish in the future tense, 183px, so a queue-form column
+elsewhere may be sized for the past tense alone. How the width is kept depends on the table. Where
+the browser spreads spare width across every sized column, the open-ended column — a title, a
+run's detail — is left unsized to take it, so the date neither wraps nor swells; the audit log
+does not do this yet, and its date grows with the rest. Where a table fits its columns to the
+container itself, a date column takes none of the spare width, and a column raised to its floor
+takes that width from the others rather than overrunning the container. The minimum is one value
+for every form, room for the date; narrower than its form a cell ellipsizes, and one drag gives
+the rest back.
 
 ## Surface classification
 
@@ -167,7 +168,7 @@ Every current `HumanizeTs` call site, classified under the principle:
 | Schema sync status | `modules/sql-editor/components/SchemaPane/SyncSchemaButton.tsx`, `routes/project/ProjectSyncSchemaPage.tsx`, `components/database/DatabaseOverviewInfo.tsx` | Freshness | 30d switch |
 | Agent chat | `modules/agent/components/AgentWindow.tsx` | Feed | 30d switch |
 | Plan-check run time | `components/plan-check/PlanCheckSection.tsx` (bare `toLocaleString()` today — adopts `HumanizeTs`) | Freshness | 30d switch |
-| Access-grant creation time | `routes/project/ProjectAccessGrantsPage.tsx` (`AccessGrantRow`; full absolute today — adopts `HumanizeTs`). Shares the operational form with the expiration beside it: two dates in one row read in one format, and consistency outranks the freshness a relative age would add. The row's status, statement and creator carry what a reader acts on — the status turns Expired by itself — so the dates hold their width and the spare goes to those columns | Operational | Operational (D6 tooltip) |
+| Access-grant creation time | `routes/project/ProjectAccessGrantsPage.tsx` (`AccessGrantRow`; full absolute today — adopts `HumanizeTs`). Shares the operational form with the expiration beside it: two dates in one row read in one format, and consistency outranks the freshness a relative age would add. The row's status, statement, creator and databases carry what a reader acts on — the status turns Expired by itself — so the dates take none of the spare width, and when the table is narrower than every column's default they give way first, down to the date alone, then the statement, the creator and the databases, with the status last. The zone is the first thing cut on a narrow screen; the full date-time stays on the hover | Operational | Operational (D6 tooltip) |
 | **Database changelog** | `routes/project/database-detail/changelog/DatabaseChangelogTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Database revisions** | `routes/project/database-detail/revision/DatabaseRevisionTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Task-run history** | `routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx`, `routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |

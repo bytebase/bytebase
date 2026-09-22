@@ -433,3 +433,38 @@ describe("distributeColumnWidths", () => {
     unmount();
   });
 });
+
+describe("distributeColumnWidths with a yield order", () => {
+  const columns = [
+    { key: "date", defaultWidth: 270, minWidth: 140, grow: false, yieldOrder: 1 },
+    { key: "title", defaultWidth: 400, minWidth: 180, yieldOrder: 2 },
+    { key: "owner", defaultWidth: 200, minWidth: 128, yieldOrder: 3 },
+    { key: "actions", defaultWidth: 140, resizable: false },
+  ];
+  const preferred = 270 + 400 + 200 + 140;
+  const floors = 140 + 180 + 128 + 140;
+
+  test("gives way in order, each column to its floor before the next", () => {
+    for (let width = floors; width < preferred; width++) {
+      const [date, title, owner, actions] = distributeColumnWidths(
+        columns,
+        width
+      );
+      expect(date + title + owner + actions).toBe(width);
+      expect(actions).toBe(140);
+      if (title < 400) {
+        expect(date).toBe(140);
+      }
+      if (owner < 200) {
+        expect(title).toBe(180);
+      }
+    }
+  });
+
+  test("keeps every preferred width once the container holds them", () => {
+    const [date, title, owner] = distributeColumnWidths(columns, preferred);
+    expect([date, title, owner]).toEqual([270, 400, 200]);
+    // Spare width still goes to the columns that grow, not the date.
+    expect(distributeColumnWidths(columns, preferred + 300)[0]).toBe(270);
+  });
+});
