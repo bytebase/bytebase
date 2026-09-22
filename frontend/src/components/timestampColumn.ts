@@ -15,8 +15,9 @@ export const TIMESTAMP_COLUMN_WIDTH = {
 } as const;
 
 /**
- * How far a reader may narrow any timestamp column: room for the date,
- * measured the same way; ja-JP writes it widest. Past the date the cell
- * ellipsizes, and one drag gives the rest back.
+ * How far any timestamp column may narrow: the date alone, measured the same
+ * way, which ja-JP writes widest. A narrower cell ellipsizes from the end, so
+ * it keeps the date only where the locale writes the date first; vi-VN
+ * writes the time first.
  */
 export const TIMESTAMP_COLUMN_MIN_WIDTH = 140;
