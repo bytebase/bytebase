@@ -150,7 +150,7 @@ describe("MCPAccessPolicySection", () => {
 
     expect(mocks.loadServerInfo).toHaveBeenCalledOnce();
     expect(container.textContent).toContain(
-      "settings.mcp.policy.mode.read-only.title"
+      "settings.mcp.policy.current(settings.mcp.policy.mode.read-only.title)"
     );
     expect(container.textContent).toContain(
       "settings.mcp.policy.description(settings.mcp.policy.bound,settings.mcp.policy.audit)"

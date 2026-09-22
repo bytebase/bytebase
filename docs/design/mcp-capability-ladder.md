@@ -414,8 +414,8 @@ reference.
 
 ## States
 
-The heading block, the description and the new-workspace note, sits above the body and is present
-in every state below.
+The heading block sits above the body and is present in every state below. It holds the description
+and the new-workspace note.
 
 | State | What the section shows |
 |---|---|
