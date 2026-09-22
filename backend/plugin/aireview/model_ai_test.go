@@ -93,38 +93,24 @@ func TestSettingModelRoundTripsThroughGemini(t *testing.T) {
 	require.Contains(t, second.Contents[2].Parts[0].FunctionResponse.Response, "result")
 }
 
-func TestSettingModelCorrectsAnEmptyGeminiReply(t *testing.T) {
+func TestSettingModelFailsOnASafetyBlockedGeminiReply(t *testing.T) {
 	t.Parallel()
 
-	var requests []geminiRequest
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var request geminiRequest
-		require.NoError(t, json.NewDecoder(r.Body).Decode(&request))
-		requests = append(requests, request)
-
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
 		w.Header().Set("Content-Type", "application/json")
-		// Gemini returns a candidate without parts when it stops for safety or a malformed function call.
-		reply := `{"candidates": [{"content": {}}]}`
-		if len(requests) == 2 {
-			reply = `{"candidates": [{"content": {"parts": [{"text": "{\"findings\": []}"}]}}]}`
-		}
-		_, err := w.Write([]byte(reply))
+		// A safety block returns a candidate with a finish reason and no content.
+		_, err := w.Write([]byte(`{"candidates": [{"finishReason": "SAFETY", "safetyRatings": [{"category": "HARM_CATEGORY_HATE_SPEECH", "probability": "HIGH"}]}]}`))
 		require.NoError(t, err)
 	}))
 	defer server.Close()
 
 	model := NewModel(&storepb.AISetting{Provider: storepb.AISetting_GEMINI, Endpoint: server.URL, Model: "gemini-3.5-flash", ApiKey: "test-key"})
-	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DROP TABLE orders;"}, &catalogTools{})
-	require.NoError(t, err)
-	require.Equal(t, 2, result.Calls)
-
-	require.Len(t, requests, 2)
-	for _, content := range requests[1].Contents {
-		require.Equal(t, "user", content.Role, "an empty model turn makes Gemini reject the request")
-		require.NotEmpty(t, content.Parts)
-	}
-	last := requests[1].Contents[len(requests[1].Contents)-1]
-	require.Contains(t, last.Parts[0].Text, "the reply is empty")
+	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: "DELETE FROM banned_phrases;"}, &catalogTools{})
+	require.ErrorIs(t, err, ErrEmptyReply)
+	require.Nil(t, result)
+	require.Equal(t, 1, requests, "a blocked turn gets no correction round")
 }
 
 // TestReviewLiveGemini reviews a risky change with a real model. It needs a key

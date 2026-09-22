@@ -29,6 +29,8 @@ var (
 	ErrDeadline = errors.New("the review ran out of time")
 	// ErrInvalidReply means the final reply was still invalid after the model was asked to correct it.
 	ErrInvalidReply = errors.New("the model did not return a valid review result")
+	// ErrEmptyReply means the vendor returned neither text nor tool calls.
+	ErrEmptyReply = errors.New("the model returned an empty reply")
 )
 
 // Request is one review: one sheet against one target database.
@@ -109,15 +111,17 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 
 		content := response.GetContent()
 		toolCalls := response.GetToolCalls()
-		// Vendors reject a history that holds an assistant message with neither
-		// text nor tool calls, which would break the correction round.
-		if strings.TrimSpace(content) != "" || len(toolCalls) > 0 {
-			messages = append(messages, &v1pb.AIChatMessage{
-				Role:      v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT,
-				Content:   response.Content,
-				ToolCalls: toolCalls,
-			})
+		// An empty reply is a safety block, a refusal, or a garbled tool call.
+		// ai.Chat carries no stop reason yet, so the loop cannot tell them apart,
+		// and asking again could let a blocked review pass on the second try.
+		if strings.TrimSpace(content) == "" && len(toolCalls) == 0 {
+			return nil, ErrEmptyReply
 		}
+		messages = append(messages, &v1pb.AIChatMessage{
+			Role:      v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT,
+			Content:   response.Content,
+			ToolCalls: toolCalls,
+		})
 
 		// A reply with tool calls is not final, whatever else it says.
 		if len(toolCalls) > 0 {

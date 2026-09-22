@@ -183,6 +183,14 @@ func TestReviewExitPaths(t *testing.T) {
 			wantToolCalls: []string{"read"},
 		},
 		{
+			// A safety block, a refusal, and a garbled tool call all arrive as an
+			// empty reply. Asking again could let a blocked review pass.
+			name:         "empty reply fails without a correction round",
+			steps:        []modelStep{finalReply(" \n"), finalReply(validReply)},
+			wantErr:      ErrEmptyReply,
+			wantRequests: 1,
+		},
+		{
 			name:        "model error fails",
 			steps:       []modelStep{{err: errors.New("Gemini API returned status 401")}},
 			wantErrText: "model call 1 failed: Gemini API returned status 401",
@@ -311,19 +319,6 @@ func TestReviewCanceledParentIsNotADeadline(t *testing.T) {
 		require.NotErrorIs(t, err, ErrDeadline)
 		require.Len(t, model.requests, 1)
 	})
-}
-
-func TestReviewKeepsAnEmptyReplyOutOfTheHistory(t *testing.T) {
-	t.Parallel()
-
-	model := &scriptedModel{steps: []modelStep{finalReply(" \n"), finalReply(validReply)}}
-	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, &fakeTools{})
-	require.NoError(t, err)
-	require.Len(t, result.Findings, 1)
-
-	history := model.requests[1].Messages
-	require.Equal(t, []v1pb.AIChatMessageRole{roleSystem, roleUser, roleUser}, roles(history))
-	require.Contains(t, history[2].GetContent(), "the reply is empty")
 }
 
 func roles(messages []*v1pb.AIChatMessage) []v1pb.AIChatMessageRole {
