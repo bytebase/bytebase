@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import {
   AdvancedSearch,
@@ -72,24 +79,34 @@ import { extractDatabaseResourceName } from "@/utils/v1/database";
 type SortKey = "creator" | "create_time" | "expire_time";
 type SortDir = "asc" | "desc";
 
-// Column descriptor for the access-grants table. Position in the array is
-// the `<colgroup>` order — keep this in sync with the cell order inside
-// `<AccessGrantRow>` (`useColumnWidths` indexes positionally). The width
-// fields are `ColumnWithWidth`'s.
+type GrantColumnKey =
+  | "status"
+  | "creator"
+  | "databases"
+  | "statement"
+  | "expiration"
+  | "created"
+  | "actions";
+
+// Column descriptor for the access-grants table. The width fields are
+// `ColumnWithWidth`'s.
 //
 // - `title`     — header label; omit for a blank header (actions col).
 // - `sortKey`   — present iff the column participates in server sort.
 // - `resizable` — defaults true; set false for purely action columns where a
 //                 too-narrow width clips the button row.
 type GrantColumn = ColumnWithWidth & {
-  key: string;
+  key: GrantColumnKey;
   title?: string;
   minWidth: number;
   sortKey?: SortKey;
   resizable?: boolean;
 };
 
-/** The table's columns, in `<colgroup>` order; titles follow the language. */
+/**
+ * The table's columns, left to right: the header, `<colgroup>` and every row
+ * follow this order. Titles follow the language.
+ */
 export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
   {
     key: "status",
@@ -106,13 +123,18 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
     yieldOrder: 3,
   },
   {
-    key: "created",
-    title: t("common.created-at"),
-    defaultWidth: TIMESTAMP_COLUMN_WIDTH.operational,
-    minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
-    grow: false,
-    sortKey: "create_time",
-    yieldOrder: 1,
+    key: "databases",
+    title: t("common.databases"),
+    defaultWidth: 240,
+    minWidth: 128,
+    yieldOrder: 4,
+  },
+  {
+    key: "statement",
+    title: t("common.statement"),
+    defaultWidth: 400,
+    minWidth: 180,
+    yieldOrder: 2,
   },
   {
     key: "expiration",
@@ -124,18 +146,13 @@ export const grantColumns = (t: (key: string) => string): GrantColumn[] => [
     yieldOrder: 1,
   },
   {
-    key: "statement",
-    title: t("common.statement"),
-    defaultWidth: 400,
-    minWidth: 180,
-    yieldOrder: 2,
-  },
-  {
-    key: "databases",
-    title: t("common.databases"),
-    defaultWidth: 240,
-    minWidth: 128,
-    yieldOrder: 4,
+    key: "created",
+    title: t("common.created-at"),
+    defaultWidth: TIMESTAMP_COLUMN_WIDTH.operational,
+    minWidth: TIMESTAMP_COLUMN_MIN_WIDTH,
+    grow: false,
+    sortKey: "create_time",
+    yieldOrder: 1,
   },
   // Trailing actions column — no title (blank header), fixed
   // width sized for two ghost buttons + "View issue".
@@ -615,11 +632,6 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                   className="w-auto table-fixed"
                   style={{ width: `${totalWidth}px` }}
                 >
-                  {/*
-                    `<colgroup>` order mirrors `columns`, which in turn
-                    mirrors the cell order inside `<AccessGrantRow>` —
-                    `useColumnWidths` indexes positionally, not by key.
-                  */}
                   <colgroup>
                     {widths.map((w, i) => (
                       <col key={columns[i].key} style={{ width: `${w}px` }} />
@@ -658,6 +670,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
                     {paged.dataList.map((grant) => (
                       <AccessGrantRow
                         key={grant.name}
+                        columns={columns}
                         grant={grant}
                         issue={issueByGrantName.get(grant.name)}
                         canActivate={canActivate}
@@ -733,6 +746,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
 // ---------------------------------------------------------------------------
 
 export function AccessGrantRow({
+  columns,
   grant,
   issue,
   canActivate,
@@ -740,6 +754,7 @@ export function AccessGrantRow({
   onActivate,
   onRevoke,
 }: {
+  columns: readonly { key: GrantColumnKey }[];
   grant: AccessGrant;
   issue?: Issue;
   canActivate: boolean;
@@ -752,87 +767,87 @@ export function AccessGrantRow({
   const createdTimeMs = getTimeForPbTimestampProtoEs(grant.createTime);
   const expireTimeMs = getAccessGrantExpireTimeMs(grant);
 
+  const cells: Record<GrantColumnKey, ReactNode> = {
+    status: (
+      <Badge variant={statusTagVariant(status)}>
+        {getAccessGrantDisplayStatusText(status)}
+      </Badge>
+    ),
+    creator: <EllipsisText text={extractUserEmail(grant.creator)} />,
+    databases: <DatabaseTargets targets={grant.targets} />,
+    statement: (
+      <div className="flex items-center gap-x-1 overflow-hidden">
+        <TruncatedQuery query={grant.query} />
+        {grant.unmask && (
+          <Badge variant="warning" className="shrink-0">
+            {t("sql-editor.grant-type-unmask")}
+          </Badge>
+        )}
+        {grant.export && (
+          <Badge variant="default" className="shrink-0">
+            {t("sql-editor.grant-type-export")}
+          </Badge>
+        )}
+      </div>
+    ),
+    expiration:
+      expireTimeMs !== undefined ? (
+        <HumanizeTs
+          className="block truncate"
+          mode="operational"
+          tsMs={expireTimeMs}
+        />
+      ) : (
+        "-"
+      ),
+    created:
+      createdTimeMs !== undefined ? (
+        <HumanizeTs
+          className="block truncate"
+          mode="operational"
+          tsMs={createdTimeMs}
+        />
+      ) : (
+        "-"
+      ),
+    actions: (
+      <div className="flex items-center justify-end gap-x-1">
+        {status === "REVOKED" && canActivate && (
+          <Button appearance="secondary" size="sm" onClick={onActivate}>
+            {t("sql-editor.activate-access")}
+          </Button>
+        )}
+        {status === "ACTIVE" && canRevoke && (
+          <Button
+            appearance="secondary"
+            size="sm"
+            className="text-error"
+            onClick={onRevoke}
+          >
+            {t("sql-editor.revoke-access")}
+          </Button>
+        )}
+        {grant.issue && (
+          <RouterLink
+            to={grant.issue.startsWith("/") ? grant.issue : `/${grant.issue}`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button appearance="secondary" size="sm">
+              {t("sql-editor.view-issue")}
+            </Button>
+          </RouterLink>
+        )}
+      </div>
+    ),
+  };
+
   return (
     <TableRow>
-      <TableCell>
-        <Badge variant={statusTagVariant(status)}>
-          {getAccessGrantDisplayStatusText(status)}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        <EllipsisText text={extractUserEmail(grant.creator)} />
-      </TableCell>
-      <TableCell>
-        {createdTimeMs !== undefined ? (
-          <HumanizeTs
-            className="block truncate"
-            mode="operational"
-            tsMs={createdTimeMs}
-          />
-        ) : (
-          "-"
-        )}
-      </TableCell>
-      <TableCell>
-        {expireTimeMs !== undefined ? (
-          <HumanizeTs
-            className="block truncate"
-            mode="operational"
-            tsMs={expireTimeMs}
-          />
-        ) : (
-          "-"
-        )}
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-x-1 overflow-hidden">
-          <TruncatedQuery query={grant.query} />
-          {grant.unmask && (
-            <Badge variant="warning" className="shrink-0">
-              {t("sql-editor.grant-type-unmask")}
-            </Badge>
-          )}
-          {grant.export && (
-            <Badge variant="default" className="shrink-0">
-              {t("sql-editor.grant-type-export")}
-            </Badge>
-          )}
-        </div>
-      </TableCell>
-      <TableCell>
-        <DatabaseTargets targets={grant.targets} />
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center justify-end gap-x-1">
-          {status === "REVOKED" && canActivate && (
-            <Button appearance="secondary" size="sm" onClick={onActivate}>
-              {t("sql-editor.activate-access")}
-            </Button>
-          )}
-          {status === "ACTIVE" && canRevoke && (
-            <Button
-              appearance="secondary"
-              size="sm"
-              className="text-error"
-              onClick={onRevoke}
-            >
-              {t("sql-editor.revoke-access")}
-            </Button>
-          )}
-          {grant.issue && (
-            <RouterLink
-              to={grant.issue.startsWith("/") ? grant.issue : `/${grant.issue}`}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Button appearance="secondary" size="sm">
-                {t("sql-editor.view-issue")}
-              </Button>
-            </RouterLink>
-          )}
-        </div>
-      </TableCell>
+      {columns.map((column) => (
+        <TableCell key={column.key}>{cells[column.key]}</TableCell>
+      ))}
     </TableRow>
   );
 }
