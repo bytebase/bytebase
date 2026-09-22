@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-//go:embed base_prompt.txt
+//go:embed base_prompt.md
 var basePrompt string
 
 // Target is what the prompt states about the database under review.
