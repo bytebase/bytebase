@@ -163,10 +163,10 @@ from the error; the two out-of-band doors mark through their shared writer.
 - The runtime flag is deleted. The write site makes two decisions: store if
   the method is audited and the call reached its handler; stream if stdout is
   on and the call was stored or refused by a permission check.
-- No MCP exception. The MCP chain, whose enforcement shipped in 3.22.0 while
-  its settings page did not, stops storing the ceiling-gate refusals it stores
-  today; they stream instead. Clamp refusals run inside the audited Query
-  handler and stay stored.
+- No MCP exception. The MCP chain, whose enforcement shipped in 3.22.0 with
+  the access-policy section of its settings page behind a dev gate until
+  3.23.0, stops storing the ceiling-gate refusals it stores today; they stream
+  instead. Clamp refusals run inside the audited Query handler and stay stored.
 
 **Implementation.** No API change.
 
