@@ -12,6 +12,7 @@ import {
 } from "@/app/router";
 import { SQLEditorButton } from "@/components/SQLEditorButton";
 import { UserAvatar } from "@/components/UserAvatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,7 +140,12 @@ export function ProfileMenuTrigger({
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger
           render={
-            <button type="button" className="cursor-pointer rounded-full" />
+            <Button
+              appearance="secondary"
+              size="xs"
+              type="button"
+              className="h-auto rounded-full p-0"
+            />
           }
         >
           <UserAvatar

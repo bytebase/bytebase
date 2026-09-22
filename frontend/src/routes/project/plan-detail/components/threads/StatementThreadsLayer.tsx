@@ -57,6 +57,8 @@ type Composer = {
   revealNonce: number;
 };
 
+const EMPTY_COMPOSERS: ReadonlyMap<number, Composer> = new Map();
+
 // Binds comment threads to the read-only statement editor with Monaco's own
 // primitives, the way VS Code's comment controller does: glyph-margin
 // decorations for markers and the comment affordance, whole-line decorations
@@ -92,7 +94,7 @@ export function StatementThreadsLayer({
     placementsForSheet(s, spec.id, sheetSha256)
   );
   const actions = useThreadActions(issue.name);
-  const canCreate = canReplyToThread(project);
+  const canCreate = canReplyToThread(project, issue);
 
   const threads = useMemo(() => groupThreads(comments), [comments]);
   const editorThreads = useMemo(
@@ -202,6 +204,7 @@ export function StatementThreadsLayer({
   const [composers, setComposers] = useState<ReadonlyMap<number, Composer>>(
     () => new Map()
   );
+  const activeComposers = canCreate ? composers : EMPTY_COMPOSERS;
   const [composerDrafts, setComposerDrafts] = useState<
     Readonly<Record<number, string>>
   >({});
@@ -311,7 +314,7 @@ export function StatementThreadsLayer({
     if (expandedEntry && !pendingSelection) {
       paint(expandedEntry.range, "bb-thread-line");
     }
-    for (const composer of composers.values()) {
+    for (const composer of activeComposers.values()) {
       paint(composer.range, "bb-thread-line--selecting");
     }
     if (pendingSelection) paint(pendingSelection, "bb-thread-line--selecting");
@@ -353,7 +356,7 @@ export function StatementThreadsLayer({
         },
       });
     }
-    if (actionLine !== undefined && !composers.has(actionLine)) {
+    if (actionLine !== undefined && !activeComposers.has(actionLine)) {
       const actionRange = selection ?? {
         startLine: actionLine,
         endLine: actionLine,
@@ -373,9 +376,9 @@ export function StatementThreadsLayer({
     };
   }, [
     actionLine,
+    activeComposers,
     canCreate,
     commentedLines,
-    composers,
     editor,
     expandedEntry,
     markersByLine,
@@ -506,7 +509,11 @@ export function StatementThreadsLayer({
         const isCreationAction =
           e.target.type ===
           monacoModule.editor.MouseTargetType.GUTTER_LINE_DECORATIONS;
-        if (isCreationAction && actionLine === line && !composers.has(line)) {
+        if (
+          isCreationAction &&
+          actionLine === line &&
+          !activeComposers.has(line)
+        ) {
           e.event.preventDefault();
           openComposer(selection ?? { startLine: line, endLine: line });
           return;
@@ -541,8 +548,8 @@ export function StatementThreadsLayer({
     };
   }, [
     actionLine,
+    activeComposers,
     canCreate,
-    composers,
     editor,
     markersByLine,
     monacoModule,
@@ -592,7 +599,7 @@ export function StatementThreadsLayer({
     );
 
   const publish = async (line: number, comment: string) => {
-    const range = composers.get(line)?.range;
+    const range = activeComposers.get(line)?.range;
     if (!range) return;
     const created = await actions.publish(
       comment,
@@ -636,7 +643,7 @@ export function StatementThreadsLayer({
               expandedThreadRef={expandedThreadRef}
               flashRoot={flashRoot}
               onFlashEnd={() => setFlashRoot(undefined)}
-              issueName={issue.name}
+              issue={issue}
               onCollapse={(rootName) =>
                 openThreads(
                   openLine,
@@ -652,7 +659,7 @@ export function StatementThreadsLayer({
           </div>
         </MonacoViewZone>
       )}
-      {Array.from(composers, ([line, composer]) => (
+      {Array.from(activeComposers, ([line, composer]) => (
         <MonacoViewZone
           afterLineNumber={line}
           editor={editor}

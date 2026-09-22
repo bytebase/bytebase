@@ -24,8 +24,14 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+
+	// Register how these engines plan a statement, for base.ExplainStatement below.
+	// This driver serves both.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/starrocks"
 )
 
 var (
@@ -164,8 +170,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	// Only preprocess when DELIMITER directives are present; normal
@@ -185,7 +191,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// Note: StarRocks is an OLAP database with limited transaction support.
 	// For DDL operations, transactions are not supported. For DML operations,
 	// StarRocks supports transactions within certain limitations.
-	if transactionMode == common.TransactionModeOff || opts.CreateDatabase {
+	if transactionMode == transaction.ModeOff || opts.CreateDatabase {
 		return d.executeInAutoCommitMode(ctx, statement)
 	}
 	return d.executeInTransactionMode(ctx, statement, opts)
@@ -304,9 +310,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(d.dbType, statement, queryContext.Option.GetExplainFormat())
+			explained, err := base.ExplainStatement(d.dbType, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			statement = explained
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			statement = base.StatementWithResultLimit(d.dbType, statement, queryContext.Limit, "")
 		}
 		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
 

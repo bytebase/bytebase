@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -167,7 +167,7 @@ func (*IndexNoDuplicateColumnAdvisor) Check(_ context.Context, checkCtx advisor.
 			Code:          code.DuplicateColumnInIndex.Int32(),
 			Title:         title,
 			Content:       fmt.Sprintf("%s `%s` has duplicate column `%s`.`%s`", h.tp, h.index, h.table, h.column),
-			StartPosition: common.ConvertANTLRLineToPosition(h.line),
+			StartPosition: base.ConvertANTLRLineToPosition(h.line),
 		})
 	}
 	return adviceList, nil

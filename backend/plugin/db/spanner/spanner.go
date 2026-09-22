@@ -26,14 +26,16 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/utils"
+
+	// Register how this engine plans a limit, for base.StatementWithResultLimit below.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/spanner"
 )
 
 var (
@@ -167,8 +169,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	stmts, err := util.SanitizeSQL(statement)
@@ -192,7 +194,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	}
 
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, stmts, opts)
 	}
 	return d.executeInTransactionMode(ctx, stmts, opts)
@@ -303,19 +305,6 @@ func getColumnTypeName(columnType *sppb.Type) (string, error) {
 	return columnType.Code.String(), nil
 }
 
-// getStatementWithResultLimit wraps a SQL statement in a CTE to enforce a result limit.
-// This is a simple approach that works for SELECT queries but has a critical limitation:
-// Spanner does NOT support DML statements (INSERT/UPDATE/DELETE) inside CTEs.
-//
-// This function should ONLY be called for SELECT statements (verify with util.IsSelect first).
-// For a more robust parser-based approach that can handle complex queries, see the
-// PostgreSQL/MySQL implementations which parse and inject LIMIT clauses directly.
-func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt = strings.TrimRightFunc(stmt, utils.IsSpaceOrSemicolon)
-	limitPart := fmt.Sprintf(" LIMIT %d", limit)
-	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
-}
-
 // instancePath returns the Spanner instance resource name,
 // e.g. projects/<project>/instances/<instance>.
 func (d *Driver) instancePath() string {
@@ -357,12 +346,10 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
-				// Only apply limit wrapper for SELECT statements
-				limitedStatement := statement
 				if queryContext.Limit > 0 {
-					limitedStatement = getStatementWithResultLimit(statement, queryContext.Limit)
+					statement = base.StatementWithResultLimit(storepb.Engine_SPANNER, statement, queryContext.Limit, "")
 				}
-				return d.queryStatement(ctx, limitedStatement, queryContext)
+				return d.queryStatement(ctx, statement, queryContext)
 			}
 			if util.IsDDL(statement) {
 				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
@@ -446,7 +433,10 @@ func (d *Driver) queryStatement(ctx context.Context, statement string, queryCont
 		result.Rows = append(result.Rows, rowData)
 		n := len(result.Rows)
 		if (n&(n-1) == 0) && int64(proto.Size(result)) > queryContext.MaximumSQLResultSize {
-			result.Error = common.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
+			result.Error = util.FormatMaximumSQLResultSizeMessage(queryContext.MaximumSQLResultSize)
+			break
+		}
+		if queryContext.Limit > 0 && n >= queryContext.Limit {
 			break
 		}
 

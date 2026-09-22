@@ -126,14 +126,16 @@ function PermissionTransfer({
       {/* Source */}
       <div className="flex-1 flex flex-col border-r min-w-0">
         <div className="flex items-center gap-x-2 px-3 py-2 border-b">
-          <button
+          <Button
+            appearance="secondary"
+            size="md"
             type="button"
-            className="text-sm text-main hover:text-accent disabled:opacity-50"
+            className="h-auto px-1.5 py-0.5 text-sm text-main hover:text-accent disabled:opacity-50"
             disabled={disabled || sourceItems.length === 0}
             onClick={selectAll}
           >
             {t("common.select-all")}
-          </button>
+          </Button>
           <span className="text-xs text-control-light">
             {t("common.total-n-items", { n: totalSourceCount })}
           </span>
@@ -167,14 +169,16 @@ function PermissionTransfer({
       {/* Target */}
       <div className="flex-1 flex flex-col min-w-0">
         <div className="flex items-center gap-x-2 px-3 py-2 border-b">
-          <button
+          <Button
+            appearance="secondary"
+            size="md"
             type="button"
-            className="text-sm text-main hover:text-accent disabled:opacity-50"
+            className="h-auto px-1.5 py-0.5 text-sm text-main hover:text-accent disabled:opacity-50"
             disabled={disabled || value.length === 0}
             onClick={clearAll}
           >
             {t("common.clear")}
-          </button>
+          </Button>
           <span className="text-xs text-control-light">
             {t("common.n-items-selected", { n: value.length })}
           </span>

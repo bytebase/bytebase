@@ -1,6 +1,7 @@
 import { ChevronDown, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Popover,
@@ -114,10 +115,12 @@ export function IssueLabelSelect({
               labels.map((label) => {
                 const isSelected = selected.includes(label.value);
                 return (
-                  <button
+                  <Button
                     key={label.value}
                     type="button"
-                    className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-control-bg transition-colors"
+                    appearance="secondary"
+                    size="md"
+                    className="h-auto w-full min-w-0 justify-start gap-2 px-3 py-2 text-left text-sm hover:bg-control-bg"
                     onClick={() => toggleLabel(label.value)}
                   >
                     <Checkbox checked={isSelected} />
@@ -125,8 +128,13 @@ export function IssueLabelSelect({
                       className="size-4 rounded-sm shrink-0"
                       style={{ backgroundColor: getColor(label.color) }}
                     />
-                    <span>{label.value}</span>
-                  </button>
+                    <span
+                      className="min-w-0 flex-1 truncate"
+                      title={label.value}
+                    >
+                      {label.value}
+                    </span>
+                  </Button>
                 );
               })
             )}

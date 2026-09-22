@@ -35,6 +35,7 @@ import {
   saveGuideWorkspaceUsage,
   saveSelectedGuideScenarioId,
 } from "@/modules/workspace-setup-guide/selection";
+import { saveWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
 import type {
   GuideScenarioId,
   GuideWorkspaceUsage,
@@ -63,6 +64,7 @@ export function WorkspaceSetupPage() {
   const prepareSampleProjectInstance = useAppStore(
     (state) => state.prepareSampleProjectInstance
   );
+  const isSaaSMode = useAppStore((state) => state.isSaaSMode());
   const sampleAvailable = useAppStore(
     (state) => state.serverInfo?.sample?.available ?? false
   );
@@ -117,6 +119,8 @@ export function WorkspaceSetupPage() {
   const [enableSampleDatabases, setEnableSampleDatabases] = useState(true);
   const [saving, setSaving] = useState(false);
   const shouldCreateProject = canCreateProject && !!projectTitle.trim();
+  const projectIsReady =
+    shouldCreateProject && !!projectResourceId && isProjectResourceIdValid;
   const sampleRequested =
     shouldCreateProject && enableSampleDatabases && canPrepareSample;
   const canEnableSample = !!projectTitle.trim() && !!projectResourceId;
@@ -171,7 +175,7 @@ export function WorkspaceSetupPage() {
   const canSave =
     !!name.trim() &&
     !saving &&
-    (!shouldCreateProject || (!!projectResourceId && isProjectResourceIdValid));
+    (isSaaSMode ? projectIsReady : !shouldCreateProject || projectIsReady);
 
   const handleSave = async () => {
     if (!currentUser?.name || !canSave) return;
@@ -227,6 +231,12 @@ export function WorkspaceSetupPage() {
         style: "SUCCESS",
         title: t("settings.profile.setup-success"),
       });
+      if (isSaaSMode) {
+        saveWorkspaceSetupFinished(
+          workspace?.name ?? currentUser.workspace,
+          true
+        );
+      }
       behaviorAnalytics.captureMetric(
         createBehaviorMetric("workspace setup submitted", {
           properties: {
@@ -309,6 +319,7 @@ export function WorkspaceSetupPage() {
           <WorkspaceSetupQuestionnaireStep
             scenarioValue={selectedScenarioId}
             workspaceUsageValue={workspaceUsage}
+            required={isSaaSMode}
             onScenarioChange={setSelectedScenarioId}
             onWorkspaceUsageChange={setWorkspaceUsage}
             onContinue={() => {
@@ -347,6 +358,7 @@ export function WorkspaceSetupPage() {
             <Input
               data-testid="profile-display-name"
               value={name}
+              autoComplete="off"
               onChange={(e) => setName(e.target.value)}
               placeholder={t("settings.profile.display-name-placeholder")}
               autoFocus
@@ -363,6 +375,7 @@ export function WorkspaceSetupPage() {
               <Input
                 data-testid="profile-workspace-title"
                 value={workspaceTitle}
+                autoComplete="off"
                 onChange={(event) => setWorkspaceTitle(event.target.value)}
                 placeholder={t("settings.profile.workspace-name-placeholder")}
               />
@@ -370,10 +383,27 @@ export function WorkspaceSetupPage() {
           )}
 
           {canCreateProject && (
-            <FormField title={t("settings.profile.setup-first-project")}>
+            <FormField
+              title={
+                <>
+                  {t("settings.profile.setup-first-project")}
+                  {isSaaSMode && (
+                    <span
+                      aria-hidden="true"
+                      className="ml-1 text-error"
+                      data-testid="project-required-indicator"
+                    >
+                      *
+                    </span>
+                  )}
+                </>
+              }
+            >
               <Input
                 data-testid="profile-project-title"
                 value={projectTitle}
+                autoComplete="off"
+                required={isSaaSMode}
                 onChange={(event) => {
                   const title = event.target.value;
                   setProjectTitle(title);
@@ -388,6 +418,7 @@ export function WorkspaceSetupPage() {
                 <ResourceIdField
                   suffix
                   value={projectResourceId}
+                  autoComplete="off"
                   resourceName={t("common.project")}
                   resourceTitle={projectTitle}
                   validate={validateProjectResourceId}
@@ -435,9 +466,11 @@ export function WorkspaceSetupPage() {
               {t("common.back")}
             </Button>
             <div className="flex flex-col items-end gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 sm:gap-y-0">
-              <Button appearance="secondary" onClick={handleSkip}>
-                {t("settings.profile.setup-skip")}
-              </Button>
+              {!isSaaSMode && (
+                <Button appearance="secondary" onClick={handleSkip}>
+                  {t("settings.profile.setup-skip")}
+                </Button>
+              )}
               <Button onClick={() => void handleSave()} disabled={!canSave}>
                 {t("settings.profile.setup-submit")}
               </Button>

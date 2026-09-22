@@ -650,6 +650,48 @@
         
           
           <li>
+            <a href="#store%2freview_rule.proto">store/review_rule.proto</a>
+            <ul>
+              
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRuleType"><span class="badge">E</span>ReviewRuleType</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2freview_run.proto">store/review_run.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun"><span class="badge">M</span>ReviewRun</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRunPayload"><span class="badge">M</span>ReviewRunPayload</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun.Type"><span class="badge">E</span>ReviewRun.Type</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fissue_comment.proto">store/issue_comment.proto</a>
             <ul>
               
@@ -670,6 +712,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.IssueCommentPayload.ReviewMetadata"><span class="badge">M</span>IssueCommentPayload.ReviewMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.IssueCommentPayload.ReviewSubmission"><span class="badge">M</span>IssueCommentPayload.ReviewSubmission</a>
                 </li>
               
@@ -677,6 +723,10 @@
                   <a href="#bytebase.store.IssueCommentPayload.StatementAnchor"><span class="badge">M</span>IssueCommentPayload.StatementAnchor</a>
                 </li>
               
+              
+                <li>
+                  <a href="#bytebase.store.IssueCommentPayload.ReviewMetadata.Priority"><span class="badge">E</span>IssueCommentPayload.ReviewMetadata.Priority</a>
+                </li>
               
               
               
@@ -788,6 +838,10 @@
               
                 <li>
                   <a href="#bytebase.store.QueryDataPolicy"><span class="badge">M</span>QueryDataPolicy</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRulePolicy"><span class="badge">M</span>ReviewRulePolicy</a>
                 </li>
               
                 <li>
@@ -948,29 +1002,6 @@
               
                 <li>
                   <a href="#bytebase.store.SQLReviewRule.Type"><span class="badge">E</span>SQLReviewRule.Type</a>
-                </li>
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2freview_run.proto">store/review_run.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRun"><span class="badge">M</span>ReviewRun</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRunPayload"><span class="badge">M</span>ReviewRunPayload</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
                 </li>
               
               
@@ -1693,6 +1724,14 @@ The server computes expire_time from this value at activation time. </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p>Number of items to skip before starting to return results. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time_upper_bound</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Bounds later pages to the rows that existed when the traversal started,
+inclusive. Set by a list whose own reads write rows it would page over. </p></td>
                 </tr>
               
             </tbody>
@@ -2760,7 +2799,8 @@ Example: projects/{project} </p></td>
                   <td>user</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: users/{email}. </p></td>
+                  <td><p>The principal who performed the action.
+Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}. </p></td>
                 </tr>
               
                 <tr>
@@ -6074,6 +6114,220 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/review_rule.proto">store/review_rule.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+
+      
+        <h3 id="bytebase.store.ReviewRuleType">ReviewRuleType</h3>
+        <p>ReviewRuleType mirrors bytebase.v1.ReviewRuleType. The values are shared by</p><p>ReviewRulePolicy and IssueCommentPayload.ReviewMetadata.</p><p>A value is never removed, only marked deprecated: both payloads are jsonb,</p><p>protojson stores the enum name, and the store's unmarshaler discards an</p><p>unknown name into REVIEW_RULE_TYPE_UNSPECIFIED, which would blank the rule</p><p>on every stored comment that used it.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>REVIEW_RULE_TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>SYNTAX</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>WALK_THROUGH</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ONLINE_MIGRATION</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PRIOR_BACKUP</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_IS_NULL</td>
+                <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_WHERE</td>
+                <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_DROP_OBJECT</td>
+                <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_TRUNCATE</td>
+                <td>8</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_DROP_CONSTRAINT</td>
+                <td>9</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DISALLOW_RENAME</td>
+                <td>10</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REQUIRE_PRIMARY_KEY</td>
+                <td>11</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/review_run.proto">store/review_run.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.ReviewRun">ReviewRun</h3>
+        <p>ReviewRun is the status slot of one reviewer (rule engine or AI) on one</p><p>issue. Results live in issue comments; the run carries none.</p>
+
+        
+
+        
+      
+        <h3 id="bytebase.store.ReviewRunPayload">ReviewRunPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Fatal execution error for the FAILED status, e.g. &#34;metadata not synced:
+instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
+executor or by the reaper. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.ReviewRun.Status">ReviewRun.Status</h3>
+        <p>Strictly 1:1 with the status CHECK constraint — no unpersisted values.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AVAILABLE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.ReviewRun.Type">ReviewRun.Type</h3>
+        <p>The reviewer. Stored by name in review_run.type, which has no CHECK:</p><p>like Issue.Type and Task.Type, the enum is the source of truth and a</p><p>new reviewer is a new value, not a migration.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RULE</td>
+                <td>1</td>
+                <td><p>Review against the standard rules.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GUIDELINE</td>
+                <td>2</td>
+                <td><p>Review against natural-language guidelines, performed by AI.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/issue_comment.proto">store/issue_comment.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -6130,6 +6384,16 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td></td>
                   <td><p>The statement context an inline comment references. Set at creation and
 immutable afterward; never set together with an event. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>review_metadata</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</a></td>
+                  <td></td>
+                  <td><p>Present on review results only, beside the text and never together with
+an event. Written by the review executor; CreateIssueComment rejects it.
+The anchor is statement_anchor; a result without one addresses the whole
+change. </p></td>
                 </tr>
               
             </tbody>
@@ -6267,6 +6531,55 @@ immutable afterward; never set together with an event. </p></td>
 
         
       
+        <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata">IssueCommentPayload.ReviewMetadata</h3>
+        <p>ReviewMetadata is what a review result carries beyond its text: which</p><p>reviewer posted it, what it was judged against, its priority, and the</p><p>databases it applies to. Results from the same reviewer are superseded</p><p>together: when a run completes, it resolves every OPEN root of its type</p><p>in the transaction that posts the new results.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>run_type</td>
+                  <td><a href="#bytebase.store.ReviewRun.Type">ReviewRun.Type</a></td>
+                  <td></td>
+                  <td><p>The reviewer slot that posted the result; review_run.type stores the
+same enum by name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rule_type</td>
+                  <td><a href="#bytebase.store.ReviewRuleType">ReviewRuleType</a></td>
+                  <td></td>
+                  <td><p>The rule judged against. Set if and only if run_type is RULE. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>priority</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.ReviewMetadata.Priority">IssueCommentPayload.ReviewMetadata.Priority</a></td>
+                  <td></td>
+                  <td><p>A result merged across databases carries the highest priority among
+them. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>targets</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Every database the result applies to, sorted. Always complete; the
+renderer collapses it when it equals the spec&#39;s target set.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.IssueCommentPayload.ReviewSubmission">IssueCommentPayload.ReviewSubmission</h3>
         <p>ReviewSubmission records that an issue entered review.</p>
 
@@ -6326,6 +6639,42 @@ Setting exactly one column to 0 is invalid. </p></td>
         
       
 
+      
+        <h3 id="bytebase.store.IssueCommentPayload.ReviewMetadata.Priority">IssueCommentPayload.ReviewMetadata.Priority</h3>
+        <p>Priority says what resolving the thread means. It has no bearing on</p><p>blocking: an OPEN root thread blocks whatever its priority, and a</p><p>result with no thread state never does.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>PRIORITY_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>P0</td>
+                <td>1</td>
+                <td><p>The SQL is wrong and must change. Resolving without changing the SQL
+is a claim of false positive.</p></td>
+              </tr>
+            
+              <tr>
+                <td>P1</td>
+                <td>2</td>
+                <td><p>Dangerous but legitimate; a person must accept it.</p></td>
+              </tr>
+            
+              <tr>
+                <td>P2</td>
+                <td>3</td>
+                <td><p>Advisory.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
@@ -7117,6 +7466,30 @@ Disallow running DDL statements in the SQL editor. </p></td>
 
         
       
+        <h3 id="bytebase.store.ReviewRulePolicy">ReviewRulePolicy</h3>
+        <p>ReviewRulePolicy is the standard review rule switch. The nearest policy</p><p>wins: the project's if it has one, else the workspace's, else every rule.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>rules</td>
+                  <td><a href="#bytebase.store.ReviewRuleType">ReviewRuleType</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.RolloutPolicy">RolloutPolicy</h3>
         <p></p>
 
@@ -7288,6 +7661,12 @@ For example, the environment resource can have the SQL review config tag, such a
               <tr>
                 <td>TAG</td>
                 <td>6</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REVIEW_RULE</td>
+                <td>7</td>
                 <td><p></p></td>
               </tr>
             
@@ -8774,94 +9153,6 @@ IM integration setting should be set for this function to work. </p></td>
               <tr>
                 <td>BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE</td>
                 <td>112</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/review_run.proto">store/review_run.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.ReviewRun">ReviewRun</h3>
-        <p>ReviewRun is the status slot of one reviewer (rule engine or AI) on one</p><p>issue. Results live in issue comments; the run carries none.</p>
-
-        
-
-        
-      
-        <h3 id="bytebase.store.ReviewRunPayload">ReviewRunPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>error</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Fatal execution error for the FAILED status, e.g. &#34;metadata not synced:
-instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
-executor or by the reaper. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.ReviewRun.Status">ReviewRun.Status</h3>
-        <p>Strictly 1:1 with the status CHECK constraint — no unpersisted values.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>AVAILABLE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>RUNNING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DONE</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>FAILED</td>
-                <td>4</td>
                 <td><p></p></td>
               </tr>
             

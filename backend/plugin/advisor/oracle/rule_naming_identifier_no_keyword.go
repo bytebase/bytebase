@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
@@ -66,7 +66,7 @@ func (r *NamingIdentifierNoKeywordRule) OnStatement(node ast.Node) {
 				r.level,
 				code.NameIsKeywordIdentifier.Int32(),
 				fmt.Sprintf("Identifier %q is a keyword and should be avoided", ident.name),
-				common.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
+				base.ConvertANTLRLineToPosition(r.locLine(ident.loc)),
 			)
 		}
 	}

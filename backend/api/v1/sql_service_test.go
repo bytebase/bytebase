@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -10,6 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -346,6 +348,8 @@ func TestValidateExplainFormat(t *testing.T) {
 		{name: "postgres json", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_JSON},
 		{name: "postgres xml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_XML},
 		{name: "postgres text", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_TEXT},
+		{name: "postgres yaml", engine: storepb.Engine_POSTGRES, format: v1pb.QueryOption_YAML},
+		{name: "mssql yaml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_YAML, wantErr: true},
 		{name: "mssql xml", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_XML},
 		{name: "mssql json", engine: storepb.Engine_MSSQL, format: v1pb.QueryOption_JSON, wantErr: true},
 		{name: "spanner json", engine: storepb.Engine_SPANNER, format: v1pb.QueryOption_JSON},
@@ -376,32 +380,79 @@ func TestValidateExplainFormat(t *testing.T) {
 	}
 }
 
-// TestExplainGateRejectsSmuggledWrite locks the smuggle defense. An explain
-// request carries the bare statement and the driver prefixes EXPLAIN, so
-// "ANALYZE DELETE FROM t" — not valid SQL on its own — would become
-// EXPLAIN ANALYZE DELETE and execute the DELETE. validateExplainStatements wraps
-// each statement the way the driver does and refuses it unless read-only. Every
-// prefix engine must classify the wrapped smuggle as non-read-only (by verdict or
-// syntax error) so it never reaches the driver.
+// explainPrefixEngines are the engines that plan a statement by prefixing EXPLAIN
+// to it, and so run a different statement than the one the caller sent.
 //
 // The engine parsers are registered for the whole v1 test binary by blank imports
-// elsewhere in the package, so each ValidateSQLForEditor call returns that engine's
-// real verdict rather than the no-validator default.
+// elsewhere in the package, so each call below returns that engine's real verdict
+// rather than a no-parser default.
+var explainPrefixEngines = []storepb.Engine{
+	storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB,
+	storepb.Engine_OCEANBASE, storepb.Engine_TIDB, storepb.Engine_REDSHIFT,
+	storepb.Engine_COCKROACHDB, storepb.Engine_SNOWFLAKE, storepb.Engine_CLICKHOUSE,
+	storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_HIVE,
+	storepb.Engine_TRINO,
+}
+
+// TestExplainGateRejectsSmuggledWrite locks the smuggle defense. An explain
+// request carries the bare statement, so "ANALYZE DELETE FROM t" — not valid SQL
+// on its own — would become EXPLAIN ANALYZE DELETE and execute the DELETE if
+// anything simply prefixed it. Every prefix engine must refuse it, by parsing the
+// statement it was handed or by classifying the planned form as non-read-only, so
+// it never reaches the driver.
 func TestExplainGateRejectsSmuggledWrite(t *testing.T) {
 	t.Parallel()
-	engines := []storepb.Engine{
-		storepb.Engine_POSTGRES, storepb.Engine_MYSQL, storepb.Engine_MARIADB,
-		storepb.Engine_OCEANBASE, storepb.Engine_TIDB, storepb.Engine_REDSHIFT,
-		storepb.Engine_COCKROACHDB, storepb.Engine_SNOWFLAKE, storepb.Engine_CLICKHOUSE,
-		storepb.Engine_STARROCKS, storepb.Engine_DORIS, storepb.Engine_HIVE,
-		storepb.Engine_TRINO,
-	}
-	for _, engine := range engines {
+	for _, engine := range explainPrefixEngines {
 		t.Run(engine.String(), func(t *testing.T) {
 			t.Parallel()
 			instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
 			require.Error(t, validateExplainStatements(instance, "ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED),
 				"EXPLAIN ANALYZE DELETE must not pass the read-only gate")
+		})
+	}
+}
+
+// TestExplainGatePlansAPlanOnce locks the rebuild. A statement that already asks
+// for a plan is planned once: the request's EXPLAIN replaces the caller's rather
+// than wrapping it, which a second EXPLAIN would turn into a syntax error.
+func TestExplainGatePlansAPlanOnce(t *testing.T) {
+	t.Parallel()
+	for _, engine := range explainPrefixEngines {
+		t.Run(engine.String(), func(t *testing.T) {
+			t.Parallel()
+			instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
+			require.NoError(t, validateExplainStatements(instance, "EXPLAIN SELECT 1", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
+		})
+	}
+}
+
+// TestExplainGateNeverAnalyzes locks what the rebuild is for: an EXPLAIN ANALYZE
+// of a write executes the write, so no explain request may end up running one,
+// whatever the caller wrote. Each engine either plans the write without the
+// caller's ANALYZE or refuses the statement — a dialect with no EXPLAIN ANALYZE
+// cannot parse it, and ClickHouse and Hive have no AST to rebuild it with, so
+// theirs runs as written and their read-only gate refuses it.
+func TestExplainGateNeverAnalyzes(t *testing.T) {
+	t.Parallel()
+	for _, engine := range explainPrefixEngines {
+		t.Run(engine.String(), func(t *testing.T) {
+			t.Parallel()
+			planned, err := parserbase.ExplainStatement(engine, "EXPLAIN ANALYZE DELETE FROM t", parserbase.ExplainFormatDefault)
+			if err != nil {
+				instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
+				require.Error(t, validateExplainStatements(instance, "EXPLAIN ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED),
+					"a statement the parser will not plan must not reach the driver")
+				return
+			}
+			if strings.Contains(strings.ToUpper(planned), "ANALYZE") {
+				// The statement runs as the caller wrote it, so the read-only gate
+				// is what stands between it and the DELETE.
+				require.Equal(t, "EXPLAIN ANALYZE DELETE FROM t", planned)
+				instance := &store.InstanceMessage{Metadata: &storepb.Instance{Engine: engine}}
+				require.Error(t, validateExplainStatements(instance, "EXPLAIN ANALYZE DELETE FROM t", v1pb.QueryOption_EXPLAIN_FORMAT_UNSPECIFIED))
+				return
+			}
+			require.Equal(t, "EXPLAIN DELETE FROM t", planned)
 		})
 	}
 }

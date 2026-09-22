@@ -25,6 +25,13 @@ type CapturedBeforeEachGuard = (
 
 const mocks = vi.hoisted(() => ({
   beforeEachGuard: undefined as CapturedBeforeEachGuard | undefined,
+  pagedGroups: [] as Array<{
+    email: string;
+    members: Array<{ member: string; role: number }>;
+    name: string;
+    source: string;
+    title: string;
+  }>,
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
 }));
@@ -121,6 +128,15 @@ vi.mock("@/components/ui/button", () => ({
   }) => createElement("button", { disabled, onClick }, children),
 }));
 
+vi.mock("@/components/ui/copy-button", () => ({
+  CopyButton: ({ content }: { content: string }) =>
+    createElement("button", {
+      "data-content": content,
+      "data-testid": "copy-group-email",
+      type: "button",
+    }),
+}));
+
 vi.mock("@/components/ui/input", () => ({
   Input: (props: InputHTMLAttributes<HTMLInputElement>) =>
     createElement("input", props),
@@ -196,7 +212,7 @@ vi.mock("@/hooks/useAppState", () => ({
 vi.mock("@/hooks/usePagedData", () => ({
   PagedTableFooter: () => null,
   usePagedData: () => ({
-    dataList: [],
+    dataList: mocks.pagedGroups,
     hasMore: false,
     isFetchingMore: false,
     isLoading: false,
@@ -293,6 +309,7 @@ let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.beforeEachGuard = undefined;
+  mocks.pagedGroups = [];
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -567,5 +584,46 @@ describe("GroupsPage create group sheet", () => {
     expect(retry).toHaveBeenCalledTimes(1);
     expect(mocks.routerPush).not.toHaveBeenCalled();
     expect(mocks.routerReplace).not.toHaveBeenCalled();
+  });
+});
+
+describe("GroupsPage group table", () => {
+  it("renders a copy action for a group name", async () => {
+    mocks.pagedGroups = [
+      {
+        email: "developers+dba@bytebase.com",
+        members: [],
+        name: "groups/developers+dba@bytebase.com",
+        source: "",
+        title: "Bytebase Developers",
+      },
+    ];
+
+    await renderPage();
+
+    expect(
+      container.querySelector("[data-testid='copy-group-email']")
+    ).toHaveAttribute("data-content", "groups/developers+dba@bytebase.com");
+  });
+
+  it("renders a copy action for a non-email group", async () => {
+    mocks.pagedGroups = [
+      {
+        email: "",
+        members: [],
+        name: "groups/0b354368-73b8-439f-b207-d4df282d3cc7",
+        source: "",
+        title: "Non-email Group",
+      },
+    ];
+
+    await renderPage();
+
+    expect(
+      container.querySelector("[data-testid='copy-group-email']")
+    ).toHaveAttribute(
+      "data-content",
+      "groups/0b354368-73b8-439f-b207-d4df282d3cc7"
+    );
   });
 });

@@ -2,6 +2,8 @@ import { Filter, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { HighlightLabelText } from "@/components/HighlightLabelText";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import { cn } from "@/lib/utils";
 import { DEBOUNCE_SEARCH_DELAY } from "@/types/common";
@@ -713,15 +715,18 @@ export function AdvancedSearch({
                   >
                     {renderTagValue(scope)}
                   </span>
-                  <button
-                    className="ml-0.5 inline-flex size-4 shrink-0 items-center justify-center hover:text-error"
+                  <Button
+                    type="button"
+                    appearance="secondary"
+                    size="xs"
+                    className="ml-0.5 shrink-0 hover:text-error"
                     onClick={(e) => {
                       e.stopPropagation();
                       removeScope(originalIndex);
                     }}
                   >
                     <X className="h-3 w-3" />
-                  </button>
+                  </Button>
                 </span>
               ))}
             </div>
@@ -752,12 +757,14 @@ export function AdvancedSearch({
          *     space, which is what made scope tags clip in panels like
          *     AccessPane.
          */}
-        <input
+        <Input
+          size="xs"
           ref={inputRef}
           className={cn(
             "flex-1 bg-transparent border-none px-2 text-sm text-main placeholder:text-control-placeholder focus:outline-none focus:border-none focus:ring-0 focus:shadow-none",
             visibleTags.length > 0 ? "min-w-[40px]" : "min-w-[120px]"
           )}
+          autoComplete="off"
           value={inputText}
           placeholder={
             visibleTags.length > 0 ? "" : (placeholder ?? t("common.filter"))
@@ -769,15 +776,18 @@ export function AdvancedSearch({
 
         {/* Clear button */}
         {clearable && (
-          <button
-            className="p-1.5 mr-1 hover:bg-control-bg rounded-full shrink-0"
+          <Button
+            type="button"
+            appearance="secondary"
+            size="xs"
+            className="mr-1 shrink-0 rounded-full hover:bg-control-bg"
             onClick={(e) => {
               e.stopPropagation();
               handleClear();
             }}
           >
             <X className="h-3 w-3 text-control-placeholder" />
-          </button>
+          </Button>
         )}
       </div>
 

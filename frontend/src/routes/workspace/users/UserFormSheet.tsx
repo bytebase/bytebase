@@ -291,7 +291,9 @@ function UserForm({ onClose, onCreated }: Omit<UserFormSheetProps, "open">) {
                   placeholder={t("common.sensitive-placeholder")}
                   className={passwordHint ? "border-error" : ""}
                 />
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   type="button"
                   className="absolute right-3 cursor-pointer"
                   onClick={() => setShowPassword(!showPassword)}
@@ -301,7 +303,7 @@ function UserForm({ onClose, onCreated }: Omit<UserFormSheetProps, "open">) {
                   ) : (
                     <EyeOff className="w-4 h-4" />
                   )}
-                </button>
+                </Button>
               </div>
             </FormField>
 
@@ -322,7 +324,9 @@ function UserForm({ onClose, onCreated }: Omit<UserFormSheetProps, "open">) {
                   )}
                   className={passwordMismatch ? "border-error" : ""}
                 />
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   type="button"
                   className="absolute right-3 cursor-pointer"
                   onClick={() => setShowPassword(!showPassword)}
@@ -332,7 +336,7 @@ function UserForm({ onClose, onCreated }: Omit<UserFormSheetProps, "open">) {
                   ) : (
                     <EyeOff className="w-4 h-4" />
                   )}
-                </button>
+                </Button>
               </div>
               {passwordMismatch && (
                 <FormError className="pl-1">

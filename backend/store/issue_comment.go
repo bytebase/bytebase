@@ -12,8 +12,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // ThreadState is the resolvable state carried by a thread's root comment: a
@@ -27,12 +27,14 @@ const (
 )
 
 type IssueCommentMessage struct {
-	ProjectID    string
-	ResourceID   string
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	IssueUID     int64
-	Payload      *storepb.IssueCommentPayload
+	ProjectID  string
+	ResourceID string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	IssueUID   int64
+	Payload    *storepb.IssueCommentPayload
+	// CreatorEmail is empty on a review result, which a reviewer posts;
+	// Payload.ReviewMetadata names it.
 	CreatorEmail string
 	// ParentID names the thread's root comment on a reply; nil on root
 	// comments and events.
@@ -202,11 +204,11 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 			Payload: &storepb.IssueCommentPayload{},
 		}
 		var p []byte
-		var parentID, threadState sql.NullString
+		var creator, parentID, threadState sql.NullString
 		if err := rows.Scan(
 			&ic.ProjectID,
 			&ic.ResourceID,
-			&ic.CreatorEmail,
+			&creator,
 			&ic.CreatedAt,
 			&ic.UpdatedAt,
 			&ic.IssueUID,
@@ -216,6 +218,7 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
+		ic.CreatorEmail = creator.String
 		if parentID.Valid {
 			ic.ParentID = &parentID.String
 		}
@@ -463,9 +466,11 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	}
 	// Text edits apply to rows that already render text: thread roots,
 	// replies, hybrid event+comment rows, and plain comments (protojson omits
-	// an empty comment, so a contentless one is {}) — never to pure events.
+	// an empty comment, so a contentless one is {}) — never to pure events,
+	// and never to review results, whose text is the reviewer's.
 	if patch.Comment != nil {
 		q.And("(payload ?? 'comment' OR payload = '{}'::jsonb OR thread_state IS NOT NULL OR parent_id IS NOT NULL)")
+		q.And("NOT (payload ?? 'reviewMetadata')")
 	}
 
 	query, args, err := q.ToSQL()
@@ -484,6 +489,12 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	if rows == 0 {
 		if patch.ThreadState != nil {
 			return common.Errorf(common.NotFound, "comment %s in project %s is missing or not a thread root; nothing was updated", patch.ResourceID, patch.ProjectID)
+		}
+		var reviewResult bool
+		if err := s.GetDB().QueryRowContext(ctx,
+			"SELECT payload ? 'reviewMetadata' FROM issue_comment WHERE project = $1 AND resource_id = $2",
+			patch.ProjectID, patch.ResourceID).Scan(&reviewResult); err == nil && reviewResult {
+			return common.Errorf(common.Invalid, "comment %s in project %s is a review result; its text belongs to the reviewer and only its thread state can change", patch.ResourceID, patch.ProjectID)
 		}
 		return common.Errorf(common.NotFound, "comment %s in project %s is missing or a pure event; nothing was updated", patch.ResourceID, patch.ProjectID)
 	}

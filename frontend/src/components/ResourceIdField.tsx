@@ -1,4 +1,5 @@
 import {
+  type ComponentProps,
   forwardRef,
   useCallback,
   useEffect,
@@ -7,6 +8,7 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
 import type { ValidatedMessage } from "@/types";
@@ -28,6 +30,7 @@ interface ResourceIdFieldProps {
   // messages — NOT the user-entered title/name of the resource.
   resourceName: string;
   resourceTitle?: string;
+  autoComplete?: ComponentProps<"input">["autoComplete"];
   suffix?: boolean;
   readonly?: boolean;
   validate?: (resourceId: string) => Promise<ValidatedMessage[]>;
@@ -64,6 +67,7 @@ export const ResourceIdField = forwardRef<
     value,
     resourceName,
     resourceTitle,
+    autoComplete,
     suffix = false,
     readonly = false,
     validate,
@@ -207,13 +211,15 @@ export const ResourceIdField = forwardRef<
           {!readonly && (
             <div>
               <span>{t("resource-id.cannot-be-changed-later")}</span>
-              <button
+              <Button
                 type="button"
-                className="text-accent font-medium cursor-pointer hover:opacity-80 ml-1"
+                appearance="link"
+                size="md"
+                className="ml-1 h-auto p-0 font-medium hover:opacity-80"
                 onClick={() => setManualEdit(true)}
               >
                 {t("common.edit")}
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -228,6 +234,7 @@ export const ResourceIdField = forwardRef<
           </p>
           <Input
             value={value}
+            autoComplete={autoComplete}
             onChange={(e) => handleManualInput(e.target.value)}
             placeholder={t("resource-id.self", { resource: resourceName })}
             className={

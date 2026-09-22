@@ -4,8 +4,6 @@ package common
 import (
 	"context"
 
-	"google.golang.org/protobuf/types/known/anypb"
-
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -16,68 +14,8 @@ const (
 	// UserContextKey is the key name used to store user message in the context.
 	UserContextKey ContextKey = iota
 	AuthContextKey
-	ServiceDataKey
 	WorkspaceIDContextKey
-	AuditWorkspaceIDKey
-	MCPPolicyDenialKey
 )
-
-func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
-	return context.WithValue(ctx, ServiceDataKey, setServiceData)
-}
-
-func GetSetServiceDataFromContext(ctx context.Context) (func(a *anypb.Any), bool) {
-	setServiceData, ok := ctx.Value(ServiceDataKey).(func(*anypb.Any))
-	return setServiceData, ok
-}
-
-// WithSetAuditWorkspaceID registers a callback handlers can use to tell the
-// audit interceptor which workspace a request should be audited against. This
-// is needed for methods that run with allow_without_credential=true (e.g.
-// Login/Signup/ExchangeToken): the workspace is unknown when the interceptor
-// chain starts, but the handler learns it before returning.
-func WithSetAuditWorkspaceID(ctx context.Context, setAuditWorkspaceID func(workspaceID string)) context.Context {
-	return context.WithValue(ctx, AuditWorkspaceIDKey, setAuditWorkspaceID)
-}
-
-// SetAuditWorkspaceID records the workspace that the current request should be
-// audited against, if the audit interceptor registered a setter on the context.
-// Safe to call even when auditing is disabled for the current method.
-func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
-	if workspaceID == "" {
-		return
-	}
-	setter, ok := ctx.Value(AuditWorkspaceIDKey).(func(string))
-	if !ok {
-		return
-	}
-	setter(workspaceID)
-}
-
-// WithSetMCPPolicyDenied registers a callback the MCP ceiling gate uses to tell
-// the audit interceptor that it refused this request. The gate runs inside the
-// audit interceptor, so a value it puts on the context cannot travel back out;
-// this is the same setter shape WithSetAuditWorkspaceID already uses for the
-// same reason.
-//
-// The signal is needed because the audit interceptor otherwise writes a row
-// only when the method's own audit annotation asks for one, and 47 of the
-// methods the gate refuses carry no such annotation. A denial nobody can see is
-// the outcome an operator most needs to see.
-func WithSetMCPPolicyDenied(ctx context.Context, setMCPPolicyDenied func()) context.Context {
-	return context.WithValue(ctx, MCPPolicyDenialKey, setMCPPolicyDenied)
-}
-
-// SetMCPPolicyDenied records that the MCP ceiling gate refused the current
-// request, if the audit interceptor registered a setter on the context. Safe to
-// call when it did not: the public chain never runs the gate at all.
-func SetMCPPolicyDenied(ctx context.Context) {
-	setter, ok := ctx.Value(MCPPolicyDenialKey).(func())
-	if !ok {
-		return
-	}
-	setter()
-}
 
 // GetWorkspaceIDFromContext returns the workspace ID from the request context.
 func GetWorkspaceIDFromContext(ctx context.Context) string {

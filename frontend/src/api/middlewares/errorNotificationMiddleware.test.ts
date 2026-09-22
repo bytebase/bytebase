@@ -33,15 +33,17 @@ import { errorNotificationInterceptor } from "./errorNotificationMiddleware";
 const createRequest = ({
   silent = false,
   ignoredCodes = [],
+  methodName = "ListDatabases",
 }: {
   silent?: boolean;
   ignoredCodes?: Code[];
+  methodName?: string;
 } = {}) =>
   ({
     contextValues: createContextValues()
       .set(silentContextKey, silent)
       .set(ignoredCodesContextKey, ignoredCodes),
-    method: { name: "ListDatabases" },
+    method: { name: methodName },
     service: { name: "DatabaseService" },
   }) as never;
 
@@ -65,6 +67,25 @@ describe("errorNotificationInterceptor", () => {
     ).rejects.toMatchObject({ code: Code.PermissionDenied });
 
     expect(mocks.pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("shows a rejected web login as a sign-in error", async () => {
+    const error = new ConnectError(
+      "only users can use web login",
+      Code.PermissionDenied
+    );
+    const next = vi.fn().mockRejectedValue(error);
+
+    await expect(
+      errorNotificationInterceptor(next)(createRequest({ methodName: "Login" }))
+    ).rejects.toBe(error);
+
+    expect(mocks.pushNotification).toHaveBeenCalledWith({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: "auth.sign-in.failed",
+      description: "only users can use web login",
+    });
   });
 
   test("still toasts non-permission request failures", async () => {

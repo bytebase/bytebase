@@ -59,6 +59,8 @@ const dropPreviousExplains = () => {
   for (const key of stale) sessionStorage.removeItem(key);
 };
 
+// Used only by the legacy standalone entry; the SQL Editor passes plans
+// directly to QueryPlanView.
 export const createExplainToken = ({
   statement,
   explain,

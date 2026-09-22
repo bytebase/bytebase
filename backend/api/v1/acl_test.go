@@ -244,17 +244,9 @@ func TestPopulateRawResourcesUsesWorkspaceFallback(t *testing.T) {
 	require.Empty(t, resources)
 }
 
-// TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject pins that
-// the lifecycle methods resolve a project without requiring it to be live —
-// so that, for one, a sample request against a deleted project reaches the
-// handler that answers "entitlement consumed" rather than dying as not found
-// at the door. The lifecycle route needs no lookup at all for a project name,
-// which the nil store proves.
-func TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject(t *testing.T) {
+func TestPopulateRawResourcesResolvesLifecycleProject(t *testing.T) {
 	t.Parallel()
-	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
 	for _, method := range []string{
-		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure,
 		v1connect.InstanceServiceDeleteInstanceProcedure,
 		v1connect.InstanceServiceUndeleteInstanceProcedure,
 	} {
@@ -262,14 +254,34 @@ func TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject(t *testin
 	}
 	require.False(t, allowsArchivedProjectResourceResolution(v1connect.InstanceServiceGetInstanceProcedure))
 
-	resources, err := populateRawResources(
-		ctx,
-		nil,
-		&v1pb.PrepareSampleProjectInstanceRequest{Parent: common.FormatProject("project-a")},
-		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure,
-	)
+	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	// A deleted project still resolves, so a sample request against one reaches
+	// the handler's "entitlement consumed" answer.
+	_, err := stores.GetDB().ExecContext(ctx, `
+		UPDATE project
+		SET deleted = TRUE
+		WHERE workspace = $1 AND resource_id = $2
+	`, common.GetWorkspaceIDFromContext(ctx), projectID)
 	require.NoError(t, err)
-	require.Equal(t, []*common.Resource{{Type: common.ResourceTypeProject, ID: "project-a"}}, resources)
+
+	resources, err := populateRawResources(ctx, stores,
+		&v1pb.PrepareSampleProjectInstanceRequest{Parent: common.FormatProject(projectID)},
+		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure)
+	require.NoError(t, err)
+	require.Equal(t, []*common.Resource{{Type: common.ResourceTypeProject, ID: projectID}}, resources)
+
+	unknown := common.FormatProject("no-such-project")
+	for method, request := range map[string]any{
+		v1connect.InstanceServicePrepareSampleProjectInstanceProcedure: &v1pb.PrepareSampleProjectInstanceRequest{Parent: unknown},
+		// Not a valid instance name, but ACL resolves it before the handler
+		// rejects it.
+		v1connect.InstanceServiceDeleteInstanceProcedure:   &v1pb.DeleteInstanceRequest{Name: unknown},
+		v1connect.InstanceServiceUndeleteInstanceProcedure: &v1pb.UndeleteInstanceRequest{Name: unknown},
+	} {
+		resources, err := populateRawResources(ctx, stores, request, method)
+		require.Equal(t, connect.CodeNotFound, connect.CodeOf(err), method)
+		require.Nil(t, resources, method)
+	}
 }
 
 func TestGetResourceFromRequest(t *testing.T) {

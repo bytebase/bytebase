@@ -26,6 +26,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	crdbparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
@@ -249,8 +250,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	owner, err := d.GetCurrentDatabaseOwner(ctx)
@@ -302,7 +303,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	commands = tmpCommands
 
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 	}
 	return d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
@@ -622,9 +623,13 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_COCKROACHDB, statement, queryContext.Option.GetExplainFormat())
+			explained, err := base.ExplainStatement(storepb.Engine_COCKROACHDB, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			statement = explained
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			statement = base.StatementWithResultLimit(storepb.Engine_COCKROACHDB, statement, queryContext.Limit, "")
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
@@ -698,11 +703,4 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	}
 
 	return results, nil
-}
-
-func getStatementWithResultLimit(stmt string, limit int) string {
-	// To handle cases where there are comments in the query.
-	// eg. select * from t1 -- this is comment;
-	// Add two new line symbol here.
-	return fmt.Sprintf("WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;", util.TrimStatement(stmt), limit)
 }

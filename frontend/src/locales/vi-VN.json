@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "Chỉ hoạt động",
+    "active-only-chats": "Xem các cuộc trò chuyện đang hoạt động",
     "ai-not-configured": {
       "configure": "Cấu hình",
       "contact-admin": "Liên hệ quản trị viên không gian làm việc để cấu hình AI.",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "Lưu trữ tất cả cuộc trò chuyện",
     "archive-chat": "Lưu trữ cuộc trò chuyện",
-    "archived-only-chats": "Chỉ đã lưu trữ",
+    "archived-only-chats": "Xem các cuộc trò chuyện đã lưu trữ",
     "args": "Tham số",
     "assistant-title": "Trợ lý AI",
     "cancel": "Hủy",
@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "Tìm kiếm theo người thực hiện",
+          "description": "Tìm người dùng theo email. Thêm tiền tố serviceAccounts/ hoặc workloadIdentities/ để tìm các tác nhân đó.",
           "title": "Người thực hiện"
         },
         "level": {
@@ -153,6 +153,7 @@
       "continue-with-email": "Tiếp tục bằng email",
       "continue-with-idp": "Tiếp tục bằng {{idp}}",
       "email-code-tab": "Mã qua email",
+      "failed": "Đăng nhập thất bại",
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
@@ -645,10 +646,6 @@
       "user": "Người dùng"
     },
     "ssh-connection": "Đường hầm SSH",
-    "ssh-type": {
-      "none": "Không có",
-      "tunnel-and-private-key": "Đường hầm + Khóa riêng"
-    },
     "ssl": {
       "ca-cert": "Chứng chỉ CA",
       "ca-path": "Đường dẫn chứng chỉ CA",
@@ -968,7 +965,7 @@
   },
   "instance": {
     "account-locator": "Định vị tài khoản",
-    "add-labels": "Thêm nhãn",
+    "account-locator-description": "Xác định tài khoản Snowflake cần kết nối.",
     "add-parameter": "Thêm tham số",
     "advanced-search": {
       "scope": {
@@ -995,6 +992,7 @@
     },
     "connect-database-to-project": "Kết nối cơ sở dữ liệu với dự án",
     "connect-instance": "Kết nối instance",
+    "connect-using": "Kết nối bằng",
     "connecting-database-to-project": "Đang kết nối cơ sở dữ liệu...",
     "connection-database": "Cơ sở dữ liệu kết nối",
     "connection-info": "Thông tin kết nối",
@@ -1100,7 +1098,6 @@
           "role-id": "ID vai trò xác thực",
           "secret-env-name": "Tên môi trường",
           "secret-id": "ID bí mật xác thực",
-          "secret-plain-text": "Văn bản thuần",
           "self": "AppRole"
         },
         "self": "Loại xác thực",
@@ -1263,7 +1260,6 @@
     "sample-project-instance-description-self-host": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng.",
     "sample-project-instance-title": "Dùng thử Phiên bản dự án mẫu",
     "scan-interval": {
-      "default-never": "Mặc định (không bao giờ)",
       "description": "Bytebase định kỳ đồng bộ lược đồ phiên bản và phát hiện bất thường.",
       "min-value": "Giá trị nhỏ nhất {{value}} phút",
       "self": "Khoảng thời gian quét"
@@ -1326,7 +1322,11 @@
         "saas": "ví dụ: db.example.com | IP cơ sở dữ liệu"
       }
     },
+    "service-name": "Tên dịch vụ",
+    "service-name-placeholder": "Ví dụ: sales.example.com",
     "show-how-to-create": "Hiển thị cách tạo",
+    "sid": "SID",
+    "sid-placeholder": "Ví dụ: ORCL",
     "snowflake-web-console": "Bảng điều khiển web Snowflake",
     "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{{0}}'.",
     "successfully-connected-instance": "Kết nối thành công.",
@@ -1630,13 +1630,11 @@
           "title": "Truy cập MCP đang tắt"
         },
         "line": {
-          "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
-          "capped": "Giới hạn bởi chính quyền Bytebase của bạn",
+          "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối được ghi vào đầu ra chuẩn khi bật ghi nhật ký kiểm toán vào đầu ra chuẩn",
+          "capped-read-only": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì Bytebase có thể kiểm tra trên từng engine — nơi không thể chứng minh một câu lệnh là đọc, không truy vấn nào chạy",
+          "capped-read-write": "Giới hạn bởi quyền Bytebase của chính bạn và bởi mức hỗ trợ của Bytebase cho từng loại cơ sở dữ liệu và từng thao tác",
           "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
-          "no-write": "Không thay đổi dữ liệu hay lược đồ",
-          "read": "Khám phá lược đồ và chạy truy vấn chỉ đọc",
-          "workflow": "Tạo vấn đề, kế hoạch và triển khai, và xuất kết quả truy vấn",
-          "write": "Thay đổi dữ liệu và lược đồ trong phạm vi quyền của bạn"
+          "no-write": "Không thay đổi, triển khai, xuất dữ liệu hay quản trị cơ sở dữ liệu"
         },
         "title": "Phiên này có thể",
         "undisclosed": {
@@ -2672,12 +2670,8 @@
       "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
     },
     "mcp": {
-      "auth": {
-        "description": "Xác thực OAuth được yêu cầu khi kết nối lần đầu. Đảm bảo bạn có quyền Bytebase phù hợp.",
-        "title": "Yêu cầu xác thực"
-      },
       "connect": {
-        "description": "Thêm Bytebase vào client AI của bạn, phê duyệt truy cập trong trình duyệt, rồi bắt đầu hỏi.",
+        "description": "Thêm Bytebase vào ứng dụng AI của bạn và bắt đầu hỏi. Ở lần kết nối đầu tiên, bạn đăng nhập và phê duyệt quyền truy cập trong trình duyệt.",
         "desktop-note": "Claude Desktop đọc máy chủ từ xa từ tài khoản Claude của bạn, không phải từ tệp cấu hình. Hãy thêm URL này làm trình kết nối tùy chỉnh tại Customize > Connectors trên claude.ai, sau đó nó sẽ xuất hiện trong Claude Desktop.",
         "json-note": "Đây là định dạng mcpServers. Mỗi client có định dạng cấu hình khác nhau: ví dụ VS Code dùng servers trong mcp.json của nó, nên hãy dùng tab VS Code cho trường hợp đó.",
         "title": "Kết nối một client"
@@ -2686,35 +2680,100 @@
       "first-prompt": {
         "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
         "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi",
-        "title": "Prompt đầu tiên của bạn"
+        "title": "Lời nhắc đầu tiên của bạn"
+      },
+      "ladder": {
+        "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
+        "floor": {
+          "label": "Không bao giờ, ở mọi chế độ:",
+          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở phiên chế độ Admin, hoặc đọc lịch sử truy vấn của người khác."
+        },
+        "heading": "{{mode}} cho phép",
+        "hide-details": "Ẩn chi tiết",
+        "mark": {
+          "allowed": "Được phép",
+          "refused": "Không được phép"
+        },
+        "row": {
+          "export": {
+            "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase.",
+            "title": "Xuất kết quả truy vấn"
+          },
+          "manage": {
+            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Cài đặt và nhãn cơ sở dữ liệu · Chuyển cơ sở dữ liệu giữa các dự án · Nhóm cơ sở dữ liệu · Truy vấn đã lưu",
+            "title": "Quản lý vận hành cơ sở dữ liệu"
+          },
+          "propose": {
+            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo, xóa và khôi phục bản phát hành · Tạo và xóa bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
+            "title": "Đề xuất thay đổi"
+          },
+          "read-data": {
+            "details": "Chạy truy vấn chỉ đọc · Ở chế độ Chỉ đọc, toàn bộ yêu cầu bị từ chối trừ khi mọi câu lệnh đều được chứng minh là một truy vấn đọc có trả về dữ liệu; mức độ kiểm tra tùy theo engine, và trên một số engine không câu lệnh nào có thể được chứng minh là đọc · Lịch sử truy vấn của riêng bạn · Truy vấn đã lưu và sheet mà bạn có quyền truy cập",
+            "title": "Đọc dữ liệu bằng cách chạy truy vấn"
+          },
+          "read-schemas": {
+            "details": "Lược đồ · Cơ sở dữ liệu và phiên bản · Dự án và nhóm cơ sở dữ liệu · Danh mục, nhật ký thay đổi và bản sửa đổi · Cấu hình rà soát SQL · Thông tin phiên và không gian làm việc của chính bạn",
+            "title": "Đọc lược đồ và siêu dữ liệu"
+          },
+          "read-workflow": {
+            "details": "Issue và bình luận · Plan và kiểm tra plan · Triển khai, lần chạy tác vụ và nhật ký · Bản phát hành · Xem trước khôi phục",
+            "title": "Đọc quy trình thay đổi"
+          },
+          "run-rollouts": {
+            "details": "Tạo một triển khai · Chạy, bỏ qua hoặc hủy các tác vụ của nó, theo chính sách phê duyệt của dự án",
+            "title": "Chạy triển khai và tác vụ"
+          },
+          "run-statements": {
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong phạm vi engine và quyền của chính người dùng cho phép",
+            "title": "Chạy câu lệnh DML và DDL"
+          }
+        },
+        "show-details": "Hiện chi tiết",
+        "stops": {
+          "read": "Chỉ đọc dừng ở đây",
+          "write": "Đọc và ghi dừng ở đây"
+        },
+        "summary": {
+          "read-only": "Đọc lược đồ, dữ liệu và quy trình thay đổi; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
+          "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, chạy, xuất và quản lý"
+        },
+        "tier": {
+          "read": "đọc",
+          "write": "ghi"
+        }
       },
       "policy": {
-        "audit": "Các lần từ chối theo chính sách MCP được ghi vào nhật ký kiểm toán.",
-        "description": "Mức tối đa mà một phiên MCP được phép làm trong không gian làm việc này. Mỗi phiên còn bị giới hạn thêm bởi quyền của chính người dùng đang kết nối.",
+        "current": "Chính sách hiện tại: {{mode}}",
+        "description": "Mức tối đa mà bất kỳ phiên MCP nào có thể làm ở đây. Các phiên còn bị giới hạn bởi quyền của từng người dùng, và những lần từ chối theo chính sách được ghi vào đầu ra chuẩn khi bật ghi nhật ký kiểm toán vào đầu ra chuẩn.",
         "edit": "Sửa chính sách",
-        "in-force": "Đang áp dụng",
         "loading": "Đang đọc chính sách truy cập…",
         "masking": {
           "badge": "Đã bỏ qua miễn trừ che dữ liệu",
-          "description": "Dữ liệu được che vẫn bị che trong phiên MCP. Các miễn trừ che dữ liệu cấp cho người dùng, và việc bỏ che đi kèm một cấp quyền truy cập, đều ngừng áp dụng cho yêu cầu MCP của họ. Cũng người dùng đó không bị ảnh hưởng trong bảng điều khiển Bytebase.",
-          "limits": "Phạm vi che dữ liệu tuỳ theo công cụ. Ở nơi Bytebase không che, hoặc che mà không tra cứu miễn trừ, thiết lập này không thay đổi gì.",
+          "badge-disabled": "Bỏ qua miễn trừ che dữ liệu — MCP đang tắt",
+          "badge-unlicensed": "Bỏ qua miễn trừ che dữ liệu — chưa có bản quyền che dữ liệu",
+          "description": "Nếu bật, dữ liệu đã che vẫn được che trong phiên MCP kể cả với người dùng có miễn trừ hoặc quyền bỏ che. Phạm vi phụ thuộc vào engine: ở nơi Bytebase không che, điều này không thay đổi gì. Console không bị ảnh hưởng.",
           "title": "Bỏ qua miễn trừ che dữ liệu",
           "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
+        },
+        "masking-pending": {
+          "applied": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu được áp dụng.",
+          "ignored": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu bị bỏ qua."
         },
         "mode": {
           "disabled": {
             "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",
+            "caption": "Không phiên MCP nào có thể kết nối",
             "description": "Không phiên MCP nào có thể kết nối tới không gian làm việc này.",
             "title": "Tắt"
           },
           "read-only": {
-            "best-for": "Phù hợp khi: truy vấn và khám phá dữ liệu, kể cả với người không viết SQL.",
-            "description": "Phiên có thể khám phá lược đồ và chạy truy vấn chỉ đọc. Bytebase phân loại từng câu lệnh trước khi chạy và từ chối trọn yêu cầu nếu có bất kỳ câu lệnh nào không phải là đọc. Nơi trình điều khiển của công cụ hỗ trợ, phiên cơ sở dữ liệu cũng được mở ở chế độ chỉ đọc. Mức độ sâu tới đâu tuỳ theo công cụ.",
+            "best-for": "Phù hợp khi: truy vấn và khám phá dữ liệu bằng ngôn ngữ tự nhiên.",
+            "caption": "Khám phá và truy vấn",
             "title": "Chỉ đọc"
           },
           "read-write": {
             "best-for": "Phù hợp khi: thực hiện thay đổi cơ sở dữ liệu qua tác nhân AI, vẫn bị giới hạn bởi quyền của từng người dùng.",
-            "description": "Phiên còn có thể thay đổi dữ liệu và lược đồ, trong phạm vi quyền của chính người dùng đang kết nối.",
+            "caption": "Thay đổi dữ liệu và lược đồ",
             "title": "Đọc và ghi"
           }
         },
@@ -2724,7 +2783,8 @@
         },
         "save": "Lưu chính sách",
         "saved": "Đã lưu chính sách. {{mode}} áp dụng cho yêu cầu kế tiếp của mọi phiên.",
-        "tightening": "Thay đổi mức trần áp dụng cho yêu cầu kế tiếp của mọi phiên đang chạy. Công việc mà tác nhân đã được cho phép vẫn chạy đến khi xong.",
+        "tightening": "Áp dụng cho yêu cầu tiếp theo của mọi phiên đang chạy.",
+        "tightening-change": "{{from}} → {{to}} áp dụng cho yêu cầu tiếp theo của mọi phiên đang chạy.",
         "title": "Chính sách truy cập",
         "unreadable": {
           "description": "Không gian làm việc này lưu một giá trị năng lực mà bản dựng hiện tại không hiểu. Mọi kết nối MCP đều bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
@@ -2732,8 +2792,8 @@
           "title": "Không đọc được chính sách truy cập đã lưu"
         },
         "unserved": {
-          "description": "Không gian làm việc này lưu {{stored}}, không phải mức trần mà bản dựng này phục vụ. Mọi kết nối MCP đang bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
-          "title": "Chính sách truy cập đã lưu không phải loại bản dựng này phục vụ"
+          "description": "Không gian làm việc này lưu {{stored}}, nhưng bản dựng này không hỗ trợ giá trị đó. Mọi kết nối MCP đều bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
+          "title": "Bản dựng này không hỗ trợ chính sách truy cập đã lưu"
         }
       },
       "title": "Tích hợp MCP"
@@ -2821,7 +2881,7 @@
       "select-role_other": "Chọn vai trò",
       "service-account": "Tài khoản dịch vụ",
       "service-accounts": "Tài khoản dịch vụ",
-      "service-key-copied": "Khóa Dịch vụ đã được sao chép vào khay nhớ tạm, vui lòng giữ bí mật.",
+      "service-key-reset-and-copied": "Đã đặt lại và sao chép khóa dịch vụ",
       "show-inactive": "Hiển thị tài khoản không hoạt động",
       "table": {
         "account": "Tài khoản",
@@ -3257,6 +3317,108 @@
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."
     },
     "query-history-not-found": "Không tìm thấy lịch sử truy vấn hoặc không còn truy cập được",
+    "query-plan-load-failed": "Không tải được kế hoạch truy vấn",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "Đã sao chép",
+        "failed": "Sao chép thất bại",
+        "plan": "Sao chép kế hoạch",
+        "query": "Sao chép truy vấn"
+      },
+      "details": {
+        "select-node": "Chọn một nút để xem chi tiết."
+      },
+      "diagram": {
+        "collapse": "Thu gọn {{count}} nút bên dưới {{node}}",
+        "cost": "chi phí {{cost}}",
+        "estimated-rows": "{{count}} hàng ước tính",
+        "expand": "Mở rộng {{count}} nút bên dưới {{node}}",
+        "fit": "Vừa với khung nhìn",
+        "nodes-hidden": "Đã ẩn {{count}} nút",
+        "plan-cost-share": "{{share}} chi phí kế hoạch",
+        "rows": "hàng {{count}}",
+        "zoom-in": "Phóng to",
+        "zoom-out": "Thu nhỏ"
+      },
+      "error": {
+        "mssql-empty": "SQL Server không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "mssql-invalid": "Kế hoạch truy vấn không phải XML hợp lệ. Cần đầu ra SHOWPLAN_XML.",
+        "mssql-no-plan": "XML của kế hoạch truy vấn không phải showplan SQL Server có ít nhất một câu lệnh.",
+        "postgres-empty": "PostgreSQL không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "postgres-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần đầu ra EXPLAIN (FORMAT JSON).",
+        "postgres-no-plan": "JSON của kế hoạch truy vấn không chứa đối tượng \"Plan\".",
+        "spanner-empty": "Spanner không trả về kế hoạch truy vấn cho câu lệnh này.",
+        "spanner-emulator": "Spanner không trả về kế hoạch truy vấn cho câu lệnh này. Trình giả lập Spanner không trả về kế hoạch cho bất kỳ câu lệnh nào; hãy giải thích câu lệnh trên một phiên bản Spanner để xem kế hoạch.",
+        "spanner-invalid": "Kế hoạch truy vấn không phải JSON hợp lệ. Cần một kế hoạch truy vấn Spanner.",
+        "spanner-no-plan": "JSON của kế hoạch truy vấn không chứa danh sách \"planNodes\" có toán tử ở gốc.",
+        "too-deep": "Kế hoạch truy vấn lồng quá sâu để trình trực quan hóa này có thể vẽ.",
+        "unreadable": "Không thể đọc kế hoạch truy vấn này"
+      },
+      "grid": {
+        "added-cost": "Chi phí thêm",
+        "added-cost-hint": "Chi phí mà nút này thêm ngoài các nút con; một số máy cơ sở dữ liệu cũng tính số lần lặp của đầu vào tại đây, chẳng hạn trong vòng lặp lồng nhau. Thanh thể hiện tỷ lệ chi phí này trong kế hoạch.",
+        "caption": "Các nút kế hoạch theo thứ tự lồng nhau của bộ lập kế hoạch, nút cha đứng trước nút con.",
+        "estimated-rows": "Số hàng ước tính",
+        "node": "Nút",
+        "rows": "Hàng",
+        "total-cost": "Tổng chi phí",
+        "width": "Độ rộng",
+        "width-hint": "Độ rộng hàng ước tính theo byte"
+      },
+      "highlight": {
+        "cost": "Chi phí",
+        "cost-hint": "Tô màu theo chi phí mà nút thêm ngoài các nút con",
+        "label": "Làm nổi bật",
+        "off": "Tắt",
+        "off-hint": "Không tô màu các thẻ nút",
+        "rows": "Hàng",
+        "rows-hint": "Tô màu theo số hàng ước tính"
+      },
+      "legend": {
+        "cost": "thanh trên mỗi thẻ thể hiện tỷ lệ chi phí ước tính của nút trong kế hoạch",
+        "rows": "cạnh dày hơn theo số hàng mà nút con dự kiến trả về"
+      },
+      "metric": {
+        "added-cost": "Chi phí thêm",
+        "bytes": "{{count}} byte",
+        "estimated-rows": "Số hàng ước tính",
+        "row-width": "Độ rộng hàng",
+        "startup-cost": "Chi phí khởi động",
+        "total-cost": "Tổng chi phí"
+      },
+      "query": {
+        "missing": "Câu lệnh không được lưu cùng kế hoạch này."
+      },
+      "summary": {
+        "added-cost": "Chi phí thêm",
+        "cost-by-operation": "Chi phí theo thao tác",
+        "cost-by-operation-description": "Mỗi loại nút trong kế hoạch và tổng chi phí của nó.",
+        "cost-ranges": "Khoảng chi phí",
+        "cost-ranges-description": "Mỗi nút trải từ chi phí khởi động — chi phí trước hàng đầu tiên — đến tổng chi phí, cả hai đều bao gồm mọi thứ bên dưới. Khoảng tối hơn chiếm nhiều chi phí kế hoạch hơn. Chi phí không phải lịch thực thi: hai đầu vào của phép nối chồng lên nhau ở đây nhưng chạy lần lượt.",
+        "costliest": "Toán tử tốn kém nhất",
+        "costliest-description": "Xếp hạng theo chi phí mà một nút thêm ngoài các nút con. Khi một đầu vào chạy lặp lại, như trong vòng lặp lồng nhau, một số máy cơ sở dữ liệu tính số lần lặp vào nút chạy lại đầu vào thay vì chính đầu vào.",
+        "count": "Số lượng",
+        "estimate-note": "Câu lệnh đã được lập kế hoạch nhưng chưa chạy, vì vậy mọi số liệu ở đây là ước tính của bộ tối ưu hóa chứ không phải phép đo. Đơn vị chi phí là tùy ý và chỉ có thể so sánh trong kế hoạch này.",
+        "estimated-rows-returned": "Số hàng trả về ước tính",
+        "no-added-cost": "Không có nút nào trong kế hoạch này tự thêm chi phí ước tính.",
+        "nodes": "Nút",
+        "operation": "Thao tác",
+        "share": "Tỷ lệ",
+        "timeline-node": "{{name}}, chi phí từ {{startup}} đến {{total}}, {{share}} chi phí kế hoạch",
+        "total-estimated-cost": "Tổng chi phí ước tính"
+      },
+      "tab": {
+        "diagram": "Sơ đồ",
+        "grid": "Lưới",
+        "query": "Truy vấn",
+        "summary": "Tóm tắt",
+        "text": "Văn bản"
+      },
+      "totals": {
+        "estimated-cost": "chi phí ước tính {{cost}}",
+        "nodes": "{{count}} nút"
+      }
+    },
     "query-time": "Thời gian truy vấn",
     "re-request": "Yêu cầu lại",
     "recent": "Gần đây",
@@ -3310,6 +3472,7 @@
     "search-scope-row-number-description": "Nhập số dòng để chuyển đến dòng đó.",
     "search-scope-row-number-title": "Số dòng",
     "select-a-database-to-start": "Chọn một cơ sở dữ liệu để bắt đầu",
+    "select-a-project-to-choose-a-database": "Chọn một dự án để chọn cơ sở dữ liệu",
     "select-connection": "Vui lòng chọn kết nối",
     "select-encoding": "Chọn mã hóa",
     "self": "Trình soạn thảo SQL",
@@ -3343,9 +3506,6 @@
     "view-detail": "Xem chi tiết",
     "view-issue": "Xem Issue",
     "view-schema-text": "Xem văn bản lược đồ",
-    "visualize-explain": "Trực quan hóa Giải thích",
-    "visualize-explain-blocked": "Tab kế hoạch truy vấn đã bị chặn. Hãy cho phép cửa sổ bật lên cho trang này và thử lại.",
-    "visualize-explain-failed": "Không tải được kế hoạch truy vấn",
     "web-socket": {
       "connection-status": {
         "connected": "đã kết nối",
@@ -3528,8 +3688,7 @@
     },
     "prior-backup": "Sao lưu trước",
     "run-immediately": {
-      "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch.",
-      "self": "Chạy ngay lập tức"
+      "description": "Các tác vụ sẽ bắt đầu thực thi ngay khi bạn nhấp vào Chạy. Không cần trì hoãn hay lên lịch."
     },
     "run-task": "Chạy tác vụ | Chạy tác vụ",
     "schedule-for-later": {

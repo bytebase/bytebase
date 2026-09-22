@@ -98,7 +98,9 @@ export function ProjectIssueDetailPage(props: ProjectIssueDetailPageProps) {
                   : "invisible pointer-events-none"
               )}
             >
-              <button
+              <Button
+                appearance="secondary"
+                size="xs"
                 className={cn(
                   "absolute inset-0 bg-overlay/40 transition-opacity duration-200",
                   LAYER_BACKDROP_CLASS,

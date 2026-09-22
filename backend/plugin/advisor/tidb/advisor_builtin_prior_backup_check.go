@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -130,7 +131,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx context.Context, checkCtx adv
 				Title:         title,
 				Content:       "Prior backup cannot deal with mixed DDL and DML statements",
 				Code:          code.BuiltinPriorBackupCheck.Int32(),
-				StartPosition: common.ConvertANTLRLineToPosition(p.OriginTextPosition()),
+				StartPosition: base.ConvertANTLRLineToPosition(p.OriginTextPosition()),
 			})
 		}
 	}

@@ -58,7 +58,7 @@ func TestMCPPolicyDenialsReachTheAuditPage(t *testing.T) {
 	connectionRows := searchMCP(`method == "/bytebase.mcp.Session/Authorize"`)
 	a.Len(connectionRows, 1, "the refused connection is on the audit page")
 	connection := connectionRows[0]
-	a.Equal(ctl.principalName, connection.User)
+	a.Equal(ctl.principalName, connection.Actor)
 	a.NotNil(connection.Status)
 	a.Contains(connection.Status.Message, "turned MCP access off")
 	a.NotNil(connection.McpDelegation, "the row wears the MCP badge")

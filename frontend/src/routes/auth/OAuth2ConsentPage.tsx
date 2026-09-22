@@ -4,8 +4,9 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
-import { readConsentCeiling } from "@/components/mcp/mcpPolicy";
+import { isServingMode, readConsentCeiling } from "@/components/mcp/mcpPolicy";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -15,10 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
-import {
-  type MCPSetting,
-  MCPSetting_Capability,
-} from "@/types/proto-es/v1/setting_service_pb";
+import type { MCPSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { MCPConsentCeiling } from "./MCPConsentCeiling";
 import { MCPConsentDisabled } from "./MCPConsentDisabled";
@@ -321,7 +319,7 @@ export function OAuth2ConsentPage() {
         />
       );
     }
-    if (ceiling.setting.capability === MCPSetting_Capability.DISABLED) {
+    if (!isServingMode(ceiling.mode)) {
       return (
         <MCPConsentDisabled
           workspaceTitle={
@@ -345,21 +343,22 @@ export function OAuth2ConsentPage() {
         </div>
         {workspaceCard}
         <MCPConsentCeiling
-          setting={ceiling.setting}
+          mode={ceiling.mode}
+          ignoreMaskingExemptions={ceiling.ignoreMaskingExemptions}
           dataMaskingAvailable={dataMaskingAvailable}
         />
         <form method="POST" action={AUTHORIZE_URL}>
-          <input type="hidden" name="client_id" value={clientId} />
-          <input type="hidden" name="redirect_uri" value={redirectUri} />
-          <input type="hidden" name="state" value={oauthState} />
-          <input type="hidden" name="code_challenge" value={codeChallenge} />
-          <input
+          <Input type="hidden" name="client_id" value={clientId} />
+          <Input type="hidden" name="redirect_uri" value={redirectUri} />
+          <Input type="hidden" name="state" value={oauthState} />
+          <Input type="hidden" name="code_challenge" value={codeChallenge} />
+          <Input
             type="hidden"
             name="code_challenge_method"
             value={codeChallengeMethod}
           />
-          <input type="hidden" name="resource" value={resource} />
-          <input type="hidden" name="scope" value={scope} />
+          <Input type="hidden" name="resource" value={resource} />
+          <Input type="hidden" name="scope" value={scope} />
           <div className="flex gap-x-2">
             <Button
               type="button"

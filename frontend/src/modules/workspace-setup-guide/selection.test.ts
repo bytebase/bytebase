@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  storageKeyWorkspaceSetupFinished,
   storageKeyWorkspaceSetupGuideScenario,
   storageKeyWorkspaceSetupGuideWorkspaceUsage,
 } from "@/utils/storage-keys";
@@ -13,6 +14,10 @@ import {
   saveGuideWorkspaceUsage,
   saveSelectedGuideScenarioId,
 } from "./selection";
+import {
+  readWorkspaceSetupFinished,
+  saveWorkspaceSetupFinished,
+} from "./setup";
 
 const mocks = vi.hoisted(() => ({
   state: {
@@ -159,5 +164,38 @@ describe("workspace setup guide workspace usage", () => {
     expect(saveGuideWorkspaceUsage("team")).toBe(true);
     expect(clearGuideWorkspaceUsage()).toBe(true);
     expect(readGuideWorkspaceUsage()).toBeUndefined();
+  });
+});
+
+describe("workspace setup completion", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  test("scopes completion by workspace without a user suffix", () => {
+    expect(storageKeyWorkspaceSetupFinished("workspaces/ws1")).toBe(
+      "bb.workspace-setup.finished.workspaces/ws1"
+    );
+    expect(saveWorkspaceSetupFinished("workspaces/ws1", false)).toBe(true);
+
+    expect(readWorkspaceSetupFinished("workspaces/ws1")).toBe(false);
+    expect(readWorkspaceSetupFinished("workspaces/ws2")).toBeUndefined();
+  });
+
+  test("distinguishes finished from legacy workspaces", () => {
+    expect(readWorkspaceSetupFinished("workspaces/ws1")).toBeUndefined();
+
+    expect(saveWorkspaceSetupFinished("workspaces/ws1", true)).toBe(true);
+
+    expect(readWorkspaceSetupFinished("workspaces/ws1")).toBe(true);
+  });
+
+  test("ignores malformed stored completion values", () => {
+    localStorage.setItem(
+      storageKeyWorkspaceSetupFinished("workspaces/ws1"),
+      JSON.stringify("false")
+    );
+
+    expect(readWorkspaceSetupFinished("workspaces/ws1")).toBeUndefined();
   });
 });

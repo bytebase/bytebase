@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => ({
   clearSelectedGuideScenarioId: vi.fn(),
   saveGuideWorkspaceUsage: vi.fn(),
   saveSelectedGuideScenarioId: vi.fn(),
+  saveWorkspaceSetupFinished: vi.fn(() => true),
   pushNotification: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => false),
   canCreateProject: true,
@@ -66,6 +67,10 @@ vi.mock("@/modules/workspace-setup-guide/selection", () => ({
     value === "query-data" || value === "create-database-change",
   saveGuideWorkspaceUsage: mocks.saveGuideWorkspaceUsage,
   saveSelectedGuideScenarioId: mocks.saveSelectedGuideScenarioId,
+}));
+
+vi.mock("@/modules/workspace-setup-guide/setup", () => ({
+  saveWorkspaceSetupFinished: mocks.saveWorkspaceSetupFinished,
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -131,11 +136,13 @@ vi.mock("@/components/ResourceIdField", async () => {
     ResourceIdField: ({
       value,
       resourceTitle,
+      autoComplete,
       onChange,
       onValidationChange,
     }: {
       value: string;
       resourceTitle?: string;
+      autoComplete?: string;
       onChange?: (value: string) => void;
       onValidationChange?: (valid: boolean) => void;
     }) => {
@@ -148,6 +155,7 @@ vi.mock("@/components/ResourceIdField", async () => {
         <input
           data-testid="project-resource-id"
           value={value}
+          autoComplete={autoComplete}
           onChange={(event) => {
             onChange?.(event.target.value);
             onValidationChange?.(event.target.value.length > 0);
@@ -250,6 +258,17 @@ const renderIntoContainer = (element: ReactElement) => {
 const renderWorkspaceForm = () => {
   const page = renderIntoContainer(<WorkspaceSetupPage />);
   page.render();
+  if (mocks.isSaaSMode) {
+    const labels = [...page.container.querySelectorAll("label")];
+    act(() => {
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Query data"))!
+      );
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Just me"))!
+      );
+    });
+  }
   const continueWithoutSelection = [
     ...page.container.querySelectorAll("button"),
   ].find((button) => button.textContent === "Continue");
@@ -406,6 +425,42 @@ describe("WorkspaceSetupPage", () => {
     expect(page.container.textContent).not.toContain("Setup 1st project");
     expect(page.container.textContent).not.toContain("Skip");
 
+    page.unmount();
+  });
+
+  test("requires both questionnaire answers in SaaS", async () => {
+    mocks.isSaaSMode = true;
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+    page.render();
+    const continueButton = page.container.querySelector("button")!;
+
+    expect(continueButton).toBeDisabled();
+
+    const labels = [...page.container.querySelectorAll("label")];
+    await act(async () => {
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Query data"))!
+      );
+      await Promise.resolve();
+    });
+    expect(continueButton).toBeDisabled();
+
+    await act(async () => {
+      fireEvent.click(
+        labels.find((label) => label.textContent?.includes("Just me"))!
+      );
+      await Promise.resolve();
+    });
+    expect(continueButton).toBeEnabled();
+    page.unmount();
+  });
+
+  test("removes the skip action from SaaS workspace setup", () => {
+    mocks.isSaaSMode = true;
+    const page = renderWorkspaceForm();
+
+    expect(page.container.textContent).not.toContain("I'll do this later");
+    expect(page.container.textContent).toContain("Setup my workspace");
     page.unmount();
   });
 
@@ -685,6 +740,23 @@ describe("WorkspaceSetupPage", () => {
     page.unmount();
   });
 
+  test("disables browser autocomplete for setup inputs", () => {
+    const page = renderWorkspaceForm();
+
+    for (const testId of [
+      "profile-display-name",
+      "profile-workspace-title",
+      "profile-project-title",
+      "project-resource-id",
+    ]) {
+      expect(
+        page.container.querySelector(`[data-testid='${testId}']`)
+      ).toHaveAttribute("autocomplete", "off");
+    }
+
+    page.unmount();
+  });
+
   test("hides workspace name for users joining an existing workspace", () => {
     mocks.workspacePolicy = {
       bindings: [
@@ -797,6 +869,10 @@ describe("WorkspaceSetupPage", () => {
     const projectNameInput = page.container.querySelector(
       "[data-testid='profile-project-title']"
     ) as HTMLInputElement;
+    expect(projectNameInput).not.toBeRequired();
+    expect(
+      page.container.querySelector("[data-testid='project-required-indicator']")
+    ).toBeNull();
     await act(async () => {
       fireEvent.change(projectNameInput, { target: { value: "" } });
       await Promise.resolve();
@@ -841,6 +917,30 @@ describe("WorkspaceSetupPage", () => {
       name: "workspace.project",
       query: { intro: "create-project" },
     });
+
+    page.unmount();
+  });
+
+  test("requires the first project in SaaS", async () => {
+    mocks.isSaaSMode = true;
+    const page = renderWorkspaceForm();
+
+    const projectNameInput = page.container.querySelector(
+      "[data-testid='profile-project-title']"
+    ) as HTMLInputElement;
+    expect(projectNameInput).toBeRequired();
+    expect(
+      page.container.querySelector("[data-testid='project-required-indicator']")
+    ).toHaveClass("ml-1");
+    await act(async () => {
+      fireEvent.change(projectNameInput, { target: { value: "" } });
+      await Promise.resolve();
+    });
+
+    const save = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    ) as HTMLButtonElement;
+    expect(save).toBeDisabled();
 
     page.unmount();
   });
@@ -1021,12 +1121,20 @@ describe("WorkspaceSetupPage", () => {
       expect(mocks.captureMetric).toHaveBeenCalledWith({
         event: "workspace setup submitted",
         properties: {
-          scenario: "unselected",
-          collaboration_type: "unselected",
+          scenario: isSaaSMode ? "query-data" : "unselected",
+          collaboration_type: isSaaSMode ? "solo" : "unselected",
           result: "finished",
           sample_enabled: true,
         },
       });
+      if (isSaaSMode) {
+        expect(mocks.saveWorkspaceSetupFinished).toHaveBeenCalledWith(
+          "workspaces/ws1",
+          true
+        );
+      } else {
+        expect(mocks.saveWorkspaceSetupFinished).not.toHaveBeenCalled();
+      }
 
       page.unmount();
     }

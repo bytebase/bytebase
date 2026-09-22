@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Copy, KeyRound, Plus, Trash2, Undo2 } from "lucide-react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { Check, Copy, KeyRound, Plus, Trash2, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import {
@@ -16,6 +16,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CopyButton } from "@/components/ui/copy-button";
 import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Sheet,
   SheetBody,
@@ -119,44 +124,113 @@ function ServiceAccountTable({
   const [resetConfirmSa, setResetConfirmSa] = useState<
     ServiceAccount | undefined
   >();
-  const [copiedKeys, setCopiedKeys] = useState<Set<string>>(new Set());
+  const [isResetting, setIsResetting] = useState(false);
+  const [keyFeedback, setKeyFeedback] = useState<Map<string, "reset" | "copy">>(
+    new Map()
+  );
+  const copiedKeyTimers = useRef(
+    new Map<string, ReturnType<typeof setTimeout>>()
+  );
+
+  useEffect(
+    () => () => {
+      for (const timer of copiedKeyTimers.current.values()) {
+        clearTimeout(timer);
+      }
+    },
+    []
+  );
+
+  const markKeyActionComplete = (name: string, action: "reset" | "copy") => {
+    setKeyFeedback((prev) => new Map(prev).set(name, action));
+    clearTimeout(copiedKeyTimers.current.get(name));
+    copiedKeyTimers.current.set(
+      name,
+      setTimeout(() => {
+        setKeyFeedback((prev) => {
+          const next = new Map(prev);
+          next.delete(name);
+          return next;
+        });
+        copiedKeyTimers.current.delete(name);
+      }, 2000)
+    );
+  };
+
+  const redactedServiceAccount = (sa: ServiceAccount) =>
+    create(ServiceAccountSchema, { ...sa, serviceKey: "" });
 
   const handleResetKey = async (sa: ServiceAccount) => {
-    setResetConfirmSa(undefined);
+    setIsResetting(true);
     try {
       const updated = await updateServiceAccount(
         { name: sa.name },
         create(FieldMaskSchema, { paths: ["service_key"] })
       );
-      onUpdated(updated);
-      if (
-        updated.serviceKey &&
-        (await writeTextToClipboard(updated.serviceKey))
-      ) {
-        setCopiedKeys((prev) => new Set(prev).add(updated.name));
+      setResetConfirmSa(undefined);
+      const copied =
+        !!updated.serviceKey &&
+        (await writeTextToClipboard(updated.serviceKey));
+      if (copied) {
+        onUpdated(redactedServiceAccount(updated));
+        markKeyActionComplete(updated.name, "reset");
         pushNotification({
           module: "bytebase",
-          style: "INFO",
-          title: t("settings.members.service-key-copied"),
+          style: "SUCCESS",
+          title: t("common.copied"),
         });
+        return;
       }
+
+      onUpdated(updated);
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.copy-failed"),
+      });
     } catch {
       // error shown by store
+    } finally {
+      setIsResetting(false);
     }
   };
 
   const handleCopyKey = async (sa: ServiceAccount) => {
-    if (!(await writeTextToClipboard(sa.serviceKey))) return;
-    setCopiedKeys((prev) => new Set(prev).add(sa.name));
+    if (!(await writeTextToClipboard(sa.serviceKey))) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("common.copy-failed"),
+      });
+      return;
+    }
+    onUpdated(redactedServiceAccount(sa));
+    markKeyActionComplete(sa.name, "copy");
     pushNotification({
       module: "bytebase",
-      style: "INFO",
-      title: t("settings.members.service-key-copied"),
+      style: "SUCCESS",
+      title: t("common.copied"),
     });
   };
 
   const renderKeyAction = (sa: ServiceAccount) => {
-    if (sa.serviceKey && !copiedKeys.has(sa.name)) {
+    const feedback = keyFeedback.get(sa.name);
+    if (feedback) {
+      return (
+        <Button
+          appearance="outline"
+          size="xs"
+          disabled
+          className="text-success disabled:opacity-100"
+        >
+          <Check className="h-3 w-3 mr-1" />
+          {feedback === "reset"
+            ? t("settings.members.service-key-reset-and-copied")
+            : t("common.copied")}
+        </Button>
+      );
+    }
+    if (sa.serviceKey) {
       return (
         <Button
           appearance="outline"
@@ -171,47 +245,50 @@ function ServiceAccountTable({
         </Button>
       );
     }
-    if (resetConfirmSa?.name === sa.name) {
-      return (
-        <div className="flex items-center gap-x-1">
-          <span className="text-xs text-error">
-            {t("settings.members.reset-service-key-alert")}
-          </span>
-          <Button
-            variant="destructive"
-            size="xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleResetKey(sa);
-            }}
-          >
-            {t("common.reset")}
-          </Button>
-          <Button
-            appearance="outline"
-            size="xs"
-            onClick={(e) => {
-              e.stopPropagation();
-              setResetConfirmSa(undefined);
-            }}
-          >
-            {t("common.cancel")}
-          </Button>
-        </div>
-      );
-    }
     return (
-      <Button
-        appearance="outline"
-        size="xs"
-        onClick={(e) => {
-          e.stopPropagation();
-          setResetConfirmSa(sa);
+      <Popover
+        open={resetConfirmSa?.name === sa.name}
+        onOpenChange={(open) => {
+          if (!isResetting) setResetConfirmSa(open ? sa : undefined);
         }}
       >
-        <KeyRound className="h-3 w-3 mr-1" />
-        {t("settings.members.reset-service-key")}
-      </Button>
+        <PopoverTrigger
+          render={<Button appearance="outline" size="xs" />}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <KeyRound className="h-3 w-3 mr-1" />
+          {t("settings.members.reset-service-key")}
+        </PopoverTrigger>
+        <PopoverContent
+          aria-label={t("settings.members.reset-service-key")}
+          className="w-80 max-w-[calc(100vw-2rem)]"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          <p className="text-control-light">
+            {t("settings.members.reset-service-key-alert")}
+          </p>
+          <div className="mt-3 flex justify-end gap-x-2">
+            <Button
+              appearance="outline"
+              size="sm"
+              disabled={isResetting}
+              onClick={() => setResetConfirmSa(undefined)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={isResetting}
+              onClick={() => void handleResetKey(sa)}
+            >
+              {t("common.reset")}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   };
 
@@ -602,7 +679,8 @@ function ServiceAccountForm({
               <Input value={serviceAccount?.email ?? ""} disabled />
             ) : (
               <div className="px-1 flex items-center border border-control-border rounded-xs overflow-hidden focus-within:border-accent">
-                <input
+                <Input
+                  size="md"
                   type="text"
                   autoComplete="off"
                   value={emailPrefix}

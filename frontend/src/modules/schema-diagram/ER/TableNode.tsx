@@ -1,5 +1,7 @@
 import { Diamond, Key, Pencil } from "lucide-react";
 import { useCallback, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Table } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import type {
   ColumnMetadata,
@@ -165,17 +167,19 @@ export function TableNode({ schema, table }: TableNodeProps) {
         )}
 
         {editable && (
-          <button
+          <Button
+            appearance="secondary"
+            size="xs"
             type="button"
             className="invisible group-hover:visible absolute top-[50%] -mt-[9px] right-1 text-control bg-background/70 hover:bg-control-bg p-0.5 rounded-sm"
             onClick={() => events.emit("edit-table", { schema, table })}
           >
             <Pencil className="size-4" />
-          </button>
+          </Button>
         )}
       </h3>
 
-      <table className="w-full text-sm table-fixed">
+      <Table className="table-fixed">
         <tbody>
           {table.columns.map((column, i) => (
             <tr
@@ -219,7 +223,7 @@ export function TableNode({ schema, table }: TableNodeProps) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   );
 }

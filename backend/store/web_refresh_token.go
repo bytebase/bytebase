@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 type WebRefreshTokenMessage struct {

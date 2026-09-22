@@ -170,9 +170,11 @@ export function WorkspaceSegment({
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             render={
-              <button
+              <Button
                 type="button"
-                className="inline-flex items-center rounded-xs p-1 text-control-placeholder hover:bg-control-bg cursor-pointer"
+                appearance="secondary"
+                size="xs"
+                className="text-control-placeholder"
               />
             }
           >
@@ -188,11 +190,11 @@ export function WorkspaceSegment({
                 ? ws.name.slice(workspaceNamePrefix.length)
                 : ws.name;
               return (
-                <button
+                <Button
                   key={ws.name}
                   type="button"
                   className={cn(
-                    "w-full flex items-center justify-between rounded-xs px-3 py-1.5 text-sm cursor-pointer gap-x-2",
+                    "h-auto w-full flex items-center justify-between rounded-xs px-3 py-1.5 text-sm gap-x-2",
                     ws.name === currentWorkspaceName
                       ? "bg-control-bg font-medium text-accent"
                       : "text-control hover:bg-control-bg"
@@ -213,7 +215,7 @@ export function WorkspaceSegment({
                   {ws.name === currentWorkspaceName && (
                     <Check className="size-4 shrink-0" />
                   )}
-                </button>
+                </Button>
               );
             })}
           </PopoverContent>
@@ -300,7 +302,7 @@ export function ProjectSegment({
                   appearance="secondary"
                   aria-label={t("project.select")}
                   size="xs"
-                  className="size-6 p-0 text-control-placeholder"
+                  className="text-control-placeholder"
                 />
               ) : (
                 <Button

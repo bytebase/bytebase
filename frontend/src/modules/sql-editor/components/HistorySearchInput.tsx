@@ -1,6 +1,8 @@
 import { Search, X } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 // Tallest the box grows before it starts scrolling internally (px).
@@ -47,7 +49,8 @@ export function HistorySearchInput({
       )}
     >
       <Search className="absolute left-2.5 top-2 h-4 w-4 text-control-placeholder pointer-events-none" />
-      <textarea
+      <Textarea
+        size="xs"
         ref={textareaRef}
         rows={1}
         value={value}
@@ -65,15 +68,17 @@ export function HistorySearchInput({
         )}
       />
       {value && (
-        <button
+        <Button
+          appearance="secondary"
+          size="xs"
           type="button"
           data-clear-search
           aria-label={t("common.clear")}
           onClick={() => onChange("")}
-          className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control"
+          className="absolute right-1.5 top-1.5 flex items-center justify-center rounded-xs text-control-placeholder hover:bg-control-bg-hover hover:text-control"
         >
           <X className="h-3.5 w-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   );

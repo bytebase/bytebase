@@ -120,33 +120,11 @@ func TestMCPCannotChangeOwnPasswordAndLogIn(t *testing.T) {
 	a.NoError(err, "the user's real password must still be their real password")
 	a.NotEmpty(stillOld.Msg.Token)
 
-	// The operator's view: a denied MCP call is exactly the event worth
-	// investigating, so both denials must be on the audit page — including
-	// Login, which the handler never reached.
-	deniedRows := func(method string) []*v1pb.AuditLog {
-		var rows []*v1pb.AuditLog
-		for _, row := range deniedMCPRows(ctx, t, ctl, workspace, method) {
-			if row.User == "users/"+agentEmail {
-				rows = append(rows, row)
-			}
-		}
-		return rows
-	}
-
-	updateRows := deniedRows("/bytebase.v1.UserService/UpdateUser")
-	a.Len(updateRows, 1, "the denied password change must produce exactly one audit row")
-	a.Equal(int32(connect.CodePermissionDenied), updateRows[0].Status.GetCode(),
-		"the row must record the denial, not a success")
-	a.NotEmpty(updateRows[0].McpDelegation.GetCorrelationId(),
-		"the denial must be correlatable back to the agent session that made it")
-
-	loginRows := deniedRows("/bytebase.v1.AuthService/Login")
-	a.Len(loginRows, 2, "both refused Login attempts must be audited")
-	for _, row := range loginRows {
-		a.Equal(int32(connect.CodePermissionDenied), row.Status.GetCode())
-	}
-	a.Equal(updateRows[0].McpDelegation.GetCorrelationId(), loginRows[0].McpDelegation.GetCorrelationId(),
-		"one session, one correlation ID across the whole chain")
+	// Both refusals are streamed, never stored.
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspace, "/bytebase.v1.UserService/UpdateUser"),
+		"a gate refusal is never stored")
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspace, "/bytebase.v1.AuthService/Login"),
+		"a gate refusal is never stored")
 }
 
 // TestWebUserStillChangesPasswordAndLogsIn is the regression half: the gate

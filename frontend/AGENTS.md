@@ -19,9 +19,9 @@ This file provides additional guidance to AI coding assistants working under `./
 
 - Follow [`../docs/agents/frontend-ux.md`](../docs/agents/frontend-ux.md) as the canonical source for foundations, page and sheet forms, sticky actions, dialogs, wizards, tables, pagination, selection, and responsive behavior.
 - New shared UI and every UI element directly modified by a change MUST follow the guideline. Do not copy an adjacent legacy pattern merely because it is already present.
-- Existing feature violations in `scripts/ui-guideline-legacy-debt.json` are temporary incremental exceptions, not permission for new debt. A change may leave unrelated fingerprints in place, but MUST NOT add, mutate, or increase them.
+- Product UI must have no scanner violations. Existing code is not a design alternative to copy.
 - Repeated measurements belong in `src/components/ui/styles.stylex.ts`; semantic colors belong in `src/assets/css/tailwind.css`; variants belong in the shared primitive's CVA definition.
-- Run `node frontend/scripts/check-ui-guideline.mjs` after UI work. When a change removes legacy debt, run `node frontend/scripts/check-ui-guideline.mjs --write-baseline`; the updater accepts reductions only.
+- Run `node frontend/scripts/check-ui-guideline.mjs` after UI work.
 
 ## Source ownership
 

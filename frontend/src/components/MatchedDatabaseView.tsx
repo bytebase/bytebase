@@ -2,6 +2,7 @@ import { ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
+import { Button } from "@/components/ui/button";
 import type { ConditionGroupExpr } from "@/modules/cel";
 import { validateSimpleExpr } from "@/modules/cel";
 import { useAppStore } from "@/stores/app";
@@ -312,9 +313,11 @@ export function MatchedDatabaseView({
 
           return (
             <div key={section.name}>
-              <button
+              <Button
                 type="button"
-                className={`w-full flex items-center justify-between py-2 px-2 text-left text-sm border-b border-control-border/60 last:border-b-0 ${
+                appearance="secondary"
+                size="md"
+                className={`h-auto w-full min-w-0 justify-between border-b border-control-border/60 px-2 py-2 text-left text-sm whitespace-normal last:border-b-0 ${
                   isEmpty
                     ? "cursor-default text-control-placeholder"
                     : "cursor-pointer hover:bg-control-bg"
@@ -322,20 +325,22 @@ export function MatchedDatabaseView({
                 disabled={isEmpty}
                 onClick={() => toggleSection(section.name)}
               >
-                <div className="flex items-center gap-x-1">
+                <div className="flex min-w-0 flex-1 items-center gap-x-1">
                   <ChevronRight
                     className={`size-4 transition-transform ${
                       isExpanded ? "rotate-90" : ""
                     } ${isEmpty ? "text-control-border" : ""}`}
                   />
-                  <span>{section.title}</span>
+                  <span className="min-w-0 flex-1 break-words">
+                    {section.title}
+                  </span>
                 </div>
                 {section.totalLabel && (
-                  <span className="text-control-light text-xs">
+                  <span className="shrink-0 text-control-light text-xs">
                     {section.totalLabel}
                   </span>
                 )}
-              </button>
+              </Button>
 
               {isExpanded && !isEmpty && (
                 <div className="flex flex-col gap-y-2 w-full max-h-48 overflow-y-auto border-b border-control-border/60 last:border-b-0">
@@ -360,14 +365,16 @@ export function MatchedDatabaseView({
                     </div>
                   )}
                   {section.hasMore && (
-                    <button
+                    <Button
                       type="button"
-                      className="self-start px-2 pb-2 text-sm text-accent hover:text-accent/80 disabled:opacity-50"
+                      appearance="link"
+                      size="md"
+                      className="self-start h-auto px-2 pb-2 text-sm hover:text-accent/80"
                       disabled={section.sectionLoading}
                       onClick={section.onLoadMore}
                     >
                       {section.sectionLoading ? "..." : t("common.load-more")}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}

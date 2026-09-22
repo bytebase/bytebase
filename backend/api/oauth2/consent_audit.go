@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/audit"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -79,8 +80,8 @@ func (s *Service) refuseConsentByCeiling(c *echo.Context, attempt consentAttempt
 // The row is written here for the same reason the connection gate writes its
 // own: this route is echo, so no interceptor sees it.
 func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, verdict auth.MCPCeilingVerdict) error {
-	row := consentRefusalRow(attempt, verdict, common.RequestMetadataFromHTTP(c.Request()))
-	common.RecordOutOfBandAudit(c.Request().Context(), s.store,
+	row := consentRefusalRow(attempt, verdict, audit.RequestMetadataFromHTTP(c.Request()))
+	audit.RecordOutOfBandAudit(c.Request().Context(), s.store,
 		s.profile.RuntimeEnableAuditLogStdout.Load(), attempt.user.workspaceID, row)
 	return c.HTML(http.StatusForbidden, consentRefusedHTML(verdict, attempt.redirectURI, attempt.state))
 }
@@ -93,9 +94,8 @@ func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, verdict
 func consentRefusalRow(attempt consentAttempt, verdict auth.MCPCeilingVerdict, requestMetadata *storepb.RequestMetadata) *storepb.AuditLog {
 	return &storepb.AuditLog{
 		Parent:   common.FormatWorkspace(attempt.user.workspaceID),
-		Method:   common.AuditMethodMCPConsentApprove,
+		Method:   audit.AuditMethodMCPConsentApprove,
 		Resource: common.FormatWorkspace(attempt.user.workspaceID),
-		Severity: storepb.AuditLog_INFO,
 		User:     common.FormatUserEmail(attempt.user.email),
 		Status: &spb.Status{
 			Code:    int32(codes.PermissionDenied),

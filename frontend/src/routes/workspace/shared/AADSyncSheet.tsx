@@ -1,5 +1,4 @@
 import { create } from "@bufbuild/protobuf";
-import { Copy } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { workspaceServiceClientConnect } from "@/api";
@@ -7,6 +6,7 @@ import { ExternalUrlAlert } from "@/components/ExternalUrlAlert";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
 import {
   Sheet,
@@ -16,7 +16,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { writeTextToClipboard } from "@/lib/clipboard";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { RotateDirectorySyncTokenRequestSchema } from "@/types/proto-es/v1/workspace_service_pb";
@@ -45,22 +44,6 @@ export function AADSyncSheet({
     externalUrl && workspaceResourceName
       ? `${externalUrl}/hook/scim/${workspaceResourceName}`
       : "";
-
-  const copyToClipboard = async (value: string) => {
-    if (await writeTextToClipboard(value)) {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.copied"),
-      });
-    } else {
-      pushNotification({
-        module: "bytebase",
-        style: "WARN",
-        title: t("common.copy-failed"),
-      });
-    }
-  };
 
   // The plaintext token is returned exactly once by the rotate RPC, so it lives
   // in local state only. The sheet stays mounted when closed, so this must be
@@ -149,14 +132,12 @@ export function AADSyncSheet({
               </span>
               <div className="flex items-center gap-x-2">
                 <Input readOnly value={scimUrl} className="flex-1 text-sm" />
-                <Button
+                <CopyButton
+                  content={scimUrl}
                   appearance="outline"
                   size="sm"
                   disabled={!scimUrl}
-                  onClick={() => copyToClipboard(scimUrl)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
+                />
               </div>
             </div>
 
@@ -176,13 +157,11 @@ export function AADSyncSheet({
                       value={mintedToken}
                       className="flex-1 text-sm font-mono"
                     />
-                    <Button
+                    <CopyButton
+                      content={mintedToken}
                       appearance="outline"
                       size="sm"
-                      onClick={() => copyToClipboard(mintedToken)}
-                    >
-                      <Copy className="size-4" />
-                    </Button>
+                    />
                   </div>
                   <Alert
                     variant="warning"

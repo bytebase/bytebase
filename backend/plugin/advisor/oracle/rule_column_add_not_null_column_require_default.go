@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -76,7 +76,7 @@ func (r *ColumnAddNotNullColumnRequireDefaultRule) OnStatement(node ast.Node) {
 					r.level,
 					code.NotNullColumnWithNoDefault.Int32(),
 					fmt.Sprintf("Adding not null column %q requires default.", col.Name),
-					common.ConvertANTLRLineToPosition(r.locLine(col.Loc)),
+					base.ConvertANTLRLineToPosition(r.locLine(col.Loc)),
 				)
 			}
 		}

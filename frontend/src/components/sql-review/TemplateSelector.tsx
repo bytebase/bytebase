@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { EnvironmentLabel } from "@/components/EnvironmentLabel";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { FormField } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useProjectByName } from "@/hooks/useProjectByName";
@@ -106,19 +107,21 @@ export function TemplateSelector({
           <>
             <div className="flex flex-wrap gap-4">
               {reviewPolicyTemplateList.map((template) => (
-                <button
+                <Button
                   type="button"
                   key={template.id}
+                  appearance="secondary"
+                  size="xs"
                   aria-pressed={isSelected(template)}
                   className={cn(
-                    "relative flex w-full cursor-pointer flex-col rounded-sm border border-control-border px-6 py-4 text-left transition-colors sm:max-w-xs",
+                    "relative h-auto w-full flex-col items-start rounded-sm border border-control-border px-6 py-4 text-left whitespace-normal sm:max-w-xs",
                     "hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
                     isSelected(template) && "bg-control-bg"
                   )}
                   onClick={() => onSelectTemplate(template)}
                 >
-                  <div className="text-left flex flex-col gap-y-2">
-                    <span className="text-base font-medium">
+                  <div className="flex w-full min-w-0 flex-col gap-y-2 text-left">
+                    <span className="break-words text-base font-medium">
                       {template.review?.name}
                     </span>
                     <div className="flex flex-wrap gap-2">
@@ -126,7 +129,7 @@ export function TemplateSelector({
                         <ResourceBadge key={resource} resource={resource} />
                       ))}
                     </div>
-                    <p className="text-sm">
+                    <p className="break-words text-sm">
                       <span className="mr-2">
                         {t("sql-review.enabled-rules")}:
                       </span>
@@ -136,7 +139,7 @@ export function TemplateSelector({
                   {isSelected(template) && (
                     <CheckCircle className="absolute right-3 top-3 size-7 text-accent" />
                   )}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -146,27 +149,29 @@ export function TemplateSelector({
 
         <div className="flex flex-wrap gap-4">
           {builtInTemplateList.map((template) => (
-            <button
+            <Button
               type="button"
               key={template.id}
+              appearance="secondary"
+              size="xs"
               aria-pressed={isSelected(template)}
               className={cn(
-                "relative flex w-full cursor-pointer flex-col rounded-sm border border-control-border px-6 py-4 text-left transition-colors sm:max-w-xs",
+                "relative h-auto w-full flex-col items-start rounded-sm border border-control-border px-6 py-4 text-left whitespace-normal sm:max-w-xs",
                 "hover:bg-control-bg focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
                 isSelected(template) && "bg-control-bg"
               )}
               onClick={() => onSelectTemplate(template)}
             >
-              <div className="text-left flex flex-col gap-y-2">
-                <span className="text-base font-medium">
+              <div className="flex w-full min-w-0 flex-col gap-y-2 text-left">
+                <span className="break-words text-base font-medium">
                   {t(`sql-review.template.${template.id.split(".").join("-")}`)}
                 </span>
-                <p className="text-sm text-control-light">
+                <p className="break-words text-sm text-control-light">
                   {t(
                     `sql-review.template.${template.id.split(".").join("-")}-desc`
                   )}
                 </p>
-                <p className="text-sm">
+                <p className="break-words text-sm">
                   <span className="mr-2">{t("sql-review.enabled-rules")}:</span>
                   <span>{template.ruleList.length}</span>
                 </p>
@@ -174,7 +179,7 @@ export function TemplateSelector({
               {isSelected(template) && (
                 <CheckCircle className="absolute right-3 top-3 size-7 text-accent" />
               )}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

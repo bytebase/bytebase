@@ -7,10 +7,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -91,7 +91,7 @@ func (r *tableNoDuplicateIndexOmniRule) checkCreateTable(n *ast.CreateTableStmt)
 			Code:          code.DuplicateIndexInTable.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			StartPosition: common.ConvertANTLRLineToPosition(index.line),
+			StartPosition: base.ConvertANTLRLineToPosition(index.line),
 		})
 	}
 }
@@ -119,7 +119,7 @@ func (r *tableNoDuplicateIndexOmniRule) checkAlterTable(n *ast.AlterTableStmt) {
 			Code:          code.DuplicateIndexInTable.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, index.indexName),
-			StartPosition: common.ConvertANTLRLineToPosition(index.line),
+			StartPosition: base.ConvertANTLRLineToPosition(index.line),
 		})
 	}
 }
@@ -184,7 +184,7 @@ func (r *tableNoDuplicateIndexOmniRule) checkCreateIndex(n *ast.CreateIndexStmt)
 			Code:          code.DuplicateIndexInTable.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("`%s` has duplicate index `%s`", tableName, dup.indexName),
-			StartPosition: common.ConvertANTLRLineToPosition(dup.line),
+			StartPosition: base.ConvertANTLRLineToPosition(dup.line),
 		})
 	}
 }

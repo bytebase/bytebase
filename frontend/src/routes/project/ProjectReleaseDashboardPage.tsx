@@ -18,6 +18,13 @@ import {
 } from "@/components/ProjectPageLayout";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -174,19 +181,25 @@ function CategorySelect({
   loading: boolean;
 }) {
   return (
-    <select
-      className="w-64 border border-control-border rounded-sm text-sm px-3 py-1.5 bg-background focus:outline-none focus:border-accent"
+    <Select
       value={value}
-      onChange={(e) => onChange(e.target.value)}
+      onValueChange={(nextValue: string | null) => {
+        if (nextValue !== null) onChange(nextValue);
+      }}
       disabled={loading}
     >
-      <option value="">All</option>
-      {categories.map((cat) => (
-        <option key={cat} value={cat}>
-          {cat}
-        </option>
-      ))}
-    </select>
+      <SelectTrigger className="w-64 rounded-sm px-3 text-sm">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="">All</SelectItem>
+        {categories.map((cat) => (
+          <SelectItem key={cat} value={cat}>
+            {cat}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 

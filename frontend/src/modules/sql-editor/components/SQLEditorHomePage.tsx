@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "@/app/router";
 import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { IAMRemindDialog } from "@/components/IAMRemindDialog";
+import { Button } from "@/components/ui/button";
 import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
@@ -179,10 +180,12 @@ export function SQLEditorHomePage() {
   const mobileToggle = isNarrowWindow
     ? createPortal(
         <SQLEditorThemeScope theme={theme} asContents>
-          <button
+          <Button
+            appearance="secondary"
+            size="lg"
             type="button"
             className={cn(
-              "fixed rounded-full border border-control-border shadow-lg w-10 h-10 bottom-16 flex items-center justify-center bg-background hover:bg-control-bg cursor-pointer transition-all",
+              "fixed rounded-full border border-control-border shadow-lg bottom-16 flex items-center justify-center bg-background hover:bg-control-bg cursor-pointer transition-all",
               LAYER_SURFACE_CLASS,
               sidebarExpanded ? "left-[80%] -translate-x-5" : "left-4"
             )}
@@ -199,7 +202,7 @@ export function SQLEditorHomePage() {
                 !sidebarExpanded && "-scale-100"
               )}
             />
-          </button>
+          </Button>
         </SQLEditorThemeScope>,
         getLayerRoot("overlay")
       )

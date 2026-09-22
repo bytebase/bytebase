@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/oracle/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -65,7 +65,7 @@ func (r *WhereRequireForUpdateDeleteRule) OnStatement(node ast.Node) {
 				r.level,
 				code.StatementNoWhere.Int32(),
 				"WHERE clause is required for UPDATE statement.",
-				common.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
+				base.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
 			)
 		}
 	case *ast.DeleteStmt:
@@ -74,7 +74,7 @@ func (r *WhereRequireForUpdateDeleteRule) OnStatement(node ast.Node) {
 				r.level,
 				code.StatementNoWhere.Int32(),
 				"WHERE clause is required for DELETE statement.",
-				common.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
+				base.ConvertANTLRLineToPosition(r.locLine(n.Loc)),
 			)
 		}
 	case *ast.PLSQLBlock:

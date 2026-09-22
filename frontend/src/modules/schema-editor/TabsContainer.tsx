@@ -7,6 +7,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import { cn } from "@/lib/utils";
 import { extractDatabaseResourceName } from "@/utils";
@@ -54,15 +55,17 @@ export function TabsContainer() {
             >
               <TabIcon type={tab.type} />
               <EllipsisText text={getTabName(tab)} className="flex-1" />
-              <button
-                className="block size-5 shrink-0 rounded-xs p-0.5 text-control-light transition-colors hover:bg-control-bg hover:text-control"
+              <Button
+                appearance="secondary"
+                size="xs"
+                className="block shrink-0 rounded-xs p-0.5 text-control-light transition-colors hover:bg-control-bg hover:text-control"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeTab(tab.id);
                 }}
               >
                 <X className="size-full" />
-              </button>
+              </Button>
             </div>
           );
         })}

@@ -62,6 +62,7 @@ const renderQuestionnaire = (
   props: Partial<{
     scenarioValue: GuideScenarioId;
     workspaceUsageValue: GuideWorkspaceUsage;
+    required: boolean;
     onScenarioChange: (value: GuideScenarioId) => void;
     onWorkspaceUsageChange: (value: GuideWorkspaceUsage) => void;
     onContinue: () => void;
@@ -71,6 +72,7 @@ const renderQuestionnaire = (
     <WorkspaceSetupQuestionnaireStep
       scenarioValue={props.scenarioValue}
       workspaceUsageValue={props.workspaceUsageValue}
+      required={props.required}
       onScenarioChange={props.onScenarioChange ?? vi.fn()}
       onWorkspaceUsageChange={props.onWorkspaceUsageChange ?? vi.fn()}
       onContinue={props.onContinue ?? vi.fn()}
@@ -111,6 +113,50 @@ describe("WorkspaceSetupQuestionnaireStep", () => {
     page.unmount();
   });
 
+  test("requires both answers when configured for SaaS", () => {
+    const unanswered = renderQuestionnaire({ required: true });
+    const unansweredContinue = unanswered.container.querySelector("button")!;
+    expect(unansweredContinue).toBeDisabled();
+    const requiredIndicators = unanswered.container.querySelectorAll(
+      "[data-testid='required-indicator']"
+    );
+    expect(requiredIndicators).toHaveLength(2);
+    for (const indicator of requiredIndicators) {
+      expect(indicator).toHaveClass("ml-1");
+    }
+    expect(
+      unanswered.container.querySelectorAll("[aria-required='true']")
+    ).toHaveLength(2);
+    unanswered.unmount();
+
+    const partiallyAnswered = renderQuestionnaire({
+      required: true,
+      scenarioValue: "query-data",
+    });
+    expect(partiallyAnswered.container.querySelector("button")).toBeDisabled();
+    partiallyAnswered.unmount();
+
+    const answered = renderQuestionnaire({
+      required: true,
+      scenarioValue: "query-data",
+      workspaceUsageValue: "solo",
+    });
+    expect(answered.container.querySelector("button")).toBeEnabled();
+    answered.unmount();
+  });
+
+  test("does not show required markers when answers are optional", () => {
+    const page = renderQuestionnaire({ required: false });
+
+    expect(
+      page.container.querySelectorAll("[data-testid='required-indicator']")
+    ).toHaveLength(0);
+    expect(
+      page.container.querySelectorAll("[aria-required='true']")
+    ).toHaveLength(0);
+    page.unmount();
+  });
+
   test("reports each answer independently", () => {
     const onScenarioChange = vi.fn();
     const onWorkspaceUsageChange = vi.fn();
@@ -128,6 +174,7 @@ describe("WorkspaceSetupQuestionnaireStep", () => {
     act(() =>
       fireEvent.click(
         labels.find((label) => label.textContent?.includes("My team"))!
+          .querySelector('[role="radio"]')!
       )
     );
 
@@ -140,7 +187,13 @@ describe("WorkspaceSetupQuestionnaireStep", () => {
     const onContinue = vi.fn();
     const page = renderQuestionnaire({ onContinue });
 
-    act(() => fireEvent.click(page.container.querySelector("button")!));
+    act(() =>
+      fireEvent.click(
+        [...page.container.querySelectorAll("button")].find((button) =>
+          button.textContent?.includes("Continue")
+        )!
+      )
+    );
 
     expect(onContinue).toHaveBeenCalledOnce();
     page.unmount();

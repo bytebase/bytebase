@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
 import { FormError, FormField, FormFieldGroup } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
@@ -348,7 +349,9 @@ function GroupRow({
       >
         <TableCell className="py-2">
           <div className="flex items-center gap-x-2">
-            <button
+            <Button
+              appearance="secondary"
+              size="xs"
               className="shrink-0 p-0.5 rounded-xs hover:bg-control-bg-hover"
               onClick={(e) => {
                 e.stopPropagation();
@@ -360,7 +363,7 @@ function GroupRow({
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-            </button>
+            </Button>
             <Users className="h-4 w-4 shrink-0 text-control-light" />
             <div className="flex flex-col">
               <div className="flex items-center gap-x-1.5">
@@ -378,9 +381,16 @@ function GroupRow({
                   <Badge className="text-xs px-1.5 py-0">{group.source}</Badge>
                 )}
               </div>
-              <span className="textinfolabel text-xs">
-                <HighlightLabelText text={group.name} keyword={searchText} />
-              </span>
+              <div className="flex items-center gap-x-1 min-w-0">
+                <span className="textinfolabel text-xs truncate">
+                  <HighlightLabelText text={group.name} keyword={searchText} />
+                </span>
+                {group.name && (
+                  <div onClick={(event) => event.stopPropagation()}>
+                    <CopyButton content={group.name} />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </TableCell>
@@ -943,18 +953,24 @@ function GroupForm({
                       {domainOptions[0]}
                     </span>
                   ) : (
-                    <select
+                    <Select
                       value={selectedDomain}
-                      onChange={(e) => setSelectedDomain(e.target.value)}
-                      className="border border-control-border rounded-sm text-sm pl-2 pr-6 py-1"
+                      onValueChange={(value: string | null) => {
+                        if (value !== null) setSelectedDomain(value);
+                      }}
                       disabled={!allowEdit}
                     >
-                      {domainOptions.map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="rounded-sm px-2 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {domainOptions.map((domain) => (
+                          <SelectItem key={domain} value={domain}>
+                            {domain}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
                 </>
               )}

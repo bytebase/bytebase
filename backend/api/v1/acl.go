@@ -46,8 +46,17 @@ func (in *ACLInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 		err := in.doACLCheck(ctx, req.Any(), req.Spec().Procedure)
 		if err != nil {
+			// Keyed on the code because inside doACLCheck only a permission
+			// verdict answers PermissionDenied.
+			if connect.CodeOf(err) == connect.CodePermissionDenied {
+				setPermissionDenied(ctx)
+			}
 			return nil, err
 		}
+		// ACL is the last interceptor on both chains, so admission here is the
+		// call reaching its handler. It is set here, not in doACLCheck, because
+		// the skipped-authentication return admits too.
+		setHandlerReached(ctx)
 		return next(ctx, req)
 	}
 }
@@ -151,11 +160,11 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 	// workspace BEFORE publishing them on the AuthContext. Project, instance,
 	// and database ownership is already validated in populateRawResources via
 	// workspace-filtered store lookups; here we validate workspace resources.
-	// Publishing only validated entries matters on the internal MCP chain,
-	// where the audit interceptor runs outside ACL and derives a denied row's
-	// parents from Resources — an entry that failed this check must never
-	// become an audit parent (the denial would be filed under the foreign
-	// workspace the request named, not under the caller).
+	// Publishing only validated entries matters because the audit interceptor
+	// runs outside ACL and derives a refused call's parents from Resources —
+	// an entry that failed this check must never become an audit parent (the
+	// refusal would be filed under the foreign workspace the request named, not
+	// under the caller).
 	// Runs after authentication so unauthenticated requests get 401 first,
 	// preventing resource existence probing.
 	for _, resource := range resources {
@@ -367,13 +376,6 @@ func resolveRawResourceWithArchivedProject(ctx context.Context, stores *store.St
 
 	parts := strings.Split(name, "/")
 	route := getResourceRoute(parts)
-	if allowArchivedProject && route == (resourceRoute{projectCollection}) {
-		projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
-		if err != nil {
-			return nil, err
-		}
-		return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
-	}
 	if allowArchivedProject && route == (resourceRoute{projectCollection, instanceCollection}) {
 		return resolveProjectInstanceResourceForLifecycle(ctx, stores, parts)
 	}
@@ -590,8 +592,7 @@ func resolveProjectInstanceResourceForLifecycle(ctx context.Context, stores *sto
 
 func allowsArchivedProjectResourceResolution(method string) bool {
 	return method == v1connect.InstanceServiceDeleteInstanceProcedure ||
-		method == v1connect.InstanceServiceUndeleteInstanceProcedure ||
-		method == v1connect.InstanceServicePrepareSampleProjectInstanceProcedure
+		method == v1connect.InstanceServiceUndeleteInstanceProcedure
 }
 
 func getResourceFromRequest(ctx context.Context, request any, method string) ([]string, error) {

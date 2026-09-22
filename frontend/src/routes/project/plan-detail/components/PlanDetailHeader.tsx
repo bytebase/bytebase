@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   createPlanWithDraftReview,
   DraftReviewIssueCreationError,
@@ -582,7 +583,8 @@ export function PlanDetailHeader() {
           {/* Terminal status (Closed / Deployed) sits at the far left, before
               the title — a state badge, not an action. */}
           <PlanLifecycleStamp state={lifecycle} />
-          <input
+          <Input
+            size="md"
             ref={titleInputRef}
             className={cn(
               "h-9 min-w-0 flex-1 bg-transparent text-xl! font-bold text-main outline-hidden",

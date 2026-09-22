@@ -20,7 +20,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetBody,
@@ -415,16 +421,23 @@ export function DataExportButton({
                   <label className="text-sm text-control">
                     {t("export-data.export-format")}
                   </label>
-                  <RadioGroup
+                  <Select
                     value={String(format)}
-                    onValueChange={(v) => setFormat(Number(v) as ExportFormat)}
+                    onValueChange={(value) => {
+                      if (value) setFormat(Number(value) as ExportFormat);
+                    }}
                   >
-                    {supportFormats.map((fmt) => (
-                      <RadioGroupItem key={fmt} value={String(fmt)}>
-                        {ExportFormat[fmt]}
-                      </RadioGroupItem>
-                    ))}
-                  </RadioGroup>
+                    <SelectTrigger className="w-full">
+                      <SelectValue>{ExportFormat[format]}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {supportFormats.map((fmt) => (
+                        <SelectItem key={fmt} value={String(fmt)}>
+                          {ExportFormat[fmt]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {supportPassword && (

@@ -42,6 +42,7 @@ import { ResourceIdField } from "@/components/ResourceIdField";
 import { RouterLink } from "@/components/RouterLink";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ColorSwatchInput } from "@/components/ui/color-input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -62,6 +63,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { useEnvironmentList } from "@/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
@@ -104,29 +106,22 @@ import {
 function ToggleSwitch({
   checked,
   disabled,
+  ariaLabel,
   onChange,
 }: {
   checked: boolean;
   disabled?: boolean;
+  ariaLabel: string;
   onChange: (value: boolean) => void;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
+    <Switch
       disabled={disabled}
-      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-        checked ? "bg-accent" : "bg-control-bg-hover"
-      }`}
-      onClick={() => onChange(!checked)}
-    >
-      <span
-        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm transition-transform ${
-          checked ? "translate-x-4" : "translate-x-0"
-        }`}
-      />
-    </button>
+      checked={checked}
+      size="md"
+      aria-label={ariaLabel}
+      onCheckedChange={onChange}
+    />
   );
 }
 
@@ -251,17 +246,19 @@ function RolloutPolicyConfig({
             {rolloutPolicy.roles.map((role) => (
               <span
                 key={role}
-                className="inline-flex items-center gap-x-1 rounded-xs bg-control-bg px-2 py-1 text-sm"
+                className="inline-flex h-7 items-center gap-x-1 rounded-xs bg-control-bg px-2 text-sm"
               >
                 {displayPolicyRoleTitle(role)}
                 {canUpdatePolicy && (
-                  <button
+                  <Button
+                    appearance="secondary"
+                    size="xs"
                     type="button"
                     className="text-control-placeholder hover:text-control-light-hover"
                     onClick={() => removeRole(role)}
                   >
                     <X className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 )}
               </span>
             ))}
@@ -309,6 +306,7 @@ function RolloutPolicyConfig({
             <ToggleSwitch
               checked={rolloutPolicy.automatic}
               disabled={!canUpdatePolicy}
+              ariaLabel={t("policy.rollout.auto")}
               onChange={toggleAutomatic}
             />
             <div className="flex flex-col">
@@ -434,6 +432,7 @@ function SQLReviewSectionInner(
             <ToggleSwitch
               checked={enforce}
               disabled={!canUpdateReviewConfig}
+              ariaLabel={pendingPolicy.name}
               onChange={setEnforce}
             />
             <div className="flex items-center gap-x-1">
@@ -449,7 +448,9 @@ function SQLReviewSectionInner(
                 {pendingPolicy.name}
               </RouterLink>
               {canUpdatePolicy && (
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   type="button"
                   className="p-0.5 text-control-placeholder hover:text-control-light-hover"
                   onClick={() => {
@@ -458,7 +459,7 @@ function SQLReviewSectionInner(
                   }}
                 >
                   <X className="w-4 h-4" />
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -727,16 +728,11 @@ function EnvironmentDetail({
           <FormField
             title={
               <span className="flex items-center gap-x-2">
-                <input
-                  type="color"
+                <ColorSwatchInput
                   value={editColor}
                   disabled={!canEdit}
-                  onChange={(e) => onColorChange(e.target.value)}
-                  className={cn(
-                    "size-6 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
-                    "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
-                    "cursor-pointer"
-                  )}
+                  onChange={onColorChange}
+                  className={cn("size-6", "cursor-pointer")}
                 />
                 <span>
                   {t("common.environment-name")}
@@ -776,7 +772,7 @@ function EnvironmentDetail({
             }
           >
             <label className="inline-flex items-center gap-x-2 cursor-pointer">
-              <Checkbox
+              <Switch
                 checked={editProtected}
                 disabled={!canEdit}
                 onCheckedChange={(checked) => setEditProtected(checked)}
@@ -1033,15 +1029,10 @@ function CreateSheet({
             <FormField
               title={
                 <span className="flex items-center gap-x-2">
-                  <input
-                    type="color"
+                  <ColorSwatchInput
                     value={color}
-                    onChange={(e) => onColorChange(e.target.value)}
-                    className={cn(
-                      "size-6 shrink-0 appearance-none rounded-xs border border-control-border bg-transparent p-0",
-                      "[&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:rounded-xs [&::-webkit-color-swatch]:border-0 [&::-moz-color-swatch]:rounded-xs [&::-moz-color-swatch]:border-0",
-                      "cursor-pointer"
-                    )}
+                    onChange={onColorChange}
+                    className={cn("size-6", "cursor-pointer")}
                   />
                   <span>
                     {t("common.environment-name")}
@@ -1086,7 +1077,7 @@ function CreateSheet({
               }
             >
               <label className="inline-flex items-center gap-x-2 cursor-pointer">
-                <Checkbox
+                <Switch
                   checked={isProtected}
                   onCheckedChange={(checked) => setIsProtected(checked)}
                 />
@@ -1175,7 +1166,9 @@ function SortableEnvironmentRow({
         <span className="textinfo">{index + 1}.</span>
         <EnvironmentLabel environment={env} />
       </div>
-      <button
+      <Button
+        appearance="secondary"
+        size="xs"
         type="button"
         className="cursor-grab active:cursor-grabbing touch-none p-1 text-control-light hover:text-control"
         aria-label="Drag to reorder"
@@ -1183,7 +1176,7 @@ function SortableEnvironmentRow({
         {...listeners}
       >
         <GripVertical className="size-5" />
-      </button>
+      </Button>
     </div>
   );
 }

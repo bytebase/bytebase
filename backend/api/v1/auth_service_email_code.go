@@ -112,7 +112,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
-	common.SetAuditWorkspaceID(ctx, workspaceID)
+	setAuditWorkspaceID(ctx, workspaceID)
 	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
 	if err != nil {
 		return nil, err
@@ -329,7 +329,7 @@ func (s *AuthService) parseAndSetAuditWorkspace(ctx context.Context, email strin
 		})
 		if accountErr == nil && account != nil && account.Type == storepb.PrincipalType_END_USER && !account.MemberDeleted &&
 			workspaceErr == nil && workspace != nil {
-			common.SetAuditWorkspaceID(ctx, workspace.ResourceID)
+			setAuditWorkspaceID(ctx, workspace.ResourceID)
 		}
 	}
 	return workspaceID, nil

@@ -201,7 +201,9 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 		}
 		if !ok {
 			// Same code and message as a missing database: a different one would
-			// tell the caller a database exists in a project they cannot see.
+			// tell the caller a database exists in a project they cannot see. The
+			// mark records the refusal the caller is not told about.
+			setPermissionDenied(ctx)
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 		}
 		database, err := s.convertToDatabase(ctx, databaseMessage)
@@ -299,7 +301,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent))
 		}
 		find.InstanceID = &instanceID
 	} else if projectID, err := common.GetProjectID(req.Msg.Parent); err == nil {
@@ -318,7 +320,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
 		}
 		find.ProjectID = &projectID
 	} else if _, err := common.GetWorkspaceID(req.Msg.Parent); err == nil {
@@ -327,7 +329,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.DatabasesList))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.DatabasesList))
 		}
 	} else if instanceID, err := common.GetInstanceID(req.Msg.Parent); err == nil {
 		if _, err := s.getInstanceForDatabaseResource(ctx, nil, instanceID); err != nil {
@@ -338,7 +340,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.InstancesGet))
+			return nil, permissionDeniedError(ctx, errors.Errorf("user does not have permission %q", permission.InstancesGet))
 		}
 		find.InstanceID = &instanceID
 	} else {
@@ -1243,7 +1245,26 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	if err != nil {
 		return storepb.Engine_ENGINE_UNSPECIFIED, err
 	}
-	return common.ConvertToParserEngine(rawEngine)
+	return convertToParserEngine(rawEngine)
+}
+
+func convertToParserEngine(e storepb.Engine) (storepb.Engine, error) {
+	switch e {
+	case storepb.Engine_POSTGRES:
+		return storepb.Engine_POSTGRES, nil
+	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+		return storepb.Engine_MYSQL, nil
+	case storepb.Engine_TIDB:
+		return storepb.Engine_TIDB, nil
+	case storepb.Engine_ORACLE:
+		return storepb.Engine_ORACLE, nil
+	case storepb.Engine_MSSQL:
+		return storepb.Engine_MSSQL, nil
+	case storepb.Engine_COCKROACHDB:
+		return storepb.Engine_COCKROACHDB, nil
+	default:
+		return storepb.Engine_ENGINE_UNSPECIFIED, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid engine type %v", e))
+	}
 }
 
 func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store.DatabaseMessage) (*v1pb.Database, error) {

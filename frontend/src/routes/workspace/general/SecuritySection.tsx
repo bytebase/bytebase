@@ -18,9 +18,10 @@ import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/components/PermissionGuard";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { usePlanFeature } from "@/hooks/useAppState";
 import {
   DOMAIN_RESTRICTION_PRODUCT_INTRO,
@@ -304,7 +305,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                 </span>
               </div>
               <label className="flex items-center gap-x-2">
-                <Checkbox
+                <Switch
                   checked={expiration.neverExpire}
                   disabled={!canEdit}
                   onCheckedChange={(checked) =>
@@ -340,7 +341,7 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
             <FormField
               title={
                 <span className="flex items-center gap-x-2">
-                  <Checkbox
+                  <Switch
                     checked={state.enableWatermark}
                     disabled={!canEdit || !hasWatermarkFeature}
                     onCheckedChange={(checked) =>
@@ -408,24 +409,26 @@ export const SecuritySection = forwardRef<SectionHandle, SecuritySectionProps>(
                       className="inline-flex items-center gap-1 rounded-xs bg-control-bg px-2 py-1.5 text-sm"
                     >
                       {domain}
-                      <button
+                      <Button
+                        appearance="secondary"
+                        size="xs"
                         type="button"
                         className="text-control-light hover:text-control disabled:opacity-50"
                         disabled={!canEdit}
                         onClick={() => removeDomain(index)}
                       >
                         <X className="h-3.5 w-3.5" />
-                      </button>
+                      </Button>
                     </span>
                   ))}
                 </div>
 
-                {/* Enforce restriction checkbox */}
+                {/* Enforce restriction toggle */}
                 <div className="w-full flex flex-row justify-between items-center">
                   <FormField
                     title={
                       <div className="flex items-start gap-x-2">
-                        <Checkbox
+                        <Switch
                           aria-describedby={membersRestrictionDescriptionId}
                           aria-labelledby={membersRestrictionLabelId}
                           checked={state.enableRestriction}

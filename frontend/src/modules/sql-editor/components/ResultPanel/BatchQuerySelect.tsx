@@ -323,7 +323,7 @@ export function BatchQuerySelect({
           <Button
             appearance={showEmpty ? "solid" : "secondary"}
             size="sm"
-            className="h-7 px-1.5 mb-2"
+            className="mb-2"
             onClick={() => setShowEmpty(!showEmpty)}
             aria-label={t(
               "sql-editor.batch-query.show-or-hide-empty-query-results"
@@ -461,13 +461,15 @@ function TabButton({
     ...styleProp,
   };
   return (
-    <button
+    <Button
+      appearance="secondary"
+      size="sm"
       type="button"
       ref={ref}
       style={style}
       onClick={onSelect}
       className={cn(
-        "inline-flex shrink-0 items-center gap-x-1 h-7 px-2 rounded-xs text-xs font-medium",
+        "inline-flex shrink-0 items-center gap-x-1 rounded-xs text-xs font-medium",
         "border border-control-border cursor-pointer whitespace-nowrap",
         className
       )}
@@ -491,6 +493,6 @@ function TabButton({
           onClose();
         }}
       />
-    </button>
+    </Button>
   );
 }

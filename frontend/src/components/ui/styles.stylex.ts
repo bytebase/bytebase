@@ -1,5 +1,11 @@
 import * as stylex from "@stylexjs/stylex";
 
+export const tableStyles = stylex.create({
+  cellContent: {
+    minHeight: 24,
+  },
+});
+
 export const controlSize = {
   xs: {
     height: 24,
@@ -216,7 +222,7 @@ const formStyles = stylex.create({
     alignItems: "start",
     columnGap: 16,
     display: "grid",
-    gridTemplateColumns: "160px minmax(0, 1fr)",
+    gridTemplateColumns: "224px minmax(0, 1fr)",
     rowGap: 0,
   },
   fieldControl: {
@@ -229,6 +235,9 @@ const formStyles = stylex.create({
     display: "flex",
     flexDirection: "column",
     rowGap: 24,
+  },
+  fieldGroupCompact: {
+    rowGap: 16,
   },
   fieldHeader: {
     display: "flex",
@@ -318,8 +327,13 @@ export function formControlRowStyle() {
   return formStyles.controlRow;
 }
 
-export function formFieldGroupStyle() {
-  return formStyles.fieldGroup;
+export function formFieldGroupStyle(
+  density: "default" | "compact" = "default"
+) {
+  return [
+    formStyles.fieldGroup,
+    density === "compact" && formStyles.fieldGroupCompact,
+  ];
 }
 
 export function formFieldHeaderStyle() {

@@ -62,6 +62,19 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *connect.
 	}
 	limitPlusOne := offset.limit + 1
 
+	// This search writes its own audit row, so an unbounded offset traversal
+	// never reaches the end of the set: newest-first it returns the same row
+	// forever, oldest-first the set grows at the rate the offset advances. The
+	// first page pins the database's clock and every page holds to it.
+	if offset.createTimeUpperBound == nil {
+		traversalStart, err := s.store.AuditLogTraversalStart(ctx)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		offset.createTimeUpperBound = timestamppb.New(traversalStart)
+	}
+	filterQ = store.ApplyCreateTimeUpperBound(filterQ, offset.createTimeUpperBound.AsTime())
+
 	var project *string
 	if request.Msg.Parent != "" && request.Msg.Parent != "projects/-" {
 		project = &request.Msg.Parent
@@ -113,12 +126,12 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *connect.
 	}
 
 	result := &v1pb.QueryResult{
-		ColumnNames: []string{"time", "user", "method", "severity", "resource", "request", "response", "status"},
+		ColumnNames: []string{"time", "actor", "method", "severity", "resource", "request", "response", "status"},
 	}
 	for _, auditLog := range searchAuditLogsResult.Msg.AuditLogs {
 		queryRow := &v1pb.QueryRow{Values: []*v1pb.RowValue{
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.CreateTime.AsTime().Format(time.RFC3339)}},
-			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.User}},
+			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Actor}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Method}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Severity.String()}},
 			{Kind: &v1pb.RowValue_StringValue{StringValue: auditLog.Resource}},
@@ -166,7 +179,7 @@ func convertToAuditLog(l *store.AuditLog) *v1pb.AuditLog {
 	return &v1pb.AuditLog{
 		Name:          fmt.Sprintf("%s/%s%s", l.Payload.Parent, common.AuditLogPrefix, l.ResourceID),
 		CreateTime:    timestamppb.New(l.CreatedAt),
-		User:          l.Payload.User,
+		Actor:         l.Payload.User,
 		Method:        l.Payload.Method,
 		Severity:      convertToAuditLogSeverity(l.Payload.Severity),
 		Resource:      l.Payload.Resource,

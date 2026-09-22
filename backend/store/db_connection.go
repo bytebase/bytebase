@@ -15,8 +15,8 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/bytebase/bytebase/backend/store/dbauth"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // DBConnectionManager manages database connections with support for dynamic updates.

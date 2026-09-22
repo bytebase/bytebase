@@ -131,7 +131,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 			return nil, err
 		}
 		s.stopper = append(s.stopper, stopper)
-		pgURL = fmt.Sprintf("host=%s port=%d user=bb database=bb", common.GetPostgresSocketDir(), profile.DatastorePort)
+		pgURL = fmt.Sprintf("host=%s port=%d user=bb database=bb", postgres.GetPostgresSocketDir(), profile.DatastorePort)
 	} else {
 		pgURL = profile.PgURL
 	}
@@ -245,7 +245,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService, productMetrics)
 
 	s.reviewRunScheduler = reviewrun.NewScheduler(stores, s.bus, profile, s.licenseService, productMetrics)
-	s.reviewRunScheduler.Register(store.ReviewRunTypeRule, reviewrun.NewRuleExecutor(stores, sheetManager, s.dbFactory))
+	s.reviewRunScheduler.Register(store.ReviewRunTypeRule, reviewrun.NewRuleExecutor(stores))
 	s.reviewRunScheduler.Register(store.ReviewRunTypeGuideline, reviewrun.NewGuidelineExecutor())
 	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 

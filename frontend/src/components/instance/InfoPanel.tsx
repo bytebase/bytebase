@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import {
   Sheet,
@@ -108,12 +109,15 @@ function PanelHeader({
       <h3 className="min-w-0 truncate text-sm font-semibold text-main">
         {title}
       </h3>
-      <button
-        className="text-control-light hover:text-main p-0.5 rounded-xs"
+      <Button
+        type="button"
+        appearance="secondary"
+        size="xs"
+        className="text-control-light hover:text-main"
         onClick={onClose}
       >
         <X className="size-4" />
-      </button>
+      </Button>
     </div>
   );
 }

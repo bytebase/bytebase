@@ -183,13 +183,27 @@ func convertToIssueComments(issueName string, issueComments []*store.IssueCommen
 	return res
 }
 
+// convertToIssueCommentReviewMetadata casts across the mirrored store and v1
+// enums; TestReviewRuleTypeEnumsMirror holds the rule numbering together.
+func convertToIssueCommentReviewMetadata(metadata *storepb.IssueCommentPayload_ReviewMetadata) *v1pb.IssueComment_ReviewMetadata {
+	return &v1pb.IssueComment_ReviewMetadata{
+		RunType:  convertToReviewRunType(metadata.RunType.String()),
+		RuleType: v1pb.ReviewRuleType(metadata.RuleType),
+		Priority: v1pb.IssueComment_ReviewMetadata_Priority(metadata.Priority),
+		Targets:  metadata.Targets,
+	}
+}
+
 func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1pb.IssueComment {
 	r := &v1pb.IssueComment{
 		Comment:    ic.Payload.Comment,
 		CreateTime: timestamppb.New(ic.CreatedAt),
 		UpdateTime: timestamppb.New(ic.UpdatedAt),
 		Name:       common.FormatIssueComment(issueName, ic.ResourceID),
-		Creator:    common.FormatUserEmail(ic.CreatorEmail),
+	}
+	// A review result has no creator; its review_metadata names the reviewer.
+	if ic.CreatorEmail != "" {
+		r.Creator = common.FormatUserEmail(ic.CreatorEmail)
 	}
 
 	if ic.ParentID != nil {
@@ -210,6 +224,9 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 			StartPosition: convertToPosition(anchor.StartPosition),
 			EndPosition:   convertToPosition(anchor.EndPosition),
 		}
+	}
+	if metadata := ic.Payload.GetReviewMetadata(); metadata != nil {
+		r.ReviewMetadata = convertToIssueCommentReviewMetadata(metadata)
 	}
 
 	switch e := ic.Payload.Event.(type) {

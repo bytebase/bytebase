@@ -15,6 +15,7 @@ import {
   navigateToPath,
   resolvePath,
 } from "@/app/router/navigation";
+import { saveWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
 import {
   LoginRequestSchema,
   SendEmailLoginCodeRequestSchema,
@@ -204,6 +205,9 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
         .fetchWorkspaceIamPolicy(true)
         .catch(() => undefined);
       if (get().enableOnboarding()) {
+        if (get().isSaaSMode()) {
+          saveWorkspaceSetupFinished(user?.workspace ?? "", false);
+        }
         navigateByName(AUTH_SETUP_MODULE, {
           query: { redirect: nextPage },
         });
@@ -245,6 +249,9 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     set({ authSessionKey: uniqueId() });
 
     if (get().enableOnboarding()) {
+      if (get().isSaaSMode()) {
+        saveWorkspaceSetupFinished(user?.workspace ?? "", false);
+      }
       navigateByName(AUTH_SETUP_MODULE, { replace: true });
       return;
     }

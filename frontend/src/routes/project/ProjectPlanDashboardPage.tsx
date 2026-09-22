@@ -815,7 +815,9 @@ function DatabaseAndGroupSelector({
   return (
     <div className="flex flex-col gap-y-3">
       <div className="flex border-b border-control-border">
-        <button
+        <Button
+          appearance="secondary"
+          size="md"
           type="button"
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
@@ -829,8 +831,10 @@ function DatabaseAndGroupSelector({
             <DatabaseIcon className="size-4" />
             {t("common.databases")}
           </span>
-        </button>
-        <button
+        </Button>
+        <Button
+          appearance="secondary"
+          size="md"
           type="button"
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
@@ -844,7 +848,7 @@ function DatabaseAndGroupSelector({
             <FolderTree className="size-4" />
             {t("common.database-group")}
           </span>
-        </button>
+        </Button>
       </div>
 
       {changeSource === "DATABASE" ? (

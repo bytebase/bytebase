@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
 	"github.com/pkg/errors"
@@ -53,7 +52,8 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
 	loopBoundary := min(len(spans), len(results))
 	for i := 0; i < loopBoundary; i++ {
-		if strings.HasPrefix(strings.TrimSpace(results[i].Statement), "EXPLAIN") {
+		// A plan is not row data, so it has no columns to trace to a masking policy.
+		if parserbase.StartsWithExplain(results[i].Statement) {
 			continue
 		}
 		if results[i].Error == "" && spans[i].FunctionNotSupportedError != nil {

@@ -159,7 +159,7 @@ func (s *AuthService) resolveAuthenticationWorkspaceID(ctx context.Context, work
 		}
 	}
 	if workspaceID != "" {
-		common.SetAuditWorkspaceID(ctx, workspaceID)
+		setAuditWorkspaceID(ctx, workspaceID)
 	}
 	return workspaceID, nil
 }
@@ -241,6 +241,9 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	if err != nil {
 		return nil, err
 	}
+	if err := rejectWebLoginForNonEndUser(request.Web, loginUser.Type); err != nil {
+		return nil, err
+	}
 
 	// 2. Reject deactivated users before any workspace provisioning.
 	if loginUser.MemberDeleted {
@@ -265,7 +268,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 		}
 	}
-	common.SetAuditWorkspaceID(ctx, workspaceID)
+	setAuditWorkspaceID(ctx, workspaceID)
 
 	// 4. Post-auth checks (deleted, domain, license). The fetched restriction
 	// is reused by needResetPassword below to spare a duplicate settings read.
@@ -290,6 +293,13 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	// 7. Build response and finalize
 	requireResetPassword := loginMethod.requiresPasswordReset() && s.needResetPassword(ctx, loginUser, workspaceID, restriction)
 	return s.finalizeLogin(ctx, req.Header(), request.Web, loginUser, token, workspaceID, requireResetPassword)
+}
+
+func rejectWebLoginForNonEndUser(web bool, principalType storepb.PrincipalType) error {
+	if web && principalType != storepb.PrincipalType_END_USER {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
+	}
+	return nil
 }
 
 func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage, workspaceID string, restriction *v1pb.Restriction) bool {
@@ -377,7 +387,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
 	// Announce it on every exit path so denied signups still produce audit entries.
-	common.SetAuditWorkspaceID(ctx, workspaceID)
+	setAuditWorkspaceID(ctx, workspaceID)
 
 	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
 	if err != nil {
@@ -949,7 +959,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find workspace"))
 	}
 	if ws == nil {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("not a member of workspace %q", workspaceID))
+		return nil, permissionDeniedError(ctx, errors.Errorf("not a member of workspace %q", workspaceID))
 	}
 
 	// Validate the target workspace's sign-in policies.
@@ -1112,9 +1122,6 @@ func (s *AuthService) finalizeLogin(ctx context.Context, header http.Header, web
 	resp := connect.NewResponse(response)
 
 	if web {
-		if user.Type != storepb.PrincipalType_END_USER {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
-		}
 		// A fresh session: the refresh token gets the full refresh duration.
 		d := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID)
 		if err := s.issueSessionCookies(ctx, resp.Header(), header.Get("Origin"), user.Email, workspaceID, token, time.Now().Add(d)); err != nil {
@@ -1197,7 +1204,7 @@ func (s *AuthService) ExchangeToken(ctx context.Context, req *connect.Request[v1
 	// Announce the workspace as soon as we know it (from the WI record) so
 	// that a deactivated-WI attempt — which compliance wants to see — still
 	// lands in the audit log.
-	common.SetAuditWorkspaceID(ctx, wi.Workspace)
+	setAuditWorkspaceID(ctx, wi.Workspace)
 	if wi.MemberDeleted {
 		return nil, connect.NewError(connect.CodeUnauthenticated,
 			errors.New("workload identity has been deactivated"))

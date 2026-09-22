@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	advisorcode "github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -88,7 +88,7 @@ func checkStmtForOrderByRand(ostmt OmniStmt, level storepb.Advice_Status, title 
 				Code:          advisorcode.InsertUseOrderByRand.Int32(),
 				Title:         title,
 				Content:       fmt.Sprintf("\"%s\" uses ORDER BY RAND in the INSERT statement", ostmt.TrimmedText()),
-				StartPosition: common.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
+				StartPosition: base.ConvertANTLRLineToPosition(ostmt.FirstTokenLine()),
 			}
 		}
 	}

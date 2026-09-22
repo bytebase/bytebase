@@ -410,6 +410,38 @@ func TestQueryConnExplainFormat(t *testing.T) {
 	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
 	require.Positive(t, plan[0].Plan.TotalCost)
 	require.Positive(t, plan[0].Plan.PlanRows)
+
+	// A statement that already asks for a plan is planned once: the request's
+	// format replaces the caller's EXPLAIN instead of wrapping it, which the
+	// server would reject as a syntax error.
+	planOfPlan, err := driver.QueryConn(ctx, conn, "EXPLAIN (FORMAT TEXT) "+statement, db.QueryContext{
+		Explain:              true,
+		Limit:                5000,
+		MaximumSQLResultSize: 1 << 30,
+		Option:               &v1pb.QueryOption{ExplainFormat: v1pb.QueryOption_JSON},
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, planOfPlan)
+	require.Empty(t, planOfPlan[0].GetError())
+	require.NoError(t, json.Unmarshal([]byte(firstStringValue(t, planOfPlan)), &plan))
+	require.Len(t, plan, 1)
+	require.Equal(t, "plan_target", plan[0].Plan.RelationName)
+}
+
+func TestTypedExplainPlan(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		statement string
+		want      *v1pb.QueryResult_QueryPlan
+	}{
+		{statement: "SELECT 1"},
+		{statement: "EXPLAIN SELECT 1", want: &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_TEXT}},
+		{statement: "EXPLAIN (FORMAT JSON) SELECT 1", want: &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_JSON}},
+		{statement: "EXPLAIN (ANALYZE, FORMAT XML) SELECT 1", want: &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_XML, Executed: true}},
+		{statement: "EXPLAIN (FORMAT YAML) SELECT 1", want: &v1pb.QueryResult_QueryPlan{Format: v1pb.QueryOption_YAML}},
+	} {
+		require.Equal(t, tc.want, typedExplainPlan(tc.statement), tc.statement)
+	}
 }
 
 func firstStringValue(t *testing.T, results []*v1pb.QueryResult) string {

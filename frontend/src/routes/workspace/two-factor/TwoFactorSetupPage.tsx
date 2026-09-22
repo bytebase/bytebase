@@ -334,6 +334,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
           <Alert
             variant={isExpired || isExpiringSoon ? "error" : "warning"}
             showIcon={false}
+            role="none"
             className="w-full p-3"
           >
             <div className="flex items-center justify-between">

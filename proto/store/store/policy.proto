@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/type/expr.proto";
+import "store/review_rule.proto";
 
 option go_package = "generated-go/store";
 
@@ -15,6 +16,7 @@ message Policy {
     MASKING_RULE = 4;
     IAM = 5;
     TAG = 6;
+    REVIEW_RULE = 7;
   }
 
   enum Resource {
@@ -23,6 +25,12 @@ message Policy {
     ENVIRONMENT = 2;
     PROJECT = 3;
   }
+}
+
+// ReviewRulePolicy is the standard review rule switch. The nearest policy
+// wins: the project's if it has one, else the workspace's, else every rule.
+message ReviewRulePolicy {
+  repeated ReviewRuleType rules = 1;
 }
 
 message RolloutPolicy {

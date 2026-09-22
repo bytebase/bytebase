@@ -3,11 +3,9 @@ package common
 
 import (
 	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"math"
 	"math/big"
-	"net/url"
 	"reflect"
 	"regexp"
 	"strings"
@@ -16,8 +14,6 @@ import (
 	"github.com/nyaruka/phonenumbers/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 const (
@@ -78,21 +74,6 @@ func RandomString(n int) (string, error) {
 	return sb.String(), nil
 }
 
-// HasPrefixes returns true if the string s has any of the given prefixes.
-func HasPrefixes(src string, prefixes ...string) bool {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(src, prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-// GetPostgresSocketDir returns the postgres socket directory of Bytebase.
-func GetPostgresSocketDir() string {
-	return "/tmp"
-}
-
 // TruncateString truncates the string to have a maximum length of `limit` characters.
 func TruncateString(str string, limit int) (string, bool) {
 	chars := 0
@@ -104,80 +85,6 @@ func TruncateString(str string, limit int) (string, bool) {
 		chars++
 	}
 	return str, false
-}
-
-// TruncateStringWithDescription tries to truncate the string and append "... (view details in Bytebase)" if truncated.
-func TruncateStringWithDescription(str string) string {
-	const limit = 450
-	if truncatedStr, truncated := TruncateString(str, limit); truncated {
-		return fmt.Sprintf("%s... (view details in Bytebase)", truncatedStr)
-	}
-	return str
-}
-
-// Obfuscate obfuscates a string with a seed string.
-func Obfuscate(src, seed string) string {
-	srcBytes, seedBytes := []byte(src), []byte(seed)
-	obfuscated := make([]byte, len(srcBytes))
-	for i, b := range srcBytes {
-		obfuscated[i] = b ^ seedBytes[i%len(seedBytes)]
-	}
-	return base64.StdEncoding.EncodeToString(obfuscated)
-}
-
-// Unobfuscate unobfuscates a string with a seed string.
-func Unobfuscate(dst, seed string) (string, error) {
-	obfuscated, err := base64.StdEncoding.DecodeString(dst)
-	if err != nil {
-		return "", err
-	}
-	unobfuscated, seedBytes := make([]byte, len(obfuscated)), []byte(seed)
-	for i, b := range obfuscated {
-		unobfuscated[i] = b ^ seedBytes[i%len(seedBytes)]
-	}
-	return string(unobfuscated), nil
-}
-
-// NormalizeExternalURL will format the external url.
-func NormalizeExternalURL(externalURL string) (string, error) {
-	r := strings.TrimSpace(externalURL)
-	r = strings.TrimSuffix(r, "/")
-	u, err := url.Parse(r)
-	if err != nil {
-		return "", errors.Wrapf(err, "%s malformed", externalURL)
-	}
-	scheme := strings.ToLower(u.Scheme)
-	if scheme != "http" && scheme != "https" {
-		return "", errors.Errorf("%s must start with http:// or https://", externalURL)
-	}
-	if u.Host == "" {
-		return "", errors.Errorf("%s must name a host", externalURL)
-	}
-	if u.User != nil {
-		return "", errors.Errorf("%s must not carry userinfo", externalURL)
-	}
-	if u.RawQuery != "" || u.ForceQuery {
-		return "", errors.Errorf("%s must not carry a query string", externalURL)
-	}
-	if u.Fragment != "" || u.RawFragment != "" {
-		return "", errors.Errorf("%s must not carry a fragment", externalURL)
-	}
-
-	host := strings.ToLower(u.Host)
-	port := u.Port()
-	if port != "" {
-		// The external URL is used as the redirectURL in the get token process of OAuth, and the
-		// RedirectURL needs to be consistent with the RedirectURL in the get code process.
-		// The frontend gets it through window.location.origin in the get code
-		// process, so port 80/443 need to be cropped.
-		if (scheme == "http" && port == "80") || (scheme == "https" && port == "443") {
-			host = strings.ToLower(u.Hostname())
-			if strings.Contains(host, ":") {
-				host = "[" + host + "]"
-			}
-		}
-	}
-	return scheme + "://" + host + strings.TrimSuffix(u.EscapedPath(), "/"), nil
 }
 
 // ValidatePhone validates the phone number.
@@ -256,10 +163,6 @@ func SanitizeUTF8String(s string) string {
 	return b.String()
 }
 
-func FormatMaximumSQLResultSizeMessage(limit int64) string {
-	return fmt.Sprintf("Output of query exceeds max allowed output size of %dMB", limit/1024/1024)
-}
-
 func IsNil(val any) bool {
 	if val == nil {
 		return true
@@ -292,89 +195,4 @@ func Uniq[T comparable](array []T) []T {
 	}
 
 	return res
-}
-
-// SanitizeUTF8Message replaces invalid UTF-8 byte sequences in every
-// populated string field of m, recursing into nested messages, repeated
-// fields, and maps (both keys and values). proto3 requires string fields to
-// hold valid UTF-8, so a single raw byte sequence smuggled in by an external
-// system (e.g. a database driver passing through unconverted bytes) makes
-// proto.Marshal fail for the entire message. Callers that assemble metadata
-// from such sources sanitize the finished message once here instead of
-// chasing every scan site.
-func SanitizeUTF8Message(m proto.Message) {
-	if m == nil {
-		return
-	}
-	sanitizeUTF8Value(m.ProtoReflect())
-}
-
-func sanitizeUTF8Value(m protoreflect.Message) {
-	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
-		switch {
-		case fd.IsMap():
-			sanitizeUTF8Map(fd, v.Map())
-		case fd.IsList():
-			list := v.List()
-			switch fd.Kind() {
-			case protoreflect.StringKind:
-				for i := 0; i < list.Len(); i++ {
-					s := list.Get(i).String()
-					if !utf8.ValidString(s) {
-						list.Set(i, protoreflect.ValueOfString(SanitizeUTF8String(s)))
-					}
-				}
-			case protoreflect.MessageKind, protoreflect.GroupKind:
-				for i := 0; i < list.Len(); i++ {
-					sanitizeUTF8Value(list.Get(i).Message())
-				}
-			default:
-			}
-		case fd.Kind() == protoreflect.StringKind:
-			if s := v.String(); !utf8.ValidString(s) {
-				m.Set(fd, protoreflect.ValueOfString(SanitizeUTF8String(s)))
-			}
-		case fd.Kind() == protoreflect.MessageKind || fd.Kind() == protoreflect.GroupKind:
-			sanitizeUTF8Value(v.Message())
-		default:
-		}
-		return true
-	})
-}
-
-func sanitizeUTF8Map(fd protoreflect.FieldDescriptor, mp protoreflect.Map) {
-	valueKind := fd.MapValue().Kind()
-	keyIsString := fd.MapKey().Kind() == protoreflect.StringKind
-
-	type rekey struct {
-		oldKey protoreflect.MapKey
-		newKey protoreflect.MapKey
-		value  protoreflect.Value
-	}
-	var rekeys []rekey
-	mp.Range(func(k protoreflect.MapKey, v protoreflect.Value) bool {
-		switch valueKind {
-		case protoreflect.StringKind:
-			if s := v.String(); !utf8.ValidString(s) {
-				mp.Set(k, protoreflect.ValueOfString(SanitizeUTF8String(s)))
-			}
-		case protoreflect.MessageKind, protoreflect.GroupKind:
-			sanitizeUTF8Value(v.Message())
-		default:
-		}
-		if keyIsString {
-			if s := k.String(); !utf8.ValidString(s) {
-				rekeys = append(rekeys, rekey{
-					oldKey: k,
-					newKey: protoreflect.ValueOfString(SanitizeUTF8String(s)).MapKey(),
-					value:  mp.Get(k),
-				})
-			}
-		}
-		return true
-	})
-	for _, r := range rekeys {
-		mp.Clear(r.oldKey)
-		mp.Set(r.newKey, r.value)
-	}
 }

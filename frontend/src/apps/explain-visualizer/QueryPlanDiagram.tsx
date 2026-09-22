@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 // standalone entry never loads. `minmax` itself is a leaf math helper.
 import { minmax } from "@/utils/math";
 import { PLAN_MINI_MAP_BOX, PlanMiniMap } from "./PlanMiniMap";
+import { type QueryPlanTranslate, useQueryPlanTranslation } from "./plan-i18n";
 import {
   layoutPlan,
   PLAN_IDENTITY_VIEWPORT,
@@ -98,10 +99,18 @@ const HIGHLIGHT_CLASS: Record<Exclude<PlanHighlightMode, "off">, string> = {
 };
 
 /** The estimates a card prints, leaving out any the plan does not carry. */
-function planCardMetrics(node: PlanNode, tree: PlanTree): string {
+function planCardMetrics(
+  node: PlanNode,
+  tree: PlanTree,
+  translate: QueryPlanTranslate
+): string {
   return [
-    tree.estimates.cost ? `cost ${formatPlanCost(node.totalCost)}` : undefined,
-    tree.estimates.rows ? `rows ${formatPlanCount(node.rows)}` : undefined,
+    tree.estimates.cost
+      ? translate("diagram.cost", { cost: formatPlanCost(node.totalCost) })
+      : undefined,
+    tree.estimates.rows
+      ? translate("diagram.rows", { count: formatPlanCount(node.rows) })
+      : undefined,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -158,9 +167,16 @@ function PlanCollapseToggle({
   hiddenCount: number;
   onToggle: () => void;
 }) {
+  const translate = useQueryPlanTranslation();
   const label = collapsed
-    ? `Expand ${formatPlanCount(hiddenCount)} nodes under ${node.nodeType}`
-    : `Collapse ${formatPlanCount(hiddenCount)} nodes under ${node.nodeType}`;
+    ? translate("diagram.expand", {
+        count: formatPlanCount(hiddenCount),
+        node: node.nodeType,
+      })
+    : translate("diagram.collapse", {
+        count: formatPlanCount(hiddenCount),
+        node: node.nodeType,
+      });
   return (
     <Tooltip content={label}>
       <Button
@@ -198,6 +214,7 @@ export function QueryPlanDiagram({
   revealId,
   onRevealed,
 }: Props) {
+  const translate = useQueryPlanTranslation();
   const layout = useMemo(
     () => layoutPlan(tree.root, collapsedIds),
     [tree, collapsedIds]
@@ -382,11 +399,15 @@ export function QueryPlanDiagram({
           strokeLinecap="round"
         >
           {edge.target.rows === undefined ? null : (
-            <title>{`${formatPlanCount(edge.target.rows)} estimated rows`}</title>
+            <title>
+              {translate("diagram.estimated-rows", {
+                count: formatPlanCount(edge.target.rows),
+              })}
+            </title>
           )}
         </path>
       )),
-    [layout, tree]
+    [layout, tree, translate]
   );
 
   const cards = useMemo(
@@ -394,7 +415,7 @@ export function QueryPlanDiagram({
       layout.nodes.map((placed) => {
         const { node, x, y } = placed;
         const selected = node.id === selectedId;
-        const metrics = planCardMetrics(node, tree);
+        const metrics = planCardMetrics(node, tree, translate);
         const share = planSelfCostShare(node, tree);
         const warnings = node.warnings.map((warning) => warning.title);
         const collapsed = collapsedIds.has(node.id);
@@ -424,11 +445,15 @@ export function QueryPlanDiagram({
                 node.subject,
                 metrics,
                 tree.estimates.cost
-                  ? `${formatPlanShare(share)} of plan cost`
+                  ? translate("diagram.plan-cost-share", {
+                      share: formatPlanShare(share),
+                    })
                   : undefined,
                 ...warnings,
                 collapsed
-                  ? `${formatPlanCount(subtreeCount)} nodes hidden`
+                  ? translate("diagram.nodes-hidden", {
+                      count: formatPlanCount(subtreeCount),
+                    })
                   : undefined,
               ]
                 .filter(Boolean)
@@ -525,6 +550,7 @@ export function QueryPlanDiagram({
       selectNode,
       panTo,
       onToggleCollapse,
+      translate,
     ]
   );
 
@@ -568,33 +594,33 @@ export function QueryPlanDiagram({
       ) : null}
 
       <div className="absolute right-2 bottom-2 flex items-center gap-1">
-        <Tooltip content="Zoom out">
+        <Tooltip content={translate("diagram.zoom-out")}>
           <Button
             appearance="outline"
             size="xs"
-            aria-label="Zoom out"
+            aria-label={translate("diagram.zoom-out")}
             className="bg-background"
             onClick={() => zoomFromCenter(1 / ZOOM_STEP)}
           >
             <ZoomOut className="size-3.5" />
           </Button>
         </Tooltip>
-        <Tooltip content="Zoom in">
+        <Tooltip content={translate("diagram.zoom-in")}>
           <Button
             appearance="outline"
             size="xs"
-            aria-label="Zoom in"
+            aria-label={translate("diagram.zoom-in")}
             className="bg-background"
             onClick={() => zoomFromCenter(ZOOM_STEP)}
           >
             <ZoomIn className="size-3.5" />
           </Button>
         </Tooltip>
-        <Tooltip content="Fit to view">
+        <Tooltip content={translate("diagram.fit")}>
           <Button
             appearance="outline"
             size="xs"
-            aria-label="Fit to view"
+            aria-label={translate("diagram.fit")}
             className="bg-background"
             onClick={() => placeView("whole")}
           >

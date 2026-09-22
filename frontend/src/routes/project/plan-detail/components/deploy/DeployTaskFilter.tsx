@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { TaskStatusIcon } from "@/components/TaskStatusIcon";
+import { Button } from "@/components/ui/button";
 import type { Stage } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskStatus, TASK_STATUS_PRIORITY } from "@/utils";
@@ -24,10 +25,12 @@ export function DeployTaskFilter({
         if (count <= 0) return null;
         const checked = selectedStatuses.includes(status);
         return (
-          <button
+          <Button
+            appearance="secondary"
+            size="md"
             key={status}
             className={[
-              "inline-flex items-center gap-1 rounded-full border px-2 py-1",
+              "h-auto inline-flex items-center gap-1 rounded-full border px-2 py-1",
               checked
                 ? "border-accent bg-accent/10"
                 : "border-control-border bg-background",
@@ -46,7 +49,7 @@ export function DeployTaskFilter({
               {stringifyTaskStatus(status, t)}
             </span>
             <span className="select-none text-sm font-medium">{count}</span>
-          </button>
+          </Button>
         );
       })}
     </div>

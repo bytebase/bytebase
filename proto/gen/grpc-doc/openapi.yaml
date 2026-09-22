@@ -5923,7 +5923,8 @@ paths:
                      - method: the API name, can be found in the docs. Usually "/bytebase.v1.…", for example "/bytebase.v1.UserService/CreateUser"; entries written outside the v1 API carry their own prefix, such as "/bytebase.mcp.Session/Authorize" or "/bytebase.cli.Recovery/ResetUserPassword". Support "==" operator.
                      - resource: the resource the entry is about, support "==" operator.
                      - severity: support "==" operator, check Severity enum in AuditLog message for values.
-                     - user: the actor, should in "users/{email}" format, support "==" operator.
+                     - actor: the actor, in users/{email}, serviceAccounts/{email}, or
+                       workloadIdentities/{email} format. Support "==" operator.
                      - create_time: support ">=" and "<=" operator.
                      - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
                      - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
@@ -5931,7 +5932,7 @@ paths:
                      For example:
                       - filter = "method == '/bytebase.v1.SQLService/Query'"
                       - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && actor == 'users/bb@bytebase.com'"
                       - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
                       - filter = "mcp == true"
                       - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
@@ -14749,9 +14750,9 @@ paths:
           description: |-
             The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
              the other way, so it carries the same classification. VerifyCheckoutSession
-             is EXCLUDED, and the MCP gate records a row for every method it refuses, so
-             leaving this unannotated would write the id into a denial row while the
-             response that produced it was redacted.
+             is EXCLUDED, and a refusal of it streams its request to the stdout audit
+             log, so leaving this unannotated would write the id into that line while
+             the response that produced it was redacted.
           required: true
           schema:
             type: string
@@ -17525,12 +17526,12 @@ components:
           title: create_time
           description: The timestamp when the audit log was created.
           readOnly: true
-        user:
+        actor:
           type: string
-          title: user
+          title: actor
           description: |-
-            The user who performed the action.
-             Format: users/{email}
+            The principal who performed the action.
+             Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}
         method:
           type: string
           title: method
@@ -22444,6 +22445,14 @@ components:
             (IMMUTABLE) Optional source context on a root or reply. A reply's anchor must share
              the root's spec and sheet_sha256; it may narrow the range.
              Cannot be set on events. Immutable after creation.
+        reviewMetadata:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewMetadata'
+          title: review_metadata
+          description: |-
+            Present on review results, the comments the review executor posts.
+             Never accepted on create or update.
+          readOnly: true
       title: IssueComment
       description: A comment on an issue.
     bytebase.v1.IssueComment.Approval:
@@ -22530,6 +22539,45 @@ components:
       description: |-
         Plan update event information (snapshot of plan.config.specs before
          and after a PlanService.UpdatePlan call that mutated specs).
+    bytebase.v1.IssueComment.ReviewMetadata:
+      type: object
+      properties:
+        runType:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.ReviewRun.Type'
+          title: run_type
+          description: The reviewer that posted the result.
+        ruleType:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.ReviewRuleType'
+          title: rule_type
+          description: The rule judged against. Set if and only if run_type is RULE.
+        priority:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.IssueComment.ReviewMetadata.Priority'
+          title: priority
+        targets:
+          type: array
+          items:
+            type: string
+          title: targets
+          description: |-
+            Every database the result applies to, sorted.
+             Format: instances/{instance}/databases/{database}
+      title: ReviewMetadata
+      additionalProperties: false
+      description: What a review result carries beyond its text.
+    bytebase.v1.IssueComment.ReviewMetadata.Priority:
+      type: string
+      title: Priority
+      enum:
+        - PRIORITY_UNSPECIFIED
+        - P0
+        - P1
+        - P2
+      description: |-
+        Priority says what resolving the thread means. It has no bearing on
+         blocking, which thread_state alone decides.
     bytebase.v1.IssueComment.ReviewSubmission:
       type: object
       title: ReviewSubmission
@@ -24438,6 +24486,9 @@ components:
          between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
          method is refused rather than served. Annotating a method is therefore a
          change to what an MCP session can reach, taking effect on the next request.
+         READ and WRITE methods are also disclosed to workspace admins, as capability
+         rows on the Access policy page, so annotating a method changes what the
+         product promises as well as what it serves.
     bytebase.v1.MCPSetting:
       type: object
       properties:
@@ -25521,6 +25572,13 @@ components:
           title: query_data_policy
         - type: object
           properties:
+            reviewRulePolicy:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.ReviewRulePolicy'
+              title: review_rule_policy
+          title: review_rule_policy
+        - type: object
+          properties:
             rolloutPolicy:
               allOf:
                 - $ref: '#/components/schemas/bytebase.v1.RolloutPolicy'
@@ -25544,6 +25602,8 @@ components:
               - required:
                   - queryDataPolicy
               - required:
+                  - reviewRulePolicy
+              - required:
                   - rolloutPolicy
               - required:
                   - tagPolicy
@@ -25555,6 +25615,8 @@ components:
                     - maskingRulePolicy
                 - required:
                     - queryDataPolicy
+                - required:
+                    - reviewRulePolicy
                 - required:
                     - rolloutPolicy
                 - required:
@@ -25619,6 +25681,7 @@ components:
         - ROLLOUT_POLICY
         - TAG
         - DATA_QUERY
+        - REVIEW_RULE
       description: The type of organizational policy.
     bytebase.v1.Position:
       type: object
@@ -26047,6 +26110,13 @@ components:
           allOf:
             - $ref: '#/components/schemas/bytebase.v1.QueryOption.ExplainFormat'
           title: explain_format
+          description: |-
+            Which explain output the caller wants, for an explain request.
+
+             Leave it unspecified for the engine's own default, which is the only
+             output most engines have. Naming a format an engine cannot produce is
+             INVALID_ARGUMENT rather than a silent fallback, as is any explain request
+             against an engine that has no explain at all.
       title: QueryOption
       additionalProperties: false
     bytebase.v1.QueryOption.ExplainFormat:
@@ -26057,13 +26127,8 @@ components:
         - TEXT
         - JSON
         - XML
-      description: |-
-        Which explain output the caller wants, for an explain request.
-
-         Leave it unspecified for the engine's own default, which is the only
-         output most engines have. Naming a format an engine cannot produce is
-         INVALID_ARGUMENT rather than a silent fallback, as is any explain request
-         against an engine that has no explain at all.
+        - YAML
+      description: The output format of a query plan.
     bytebase.v1.QueryOption.RedisRunCommandsOn:
       type: string
       title: RedisRunCommandsOn
@@ -26250,6 +26315,11 @@ components:
             $ref: '#/components/schemas/bytebase.v1.MaskingReason'
           title: masked
           description: Masking reasons for each column (empty for non-masked columns).
+        queryPlan:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.QueryResult.QueryPlan'
+          title: query_plan
+          description: Set when the result is a query plan. Unset for any other result.
       title: QueryResult
     bytebase.v1.QueryResult.CommandError:
       type: object
@@ -26357,6 +26427,22 @@ components:
       description: |-
         refer https://www.postgresql.org/docs/11/protocol-error-fields.html
          for field description.
+    bytebase.v1.QueryResult.QueryPlan:
+      type: object
+      properties:
+        format:
+          allOf:
+            - $ref: '#/components/schemas/bytebase.v1.QueryOption.ExplainFormat'
+          title: format
+        executed:
+          type: boolean
+          title: executed
+          description: |-
+            Whether producing the plan executed the statement, as EXPLAIN ANALYZE
+             does.
+      title: QueryPlan
+      additionalProperties: false
+      description: A query plan held in the result's rows.
     bytebase.v1.QueryResult.SyntaxError:
       type: object
       properties:
@@ -26765,6 +26851,50 @@ components:
              Format: {resource}/{resource id}, e.g., environments/test.
       title: ReviewConfig
       additionalProperties: false
+    bytebase.v1.ReviewRulePolicy:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.ReviewRuleType'
+          title: rules
+          description: The rules switched on. Unknown or unspecified values are rejected.
+      title: ReviewRulePolicy
+      additionalProperties: false
+      description: |-
+        Standard review rule policy: the rules switched on. The nearest policy
+         wins: a project's own policy applies as is; a project without one uses
+         the workspace policy; with neither, every rule is on.
+
+         A saved list is explicit, so a rule added to the standard set in a later
+         release is appended to every saved policy by a data migration in that
+         release.
+    bytebase.v1.ReviewRuleType:
+      type: string
+      title: ReviewRuleType
+      enum:
+        - REVIEW_RULE_TYPE_UNSPECIFIED
+        - SYNTAX
+        - WALK_THROUGH
+        - ONLINE_MIGRATION
+        - PRIOR_BACKUP
+        - REQUIRE_IS_NULL
+        - REQUIRE_WHERE
+        - DISALLOW_DROP_OBJECT
+        - DISALLOW_TRUNCATE
+        - DISALLOW_DROP_CONSTRAINT
+        - DISALLOW_RENAME
+        - REQUIRE_PRIMARY_KEY
+      description: |-
+        ReviewRuleType is the standard review rule set. The rules are fixed:
+         every project gets them without configuration, and the only setting is a
+         switch (see ReviewRulePolicy).
+
+         A rule id names what the rule examines. An execution check is named for
+         what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
+         the id says which way it cuts. DISALLOW on a P1 rule means the operation
+         needs a person's acceptance, not that it is forbidden.
     bytebase.v1.ReviewRun:
       type: object
       properties:
@@ -27923,7 +28053,8 @@ components:
              - method: the API name, can be found in the docs. Usually "/bytebase.v1.…", for example "/bytebase.v1.UserService/CreateUser"; entries written outside the v1 API carry their own prefix, such as "/bytebase.mcp.Session/Authorize" or "/bytebase.cli.Recovery/ResetUserPassword". Support "==" operator.
              - resource: the resource the entry is about, support "==" operator.
              - severity: support "==" operator, check Severity enum in AuditLog message for values.
-             - user: the actor, should in "users/{email}" format, support "==" operator.
+             - actor: the actor, in users/{email}, serviceAccounts/{email}, or
+               workloadIdentities/{email} format. Support "==" operator.
              - create_time: support ">=" and "<=" operator.
              - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
              - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
@@ -27931,7 +28062,7 @@ components:
              For example:
               - filter = "method == '/bytebase.v1.SQLService/Query'"
               - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-              - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+              - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && actor == 'users/bb@bytebase.com'"
               - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
               - filter = "mcp == true"
               - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
@@ -31293,9 +31424,9 @@ components:
           description: |-
             The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
              the other way, so it carries the same classification. VerifyCheckoutSession
-             is EXCLUDED, and the MCP gate records a row for every method it refuses, so
-             leaving this unannotated would write the id into a denial row while the
-             response that produced it was redacted.
+             is EXCLUDED, and a refusal of it streams its request to the stdout audit
+             log, so leaving this unannotated would write the id into that line while
+             the response that produced it was redacted.
       title: VerifyCheckoutSessionRequest
       additionalProperties: false
     bytebase.v1.VerifyCheckoutSessionResponse:

@@ -113,9 +113,11 @@ export function PasswordSigninForm({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          <button
+          <Button
             type="button"
-            className="hover:cursor-pointer absolute right-3"
+            appearance="secondary"
+            size="xs"
+            className="absolute right-3 text-control-light hover:text-control"
             onClick={() => setShowPassword((v) => !v)}
             aria-label="Toggle password visibility"
           >
@@ -124,7 +126,7 @@ export function PasswordSigninForm({
             ) : (
               <EyeOff className="w-4 h-4" />
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

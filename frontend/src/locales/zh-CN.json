@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "仅活跃",
+    "active-only-chats": "查看活跃对话",
     "ai-not-configured": {
       "configure": "配置",
       "contact-admin": "请联系工作区管理员配置 AI。",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "归档所有对话",
     "archive-chat": "归档对话",
-    "archived-only-chats": "仅已归档",
+    "archived-only-chats": "查看已归档对话",
     "args": "参数",
     "assistant-title": "AI 助手",
     "cancel": "取消",
@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "按审计日志操作者搜索",
+          "description": "按邮箱搜索用户。使用 serviceAccounts/ 或 workloadIdentities/ 前缀搜索这些操作者。",
           "title": "操作者"
         },
         "level": {
@@ -153,6 +153,7 @@
       "continue-with-email": "使用邮箱继续",
       "continue-with-idp": "使用 {{idp}} 继续",
       "email-code-tab": "邮箱验证码",
+      "failed": "登录失败",
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {{email}} 登录",
@@ -645,10 +646,6 @@
       "user": "用户名"
     },
     "ssh-connection": "SSH 隧道",
-    "ssh-type": {
-      "none": "不使用",
-      "tunnel-and-private-key": "隧道 + 私钥"
-    },
     "ssl": {
       "ca-cert": "CA 证书",
       "ca-path": "CA 证书路径",
@@ -968,7 +965,7 @@
   },
   "instance": {
     "account-locator": "账户定位符",
-    "add-labels": "添加标签",
+    "account-locator-description": "用于标识要连接的 Snowflake 账户。",
     "add-parameter": "添加参数",
     "advanced-search": {
       "scope": {
@@ -995,6 +992,7 @@
     },
     "connect-database-to-project": "连接数据库到项目",
     "connect-instance": "连接实例",
+    "connect-using": "连接方式",
     "connecting-database-to-project": "正在连接数据库...",
     "connection-database": "连接数据库",
     "connection-info": "连接信息",
@@ -1100,7 +1098,6 @@
           "role-id": "Auth role id",
           "secret-env-name": "环境变量名",
           "secret-id": "Auth secret id",
-          "secret-plain-text": "明文",
           "self": "AppRole"
         },
         "self": "认证方式",
@@ -1263,7 +1260,6 @@
     "sample-project-instance-description-self-host": "使用带有预配置数据库的示例项目实例探索 Bytebase。",
     "sample-project-instance-title": "试用示例项目实例",
     "scan-interval": {
-      "default-never": "默认（永不）",
       "description": "Bytebase 会定期同步实例的 schema 以及进行异常检测。",
       "min-value": "最小值 {{value}} 分钟",
       "self": "扫描间隔"
@@ -1326,7 +1322,11 @@
         "saas": "例如 db.example.com | 数据库 IP"
       }
     },
+    "service-name": "服务名",
+    "service-name-placeholder": "例如 sales.example.com",
     "show-how-to-create": "如何创建",
+    "sid": "SID",
+    "sid-placeholder": "例如 ORCL",
     "snowflake-web-console": "Snowflake Web 控制台",
     "successfully-archived-instance": "成功归档实例'{{0}}'。",
     "successfully-connected-instance": "连接成功。",
@@ -1630,13 +1630,11 @@
           "title": "MCP 访问已关闭"
         },
         "line": {
-          "audit": "被审计的操作会带上 MCP 标记，策略拒绝的操作也会被记录",
-          "capped": "以你本人的 Bytebase 权限为上限",
+          "audit": "被审计的操作会带上 MCP 标记，启用审计日志输出到标准输出时，策略拒绝的操作会输出到标准输出",
+          "capped-read-only": "上限取决于你自己的 Bytebase 权限，以及 Bytebase 在各数据库引擎上能确认的范围——在无法确认语句是读取的引擎上，任何查询都不会执行",
+          "capped-read-write": "上限取决于你自己的 Bytebase 权限，以及 Bytebase 对每种数据库引擎和每种操作的支持程度",
           "masking": "你的脱敏豁免对此会话不生效",
-          "no-write": "不能修改任何数据或模式",
-          "read": "浏览模式并执行只读查询",
-          "workflow": "创建工单、计划和发布，以及导出查询结果",
-          "write": "在你的权限范围内修改数据和模式"
+          "no-write": "不能变更、部署、导出或管理数据库"
         },
         "title": "此会话可以",
         "undisclosed": {
@@ -2672,12 +2670,8 @@
       "description": "即时通讯集成用于针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
     },
     "mcp": {
-      "auth": {
-        "description": "首次连接需要 OAuth 身份验证。请确保您拥有相应的 Bytebase 权限。",
-        "title": "需要身份验证"
-      },
       "connect": {
-        "description": "将 Bytebase 添加到你的 AI 客户端，在浏览器中批准访问，然后开始提问。",
+        "description": "把 Bytebase 添加到你的 AI 客户端就可以开始提问。首次连接时会在浏览器中登录并批准访问。",
         "desktop-note": "Claude Desktop 从你的 Claude 账户读取远程服务器，而不是配置文件。请在 claude.ai 的 Customize > Connectors 中将此 URL 添加为自定义连接器，随后它会出现在 Claude Desktop 中。",
         "json-note": "这是 mcpServers 格式。各客户端的配置格式并不相同：例如 VS Code 在自己的 mcp.json 中使用 servers，此时请改用 VS Code 标签页。",
         "title": "连接客户端"
@@ -2686,35 +2680,100 @@
       "first-prompt": {
         "description": "连接后，尝试向 AI 助手提问：",
         "example": "列出我的 Bytebase 实例中的所有项目",
-        "title": "您的第一个提示"
+        "title": "你的第一个提示词"
+      },
+      "ladder": {
+        "disabled": "不允许任何操作；MCP 会话无法连接。",
+        "floor": {
+          "label": "在任何模式下都不允许：",
+          "text": "审批工单、管理工作空间、处理凭据、开启 Admin 模式会话、查看他人的查询历史。"
+        },
+        "heading": "{{mode}} 允许",
+        "hide-details": "隐藏详情",
+        "mark": {
+          "allowed": "允许",
+          "refused": "不允许"
+        },
+        "row": {
+          "export": {
+            "details": "将结果下载为文件。数据会离开 Bytebase。",
+            "title": "导出查询结果"
+          },
+          "manage": {
+            "details": "同步实例和数据库 · 数据库设置和标签 · 在项目之间移动数据库 · 数据库组 · 已保存的查询",
+            "title": "管理数据库日常维护"
+          },
+          "propose": {
+            "details": "创建工作表 · 创建和编辑 Plan 与工单 · 执行计划检查和审核 · 创建、删除和恢复发布 · 创建和删除修订 · 生成模式差异。智能体绝不会审批自己的变更；是否需要人来审批由项目的审批策略决定",
+            "title": "提议变更"
+          },
+          "read-data": {
+            "details": "执行只读查询 · 在只读模式下，除非每条语句都能被确认为返回数据的读取，否则整体拒绝该请求；能确认到多深取决于引擎，在部分引擎上没有任何语句能被确认为读取 · 你自己的查询历史 · 你有权访问的已保存查询和工作表",
+            "title": "通过执行查询读取数据"
+          },
+          "read-schemas": {
+            "details": "模式 · 数据库和实例 · 项目和数据库组 · 目录、变更历史和修订 · SQL 审核配置 · 你自己的会话和工作空间信息",
+            "title": "读取模式和元数据"
+          },
+          "read-workflow": {
+            "details": "工单和评论 · Plan 和计划检查 · 部署、任务运行和日志 · 发布 · 回滚预览",
+            "title": "读取变更流程"
+          },
+          "run-rollouts": {
+            "details": "创建部署 · 在项目审批策略之下执行、跳过或取消其任务",
+            "title": "执行部署和任务"
+          },
+          "run-statements": {
+            "details": "通过查询执行 INSERT、UPDATE、DELETE、CREATE、ALTER、DROP，以引擎和该用户自身权限允许的范围为限",
+            "title": "执行 DML 和 DDL 语句"
+          }
+        },
+        "show-details": "显示详情",
+        "stops": {
+          "read": "只读到此为止",
+          "write": "读写到此为止"
+        },
+        "summary": {
+          "read-only": "读取模式、数据和变更流程；只要请求中含有无法被确认为读取的内容就会被拒绝，也不能导出",
+          "read-write": "读取模式、数据和变更流程；提议、执行、导出和管理"
+        },
+        "tier": {
+          "read": "读取",
+          "write": "写入"
+        }
       },
       "policy": {
-        "audit": "MCP 策略拒绝会记录在审计日志中。",
-        "description": "本工作空间中任何 MCP 会话所能执行操作的上限。每个会话还会受到连接用户自身权限的限制。",
+        "current": "当前策略：{{mode}}",
+        "description": "MCP 会话在此最多能做的事。每个会话还受各用户自身权限的限制；启用审计日志输出到标准输出时，策略拒绝会输出到标准输出。",
         "edit": "编辑策略",
-        "in-force": "当前生效",
         "loading": "正在读取访问策略…",
         "masking": {
           "badge": "已忽略脱敏豁免",
-          "description": "在 MCP 会话中，脱敏数据保持脱敏。授予用户的脱敏豁免，以及访问授权所携带的解除脱敏，都不再对其 MCP 请求生效。同一用户在 Bytebase 控制台中不受影响。",
-          "limits": "脱敏覆盖范围取决于引擎。若 Bytebase 在该引擎上不做脱敏，或者脱敏时不查询豁免，此项不产生任何变化。",
+          "badge-disabled": "已忽略脱敏豁免 — MCP 已关闭",
+          "badge-unlicensed": "已忽略脱敏豁免 — 未授权脱敏功能",
+          "description": "启用后，即使用户拥有豁免或解除脱敏的授权，在 MCP 会话中被脱敏的数据仍保持脱敏。覆盖范围取决于引擎：Bytebase 本来就不脱敏的地方，这不会有任何改变。控制台不受影响。",
           "title": "忽略脱敏豁免",
           "unavailable": "本工作空间未授权数据脱敏功能，因此无论此项如何设置都不会脱敏。"
+        },
+        "masking-pending": {
+          "applied": "此策略将在保留脱敏豁免的状态下保存。",
+          "ignored": "此策略将在忽略脱敏豁免的状态下保存。"
         },
         "mode": {
           "disabled": {
             "best-for": "适用于：在准备好开启之前先关闭 MCP。",
+            "caption": "MCP 会话无法连接",
             "description": "任何 MCP 会话都无法连接到本工作空间。",
             "title": "禁用"
           },
           "read-only": {
-            "best-for": "适用于：查询和探索数据，包括不写 SQL 的人。",
-            "description": "会话可以浏览模式并执行只读查询。Bytebase 会在每条语句执行前对其分类，只要其中有一条不是读取，就整体拒绝该请求。若引擎的驱动支持，还会以只读方式打开数据库会话。具体强度因引擎而异。",
+            "best-for": "适用于：使用自然语言查询和探索数据。",
+            "caption": "探索与查询",
             "title": "只读"
           },
           "read-write": {
             "best-for": "适用于：通过 AI 代理执行数据库变更，仍受每位用户自身权限的限制。",
-            "description": "会话还可以修改数据和模式，范围以连接用户自身的权限为限。",
+            "caption": "变更数据和模式",
             "title": "读写"
           }
         },
@@ -2724,16 +2783,17 @@
         },
         "save": "保存策略",
         "saved": "策略已保存。{{mode}} 将对每个会话的下一次请求生效。",
-        "tightening": "上限变更会对每个运行中会话的下一次请求生效。代理已被放行的工作会继续执行完毕。",
+        "tightening": "从每个运行中会话的下一个请求起生效。",
+        "tightening-change": "{{from}} → {{to}} 从每个运行中会话的下一个请求起生效。",
         "title": "访问策略",
         "unreadable": {
-          "description": "此工作区存储的能力值是当前构建无法理解的。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
+          "description": "本工作空间存储的能力值是当前构建无法理解的。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
           "pick": "请选择一种模式后再保存此策略。",
           "title": "无法读取已存储的访问策略"
         },
         "unserved": {
-          "description": "本工作空间存储的值为 {{stored}}，当前版本不提供该上限。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修复。",
-          "title": "当前版本不提供已存储的访问策略"
+          "description": "本工作空间存储了 {{stored}}，当前构建不支持该值。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
+          "title": "当前构建不支持已存储的访问策略"
         }
       },
       "title": "MCP 集成"
@@ -2821,7 +2881,7 @@
       "select-role_other": "选择角色",
       "service-account": "服务账号",
       "service-accounts": "服务账号",
-      "service-key-copied": "Service Key 已复制，请勿泄漏",
+      "service-key-reset-and-copied": "Service Key 已重置并复制",
       "show-inactive": "显示已停用账户",
       "table": {
         "account": "账户",
@@ -3257,6 +3317,108 @@
       "admin-data-source-is-disallowed-to-query": "禁止查询主数据源。"
     },
     "query-history-not-found": "查询历史记录不存在或已无法访问",
+    "query-plan-load-failed": "加载查询计划失败",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "已复制",
+        "failed": "复制失败",
+        "plan": "复制计划",
+        "query": "复制查询"
+      },
+      "details": {
+        "select-node": "选择节点以查看详情。"
+      },
+      "diagram": {
+        "collapse": "折叠 {{node}} 下的 {{count}} 个节点",
+        "cost": "成本 {{cost}}",
+        "estimated-rows": "预计 {{count}} 行",
+        "expand": "展开 {{node}} 下的 {{count}} 个节点",
+        "fit": "适应视图",
+        "nodes-hidden": "已隐藏 {{count}} 个节点",
+        "plan-cost-share": "占计划成本的 {{share}}",
+        "rows": "行数 {{count}}",
+        "zoom-in": "放大",
+        "zoom-out": "缩小"
+      },
+      "error": {
+        "mssql-empty": "SQL Server 未返回此语句的查询计划。",
+        "mssql-invalid": "查询计划不是有效的 XML。需要 SHOWPLAN_XML 输出。",
+        "mssql-no-plan": "查询计划 XML 不是至少包含一条语句的 SQL Server showplan。",
+        "postgres-empty": "PostgreSQL 未返回此语句的查询计划。",
+        "postgres-invalid": "查询计划不是有效的 JSON。需要 EXPLAIN (FORMAT JSON) 输出。",
+        "postgres-no-plan": "查询计划 JSON 不包含 \"Plan\" 对象。",
+        "spanner-empty": "Spanner 未返回此语句的查询计划。",
+        "spanner-emulator": "Spanner 未返回此语句的查询计划。Spanner 模拟器不会为任何语句返回计划，请在 Spanner 实例上执行解释以查看计划。",
+        "spanner-invalid": "查询计划不是有效的 JSON。需要 Spanner 查询计划。",
+        "spanner-no-plan": "查询计划 JSON 不包含根节点为操作符的 \"planNodes\" 列表。",
+        "too-deep": "查询计划嵌套过深，此可视化工具无法绘制。",
+        "unreadable": "无法读取此查询计划"
+      },
+      "grid": {
+        "added-cost": "新增成本",
+        "added-cost-hint": "此节点在其子节点之上增加的成本；某些引擎还会在此计入输入重复执行的成本，例如嵌套循环下的输入。条形图表示该成本占计划总成本的比例。",
+        "caption": "按规划器嵌套顺序排列的计划节点，父节点在子节点之前。",
+        "estimated-rows": "预计行数",
+        "node": "节点",
+        "rows": "行数",
+        "total-cost": "总成本",
+        "width": "宽度",
+        "width-hint": "预计行宽（字节）"
+      },
+      "highlight": {
+        "cost": "成本",
+        "cost-hint": "按节点在其子节点之上增加的成本着色",
+        "label": "高亮",
+        "off": "关闭",
+        "off-hint": "不为任何节点卡片着色",
+        "rows": "行数",
+        "rows-hint": "按预计行数着色"
+      },
+      "legend": {
+        "cost": "每张卡片的条形图表示该节点占计划预计成本的比例",
+        "rows": "边的粗细随其子节点预计返回的行数增加"
+      },
+      "metric": {
+        "added-cost": "新增成本",
+        "bytes": "{{count}} 字节",
+        "estimated-rows": "预计行数",
+        "row-width": "行宽",
+        "startup-cost": "启动成本",
+        "total-cost": "总成本"
+      },
+      "query": {
+        "missing": "此计划未记录对应语句。"
+      },
+      "summary": {
+        "added-cost": "新增成本",
+        "cost-by-operation": "按操作统计成本",
+        "cost-by-operation-description": "计划中每种节点类型及其总成本。",
+        "cost-ranges": "成本范围",
+        "cost-ranges-description": "每个节点从启动成本（返回第一行前的成本）延伸到总成本，两者都包含其下所有节点。颜色越深表示承担的计划成本越高。成本并非执行时间表：连接的两个输入会在此重叠，但实际依次执行。",
+        "costliest": "成本最高的操作符",
+        "costliest-description": "按节点在其子节点之上增加的成本排序。当输入重复执行时（如嵌套循环），某些引擎会将重复成本计入重新运行该输入的节点，而不是输入本身。",
+        "count": "数量",
+        "estimate-note": "语句已规划但未执行，因此此处所有数据都是优化器估算值，而非测量值。成本单位是任意的，只能在此计划内比较。",
+        "estimated-rows-returned": "预计返回行数",
+        "no-added-cost": "此计划中没有节点自身增加预计成本。",
+        "nodes": "节点",
+        "operation": "操作",
+        "share": "占比",
+        "timeline-node": "{{name}}，成本 {{startup}} 到 {{total}}，占计划成本的 {{share}}",
+        "total-estimated-cost": "预计总成本"
+      },
+      "tab": {
+        "diagram": "图表",
+        "grid": "网格",
+        "query": "查询",
+        "summary": "摘要",
+        "text": "文本"
+      },
+      "totals": {
+        "estimated-cost": "预计成本 {{cost}}",
+        "nodes": "{{count}} 个节点"
+      }
+    },
     "query-time": "查询时间",
     "re-request": "重新申请",
     "recent": "最近",
@@ -3310,6 +3472,7 @@
     "search-scope-row-number-description": "输入行号跳转到指定行。",
     "search-scope-row-number-title": "行号",
     "select-a-database-to-start": "选择数据库以开始",
+    "select-a-project-to-choose-a-database": "选择项目以选择数据库",
     "select-connection": "请选择数据连接",
     "select-encoding": "选择编码",
     "self": "SQL 编辑器",
@@ -3343,9 +3506,6 @@
     "view-detail": "查看详情",
     "view-issue": "查看工单",
     "view-schema-text": "查看文本 Schema",
-    "visualize-explain": "可视化 Explain",
-    "visualize-explain-blocked": "查询计划标签页被拦截。请允许本站弹出窗口后重试。",
-    "visualize-explain-failed": "加载查询计划失败",
     "web-socket": {
       "connection-status": {
         "connected": "已连接",
@@ -3528,8 +3688,7 @@
     },
     "prior-backup": "预备份受影响数据",
     "run-immediately": {
-      "description": "点击“运行”后，任务将立即开始执行。",
-      "self": "立即运行"
+      "description": "点击“运行”后，任务将立即开始执行。"
     },
     "run-task": "运行任务 | 运行任务",
     "schedule-for-later": {

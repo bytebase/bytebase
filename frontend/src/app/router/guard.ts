@@ -1,4 +1,5 @@
 import { redirect } from "react-router";
+import { readWorkspaceSetupFinished } from "@/modules/workspace-setup-guide/setup";
 import { useAppStore } from "@/stores/app";
 import { DatabaseChangeMode } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -89,7 +90,16 @@ export async function workspaceSetupGuard(url: URL): Promise<Response | null> {
   } catch {
     return redirect(resolvePath(WORKSPACE_ROUTE_LANDING));
   }
-  if (store.enableOnboarding()) {
+  const setupFinished = readWorkspaceSetupFinished(
+    store.currentUser?.workspace ?? store.serverInfo?.workspace ?? ""
+  );
+  if (store.isSaaSMode() && setupFinished === false) {
+    return null;
+  }
+  if (
+    (!store.isSaaSMode() || setupFinished === undefined) &&
+    store.enableOnboarding()
+  ) {
     return null;
   }
 
@@ -299,6 +309,15 @@ export function rootGuard({
   // Enforce password reset if required.
   if (store.requireResetPassword() && toName !== AUTH_PASSWORD_RESET_MODULE) {
     return redirect(resolvePath(AUTH_PASSWORD_RESET_MODULE));
+  }
+
+  if (
+    store.isSaaSMode() &&
+    readWorkspaceSetupFinished(
+      store.currentUser?.workspace ?? store.serverInfo?.workspace ?? ""
+    ) === false
+  ) {
+    return redirect(resolvePath(AUTH_SETUP_MODULE));
   }
 
   // The bare workspace root ("/") has no page, so always redirect.

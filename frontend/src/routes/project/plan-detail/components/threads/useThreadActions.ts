@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
+  type Issue,
   IssueComment_ThreadState,
   type StatementAnchor,
 } from "@/types/proto-es/v1/issue_service_pb";
@@ -18,9 +19,14 @@ export function canSettleThread(project: Project | undefined): boolean {
   );
 }
 
-export function canReplyToThread(project: Project | undefined): boolean {
+export function canReplyToThread(
+  project: Project | undefined,
+  issue: Issue
+): boolean {
   return Boolean(
-    project && hasProjectPermissionV2(project, "bb.issueComments.create")
+    !issue.draft &&
+      project &&
+      hasProjectPermissionV2(project, "bb.issueComments.create")
   );
 }
 

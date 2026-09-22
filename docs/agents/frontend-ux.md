@@ -194,6 +194,39 @@ behavior:
 - Required fields, disabled state, pending state, and server errors MUST remain
   understandable without color alone.
 
+### Choice Controls
+
+- Choose the control from the decision, not merely the number of options.
+  First ask whether users need to see the alternatives together to understand
+  or compare the choice. If they do, use a visible `RadioGroup`; if they do
+  not, use `Select` to keep the form compact. A small option count alone does
+  not make either control correct.
+- Use the shared `Switch` for one stateful binary setting, regardless of
+  whether the surrounding form saves it immediately or later. Its label names
+  the enabled behavior or state, such as "Use SSH tunnel", "Production
+  environment", or "Sync all databases". The off state MUST have a clear,
+  meaningful result.
+- Use `Checkbox` for selection or acknowledgement: selecting one or more
+  items, including an optional item in a submission, accepting terms, or
+  confirming a destructive action. A grouped set of independent requirements,
+  such as password-character requirements, MAY also use checkboxes. Do not use
+  a single checkbox for a standalone enabled or disabled setting.
+- Use `RadioGroup` for a small set of peer values where users need to compare
+  the alternatives, their descriptions, consequences, or availability. Use
+  choice-card styling when that supporting context matters, such as onboarding
+  goals, cancellation reasons, access scope, and security modes.
+- Do not replace a consequential first-step choice with a dropdown solely
+  because it has a small number of options. For example, identity-provider
+  types need visible descriptions and feature availability so users can choose
+  the integration model before they enter a configuration flow.
+- Use the shared `Select` dropdown for many, familiar, or low-context mutually
+  exclusive options where compactness is more useful than comparison, such as
+  themes, export formats, environments, and webhook destinations. It MAY also
+  be used for two peer values when space is constrained and comparison is
+  unnecessary.
+- Do not use `SegmentedControl` for ordinary form values. Reserve it for
+  compact view or mode controls outside forms.
+
 ### Dense Horizontal Forms
 
 Multi-option connection forms MAY use horizontal fields through shared form
@@ -205,21 +238,27 @@ third column for section titles.
 - Stack labels based on available form width, independently of the navigation
   sidebar breakpoint. Compound controls MAY wrap within the control column
   before the field itself stacks.
-- Keep descriptions and validation beside the control they explain. Associate
-  labels and radio groups with accessible names in both layouts.
+- Keep concise descriptions and validation beside the control they explain.
+  Long secondary guidance that would make a dense form harder to scan MAY use
+  a focusable info tooltip beside the field title; validation and essential
+  status remain visible beside the control. Associate labels and choice controls
+  with accessible names in both layouts.
 - Put choices that determine subsequent fields first. Use one `Select` dropdown
   combining authentication methods and password sources. Do not add a separate
-  password-source selector. Keep synchronization choices visible in a
-  `SegmentedControl`.
+  password-source selector. Use a `Switch` for binary choices such as syncing
+  all databases; reveal the selected-database controls only when it is off.
 - Reveal the selected authentication method's fields below the selector.
   External sources reveal their configuration there. Preserve separate drafts
   while switching sources, and submit only the active source. Reveal dependent
   TLS, SSH, IAM, and external-source configuration below its controlling
   choice, using nested flow rather than a framed surface inside another frame.
 - Keep security modes visible; reveal their dependent fields when selected.
-  Switches and segmented controls align to the start of their control column.
-  Keep ordinary connection rows on the 16px rhythm. Use explicit choices for
-  modes such as syncing all or selected databases.
+  Switches, select triggers, and radio groups align to the start of their
+  control column. Keep ordinary connection rows on the 16px rhythm using
+  `FormFieldGroup density="compact"`, including across engine-specific field
+  groups. Empty conditional groups MUST NOT reserve space. Larger gaps need a
+  meaningful section boundary. Use explicit choices for modes such as syncing
+  all or selected databases.
 - Empty optional collections MAY start as an add action. Existing entries and
   validation errors MUST remain discoverable.
 - A connection-creation footer MAY place Test Connection beside Create, with
@@ -401,6 +440,9 @@ A resource table is composed in this order:
 
 - Header rows are 40px high.
 - Default cells use 16px horizontal and 12px vertical padding.
+- Instance and database body cells use `TableCellContent` for a vertically
+  centered, 24px minimum content area: 48px with cell padding, plus row borders.
+  Expanded or multi-line content can increase the row height.
 - Interactive menu/list rows have a 32px compact or 36px default minimum
   height, 14/20px primary text, and an 8px internal gap.
 - Numeric values align right. Selection and icon-only columns remain narrow.

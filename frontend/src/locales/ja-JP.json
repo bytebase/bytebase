@@ -22,7 +22,7 @@
     }
   },
   "agent": {
-    "active-only-chats": "アクティブのみ",
+    "active-only-chats": "アクティブなチャットを表示",
     "ai-not-configured": {
       "configure": "設定",
       "contact-admin": "ワークスペース管理者に AI の設定を依頼してください。",
@@ -31,7 +31,7 @@
     },
     "archive-all-chats": "すべてのチャットをアーカイブ",
     "archive-chat": "チャットをアーカイブ",
-    "archived-only-chats": "アーカイブ済みのみ",
+    "archived-only-chats": "アーカイブ済みのチャットを表示",
     "args": "引数",
     "assistant-title": "AI アシスタント",
     "cancel": "キャンセル",
@@ -79,7 +79,7 @@
     "advanced-search": {
       "scope": {
         "actor": {
-          "description": "監査ログの操作者で検索",
+          "description": "メールアドレスでユーザーを検索します。サービスアカウントまたはワークロード ID を検索するには、serviceAccounts/ または workloadIdentities/ を付けます。",
           "title": "操作者"
         },
         "level": {
@@ -153,6 +153,7 @@
       "continue-with-email": "メールで続行",
       "continue-with-idp": "{{idp}} で続行",
       "email-code-tab": "メール認証コード",
+      "failed": "サインインに失敗しました",
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{{email}} でログインしてください",
@@ -645,10 +646,6 @@
       "user": "ユーザー名"
     },
     "ssh-connection": "SSH トンネル",
-    "ssh-type": {
-      "none": "なし",
-      "tunnel-and-private-key": "トンネル + 秘密鍵"
-    },
     "ssl": {
       "ca-cert": "CA証明書",
       "ca-path": "CA証明書のパス",
@@ -968,7 +965,7 @@
   },
   "instance": {
     "account-locator": "アカウントロケーター",
-    "add-labels": "ラベルを追加",
+    "account-locator-description": "接続先の Snowflake アカウントを識別します。",
     "add-parameter": "パラメータを追加",
     "advanced-search": {
       "scope": {
@@ -995,6 +992,7 @@
     },
     "connect-database-to-project": "データベースをプロジェクトに接続",
     "connect-instance": "インスタンスを接続",
+    "connect-using": "接続方式",
     "connecting-database-to-project": "データベースを接続中...",
     "connection-database": "接続先データベース",
     "connection-info": "接続情報",
@@ -1100,7 +1098,6 @@
           "role-id": "認証ロールID",
           "secret-env-name": "環境変数名",
           "secret-id": "認証シークレットID",
-          "secret-plain-text": "プレーンテキスト",
           "self": "AppRole"
         },
         "self": "認証タイプ",
@@ -1263,7 +1260,6 @@
     "sample-project-instance-description-self-host": "すぐに使えるデータベースを備えたサンプルプロジェクトインスタンスを使用して、Bytebase を試すことができます。",
     "sample-project-instance-title": "サンプルプロジェクトインスタンスを試す",
     "scan-interval": {
-      "default-never": "デフォルト (なし)",
       "description": "Bytebase は定期的にインスタンスのスキーマを同期し、異常検出を実行します。",
       "min-value": "最短 {{value}} 分",
       "self": "スキャン間隔"
@@ -1326,7 +1322,11 @@
         "saas": "例: db.example.com | データベース IP"
       }
     },
+    "service-name": "サービス名",
+    "service-name-placeholder": "例: sales.example.com",
     "show-how-to-create": "作成方法",
+    "sid": "SID",
+    "sid-placeholder": "例: ORCL",
     "snowflake-web-console": "スノーフレークウェブコンソール",
     "successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",
     "successfully-connected-instance": "接続に成功しました。",
@@ -1630,13 +1630,11 @@
           "title": "MCP アクセスはオフです"
         },
         "line": {
-          "audit": "監査対象の操作には MCP タグが付き、ポリシーが拒否したものも記録されます",
-          "capped": "上限はあなた自身の Bytebase 権限",
+          "audit": "監査対象の操作には MCP タグが付き、監査ログの標準出力への出力が有効な場合、ポリシーが拒否したものは標準出力に出力されます",
+          "capped-read-only": "上限はあなた自身の Bytebase 権限と、Bytebase が各データベースエンジンで確認できる範囲。ステートメントが読み取りだと示せないエンジンでは、クエリは一切実行されません",
+          "capped-read-write": "上限はあなた自身の Bytebase 権限と、Bytebase が各データベースエンジンおよび各操作にどこまで対応しているか",
           "masking": "あなたのマスキング適用除外はこのセッションには適用されません",
-          "no-write": "データやスキーマの変更はできない",
-          "read": "スキーマを調べ、読み取り専用のクエリを実行する",
-          "workflow": "イシュー・プラン・ロールアウトの作成、およびクエリ結果のエクスポート",
-          "write": "あなたの権限の範囲でデータとスキーマを変更する"
+          "no-write": "変更・ロールアウト・エクスポート・データベース管理はできない"
         },
         "title": "このセッションでできること",
         "undisclosed": {
@@ -2672,12 +2670,8 @@
       "description": "IM 連携は、特定のイシューイベントについてユーザーにダイレクトメッセージをプッシュするために使用されます。プロジェクト Webhook と連携して動作します。"
     },
     "mcp": {
-      "auth": {
-        "description": "初回接続時に OAuth 認証が必要です。適切な Bytebase 権限があることを確認してください。",
-        "title": "認証が必要"
-      },
       "connect": {
-        "description": "Bytebase を AI クライアントに追加し、ブラウザーでアクセスを承認して、質問を始めてください。",
+        "description": "Bytebase を AI クライアントに追加すれば、すぐに質問を始められます。初回接続時にはブラウザーでサインインし、アクセスを承認します。",
         "desktop-note": "Claude Desktop はリモートサーバーを設定ファイルではなく Claude アカウントから読み込みます。claude.ai の Customize > Connectors でこの URL をカスタムコネクタとして追加すると、Claude Desktop に表示されます。",
         "json-note": "これは mcpServers 形式です。クライアントごとに設定形式が異なります。たとえば VS Code は独自の mcp.json で servers を使うため、その場合は VS Code タブを使ってください。",
         "title": "クライアントを接続"
@@ -2688,33 +2682,98 @@
         "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする",
         "title": "最初のプロンプト"
       },
+      "ladder": {
+        "disabled": "何も許可されません。MCP セッションは接続できません。",
+        "floor": {
+          "label": "どのモードでも決してできないこと：",
+          "text": "Issue の承認、ワークスペースの管理、認証情報の取り扱い、Admin モードのセッションの開始、他人のクエリ履歴の閲覧。"
+        },
+        "heading": "{{mode}} で許可されること",
+        "hide-details": "詳細を隠す",
+        "mark": {
+          "allowed": "許可",
+          "refused": "不許可"
+        },
+        "row": {
+          "export": {
+            "details": "結果をファイルとしてダウンロードします。データが Bytebase の外に出ます。",
+            "title": "クエリ結果をエクスポートする"
+          },
+          "manage": {
+            "details": "インスタンスとデータベースの同期 · データベースの設定とラベル · データベースをプロジェクト間で移動 · データベースグループ · 保存済みクエリ",
+            "title": "データベースの運用設定を管理する"
+          },
+          "propose": {
+            "details": "シートの作成 · Plan と Issue の作成・編集 · プランチェックとレビューの実行 · リリースの作成・削除・復元 · リビジョンの作成・削除 · スキーマ差分の生成。エージェントが自分の変更を承認することはありません。人の承認が必要かどうかはプロジェクトの承認ポリシーが決めます",
+            "title": "変更を提案する"
+          },
+          "read-data": {
+            "details": "読み取り専用のクエリを実行 · 読み取り専用では、すべてのステートメントがデータを返す読み取りだと確認できない限りリクエスト全体を拒否します。どこまで確認できるかはエンジンによって異なり、どのステートメントも読み取りだと確認できないエンジンもあります · 自分のクエリ履歴 · アクセス権のある保存済みクエリとシート",
+            "title": "クエリを実行してデータを読み取る"
+          },
+          "read-schemas": {
+            "details": "スキーマ · データベースとインスタンス · プロジェクトとデータベースグループ · カタログ・変更履歴・リビジョン · SQL レビュー設定 · 自分のセッションとワークスペースの情報",
+            "title": "スキーマとメタデータの読み取り"
+          },
+          "read-workflow": {
+            "details": "Issue とコメント · Plan とプランチェック · ロールアウト・タスク実行・ログ · リリース · ロールバックのプレビュー",
+            "title": "変更ワークフローの読み取り"
+          },
+          "run-rollouts": {
+            "details": "ロールアウトの作成 · プロジェクトの承認ポリシーのもとでタスクを実行・スキップ・キャンセル",
+            "title": "ロールアウトとタスクを実行する"
+          },
+          "run-statements": {
+            "details": "クエリを通じた INSERT・UPDATE・DELETE・CREATE・ALTER・DROP。エンジンとそのユーザー自身の権限が許す範囲で行われます",
+            "title": "DML と DDL のステートメントを実行する"
+          }
+        },
+        "show-details": "詳細を表示",
+        "stops": {
+          "read": "読み取り専用はここまで",
+          "write": "読み書きはここまで"
+        },
+        "summary": {
+          "read-only": "スキーマ・データ・変更ワークフローの読み取り。読み取りだと確認できないものを含むリクエストは拒否され、エクスポートもできません",
+          "read-write": "スキーマ・データ・変更ワークフローの読み取り。提案・実行・エクスポート・管理"
+        },
+        "tier": {
+          "read": "読み取り",
+          "write": "書き込み"
+        }
+      },
       "policy": {
-        "audit": "MCP ポリシーによる拒否は監査ログに記録されます。",
-        "description": "このワークスペースで MCP セッションが実行できる操作の上限です。各セッションは接続ユーザー自身の権限によってもさらに制限されます。",
+        "current": "現在のポリシー：{{mode}}",
+        "description": "このワークスペースで MCP セッションが実行できる操作の上限です。各セッションは接続ユーザー自身の権限によっても制限され、監査ログの標準出力への出力が有効な場合、ポリシーによる拒否は標準出力に出力されます。",
         "edit": "ポリシーを編集",
-        "in-force": "適用中",
         "loading": "アクセスポリシーを読み込んでいます…",
         "masking": {
           "badge": "適用除外を無視中",
-          "description": "MCP セッションではマスクされたデータがマスクされたままになります。ユーザーに付与されたマスキングの適用除外も、アクセスグラントに伴うマスク解除も、その MCP リクエストには適用されなくなります。同じユーザーでも Bytebase コンソールでは影響を受けません。",
-          "limits": "マスキングの適用範囲はエンジンによって異なります。Bytebase がマスクしないエンジン、または適用除外を参照せずにマスクするエンジンでは、この設定は何も変えません。",
+          "badge-disabled": "マスキング適用除外を無視 — MCP は無効",
+          "badge-unlicensed": "マスキング適用除外を無視 — マスキングは未ライセンス",
+          "description": "有効にすると、適用除外やマスク解除の権限を持つユーザーであっても、MCP セッションではマスクされたデータがマスクされたままになります。範囲はエンジンによって異なり、Bytebase がマスクしないところでは何も変わりません。コンソールには影響しません。",
           "title": "マスキングの適用除外を無視する",
           "unavailable": "このワークスペースではデータマスキングのライセンスがないため、この設定にかかわらず何もマスクされません。"
+        },
+        "masking-pending": {
+          "applied": "このポリシーは、マスキング適用除外を有効にしたまま保存されます。",
+          "ignored": "このポリシーは、マスキング適用除外を無視した状態で保存されます。"
         },
         "mode": {
           "disabled": {
             "best-for": "適する場面：有効にする準備が整うまで MCP をオフにしておきたいとき。",
+            "caption": "MCP セッションは接続できません",
             "description": "このワークスペースにはどの MCP セッションも接続できません。",
             "title": "無効"
           },
           "read-only": {
-            "best-for": "適する場面：SQL を書かない人も含めた、データの照会と探索。",
-            "description": "セッションはスキーマを調べ、読み取り専用のクエリを実行できます。Bytebase は実行前にすべてのステートメントを分類し、読み取りでないものが 1 つでもあればリクエスト全体を拒否します。エンジンのドライバーが対応していれば、データベースセッション自体も読み取り専用で開きます。どこまで踏み込めるかはエンジンによって異なります。",
+            "best-for": "適する場面：自然言語を使ったデータの照会と探索。",
+            "caption": "探索と照会",
             "title": "読み取り専用"
           },
           "read-write": {
             "best-for": "適する場面：AI エージェント経由でのデータベース変更。各ユーザー自身の権限による制限は残ります。",
-            "description": "セッションはデータやスキーマの変更も行えます。範囲は接続ユーザー自身の権限までです。",
+            "caption": "データとスキーマの変更",
             "title": "読み書き"
           }
         },
@@ -2724,7 +2783,8 @@
         },
         "save": "ポリシーを保存",
         "saved": "ポリシーを保存しました。{{mode}} はすべてのセッションの次のリクエストから適用されます。",
-        "tightening": "上限の変更は、実行中のすべてのセッションの次のリクエストから適用されます。エージェントがすでに許可された処理は最後まで実行されます。",
+        "tightening": "実行中のすべてのセッションの次のリクエストから適用されます。",
+        "tightening-change": "{{from}} → {{to}} は、実行中のすべてのセッションの次のリクエストから適用されます。",
         "title": "アクセスポリシー",
         "unreadable": {
           "description": "このワークスペースには、このビルドが解釈できない機能レベルの値が保存されています。MCP 接続はすべて拒否されています。モードを選択して保存し、修正してください。",
@@ -2732,8 +2792,8 @@
           "title": "保存されたアクセスポリシーを読み取れません"
         },
         "unserved": {
-          "description": "このワークスペースには {{stored}} が保存されていますが、このビルドが提供する上限ではありません。MCP 接続はすべて拒否されています。モードを選んで保存すると修復されます。",
-          "title": "保存されたアクセスポリシーはこのビルドが提供するものではありません"
+          "description": "このワークスペースには {{stored}} が保存されていますが、このビルドは対応していません。MCP 接続はすべて拒否されています。モードを選択して保存し、修正してください。",
+          "title": "保存されたアクセスポリシーはこのビルドではサポートされていません"
         }
       },
       "title": "MCP 連携"
@@ -2821,7 +2881,7 @@
       "select-role_other": "ロールを選択",
       "service-account": "サービスアカウント",
       "service-accounts": "サービスアカウント",
-      "service-key-copied": "サービスキーはコピーされています。公開しないでください",
+      "service-key-reset-and-copied": "サービスキーをリセットしてコピーしました",
       "show-inactive": "非アクティブなアカウントを表示",
       "table": {
         "account": "アカウント",
@@ -3257,6 +3317,108 @@
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。"
     },
     "query-history-not-found": "クエリ履歴が見つからないか、アクセスできなくなりました",
+    "query-plan-load-failed": "クエリプランの読み込みに失敗しました",
+    "query-plan-viewer": {
+      "copy": {
+        "copied": "コピーしました",
+        "failed": "コピーに失敗しました",
+        "plan": "プランをコピー",
+        "query": "クエリをコピー"
+      },
+      "details": {
+        "select-node": "詳細を表示するノードを選択してください。"
+      },
+      "diagram": {
+        "collapse": "{{node}} 配下の {{count}} ノードを折りたたむ",
+        "cost": "コスト {{cost}}",
+        "estimated-rows": "推定 {{count}} 行",
+        "expand": "{{node}} 配下の {{count}} ノードを展開",
+        "fit": "全体を表示",
+        "nodes-hidden": "{{count}} ノードを非表示",
+        "plan-cost-share": "プランコストの {{share}}",
+        "rows": "行数 {{count}}",
+        "zoom-in": "拡大",
+        "zoom-out": "縮小"
+      },
+      "error": {
+        "mssql-empty": "SQL Server はこのステートメントのクエリプランを返しませんでした。",
+        "mssql-invalid": "クエリプランが有効な XML ではありません。SHOWPLAN_XML の出力が必要です。",
+        "mssql-no-plan": "クエリプラン XML は、1つ以上のステートメントを含む SQL Server showplan ではありません。",
+        "postgres-empty": "PostgreSQL はこのステートメントのクエリプランを返しませんでした。",
+        "postgres-invalid": "クエリプランが有効な JSON ではありません。EXPLAIN (FORMAT JSON) の出力が必要です。",
+        "postgres-no-plan": "クエリプラン JSON に \"Plan\" オブジェクトがありません。",
+        "spanner-empty": "Spanner はこのステートメントのクエリプランを返しませんでした。",
+        "spanner-emulator": "Spanner はこのステートメントのクエリプランを返しませんでした。Spanner エミュレーターはいずれのステートメントにもプランを返さないため、Spanner インスタンスで説明を実行してください。",
+        "spanner-invalid": "クエリプランが有効な JSON ではありません。Spanner クエリプランが必要です。",
+        "spanner-no-plan": "クエリプラン JSON に、ルートがオペレーターである \"planNodes\" リストがありません。",
+        "too-deep": "クエリプランの入れ子が深すぎるため、このビジュアライザーでは描画できません。",
+        "unreadable": "このクエリプランを読み取れませんでした"
+      },
+      "grid": {
+        "added-cost": "追加コスト",
+        "added-cost-hint": "このノードが子ノードに加えて追加するコストです。一部のエンジンでは、ネストループ配下などで入力の反復実行もここに含めます。バーはプラン全体に占めるこのコストの割合です。",
+        "caption": "プランナーが入れ子にする順序で並べたプランノードです。親が子より先に表示されます。",
+        "estimated-rows": "推定行数",
+        "node": "ノード",
+        "rows": "行数",
+        "total-cost": "総コスト",
+        "width": "幅",
+        "width-hint": "推定行幅（バイト）"
+      },
+      "highlight": {
+        "cost": "コスト",
+        "cost-hint": "ノードが子ノードに加えて追加するコストで色付け",
+        "label": "ハイライト",
+        "off": "オフ",
+        "off-hint": "すべてのノードカードを色付けしない",
+        "rows": "行数",
+        "rows-hint": "推定行数で色付け"
+      },
+      "legend": {
+        "cost": "各カードのバーは、そのノードがプランの推定コストに占める割合を示します",
+        "rows": "子ノードが返すと推定される行数に応じてエッジが太くなります"
+      },
+      "metric": {
+        "added-cost": "追加コスト",
+        "bytes": "{{count}} バイト",
+        "estimated-rows": "推定行数",
+        "row-width": "行幅",
+        "startup-cost": "開始コスト",
+        "total-cost": "総コスト"
+      },
+      "query": {
+        "missing": "このプランにはステートメントが保存されていません。"
+      },
+      "summary": {
+        "added-cost": "追加コスト",
+        "cost-by-operation": "操作別コスト",
+        "cost-by-operation-description": "プラン内の各ノード種別と、その総コストです。",
+        "cost-ranges": "コスト範囲",
+        "cost-ranges-description": "各ノードは、最初の行を返す前の開始コストから、その配下のすべてを含む総コストまでを示します。濃い範囲ほどプランコストの割合が高くなります。コストは実行スケジュールではありません。結合の2つの入力はここでは重なりますが、実際には順番に実行されます。",
+        "costliest": "高コストなオペレーター",
+        "costliest-description": "ノードが子ノードに加えて追加するコスト順です。ネストループ配下などで入力が繰り返し実行される場合、一部のエンジンは反復コストを入力自体ではなく、その入力を再実行するノードに計上します。",
+        "count": "件数",
+        "estimate-note": "ステートメントはプランニングされましたが実行されていないため、ここにある数値はすべて測定値ではなくオプティマイザーの推定値です。コスト単位は任意で、このプラン内でのみ比較できます。",
+        "estimated-rows-returned": "推定返却行数",
+        "no-added-cost": "このプランには固有の推定コストを追加するノードがありません。",
+        "nodes": "ノード",
+        "operation": "操作",
+        "share": "割合",
+        "timeline-node": "{{name}}、コスト {{startup}} から {{total}}、プランコストの {{share}}",
+        "total-estimated-cost": "推定総コスト"
+      },
+      "tab": {
+        "diagram": "ダイアグラム",
+        "grid": "グリッド",
+        "query": "クエリ",
+        "summary": "概要",
+        "text": "テキスト"
+      },
+      "totals": {
+        "estimated-cost": "推定コスト {{cost}}",
+        "nodes": "{{count}} ノード"
+      }
+    },
     "query-time": "クエリ時間",
     "re-request": "再申請",
     "recent": "最近",
@@ -3310,6 +3472,7 @@
     "search-scope-row-number-description": "行番号を入力してその行にジャンプします。",
     "search-scope-row-number-title": "行番号",
     "select-a-database-to-start": "開始するにはデータベースを選択してください",
+    "select-a-project-to-choose-a-database": "データベースを選択するにはプロジェクトを選択してください",
     "select-connection": "データ接続を選択してください",
     "select-encoding": "エンコーディングの選択",
     "self": "SQLエディタ",
@@ -3343,9 +3506,6 @@
     "view-detail": "詳細を見る",
     "view-issue": "Issue を表示",
     "view-schema-text": "テキストの表示 スキーマ",
-    "visualize-explain": "視覚化の説明",
-    "visualize-explain-blocked": "クエリプランのタブがブロックされました。このサイトのポップアップを許可して再試行してください。",
-    "visualize-explain-failed": "クエリプランの読み込みに失敗しました",
     "web-socket": {
       "connection-status": {
         "connected": "接続済み",
@@ -3528,8 +3688,7 @@
     },
     "prior-backup": "影響を受けるデータの事前バックアップ",
     "run-immediately": {
-      "description": "「実行」をクリックするとすぐにタスクの実行が開始されます。遅延やスケジュール設定は必要ありません。",
-      "self": "すぐに実行"
+      "description": "「実行」をクリックするとすぐにタスクの実行が開始されます。遅延やスケジュール設定は必要ありません。"
     },
     "run-task": "タスクを実行 | タスクを実行",
     "schedule-for-later": {

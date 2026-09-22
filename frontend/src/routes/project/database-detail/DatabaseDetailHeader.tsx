@@ -1,10 +1,10 @@
-import { Check, Copy, ShieldAlert } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { ShieldAlert } from "lucide-react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { InstanceLabel } from "@/components/InstanceLabel";
 import { RouterLink } from "@/components/RouterLink";
+import { CopyButton } from "@/components/ui/copy-button";
 import { useEnvironment, usePlanFeature } from "@/hooks/useAppState";
-import { writeTextToClipboard } from "@/lib/clipboard";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
@@ -32,7 +32,6 @@ const extractDatabaseParts = (resource: string) => {
 
 export function DatabaseDetailHeader({ database }: { database: Database }) {
   const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
   const { databaseName } = useMemo(
     () => extractDatabaseParts(database.name),
     [database.name]
@@ -82,14 +81,6 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
     };
   }, [environmentColorRgb]);
 
-  const handleCopy = useCallback(async () => {
-    const success = await writeTextToClipboard(database.name);
-    setCopied(success);
-    if (success) {
-      window.setTimeout(() => setCopied(false), 1200);
-    }
-  }, [database.name]);
-
   return (
     <div className="flex min-w-0 flex-1 shrink-0 flex-col gap-y-2">
       <div className="flex w-full min-w-0 flex-col">
@@ -102,17 +93,10 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
           <span className="min-w-0 truncate" title={database.name}>
             {database.name}
           </span>
-          <button
-            type="button"
-            className="inline-flex shrink-0 items-center p-0.5 text-control-light hover:text-main"
-            onClick={() => void handleCopy()}
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
+          <CopyButton
+            content={database.name}
+            className="shrink-0 p-0.5 text-control-light hover:text-main"
+          />
         </div>
       </div>
 

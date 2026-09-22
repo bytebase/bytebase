@@ -935,12 +935,6 @@ func TestMCPSessionCannotFlipTheMaskingToggle(t *testing.T) {
 	a.NoError(err)
 	a.True(stored, "the refusal must land before the write: the toggle is still on")
 
-	// The operator's view. A gate denial runs before ACL, so it carries no
-	// resource and its row is parented to the caller's workspace.
-	rows := deniedMCPRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.SettingService/UpdateSetting")
-	a.NotEmpty(rows, "a denied settings write must be visible to an operator with MCP provenance")
-	a.Equal(int32(connect.CodePermissionDenied), rows[0].Status.GetCode(),
-		"the row must record the denial, not a success")
-	a.NotEmpty(rows[0].McpDelegation.GetCorrelationId(),
-		"the denial must be correlatable back to the agent session that made it")
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.SettingService/UpdateSetting"),
+		"a gate refusal is never stored")
 }

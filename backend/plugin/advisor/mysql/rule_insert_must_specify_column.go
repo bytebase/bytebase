@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -66,7 +66,7 @@ func (r *insertMustSpecifyColumnOmniRule) OnStatement(node ast.Node) {
 			Code:          code.InsertNotSpecifyColumn.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
+			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
 		})
 		return
 	}
@@ -78,7 +78,7 @@ func (r *insertMustSpecifyColumnOmniRule) OnStatement(node ast.Node) {
 			Code:          code.InsertNotSpecifyColumn.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("The INSERT statement must specify columns but \"%s\" does not", text),
-			StartPosition: common.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
+			StartPosition: base.ConvertANTLRLineToPosition(r.BaseLine + int(r.ContentStartLine())),
 		})
 	}
 }

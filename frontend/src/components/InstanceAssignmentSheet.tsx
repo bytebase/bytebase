@@ -16,6 +16,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Table } from "@/components/ui/table";
 import { useServerState, useSubscriptionState } from "@/hooks/useAppState";
 import { PagedTableFooter } from "@/hooks/usePagedData";
 import { pushNotification } from "@/stores";
@@ -245,7 +246,7 @@ export function InstanceAssignmentSheet({
           </div>
 
           <div className="overflow-x-auto rounded-sm border border-control-border">
-            <table className="w-full min-w-[36rem] text-sm">
+            <Table className="min-w-[36rem]">
               <thead>
                 <tr className="border-b border-control-border bg-control-bg text-left">
                   {canManageSubscription && <th className="w-12 px-4 py-2" />}
@@ -320,7 +321,7 @@ export function InstanceAssignmentSheet({
                   })
                 )}
               </tbody>
-            </table>
+            </Table>
           </div>
 
           <PagedTableFooter

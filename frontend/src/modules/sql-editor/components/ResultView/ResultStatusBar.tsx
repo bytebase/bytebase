@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
-import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import { cn } from "@/lib/utils";
@@ -35,16 +34,12 @@ type ResultStatusBarProps = Readonly<{
   database: Database;
   statement: string;
   queryTime: string;
-  showVisualizeButton?: boolean;
-  onVisualizeExplain?: () => void;
 }>;
 
 export function ResultStatusBar({
   database,
   statement,
   queryTime,
-  showVisualizeButton = false,
-  onVisualizeExplain,
 }: ResultStatusBarProps) {
   const { t } = useTranslation();
   const hasStatement = statement.trim() !== "";
@@ -135,16 +130,6 @@ export function ResultStatusBar({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-x-2">
-        {showVisualizeButton && (
-          <Button
-            size="sm"
-            appearance="link"
-            className="h-auto px-0 text-xs"
-            onClick={onVisualizeExplain}
-          >
-            {t("sql-editor.visualize-explain")}
-          </Button>
-        )}
         <span>
           {t("sql-editor.query-time")}: {queryTime}
         </span>

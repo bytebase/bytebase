@@ -126,6 +126,7 @@
     - [QueryResult.CommandError](#bytebase-v1-QueryResult-CommandError)
     - [QueryResult.Message](#bytebase-v1-QueryResult-Message)
     - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
+    - [QueryResult.QueryPlan](#bytebase-v1-QueryResult-QueryPlan)
     - [QueryResult.SyntaxError](#bytebase-v1-QueryResult-SyntaxError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
@@ -169,6 +170,9 @@
   
     - [PlanService](#bytebase-v1-PlanService)
   
+- [v1/review_rule.proto](#v1_review_rule-proto)
+    - [ReviewRuleType](#bytebase-v1-ReviewRuleType)
+  
 - [v1/issue_service.proto](#v1_issue_service-proto)
     - [ApprovalFlow](#bytebase-v1-ApprovalFlow)
     - [ApprovalTemplate](#bytebase-v1-ApprovalTemplate)
@@ -184,6 +188,7 @@
     - [IssueComment.Approval](#bytebase-v1-IssueComment-Approval)
     - [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate)
     - [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate)
+    - [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata)
     - [IssueComment.ReviewSubmission](#bytebase-v1-IssueComment-ReviewSubmission)
     - [ListIssueCommentsRequest](#bytebase-v1-ListIssueCommentsRequest)
     - [ListIssueCommentsResponse](#bytebase-v1-ListIssueCommentsResponse)
@@ -204,6 +209,7 @@
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
+    - [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority)
     - [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState)
     - [ReviewRun.Status](#bytebase-v1-ReviewRun-Status)
     - [ReviewRun.Type](#bytebase-v1-ReviewRun-Type)
@@ -594,6 +600,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
+    - [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [TagPolicy](#bytebase-v1-TagPolicy)
     - [TagPolicy.TagsEntry](#bytebase-v1-TagPolicy-TagsEntry)
@@ -902,6 +909,9 @@ WRITE are the serving classes the workspace&#39;s MCP capability ceiling selects
 between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
 method is refused rather than served. Annotating a method is therefore a
 change to what an MCP session can reach, taking effect on the next request.
+READ and WRITE methods are also disclosed to workspace admins, as capability
+rows on the Access policy page, so annotating a method changes what the
+product promises as well as what it serves.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -2561,7 +2571,9 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | redis_run_commands_on | [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn) |  |  |
-| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
+| explain_format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  | Which explain output the caller wants, for an explain request.
+
+Leave it unspecified for the engine&#39;s own default, which is the only output most engines have. Naming a format an engine cannot produce is INVALID_ARGUMENT rather than a silent fallback, as is any explain request against an engine that has no explain at all. |
 
 
 
@@ -2627,6 +2639,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | command_error | [QueryResult.CommandError](#bytebase-v1-QueryResult-CommandError) |  |  |
 | messages | [QueryResult.Message](#bytebase-v1-QueryResult-Message) | repeated | Informational or debug messages returned by the database engine during query execution. Examples include PostgreSQL&#39;s RAISE NOTICE, MSSQL&#39;s PRINT, or Oracle&#39;s DBMS_OUTPUT.PUT_LINE. |
 | masked | [MaskingReason](#bytebase-v1-MaskingReason) | repeated | Masking reasons for each column (empty for non-masked columns). |
+| query_plan | [QueryResult.QueryPlan](#bytebase-v1-QueryResult-QueryPlan) |  | Set when the result is a query plan. Unset for any other result. |
 
 
 
@@ -2691,6 +2704,22 @@ for field description.
 | file | [string](#string) |  |  |
 | line | [int32](#int32) |  |  |
 | routine | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-QueryPlan"></a>
+
+### QueryResult.QueryPlan
+A query plan held in the result&#39;s rows.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| format | [QueryOption.ExplainFormat](#bytebase-v1-QueryOption-ExplainFormat) |  |  |
+| executed | [bool](#bool) |  | Whether producing the plan executed the statement, as EXPLAIN ANALYZE does. |
 
 
 
@@ -2820,19 +2849,15 @@ RuleType indicates the source of the linting rule.
 <a name="bytebase-v1-QueryOption-ExplainFormat"></a>
 
 ### QueryOption.ExplainFormat
-Which explain output the caller wants, for an explain request.
-
-Leave it unspecified for the engine&#39;s own default, which is the only
-output most engines have. Naming a format an engine cannot produce is
-INVALID_ARGUMENT rather than a silent fallback, as is any explain request
-against an engine that has no explain at all.
+The output format of a query plan.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. |
+| EXPLAIN_FORMAT_UNSPECIFIED | 0 | The engine&#39;s default: PostgreSQL EXPLAIN, SQL Server SHOWPLAN_ALL. On a result, a default the server could not resolve, as when MySQL follows the session&#39;s explain_format; read such a plan as text. |
 | TEXT | 1 | The human-readable plan. PostgreSQL: EXPLAIN (FORMAT TEXT). SQL Server: SHOWPLAN_ALL. |
 | JSON | 2 | The plan tree as JSON. PostgreSQL: EXPLAIN (FORMAT JSON). |
 | XML | 3 | The plan tree as XML. PostgreSQL: EXPLAIN (FORMAT XML). SQL Server: SHOWPLAN_XML. |
+| YAML | 4 | The plan tree as YAML. PostgreSQL: EXPLAIN (FORMAT YAML). |
 
 
 
@@ -3326,6 +3351,51 @@ PlanService manages deployment plans for database changes.
 
 
 
+<a name="v1_review_rule-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/review_rule.proto
+
+
+ 
+
+
+<a name="bytebase-v1-ReviewRuleType"></a>
+
+### ReviewRuleType
+ReviewRuleType is the standard review rule set. The rules are fixed:
+every project gets them without configuration, and the only setting is a
+switch (see ReviewRulePolicy).
+
+A rule id names what the rule examines. An execution check is named for
+what it checks; a rule about the SQL itself carries REQUIRE or DISALLOW so
+the id says which way it cuts. DISALLOW on a P1 rule means the operation
+needs a person&#39;s acceptance, not that it is forbidden.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| REVIEW_RULE_TYPE_UNSPECIFIED | 0 |  |
+| SYNTAX | 1 | P0: the statements do not parse for the target engine. |
+| WALK_THROUGH | 2 | P0: applying the statements to the synced schema fails: a missing table or column, a duplicate object, or an invalid reference. |
+| ONLINE_MIGRATION | 3 | P0: the change requests online migration but is not eligible. |
+| PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
+| REQUIRE_IS_NULL | 5 | P0: = NULL or &lt;&gt; NULL in a predicate, which is always false. Test for NULL with IS NULL or IS NOT NULL. |
+| REQUIRE_WHERE | 6 | P1: UPDATE or DELETE without WHERE. |
+| DISALLOW_DROP_OBJECT | 7 | P1: DROP TABLE, COLUMN, SCHEMA, or DATABASE. |
+| DISALLOW_TRUNCATE | 8 | P1: TRUNCATE. |
+| DISALLOW_DROP_CONSTRAINT | 9 | P1: dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint. |
+| DISALLOW_RENAME | 10 | P1: renaming a table or column. |
+| REQUIRE_PRIMARY_KEY | 11 | P1: the change creates a table without a primary key, or drops a primary key without adding one back. A table that already lacked a primary key before the change is not reported. |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="v1_issue_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -3521,6 +3591,7 @@ A comment on an issue.
 | root | [string](#string) | optional | The thread root&#39;s name, set only on replies. Immutable after creation. Format: projects/{project}/issues/{issue}/issueComments/{issueComment} Must name a thread root in the same issue, never a general comment or reply. |
 | thread_state | [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState) | optional | Present only on thread roots. Set OPEN on create to start a thread; an anchored root starts one without it. Omit root, thread_state, and statement_anchor to create a general comment. Update through the thread_state field mask to resolve or reopen. Adding a reply does not reopen a resolved thread. |
 | statement_anchor | [StatementAnchor](#bytebase-v1-StatementAnchor) |  | Optional source context on a root or reply. A reply&#39;s anchor must share the root&#39;s spec and sheet_sha256; it may narrow the range. Cannot be set on events. Immutable after creation. |
+| review_metadata | [IssueComment.ReviewMetadata](#bytebase-v1-IssueComment-ReviewMetadata) |  | Present on review results, the comments the review executor posts. Never accepted on create or update. |
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
@@ -3579,6 +3650,24 @@ and after a PlanService.UpdatePlan call that mutated specs).
 | ----- | ---- | ----- | ----------- |
 | from_specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
 | to_specs | [Plan.Spec](#bytebase-v1-Plan-Spec) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-IssueComment-ReviewMetadata"></a>
+
+### IssueComment.ReviewMetadata
+What a review result carries beyond its text.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| run_type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | The reviewer that posted the result. |
+| rule_type | [ReviewRuleType](#bytebase-v1-ReviewRuleType) |  | The rule judged against. Set if and only if run_type is RULE. |
+| priority | [IssueComment.ReviewMetadata.Priority](#bytebase-v1-IssueComment-ReviewMetadata-Priority) |  |  |
+| targets | [string](#string) | repeated | Every database the result applies to, sorted. Format: instances/{instance}/databases/{database} |
 
 
 
@@ -3909,6 +3998,21 @@ Approval status values.
 | PENDING | 1 | Approval pending. |
 | APPROVED | 2 | Approved. |
 | REJECTED | 3 | Rejected. |
+
+
+
+<a name="bytebase-v1-IssueComment-ReviewMetadata-Priority"></a>
+
+### IssueComment.ReviewMetadata.Priority
+Priority says what resolving the thread means. It has no bearing on
+blocking, which thread_state alone decides.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| PRIORITY_UNSPECIFIED | 0 |  |
+| P0 | 1 | The SQL is wrong and must change. |
+| P1 | 2 | Dangerous but legitimate; a person must accept it. |
+| P2 | 3 | Advisory. |
 
 
 
@@ -5340,7 +5444,7 @@ Audit log entry recording system activity or API call.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the log. Formats: - projects/{project}/auditLogs/{uid} - workspaces/{workspace}/auditLogs/{uid} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the audit log was created. |
-| user | [string](#string) |  | The user who performed the action. Format: users/{email} |
+| actor | [string](#string) |  | The principal who performed the action. Formats: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email} |
 | method | [string](#string) |  | The method or action being audited. For example: /bytebase.v1.SQLService/Query or bb.project.repository.push |
 | severity | [AuditLog.Severity](#bytebase-v1-AuditLog-Severity) |  | The severity level of this audit log entry. |
 | resource | [string](#string) |  | The resource associated with this audit log. |
@@ -5441,9 +5545,9 @@ Request message for searching audit logs.
 | parent | [string](#string) |  |  |
 | filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - method: the API name, can be found in the docs. Usually &#34;/bytebase.v1.…&#34;, for example &#34;/bytebase.v1.UserService/CreateUser&#34;; entries written outside the v1 API carry their own prefix, such as &#34;/bytebase.mcp.Session/Authorize&#34; or &#34;/bytebase.cli.Recovery/ResetUserPassword&#34;. Support &#34;==&#34; operator. - resource: the resource the entry is about, support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - user: the actor, should in &#34;users/{email}&#34; format, support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator. - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support &#34;==&#34; operator. - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry&#39;s mcp_delegation.correlation_id. Support &#34;==&#34; operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
+Supported filter: - method: the API name, can be found in the docs. Usually &#34;/bytebase.v1.…&#34;, for example &#34;/bytebase.v1.UserService/CreateUser&#34;; entries written outside the v1 API carry their own prefix, such as &#34;/bytebase.mcp.Session/Authorize&#34; or &#34;/bytebase.cli.Recovery/ResetUserPassword&#34;. Support &#34;==&#34; operator. - resource: the resource the entry is about, support &#34;==&#34; operator. - severity: support &#34;==&#34; operator, check Severity enum in AuditLog message for values. - actor: the actor, in users/{email}, serviceAccounts/{email}, or workloadIdentities/{email} format. Support &#34;==&#34; operator. - create_time: support &#34;&gt;=&#34; and &#34;&lt;=&#34; operator. - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support &#34;==&#34; operator. - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry&#39;s mcp_delegation.correlation_id. Support &#34;==&#34; operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
 
-For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; - filter = &#34;mcp == true&#34; - filter = &#34;mcp_correlation_id == &#39;0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60&#39;&#34; |
+For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; actor == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; - filter = &#34;mcp == true&#34; - filter = &#34;mcp_correlation_id == &#39;0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60&#39;&#34; |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. The default sorting order is ascending. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
 | page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 10 log entries will be returned. The maximum value is 5000; values above 5000 will be coerced to 5000. |
 | page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
@@ -9873,6 +9977,7 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 | masking_exemption_policy | [MaskingExemptionPolicy](#bytebase-v1-MaskingExemptionPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
+| review_rule_policy | [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy) |  |  |
 | enforce | [bool](#bool) |  | Whether the policy is enforced. |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 
@@ -9893,6 +9998,27 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
+
+
+
+
+
+
+<a name="bytebase-v1-ReviewRulePolicy"></a>
+
+### ReviewRulePolicy
+Standard review rule policy: the rules switched on. The nearest policy
+wins: a project&#39;s own policy applies as is; a project without one uses
+the workspace policy; with neither, every rule is on.
+
+A saved list is explicit, so a rule added to the standard set in a later
+release is appended to every saved policy by a data migration in that
+release.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rules | [ReviewRuleType](#bytebase-v1-ReviewRuleType) | repeated | The rules switched on. Unknown or unspecified values are rejected. |
 
 
 
@@ -9994,6 +10120,7 @@ The type of organizational policy.
 | ROLLOUT_POLICY | 3 | Rollout deployment policy. |
 | TAG | 4 | Resource tag policy. |
 | DATA_QUERY | 6 | Query data access policy. |
+| REVIEW_RULE | 7 | Standard review rule switch. Allowed on WORKSPACE and PROJECT. |
 
 
  
@@ -12500,7 +12627,7 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| session_id | [string](#string) |  | The same Stripe Checkout Session ID PurchaseResponse mints, arriving back the other way, so it carries the same classification. VerifyCheckoutSession is EXCLUDED, and the MCP gate records a row for every method it refuses, so leaving this unannotated would write the id into a denial row while the response that produced it was redacted. |
+| session_id | [string](#string) |  | The same Stripe Checkout Session ID PurchaseResponse mints, arriving back the other way, so it carries the same classification. VerifyCheckoutSession is EXCLUDED, and a refusal of it streams its request to the stdout audit log, so leaving this unannotated would write the id into that line while the response that produced it was redacted. |
 
 
 

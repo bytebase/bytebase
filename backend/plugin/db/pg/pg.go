@@ -28,6 +28,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -394,8 +395,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	owner, err := d.GetCurrentDatabaseOwner(ctx)
@@ -447,7 +448,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 
 	// Execute based on transaction mode
 	var affectedRows int64
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 	} else {
 		affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
@@ -470,7 +471,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		opts.LogRetryInfo(err, i+1)
 
 		// Do retry.
-		if transactionMode == common.TransactionModeOff {
+		if transactionMode == transaction.ModeOff {
 			affectedRows, err = d.executeInAutoCommitMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
 		} else {
 			affectedRows, err = d.executeInTransactionMode(ctx, owner, statement, commands, nonTransactionAndSetRoleStmts, opts, isPlsql)
@@ -799,9 +800,13 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if queryContext.Explain {
-			statement, _ = db.ExplainStatement(storepb.Engine_POSTGRES, statement, queryContext.Option.GetExplainFormat())
+			explained, err := base.ExplainStatement(storepb.Engine_POSTGRES, statement, db.ExplainFormat(queryContext.Option.GetExplainFormat()))
+			if err != nil {
+				return nil, err
+			}
+			statement = explained
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			statement = base.StatementWithResultLimit(storepb.Engine_POSTGRES, statement, queryContext.Limit, "")
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
@@ -837,6 +842,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				if err := rows.Err(); err != nil {
 					return nil, err
 				}
+				if !queryContext.Explain {
+					r.QueryPlan = typedExplainPlan(statement)
+				}
 				return r, nil
 			}
 
@@ -868,6 +876,17 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	}
 
 	return results, nil
+}
+
+func typedExplainPlan(statement string) *v1pb.QueryResult_QueryPlan {
+	format, executed, ok := pgparser.DescribeExplain(statement)
+	if !ok {
+		return nil
+	}
+	return &v1pb.QueryResult_QueryPlan{
+		Format:   v1pb.QueryOption_ExplainFormat(v1pb.QueryOption_ExplainFormat_value[strings.ToUpper(format)]),
+		Executed: executed,
+	}
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {

@@ -7,10 +7,10 @@ import (
 	"github.com/bytebase/omni/tidb/ast"
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -132,7 +132,7 @@ func (*IndexKeyNumberLimitAdvisor) Check(_ context.Context, checkCtx advisor.Con
 			Code:          code.IndexKeyNumberExceedsLimit.Int32(),
 			Title:         title,
 			Content:       fmt.Sprintf("The number of index `%s` in table `%s` should be not greater than %d", h.index, h.table, maximum),
-			StartPosition: common.ConvertANTLRLineToPosition(h.line),
+			StartPosition: base.ConvertANTLRLineToPosition(h.line),
 		})
 	}
 	return adviceList, nil

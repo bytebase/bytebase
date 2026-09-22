@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -84,7 +84,7 @@ func (r *tableCommentConventionOmniRule) checkCreateTable(n *ast.CreateTableStmt
 			Code:          code.CommentEmpty.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("Table `%s` requires comments", tableName),
-			StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+			StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 		})
 	}
 	if r.payload.MaxLength >= 0 && int32(len(comment)) > r.payload.MaxLength {
@@ -93,7 +93,7 @@ func (r *tableCommentConventionOmniRule) checkCreateTable(n *ast.CreateTableStmt
 			Code:          code.CommentTooLong.Int32(),
 			Title:         r.Title,
 			Content:       fmt.Sprintf("The length of table `%s` comment should be within %d characters", tableName, r.payload.MaxLength),
-			StartPosition: common.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
+			StartPosition: base.ConvertANTLRLineToPosition(int(r.ContentStartLine())),
 		})
 	}
 }

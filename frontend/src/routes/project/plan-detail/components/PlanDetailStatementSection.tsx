@@ -16,6 +16,7 @@ import {
 import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { seedSheetStatement } from "@/hooks/useSheetStatement";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -508,7 +509,7 @@ export function PlanDetailStatementSection({
           <span>{statementTitle}</span>
           {isEmpty && <span className="text-error">*</span>}
         </div>
-        <input
+        <Input
           ref={inputRef}
           accept=".sql,.txt,application/sql,text/plain"
           className="hidden"

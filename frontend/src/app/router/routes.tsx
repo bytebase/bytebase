@@ -12,6 +12,7 @@ import { sqlEditorRoutes } from "@/app/router/routes/sqlEditor";
 export const routes: RouteObject[] = [
   {
     element: <RootLayout />,
+    shouldRevalidate: () => true,
     // Catch-all for uncaught render/loader exceptions anywhere in the
     // tree: show a user-facing recovery page instead of react-router's
     // developer default screen.

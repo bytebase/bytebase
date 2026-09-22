@@ -1,10 +1,17 @@
 package v1
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"log"
+	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -63,6 +70,59 @@ func TestFailedLoginWithHandlerWorkspaceCreatesSingleAuditRow(t *testing.T) {
 	require.Equal(t, "member@example.com", rows[0].payload.GetResource())
 }
 
+func TestAuditRowsPreserveAuthenticatedPrincipalType(t *testing.T) {
+	t.Parallel()
+	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
+
+	for _, tc := range []struct {
+		name string
+		user *store.UserMessage
+	}{
+		{
+			name: "end user",
+			user: &store.UserMessage{
+				Email: "alice@example.com",
+				Type:  storepb.PrincipalType_END_USER,
+			},
+		},
+		{
+			name: "service account",
+			user: &store.UserMessage{
+				Email: "deploy@service.bytebase.com",
+				Type:  storepb.PrincipalType_SERVICE_ACCOUNT,
+			},
+		},
+		{
+			name: "workload identity",
+			user: &store.UserMessage{
+				Email: "ci@workload.bytebase.com",
+				Type:  storepb.PrincipalType_WORKLOAD_IDENTITY,
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := newAuditTestContext(&common.AuthContext{
+				Audit: true,
+				Resources: []*common.Resource{{
+					Type: common.ResourceTypeWorkspace,
+					ID:   auditTestWorkspace,
+				}},
+			})
+			ctx = context.WithValue(ctx, common.UserContextKey, tc.user)
+
+			rows, err := in.buildAuditRows(ctx, &auditEntry{
+				request: &v1pb.QueryRequest{Name: "instances/instance-a/databases/database-a"},
+				method:  v1connect.SQLServiceQueryProcedure,
+			})
+			require.NoError(t, err)
+			require.Len(t, rows, 1)
+			require.Equal(t, common.FormatPrincipalMember(tc.user.Email, tc.user.Type), rows[0].payload.GetUser())
+		})
+	}
+}
+
 // TestStreamingAuditPersistedBeforeSend pins the streaming audit contract: a
 // client must not observe a successful streaming response before the
 // corresponding audit entry is durably persisted. Regression test for the
@@ -73,10 +133,11 @@ func TestStreamingAuditPersistedBeforeSend(t *testing.T) {
 		a := require.New(t)
 		recorder := &auditOrderRecorder{}
 		interceptor := &AuditInterceptor{
-			createAuditLogFunc: func(_ context.Context, _ *auditEntry) error {
+			auditLogWriter: auditLogWriterFunc(func(context.Context, string, *storepb.AuditLog) error {
 				recorder.record("audit")
 				return nil
-			},
+			}),
+			profile: &config.Profile{},
 		}
 		handler := interceptor.WrapStreamingHandler(func(_ context.Context, conn connect.StreamingHandlerConn) error {
 			if err := conn.Receive(&v1pb.AdminExecuteRequest{}); err != nil {
@@ -85,7 +146,7 @@ func TestStreamingAuditPersistedBeforeSend(t *testing.T) {
 			return conn.Send(&v1pb.AdminExecuteResponse{})
 		})
 
-		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+		ctx := newAuditTestContext(&common.AuthContext{Audit: true})
 		a.NoError(handler(ctx, &auditRecorderConn{recorder: recorder}))
 
 		a.Equal([]string{"audit", "send"}, recorder.events,
@@ -97,10 +158,11 @@ func TestStreamingAuditPersistedBeforeSend(t *testing.T) {
 		recorder := &auditOrderRecorder{}
 		persistErr := errors.New("persist failed")
 		interceptor := &AuditInterceptor{
-			createAuditLogFunc: func(_ context.Context, _ *auditEntry) error {
+			auditLogWriter: auditLogWriterFunc(func(context.Context, string, *storepb.AuditLog) error {
 				recorder.record("audit")
 				return persistErr
-			},
+			}),
+			profile: &config.Profile{},
 		}
 		handler := interceptor.WrapStreamingHandler(func(_ context.Context, conn connect.StreamingHandlerConn) error {
 			if err := conn.Receive(&v1pb.AdminExecuteRequest{}); err != nil {
@@ -109,7 +171,7 @@ func TestStreamingAuditPersistedBeforeSend(t *testing.T) {
 			return conn.Send(&v1pb.AdminExecuteResponse{})
 		})
 
-		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+		ctx := newAuditTestContext(&common.AuthContext{Audit: true})
 		a.ErrorIs(handler(ctx, &auditRecorderConn{recorder: recorder}), persistErr)
 		a.Equal([]string{"audit"}, recorder.events,
 			"response must not be delivered when the audit entry cannot be persisted")
@@ -226,22 +288,108 @@ func (r *specRequest) Spec() connect.Spec {
 	return connect.Spec{Procedure: r.procedure}
 }
 
-// newRecordingAuditInterceptor builds the interceptor with no store and
-// captures the rows each audited call would have written, so a test asserts on
-// what the interceptor decided rather than on a database. That the rows reach
-// the audit page on a live server is backend/tests' TestMCPAuditProvenance.
-func newRecordingAuditInterceptor() (*AuditInterceptor, *[]auditRow) {
-	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
-	rows := &[]auditRow{}
-	in.createAuditLogFunc = func(ctx context.Context, e *auditEntry) error {
-		built, err := in.buildAuditRows(ctx, e)
-		if err != nil {
-			return err
-		}
-		*rows = append(*rows, built...)
-		return nil
+// auditLogWriterFunc adapts a function to audit.LogWriter.
+type auditLogWriterFunc func(context.Context, string, *storepb.AuditLog) error
+
+func (f auditLogWriterFunc) CreateAuditLog(ctx context.Context, workspace string, payload *storepb.AuditLog) error {
+	return f(ctx, workspace, payload)
+}
+
+// recordingLogWriter stands in for the store's insert. It keeps every row
+// the interceptor tried to store, and fails each insert with err when set.
+type recordingLogWriter struct {
+	mu   sync.Mutex
+	rows []auditRow
+	err  error
+	// onInsert runs before each row is recorded, for a test that asserts what
+	// has already reached the stream.
+	onInsert func()
+}
+
+func (w *recordingLogWriter) CreateAuditLog(_ context.Context, workspace string, payload *storepb.AuditLog) error {
+	if w.onInsert != nil {
+		w.onInsert()
 	}
-	return in, rows
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.rows = append(w.rows, auditRow{workspaceID: workspace, payload: payload})
+	return w.err
+}
+
+func (w *recordingLogWriter) stored() []auditRow {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return slices.Clone(w.rows)
+}
+
+// newRecordingAuditInterceptor builds the interceptor with stdout off and a
+// writer that keeps the rows each call stored, so a test asserts on what the
+// interceptor decided rather than on a database. TestStreamingAuditRedactsRows
+// writes through the real store.
+func newRecordingAuditInterceptor() (*AuditInterceptor, *recordingLogWriter) {
+	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
+	writer := &recordingLogWriter{}
+	in.auditLogWriter = writer
+	return in, writer
+}
+
+// admitted stands in for the ACL interceptor's admission, for a test that
+// runs the audit interceptor around a handler with no ACL between them.
+func admitted(handler connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		setHandlerReached(ctx)
+		return handler(ctx, req)
+	}
+}
+
+// captureAuditStream sends slog.Default to a buffer until the test ends and
+// returns a reader for the audit lines written so far. slog.Default is
+// process-wide, so a test that calls this must not be parallel.
+func captureAuditStream(t *testing.T) func() []map[string]any {
+	t.Helper()
+	var mu sync.Mutex
+	var buf bytes.Buffer
+	prev, prevWriter, prevFlags := slog.Default(), log.Writer(), log.Flags()
+	// slog.SetDefault also points the log package at the new handler, and
+	// restoring the slog default does not undo that.
+	t.Cleanup(func() {
+		slog.SetDefault(prev)
+		log.SetOutput(prevWriter)
+		log.SetFlags(prevFlags)
+	})
+	slog.SetDefault(slog.New(slog.NewJSONHandler(lockedWriter{mu: &mu, w: &buf}, nil)))
+	return func() []map[string]any {
+		mu.Lock()
+		defer mu.Unlock()
+		var lines []map[string]any
+		for _, raw := range bytes.Split(buf.Bytes(), []byte("\n")) {
+			var line map[string]any
+			if json.Unmarshal(raw, &line) == nil && line["log_type"] == "audit" {
+				lines = append(lines, line)
+			}
+		}
+		return lines
+	}
+}
+
+// lineText reads one string attribute off a captured audit line.
+func lineText(line map[string]any, key string) string {
+	v, ok := line[key].(string)
+	if !ok {
+		return ""
+	}
+	return v
+}
+
+type lockedWriter struct {
+	mu *sync.Mutex
+	w  *bytes.Buffer
+}
+
+func (l lockedWriter) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.w.Write(p)
 }
 
 func auditTestUser() *store.UserMessage {
@@ -294,7 +442,7 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 			AnyRequest: connect.NewRequest(&v1pb.QueryRequest{Name: "instances/i/databases/d"}),
 			procedure:  "/bytebase.v1.SQLService/Query",
 		}
-		_, err := in.WrapUnary(next)(newAuditTestContext(authCtx), req)
+		_, err := in.WrapUnary(admitted(next))(newAuditTestContext(authCtx), req)
 		require.NoError(t, err)
 	}
 
@@ -305,7 +453,7 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 			ClientID:      "client-A",
 			CorrelationID: "corr-full",
 		})
-		matched := rowsByCorrelation(*rows, "corr-full")
+		matched := rowsByCorrelation(rows.stored(), "corr-full")
 		require.Len(t, matched, 1, "an audited internal-chain call must produce exactly one provenance-carrying row")
 		got := matched[0].GetMcpDelegation()
 		require.Equal(t, "mcp:read-only", got.GetScope())
@@ -315,7 +463,7 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 
 	t.Run("a legacy empty grant still marks MCP origin, empty stays empty", func(t *testing.T) {
 		invoke(t, &common.DelegatedGrant{CorrelationID: "corr-legacy"})
-		matched := rowsByCorrelation(*rows, "corr-legacy")
+		matched := rowsByCorrelation(rows.stored(), "corr-legacy")
 		require.Len(t, matched, 1)
 		got := matched[0].GetMcpDelegation()
 		require.NotNil(t, got, "presence of the delegation message is the MCP-origin marker, even for empty legacy grants")
@@ -327,7 +475,7 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 	t.Run("a public-chain row carries no MCP fields", func(t *testing.T) {
 		invoke(t, nil)
 		var publicRows int
-		for _, row := range *rows {
+		for _, row := range rows.stored() {
 			if row.payload.GetMcpDelegation() == nil {
 				publicRows++
 			}
@@ -338,10 +486,8 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 
 // TestAuditParentsDeduplicated pins that an audited call writes ONE row per
 // distinct parent. Batch requests repeat the same project resource once per
-// item, and since PR 5b routes ACL-denied internal-chain calls through the
-// audit interceptor, an unprivileged caller reaches this fan-out — without
-// dedup, a single denied batch call naming N items would write N identical
-// rows.
+// item; without dedup, a single batch call naming N items would write N
+// identical rows, and a refused one N identical stream lines.
 func TestAuditParentsDeduplicated(t *testing.T) {
 	t.Parallel()
 	in, rows := newRecordingAuditInterceptor()
@@ -364,11 +510,11 @@ func TestAuditParentsDeduplicated(t *testing.T) {
 		AnyRequest: connect.NewRequest(&v1pb.QueryRequest{Name: "instances/i/databases/d"}),
 		procedure:  "/bytebase.v1.SQLService/Query",
 	}
-	_, err := in.WrapUnary(next)(newAuditTestContext(authCtx), req)
+	_, err := in.WrapUnary(admitted(next))(newAuditTestContext(authCtx), req)
 	require.NoError(t, err)
 
 	var parents []string
-	for _, row := range rowsByCorrelation(*rows, "corr-dedup") {
+	for _, row := range rowsByCorrelation(rows.stored(), "corr-dedup") {
 		parents = append(parents, row.Parent)
 	}
 	require.ElementsMatch(t,
@@ -377,76 +523,199 @@ func TestAuditParentsDeduplicated(t *testing.T) {
 		"one audit row per DISTINCT parent — repeated batch resources must not multiply rows")
 }
 
-// TestInternalChainAuditRecordsACLDenial pins PR 5b's denial-audit mechanism:
-// with the audit interceptor wrapped OUTSIDE the ACL interceptor (the internal
-// MCP chain's order), an ACL denial produces an audit row carrying the
-// provenance and the denied status; a method whose annotation opts out of
-// auditing stays silent for permitted and denied calls alike. The workspace
-// mismatch is decided on the request alone, so no store is needed.
-func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
-	auditIn, rows := newRecordingAuditInterceptor()
-	aclIn := NewACLInterceptor(nil, "test-secret", nil /* iamManager: unreached on these paths */, &config.Profile{})
+// auditCallOutcome is where a call in TestAuditSinks ends.
+type auditCallOutcome int
 
-	invoke := func(t *testing.T, audited bool, correlationID, resource string) (handlerReached bool, rerr error) {
-		t.Helper()
-		authCtx := &common.AuthContext{
-			Audit:      audited,
-			AuthMethod: common.AuthMethodCustom,
-			DelegatedGrant: &common.DelegatedGrant{
-				Scope:         "mcp:read-only",
-				Resource:      "https://bb.example.com/mcp",
-				ClientID:      "client-A",
-				CorrelationID: correlationID,
-			},
-		}
-		handler := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
-			handlerReached = true
-			return connect.NewResponse(&v1pb.IamPolicy{}), nil
-		}
-		// The internal chain's order: audit outside, ACL inside.
-		chain := auditIn.WrapUnary(aclIn.WrapUnary(handler))
-		req := &specRequest{
-			AnyRequest: connect.NewRequest(&v1pb.SetIamPolicyRequest{Resource: resource}),
-			procedure:  "/bytebase.v1.WorkspaceService/SetIamPolicy",
-		}
-		_, rerr = chain(newAuditTestContext(authCtx), req)
-		return handlerReached, rerr
+const (
+	// The handler runs and succeeds.
+	outcomeOK auditCallOutcome = iota
+	// The handler makes its own permission check, marks it and refuses.
+	outcomeRefusedInHandler
+	// The handler fails for a reason that is not a permission check.
+	outcomeFailedInHandler
+	// ACL refuses: the request names another workspace.
+	outcomeRefusedByACL
+	// ACL fails before any verdict: the request names no workspace.
+	outcomeFailedInACL
+	// The MCP ceiling gate refuses a FORBIDDEN method.
+	outcomeRefusedByGate
+)
+
+// TestAuditSinks is the store and stream rule, driven through the real audit,
+// gate and ACL interceptors in each chain's order:
+//
+//	store  = audited method and the call reached its handler
+//	stream = stdout on and (stored or refused by a permission check)
+//
+// Every expectation is written out per row rather than derived, so a change to
+// the rule has to change this table. Not parallel: it captures slog.Default.
+func TestAuditSinks(t *testing.T) {
+	lines := captureAuditStream(t)
+	const procedure = "/bytebase.v1.SettingService/UpdateSetting"
+	aclIn := NewACLInterceptor(nil, "test-secret", nil /* iamManager: CUSTOM methods never reach it */, &config.Profile{})
+	gate := NewInternalMCPGateInterceptor(readWriteCeiling())
+
+	type sinkCase struct {
+		name         string
+		audited      bool
+		validateOnly bool
+		outcome      auditCallOutcome
+		wantRow      bool
+		wantLine     bool // when stdout is on
+		wantWarning  bool
+	}
+	cases := []sinkCase{
+		{name: "audited ok", audited: true, outcome: outcomeOK, wantRow: true, wantLine: true},
+		{name: "audited refused in handler", audited: true, outcome: outcomeRefusedInHandler, wantRow: true, wantLine: true, wantWarning: true},
+		{name: "audited failed in handler", audited: true, outcome: outcomeFailedInHandler, wantRow: true, wantLine: true},
+		{name: "audited refused by ACL", audited: true, outcome: outcomeRefusedByACL, wantLine: true, wantWarning: true},
+		{name: "audited failed in ACL", audited: true, outcome: outcomeFailedInACL},
+		{name: "unaudited ok", outcome: outcomeOK},
+		{name: "unaudited refused in handler", outcome: outcomeRefusedInHandler, wantLine: true, wantWarning: true},
+		{name: "unaudited failed in handler", outcome: outcomeFailedInHandler},
+		{name: "unaudited refused by ACL", outcome: outcomeRefusedByACL, wantLine: true, wantWarning: true},
+		{name: "audited validate-only ok", audited: true, validateOnly: true, outcome: outcomeOK},
+		{name: "audited validate-only refused in handler", audited: true, validateOnly: true, outcome: outcomeRefusedInHandler, wantRow: true, wantLine: true, wantWarning: true},
+		{name: "audited validate-only refused by ACL", audited: true, validateOnly: true, outcome: outcomeRefusedByACL, wantLine: true, wantWarning: true},
+	}
+	internalCases := []sinkCase{
+		{name: "audited refused by gate", audited: true, outcome: outcomeRefusedByGate, wantLine: true, wantWarning: true},
+		{name: "unaudited refused by gate", outcome: outcomeRefusedByGate, wantLine: true, wantWarning: true},
+		{name: "audited validate-only refused by gate", audited: true, validateOnly: true, outcome: outcomeRefusedByGate, wantLine: true, wantWarning: true},
 	}
 
-	t.Run("an ACL denial produces a provenance-carrying denied row", func(t *testing.T) {
-		handlerReached, err := invoke(t, true, "corr-denied", "workspaces/other-ws")
-		require.Error(t, err)
-		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
-		require.False(t, handlerReached, "the denial must come from the ACL interceptor, not the handler")
+	handler := func(outcome auditCallOutcome) connect.UnaryFunc {
+		return func(ctx context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+			switch outcome {
+			case outcomeRefusedInHandler:
+				setPermissionDenied(ctx)
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.New("permission denied"))
+			case outcomeFailedInHandler:
+				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("setting is locked"))
+			case outcomeOK:
+				return connect.NewResponse(&v1pb.Setting{Name: "settings/AI"}), nil
+			default:
+				return nil, errors.Errorf("handler reached on outcome %d", outcome)
+			}
+		}
+	}
 
-		matched := rowsByCorrelation(*rows, "corr-denied")
-		require.Len(t, matched, 1, "an ACL-denied internal-chain call must still produce an audit row")
-		row := matched[0]
-		require.Equal(t, "workspaces/"+auditTestWorkspace, row.Parent,
-			"a denied cross-workspace attempt must be audited under the CALLER's workspace, never the foreign one it named")
-		require.Equal(t, "/bytebase.v1.WorkspaceService/SetIamPolicy", row.Method)
-		require.Equal(t, common.FormatUserEmail(auditTestUser().Email), row.User)
-		require.NotNil(t, row.Status, "the row must reflect the denial")
-		require.Equal(t, int32(connect.CodePermissionDenied), row.Status.Code)
-		require.Equal(t, "mcp:read-only", row.GetMcpDelegation().GetScope())
-	})
+	for _, chain := range []string{"public", "internal"} {
+		chainCases := cases
+		if chain == "internal" {
+			chainCases = append(slices.Clone(cases), internalCases...)
+		}
+		for _, stdout := range []bool{true, false} {
+			for _, tc := range chainCases {
+				name := fmt.Sprintf("%s/stdout=%t/%s", chain, stdout, tc.name)
+				t.Run(name, func(t *testing.T) {
+					in, writer := newRecordingAuditInterceptor()
+					in.profile.RuntimeEnableAuditLogStdout.Store(stdout)
 
-	t.Run("a method opted out of auditing stays silent for denials too", func(t *testing.T) {
-		_, err := invoke(t, false, "corr-optout", "workspaces/other-ws")
-		require.Error(t, err)
-		require.Empty(t, rowsByCorrelation(*rows, "corr-optout"),
-			"audit opt-out must behave consistently for permitted and denied calls")
-	})
+					settingName := "settings/AI"
+					switch tc.outcome {
+					case outcomeRefusedByACL:
+						settingName = "workspaces/other-ws/settings/AI"
+					case outcomeFailedInACL:
+						settingName = "workspaces/"
+					default:
+					}
+					authCtx := &common.AuthContext{
+						Audit:          tc.audited,
+						AuthMethod:     common.AuthMethodCustom,
+						MCPMethodClass: v1pb.MCPMethodClass_WRITE,
+					}
+					var call connect.UnaryFunc
+					if chain == "public" {
+						call = in.WrapUnary(aclIn.WrapUnary(handler(tc.outcome)))
+					} else {
+						authCtx.DelegatedGrant = &common.DelegatedGrant{CorrelationID: name, Scope: "mcp:read-write"}
+						if tc.outcome == outcomeRefusedByGate {
+							authCtx.MCPMethodClass = v1pb.MCPMethodClass_FORBIDDEN
+						}
+						call = in.WrapUnary(gate.WrapUnary(aclIn.WrapUnary(handler(tc.outcome))))
+					}
+					request := &v1pb.UpdateSettingRequest{
+						Setting:      &v1pb.Setting{Name: settingName},
+						ValidateOnly: tc.validateOnly,
+					}
+					before := len(lines())
+					_, err := call(newAuditTestContext(authCtx), &specRequest{AnyRequest: connect.NewRequest(request), procedure: procedure})
+					if tc.outcome == outcomeOK {
+						require.NoError(t, err)
+					} else {
+						require.Error(t, err)
+					}
+					got := lines()[before:]
+					rows := writer.stored()
 
-	t.Run("a permitted call is audited exactly once", func(t *testing.T) {
-		handlerReached, err := invoke(t, true, "corr-permitted", "workspaces/"+auditTestWorkspace)
-		require.NoError(t, err)
-		require.True(t, handlerReached)
+					if tc.wantRow {
+						require.Len(t, rows, 1, "the call must be stored")
+					} else {
+						require.Empty(t, rows, "the call must not be stored")
+					}
+					if !stdout || !tc.wantLine {
+						require.Empty(t, got, "the call must not be streamed")
+						return
+					}
+					require.Len(t, got, 1, "the call must be streamed once")
+					line := got[0]
+					require.Equal(t, procedure, line["method"])
+					require.Equal(t, "workspaces/"+auditTestWorkspace, line["parent"],
+						"a refused call is filed under the caller's workspace, never the one it named")
+					require.Equal(t, common.FormatUserEmail(auditTestUser().Email), line["user"])
+					wantSeverity := storepb.AuditLog_INFO
+					if tc.wantWarning {
+						wantSeverity = storepb.AuditLog_WARNING
+						require.InDelta(t, float64(connect.CodePermissionDenied), line["status_code"], 0)
+					}
+					require.Equal(t, wantSeverity.String(), line["severity"])
+					if chain == "internal" {
+						require.Equal(t, name, line["mcp_correlation_id"])
+					}
+					if len(rows) == 1 {
+						// One built row feeds both sinks.
+						require.Equal(t, wantSeverity, rows[0].payload.Severity)
+						require.Equal(t, rows[0].payload.Request, line["request"])
+					}
+				})
+			}
+		}
+	}
+}
 
-		matched := rowsByCorrelation(*rows, "corr-permitted")
-		require.Len(t, matched, 1)
-		require.Nil(t, matched[0].Status, "a permitted call keeps its success status")
-	})
+// TestAuditStreamSurvivesAFailedInsert pins that every line is written before
+// any insert, and once, so a metadata database that refuses the row does not
+// take the stream line with it. The call names two parents, so a per-row
+// "log it, insert it" loop that stops at the first failure fails here. Not
+// parallel: it captures slog.Default.
+func TestAuditStreamSurvivesAFailedInsert(t *testing.T) {
+	lines := captureAuditStream(t)
+	in, writer := newRecordingAuditInterceptor()
+	writer.err = errors.New("audit_log insert failed")
+	writer.onInsert = func() {
+		require.Len(t, lines(), 2, "every line must be on the stream before any insert runs")
+	}
+	in.profile.RuntimeEnableAuditLogStdout.Store(true)
+
+	next := func(context.Context, connect.AnyRequest) (connect.AnyResponse, error) {
+		return connect.NewResponse(&v1pb.QueryResponse{}), nil
+	}
+	req := &specRequest{
+		AnyRequest: connect.NewRequest(&v1pb.QueryRequest{Name: "instances/i/databases/d"}),
+		procedure:  "/bytebase.v1.SQLService/Query",
+	}
+	authCtx := &common.AuthContext{
+		Audit: true,
+		Resources: []*common.Resource{
+			{Type: common.ResourceTypeProject, ID: "proj-insert-failed"},
+			{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace},
+		},
+	}
+	_, err := in.WrapUnary(admitted(next))(newAuditTestContext(authCtx), req)
+	require.NoError(t, err, "a failed audit insert must not fail the call")
+	require.Len(t, writer.stored(), 1, "the insert stops at the first failure")
+	require.Len(t, lines(), 2, "both lines are written, whatever the insert did")
 }
 
 // TestValidateOnlyAuditSkipAppliesOnlyToSuccess pins the boundary of the
@@ -504,7 +773,7 @@ func TestValidateOnlyAuditSkipAppliesOnlyToSuccess(t *testing.T) {
 			AnyRequest: connect.NewRequest(request),
 			procedure:  "/bytebase.v1.InstanceService/UpdateDataSource",
 		}
-		_, err := in.WrapUnary(next)(newAuditTestContext(authCtx), req)
+		_, err := in.WrapUnary(admitted(next))(newAuditTestContext(authCtx), req)
 		if rerr == nil {
 			require.NoError(t, err)
 		} else {
@@ -514,10 +783,10 @@ func TestValidateOnlyAuditSkipAppliesOnlyToSuccess(t *testing.T) {
 
 	t.Run("a denied validate-only call is recorded", func(t *testing.T) {
 		denial := connect.NewError(connect.CodePermissionDenied,
-			errors.New("InstanceService/UpdateDataSource is not available to MCP sessions"))
+			errors.New("permission denied for the data source"))
 		invoke(t, "corr-validate-only-denied", retargetRequest(true), denial)
 
-		rows := rowsByCorrelation(*captured, "corr-validate-only-denied")
+		rows := rowsByCorrelation(captured.stored(), "corr-validate-only-denied")
 		require.Len(t, rows, 1,
 			"a refused attempt must be auditable whether or not validate_only was set — "+
 				"otherwise the flag is a switch that turns off the record")
@@ -546,7 +815,7 @@ func TestValidateOnlyAuditSkipAppliesOnlyToSuccess(t *testing.T) {
 	t.Run("a succeeding validate-only call stays silent", func(t *testing.T) {
 		invoke(t, "corr-validate-only-ok", retargetRequest(true), nil)
 
-		require.Empty(t, rowsByCorrelation(*captured, "corr-validate-only-ok"),
+		require.Empty(t, rowsByCorrelation(captured.stored(), "corr-validate-only-ok"),
 			"a dry run that succeeded changed nothing — the original reason for the skip")
 	})
 
@@ -559,7 +828,7 @@ func TestValidateOnlyAuditSkipAppliesOnlyToSuccess(t *testing.T) {
 			errors.New("failed to connect to attacker.example.com: connection refused"))
 		invoke(t, "corr-validate-only-dial-failed", retargetRequest(true), failedDial)
 
-		rows := rowsByCorrelation(*captured, "corr-validate-only-dial-failed")
+		rows := rowsByCorrelation(captured.stored(), "corr-validate-only-dial-failed")
 		require.Len(t, rows, 1,
 			"keying on a denial code would drop every other rejected attempt — the hole this change closes")
 		require.Equal(t, int32(connect.CodeInvalidArgument), rows[0].GetStatus().GetCode())
@@ -569,7 +838,7 @@ func TestValidateOnlyAuditSkipAppliesOnlyToSuccess(t *testing.T) {
 		denial := connect.NewError(connect.CodePermissionDenied, errors.New("denied"))
 		invoke(t, "corr-plain-denied", retargetRequest(false), denial)
 
-		rows := rowsByCorrelation(*captured, "corr-plain-denied")
+		rows := rowsByCorrelation(captured.stored(), "corr-plain-denied")
 		require.Len(t, rows, 1, "control: the flag is the only difference between this and the first case")
 		require.True(t, strings.Contains(rows[0].GetMethod(), "UpdateDataSource"))
 	})

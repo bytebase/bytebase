@@ -346,13 +346,11 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	}
 	if clamped {
 		if err := refuseNonReadOnlyStatement(instance.Metadata.GetEngine(), statement); err != nil {
-			// The same kind of refusal the ceiling gate records, taken at the
-			// one point that can see the request's argument. It adds no row
-			// today — Query is annotated audit = true, so the denial is
-			// recorded either way — and it is here so that stays true if that
-			// annotation ever changes, which is the only thing the mark
-			// controls.
-			common.SetMCPPolicyDenied(ctx)
+			// The same kind of refusal the ceiling gate marks, taken at the
+			// one point that can see the request's argument. Query is audited
+			// and this runs in its handler, so the row is stored either way;
+			// the mark stamps it WARNING.
+			setPermissionDenied(ctx)
 			return nil, err
 		}
 	}
@@ -734,6 +732,7 @@ func queryRetry(
 
 	maskingEnabled := !queryContext.Explain && !queryContext.SkipMasking &&
 		licenseService.IsFeatureEnabledForInstance(ctx, common.GetWorkspaceIDFromContext(ctx), v1pb.PlanFeature_FEATURE_DATA_MASKING, instance) == nil
+	queryContext.MaskingEnabled = maskingEnabled
 
 	if maskingEnabled {
 		if err := preExecuteMaskingCheck(ctx, stores, instance.Metadata.GetEngine(), database, spans); err != nil {
@@ -754,6 +753,13 @@ func queryRetry(
 	}
 	slog.Debug("execute success", slog.String("instance", instance.ResourceID), slog.String("statement", originalStatement), slog.Duration("duration", duration))
 	if queryContext.Explain {
+		if format, ok := db.ExplainResultFormat(instance.Metadata.GetEngine(), queryContext.Option.GetExplainFormat()); ok {
+			for _, result := range results {
+				if result.Error == "" {
+					result.QueryPlan = &v1pb.QueryResult_QueryPlan{Format: format}
+				}
+			}
+		}
 		return results, nil, duration, nil
 	}
 
@@ -1435,6 +1441,11 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check access control for database: %q, error %v", databaseFullName, err))
 		}
 		if !ok {
+			// queryError does not implement Unwrap, and Query reports a refusal
+			// inside its response rather than as an RPC error, so connect.CodeOf
+			// cannot see this verdict. The mark is the only way it reaches the
+			// audit interceptor.
+			setPermissionDenied(ctx)
 			return &queryError{
 				err: connect.NewError(
 					connect.CodePermissionDenied,
@@ -1528,6 +1539,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 				return err
 			}
 			if len(deniedResources) > 0 {
+				setPermissionDenied(ctx)
 				return &queryError{
 					err: connect.NewError(
 						connect.CodePermissionDenied,
@@ -1595,6 +1607,7 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 			}
 		}
 		if len(deniedResources) > 0 {
+			setPermissionDenied(ctx)
 			return &queryError{
 				err: connect.NewError(
 					connect.CodePermissionDenied,
@@ -1977,37 +1990,11 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	return user, instance, database, nil
 }
 
-// supportedExplainFormats lists the explain formats an engine's driver actually
-// produces. TEXT is the human-readable plan every engine returns by default,
-// which is why only the engines with a machine-readable plan, or without a
-// readable one, need a case here.
-func supportedExplainFormats(engine storepb.Engine) []v1pb.QueryOption_ExplainFormat {
-	switch engine {
-	case storepb.Engine_POSTGRES:
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_JSON, v1pb.QueryOption_XML}
-	case storepb.Engine_MSSQL:
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT, v1pb.QueryOption_XML}
-	case storepb.Engine_SPANNER:
-		// Spanner returns its plan as JSON and has no text form.
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_JSON}
-	case storepb.Engine_MONGODB, storepb.Engine_REDIS, storepb.Engine_DYNAMODB,
-		storepb.Engine_CASSANDRA, storepb.Engine_COSMOSDB, storepb.Engine_DATABRICKS,
-		storepb.Engine_ELASTICSEARCH:
-		// No driver here implements explain: the first three refuse it, the rest
-		// ignore the flag and would run the statement itself. Saying TEXT would
-		// send a caller down a path that never produces a plan.
-		return nil
-	default:
-		return []v1pb.QueryOption_ExplainFormat{v1pb.QueryOption_TEXT}
-	}
-}
-
-// validateExplainFormat refuses a format the engine cannot produce. This is the
-// one place the engine-to-format support is decided: drivers below map whatever
-// reaches them onto their own syntax, so a request that slipped through would
-// silently come back in a format the caller cannot parse.
+// validateExplainFormat refuses a format the driver cannot produce. Drivers
+// map whatever reaches them onto their own syntax, so a request that slipped
+// through would silently come back in a format the caller cannot parse.
 func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_ExplainFormat) error {
-	supported := supportedExplainFormats(engine)
+	supported := db.SupportedExplainFormats(engine)
 	// An engine with no explain at all is refused whatever the caller asked for,
 	// including nothing. Its driver would otherwise run the statement as an
 	// ordinary query — and an explain request skips the read-only validation
@@ -2029,19 +2016,24 @@ func validateExplainFormat(engine storepb.Engine, format v1pb.QueryOption_Explai
 	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%s does not support explain format %s, supported formats: %s", engine, format, strings.Join(names, ", ")))
 }
 
-// validateExplainStatements refuses an explain request whose EXPLAIN-wrapped form
-// would execute a write. The driver splits a multi-statement request and prefixes
-// EXPLAIN to each statement (see pg.go and its siblings), so this validates the
-// same per-statement wrapped form: a smuggled "ANALYZE DELETE FROM t" becomes
-// EXPLAIN ANALYZE DELETE and is rejected before it runs. Engines whose EXPLAIN is
-// not a statement prefix (Oracle EXPLAIN PLAN, SQL Server SHOWPLAN, Spanner/BigQuery
-// plan APIs) report ok=false from db.ExplainStatement and run their own plan API,
-// which does not execute the statement.
+// validateExplainStatements refuses an explain request whose planned form would
+// execute a write. The driver splits a multi-statement request and builds the
+// EXPLAIN of each statement (see pg.go and its siblings), so this validates the
+// same per-statement form built the same way: a smuggled "ANALYZE DELETE FROM t"
+// is not a statement the parser can plan, and an EXPLAIN ANALYZE DELETE the caller
+// wrote itself is rebuilt as a plain EXPLAIN or refused before it runs.
+//
+// An engine whose EXPLAIN is not a statement prefix (Oracle EXPLAIN PLAN, SQL
+// Server SHOWPLAN, Spanner/BigQuery plan APIs) runs its own plan API, which does
+// not execute the statement, and so has nothing registered to validate here.
 func validateExplainStatements(instance *store.InstanceMessage, statement string, format v1pb.QueryOption_ExplainFormat) error {
 	engine := instance.Metadata.GetEngine()
+	if !parserbase.HasExplainStatement(engine) {
+		return nil
+	}
 	statements, err := parserbase.SplitMultiSQL(engine, statement)
 	if err != nil {
-		// No splitter for this engine: validate the whole statement wrapped once.
+		// No splitter for this engine: validate the whole statement planned once.
 		// Execution goes through the same splitter, so a request that fails to split
 		// here fails there too rather than executing.
 		statements = []parserbase.Statement{{Text: statement}}
@@ -2050,11 +2042,11 @@ func validateExplainStatements(instance *store.InstanceMessage, statement string
 		if stmt.Empty {
 			continue
 		}
-		wrapped, ok := db.ExplainStatement(engine, stmt.Text, format)
-		if !ok {
-			return nil
+		planned, err := parserbase.ExplainStatement(engine, stmt.Text, db.ExplainFormat(format))
+		if err != nil {
+			return connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		if err := validateQueryRequest(instance, wrapped); err != nil {
+		if err := validateQueryRequest(instance, planned); err != nil {
 			return err
 		}
 	}

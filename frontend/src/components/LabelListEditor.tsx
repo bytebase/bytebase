@@ -159,14 +159,16 @@ export function LabelListEditor({
                         }
                       />
                     )}
-                    <button
+                    <Button
                       type="button"
+                      appearance="secondary"
+                      size="xs"
                       aria-label={t("common.delete")}
                       className={`ml-1 ${readonly ? "invisible" : "visible"} text-control-light hover:text-error`}
                       onClick={() => handleRemove(index)}
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                   {kv.message && (
                     <div className="textinfolabel">{kv.message}</div>

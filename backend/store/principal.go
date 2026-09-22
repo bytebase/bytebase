@@ -13,8 +13,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 // FindUserMessage is the message for finding users.
@@ -982,8 +982,8 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	rows.Close()
 
 	// 5. Update Audit Logs
-	// Update audit_log.payload to replace old user reference with new one.
-	// User is stored in the 'user' field in "users/{email}" format.
+	// Update the audit log principal reference.
+	// AuditLog.User is stored in the 'user' field in "users/{email}" format.
 	query = qb.Q().Space(`
 		UPDATE audit_log
 		SET payload = jsonb_set(payload, '{user}', to_jsonb(?::text))

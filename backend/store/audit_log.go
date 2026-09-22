@@ -12,8 +12,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store/qb"
 )
 
 type AuditLog struct {
@@ -163,13 +163,16 @@ func auditLogEqualsFilter(variable string, rawValue any) (*qb.Query, error) {
 		}
 		return qb.Q().Space("NOT (payload ?? 'mcpDelegation')"), nil
 
-	case "resource", "method", "user", "severity", "mcp_correlation_id":
+	case "resource", "method", "actor", "severity", "mcp_correlation_id":
 		value, ok := rawValue.(string)
 		if !ok {
 			return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
 		}
 		if variable == "mcp_correlation_id" {
 			return qb.Q().Space("payload->'mcpDelegation'->>'correlationId' = ?", value), nil
+		}
+		if variable == "actor" {
+			return qb.Q().Space("payload->>'user' = ?", value), nil
 		}
 		return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
 
@@ -268,6 +271,31 @@ func ApplyRetentionFilter(userFilterQ *qb.Query, cutoff *time.Time) *qb.Query {
 	q := qb.Q()
 	q.Space("?", userFilterQ)
 	q.And("?", retentionQ)
+	return qb.Q().Space("(?)", q)
+}
+
+// AuditLogTraversalStart is the bound a paged audit-log traversal pins on its
+// first page. It is read from the database because created_at is written
+// there: a time taken in this process is not comparable with it.
+func (s *Store) AuditLogTraversalStart(ctx context.Context) (time.Time, error) {
+	var now time.Time
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT now()").Scan(&now); err != nil {
+		return time.Time{}, errors.Wrapf(err, "failed to read the database time")
+	}
+	return now, nil
+}
+
+// ApplyCreateTimeUpperBound bounds a search to the rows that existed when the
+// traversal started. A search writes its own audit row, so without it an
+// offset traversal never reaches the end of the set.
+func ApplyCreateTimeUpperBound(userFilterQ *qb.Query, upperBound time.Time) *qb.Query {
+	boundQ := qb.Q().Space("created_at <= ?", upperBound)
+	if userFilterQ == nil {
+		return qb.Q().Space("(?)", boundQ)
+	}
+	q := qb.Q()
+	q.Space("?", userFilterQ)
+	q.And("?", boundQ)
 	return qb.Q().Space("(?)", q)
 }
 

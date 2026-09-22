@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -103,7 +103,7 @@ func (*ColumnDisallowDropInIndexAdvisor) Check(_ context.Context, checkCtx advis
 						Code:          code.DropIndexColumn.Int32(),
 						Title:         title,
 						Content:       fmt.Sprintf("`%s`.`%s` cannot drop index column", tableName, colName),
-						StartPosition: common.ConvertANTLRLineToPosition(stmtLine),
+						StartPosition: base.ConvertANTLRLineToPosition(stmtLine),
 					})
 				}
 			}

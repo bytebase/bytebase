@@ -16,10 +16,10 @@ import (
 
 	omniast "github.com/bytebase/omni/tidb/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
@@ -879,7 +879,7 @@ func runNamingConventionRule(
 					Code:          cfg.mismatchCode.Int32(),
 					Title:         title,
 					Content:       fmt.Sprintf("%s in table `%s` mismatches the naming convention, expect %q but found `%s`", cfg.typeNoun, indexData.tableName, regex, indexData.indexName),
-					StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
+					StartPosition: base.ConvertANTLRLineToPosition(indexData.line),
 				})
 			}
 			if maxLength > 0 && len(indexData.indexName) > maxLength {
@@ -888,7 +888,7 @@ func runNamingConventionRule(
 					Code:          cfg.mismatchCode.Int32(),
 					Title:         title,
 					Content:       fmt.Sprintf("%s `%s` in table `%s` mismatches the naming convention, its length should be within %d characters", cfg.typeNoun, indexData.indexName, indexData.tableName, maxLength),
-					StartPosition: common.ConvertANTLRLineToPosition(indexData.line),
+					StartPosition: base.ConvertANTLRLineToPosition(indexData.line),
 				})
 			}
 		}

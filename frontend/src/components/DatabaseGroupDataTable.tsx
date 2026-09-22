@@ -197,17 +197,19 @@ export function DatabaseGroupDataTable({
                       </TableCell>
                       {showExternalLink && (
                         <TableCell>
-                          <button
+                          <Button
                             type="button"
+                            appearance="secondary"
+                            size="xs"
                             className={cn(
-                              "flex items-center justify-end cursor-pointer size-6 p-1 opacity-60",
+                              "flex items-center justify-end opacity-60",
                               "hover:opacity-100 hover:bg-background hover:shadow-xs rounded-sm"
                             )}
                             onClick={(e) => handleExternalLink(e, group)}
                             aria-label={t("common.view-details")}
                           >
                             <ExternalLink className="size-4" />
-                          </button>
+                          </Button>
                         </TableCell>
                       )}
                       {showActions && (

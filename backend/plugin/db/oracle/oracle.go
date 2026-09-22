@@ -17,11 +17,11 @@ import (
 	goora "github.com/sijms/go-ora/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/transaction"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -113,8 +113,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	transactionMode := config.Mode
 
 	// Apply default when transaction mode is not specified
-	if transactionMode == common.TransactionModeUnspecified {
-		transactionMode = common.GetDefaultTransactionMode()
+	if transactionMode == transaction.ModeUnspecified {
+		transactionMode = transaction.DefaultMode()
 	}
 
 	commands, err := buildExecuteCommands(statement)
@@ -132,7 +132,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	defer conn.Close()
 
 	// Execute based on transaction mode
-	if transactionMode == common.TransactionModeOff {
+	if transactionMode == transaction.ModeOff {
 		return d.executeInAutoCommitMode(ctx, conn, commands, opts)
 	}
 	return d.executeInTransactionMode(ctx, conn, commands, opts)
@@ -250,7 +250,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		}
 
 		if !queryContext.Explain && queryContext.Limit > 0 {
-			statement = addResultLimit(statement, queryContext.Limit, d.connectionCtx.EngineVersion)
+			statement = base.StatementWithResultLimit(storepb.Engine_ORACLE, statement, queryContext.Limit, d.connectionCtx.EngineVersion)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_ORACLE, statement)

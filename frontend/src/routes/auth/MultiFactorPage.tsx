@@ -99,24 +99,28 @@ export function MultiFactorPage() {
           <ul className="list-disc list-inside pl-2 pt-1">
             {mfaType !== "OTP" && (
               <li>
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   type="button"
                   className="accent-link"
                   onClick={() => setMfaType("OTP")}
                 >
                   {t("multi-factor.other-methods.use-auth-app.self")}
-                </button>
+                </Button>
               </li>
             )}
             {mfaType !== "RECOVERY_CODE" && (
               <li>
-                <button
+                <Button
+                  appearance="secondary"
+                  size="xs"
                   type="button"
                   className="accent-link"
                   onClick={() => setMfaType("RECOVERY_CODE")}
                 >
                   {t("multi-factor.other-methods.use-recovery-code.self")}
-                </button>
+                </Button>
               </li>
             )}
           </ul>

@@ -1,5 +1,12 @@
 import { create } from "@bufbuild/protobuf";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { Engine, State } from "@/types/proto-es/v1/common_pb";
 import {
@@ -7,6 +14,7 @@ import {
   DataSource_RedisType,
   DataSourceType,
   InstanceSchema,
+  SyncDatabasesSchema,
 } from "@/types/proto-es/v1/instance_service_pb";
 import type { EditDataSource } from "./common";
 import {
@@ -29,11 +37,13 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/components/EngineIcon", () => ({ EngineIcon: () => null }));
 vi.mock("@/components/EnvironmentSelect", () => ({
-  EnvironmentSelect: () => null,
+  EnvironmentSelect: ({ className }: { className?: string }) => (
+    <div data-testid="environment-select" className={className} />
+  ),
 }));
 vi.mock("@/components/FeatureBadge", () => ({ FeatureBadge: () => null }));
 vi.mock("@/components/LabelListEditor", () => ({
-  LabelListEditor: () => null,
+  LabelListEditor: () => <div data-testid="label-list-editor" />,
 }));
 vi.mock("@/components/LearnMoreLink", () => ({ LearnMoreLink: () => null }));
 vi.mock("@/components/ResourceIdField", () => ({
@@ -157,6 +167,7 @@ vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: () => true,
   isValidEnvironmentName: () => false,
   engineNameV1: () => "Engine",
+  supportedEngineV1List: () => [],
   extractInstanceResourceName: () => "prod",
   onlyAllowNumber: (value: string) => /^\d+$/.test(value),
   RE_GCP_PROJECT_ID: /^[a-z-]+$/,
@@ -205,7 +216,7 @@ vi.mock("@/components/ui/feature-modal", () => ({
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-import { InstanceFormBody } from "./InstanceFormBody";
+import { InstanceFormBody, SyncDatabases } from "./InstanceFormBody";
 
 let context: ReturnType<typeof useInstanceFormContext>;
 function Editor() {
@@ -253,6 +264,250 @@ afterEach(cleanup);
 
 const input = (container: HTMLElement, id: string) =>
   container.querySelector<HTMLInputElement>(`#${id}`)!;
+
+test("uses a switch for synchronization scope", () => {
+  const { container } = render(
+    <InstanceFormProvider>
+      <SyncDatabases
+        isCreating
+        showLabel
+        allowEdit
+        onSyncDatabasesChange={() => undefined}
+      />
+    </InstanceFormProvider>
+  );
+
+  expect(container.querySelector('[role="switch"]')).toHaveAttribute(
+    "aria-checked",
+    "true"
+  );
+});
+
+test("keeps newly loaded selections in the database preview", async () => {
+  mocks.listInstanceDatabases.mockResolvedValue({ databases: ["analytics"] });
+  const instance = create(InstanceSchema, {
+    name: "instances/production",
+    engine: Engine.POSTGRES,
+  });
+  const { rerender } = render(
+    <InstanceFormProvider instance={instance}>
+      <SyncDatabases
+        isCreating={false}
+        showLabel={false}
+        allowEdit
+        syncDatabases={create(SyncDatabasesSchema, {
+          databases: ["analytics"],
+        })}
+        onSyncDatabasesChange={() => undefined}
+      />
+    </InstanceFormProvider>
+  );
+
+  try {
+    await waitFor(() => {
+      expect(screen.getByText("analytics")).toBeInTheDocument();
+    });
+
+    rerender(
+      <InstanceFormProvider instance={instance}>
+        <SyncDatabases
+          isCreating={false}
+          showLabel={false}
+          allowEdit
+          syncDatabases={create(SyncDatabasesSchema, {
+            databases: ["app"],
+          })}
+          onSyncDatabasesChange={() => undefined}
+        />
+      </InstanceFormProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("app")).toBeInTheDocument();
+    });
+    expect(
+      screen
+        .getByText("app")
+        .closest("label")
+        ?.querySelector('[role="checkbox"]')
+    ).toHaveAttribute("data-checked");
+  } finally {
+    mocks.listInstanceDatabases.mockResolvedValue({
+      databases: ["app", "analytics"],
+    });
+  }
+});
+
+test("keeps selections added while the database preview request is pending", async () => {
+  const requestCount = mocks.listInstanceDatabases.mock.calls.length;
+  let resolvePreview:
+    | ((value: { databases: string[] }) => void)
+    | undefined;
+  mocks.listInstanceDatabases.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolvePreview = resolve;
+      })
+  );
+  const instance = create(InstanceSchema, {
+    name: "instances/production",
+    engine: Engine.POSTGRES,
+  });
+  const { rerender } = render(
+    <InstanceFormProvider instance={instance}>
+      <SyncDatabases
+        isCreating={false}
+        showLabel={false}
+        allowEdit
+        syncDatabases={create(SyncDatabasesSchema, {
+          databases: ["analytics"],
+        })}
+        onSyncDatabasesChange={() => undefined}
+      />
+    </InstanceFormProvider>
+  );
+
+  try {
+    await waitFor(() => {
+      expect(mocks.listInstanceDatabases).toHaveBeenCalledTimes(requestCount + 1);
+    });
+
+    rerender(
+      <InstanceFormProvider instance={instance}>
+        <SyncDatabases
+          isCreating={false}
+          showLabel={false}
+          allowEdit
+          syncDatabases={create(SyncDatabasesSchema, {
+            databases: ["app"],
+          })}
+          onSyncDatabasesChange={() => undefined}
+        />
+      </InstanceFormProvider>
+    );
+
+    await act(async () => {
+      resolvePreview?.({ databases: ["analytics"] });
+    });
+    await waitFor(() => {
+      expect(screen.getByText("app")).toBeInTheDocument();
+    });
+  } finally {
+    mocks.listInstanceDatabases.mockResolvedValue({
+      databases: ["app", "analytics"],
+    });
+  }
+});
+
+test("keeps labels in their own form field", () => {
+  const { container } = render(
+    <InstanceFormProvider>
+      <InstanceFormBody />
+    </InstanceFormProvider>
+  );
+
+  const environmentField = Array.from(
+    container.querySelectorAll('[data-slot="form-field"]')
+  ).find((field) =>
+    field
+      .querySelector('[data-slot="form-field-title"]')
+      ?.textContent?.includes("common.environment")
+  );
+  const labelsField = Array.from(
+    container.querySelectorAll('[data-slot="form-field"]')
+  ).find((field) =>
+    field
+      .querySelector('[data-slot="form-field-title"]')
+      ?.textContent?.includes("common.labels")
+  );
+
+  expect(environmentField?.textContent).not.toContain("instance.add-labels");
+  expect(labelsField).toContainElement(
+    container.querySelector('[data-testid="label-list-editor"]')
+  );
+});
+
+test("uses the shared form width for basic info controls", () => {
+  const { container } = render(
+    <InstanceFormProvider>
+      <InstanceFormBody />
+    </InstanceFormProvider>
+  );
+
+  expect(container.querySelector("#name")).toHaveClass("w-full");
+  expect(container.querySelector("#name")).not.toHaveClass("max-w-[40rem]");
+  expect(
+    container.querySelector('[data-testid="environment-select"]')
+  ).toHaveClass("w-full");
+  expect(
+    container.querySelector('[data-testid="environment-select"]')
+  ).not.toHaveClass("max-w-[40rem]");
+});
+
+test("names the external link info button distinctly", async () => {
+  const { container } = render(
+    <InstanceFormProvider
+      instance={create(InstanceSchema, {
+        name: "instances/production",
+        engine: Engine.POSTGRES,
+        externalLink: "https://example.com",
+      })}
+    >
+      <InstanceFormBody />
+    </InstanceFormProvider>
+  );
+  vi.useFakeTimers();
+
+  try {
+    const externalLinkInput = container.querySelector("#external-link");
+    const field = externalLinkInput?.closest('[data-slot="form-field"]');
+    const infoButton = field?.querySelector<HTMLButtonElement>(
+      'button[aria-label="instance.external-link common.info"]'
+    );
+    const openLinkButton = field?.querySelector<HTMLButtonElement>(
+      'button[aria-label="instance.external-link"]'
+    );
+
+    expect(infoButton).toBeDefined();
+    expect(openLinkButton).toBeDefined();
+
+    fireEvent.focus(infoButton!);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+
+    expect(
+      document.getElementById("bb-react-layer-overlay")?.textContent
+    ).toContain("instance.sentence.console.snowflake");
+
+    const scanIntervalField = Array.from(
+      container.querySelectorAll('[data-slot="form-field"]')
+    ).find((candidate) =>
+      candidate
+        .querySelector('[data-slot="form-field-title"]')
+        ?.textContent?.includes("instance.scan-interval.self")
+    );
+    const scanIntervalInfoButton =
+      scanIntervalField?.querySelector<HTMLButtonElement>(
+        'button[aria-label="instance.scan-interval.self"]'
+      );
+
+    expect(
+      scanIntervalField?.querySelector('[data-slot="form-field-description"]')
+    ).toBeNull();
+    expect(scanIntervalInfoButton).toBeDefined();
+
+    fireEvent.focus(scanIntervalInfoButton!);
+    await act(async () => {
+      vi.advanceTimersByTime(100);
+    });
+    expect(
+      document.getElementById("bb-react-layer-overlay")?.textContent
+    ).toContain("instance.scan-interval.description");
+  } finally {
+    vi.useRealTimers();
+  }
+});
 
 test("each connection tab edits its own endpoint and authentication", () => {
   const { container } = mount(Engine.POSTGRES);
@@ -367,10 +622,15 @@ test("MongoDB SRV mode only clears the selected connection's address fields", ()
   expect(context.adminDataSource.additionalAddresses).toHaveLength(1);
 });
 
-test("Redis connection mode belongs to the selected data source", () => {
+test("Redis connection mode belongs to the selected data source", async () => {
   mount(Engine.REDIS);
   fireEvent.click(screen.getByRole("button", { name: "common.read-only" }));
-  fireEvent.click(screen.getByRole("radio", { name: "Cluster" }));
+  fireEvent.click(
+    screen.getByRole("combobox", { name: "data-source.connection-type" })
+  );
+  const cluster = await screen.findByRole("option", { name: "Cluster" });
+  fireEvent.pointerDown(cluster, { pointerType: "mouse" });
+  fireEvent.click(cluster);
   expect(context.readonlyDataSourceList[0].redisType).toBe(
     DataSource_RedisType.CLUSTER
   );

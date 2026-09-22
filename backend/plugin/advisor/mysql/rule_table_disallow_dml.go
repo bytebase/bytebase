@@ -6,10 +6,10 @@ import (
 
 	"github.com/bytebase/omni/mysql/ast"
 
-	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 var (
@@ -82,7 +82,7 @@ func (r *tableDisallowDMLOmniRule) checkTableName(tableName string, lineNumber i
 				Code:          code.TableDisallowDML.Int32(),
 				Title:         r.Title,
 				Content:       fmt.Sprintf("DML is disallowed on table %s.", tableName),
-				StartPosition: common.ConvertANTLRLineToPosition(absoluteLine),
+				StartPosition: base.ConvertANTLRLineToPosition(absoluteLine),
 			})
 			return
 		}

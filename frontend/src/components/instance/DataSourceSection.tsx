@@ -3,6 +3,7 @@ import { type ReactNode, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { FormFieldGroup } from "@/components/ui/form";
 import { useAppStore } from "@/stores/app";
 import { DATASOURCE_READONLY_USER_NAME } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -133,13 +134,15 @@ export function DataSourceSection({
   const showROTips = showDataSourceTabs && !hasReadOnlyDataSource;
 
   return (
-    <div>
+    <FormFieldGroup density="compact">
       {/* Data source tabs */}
       {showDataSourceTabs && (
-        <div className="mb-4 flex items-center gap-x-2 border-b border-block-border">
-          <button
+        <div className="flex items-center gap-x-2 border-b border-block-border">
+          <Button
             type="button"
-            className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+            appearance="secondary"
+            size="md"
+            className={`h-auto pb-2 px-1 text-sm font-medium border-b-2 ${
               dataSourceEditState.editingDataSourceId === adminDataSource.id
                 ? "border-accent text-accent"
                 : "border-transparent text-control-light hover:text-main"
@@ -148,12 +151,14 @@ export function DataSourceSection({
           >
             {t("common.admin")}
             {incompleteMarker(adminDataSource)}
-          </button>
+          </Button>
           {readonlyDataSourceList.map((ds) => (
             <div key={ds.id} className="flex items-center">
-              <button
+              <Button
                 type="button"
-                className={`pb-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                appearance="secondary"
+                size="md"
+                className={`h-auto pb-2 px-1 text-sm font-medium border-b-2 ${
                   dataSourceEditState.editingDataSourceId === ds.id
                     ? "border-accent text-accent"
                     : "border-transparent text-control-light hover:text-main"
@@ -162,11 +167,13 @@ export function DataSourceSection({
               >
                 {t("common.read-only")}
                 {incompleteMarker(ds)}
-              </button>
+              </Button>
               {hasReadOnlyDataSource && (
-                <button
+                <Button
                   type="button"
-                  className="ml-1 text-error hover:text-error-hover text-xs pb-2"
+                  appearance="secondary"
+                  size="xs"
+                  className="ml-1 h-auto pb-2 text-error hover:text-error-hover"
                   disabled={!allowUpdate}
                   onClick={() => {
                     if (
@@ -180,7 +187,7 @@ export function DataSourceSection({
                   }}
                 >
                   ✕
-                </button>
+                </Button>
               )}
             </div>
           ))}
@@ -190,14 +197,16 @@ export function DataSourceSection({
             </span>
           )}
           {allowEdit && (
-            <button
+            <Button
               type="button"
-              className="pb-2 px-1 text-control-light hover:text-main disabled:opacity-50"
+              appearance="secondary"
+              size="md"
+              className="h-auto px-1 pb-2 text-control-light hover:text-main"
               disabled={!allowUpdate}
               onClick={handleCreateRODataSource}
             >
               <Plus className="w-4 h-4" />
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -205,7 +214,6 @@ export function DataSourceSection({
       {showROTips && (
         <Alert
           variant="warning"
-          className="my-4"
           description={
             <div className="flex items-center justify-between gap-x-2">
               <span>{t("data-source.no-read-only-data-source")}</span>
@@ -224,7 +232,6 @@ export function DataSourceSection({
       {!isCreating && editingDataSource && (
         <CreateDataSourceExample
           key={editingDataSource.id}
-          className="mb-4"
           engine={basicInfo.engine}
           dataSourceType={editingDataSource.type}
           authenticationType={editingDataSource.authenticationType}
@@ -235,16 +242,14 @@ export function DataSourceSection({
       {children}
 
       {editingDataSource && (
-        <div className="mt-4">
-          <DataSourceForm
-            dataSource={editingDataSource}
-            hideOptions={hideOptions}
-            hideAuthentication={hideAuthentication}
-            onDataSourceChange={handleDataSourceChange}
-            onOpenInfoPanel={onOpenInfoPanel}
-          />
-        </div>
+        <DataSourceForm
+          dataSource={editingDataSource}
+          hideOptions={hideOptions}
+          hideAuthentication={hideAuthentication}
+          onDataSourceChange={handleDataSourceChange}
+          onOpenInfoPanel={onOpenInfoPanel}
+        />
       )}
-    </div>
+    </FormFieldGroup>
   );
 }
