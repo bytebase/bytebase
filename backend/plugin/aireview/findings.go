@@ -3,7 +3,10 @@ package aireview
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 // Severity is how serious a finding is.
@@ -26,10 +29,19 @@ type Finding struct {
 	Fix      string
 }
 
+// reply is the model's final answer once parsed and validated.
+type reply struct {
+	Findings []Finding
+	// Notes name what the model could not check and why. They are for the
+	// backend, never for the user, and they never count as findings.
+	Notes []string
+}
+
 type replyJSON struct {
 	// Findings is a pointer so that a reply without the key is told apart from
 	// an empty list, which means the change passes.
 	Findings *[]findingJSON `json:"findings"`
+	Notes    []string       `json:"notes"`
 }
 
 type findingJSON struct {
@@ -43,32 +55,32 @@ type findingJSON struct {
 
 const maxReportedProblems = 10
 
-// parseFindings reads the model's final reply. It returns the problems that
-// make the reply invalid, worded for the model to correct. One invalid finding
+// parseReply reads the model's final reply. It returns the problems that make
+// the reply invalid, worded for the model to correct. One invalid finding
 // invalidates the whole reply: dropping it instead could empty the list, and an
 // empty list passes the change.
-func parseFindings(text string, lineCount int) ([]Finding, []string) {
+func parseReply(text string, lineCount int) (*reply, []string) {
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return nil, []string{"the reply is empty"}
 	}
 
-	reply, problem := decodeReply(text)
+	decoded, problem := decodeReply(text)
 	if problem != "" {
 		return nil, []string{problem}
 	}
-	if reply.Findings == nil {
+	if decoded.Findings == nil {
 		return nil, []string{`the JSON object has no "findings" key`}
 	}
 
-	var findings []Finding
+	result := &reply{}
 	var problems []string
-	for i, raw := range *reply.Findings {
+	for i, raw := range *decoded.Findings {
 		finding, findingProblems := validateFinding(raw, lineCount)
 		for _, problem := range findingProblems {
 			problems = append(problems, fmt.Sprintf("findings[%d].%s", i, problem))
 		}
-		findings = append(findings, finding)
+		result.Findings = append(result.Findings, finding)
 	}
 	if len(problems) > maxReportedProblems {
 		more := len(problems) - maxReportedProblems
@@ -77,21 +89,24 @@ func parseFindings(text string, lineCount int) ([]Finding, []string) {
 	if len(problems) > 0 {
 		return nil, problems
 	}
-	return findings, nil
+	for _, note := range decoded.Notes {
+		if note = strings.TrimSpace(note); note != "" {
+			result.Notes = append(result.Notes, note)
+		}
+	}
+	return result, nil
 }
 
 // decodeReply accepts the bare object or the object inside a code fence. An
 // object embedded in prose counts only when it holds findings: an empty list
 // passes the change, and prose that mentions {"findings": []} is not a verdict.
 func decodeReply(text string) (*replyJSON, string) {
-	reply := &replyJSON{}
-	if err := json.Unmarshal([]byte(text), reply); err == nil {
-		return reply, ""
+	if decoded, err := decodeStrict(text); err == nil {
+		return decoded, ""
 	}
 	if unfenced, ok := stripCodeFence(text); ok {
-		reply = &replyJSON{}
-		if err := json.Unmarshal([]byte(unfenced), reply); err == nil {
-			return reply, ""
+		if decoded, err := decodeStrict(unfenced); err == nil {
+			return decoded, ""
 		}
 	}
 
@@ -99,14 +114,30 @@ func decodeReply(text string) (*replyJSON, string) {
 	if start < 0 || end <= start {
 		return nil, "the reply is not a JSON object"
 	}
-	reply = &replyJSON{}
-	if err := json.Unmarshal([]byte(text[start:end+1]), reply); err != nil {
+	decoded, err := decodeStrict(text[start : end+1])
+	if err != nil {
 		return nil, fmt.Sprintf("the reply is not a valid JSON object: %v", err)
 	}
-	if reply.Findings != nil && len(*reply.Findings) == 0 {
+	if decoded.Findings != nil && len(*decoded.Findings) == 0 {
 		return nil, "the reply has text around the JSON object; reply with only the JSON object"
 	}
-	return reply, ""
+	return decoded, ""
+}
+
+// decodeStrict rejects keys outside the answer format. A model that cannot
+// review sometimes says so in a key of its own, such as "error", and dropping
+// that key would turn its report into a pass.
+func decodeStrict(text string) (*replyJSON, error) {
+	decoder := json.NewDecoder(strings.NewReader(text))
+	decoder.DisallowUnknownFields()
+	decoded := &replyJSON{}
+	if err := decoder.Decode(decoded); err != nil {
+		return nil, err
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		return nil, errors.New("unexpected text after the JSON object")
+	}
+	return decoded, nil
 }
 
 func stripCodeFence(text string) (string, bool) {

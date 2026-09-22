@@ -108,12 +108,13 @@ func TestReviewAnswersEveryToolCallAndKeepsMetadata(t *testing.T) {
 		{Id: "call-1", Name: "search", Arguments: `{"text": "orders"}`, Metadata: &signature},
 		{Id: "call-2", Name: "read", Arguments: `{"objects": [{"name": "orders"}]}`},
 	}
-	model := &scriptedModel{steps: []modelStep{toolCallReply(calls...), finalReply(`{"findings": []}`)}}
+	model := &scriptedModel{steps: []modelStep{toolCallReply(calls...), finalReply(`{"findings": [], "notes": ["orders has no row count in the sync"]}`)}}
 	tools := &fakeTools{outputs: map[string]string{"search": "orders_summary", "read": "CREATE TABLE orders"}}
 
 	result, err := NewReviewer(model).Review(context.Background(), &Request{Statement: threeLineStatement}, tools)
 	require.NoError(t, err)
 	require.Empty(t, result.Findings)
+	require.Equal(t, []string{"orders has no row count in the sync"}, result.Notes)
 	require.Equal(t, 2, result.Calls)
 	require.Equal(t, 200, result.TotalTokens)
 	require.Equal(t, []string{"search", "read"}, tools.calls)
@@ -157,6 +158,12 @@ func TestReviewExitPaths(t *testing.T) {
 			wantFindings:     1,
 			wantCalls:        2,
 			wantLastUserText: `findings[0].severity: "critical" is not one of P0, P1, P2`,
+		},
+		{
+			name:             "an invented error key gets a correction round",
+			steps:            []modelStep{finalReply(`{"findings": [], "error": "could not review"}`), finalReply(`{"findings": [], "notes": ["could not review"]}`)},
+			wantCalls:        2,
+			wantLastUserText: `json: unknown field "error"`,
 		},
 		{
 			name:        "invalid reply twice fails",

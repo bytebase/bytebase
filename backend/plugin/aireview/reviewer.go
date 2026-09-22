@@ -43,6 +43,10 @@ type Request struct {
 // Result is the outcome of a completed review. No findings means the change passes.
 type Result struct {
 	Findings []Finding
+	// Notes name what the model could not check and why, for example a fact
+	// the sync does not hold. They are for the backend's telemetry, not for
+	// the user, and they do not affect the verdict.
+	Notes []string
 	// Calls is the number of model calls the review made.
 	Calls int
 	// TotalTokens is the token usage the vendor reported, summed over the calls.
@@ -140,9 +144,10 @@ func (r *Reviewer) Review(parent context.Context, request *Request, tools Tools)
 			continue
 		}
 
-		findings, problems := parseFindings(content, lineCount)
+		parsed, problems := parseReply(content, lineCount)
 		if len(problems) == 0 {
-			result.Findings = findings
+			result.Findings = parsed.Findings
+			result.Notes = parsed.Notes
 			return result, nil
 		}
 		if invalidReplies >= maxInvalidReplies || result.Calls >= r.maxModelCalls {

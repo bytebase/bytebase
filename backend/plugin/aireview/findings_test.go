@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseFindings(t *testing.T) {
+func TestParseReply(t *testing.T) {
 	t.Parallel()
 
 	const finding = `{"title": "Create the index concurrently", "severity": "P1", "line": 2, "rule": "a long lock", "evidence": "orders has 52000000 rows", "fix": "Use CREATE INDEX CONCURRENTLY"}`
@@ -23,6 +23,7 @@ func TestParseFindings(t *testing.T) {
 		name         string
 		reply        string
 		want         []Finding
+		wantNotes    []string
 		wantProblems []string
 	}{
 		{name: "bare object", reply: `{"findings": [` + finding + `]}`, want: want},
@@ -30,6 +31,28 @@ func TestParseFindings(t *testing.T) {
 		{name: "sentence around the object", reply: `Here is my review: {"findings": [` + finding + `]} Let me know.`, want: want},
 		{name: "empty list passes", reply: `{"findings": []}`},
 		{name: "empty list in code fences passes", reply: "```json\n{\"findings\": []}\n```"},
+		{
+			name:      "notes ride along and are not findings",
+			reply:     `{"findings": [], "notes": ["row count of orders is not synced", " ", ""]}`,
+			wantNotes: []string{"row count of orders is not synced"},
+		},
+		{
+			// A model that cannot review sometimes invents a key for it. Dropping
+			// the key would turn its report into a pass.
+			name:         "unknown top level key is rejected",
+			reply:        `{"findings": [], "error": "could not review"}`,
+			wantProblems: []string{`the reply is not a valid JSON object: json: unknown field "error"`},
+		},
+		{
+			name:         "unknown key inside a finding is rejected",
+			reply:        `{"findings": [{"title": "t", "severity": "P1", "line": 1, "rule": "r", "evidence": "e", "fix": "f", "confidence": 0.9}]}`,
+			wantProblems: []string{`the reply is not a valid JSON object: json: unknown field "confidence"`},
+		},
+		{
+			name:         "a second object after the first is rejected",
+			reply:        `{"findings": []} {"findings": []}`,
+			wantProblems: []string{"the reply is not a valid JSON object: unexpected text after the JSON object"},
+		},
 		{
 			name:         "a single word on the fence line does not pass",
 			reply:        "```REJECTED\n{\"findings\": []}\n```",
@@ -64,7 +87,7 @@ func TestParseFindings(t *testing.T) {
 		{
 			// An object without the key must not read as an empty list, which passes.
 			name:         "object without the findings key",
-			reply:        `{"error": "could not review"}`,
+			reply:        `{"notes": ["could not review"]}`,
 			wantProblems: []string{`the JSON object has no "findings" key`},
 		},
 		{
@@ -87,24 +110,29 @@ func TestParseFindings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got, problems := parseFindings(tc.reply, 5)
+			got, problems := parseReply(tc.reply, 5)
 			require.Equal(t, tc.wantProblems, problems)
-			require.Equal(t, tc.want, got)
+			if tc.wantProblems != nil {
+				require.Nil(t, got)
+				return
+			}
+			require.Equal(t, tc.want, got.Findings)
+			require.Equal(t, tc.wantNotes, got.Notes)
 		})
 	}
 }
 
-func TestParseFindingsReportsTheErrorInsideTheFence(t *testing.T) {
+func TestParseReplyReportsTheErrorInsideTheFence(t *testing.T) {
 	t.Parallel()
 
 	// The model must hear about the wrong type of line, not about the fence.
-	_, problems := parseFindings("```json\n{\"findings\": [{\"line\": \"3\"}]}\n```", 5)
+	_, problems := parseReply("```json\n{\"findings\": [{\"line\": \"3\"}]}\n```", 5)
 	require.Len(t, problems, 1)
 	require.Contains(t, problems[0], "cannot unmarshal string")
 	require.Contains(t, problems[0], "line")
 }
 
-func TestParseFindingsCapsTheProblemList(t *testing.T) {
+func TestParseReplyCapsTheProblemList(t *testing.T) {
 	t.Parallel()
 
 	reply := `{"findings": [`
@@ -116,7 +144,7 @@ func TestParseFindingsCapsTheProblemList(t *testing.T) {
 	}
 	reply += `]}`
 
-	_, problems := parseFindings(reply, 5)
+	_, problems := parseReply(reply, 5)
 	require.Len(t, problems, maxReportedProblems+1)
 	require.Equal(t, "and 14 more problems", problems[maxReportedProblems])
 }
