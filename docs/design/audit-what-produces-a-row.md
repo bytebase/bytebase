@@ -147,7 +147,8 @@ option on its response field.
 
 **Implementation.** No API change. The mark is set where the access-control
 interceptor answers permission-denied, at the MCP ceiling gate, at the
-read-only SQL clamp, and at the custom-auth handler sites that make the check
+read-only SQL clamp, at the two MCP-origin guards in the issue and rollout
+handlers, and at the custom-auth handler sites that make the check
 themselves. Handler sites mark by building the refusal with
 `permissionDeniedError` in `backend/api/v1`, so the mark cannot be forgotten separately
 from the error; the two out-of-band doors mark through their shared writer.
@@ -162,9 +163,10 @@ from the error; the two out-of-band doors mark through their shared writer.
 - The runtime flag is deleted. The write site makes two decisions: store if
   the method is audited and the call reached its handler; stream if stdout is
   on and the call was stored or refused by a permission check.
-- No MCP exception. The MCP chain, which is pre-release, stops storing the
-  ceiling-gate refusals it stores today; they stream instead. Clamp refusals
-  run inside the audited Query handler and stay stored.
+- No MCP exception. The MCP chain, whose enforcement shipped in 3.22.0 while
+  its settings page did not, stops storing the ceiling-gate refusals it stores
+  today; they stream instead. Clamp refusals run inside the audited Query
+  handler and stay stored.
 
 **Implementation.** No API change.
 

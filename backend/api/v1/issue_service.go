@@ -621,7 +621,7 @@ func rejectMCPOriginatedGrantIssue(ctx context.Context, issueType v1pb.Issue_Typ
 	if issueType == v1pb.Issue_DATABASE_CHANGE {
 		return nil
 	}
-	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+	return permissionDeniedError(ctx, errors.Errorf(
 		"an MCP session may not create a %v issue: that issue type completes on creation whenever the "+
 			"workspace approval rule produces no template, which grants access with no human step. "+
 			"Create it signed in to the Bytebase console instead", issueType))
