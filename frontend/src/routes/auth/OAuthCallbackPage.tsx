@@ -201,7 +201,7 @@ export function OAuthCallbackPage() {
       name: AUTH_SIGNIN_MODULE,
       query: {
         redirect: state.redirect,
-        ssoError: idpName,
+        failedIdpName: idpName,
       },
     });
   };

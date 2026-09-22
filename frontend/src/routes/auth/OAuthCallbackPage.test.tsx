@@ -248,7 +248,7 @@ describe("OAuthCallbackPage", () => {
       name: "auth.signin",
       query: {
         redirect: "/projects",
-        ssoError: "idps/okta",
+        failedIdpName: "idps/okta",
       },
     });
     unmount();
@@ -276,7 +276,7 @@ describe("OAuthCallbackPage", () => {
       name: "auth.signin",
       query: {
         redirect: undefined,
-        ssoError: "idps/okta",
+        failedIdpName: "idps/okta",
       },
     });
     unmount();

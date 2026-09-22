@@ -22,7 +22,7 @@ import type {
   LoginRequest,
 } from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
-import { openWindowForSSO, SsoConfigError } from "@/utils";
+import { openWindowForSSO } from "@/utils";
 
 export type SigninPageProps = {
   readonly redirect?: boolean;
@@ -37,15 +37,15 @@ type SSOFailure = {
 };
 
 const ADMIN_RECOVERY_URL =
-  "https://docs.bytebase.com/get-started/self-host/admin-recovery?source=console";
-const SUPPORT_URL = "https://docs.bytebase.com/faq#how-to-reach-us";
+  "https://docs.bytebase.com/administration/admin-recovery?source=console";
+const SUPPORT_URL = "https://docs.bytebase.com/faq#how-to-reach-us?source=console";
 
 function queryString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
 function queryFailure(query: Record<string, unknown>): SSOFailure | undefined {
-  const idpName = queryString(query.ssoError);
+  const idpName = queryString(query.failedIdpName);
   if (!idpName) return undefined;
   return { idpName };
 }
@@ -112,10 +112,7 @@ export function SigninPage(props: SigninPageProps) {
         module: "bytebase",
         style: "CRITICAL",
         title: "Request error occurred",
-        description:
-          error instanceof SsoConfigError
-            ? t(error.i18nKey)
-            : (error as Error).message,
+        description: (error as Error).message,
       });
       setSSOFailure({ idpName: idp.name });
     }

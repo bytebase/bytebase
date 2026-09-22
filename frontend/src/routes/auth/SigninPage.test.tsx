@@ -389,7 +389,7 @@ describe("SigninPage", () => {
 
   test("shows recovery instructions after an SSO failure", async () => {
     mocks.currentRoute.value.query = {
-      ssoError: "idps/okta",
+      failedIdpName: "idps/okta",
     };
     const idps = [
       {
@@ -437,7 +437,7 @@ describe("SigninPage", () => {
 
   test("offers recovery help when password signin is disabled and email-code signin is available", async () => {
     mocks.currentRoute.value.query = {
-      ssoError: "idps/okta",
+      failedIdpName: "idps/okta",
     };
     mocks.actuatorStore = {
       authenticationInfo: {
@@ -481,7 +481,7 @@ describe("SigninPage", () => {
 
   test("directs Cloud users to Bytebase support instead of the recovery guide", async () => {
     mocks.currentRoute.value.query = {
-      ssoError: "idps/okta",
+      failedIdpName: "idps/okta",
     };
     mocks.actuatorStore = {
       authenticationInfo: {
