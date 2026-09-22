@@ -633,18 +633,18 @@ describe("OAuth2ConsentPage", () => {
       node.textContent?.includes("settings.mcp.policy.mode.read-only.title")
     );
     expect(detailsAction).toHaveAttribute("aria-expanded", "false");
-    expect(detailsAction?.parentElement).toBe(sessionTitle?.parentElement);
+    expect(detailsAction?.parentElement).toHaveClass("ml-auto", "shrink-0");
+    expect(sessionTitle?.parentElement).toHaveClass("items-center", "gap-2");
     expect(sessionTitle?.parentElement?.parentElement).toHaveClass(
-      "flex-wrap",
-      "gap-y-2"
+      "flex-col",
+      "gap-2"
     );
     expect(modeBadge).toHaveClass("whitespace-nowrap");
     expect(modeBadge?.parentElement).toHaveClass(
-      "shrink-0",
       "flex-wrap",
-      "xl:ml-auto"
+      "max-w-full"
     );
-    expect(modeBadge?.parentElement).not.toHaveClass("ml-auto");
+    expect(modeBadge?.parentElement).not.toHaveClass("ml-auto", "xl:ml-auto");
     act(() => detailsAction?.click());
 
     expect(container.textContent).toContain(

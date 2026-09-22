@@ -33,13 +33,15 @@ export function MCPConsentPolicyCard({
 }: Props) {
   return (
     <div className="bg-control-bg rounded-sm p-4 flex flex-col gap-3">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-        <div className="flex shrink-0 items-center gap-x-2">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
           <p className="text-sm text-control-light">{label}</p>
-          {headerAction}
+          {headerAction && (
+            <div className="ml-auto shrink-0">{headerAction}</div>
+          )}
         </div>
         {mode !== undefined && (
-          <div className="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2 xl:ml-auto">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             <MCPModeBadge mode={mode} />
             {modeAddon}
           </div>
