@@ -93,14 +93,24 @@ export function distributeColumnWidths<
 }
 
 /**
- * The width a table can take inside `scroller` without scrolling it: inside
- * its border and any scrollbar, and floored, because `clientWidth` rounds and
- * a table half a pixel wider than its scroller still scrolls.
+ * The width a table can take inside `scroller` without scrolling it, which
+ * even half a pixel too many does. Borders and padding come from the computed
+ * style, exact even where the browser snaps a 1px border to 0.8px at 125%;
+ * `offsetWidth` and `clientWidth` each round to a pixel, so a scrollbar is
+ * known only to within one and is given that pixel.
  */
 export function fillableWidth(scroller: HTMLElement): number {
-  const bordersAndScrollbar = scroller.offsetWidth - scroller.clientWidth;
+  const style = getComputedStyle(scroller);
+  const px = (value: string) => Number.parseFloat(value) || 0;
+  const borders = px(style.borderLeftWidth) + px(style.borderRightWidth);
+  const padding = px(style.paddingLeft) + px(style.paddingRight);
+  const scrollbar = scroller.offsetWidth - scroller.clientWidth - borders;
+  const scrollbarAllowance = scrollbar > 1 ? scrollbar + 1 : 0;
   return Math.floor(
-    scroller.getBoundingClientRect().width - bordersAndScrollbar
+    scroller.getBoundingClientRect().width -
+      borders -
+      padding -
+      scrollbarAllowance
   );
 }
 
