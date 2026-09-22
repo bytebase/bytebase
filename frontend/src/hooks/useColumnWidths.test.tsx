@@ -482,21 +482,63 @@ describe("distributeColumnWidths with a yield order", () => {
 });
 
 describe("fillableWidth", () => {
-  // jsdom lays nothing out, so each case states what a browser reports.
-  const scroller = (rect: number, offset: number, client: number) => {
+  // jsdom lays nothing out, so each case states what a browser reports; it
+  // does report the inline border and padding back as the computed style.
+  const scroller = (
+    rect: number,
+    offset: number,
+    client: number,
+    { border = "0px", padding = "0px" } = {}
+  ) => {
     const node = document.createElement("div");
+    node.style.borderLeftWidth = border;
+    node.style.borderRightWidth = border;
+    node.style.paddingLeft = padding;
+    node.style.paddingRight = padding;
+    document.body.appendChild(node);
     Object.defineProperty(node, "offsetWidth", { value: offset });
     Object.defineProperty(node, "clientWidth", { value: client });
     node.getBoundingClientRect = () => ({ width: rect }) as DOMRect;
     return node;
   };
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
 
   test.each([
-    ["a whole width, inside a 1px border", scroller(800, 800, 798), 798],
+    [
+      "a whole width, inside a 1px border",
+      () => scroller(800, 800, 798, { border: "1px" }),
+      798,
+    ],
     // 795.5 inside reads as 796; a table that wide scrolls by half a pixel.
-    ["a fractional width clientWidth rounds up", scroller(797.5, 798, 796), 795],
-    ["a width beside a vertical scrollbar", scroller(800, 800, 783), 783],
-  ])("fills %s without scrolling", (_, node, width) => {
-    expect(fillableWidth(node)).toBe(width);
+    [
+      "a fractional width clientWidth rounds up",
+      () => scroller(797.5, 798, 796, { border: "1px" }),
+      795,
+    ],
+    // At 150% a 1px border snaps to two thirds of a pixel: 798.67 inside,
+    // though offsetWidth less clientWidth reads 1.
+    [
+      "a width whose borders the browser snapped",
+      () => scroller(800, 800, 799, { border: "0.666667px" }),
+      798,
+    ],
+    // 798.47 inside reads as 798, so the rounded widths differ by 2 and leave
+    // two thirds of a pixel over the borders: rounding, not a scrollbar.
+    [
+      "a width whose rounding looks like a scrollbar",
+      () => scroller(799.8, 800, 798, { border: "0.666667px" }),
+      798,
+    ],
+    // 17px beside the content, known only to the pixel from two rounded widths.
+    ["a width beside a vertical scrollbar", () => scroller(800, 800, 783), 782],
+    [
+      "a width inside padding",
+      () => scroller(800, 800, 800, { padding: "8px" }),
+      784,
+    ],
+  ])("fills %s without scrolling", (_, make, width) => {
+    expect(fillableWidth(make())).toBe(width);
   });
 });
