@@ -152,6 +152,9 @@ describe("MCPAccessPolicySection", () => {
     expect(container.textContent).toContain(
       "settings.mcp.policy.mode.read-only.title"
     );
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.description(settings.mcp.policy.bound,settings.mcp.policy.audit)"
+    );
     unmount();
   });
 
@@ -350,9 +353,12 @@ describe("MCPAccessPolicySection", () => {
 
     const title = [...container.querySelectorAll("div")].find(
       (node) =>
-        node.classList.contains("textinfo") &&
+        node.classList.contains("text-base") &&
+        node.classList.contains("font-semibold") &&
+        node.classList.contains("text-main") &&
         node.textContent === "settings.mcp.policy.masking.title"
     );
+    expect(title).toBeDefined();
     expect(maskingSwitch(container)?.parentElement).toBe(title?.parentElement);
     unmount();
   });
@@ -896,7 +902,7 @@ describe("MCPAccessPolicySection", () => {
     render();
     await flush();
     expect(container.textContent).not.toContain("settings.mcp.policy.tightening");
-    expect(container.textContent).not.toContain("settings.mcp.policy.audit");
+    expect(container.textContent).toContain("settings.mcp.policy.audit");
 
     clickText(container, "settings.mcp.policy.edit");
     await flush();

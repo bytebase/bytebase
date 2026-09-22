@@ -1,37 +1,18 @@
-import { Check, ChevronRight, Minus } from "lucide-react";
-import { Fragment } from "react";
+import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type {
-  MCPCapabilityRow,
-  MCPCapabilityTier,
-} from "@/components/mcp/mcpCapabilityRows";
-import {
-  isRowServed,
-  MCP_CAPABILITY_TIERS,
-  mcpRowKey,
-  mcpTierKey,
-  rowsInTier,
-} from "@/components/mcp/mcpCapabilityRows";
+import { MCPCapabilityList } from "@/components/mcp/MCPCapabilityList";
 import {
   type MCPServingMode,
   mcpModeKey,
   mcpSummaryKey,
 } from "@/components/mcp/mcpPolicy";
-import type { BadgeProps } from "@/components/ui/badge";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsiblePanel,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
-const TIER_VARIANT: Record<MCPCapabilityTier, BadgeProps["variant"]> = {
-  read: "success",
-  write: "warning",
-};
 
 interface Props {
   readonly mode: MCPServingMode;
@@ -80,8 +61,10 @@ export function MCPCapabilityLadder({
               this is. */}
           <span
             className={cn(
-              "min-w-0 text-sm",
-              expanded ? "font-medium text-main" : "text-control-light"
+              "min-w-0",
+              expanded
+                ? "text-base font-semibold text-main"
+                : "text-sm text-control-light"
             )}
           >
             {expanded
@@ -106,109 +89,8 @@ export function MCPCapabilityLadder({
       </div>
 
       <CollapsiblePanel>
-        {/* One list, so the rows are announced as a single ordered set and a
-            row's position in it survives without sight — the prefix the design
-            rests on. Each divider is a presentational sibling of the rows it
-            closes, never content inside the last of them. */}
-        {/* Tailwind's preflight removes the marker from every `ul`, and Safari
-            drops list semantics from an unstyled list — so the position
-            announcement this list depends on needs the role stated. */}
-        <ul role="list" className="flex flex-col gap-y-2">
-          {MCP_CAPABILITY_TIERS.map((tier) => (
-            <Fragment key={tier}>
-              {rowsInTier(tier).map((row) => (
-                <LadderRow
-                  key={row.id}
-                  row={row}
-                  served={isRowServed(mode, row)}
-                  details={details}
-                />
-              ))}
-              <TierDivider tier={tier} />
-            </Fragment>
-          ))}
-        </ul>
-        {/* The floor is one line rather than a row: it is what no mode serves,
-            so it has no mark and belongs to no tier. */}
-        <p className="bg-error/5 px-3 py-2 text-sm text-error my-2">
-          <span className="font-medium">
-            {t("settings.mcp.ladder.floor.label")}
-          </span>{" "}
-          {t("settings.mcp.ladder.floor.text")}
-        </p>
+        <MCPCapabilityList mode={mode} details={details} tierDividers floor />
       </CollapsiblePanel>
     </Collapsible>
-  );
-}
-
-function LadderRow({
-  row,
-  served,
-  details,
-}: {
-  row: MCPCapabilityRow;
-  served: boolean;
-  details: boolean;
-}) {
-  const { t } = useTranslation();
-  return (
-    <li className="flex items-start gap-x-2 px-1 py-1">
-      <span
-        className={cn(
-          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full",
-          served ? "bg-success/10 text-success" : "bg-error/10 text-error"
-        )}
-      >
-        {served ? (
-          <Check className="size-3" aria-hidden="true" />
-        ) : (
-          <Minus className="size-3" aria-hidden="true" />
-        )}
-        {/* Served and unserved are otherwise carried by the glyph, the muting
-            and the presence of the tier tag — all of them visual. Without this
-            a refused row is announced the same as an allowed one. */}
-        <span className="sr-only">
-          {served
-            ? t("settings.mcp.ladder.mark.allowed")
-            : t("settings.mcp.ladder.mark.refused")}
-        </span>
-      </span>
-      <div className="flex min-w-0 flex-col gap-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-control-light">
-            {t(mcpRowKey(row, "title"))}
-          </span>
-          {served && (
-            <Badge
-              variant={TIER_VARIANT[row.tier]}
-              className="px-2 py-0 text-xs"
-            >
-              {t(mcpTierKey(row.tier, "tier"))}
-            </Badge>
-          )}
-        </div>
-        {details && (
-          <p className="text-xs leading-5 text-control-light">
-            {t(mcpRowKey(row, "details"))}
-          </p>
-        )}
-      </div>
-    </li>
-  );
-}
-
-function TierDivider({ tier }: { tier: MCPCapabilityTier }) {
-  const { t } = useTranslation();
-  return (
-    <li
-      role="presentation"
-      className="flex items-center gap-x-2 py-2 text-sm text-control-light"
-    >
-      <Separator className="flex-1" />
-      <span className="uppercase font-medium text-main tracking-wide">
-        {t(mcpTierKey(tier, "stops"))}
-      </span>
-      <Separator className="flex-1" />
-    </li>
   );
 }

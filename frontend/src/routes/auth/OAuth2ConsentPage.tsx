@@ -378,7 +378,7 @@ export function OAuth2ConsentPage() {
               name="action"
               value="allow"
             >
-              {t("common.allow")}
+              {t("oauth2.consent.allow-access")}
             </Button>
           </div>
         </form>
@@ -391,7 +391,7 @@ export function OAuth2ConsentPage() {
     // scroll: the ceiling panel and its caution make the card taller than a
     // short viewport, and the part that clips is Allow and Deny. The auto
     // margins keep it centred while it still fits.
-    <div className="h-full overflow-y-auto flex flex-col mx-auto w-full max-w-sm py-8">
+    <div className="h-full overflow-y-auto flex flex-col mx-auto w-full max-w-5xl px-4 py-8 md:w-3/5 lg:w-1/2 lg:px-0">
       <BytebaseLogo className="mx-auto mb-8 mt-auto shrink-0" />
       <div className="rounded-sm border border-control-border bg-background p-6 mb-auto shrink-0">
         {consentBody()}

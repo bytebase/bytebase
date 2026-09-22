@@ -137,9 +137,15 @@ describe("MCPCapabilityLadder", () => {
 
   test("expanded, the trigger becomes the list heading naming the mode", () => {
     const { container, unmount } = renderIntoContainer(ladder({}));
-    expect(container.textContent).toContain(
+    const heading = [...container.querySelectorAll("span")].find((node) =>
+      node.textContent?.includes(
+        "settings.mcp.ladder.heading(settings.mcp.policy.mode.read-only.title)"
+      )
+    );
+    expect(heading?.textContent).toContain(
       "settings.mcp.ladder.heading(settings.mcp.policy.mode.read-only.title)"
     );
+    expect(heading).toHaveClass("text-base", "font-semibold", "text-main");
     expect(container.textContent).not.toContain(
       "settings.mcp.ladder.summary.read-only"
     );
@@ -190,6 +196,20 @@ describe("MCPCapabilityLadder", () => {
     );
 
     expect(detail).toHaveClass("text-xs", "leading-5", "text-control-light");
+    unmount();
+  });
+
+  test("prioritizes granted capability titles over refused titles", () => {
+    const { container, unmount } = renderIntoContainer(ladder({}));
+    const allowed = [...container.querySelectorAll("span")].find((node) =>
+      node.textContent?.includes("settings.mcp.ladder.row.read-schemas.title")
+    );
+    const refused = [...container.querySelectorAll("span")].find((node) =>
+      node.textContent?.includes("settings.mcp.ladder.row.propose.title")
+    );
+
+    expect(allowed).toHaveClass("text-main");
+    expect(refused).toHaveClass("text-control");
     unmount();
   });
 
@@ -262,7 +282,7 @@ describe("MCPCapabilityLadder", () => {
     for (const row of rowItems(container)) {
       expect(row).not.toHaveClass("border-b");
     }
-    expect(divider).toHaveClass("py-2", "text-sm");
+    expect(divider).toHaveClass("py-2", "text-xs");
     expect(divider?.querySelector("span")).toHaveClass("font-medium");
     unmount();
   });

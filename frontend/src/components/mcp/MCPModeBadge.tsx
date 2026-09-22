@@ -32,7 +32,7 @@ export function MCPModeBadge({ mode, describedAs }: Props) {
   const { icon: Icon, badge } = MCP_MODE_PRESENTATION[mode];
   const label = t(mcpModeKey(mode, "title"));
   return (
-    <Badge variant={badge} className="gap-x-1">
+    <Badge variant={badge} className="gap-x-1 whitespace-nowrap">
       <Icon className="size-3.5 shrink-0" aria-hidden="true" />
       {/* Carried as text rather than aria-label: a Badge renders a bare span,
           and ARIA forbids naming its implicit `generic` role, so a label put
