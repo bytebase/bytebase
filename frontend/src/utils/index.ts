@@ -3,7 +3,6 @@ export * from "./collections";
 export * from "./role";
 export * from "./slug";
 export * from "./util";
-export * from "./featureGates";
 export * from "./datetime";
 export * from "./label";
 export * from "./string";
