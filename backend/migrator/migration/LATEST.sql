@@ -393,9 +393,9 @@ CREATE INDEX idx_issue_comment_open_thread ON issue_comment(project, issue_id)
 CREATE TABLE review_run (
     project text NOT NULL REFERENCES project(resource_id),
     issue_id bigint NOT NULL,
-    -- Reviewer type: 'RULE' (standard rules) or 'GUIDELINE' (natural-language
-    -- guidelines, performed by AI). No CHECK on purpose: the reviewer-id space
-    -- is open.
+    -- Reviewer type: 'RULE' (standard rules) or 'AI' (the AI review policy's
+    -- natural-language instructions, judged by a model). No CHECK on purpose:
+    -- the reviewer-id space is open.
     type text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),

@@ -11466,7 +11466,7 @@ Format: projects/{project}/issues/{issue} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;guideline&#34;. The name
+The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;ai&#34;. The name
 addresses a slot, not an execution. </p></td>
                 </tr>
               
@@ -12067,9 +12067,10 @@ review passed: whether problems remain is judged from open comments.</p></td>
               </tr>
             
               <tr>
-                <td>GUIDELINE</td>
+                <td>AI</td>
                 <td>2</td>
-                <td><p>Review against natural-language guidelines, performed by AI.</p></td>
+                <td><p>Review against the AI review policy&#39;s natural-language instructions,
+performed by a model.</p></td>
               </tr>
             
           </tbody>

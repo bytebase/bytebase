@@ -310,8 +310,9 @@ const (
 	ReviewRun_TYPE_UNSPECIFIED ReviewRun_Type = 0
 	// Review against the standard rules.
 	ReviewRun_RULE ReviewRun_Type = 1
-	// Review against natural-language guidelines, performed by AI.
-	ReviewRun_GUIDELINE ReviewRun_Type = 2
+	// Review against the AI review policy's natural-language instructions,
+	// performed by a model.
+	ReviewRun_AI ReviewRun_Type = 2
 )
 
 // Enum value maps for ReviewRun_Type.
@@ -319,12 +320,12 @@ var (
 	ReviewRun_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "RULE",
-		2: "GUIDELINE",
+		2: "AI",
 	}
 	ReviewRun_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"RULE":             1,
-		"GUIDELINE":        2,
+		"AI":               2,
 	}
 )
 
@@ -2194,7 +2195,7 @@ func (x *StatementAnchor) GetEndPosition() *Position {
 type ReviewRun struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-	// The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+	// The {reviewRun} id is the reviewer: "rule" or "ai". The name
 	// addresses a slot, not an execution.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Derived from the name.
@@ -2904,7 +2905,7 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x04spec\x18\x01 \x01(\tR\x04spec\x12!\n" +
 	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12<\n" +
 	"\x0estart_position\x18\x03 \x01(\v2\x15.bytebase.v1.PositionR\rstartPosition\x128\n" +
-	"\fend_position\x18\x04 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"\x8c\x04\n" +
+	"\fend_position\x18\x04 \x01(\v2\x15.bytebase.v1.PositionR\vendPosition\"\x85\x04\n" +
 	"\tReviewRun\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.ReviewRun.TypeB\x03\xe0A\x03R\x04type\x12:\n" +
@@ -2912,11 +2913,11 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12:\n" +
 	"\bend_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\aendTime\x12\x19\n" +
-	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03R\x05error\"5\n" +
+	"\x05error\x18\x06 \x01(\tB\x03\xe0A\x03R\x05error\".\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04RULE\x10\x01\x12\r\n" +
-	"\tGUIDELINE\x10\x02\"R\n" +
+	"\x04RULE\x10\x01\x12\x06\n" +
+	"\x02AI\x10\x02\"R\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tAVAILABLE\x10\x01\x12\v\n" +

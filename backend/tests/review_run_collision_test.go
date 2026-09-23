@@ -93,9 +93,9 @@ func TestCollision_ReviewRunProjectPurge(t *testing.T) {
 	a.Equal(issueAUID, issueBUID, "fixture issue ids should collide")
 
 	seedReviewRun(ctx, t, ctl, projectAID, issueAUID, "RULE", 2, "DONE")
-	seedReviewRun(ctx, t, ctl, projectAID, issueAUID, "GUIDELINE", 0, "AVAILABLE")
+	seedReviewRun(ctx, t, ctl, projectAID, issueAUID, "AI", 0, "AVAILABLE")
 	seedReviewRun(ctx, t, ctl, projectBID, issueBUID, "RULE", 5, "FAILED")
-	seedReviewRun(ctx, t, ctl, projectBID, issueBUID, "GUIDELINE", 1, "RUNNING")
+	seedReviewRun(ctx, t, ctl, projectBID, issueBUID, "AI", 1, "RUNNING")
 
 	// Positive preconditions: an empty list would make the isolation
 	// assertions below vacuously true.

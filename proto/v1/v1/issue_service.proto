@@ -800,7 +800,7 @@ message ReviewRun {
   };
 
   // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-  // The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+  // The {reviewRun} id is the reviewer: "rule" or "ai". The name
   // addresses a slot, not an execution.
   string name = 1;
 
@@ -808,8 +808,9 @@ message ReviewRun {
     TYPE_UNSPECIFIED = 0;
     // Review against the standard rules.
     RULE = 1;
-    // Review against natural-language guidelines, performed by AI.
-    GUIDELINE = 2;
+    // Review against the AI review policy's natural-language instructions,
+    // performed by a model.
+    AI = 2;
   }
   // Derived from the name.
   Type type = 2 [(google.api.field_behavior) = OUTPUT_ONLY];

@@ -73,8 +73,8 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	_, err = runReview(ctx, ctl, issueA.Name, "bogus")
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
-	// Guideline review requires AI, which is off in the test workspace.
-	_, err = runReview(ctx, ctl, issueA.Name, "guideline")
+	// AI review requires AI to be enabled, which is off in the test workspace.
+	_, err = runReview(ctx, ctl, issueA.Name, "ai")
 	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
 
 	// Rule review on both colliding issues.
@@ -114,7 +114,7 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	afterB := listReviewRuns(ctx, t, ctl, projectBID)
 	a.Equal(beforeB, afterB, "project B review_run rows must be untouched by A's re-run")
 
-	// With AI enabled, the guideline slot is created, claimed, and fails
+	// With AI enabled, the AI slot is created, claimed, and fails
 	// honestly: the executor is not implemented yet.
 	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
@@ -137,13 +137,13 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 		},
 	}))
 	a.NoError(err)
-	runG, err := runReview(ctx, ctl, issueA.Name, "guideline")
+	aiRun, err := runReview(ctx, ctl, issueA.Name, "ai")
 	a.NoError(err)
-	a.Equal(v1pb.ReviewRun_GUIDELINE, runG.Type)
-	rowG := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "GUIDELINE")
-	a.Equal("FAILED", rowG.Status)
-	a.Contains(rowG.Payload, "not implemented")
-	// The failed guideline run left A's rule slot alone.
+	a.Equal(v1pb.ReviewRun_AI, aiRun.Type)
+	aiRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
+	a.Equal("FAILED", aiRow.Status)
+	a.Contains(aiRow.Payload, "not implemented")
+	// The failed AI run left A's rule slot alone.
 	rowA3 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
 	a.Equal(int64(1), rowA3.Attempt)
 	a.Equal("FAILED", rowA3.Status)

@@ -80,7 +80,7 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 	ctx, s := fixture.ctx, fixture.store
 	const issueUID = reviewResultIssue
 
-	// A person's anchored thread and a guideline result on the same issue
+	// A person's anchored thread and an AI review result on the same issue
 	// must survive every rule completion below.
 	open := store.ThreadStateOpen
 	_, err := s.CreateIssueComments(ctx, "dev@example.com", &store.IssueCommentMessage{
@@ -91,16 +91,16 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	guideline := reviewResult("default", "guideline", storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
-	guideline.Payload.ReviewMetadata.RunType = storepb.ReviewRun_GUIDELINE
-	guideline.ThreadState = &open
+	aiReview := reviewResult("default", "ai", storepb.ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED)
+	aiReview.Payload.ReviewMetadata.RunType = storepb.ReviewRun_AI
+	aiReview.ThreadState = &open
 
 	// Colliding rule runs on both projects.
 	for _, projectID := range []string{"default", "other"} {
 		_, err := s.CreateReviewRun(ctx, projectID, issueUID, store.ReviewRunTypeRule)
 		require.NoError(t, err)
 	}
-	_, err = s.CreateReviewRun(ctx, "default", issueUID, store.ReviewRunTypeGuideline)
+	_, err = s.CreateReviewRun(ctx, "default", issueUID, store.ReviewRunTypeAI)
 	require.NoError(t, err)
 	claimed, err := s.ClaimAvailableReviewRuns(ctx, "replica-1")
 	require.NoError(t, err)
@@ -111,9 +111,9 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 	}
 	ruleDefault := byKey[[2]string{"default", store.ReviewRunTypeRule}]
 	ruleOther := byKey[[2]string{"other", store.ReviewRunTypeRule}]
-	guidelineDefault := byKey[[2]string{"default", store.ReviewRunTypeGuideline}]
+	aiReviewDefault := byKey[[2]string{"default", store.ReviewRunTypeAI}]
 
-	updated, err := s.CompleteReviewRun(ctx, guidelineDefault, "replica-1", storepb.ReviewRun_DONE, nil, []*store.IssueCommentMessage{guideline})
+	updated, err := s.CompleteReviewRun(ctx, aiReviewDefault, "replica-1", storepb.ReviewRun_DONE, nil, []*store.IssueCommentMessage{aiReview})
 	require.NoError(t, err)
 	require.True(t, updated)
 
@@ -122,7 +122,7 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 		[]*store.IssueCommentMessage{reviewResult("other", "wrong project", storepb.ReviewRuleType_SYNTAX)})
 	require.Error(t, err)
 	wrongReviewer := reviewResult("default", "wrong reviewer", storepb.ReviewRuleType_SYNTAX)
-	wrongReviewer.Payload.ReviewMetadata.RunType = storepb.ReviewRun_GUIDELINE
+	wrongReviewer.Payload.ReviewMetadata.RunType = storepb.ReviewRun_AI
 	_, err = s.CompleteReviewRun(ctx, ruleDefault, "replica-1", storepb.ReviewRun_DONE, nil, []*store.IssueCommentMessage{wrongReviewer})
 	require.Error(t, err)
 	_, err = s.CompleteReviewRun(ctx, ruleDefault, "replica-1", storepb.ReviewRun_FAILED, nil,
@@ -145,7 +145,7 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 
 	got := listReviewComments(t, fixture, "default")
 	require.Equal(t, []reviewComment{
-		{Comment: "guideline", ThreadState: "OPEN"},
+		{Comment: "ai", ThreadState: "OPEN"},
 		{Comment: "default first", ThreadState: "OPEN"},
 		{Comment: "default second", ThreadState: "OPEN"},
 	}, got, "results post in order as OPEN roots with no creator")
@@ -179,7 +179,7 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 	require.Equal(t, got, listReviewComments(t, fixture, "default"), "a failed run leaves the comments alone")
 
 	// The next DONE resolves the same reviewer's earlier results on this
-	// issue, and only those: the guideline result, the person's thread, and
+	// issue, and only those: the AI review result, the person's thread, and
 	// the colliding issue in the other project stay open.
 	_, err = s.CreateReviewRun(ctx, "default", issueUID, store.ReviewRunTypeRule)
 	require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, updated)
 	require.Equal(t, []reviewComment{
-		{Comment: "guideline", ThreadState: "OPEN"},
+		{Comment: "ai", ThreadState: "OPEN"},
 		{Comment: "default first", ThreadState: "RESOLVED"},
 		{Comment: "default second", ThreadState: "RESOLVED"},
 		{Comment: "default third", ThreadState: "OPEN"},
@@ -210,7 +210,7 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 			require.Equal(t, "dev@example.com", c.CreatorEmail)
 		}
 	}
-	require.ElementsMatch(t, []string{"person", "guideline", "default third"}, comments)
+	require.ElementsMatch(t, []string{"person", "ai", "default third"}, comments)
 
 	// A review result's text belongs to the reviewer: a person can resolve or
 	// reopen it but not rewrite it. A person's own thread stays editable.
@@ -240,7 +240,7 @@ func TestCompleteReviewRunPostsResults(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, updated)
 	for _, c := range listReviewComments(t, fixture, "default") {
-		if c.Comment == "guideline" {
+		if c.Comment == "ai" {
 			require.Equal(t, "OPEN", c.ThreadState)
 			continue
 		}
