@@ -1,4 +1,3 @@
-import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -23,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
-import { getLayerRoot, LAYER_SURFACE_CLASS } from "@/components/ui/layer";
 import {
   Table,
   TableBody,
@@ -32,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tooltip } from "@/components/ui/tooltip";
+import { BlockTooltip, Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import {
   distributeColumnWidths,
@@ -848,34 +846,23 @@ function TruncatedQuery({ query }: { query: string }) {
   }, [query]);
 
   return (
-    <BaseTooltip.Provider delay={300}>
-      <BaseTooltip.Root open={isTruncated && open} onOpenChange={setOpen}>
-        <BaseTooltip.Trigger
-          render={
-            <span
-              ref={ref}
-              className="block font-mono text-xs truncate min-w-0 flex-1"
-            />
-          }
-        >
-          {query}
-        </BaseTooltip.Trigger>
-        <BaseTooltip.Portal container={getLayerRoot("overlay")}>
-          <BaseTooltip.Positioner
-            side="top"
-            sideOffset={4}
-            className={LAYER_SURFACE_CLASS}
-          >
-            <BaseTooltip.Popup className="rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md">
-              <pre className="max-w-lg whitespace-pre-wrap font-mono">
-                {query}
-              </pre>
-              <BaseTooltip.Arrow className="fill-main" />
-            </BaseTooltip.Popup>
-          </BaseTooltip.Positioner>
-        </BaseTooltip.Portal>
-      </BaseTooltip.Root>
-    </BaseTooltip.Provider>
+    <BlockTooltip
+      content={
+        <pre className="max-w-lg whitespace-pre-wrap font-mono">{query}</pre>
+      }
+      delayDuration={300}
+      open={isTruncated && open}
+      onOpenChange={setOpen}
+      popupClassName="max-w-lg"
+      render={
+        <span
+          ref={ref}
+          className="block font-mono text-xs truncate min-w-0 flex-1"
+        />
+      }
+    >
+      {query}
+    </BlockTooltip>
   );
 }
 

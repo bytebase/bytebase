@@ -1,3 +1,4 @@
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import {
   createBrowserRouter,
   type LoaderFunctionArgs,
@@ -43,5 +44,9 @@ export const appRouter = createBrowserRouter(routes);
 setAppRouter(appRouter);
 
 export function AppRoot() {
-  return <RouterProvider router={appRouter} />;
+  return (
+    <BaseTooltip.Provider>
+      <RouterProvider router={appRouter} />
+    </BaseTooltip.Provider>
+  );
 }
