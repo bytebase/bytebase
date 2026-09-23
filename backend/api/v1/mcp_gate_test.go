@@ -1604,6 +1604,7 @@ func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
 		"an MCP session may not create an access grant": {mcpSession, v1pb.Issue_ACCESS_GRANT, true},
 		"an MCP session may not create an unknown type": {mcpSession, v1pb.Issue_Type(9999), true},
 		"an MCP session composes database changes":      {mcpSession, v1pb.Issue_DATABASE_CHANGE, false},
+		"an unset type is left to buildIssueMessage":    {mcpSession, v1pb.Issue_TYPE_UNSPECIFIED, false},
 		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, false},
 		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, false},
 	} {
