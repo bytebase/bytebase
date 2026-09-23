@@ -117,9 +117,13 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 	afterB := listReviewRuns(ctx, t, ctl, projectBID)
 	a.Equal(beforeB, afterB, "project B review_run rows must be untouched by A's re-run")
 
-	// With AI enabled but the model unreachable, the AI slot is created,
-	// claimed, and fails honestly with the model's error.
-	setAISetting(ctx, t, ctl, "https://ai.invalid")
+	// With AI enabled but the model failing, the AI slot is created, claimed,
+	// and fails honestly with the model's error.
+	brokenModel := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, `{"error": {"message": "quota exceeded"}}`, http.StatusServiceUnavailable)
+	}))
+	defer brokenModel.Close()
+	setAISetting(ctx, t, ctl, brokenModel.URL)
 	aiRun, err := runReview(ctx, ctl, issueA.Name, "ai")
 	a.NoError(err)
 	a.Equal(v1pb.ReviewRun_AI, aiRun.Type)
