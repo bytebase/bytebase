@@ -71,7 +71,7 @@ describe("plan detail phase summaries", () => {
     } as unknown as Plan;
 
     expect(buildChangesSummary(plan, t)).toBe(
-      "2 changes · 2 databases and 1 database groups · 2 passed, 1 warning, 2 error"
+      "2 changes · 2 databases and 1 database groups · 2 passed, 1 warning, 1 error"
     );
   });
 
