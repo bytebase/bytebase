@@ -117,8 +117,9 @@ bytebase:
 # Gateway API HTTPRoute configuration
 # ref: https://gateway-api.sigs.k8s.io/api-types/httproute/
 httpRoute:
-  # -- Enable HTTPRoute for Bytebase (Gateway API). Requires a Gateway API implementation in the cluster.
-  # Mutually exclusive with Ingress — enable one or the other, not both.
+  # -- Enable a Gateway API HTTPRoute to expose Bytebase, instead of an
+  # externally-managed Ingress/LoadBalancer. Requires a Gateway API
+  # implementation in the cluster.
   enabled: false
   # -- Additional HTTPRoute annotations
   annotations: {}
