@@ -36,6 +36,13 @@ vi.mock("@/components/ui/tooltip", () => ({
     children: React.ReactElement<{ title?: string }>;
     content?: string;
   }) => (content ? cloneElement(children, { title: content }) : children),
+  BlockTooltip: ({
+    children,
+    render,
+  }: {
+    children: React.ReactNode;
+    render?: React.ReactElement;
+  }) => (render ? cloneElement(render, undefined, children) : <>{children}</>),
 }));
 
 vi.mock("@/stores/app", () => ({
