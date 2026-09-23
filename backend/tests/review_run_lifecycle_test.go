@@ -137,12 +137,12 @@ func TestCollision_RunReviewLifecycle(t *testing.T) {
 		},
 	}))
 	a.NoError(err)
-	runG, err := runReview(ctx, ctl, issueA.Name, "ai")
+	aiRun, err := runReview(ctx, ctl, issueA.Name, "ai")
 	a.NoError(err)
-	a.Equal(v1pb.ReviewRun_AI, runG.Type)
-	rowG := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
-	a.Equal("FAILED", rowG.Status)
-	a.Contains(rowG.Payload, "not implemented")
+	a.Equal(v1pb.ReviewRun_AI, aiRun.Type)
+	aiRow := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "AI")
+	a.Equal("FAILED", aiRow.Status)
+	a.Contains(aiRow.Payload, "not implemented")
 	// The failed AI run left A's rule slot alone.
 	rowA3 := waitReviewRunTerminal(ctx, t, ctl, projectAID, issueAUID, "RULE")
 	a.Equal(int64(1), rowA3.Attempt)
