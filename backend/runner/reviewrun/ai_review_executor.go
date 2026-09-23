@@ -9,7 +9,7 @@ import (
 )
 
 // AIReviewExecutor is the AI review: a model judges the change against the
-// natural-language instructions of the AI review policy.
+// natural-language AI review policy.
 //
 // Not implemented yet: the evaluation lands with the AI review design. A
 // claimed AI run must still reach a terminal status, so it fails honestly

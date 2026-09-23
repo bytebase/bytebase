@@ -841,6 +841,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ReviewRulePolicy"><span class="badge">M</span>ReviewRulePolicy</a>
                 </li>
               
@@ -6315,8 +6319,8 @@ executor or by the reaper. </p></td>
               <tr>
                 <td>AI</td>
                 <td>2</td>
-                <td><p>Review against the AI review policy&#39;s natural-language instructions,
-performed by a model.</p></td>
+                <td><p>Review against the natural-language AI review policy, performed by a
+model.</p></td>
               </tr>
             
           </tbody>
@@ -7467,6 +7471,30 @@ Disallow running DDL statements in the SQL editor. </p></td>
 
         
       
+        <h3 id="bytebase.store.ReviewAIPolicy">ReviewAIPolicy</h3>
+        <p>ReviewAIPolicy holds the natural-language policy the AI review judges a</p><p>change against. Both levels apply: the workspace policy and the project</p><p>policy both reach the reviewer, and the project policy wins where they</p><p>conflict.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.ReviewRulePolicy">ReviewRulePolicy</h3>
         <p>ReviewRulePolicy is the standard review rule switch. The nearest policy</p><p>wins: the project's if it has one, else the workspace's, else every rule.</p>
 
@@ -7668,6 +7696,12 @@ For example, the environment resource can have the SQL review config tag, such a
               <tr>
                 <td>REVIEW_RULE</td>
                 <td>7</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>REVIEW_AI</td>
+                <td>8</td>
                 <td><p></p></td>
               </tr>
             

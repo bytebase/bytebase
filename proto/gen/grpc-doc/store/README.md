@@ -169,6 +169,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-store-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-store-Policy)
     - [QueryDataPolicy](#bytebase-store-QueryDataPolicy)
+    - [ReviewAIPolicy](#bytebase-store-ReviewAIPolicy)
     - [ReviewRulePolicy](#bytebase-store-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-store-RolloutPolicy)
     - [TagPolicy](#bytebase-store-TagPolicy)
@@ -2195,7 +2196,7 @@ new reviewer is a new value, not a migration.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RULE | 1 | Review against the standard rules. |
-| AI | 2 | Review against the AI review policy&#39;s natural-language instructions, performed by a model. |
+| AI | 2 | Review against the natural-language AI review policy, performed by a model. |
 
 
  
@@ -2743,6 +2744,24 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 
 
 
+<a name="bytebase-store-ReviewAIPolicy"></a>
+
+### ReviewAIPolicy
+ReviewAIPolicy holds the natural-language policy the AI review judges a
+change against. Both levels apply: the workspace policy and the project
+policy both reach the reviewer, and the project policy wins where they
+conflict.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) |  |  |
+
+
+
+
+
+
 <a name="bytebase-store-ReviewRulePolicy"></a>
 
 ### ReviewRulePolicy
@@ -2837,6 +2856,7 @@ wins: the project&#39;s if it has one, else the workspace&#39;s, else every rule
 | IAM | 5 |  |
 | TAG | 6 |  |
 | REVIEW_RULE | 7 |  |
+| REVIEW_AI | 8 |  |
 
 
  

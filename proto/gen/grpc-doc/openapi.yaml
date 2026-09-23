@@ -25572,6 +25572,13 @@ components:
           title: query_data_policy
         - type: object
           properties:
+            reviewAiPolicy:
+              allOf:
+                - $ref: '#/components/schemas/bytebase.v1.ReviewAIPolicy'
+              title: review_ai_policy
+          title: review_ai_policy
+        - type: object
+          properties:
             reviewRulePolicy:
               allOf:
                 - $ref: '#/components/schemas/bytebase.v1.ReviewRulePolicy'
@@ -25602,6 +25609,8 @@ components:
               - required:
                   - queryDataPolicy
               - required:
+                  - reviewAiPolicy
+              - required:
                   - reviewRulePolicy
               - required:
                   - rolloutPolicy
@@ -25615,6 +25624,8 @@ components:
                     - maskingRulePolicy
                 - required:
                     - queryDataPolicy
+                - required:
+                    - reviewAiPolicy
                 - required:
                     - reviewRulePolicy
                 - required:
@@ -25682,6 +25693,7 @@ components:
         - TAG
         - DATA_QUERY
         - REVIEW_RULE
+        - REVIEW_AI
       description: The type of organizational policy.
     bytebase.v1.Position:
       type: object
@@ -26816,6 +26828,19 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.ReviewAIPolicy:
+      type: object
+      properties:
+        content:
+          type: string
+          title: content
+          description: The policy text. Must not be blank, at most 64 KiB.
+      title: ReviewAIPolicy
+      additionalProperties: false
+      description: |-
+        Natural-language policy for the AI review. Unlike the review rule policy,
+         both levels apply: the workspace policy and the project policy both reach
+         the reviewer, and the project policy wins where they conflict.
     bytebase.v1.ReviewConfig:
       type: object
       properties:

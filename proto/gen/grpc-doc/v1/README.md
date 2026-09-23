@@ -600,6 +600,7 @@
     - [MaskingRulePolicy.MaskingRule](#bytebase-v1-MaskingRulePolicy-MaskingRule)
     - [Policy](#bytebase-v1-Policy)
     - [QueryDataPolicy](#bytebase-v1-QueryDataPolicy)
+    - [ReviewAIPolicy](#bytebase-v1-ReviewAIPolicy)
     - [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy)
     - [RolloutPolicy](#bytebase-v1-RolloutPolicy)
     - [TagPolicy](#bytebase-v1-TagPolicy)
@@ -4055,7 +4056,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RULE | 1 | Review against the standard rules. |
-| AI | 2 | Review against the AI review policy&#39;s natural-language instructions, performed by a model. |
+| AI | 2 | Review against the natural-language AI review policy, performed by a model. |
 
 
  
@@ -9978,6 +9979,7 @@ For example: resource.environment_id == &#34;test&#34; &amp;&amp; resource.proje
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | query_data_policy | [QueryDataPolicy](#bytebase-v1-QueryDataPolicy) |  |  |
 | review_rule_policy | [ReviewRulePolicy](#bytebase-v1-ReviewRulePolicy) |  |  |
+| review_ai_policy | [ReviewAIPolicy](#bytebase-v1-ReviewAIPolicy) |  |  |
 | enforce | [bool](#bool) |  | Whether the policy is enforced. |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 
@@ -9998,6 +10000,23 @@ QueryDataPolicy is the policy configuration for querying data in the SQL Editor.
 | disable_export | [bool](#bool) |  | workspace-level policy Disable data export in the SQL editor. |
 | disable_copy_data | [bool](#bool) |  | workspace-level policy Disable copying query results in the SQL editor. |
 | allow_admin_data_source | [bool](#bool) |  | workspace-level policy Allow using the admin data source to query in the SQL editor. If true, users can select the admin data source or read-only data source If false, 1. when read-only data source is configured, users&#39;re force to use the read-only data source 2. otherwise fallback to use the admin data source. |
+
+
+
+
+
+
+<a name="bytebase-v1-ReviewAIPolicy"></a>
+
+### ReviewAIPolicy
+Natural-language policy for the AI review. Unlike the review rule policy,
+both levels apply: the workspace policy and the project policy both reach
+the reviewer, and the project policy wins where they conflict.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| content | [string](#string) |  | The policy text. Must not be blank, at most 64 KiB. |
 
 
 
@@ -10121,6 +10140,7 @@ The type of organizational policy.
 | TAG | 4 | Resource tag policy. |
 | DATA_QUERY | 6 | Query data access policy. |
 | REVIEW_RULE | 7 | Standard review rule switch. Allowed on WORKSPACE and PROJECT. |
+| REVIEW_AI | 8 | Natural-language policy for the AI review. Allowed on WORKSPACE and PROJECT. |
 
 
  

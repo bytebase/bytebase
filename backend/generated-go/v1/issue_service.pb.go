@@ -310,8 +310,8 @@ const (
 	ReviewRun_TYPE_UNSPECIFIED ReviewRun_Type = 0
 	// Review against the standard rules.
 	ReviewRun_RULE ReviewRun_Type = 1
-	// Review against the AI review policy's natural-language instructions,
-	// performed by a model.
+	// Review against the natural-language AI review policy, performed by a
+	// model.
 	ReviewRun_AI ReviewRun_Type = 2
 )
 

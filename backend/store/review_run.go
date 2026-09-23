@@ -18,8 +18,8 @@ import (
 const (
 	// ReviewRunTypeRule reviews against the standard rules.
 	ReviewRunTypeRule = "RULE"
-	// ReviewRunTypeAI reviews against the AI review policy's natural-language
-	// instructions, judged by a model.
+	// ReviewRunTypeAI reviews against the natural-language AI review policy,
+	// judged by a model.
 	ReviewRunTypeAI = "AI"
 )
 
