@@ -1,9 +1,14 @@
 package reviewrun
 
 import (
+	"context"
+	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -88,4 +93,80 @@ func TestAIReviewComments(t *testing.T) {
 	require.Equal(t, []string{"instances/prod-1/databases/db"}, single.Payload.ReviewMetadata.Targets)
 
 	require.Empty(t, aiReviewComments("p", 7, nil))
+}
+
+func TestUniqueCheckTargets(t *testing.T) {
+	t.Parallel()
+
+	targets := []*plancheck.CheckTarget{
+		{SpecID: "spec-1", Target: "instances/i/databases/a"},
+		{SpecID: "spec-1", Target: "instances/i/databases/b"},
+		{SpecID: "spec-1", Target: "instances/i/databases/a"},
+		{SpecID: "spec-2", Target: "instances/i/databases/a"},
+	}
+	unique := uniqueCheckTargets(targets)
+	require.Equal(t, []*plancheck.CheckTarget{targets[0], targets[1], targets[3]}, unique, "the same database under another spec is another review")
+	require.Empty(t, uniqueCheckTargets(nil))
+}
+
+func TestCheckSheetSize(t *testing.T) {
+	t.Parallel()
+
+	require.NoError(t, checkSheetSize(strings.Repeat("s", maxAIReviewSheetBytes)))
+	err := checkSheetSize(strings.Repeat("s", maxAIReviewSheetBytes+1))
+	require.ErrorContains(t, err, "not reviewed")
+	require.ErrorContains(t, err, "262145 bytes")
+}
+
+// TestReviewUnits pins the executor's concurrency guarantees: at most
+// aiReviewConcurrency reviews in flight, every unit attempted whatever the
+// others do, and a panicking review recorded as that unit's error.
+func TestReviewUnits(t *testing.T) {
+	t.Parallel()
+
+	units := make([]*aiReviewUnit, 20)
+	for i := range units {
+		units[i] = &aiReviewUnit{Check: &plancheck.CheckTarget{SpecID: "spec-1", Target: "instances/i/databases/db" + string(rune('a'+i))}}
+	}
+	var inFlight, maxInFlight atomic.Int32
+	review := func(_ context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
+		now := inFlight.Add(1)
+		defer inFlight.Add(-1)
+		for {
+			seen := maxInFlight.Load()
+			if now <= seen || maxInFlight.CompareAndSwap(seen, now) {
+				break
+			}
+		}
+		time.Sleep(20 * time.Millisecond)
+		switch unit.Check.Target {
+		case units[3].Check.Target:
+			return nil, errors.New("model call 1 failed")
+		case units[5].Check.Target:
+			panic("boom")
+		default:
+			return &aireview.Result{Findings: []aireview.Finding{{Title: "finding on " + unit.Check.Target, Line: 1}}}, nil
+		}
+	}
+
+	results, errs := reviewUnits(context.Background(), units, review)
+	require.Len(t, results, 20)
+	require.Len(t, errs, 20)
+	require.LessOrEqual(t, maxInFlight.Load(), int32(aiReviewConcurrency))
+	require.Greater(t, maxInFlight.Load(), int32(1), "the reviews run concurrently")
+	for i, result := range results {
+		switch i {
+		case 3:
+			require.Nil(t, result)
+			require.ErrorContains(t, errs[i], units[3].Check.Target+": model call 1 failed")
+		case 5:
+			require.Nil(t, result)
+			require.ErrorContains(t, errs[i], units[5].Check.Target+": review panic: boom")
+		default:
+			require.NoError(t, errs[i])
+			require.Same(t, units[i], result.Unit)
+			require.Equal(t, "finding on "+units[i].Check.Target, result.Findings[0].Title)
+		}
+	}
+	require.Zero(t, inFlight.Load())
 }
