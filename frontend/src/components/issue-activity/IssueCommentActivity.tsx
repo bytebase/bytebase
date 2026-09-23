@@ -814,14 +814,14 @@ function SpecChangeRow({
       );
     } else if (showIndex) {
       chipSuffix = (
-        <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
+        <span className="rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-main">
           {specInfo.displayIndex}
         </span>
       );
     }
   } else if (specIdShort !== "") {
     chipSuffix = (
-      <span className="rounded-full bg-control-bg px-1.5 py-0.5 text-xs text-main">
+      <span className="rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs text-main">
         {specIdShort}
       </span>
     );

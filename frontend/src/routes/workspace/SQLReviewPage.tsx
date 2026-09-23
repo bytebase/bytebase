@@ -288,10 +288,7 @@ export function SQLReviewPage() {
         description={
           <>
             {t("sql-review.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/sql-review/review-rules?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/sql-review/review-rules?source=console" />
           </>
         }
       />

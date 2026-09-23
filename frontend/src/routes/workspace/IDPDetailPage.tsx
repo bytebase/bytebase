@@ -1174,10 +1174,7 @@ export function IDPDetailPage() {
         description={
           <>
             {t("settings.sso.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/administration/sso/overview?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/administration/sso/overview?source=console" />
           </>
         }
       />

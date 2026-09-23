@@ -229,14 +229,11 @@ export function InstanceAssignmentSheet({
         </SheetHeader>
         <SheetBody className="gap-y-6">
           <div>
-            <div className="flex gap-x-2 text-control-light">
+            <div className="flex gap-x-2 text-sm text-control-light">
               <span>
                 {t("subscription.instance-assignment.used-and-total-license")}
               </span>
-              <LearnMoreLink
-                href="https://docs.bytebase.com/administration/license?source=console"
-                className="text-sm"
-              />
+              <LearnMoreLink href="https://docs.bytebase.com/administration/license?source=console" />
             </div>
             <div className="mt-1 flex items-center gap-x-2 text-4xl">
               <span>{activatedInstanceCount}</span>

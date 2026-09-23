@@ -61,6 +61,38 @@ describe("SslCertificateForm", () => {
     });
   });
 
+  test("renders the verification switch before its label in an inline row", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <SslCertificateForm
+          layout="vertical"
+          verifyControlLayout="inline"
+          verify={true}
+          onVerifyChange={() => {}}
+        />
+      );
+    });
+
+    const verifySwitch = screen.getByRole("switch", {
+      name: "data-source.ssl.verify-certificate",
+    });
+    expect(verifySwitch.parentElement).toHaveAttribute(
+      "data-slot",
+      "form-control-row"
+    );
+    expect(verifySwitch.parentElement?.lastElementChild?.textContent).toBe(
+      "data-source.ssl.verify-certificate"
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("renders posture-first connection security controls", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

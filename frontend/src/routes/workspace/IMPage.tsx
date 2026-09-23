@@ -531,10 +531,7 @@ function Description() {
       description={
         <>
           {t("settings.im-integration.description")}{" "}
-          <LearnMoreLink
-            href="https://docs.bytebase.com/change-database/webhook?source=console"
-            className="text-accent"
-          />
+          <LearnMoreLink href="https://docs.bytebase.com/change-database/webhook?source=console" />
         </>
       }
     />

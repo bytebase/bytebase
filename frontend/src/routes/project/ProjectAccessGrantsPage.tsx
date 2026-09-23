@@ -251,7 +251,7 @@ export function ProjectAccessGrantsPage({ projectId }: { projectId: string }) {
             </span>
             <span>{u.title}</span>
             {currentUser && u.name === currentUser.name && (
-              <span className="text-xs bg-success/10 text-success rounded-full px-1.5">
+              <span className="inline-flex items-center rounded-xs border border-transparent bg-success/10 px-1.5 py-0.5 text-xs text-success">
                 {t("common.you")}
               </span>
             )}
