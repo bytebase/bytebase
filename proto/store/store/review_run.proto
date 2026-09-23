@@ -14,8 +14,9 @@ message ReviewRun {
     TYPE_UNSPECIFIED = 0;
     // Review against the standard rules.
     RULE = 1;
-    // Review against natural-language guidelines, performed by AI.
-    GUIDELINE = 2;
+    // Review against the AI review policy's natural-language instructions,
+    // performed by a model.
+    AI = 2;
   }
 
   // Strictly 1:1 with the status CHECK constraint — no unpersisted values.

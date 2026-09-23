@@ -17,8 +17,8 @@ import (
 // Review run resource IDs: the {reviewRun} segment of
 // projects/{project}/issues/{issue}/reviewRuns/{reviewRun}.
 const (
-	reviewRunIDRule      = "rule"
-	reviewRunIDGuideline = "guideline"
+	reviewRunIDRule = "rule"
+	reviewRunIDAI   = "ai"
 )
 
 // RunReview triggers a review run. The slot is reset unconditionally: a
@@ -82,13 +82,13 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if len(targets) == 0 {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan has no reviewable SQL"))
 	}
-	if reviewType == store.ReviewRunTypeGuideline {
+	if reviewType == store.ReviewRunTypeAI {
 		aiSetting, err := s.store.GetAISetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get AI setting"))
 		}
 		if !aiSetting.Enabled {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("guideline review requires AI to be enabled"))
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("AI review requires AI to be enabled in the workspace setting"))
 		}
 	}
 
@@ -111,8 +111,8 @@ func reviewRunTypeFromID(reviewRunID string) (string, bool) {
 	switch reviewRunID {
 	case reviewRunIDRule:
 		return store.ReviewRunTypeRule, true
-	case reviewRunIDGuideline:
-		return store.ReviewRunTypeGuideline, true
+	case reviewRunIDAI:
+		return store.ReviewRunTypeAI, true
 	default:
 		return "", false
 	}
@@ -125,8 +125,8 @@ func reviewRunIDFromType(reviewType string) string {
 	switch reviewType {
 	case store.ReviewRunTypeRule:
 		return reviewRunIDRule
-	case store.ReviewRunTypeGuideline:
-		return reviewRunIDGuideline
+	case store.ReviewRunTypeAI:
+		return reviewRunIDAI
 	default:
 		return reviewType
 	}
@@ -156,8 +156,8 @@ func convertToReviewRunType(reviewType string) v1pb.ReviewRun_Type {
 	switch reviewType {
 	case store.ReviewRunTypeRule:
 		return v1pb.ReviewRun_RULE
-	case store.ReviewRunTypeGuideline:
-		return v1pb.ReviewRun_GUIDELINE
+	case store.ReviewRunTypeAI:
+		return v1pb.ReviewRun_AI
 	default:
 		return v1pb.ReviewRun_TYPE_UNSPECIFIED
 	}

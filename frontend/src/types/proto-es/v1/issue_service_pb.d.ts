@@ -1363,7 +1363,7 @@ export declare const StatementAnchorSchema: GenMessage<StatementAnchor>;
 export declare type ReviewRun = Message<"bytebase.v1.ReviewRun"> & {
   /**
    * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-   * The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+   * The {reviewRun} id is the reviewer: "rule" or "ai". The name
    * addresses a slot, not an execution.
    *
    * @generated from field: string name = 1;
@@ -1430,11 +1430,12 @@ export enum ReviewRun_Type {
   RULE = 1,
 
   /**
-   * Review against natural-language guidelines, performed by AI.
+   * Review against the AI review policy's natural-language instructions,
+   * performed by a model.
    *
-   * @generated from enum value: GUIDELINE = 2;
+   * @generated from enum value: AI = 2;
    */
-  GUIDELINE = 2,
+  AI = 2,
 }
 
 /**

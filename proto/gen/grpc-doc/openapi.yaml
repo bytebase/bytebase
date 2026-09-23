@@ -26903,7 +26903,7 @@ components:
           title: name
           description: |-
             Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
-             The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+             The {reviewRun} id is the reviewer: "rule" or "ai". The name
              addresses a slot, not an execution.
         type:
           allOf:
@@ -26959,7 +26959,7 @@ components:
       enum:
         - TYPE_UNSPECIFIED
         - RULE
-        - GUIDELINE
+        - AI
     bytebase.v1.Revision:
       type: object
       properties:

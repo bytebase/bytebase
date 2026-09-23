@@ -3817,7 +3817,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;guideline&#34;. The name addresses a slot, not an execution. |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;ai&#34;. The name addresses a slot, not an execution. |
 | type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | Derived from the name. |
 | status | [ReviewRun.Status](#bytebase-v1-ReviewRun-Status) |  |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the current run was triggered. Reset on every re-run. |
@@ -4055,7 +4055,7 @@ completion transaction, so re-running supersedes instead of canceling).
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RULE | 1 | Review against the standard rules. |
-| GUIDELINE | 2 | Review against natural-language guidelines, performed by AI. |
+| AI | 2 | Review against the AI review policy&#39;s natural-language instructions, performed by a model. |
 
 
  
