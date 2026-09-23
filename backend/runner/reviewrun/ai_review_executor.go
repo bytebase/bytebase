@@ -5,20 +5,10 @@ import (
 	"log/slog"
 
 	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
-)
-
-const (
-	// maxAIReviewSheetBytes bounds the sheet one review reads whole. A larger
-	// sheet is reported as not reviewed, never truncated: the tail would pass
-	// unreviewed.
-	maxAIReviewSheetBytes = 256 << 10
-	// aiReviewConcurrency caps the reviews of one run in flight at the model.
-	aiReviewConcurrency = 8
 )
 
 // AIReviewExecutor is the AI review: a model judges each spec's sheet against
@@ -64,6 +54,7 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to derive review targets")
 	}
+	checkTargets = uniqueCheckTargets(checkTargets)
 
 	var unitErrs []error
 	var units []*aiReviewUnit
@@ -86,38 +77,29 @@ func (e *AIReviewExecutor) RunOnce(ctx context.Context, projectID string, issueU
 	}
 
 	reviewer := aireview.NewReviewer(aireview.NewModel(aiSetting))
-	results := make([]*aiReviewResult, len(units))
-	reviewErrs := make([]error, len(units))
-	var group errgroup.Group
-	group.SetLimit(aiReviewConcurrency)
-	for i, unit := range units {
-		group.Go(func() error {
-			result, err := reviewer.Review(ctx, &aireview.Request{
-				WorkspacePolicy: policy.Workspace,
-				ProjectPolicy:   policy.Project,
-				Target:          unit.Target,
-				Statement:       unit.Statement,
-			}, aireview.NoTools{})
-			if err != nil {
-				reviewErrs[i] = errors.Wrapf(err, "%s", unit.Check.Target)
-				return nil
-			}
-			results[i] = &aiReviewResult{Unit: unit, Findings: result.Findings}
-			// The notes name the facts the model could not get. They are
-			// for the operator, never a finding.
-			slog.Info("AI review completed",
-				slog.String("project", projectID),
-				slog.Int64("issue_id", issueUID),
-				slog.String("spec", unit.Check.SpecID),
-				slog.String("target", unit.Check.Target),
-				slog.Int("model_calls", result.Calls),
-				slog.Int("tokens", result.TotalTokens),
-				slog.Int("findings", len(result.Findings)),
-				slog.Any("notes", result.Notes))
-			return nil
-		})
-	}
-	_ = group.Wait()
+	results, reviewErrs := reviewUnits(ctx, units, func(ctx context.Context, unit *aiReviewUnit) (*aireview.Result, error) {
+		result, err := reviewer.Review(ctx, &aireview.Request{
+			WorkspacePolicy: policy.Workspace,
+			ProjectPolicy:   policy.Project,
+			Target:          unit.Target,
+			Statement:       unit.Statement,
+		}, aireview.NoTools{})
+		if err != nil {
+			return nil, err
+		}
+		// The notes name the facts the model could not get. They are for
+		// the operator, never a finding.
+		slog.Info("AI review completed",
+			slog.String("project", projectID),
+			slog.Int64("issue_id", issueUID),
+			slog.String("spec", unit.Check.SpecID),
+			slog.String("target", unit.Check.Target),
+			slog.Int("model_calls", result.Calls),
+			slog.Int("tokens", result.TotalTokens),
+			slog.Int("findings", len(result.Findings)),
+			slog.Any("notes", result.Notes))
+		return result, nil
+	})
 	// A canceled context is shutdown: the scheduler leaves the run to the
 	// reaper instead of failing it.
 	if err := ctx.Err(); err != nil {
@@ -147,8 +129,8 @@ func (e *AIReviewExecutor) sheetStatement(ctx context.Context, sheets map[string
 	if sheet == nil {
 		return "", errors.Errorf("sheet %s not found", sha256)
 	}
-	if len(sheet.Statement) > maxAIReviewSheetBytes {
-		return "", errors.Errorf("not reviewed: the sheet is %d bytes, over the %d byte limit", len(sheet.Statement), maxAIReviewSheetBytes)
+	if err := checkSheetSize(sheet.Statement); err != nil {
+		return "", err
 	}
 	sheets[sha256] = sheet.Statement
 	return sheet.Statement, nil

@@ -1,16 +1,28 @@
 package reviewrun
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 
 	metadatapb "github.com/bytebase/omni/metadata"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/aireview"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
+)
+
+const (
+	// maxAIReviewSheetBytes bounds the sheet one review reads whole.
+	maxAIReviewSheetBytes = 256 << 10
+	// aiReviewConcurrency caps the reviews of one run in flight at the model.
+	aiReviewConcurrency = 8
 )
 
 // aiReviewUnit is one AI review: a spec's sheet against one database, with
@@ -131,4 +143,64 @@ func aiReviewPriority(severity aireview.Severity) storepb.IssueCommentPayload_Re
 	default:
 		return storepb.IssueCommentPayload_ReviewMetadata_P2
 	}
+}
+
+// uniqueCheckTargets drops a database a spec names twice, so that each
+// database is reviewed once per spec.
+func uniqueCheckTargets(targets []*plancheck.CheckTarget) []*plancheck.CheckTarget {
+	type key struct {
+		specID string
+		target string
+	}
+	seen := make(map[key]bool, len(targets))
+	unique := make([]*plancheck.CheckTarget, 0, len(targets))
+	for _, target := range targets {
+		k := key{specID: target.SpecID, target: target.Target}
+		if seen[k] {
+			continue
+		}
+		seen[k] = true
+		unique = append(unique, target)
+	}
+	return unique
+}
+
+// checkSheetSize refuses a sheet over maxAIReviewSheetBytes. A larger sheet
+// is reported as not reviewed, never truncated: the tail would pass
+// unreviewed.
+func checkSheetSize(statement string) error {
+	if len(statement) > maxAIReviewSheetBytes {
+		return errors.Errorf("not reviewed: the sheet is %d bytes, over the %d byte limit", len(statement), maxAIReviewSheetBytes)
+	}
+	return nil
+}
+
+// reviewUnits runs review over the units, at most aiReviewConcurrency at a
+// time, and returns each unit's result or error by index. A panic in one
+// review is that unit's error, so the run fails instead of the process: the
+// scheduler's recovery covers only the goroutine that called RunOnce.
+func reviewUnits(ctx context.Context, units []*aiReviewUnit, review func(context.Context, *aiReviewUnit) (*aireview.Result, error)) ([]*aiReviewResult, []error) {
+	results := make([]*aiReviewResult, len(units))
+	errs := make([]error, len(units))
+	var group errgroup.Group
+	group.SetLimit(aiReviewConcurrency)
+	for i, unit := range units {
+		group.Go(func() error {
+			defer func() {
+				if r := recover(); r != nil {
+					slog.Error("AI review PANIC RECOVER", slog.String("target", unit.Check.Target), slog.Any("panic", r), log.BBStack("panic-stack"))
+					errs[i] = errors.Errorf("%s: review panic: %v", unit.Check.Target, r)
+				}
+			}()
+			result, err := review(ctx, unit)
+			if err != nil {
+				errs[i] = errors.Wrapf(err, "%s", unit.Check.Target)
+				return nil
+			}
+			results[i] = &aiReviewResult{Unit: unit, Findings: result.Findings}
+			return nil
+		})
+	}
+	_ = group.Wait()
+	return results, errs
 }
