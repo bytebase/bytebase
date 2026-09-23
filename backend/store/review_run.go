@@ -18,9 +18,9 @@ import (
 const (
 	// ReviewRunTypeRule reviews against the standard rules.
 	ReviewRunTypeRule = "RULE"
-	// ReviewRunTypeGuideline reviews against natural-language guidelines,
-	// performed by AI.
-	ReviewRunTypeGuideline = "GUIDELINE"
+	// ReviewRunTypeAI reviews against the AI review policy's natural-language
+	// instructions, judged by a model.
+	ReviewRunTypeAI = "AI"
 )
 
 // ReviewRunMessage is one review_run slot row: the current run of one

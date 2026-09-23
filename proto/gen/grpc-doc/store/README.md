@@ -2195,7 +2195,7 @@ new reviewer is a new value, not a migration.
 | ---- | ------ | ----------- |
 | TYPE_UNSPECIFIED | 0 |  |
 | RULE | 1 | Review against the standard rules. |
-| GUIDELINE | 2 | Review against natural-language guidelines, performed by AI. |
+| AI | 2 | Review against the AI review policy&#39;s natural-language instructions, performed by a model. |
 
 
  

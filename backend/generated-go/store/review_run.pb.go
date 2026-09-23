@@ -30,8 +30,9 @@ const (
 	ReviewRun_TYPE_UNSPECIFIED ReviewRun_Type = 0
 	// Review against the standard rules.
 	ReviewRun_RULE ReviewRun_Type = 1
-	// Review against natural-language guidelines, performed by AI.
-	ReviewRun_GUIDELINE ReviewRun_Type = 2
+	// Review against the AI review policy's natural-language instructions,
+	// performed by a model.
+	ReviewRun_AI ReviewRun_Type = 2
 )
 
 // Enum value maps for ReviewRun_Type.
@@ -39,12 +40,12 @@ var (
 	ReviewRun_Type_name = map[int32]string{
 		0: "TYPE_UNSPECIFIED",
 		1: "RULE",
-		2: "GUIDELINE",
+		2: "AI",
 	}
 	ReviewRun_Type_value = map[string]int32{
 		"TYPE_UNSPECIFIED": 0,
 		"RULE":             1,
-		"GUIDELINE":        2,
+		"AI":               2,
 	}
 )
 
@@ -220,12 +221,12 @@ var File_store_review_run_proto protoreflect.FileDescriptor
 
 const file_store_review_run_proto_rawDesc = "" +
 	"\n" +
-	"\x16store/review_run.proto\x12\x0ebytebase.store\"\x96\x01\n" +
-	"\tReviewRun\"5\n" +
+	"\x16store/review_run.proto\x12\x0ebytebase.store\"\x8f\x01\n" +
+	"\tReviewRun\".\n" +
 	"\x04Type\x12\x14\n" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04RULE\x10\x01\x12\r\n" +
-	"\tGUIDELINE\x10\x02\"R\n" +
+	"\x04RULE\x10\x01\x12\x06\n" +
+	"\x02AI\x10\x02\"R\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tAVAILABLE\x10\x01\x12\v\n" +
