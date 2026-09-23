@@ -173,6 +173,95 @@ func TestChatGeminiGeneratesUniqueToolCallIDs(t *testing.T) {
 	require.NotEqual(t, resp.ToolCalls[0].Id, resp.ToolCalls[1].Id)
 }
 
+func TestGeminiFunctionResponseIsAlwaysAnObject(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		content string
+		want    map[string]any
+	}{
+		{name: "object passes through", content: `{"rows": 7}`, want: map[string]any{"rows": float64(7)}},
+		{name: "array is wrapped", content: `[{"name": "orders"}]`, want: map[string]any{"result": []any{map[string]any{"name": "orders"}}}},
+		{name: "number is wrapped", content: `42`, want: map[string]any{"result": float64(42)}},
+		{name: "plain text is wrapped", content: "CREATE TABLE orders (id bigint);", want: map[string]any{"result": "CREATE TABLE orders (id bigint);"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			require.Equal(t, tc.want, geminiFunctionResponse(tc.content))
+		})
+	}
+}
+
+func TestChatGeminiSendsSystemMessagesAsSystemInstruction(t *testing.T) {
+	t.Parallel()
+
+	system := "You review SQL."
+	user := "ALTER TABLE orders ADD COLUMN note text;"
+	tests := []struct {
+		name         string
+		messages     []*v1pb.AIChatMessage
+		wantSystem   []string
+		wantContents []string
+	}{
+		{
+			name: "system and user",
+			messages: []*v1pb.AIChatMessage{
+				{Role: v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM, Content: &system},
+				{Role: v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER, Content: &user},
+			},
+			wantSystem:   []string{system},
+			wantContents: []string{user},
+		},
+		{
+			name: "system only falls back to a user turn",
+			messages: []*v1pb.AIChatMessage{
+				{Role: v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_SYSTEM, Content: &system},
+			},
+			wantContents: []string{system},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			var payload chatGeminiRequest
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+				w.Header().Set("Content-Type", "application/json")
+				_, err := w.Write([]byte(`{"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}`))
+				require.NoError(t, err)
+			}))
+			defer server.Close()
+
+			_, err := chatGemini(
+				context.Background(),
+				&storepb.AISetting{Endpoint: server.URL, Model: "gemini-3.5-flash", ApiKey: "test-key"},
+				&v1pb.AIChatRequest{Messages: tc.messages},
+			)
+			require.NoError(t, err)
+
+			var gotSystem []string
+			if payload.SystemInstruction != nil {
+				for _, part := range payload.SystemInstruction.Parts {
+					gotSystem = append(gotSystem, part.Text)
+				}
+			}
+			require.Equal(t, tc.wantSystem, gotSystem)
+
+			var gotContents []string
+			for _, content := range payload.Contents {
+				require.Equal(t, "user", content.Role)
+				for _, part := range content.Parts {
+					gotContents = append(gotContents, part.Text)
+				}
+			}
+			require.Equal(t, tc.wantContents, gotContents)
+		})
+	}
+}
+
 func TestChatOpenAIResponsesEndpointUsesResponsesWireFormat(t *testing.T) {
 	t.Parallel()
 
