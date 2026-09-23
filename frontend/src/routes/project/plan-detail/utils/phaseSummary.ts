@@ -1,27 +1,23 @@
 import {
+  getPlanCheckSummaryWithFallback,
+  type PlanCheckSummary,
+} from "@/lib/plan/check";
+import {
   ApprovalStatus,
   IssueStatus,
   State,
 } from "@/types/proto-es/v1/common_pb";
 import type { Issue } from "@/types/proto-es/v1/issue_service_pb";
 import type { Plan } from "@/types/proto-es/v1/plan_service_pb";
-import { PlanCheckRun_Status } from "@/types/proto-es/v1/plan_service_pb";
 import type { Rollout } from "@/types/proto-es/v1/rollout_service_pb";
 import { Task_Status } from "@/types/proto-es/v1/rollout_service_pb";
-import { Advice_Level } from "@/types/proto-es/v1/sql_service_pb";
+
+export type { PlanCheckSummary } from "@/lib/plan/check";
 
 type T = (key: string, options?: Record<string, unknown>) => string;
 
 const isDatabaseGroupName = (name: string): boolean =>
   name.includes("/databaseGroups/");
-
-export interface PlanCheckSummary {
-  error: number;
-  running: number;
-  success: number;
-  total: number;
-  warning: number;
-}
 
 // Mirrors the eligibility gates that can permanently prevent RolloutCreator
 // from materializing a rollout. Transient approval and check gates are handled
@@ -31,25 +27,8 @@ const supportsAutomaticRollout = (plan: Plan): boolean =>
   plan.specs.length > 0 &&
   plan.specs.every((spec) => spec.config?.case === "changeDatabaseConfig");
 
-export const getPlanCheckSummary = (plan: Plan): PlanCheckSummary => {
-  const statusCount = plan.planCheckRunStatusCount || {};
-  const running =
-    statusCount[PlanCheckRun_Status[PlanCheckRun_Status.RUNNING]] || 0;
-  const success = statusCount[Advice_Level[Advice_Level.SUCCESS]] || 0;
-  const warning = statusCount[Advice_Level[Advice_Level.WARNING]] || 0;
-  const error = statusCount[Advice_Level[Advice_Level.ERROR]] || 0;
-  const failed =
-    statusCount[PlanCheckRun_Status[PlanCheckRun_Status.FAILED]] || 0;
-  const totalError = error + failed;
-
-  return {
-    error: totalError,
-    running,
-    success,
-    total: running + success + warning + totalError,
-    warning,
-  };
-};
+export const getPlanCheckSummary = (plan: Plan): PlanCheckSummary =>
+  getPlanCheckSummaryWithFallback([], plan.planCheckRunStatusCount);
 
 export const isRolloutExpected = ({
   issue,
@@ -78,8 +57,7 @@ export const isRolloutExpected = ({
   return (
     checks.running === 0 &&
     checks.error === 0 &&
-    (plan.planCheckRunStatusCount?.AVAILABLE ?? 0) === 0 &&
-    (plan.planCheckRunStatusCount?.CANCELED ?? 0) === 0
+    (plan.planCheckRunStatusCount?.AVAILABLE ?? 0) === 0
   );
 };
 
