@@ -198,6 +198,7 @@ vi.mock("@/components/ui/switch", () => ({
 
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: mocks.Tooltip,
+  BlockTooltip: mocks.Tooltip,
 }));
 
 vi.mock("@/lib/utils", () => ({

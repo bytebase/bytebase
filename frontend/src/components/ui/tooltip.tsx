@@ -9,6 +9,10 @@ interface TooltipProps {
   readonly side?: "top" | "bottom" | "left" | "right";
   readonly delayDuration?: number;
   readonly popupClassName?: string;
+  readonly open?: boolean;
+  readonly onOpenChange?: ComponentProps<
+    typeof BaseTooltip.Root
+  >["onOpenChange"];
 }
 
 export function Tooltip({
@@ -17,36 +21,39 @@ export function Tooltip({
   side = "top",
   delayDuration = 100,
   popupClassName,
+  open,
+  onOpenChange,
 }: TooltipProps) {
   if (!content) {
     return <>{children}</>;
   }
 
   return (
-    <BaseTooltip.Provider delay={delayDuration}>
-      <BaseTooltip.Root>
-        <BaseTooltip.Trigger render={<span className="inline-flex" />}>
-          {children}
-        </BaseTooltip.Trigger>
-        <BaseTooltip.Portal container={getLayerRoot("overlay")}>
-          <BaseTooltip.Positioner
-            side={side}
-            sideOffset={4}
-            className={LAYER_SURFACE_CLASS}
+    <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
+      <BaseTooltip.Trigger
+        delay={delayDuration}
+        render={<span className="inline-flex" />}
+      >
+        {children}
+      </BaseTooltip.Trigger>
+      <BaseTooltip.Portal container={getLayerRoot("overlay")}>
+        <BaseTooltip.Positioner
+          side={side}
+          sideOffset={4}
+          className={LAYER_SURFACE_CLASS}
+        >
+          <BaseTooltip.Popup
+            className={cn(
+              "max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md",
+              popupClassName
+            )}
           >
-            <BaseTooltip.Popup
-              className={cn(
-                "max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md",
-                popupClassName
-              )}
-            >
-              {content}
-              <BaseTooltip.Arrow className="fill-main" />
-            </BaseTooltip.Popup>
-          </BaseTooltip.Positioner>
-        </BaseTooltip.Portal>
-      </BaseTooltip.Root>
-    </BaseTooltip.Provider>
+            {content}
+            <BaseTooltip.Arrow className="fill-main" />
+          </BaseTooltip.Popup>
+        </BaseTooltip.Positioner>
+      </BaseTooltip.Portal>
+    </BaseTooltip.Root>
   );
 }
 
@@ -62,6 +69,8 @@ export function BlockTooltip({
   delayDuration = 100,
   popupClassName,
   render,
+  open,
+  onOpenChange,
 }: TooltipProps & {
   readonly render?: ComponentProps<typeof BaseTooltip.Trigger>["render"];
 }) {
@@ -70,31 +79,30 @@ export function BlockTooltip({
   }
 
   return (
-    <BaseTooltip.Provider delay={delayDuration}>
-      <BaseTooltip.Root>
-        <BaseTooltip.Trigger
-          render={render ?? <div className="flex-1 min-w-0" />}
+    <BaseTooltip.Root open={open} onOpenChange={onOpenChange}>
+      <BaseTooltip.Trigger
+        delay={delayDuration}
+        render={render ?? <div className="flex-1 min-w-0" />}
+      >
+        {children}
+      </BaseTooltip.Trigger>
+      <BaseTooltip.Portal container={getLayerRoot("overlay")}>
+        <BaseTooltip.Positioner
+          side={side}
+          sideOffset={4}
+          className={LAYER_SURFACE_CLASS}
         >
-          {children}
-        </BaseTooltip.Trigger>
-        <BaseTooltip.Portal container={getLayerRoot("overlay")}>
-          <BaseTooltip.Positioner
-            side={side}
-            sideOffset={4}
-            className={LAYER_SURFACE_CLASS}
+          <BaseTooltip.Popup
+            className={cn(
+              "max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md",
+              popupClassName
+            )}
           >
-            <BaseTooltip.Popup
-              className={cn(
-                "max-w-56 rounded-sm bg-main px-2.5 py-1.5 text-xs text-main-text shadow-md",
-                popupClassName
-              )}
-            >
-              {content}
-              <BaseTooltip.Arrow className="fill-main" />
-            </BaseTooltip.Popup>
-          </BaseTooltip.Positioner>
-        </BaseTooltip.Portal>
-      </BaseTooltip.Root>
-    </BaseTooltip.Provider>
+            {content}
+            <BaseTooltip.Arrow className="fill-main" />
+          </BaseTooltip.Popup>
+        </BaseTooltip.Positioner>
+      </BaseTooltip.Portal>
+    </BaseTooltip.Root>
   );
 }

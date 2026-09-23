@@ -227,6 +227,7 @@ vi.mock("@/components/ui/switch", () => ({
 
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
+  BlockTooltip: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
 
 vi.mock("@/components/ui/popover", () => ({
