@@ -377,7 +377,10 @@ func validatePlanCheckRun(project *store.ProjectMessage, plan *store.PlanMessage
 	case store.PlanCheckRunStatusAvailable, store.PlanCheckRunStatusRunning:
 		return workflowError(ErrorFailedPrecondition, "Plan checks are still running")
 	case store.PlanCheckRunStatusCanceled, store.PlanCheckRunStatusFailed:
-		return workflowError(ErrorFailedPrecondition, "Plan checks did not pass")
+		if project.Setting.GetEnforceSqlReview() {
+			return workflowError(ErrorFailedPrecondition, "Plan checks did not pass")
+		}
+		return nil
 	case store.PlanCheckRunStatusDone:
 	default:
 		return workflowError(ErrorFailedPrecondition, "Plan checks are not complete")

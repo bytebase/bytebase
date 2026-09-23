@@ -148,17 +148,19 @@ describe("getSubmitReviewAdvance", () => {
     );
   });
 
-  test("treats a failed run the same as an errored one", () => {
-    expect(
-      ids(
-        getSubmitReviewAdvance(
-          submitArgs({
-            plan: makePlan(["changeDatabaseConfig"], { FAILED: 1 }),
-            project: project({ enforceSqlReview: true }),
-          })
-        ).blockers
-      )
-    ).toEqual(["checks-failed"]);
+  test("blocks failed and canceled runs when SQL review is enforced", () => {
+    for (const status of ["FAILED", "CANCELED"]) {
+      expect(
+        ids(
+          getSubmitReviewAdvance(
+            submitArgs({
+              plan: makePlan(["changeDatabaseConfig"], { [status]: 1 }),
+              project: project({ enforceSqlReview: true }),
+            })
+          ).blockers
+        )
+      ).toEqual(["checks-failed"]);
+    }
   });
 
   test("requires labels only where the project forces them", () => {
@@ -258,6 +260,16 @@ describe("getSubmitReviewAdvance override", () => {
   test("offers the override when checks failed and SQL review is not enforced", () => {
     expect(
       decisionFor({ plan: makePlan(["changeDatabaseConfig"], { ERROR: 1 }) })
+    ).toEqual({
+      body: "issue.checks-warning-hint",
+      headline: "plan.lifecycle.gate-checks-failed",
+      verb: "plan.submit-review-anyway",
+    });
+  });
+
+  test("offers the override when a run was canceled", () => {
+    expect(
+      decisionFor({ plan: makePlan(["changeDatabaseConfig"], { CANCELED: 1 }) })
     ).toEqual({
       body: "issue.checks-warning-hint",
       headline: "plan.lifecycle.gate-checks-failed",

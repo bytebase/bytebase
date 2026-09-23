@@ -59,8 +59,8 @@ interface PlanCheckSectionProps {
   // Optional trailing element rendered after status counts (e.g. affected rows).
   trailingSummary?: ReactNode;
   renderTarget?: (target: string) => ReactNode;
-  // If true, FAILED check runs without results render as a synthetic error
-  // group. Used by plan-detail regular checks.
+  // If true, FAILED and CANCELED runs without error results render as a
+  // synthetic error group. Used by plan-detail regular checks.
   includeRunFailure?: boolean;
   // Section heading style; defaults to uppercase.
   headingClassName?: string;
@@ -298,6 +298,8 @@ export function PlanCheckResultsDrawer({
       getFilteredResultGroups({
         includeRunFailure,
         planCheckRuns,
+        runCanceledContent: t("common.canceled"),
+        runCanceledTitle: t("common.canceled"),
         runFailureContent: t("common.failed"),
         runFailureTitle: t("common.failed"),
         selectedStatus,
