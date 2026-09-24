@@ -196,10 +196,6 @@ message MCPSetting {
   // served, and under READ_ONLY the SQL clamp decides, per statement, whether
   // it only reads.
   Capability capability = 1;
-
-  // 2 was ignore_masking_exemptions, released in 3.22.0 and retired before 3.23.0.
-  reserved 2;
-  reserved "ignore_masking_exemptions";
 }
 
 message SQLEditorThemeSetting {

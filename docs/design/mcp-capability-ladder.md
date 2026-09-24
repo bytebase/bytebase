@@ -355,10 +355,10 @@ field 2 of `MCPSetting`) before the 3.23.0 tag. The toggle came from the MCP des
 it. The former D8 set the toggle's copy and is removed; its note on the Read-only description
 sentence moved to Copy. An MCP session now applies the caller's own masking provisioning exactly as
 the console does, including masking exemptions and the unmask carried by an access grant. There is
-deliberately no setting that forces masking for MCP sessions. Field 2 is reserved in both the store
-and v1 messages. Stored rows need no migration, because the store's unmarshaler discards the unknown
-key and the next save rewrites the row without it. The masked-write guard stays, because it never
-depended on the toggle.
+deliberately no setting that forces masking for MCP sessions. Field 2 is deleted without a
+`reserved` entry, because no other field is expected to take the number. Stored rows need no
+migration, because the store's unmarshaler discards the unknown key and the next save rewrites the
+row without it. The masked-write guard stays, because it never depended on the toggle.
 
 ## States
 
