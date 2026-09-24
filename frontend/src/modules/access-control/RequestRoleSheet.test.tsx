@@ -18,8 +18,26 @@ import type { Permission } from "@/types";
 // ---------------------------------------------------------------------------
 
 vi.mock("@/components/EnvironmentSelect", () => ({
-  EnvironmentSelect: () =>
-    createElement("div", { "data-testid": "env-multi-select" }),
+  EnvironmentSelect: ({ onChange }: { onChange: (next: string[]) => void }) =>
+    createElement(
+      "div",
+      { "data-testid": "env-multi-select" },
+      createElement("button", {
+        type: "button",
+        "data-testid": "pick-staging",
+        onClick: () => onChange(["environments/staging"]),
+      }),
+      createElement("button", {
+        type: "button",
+        "data-testid": "clear-envs",
+        onClick: () => onChange([]),
+      })
+    ),
+}));
+
+vi.mock("@/components/EnvironmentLabel", () => ({
+  EnvironmentLabel: ({ environmentName }: { environmentName: string }) =>
+    createElement("span", { "data-testid": "env-label" }, environmentName),
 }));
 
 // ---------------------------------------------------------------------------
@@ -113,7 +131,10 @@ vi.mock("@/components/RoleSelect", () => ({
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: "en-US" },
+  }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -143,6 +164,9 @@ vi.mock("@/types/proto-es/v1/issue_service_pb", () => ({
 }));
 
 vi.mock("@/types/proto-es/v1/project_service_pb", () => ({}));
+vi.mock("@/types/proto-es/v1/subscription_service_pb", () => ({
+  PlanFeature: { FEATURE_ENVIRONMENT_TIERS: "FEATURE_ENVIRONMENT_TIERS" },
+}));
 
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
@@ -218,6 +242,10 @@ vi.mock("@/stores", () => ({
 
 vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: () => mocks.currentUser,
+  useEnvironmentList: () => [
+    { name: "environments/staging", title: "Staging", tags: {} },
+  ],
+  usePlanFeature: () => true,
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -440,27 +468,166 @@ describe("RequestRoleSheet — enforceIssueTitle (BYT-9310)", () => {
     expect(getSubmitButton().disabled).toBe(false);
   });
 
-  it("renders DDL/DML warning under env multiselect when role has env limitation", async () => {
-    // Override default helper mock for this case so the env section appears.
-    const utilsMock = await import("@/lib/project-member/utils");
-    vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockImplementation(
-      () => "DDL/DML"
-    );
+  describe("direct DDL/DML execution", () => {
+    async function useDdlRole(): Promise<void> {
+      const utilsMock = await import("@/lib/project-member/utils");
+      vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockImplementation(
+        (role: string) => (role === "roles/sqlEditorUser" ? "DDL/DML" : undefined)
+      );
+    }
+    function getSwitch(): HTMLElement {
+      return container.querySelector("[role='switch']") as HTMLElement;
+    }
+    async function toggleSwitch(): Promise<void> {
+      await act(async () => {
+        getSwitch().click();
+      });
+      await flush();
+    }
+    async function pickStaging(): Promise<void> {
+      await act(async () => {
+        (
+          container.querySelector(
+            "[data-testid='pick-staging']"
+          ) as HTMLButtonElement
+        ).click();
+      });
+      await flush();
+    }
+    function submittedRequest(): {
+      issue: {
+        title: string;
+        roleGrant: { condition: { environments?: string[] } };
+      };
+    } {
+      expect(mocks.createIssue).toHaveBeenCalledTimes(1);
+      return mocks.createIssue.mock.calls[0][0] as never;
+    }
 
-    await renderSheet(false);
-    await selectRole("roles/sqlEditorUser");
-    await flush();
+    it("is off by default: caption, no picker, and the empty clause on submit", async () => {
+      await useDdlRole();
+      await renderSheet(false);
+      await selectRole("roles/sqlEditorUser");
+      await flush();
 
-    expect(container.textContent).toContain("project.members.ddl-warning");
-  });
+      expect(getSwitch().getAttribute("aria-checked")).toBe("false");
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.off-caption"
+      );
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.role-pointer"
+      );
+      expect(
+        container.querySelector("[data-testid='env-multi-select']")
+      ).toBeNull();
+      expect(getSubmitButton().disabled).toBe(false);
 
-  it("does not render DDL warning when role has no env limitation", async () => {
-    // Default mock returns undefined — no override needed. Confirms the
-    // warning is gated by envKind, not always-rendered.
-    await renderSheet(false);
-    await selectRole("roles/projectOwner");
-    await flush();
+      await act(async () => {
+        getSubmitButton().click();
+      });
+      await flush();
 
-    expect(container.textContent).not.toContain("project.members.ddl-warning");
+      const req = submittedRequest();
+      expect(req.issue.roleGrant.condition.environments).toEqual([]);
+      expect(req.issue.title).not.toContain("direct-execution-suffix");
+    });
+
+    it("blocks submit while on with nothing picked, with the error beside the picker", async () => {
+      await useDdlRole();
+      await renderSheet(false);
+      await selectRole("roles/sqlEditorUser");
+      await toggleSwitch();
+
+      expect(getSwitch().getAttribute("aria-checked")).toBe("true");
+      expect(
+        container.querySelector("[data-testid='env-multi-select']")
+      ).not.toBeNull();
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.pick-or-off"
+      );
+      expect(container.textContent).not.toContain(
+        "project.members.direct-execution.lead-request"
+      );
+      expect(getSubmitButton().disabled).toBe(true);
+    });
+
+    it("submits the picked list, shows the requester's lead, and suffixes the title", async () => {
+      await useDdlRole();
+      await renderSheet(false);
+      await selectRole("roles/sqlEditorUser");
+      await toggleSwitch();
+      await pickStaging();
+
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.lead-request"
+      );
+      expect(container.textContent).not.toContain(
+        "project.members.direct-execution.pick-or-off"
+      );
+      expect(getSubmitButton().disabled).toBe(false);
+
+      await act(async () => {
+        getSubmitButton().click();
+      });
+      await flush();
+
+      const req = submittedRequest();
+      expect(req.issue.roleGrant.condition.environments).toEqual([
+        "environments/staging",
+      ]);
+      expect(req.issue.title).toBe(
+        "FMT(issue.title.request-specific-role) · issue.role-grant.direct-execution-suffix"
+      );
+    });
+
+    it("suffixes an enforced title too", async () => {
+      await useDdlRole();
+      await renderSheet(true);
+      await selectRole("roles/sqlEditorUser");
+      await typeReason("fix the backfill");
+      await toggleSwitch();
+      await pickStaging();
+
+      await act(async () => {
+        getSubmitButton().click();
+      });
+      await flush();
+
+      expect(submittedRequest().issue.title).toBe(
+        "[issue.title.request-role] fix the backfill · issue.role-grant.direct-execution-suffix"
+      );
+    });
+
+    it("a role change turns the switch off and clears the error", async () => {
+      await useDdlRole();
+      await renderSheet(false);
+      await selectRole("roles/sqlEditorUser");
+      await toggleSwitch();
+      expect(container.textContent).toContain(
+        "project.members.direct-execution.pick-or-off"
+      );
+
+      await selectRole("roles/projectOwner");
+      await flush();
+      expect(getSwitch()).toBeNull();
+
+      await selectRole("roles/sqlEditorUser");
+      await flush();
+      expect(getSwitch().getAttribute("aria-checked")).toBe("false");
+      expect(container.textContent).not.toContain(
+        "project.members.direct-execution.pick-or-off"
+      );
+    });
+
+    it("renders no field for a role without DDL/DML", async () => {
+      await renderSheet(false);
+      await selectRole("roles/projectOwner");
+      await flush();
+
+      expect(getSwitch()).toBeNull();
+      expect(container.textContent).not.toContain(
+        "project.members.direct-execution"
+      );
+    });
   });
 });

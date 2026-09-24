@@ -1,38 +1,23 @@
+import {
+  type DirectExecutionScope,
+  directExecutionScopeFromCondition,
+} from "@/components/role-grant/directExecutionScope";
 import { getRoleEnvironmentLimitationKind } from "@/lib/project-member/utils";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
 import { convertFromExpr } from "@/utils/issue/cel";
 
-export type ProjectRoleBindingEnvironmentLimitationState =
-  | {
-      type: "unrestricted";
-    }
-  | {
-      environments: string[];
-      type: "restricted";
-    };
-
-export const getProjectRoleBindingEnvironmentLimitationState = (
+// undefined ⇔ the role carries no DDL/DML permission ⇔ nothing to show.
+export const getProjectRoleBindingDirectExecutionScope = (
   binding: Binding
-): ProjectRoleBindingEnvironmentLimitationState | undefined => {
+): DirectExecutionScope | undefined => {
   if (getRoleEnvironmentLimitationKind(binding.role) === undefined) {
     return undefined;
   }
-
-  if (!binding.parsedExpr) {
-    return {
-      type: "unrestricted",
-    };
-  }
-
-  const environments = convertFromExpr(binding.parsedExpr).environments;
-  if (environments === undefined) {
-    return {
-      type: "unrestricted",
-    };
-  }
-
-  return {
-    environments,
-    type: "restricted",
-  };
+  const condition = binding.parsedExpr
+    ? convertFromExpr(binding.parsedExpr)
+    : undefined;
+  return directExecutionScopeFromCondition(
+    condition,
+    binding.condition?.expression ?? ""
+  );
 };

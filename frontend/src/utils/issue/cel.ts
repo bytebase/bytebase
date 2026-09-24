@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import dayjs from "dayjs";
 import { cloneDeep, head } from "lodash-es";
 import type { SimpleExpr } from "@/modules/cel";
-import { isRawStringExpr, resolveCELExpr } from "@/modules/cel";
+import { ExprType, isRawStringExpr, resolveCELExpr } from "@/modules/cel";
 import {
   databaseNamePrefix,
   environmentNamePrefix,
@@ -63,6 +63,14 @@ export interface ConditionExpression {
   expiredTime?: string;
   // environment full name list in environments/{name} format.
   environments?: string[];
+  // Set when the expression is not one the grant forms could have written:
+  // an OR, a negation, a raw fragment, or an operator or attribute the forms
+  // never emit. The fields above are still filled from whatever was
+  // recognizable, but they cannot be trusted as a summary of the grant — the
+  // SQL service evaluates the whole expression, and `a || true` would decode
+  // to `a` here. Surfaces that summarize a grant show the raw expression
+  // instead when this is set.
+  unrecognized?: true;
 }
 
 const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
@@ -383,11 +391,56 @@ export const batchConvertFromCELString = async (
   return resp;
 };
 
+const RECOGNIZED_IN_ATTRIBUTES = new Set<string>([
+  CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+]);
+const RECOGNIZED_EQ_ATTRIBUTES = new Set<string>([
+  CEL_ATTRIBUTE_RESOURCE_INSTANCE_ID,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_DATABASE,
+  CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
+  CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
+  CEL_ATTRIBUTE_RESOURCE_COLUMN_NAME,
+]);
+
+// The grant forms emit an AND of `attr in [...]`, `attr == "..."` and
+// `request.time < timestamp(...)`; anything else cannot be summarized by the
+// fields of ConditionExpression and is reported as unrecognized.
+const isRecognizedGrantExpr = (expr: SimpleExpr): boolean => {
+  if (isRawStringExpr(expr)) {
+    return false;
+  }
+  if (expr.type === ExprType.ConditionGroup) {
+    return expr.operator === "_&&_" && expr.args.every(isRecognizedGrantExpr);
+  }
+  const [left] = expr.args;
+  if (typeof left !== "string") {
+    return false;
+  }
+  switch (expr.operator) {
+    case "@in":
+      return RECOGNIZED_IN_ATTRIBUTES.has(left);
+    case "_==_":
+      return RECOGNIZED_EQ_ATTRIBUTES.has(left);
+    case "_<_":
+      return left === CEL_ATTRIBUTE_REQUEST_TIME;
+    default:
+      return false;
+  }
+};
+
 export const convertFromExpr = (expr: Expr): ConditionExpression => {
   const simpleExpr = resolveCELExpr(expr);
   const conditionExpression: ConditionExpression = {
     databaseResources: [],
   };
+  if (!isRecognizedGrantExpr(simpleExpr)) {
+    conditionExpression.unrecognized = true;
+  }
 
   function processCondition(expr: SimpleExpr) {
     // Do not process raw string expression.

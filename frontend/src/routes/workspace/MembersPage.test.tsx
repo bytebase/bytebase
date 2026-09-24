@@ -53,8 +53,16 @@ vi.mock("@/components/DatabaseResourceSelector", () => ({
 }));
 
 vi.mock("@/components/EnvironmentSelect", () => ({
-  EnvironmentSelect: () =>
-    createElement("div", { "data-testid": "environment-multi-select" }),
+  EnvironmentSelect: ({ onChange }: { onChange: (next: string[]) => void }) =>
+    createElement(
+      "div",
+      { "data-testid": "environment-multi-select" },
+      createElement("button", {
+        type: "button",
+        "data-testid": "pick-staging",
+        onClick: () => onChange(["environments/staging"]),
+      })
+    ),
 }));
 
 vi.mock("@/components/ExprEditor", () => ({
@@ -93,8 +101,25 @@ vi.mock("@/components/RoleSelect", () => ({
     }),
 }));
 
-vi.mock("@/components/role-grant/DDLWarningCallout", () => ({
-  DDLWarningCallout: () => null,
+vi.mock("@/components/role-grant/DirectExecutionCallout", () => ({
+  DirectExecutionCallout: ({
+    lead,
+    scope,
+  }: {
+    lead: string;
+    scope: { type: string; environments?: string[] };
+  }) =>
+    createElement("div", {
+      "data-testid": "direct-execution-callout",
+      "data-lead": lead,
+      "data-scope": scope.type,
+      "data-envs": scope.environments?.join(",") ?? "",
+    }),
+}));
+
+vi.mock("@/lib/role", () => ({
+  displayRoleTitleFromList: (role: string) => role,
+  displayRoleDescriptionFromList: (role: string) => `DESC(${role})`,
 }));
 
 vi.mock("@/components/UserCell", () => ({
@@ -300,6 +325,8 @@ vi.mock("@/hooks/useAppState", () => ({
     email: "me@example.com",
     name: "users/me@example.com",
   }),
+  useEnvironmentList: () => [],
+  usePlanFeature: () => true,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -574,6 +601,185 @@ describe("MembersPage project role grant drawer", () => {
       title: "project.members.request-role.failed-to-build-expression",
     });
     expect(mockUpdateProjectIamPolicy).not.toHaveBeenCalled();
+  });
+});
+
+describe("MembersPage direct DDL/DML execution", () => {
+  async function useDdlRole(): Promise<void> {
+    const utilsMock = await import("@/lib/project-member/utils");
+    vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockImplementation(
+      (role: string) => (role === "roles/sqlEditorUser" ? "DDL/DML" : undefined)
+    );
+  }
+  afterEach(async () => {
+    const utilsMock = await import("@/lib/project-member/utils");
+    vi.mocked(utilsMock.getRoleEnvironmentLimitationKind).mockImplementation(
+      () => undefined
+    );
+  });
+  async function openGrantDrawerWithRole(role: string): Promise<void> {
+    await renderPage();
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+    await act(async () => {
+      (
+        container.querySelector(
+          "[data-testid='account-select']"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await act(async () => {
+      nativeChange(
+        container.querySelector(
+          "[data-testid='role-select']"
+        ) as HTMLInputElement,
+        role
+      );
+    });
+    await flush();
+  }
+  function getSwitch(): HTMLElement {
+    return container.querySelector("[role='switch']") as HTMLElement;
+  }
+  function getCreateButton(): HTMLButtonElement {
+    return [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "common.create"
+    ) as HTMLButtonElement;
+  }
+  async function clickCreate(): Promise<void> {
+    await act(async () => {
+      getCreateButton().click();
+    });
+    await flush();
+  }
+  function savedEnvironments(): string[] | undefined {
+    expect(mockUpdateProjectIamPolicy).toHaveBeenCalledTimes(1);
+    const policy = mockUpdateProjectIamPolicy.mock.calls[0][1] as {
+      bindings: { condition: { environments?: string[] } }[];
+    };
+    return policy.bindings.at(-1)?.condition.environments;
+  }
+
+  it("shows the role's description and the pointer to the field", async () => {
+    await useDdlRole();
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    expect(container.textContent).toContain("DESC(roles/sqlEditorUser)");
+    expect(container.textContent).toContain(
+      "project.members.direct-execution.role-pointer"
+    );
+  });
+
+  it("off by default writes the empty clause, byte-for-byte the old empty picker", async () => {
+    await useDdlRole();
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    expect(getSwitch().getAttribute("aria-checked")).toBe("false");
+    expect(container.textContent).toContain(
+      "project.members.direct-execution.off-caption"
+    );
+    expect(
+      container.querySelector("[data-testid='environment-multi-select']")
+    ).toBeNull();
+    await clickCreate();
+    expect(savedEnvironments()).toEqual([]);
+  });
+
+  it("on with nothing picked cannot be created", async () => {
+    await useDdlRole();
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    await act(async () => {
+      getSwitch().click();
+    });
+    await flush();
+    expect(container.textContent).toContain(
+      "project.members.direct-execution.pick-or-off"
+    );
+    expect(getCreateButton().disabled).toBe(true);
+  });
+
+  it("on with a pick writes the picked list and shows the grant lead", async () => {
+    await useDdlRole();
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    await act(async () => {
+      getSwitch().click();
+    });
+    await flush();
+    await act(async () => {
+      (
+        container.querySelector(
+          "[data-testid='pick-staging']"
+        ) as HTMLButtonElement
+      ).click();
+    });
+    await flush();
+    const callout = container.querySelector(
+      "[data-testid='direct-execution-callout']"
+    ) as HTMLElement;
+    expect(callout.getAttribute("data-lead")).toBe("grant");
+    expect(callout.getAttribute("data-envs")).toBe("environments/staging");
+    expect(getCreateButton().disabled).toBe(false);
+    await clickCreate();
+    expect(savedEnvironments()).toEqual(["environments/staging"]);
+  });
+
+  it("a role change turns the switch off", async () => {
+    await useDdlRole();
+    await openGrantDrawerWithRole("roles/sqlEditorUser");
+    await act(async () => {
+      getSwitch().click();
+    });
+    await flush();
+    expect(getSwitch().getAttribute("aria-checked")).toBe("true");
+    const roleInput = container.querySelector(
+      "[data-testid='role-select']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      nativeChange(roleInput, "roles/projectOwner");
+    });
+    await flush();
+    expect(getSwitch()).toBeNull();
+    await act(async () => {
+      nativeChange(roleInput, "roles/sqlEditorUser");
+    });
+    await flush();
+    expect(getSwitch().getAttribute("aria-checked")).toBe("false");
+    expect(container.textContent).not.toContain(
+      "project.members.direct-execution.pick-or-off"
+    );
+  });
+
+  it("the workspace sheet says an unscoped grant runs everywhere", async () => {
+    await useDdlRole();
+    await renderWorkspacePage();
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+    expect(
+      container.querySelector("[data-testid='direct-execution-callout']")
+    ).toBeNull();
+    await act(async () => {
+      nativeChange(
+        container.querySelector(
+          "[data-testid='role-select']"
+        ) as HTMLInputElement,
+        "roles/sqlEditorUser"
+      );
+    });
+    await flush();
+    const callout = container.querySelector(
+      "[data-testid='direct-execution-callout']"
+    ) as HTMLElement;
+    expect(callout).not.toBeNull();
+    expect(callout.getAttribute("data-lead")).toBe("binding");
+    expect(callout.getAttribute("data-scope")).toBe("all");
   });
 });
 
