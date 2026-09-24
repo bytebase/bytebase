@@ -363,14 +363,15 @@ function LogRow({
       <span className={cn(TEXT_CELL, item.levelClass)}>
         {item.levelIndicator}
       </span>
-      {/* Reserved on every row so the statement column stays straight. */}
-      <span className="flex w-6 shrink-0 justify-center">
+      {/* Reserved on every row so the statement column stays straight; wide
+          enough for the shared xs control at its own padding. */}
+      <span className="flex w-7 shrink-0 justify-center">
         {isFoldable ? (
           <Button
             type="button"
             appearance="secondary"
             size="xs"
-            className="px-1 text-control-light hover:bg-control-bg-hover hover:text-control"
+            className="text-control-light hover:bg-control-bg-hover hover:text-control"
             aria-expanded={showBlock}
             aria-label={
               showBlock
