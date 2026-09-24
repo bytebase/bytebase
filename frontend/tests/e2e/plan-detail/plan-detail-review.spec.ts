@@ -1228,14 +1228,23 @@ test.describe("Inline comment threads: ranges, shared markers, walker details, n
   test("a narrow viewport keeps the walker inside the editor's top-right corner and composers usable", async () => {
     await page.setViewportSize({ width: 480, height: 1200 });
     await expect(planPage.threadWalker).toBeVisible({ timeout: 10_000 });
-    const editorBox = await planPage.statementEditor.boundingBox();
-    const walkerBox = await planPage.threadWalker.boundingBox();
-    expect(editorBox && walkerBox).toBeTruthy();
-    if (editorBox && walkerBox) {
-      expect(walkerBox.x + walkerBox.width).toBeLessThanOrEqual(editorBox.x + editorBox.width);
-      expect(walkerBox.y).toBeGreaterThanOrEqual(editorBox.y);
-      expect(walkerBox.y - editorBox.y).toBeLessThan(40);
-    }
+    // The walker is a Monaco overlay widget, placed by Monaco's own layout a
+    // frame or more after the viewport changes, so wait for the corner.
+    await expect
+      .poll(
+        async () => {
+          const editorBox = await planPage.statementEditor.boundingBox();
+          const walkerBox = await planPage.threadWalker.boundingBox();
+          if (!editorBox || !walkerBox) return "missing box";
+          return {
+            rightEdgeInside: walkerBox.x + walkerBox.width <= editorBox.x + editorBox.width,
+            belowEditorTop: walkerBox.y >= editorBox.y,
+            nearEditorTop: walkerBox.y - editorBox.y < 40,
+          };
+        },
+        { timeout: 5_000 },
+      )
+      .toEqual({ rightEdgeInside: true, belowEditorTop: true, nearEditorTop: true });
     const composer = await planPage.openInlineComposerOn(1);
     await expect(composer.getByRole("button", { name: "Publish", exact: true })).toBeDisabled();
     await composer.getByRole("button", { name: "Cancel" }).click();
