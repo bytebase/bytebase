@@ -19,17 +19,11 @@ import { lazyPage } from "@/app/router/lazyPage";
 export const authRoutes: RouteObject[] = [
   {
     path: "/oauth2/consent",
-    element: <SplashLayout />,
-    children: [
-      {
-        index: true,
-        handle: { name: OAUTH2_CONSENT_MODULE },
-        lazy: lazyPage(
-          () => import("@/routes/auth/OAuth2ConsentPage"),
-          (m) => m.OAuth2ConsentPage
-        ),
-      },
-    ],
+    handle: { name: OAUTH2_CONSENT_MODULE },
+    lazy: lazyPage(
+      () => import("@/routes/auth/OAuth2ConsentPage"),
+      (m) => m.OAuth2ConsentPage
+    ),
   },
   {
     path: "/auth",
