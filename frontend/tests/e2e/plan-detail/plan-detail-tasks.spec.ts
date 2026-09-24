@@ -192,3 +192,136 @@ test.describe("Expanded task statement preview is height-bounded, not clipped (B
     ).toBeLessThanOrEqual(300);
   });
 });
+
+test.describe("Failed task's log keeps the statement that failed (BYT-10168)", () => {
+  // The log used to cut every statement to 80 characters and, on a failed
+  // command, show the driver's error alone — so the row a reader opened the log
+  // for could not say which SQL produced it, and nothing could be copied.
+  // See docs/design/task-run-log-statement-unfold.md.
+  test("a full log keeps its height; the failure unfolds from its line, copies, and folds back into place", async () => {
+    test.setTimeout(180_000);
+    await sharedContext.grantPermissions(
+      ["clipboard-read", "clipboard-write"],
+      { origin: env.baseURL },
+    );
+
+    // Nine successes then the failure: ten rows fill the section's box, and
+    // the failing statement (16 lines, ~300px) is taller than the box on its
+    // own. Not longer: the create page's editor renders about 26 lines, and
+    // the plan helper checks the first line is still in view after insertion.
+    const stamp = Date.now();
+    const okColumn = (index: number) => `e2e_log_ok_${stamp}_${index}`;
+    const missingTable = `nonexistent_table_e2e_${stamp}`;
+    const failedLines = Array.from(
+      { length: 15 },
+      (_, index) => `  ADD COLUMN c${index + 1} TEXT${index === 14 ? ";" : ","}`,
+    );
+    await createPlanAndNavigate(
+      "E2E Task Log",
+      [
+        ...Array.from({ length: 9 }, (_, index) =>
+          `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${okColumn(index)} TEXT;`,
+        ),
+        `ALTER TABLE ${missingTable}`,
+        ...failedLines,
+      ].join("\n"),
+    );
+
+    await planPage.runTask();
+    await expect(page.getByText("Failed").first()).toBeVisible({
+      timeout: 30_000,
+    });
+
+    const rows = page.getByTestId("task-run-log-row");
+    const failedRow = rows.filter({ hasText: "does not exist" });
+    const rowText = (row: typeof failedRow) =>
+      row.evaluate((element) => element.textContent ?? "");
+    const failedSql = new RegExp(
+      `ALTER TABLE ${missingTable}\\s*\\n\\s*ADD COLUMN c1 TEXT,[\\s\\S]*ADD COLUMN c15 TEXT;`,
+    );
+    const box = failedRow.locator("xpath=..");
+    const boxHeight = () =>
+      box.evaluate((element) => element.getBoundingClientRect().height);
+    // Where the box sits on screen: unchanged means nothing around it moved,
+    // whichever container the page scrolls in.
+    const boxY = () => box.evaluate((element) => element.getBoundingClientRect().y);
+    const errorText = failedRow.getByText("does not exist");
+    const lineY = async () => (await errorText.boundingBox())?.y ?? Number.NaN;
+
+    // Nothing is unfolded for the reader: the failure shows its error, folded,
+    // and the section is scrolled to it — it is the tenth row, at the box's
+    // bottom.
+    await expect(failedRow).toBeVisible({ timeout: 30_000 });
+    await expect(failedRow).toContainText(`"${missingTable}" does not exist`);
+    const showFailed = failedRow.getByRole("button", {
+      name: "Show full statement",
+    });
+    await expect(showFailed).toHaveAttribute("aria-expanded", "false");
+    expect(await rowText(failedRow)).not.toMatch(failedSql);
+    await expect(rows).toHaveCount(10);
+    // The reader has scrolled the page to the failure; from here on nothing
+    // the toggles do may move it.
+    await failedRow.scrollIntoViewIfNeeded();
+    const fullBoxHeight = await boxHeight();
+    const parkedY = await lineY();
+    const boxYBefore = await boxY();
+
+    // Every line with a fold control toggles on click, the error included. The
+    // box does not grow: the statement that failed opens inside it, and since
+    // it is taller than the box the line goes to the box's top so the SQL can
+    // fill the rest.
+    await expect(errorText).toHaveCSS("cursor", "pointer");
+    await errorText.click();
+    const hideFailed = failedRow.getByRole("button", {
+      name: "Hide full statement",
+    });
+    await expect(hideFailed).toHaveAttribute("aria-expanded", "true");
+    await expect.poll(() => rowText(failedRow)).toMatch(failedSql);
+    expect(await boxHeight()).toBe(fullBoxHeight);
+    expect(await boxY()).toBe(boxYBefore);
+    expect(Math.abs((await lineY()) - boxYBefore)).toBeLessThanOrEqual(6);
+    const revealScroll = await box.evaluate((element) => element.scrollTop);
+
+    // Copy takes the SQL, never the error — and stays in reach: scrolled to the
+    // end of a block taller than the box, the button is still inside the box.
+    const copy = failedRow.getByRole("button", { name: "Copy" });
+    await box.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+    const copyBox = await copy.boundingBox();
+    const boxBox = await box.boundingBox();
+    expect(copyBox).not.toBeNull();
+    expect(copyBox!.y).toBeGreaterThanOrEqual(boxBox!.y);
+    expect(copyBox!.y + copyBox!.height).toBeLessThanOrEqual(
+      boxBox!.y + boxBox!.height,
+    );
+    await copy.click();
+    const clipboard = () => page.evaluate(() => navigator.clipboard.readText());
+    await expect.poll(clipboard).toMatch(failedSql);
+    expect(await clipboard()).not.toContain("does not exist");
+
+    // Folding puts the line back where it was clicked from: the box keeps its
+    // height and its place on the page, and the row returns to the box's
+    // bottom.
+    await box.evaluate((element, top) => {
+      element.scrollTop = top;
+    }, revealScroll);
+    await errorText.click();
+    await expect(showFailed).toHaveAttribute("aria-expanded", "false");
+    await expect(failedRow).not.toContainText("ADD COLUMN c1 TEXT");
+    await expect(failedRow).toContainText("does not exist");
+    expect(await boxHeight()).toBe(fullBoxHeight);
+    expect(await boxY()).toBe(boxYBefore);
+    expect(Math.abs((await lineY()) - parkedY)).toBeLessThanOrEqual(1);
+
+    // A successful statement that fits its line has no fold control, and
+    // copies from the row.
+    const okRow = rows.filter({ hasText: okColumn(3) });
+    await expect(
+      okRow.getByRole("button", { name: "Show full statement" }),
+    ).toHaveCount(0);
+    await okRow.hover();
+    await okRow.getByRole("button", { name: "Copy" }).click();
+    await expect.poll(clipboard).toContain(okColumn(3));
+  });
+});

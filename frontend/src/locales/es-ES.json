@@ -3725,7 +3725,9 @@
       "completed": "Completado",
       "computing": "computación...",
       "dumping": "dumping...",
+      "hide-full-statement": "Ocultar la declaración completa",
       "retry-attempt": "intento {{current}}/{{max}}",
+      "show-full-statement": "Mostrar la declaración completa",
       "syncing": "sincronizando..."
     },
     "log-type": {

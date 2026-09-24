@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  TaskRun_Status,
   TaskRunLogEntry,
   TaskRunLogEntry_Type,
 } from "@/types/proto-es/v1/rollout_service_pb";
 import type { Sheet } from "@/types/proto-es/v1/sheet_service_pb";
 import type { TaskRunLogDetailText } from "./model";
 import {
+  assignEntryKeys,
   buildReleaseFileGroups,
   buildSectionsFromEntries,
   getUniqueReplicaIds,
@@ -40,6 +42,8 @@ export interface UseTaskRunLogSectionsOptions {
   getSectionLabel: (type: TaskRunLogEntry_Type) => string;
   detailText?: TaskRunLogDetailText;
   datasetKey?: string;
+  // Forwarded into every builder call below; see pickMarkedEntry.
+  taskRunStatus?: TaskRun_Status;
 }
 
 export interface UseTaskRunLogSectionsResult {
@@ -71,6 +75,7 @@ export const useTaskRunLogSections = ({
   getSectionLabel,
   detailText,
   datasetKey,
+  taskRunStatus,
 }: UseTaskRunLogSectionsOptions): UseTaskRunLogSectionsResult => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => new Set()
@@ -91,25 +96,49 @@ export const useTaskRunLogSections = ({
     Set<string>
   >(() => new Set());
 
+  // Every builder below sees a filtered slice of the run, so the keys are
+  // assigned here, over all of it.
+  const entryKeys = useMemo(() => assignEntryKeys(entries), [entries]);
+
   const sections = useMemo(() => {
     return buildSectionsFromEntries(entries, {
       getSectionLabel,
+      entryKeys,
       sheet,
       sheetsMap,
       detailText,
+      taskRunStatus,
     });
-  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
+  }, [
+    detailText,
+    entries,
+    entryKeys,
+    getSectionLabel,
+    sheet,
+    sheetsMap,
+    taskRunStatus,
+  ]);
 
   const releaseFileGroups = useMemo(() => {
     if (!hasReleaseFileMarkers(entries)) return [];
     return buildReleaseFileGroups(entries, {
       getSectionLabel,
+      entryKeys,
       sheet,
       sheetsMap,
       detailText,
       includeOrphanGroup: true,
+      taskRunStatus,
     });
-  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
+  }, [
+    detailText,
+    entries,
+    entryKeys,
+    getSectionLabel,
+    sheet,
+    sheetsMap,
+    taskRunStatus,
+  ]);
 
   const replicaGroups = useMemo(() => {
     const replicaIds = getUniqueReplicaIds(entries);
@@ -126,11 +155,13 @@ export const useTaskRunLogSections = ({
           releaseFileGroups: [],
           sections: buildSectionsFromEntries(replicaEntries, {
             getSectionLabel,
+            entryKeys,
             sheet,
             sheetsMap,
             idPrefix: replicaId,
             forceError,
             detailText,
+            taskRunStatus,
           }),
         };
       }
@@ -143,26 +174,38 @@ export const useTaskRunLogSections = ({
         replicaId,
         releaseFileGroups: buildReleaseFileGroups(replicaEntries, {
           getSectionLabel,
+          entryKeys,
           sheet,
           sheetsMap,
           idPrefix: replicaId,
           forceError,
           detailText,
+          taskRunStatus,
         }),
         sections:
           orphanGroup && orphanGroup.entries.length > 0
             ? buildSectionsFromEntries(orphanGroup.entries, {
                 getSectionLabel,
+                entryKeys,
                 sheet,
                 sheetsMap,
                 idPrefix: `${replicaId}-orphan`,
                 forceError,
                 detailText,
+                taskRunStatus,
               })
             : [],
       };
     });
-  }, [detailText, entries, getSectionLabel, sheet, sheetsMap]);
+  }, [
+    detailText,
+    entries,
+    entryKeys,
+    getSectionLabel,
+    sheet,
+    sheetsMap,
+    taskRunStatus,
+  ]);
 
   const hasReleaseFiles = useMemo(
     () => hasReleaseFileMarkers(entries),

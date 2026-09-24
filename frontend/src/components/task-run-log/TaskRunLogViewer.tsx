@@ -9,6 +9,7 @@ import {
 import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { useSeededState } from "@/hooks/useSeededState";
 import {
   type TaskRun_Status,
   TaskRunLogEntry_Type,
@@ -44,6 +45,19 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     taskRunName,
     taskRunStatus,
     active
+  );
+
+  // The reader's explicit row folds. They live here, above every conditional
+  // SectionContent mount, so collapsing a section or the sole-section layout
+  // giving way to the section tree does not discard them. A new run starts
+  // clean, as does a new phase: both deploy surfaces key this viewer on status.
+  const [foldOverrides, setFoldOverrides] = useSeededState<
+    ReadonlyMap<string, boolean>
+  >(taskRunName, () => new Map());
+  const handleFoldChange = useCallback(
+    (key: string, open: boolean) =>
+      setFoldOverrides((previous) => new Map(previous).set(key, open)),
+    [setFoldOverrides]
   );
 
   const getSectionLabel = useCallback(
@@ -119,6 +133,7 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
     getSectionLabel,
     detailText,
     datasetKey: taskRunName,
+    taskRunStatus,
   });
 
   const hasRenderableReleaseFiles =
@@ -164,7 +179,12 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
               </span>
             ) : null}
           </div>
-          <SectionContent section={soleSection} datasetKey={taskRunName} />
+          <SectionContent
+            section={soleSection}
+            datasetKey={taskRunName}
+            foldOverrides={foldOverrides}
+            onFoldChange={handleFoldChange}
+          />
         </div>
       </div>
     );
@@ -197,6 +217,8 @@ export const TaskRunLogViewer = memo(function TaskRunLogViewer({
           section={section}
           indent={indent}
           datasetKey={taskRunName}
+          foldOverrides={foldOverrides}
+          onFoldChange={handleFoldChange}
         />
       ) : null}
     </div>

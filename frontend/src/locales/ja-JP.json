@@ -3725,7 +3725,9 @@
       "completed": "完了しました",
       "computing": "コンピューティング...",
       "dumping": "ダンピング...",
+      "hide-full-statement": "ステートメント全体を非表示",
       "retry-attempt": "試行 {{current}}/{{max}}",
+      "show-full-statement": "ステートメント全体を表示",
       "syncing": "同期中..."
     },
     "log-type": {

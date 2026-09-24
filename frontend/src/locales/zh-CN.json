@@ -3725,7 +3725,9 @@
       "completed": "已完成",
       "computing": "计算中...",
       "dumping": "导出中...",
+      "hide-full-statement": "隐藏完整语句",
       "retry-attempt": "第 {{current}}/{{max}} 次尝试",
+      "show-full-statement": "显示完整语句",
       "syncing": "同步中..."
     },
     "log-type": {
