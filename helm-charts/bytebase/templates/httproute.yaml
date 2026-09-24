@@ -26,7 +26,6 @@ spec:
     - backendRefs:
         - name: {{ $svcName }}
           port: 80
-          weight: 1
       {{- with .matches }}
       matches:
         {{- toYaml . | nindent 8 }}
@@ -44,7 +43,6 @@ spec:
     - backendRefs:
         - name: {{ $svcName }}
           port: 80
-          weight: 1
       matches:
         - path:
             type: PathPrefix
