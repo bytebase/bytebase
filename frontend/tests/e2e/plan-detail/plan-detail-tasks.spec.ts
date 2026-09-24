@@ -209,8 +209,10 @@ test.describe("Failed task's log keeps the statement that failed (BYT-10168)", (
     // the failing statement (16 lines, ~300px) is taller than the box on its
     // own. Not longer: the create page's editor renders about 26 lines, and
     // the plan helper checks the first line is still in view after insertion.
+    // The successes are SELECTs so the run leaves no schema behind; each
+    // carries its own marker so a row can be told from its neighbours.
     const stamp = Date.now();
-    const okColumn = (index: number) => `e2e_log_ok_${stamp}_${index}`;
+    const okMarker = (index: number) => `e2e_log_ok_${stamp}_${index}`;
     const missingTable = `nonexistent_table_e2e_${stamp}`;
     const failedLines = Array.from(
       { length: 15 },
@@ -220,7 +222,7 @@ test.describe("Failed task's log keeps the statement that failed (BYT-10168)", (
       "E2E Task Log",
       [
         ...Array.from({ length: 9 }, (_, index) =>
-          `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${okColumn(index)} TEXT;`,
+          `SELECT '${okMarker(index)}';`,
         ),
         `ALTER TABLE ${missingTable}`,
         ...failedLines,
@@ -316,12 +318,12 @@ test.describe("Failed task's log keeps the statement that failed (BYT-10168)", (
 
     // A successful statement that fits its line has no fold control, and
     // copies from the row.
-    const okRow = rows.filter({ hasText: okColumn(3) });
+    const okRow = rows.filter({ hasText: okMarker(3) });
     await expect(
       okRow.getByRole("button", { name: "Show full statement" }),
     ).toHaveCount(0);
     await okRow.hover();
     await okRow.getByRole("button", { name: "Copy" }).click();
-    await expect.poll(clipboard).toContain(okColumn(3));
+    await expect.poll(clipboard).toContain(okMarker(3));
   });
 });
