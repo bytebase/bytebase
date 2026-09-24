@@ -105,7 +105,10 @@ account, or a workload identity — never a group. The approval router is blind 
 the expiration and the *database* scope, and derives `resource.environment_id` from that scope or
 from every workspace environment; the direct-execution clause never reaches a rule. "Direct DDL/DML
 in Prod requires a DBA" cannot be written today; the coarse "every SQL Editor User request requires
-a DBA" can, through `request.role`.
+a DBA" can, through `request.role`. A trap follows: `request.role == "roles/sqlEditorUser" &&
+resource.environment_id == "prod"` compiles and fires on every such request in any project that
+has a Prod environment, switch on or off, because that variable names the *database* scope, not
+the switch.
 
 ## Principle
 
@@ -142,7 +145,9 @@ names the enabled behavior and whose off state has a meaningful result
 The caption describes the grant, not the member: bindings are additive, the SQL service accepts
 any matching binding (`sql_service.go:2261-2285`), and a group or workspace grant that already
 allows direct execution is untouched by an off grant. Off submits exactly what an empty picker
-submits today, so no binding, migration, or backend path changes.
+submits today on both forms — the request sheet passes the empty list through
+(`RequestRoleSheet.tsx:342`), and the members page does too, since an empty list still counts as a
+condition there (`MembersPage.tsx:1556-1565`) — so no binding, migration, or backend path changes.
 
 **D2 · On reveals the picker, labeled for what it is.** Sub-label *In these environments*, the
 existing `EnvironmentSelect`, placeholder *Select environments*. The word *Environments* no longer
@@ -203,11 +208,13 @@ the grant opens."*, and Project Owner's gains the same clause after *"All permis
 project"*. The sentence names no control, because the description also renders in the role
 dropdown's option rows (`frontend/src/components/RoleSelect.tsx:59-75`), on the roles settings
 page, and in the workspace member sheet, where there is no switch. Both project grant forms render
-the selected role's description under the select — today the members form shows a box of
-permission ids and the request sheet shows the description only inside the open dropdown — and
+the selected role's description under the select — today neither form shows it once a role is
+chosen, and the open dropdown omits it for custom roles, whose custom row renderer replaces the
+description block (`RoleSelect.tsx:77-90`) — and
 the pointer to the field ("…in the environments you open below") is a form-owned caption there,
-not part of the description. Custom roles keep their author's description; the presence of the
-switch is what tells the granter the role carries the permission.
+not part of the description. Custom roles keep their author's description, which this change makes visible on the forms for
+the first time; the presence of the switch is what tells the granter the role carries the
+permission.
 
 **D7 · Protected environments are flagged, not blocked.** Every picker row already renders
 `EnvironmentLabel`, so the shield shows today (`frontend/src/components/EnvironmentSelect.tsx:44`).
@@ -232,8 +239,9 @@ grantee ([BOT-137](https://linear.app/bytebase/issue/BOT-137)).
 
 **D9 · The issue title carries the scope.** The sheet generates *Request "SQL Editor User" role*
 today, or *[Request role] {reason}* when the project enforces issue titles
-(`RequestRoleSheet.tsx:426-433`); with the switch on, both forms get the suffix *· direct DDL/DML in
-Staging, Prod*, so the issue list shows the request's shape without opening it. The title is
+(`RequestRoleSheet.tsx:426-433`); with the switch on, both branches get the suffix *· direct DDL/DML in
+Staging, Prod*, placed after the database names the generated title already carries, so the issue
+list shows the request's shape without opening it. The title is
 client-supplied text stored verbatim (`issue_service.go:711`) and an environment rename does not
 update it, so the details card is authoritative and the title is a convenience.
 
