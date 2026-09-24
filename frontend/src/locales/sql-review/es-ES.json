@@ -729,6 +729,66 @@
   },
   "select-all": "Seleccionar todo",
   "select-review-rules": "Seleccionar reglas de revisión de SQL",
+  "standard-rules": {
+    "customize": {
+      "description": "Si está desactivado, este proyecto sigue las reglas estándar del espacio de trabajo.",
+      "self": "Personalizar para este proyecto",
+      "view-workspace-rules": "Ver las reglas del espacio de trabajo"
+    },
+    "description": "Reglas integradas que revisan el SQL de cada issue. Los proyectos que no personalizan sus reglas siguen estas.",
+    "off": "Desactivada",
+    "on": "Activada",
+    "project-description": "Reglas integradas que revisan el SQL de cada issue de este proyecto.",
+    "rule": {
+      "disallow-drop-constraint": {
+        "description": "Señala la eliminación de una restricción PRIMARY KEY, FOREIGN KEY, UNIQUE o CHECK.",
+        "title": "Eliminación de restricciones"
+      },
+      "disallow-drop-object": {
+        "description": "Señala DROP TABLE, COLUMN, SCHEMA o DATABASE.",
+        "title": "Eliminación de objetos"
+      },
+      "disallow-rename": {
+        "description": "Señala el cambio de nombre de una tabla o columna.",
+        "title": "Cambio de nombre"
+      },
+      "disallow-truncate": {
+        "description": "Señala TRUNCATE.",
+        "title": "Vaciado de tablas"
+      },
+      "online-migration": {
+        "description": "Señala un cambio que solicita migración en línea pero no es apto para ella.",
+        "title": "Idoneidad para la migración en línea"
+      },
+      "prior-backup": {
+        "description": "Señala un cambio que activa la copia de seguridad previa cuando no se puede realizar.",
+        "title": "Viabilidad de la copia de seguridad previa"
+      },
+      "require-is-null": {
+        "description": "Señala = NULL o <> NULL en un predicado, que nunca es verdadero. Use IS NULL o IS NOT NULL en su lugar.",
+        "title": "Comparación con NULL"
+      },
+      "require-primary-key": {
+        "description": "Señala una tabla que el cambio crea sin clave primaria, o una clave primaria que elimina sin volver a añadirla.",
+        "title": "Clave primaria"
+      },
+      "require-where": {
+        "description": "Señala UPDATE o DELETE sin cláusula WHERE.",
+        "title": "Cláusula WHERE"
+      },
+      "syntax": {
+        "description": "Señala las sentencias que el motor de base de datos no puede analizar. Las demás reglas solo comprueban SQL que se puede analizar, por lo que desactivar esta regla desactiva todas las reglas estándar.",
+        "title": "Sintaxis"
+      },
+      "walk-through": {
+        "description": "Señala las sentencias que fallan contra el esquema sincronizado, como una tabla o columna inexistente, un objeto duplicado o una referencia no válida.",
+        "title": "Recorrido del esquema"
+      }
+    },
+    "running": "{{on}} de {{total}} reglas activas",
+    "self": "Reglas estándar",
+    "syntax-off": "La sintaxis está desactivada, por lo que no se ejecuta ninguna regla estándar. Active la sintaxis para revisar los cambios."
+  },
   "template": {
     "bb-sql-review-dev": "Plantilla Básica",
     "bb-sql-review-dev-desc": "Cobertura básica para defender sus bases de datos de uso indebido común.",

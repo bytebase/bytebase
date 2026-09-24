@@ -484,7 +484,8 @@ func GetDefaultReviewRulePolicy() *storepb.ReviewRulePolicy {
 // GetEffectiveReviewRulePolicy returns the standard review rules on for a
 // project. The nearest policy wins: the project's own policy applies as is, a
 // project without one uses the workspace policy, and with neither every rule
-// is on. A policy that is not enforced counts as absent.
+// is on. A policy that is not enforced counts as absent. SYNTAX gates the
+// rest, so a policy without it leaves no rule on.
 func (s *Store) GetEffectiveReviewRulePolicy(ctx context.Context, workspaceID string, projectID string) (*storepb.ReviewRulePolicy, error) {
 	for _, level := range []struct {
 		resourceType storepb.Policy_Resource
@@ -498,6 +499,9 @@ func (s *Store) GetEffectiveReviewRulePolicy(ctx context.Context, workspaceID st
 			return nil, err
 		}
 		if policy != nil {
+			if !slices.Contains(policy.Rules, storepb.ReviewRuleType_SYNTAX) {
+				return &storepb.ReviewRulePolicy{}, nil
+			}
 			return policy, nil
 		}
 	}

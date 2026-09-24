@@ -729,6 +729,66 @@
   },
   "select-all": "Select all",
   "select-review-rules": "Select SQL review rules",
+  "standard-rules": {
+    "customize": {
+      "description": "When off, this project follows the workspace standard rules.",
+      "self": "Customize for this project",
+      "view-workspace-rules": "View workspace rules"
+    },
+    "description": "Built-in rules that review the SQL of every issue. Projects that do not customize their rules follow these.",
+    "off": "Off",
+    "on": "On",
+    "project-description": "Built-in rules that review the SQL of every issue in this project.",
+    "rule": {
+      "disallow-drop-constraint": {
+        "description": "Flags dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint.",
+        "title": "Dropping constraints"
+      },
+      "disallow-drop-object": {
+        "description": "Flags DROP TABLE, COLUMN, SCHEMA, or DATABASE.",
+        "title": "Dropping objects"
+      },
+      "disallow-rename": {
+        "description": "Flags renaming a table or column.",
+        "title": "Renaming"
+      },
+      "disallow-truncate": {
+        "description": "Flags TRUNCATE.",
+        "title": "Truncating tables"
+      },
+      "online-migration": {
+        "description": "Flags a change that requests online migration but is not eligible for it.",
+        "title": "Online migration eligibility"
+      },
+      "prior-backup": {
+        "description": "Flags a change that enables prior backup when the backup cannot be taken.",
+        "title": "Prior backup feasibility"
+      },
+      "require-is-null": {
+        "description": "Flags = NULL or <> NULL in a predicate, which is never true. Use IS NULL or IS NOT NULL instead.",
+        "title": "NULL comparison"
+      },
+      "require-primary-key": {
+        "description": "Flags a table the change creates without a primary key, or a primary key it drops without adding one back.",
+        "title": "Primary key"
+      },
+      "require-where": {
+        "description": "Flags UPDATE or DELETE without a WHERE clause.",
+        "title": "WHERE clause"
+      },
+      "syntax": {
+        "description": "Flags statements that do not parse for the database engine. The other rules only check SQL that parses, so turning this off turns off every standard rule.",
+        "title": "Syntax"
+      },
+      "walk-through": {
+        "description": "Flags statements that fail against the synced schema, such as a missing table or column, a duplicate object, or an invalid reference.",
+        "title": "Schema walk-through"
+      }
+    },
+    "running": "{{on}} of {{total}} rules running",
+    "self": "Standard rules",
+    "syntax-off": "Syntax is off, so none of the standard rules run. Turn Syntax on to review changes."
+  },
   "template": {
     "bb-sql-review-dev": "Basic Template",
     "bb-sql-review-dev-desc": "Basic coverage to defend your databases from common misusage.",

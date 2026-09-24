@@ -729,6 +729,66 @@
   },
   "select-all": "すべて選択",
   "select-review-rules": "SQL レビュールールを選択",
+  "standard-rules": {
+    "customize": {
+      "description": "オフの場合、このプロジェクトはワークスペースの標準ルールに従います。",
+      "self": "このプロジェクト用にカスタマイズ",
+      "view-workspace-rules": "ワークスペースのルールを表示"
+    },
+    "description": "すべての Issue の SQL をレビューする組み込みルールです。ルールをカスタマイズしていないプロジェクトはこの設定に従います。",
+    "off": "オフ",
+    "on": "オン",
+    "project-description": "このプロジェクトのすべての Issue の SQL をレビューする組み込みルールです。",
+    "rule": {
+      "disallow-drop-constraint": {
+        "description": "PRIMARY KEY、FOREIGN KEY、UNIQUE、CHECK 制約の削除を検出します。",
+        "title": "制約の削除"
+      },
+      "disallow-drop-object": {
+        "description": "DROP TABLE、COLUMN、SCHEMA、DATABASE を検出します。",
+        "title": "オブジェクトの削除"
+      },
+      "disallow-rename": {
+        "description": "テーブルまたは列の名前変更を検出します。",
+        "title": "名前の変更"
+      },
+      "disallow-truncate": {
+        "description": "TRUNCATE を検出します。",
+        "title": "テーブルの切り捨て"
+      },
+      "online-migration": {
+        "description": "オンライン移行を要求しているが、その条件を満たさない変更を検出します。",
+        "title": "オンライン移行の適格性"
+      },
+      "prior-backup": {
+        "description": "事前バックアップが有効だが、バックアップを取得できない変更を検出します。",
+        "title": "事前バックアップの実行可能性"
+      },
+      "require-is-null": {
+        "description": "述語内の = NULL または <> NULL を検出します。これらが真になることはありません。代わりに IS NULL または IS NOT NULL を使用してください。",
+        "title": "NULL の比較"
+      },
+      "require-primary-key": {
+        "description": "変更で作成されるテーブルに主キーがない場合や、削除した主キーを再追加しない場合を検出します。",
+        "title": "主キー"
+      },
+      "require-where": {
+        "description": "WHERE 句のない UPDATE または DELETE を検出します。",
+        "title": "WHERE 句"
+      },
+      "syntax": {
+        "description": "データベースエンジンで解析できないステートメントを検出します。他のルールは解析できる SQL のみをチェックするため、これをオフにするとすべての標準ルールがオフになります。",
+        "title": "構文"
+      },
+      "walk-through": {
+        "description": "同期済みのスキーマに対して失敗するステートメントを検出します。例: 存在しないテーブルや列、重複したオブジェクト、無効な参照。",
+        "title": "スキーマウォークスルー"
+      }
+    },
+    "running": "{{total}} 件中 {{on}} 件のルールが有効",
+    "self": "標準ルール",
+    "syntax-off": "構文チェックがオフのため、標準ルールはいずれも実行されません。変更をレビューするには構文チェックをオンにしてください。"
+  },
   "template": {
     "bb-sql-review-dev": "基本的なテンプレート",
     "bb-sql-review-dev-desc": "一般的な誤用からデータベースを守るための基本的なカバレッジ。",

@@ -95,6 +95,7 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { Environment } from "@/types/v1/environment";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 import {
   getEnvironmentListKey,
   resolveSelectedEnvironmentId,
@@ -820,12 +821,14 @@ function EnvironmentDetail({
             </FormField>
           )}
 
-          {/* SQL Review section */}
-          <SQLReviewSection
-            ref={sqlReviewRef}
-            environmentId={environment.id}
-            onDirtyChange={setSqlReviewDirty}
-          />
+          {/* The v1 review policy goes away with SQL Review V2. */}
+          {!sqlReviewV2Enabled() && (
+            <SQLReviewSection
+              ref={sqlReviewRef}
+              environmentId={environment.id}
+              onDirtyChange={setSqlReviewDirty}
+            />
+          )}
 
           {/* Delete section */}
           {allowDelete && (

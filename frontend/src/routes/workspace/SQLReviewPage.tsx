@@ -12,6 +12,7 @@ import { ResourceLink } from "@/components/sql-review/ResourceLink";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
+import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -27,10 +28,16 @@ import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
 import { useSQLReviewStore } from "@/stores/sqlReview";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
+import {
+  SQLReviewStandardRulesSection,
+  useWorkspaceStandardRules,
+} from "./SQLReviewStandardRulesSection";
 
 // ============================================================
 // PolicyTable
@@ -245,14 +252,23 @@ function PolicyTable({
 // SQLReviewPage (exported)
 // ============================================================
 
+// The standard rules read as one centered column, and the footer lines its
+// actions up with it.
+const STANDARD_RULES_COLUMN = "mx-auto w-full max-w-3xl";
+
 export function SQLReviewPage() {
   const { t } = useTranslation();
   const sqlReviewStore = useSQLReviewStore();
   const [searchText, setSearchText] = useState("");
+  // With SQL Review V2 the standard rules replace the v1 review policies.
+  const sqlReviewV2 = sqlReviewV2Enabled();
+  const standardRules = useWorkspaceStandardRules(sqlReviewV2);
+  useUnsavedChangesGuard(standardRules.isDirty);
 
   useEffect(() => {
+    if (sqlReviewV2) return;
     useSQLReviewStore.getState().fetchReviewPolicyList();
-  }, []);
+  }, [sqlReviewV2]);
 
   const policyList = sqlReviewStore.reviewPolicyList;
 
@@ -284,50 +300,82 @@ export function SQLReviewPage() {
 
   return (
     <WorkspacePageLayout className="gap-y-4">
-      <WorkspacePageInfo
-        description={
-          <>
-            {t("sql-review.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/sql-review/review-rules?source=console"
-              className="text-accent"
-            />
-          </>
-        }
-      />
-
-      <WorkspacePageToolbar align="end">
-        <SearchInput
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder={t("common.filter-by-name")}
-          autoFocus
-          wrapperClassName="max-w-full"
-        />
-        {hasCreatePermission && (
-          <Button onClick={navigateToCreate}>
-            <Plus className="w-4 h-4 mr-1" />
-            {t("common.create")}
-          </Button>
-        )}
-      </WorkspacePageToolbar>
-
-      {policyList.length > 0 ? (
-        <PolicyTable
-          policies={filteredList}
-          searchText={searchText}
-          onDelete={handleDelete}
-        />
-      ) : (
-        <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-3 text-control-light">
-          <span>{t("common.no-data")}</span>
-          {hasCreatePermission && (
-            <Button size="sm" onClick={navigateToCreate}>
-              <Plus className="w-4 h-4 mr-1" />
-              {t("common.create")}
-            </Button>
-          )}
+      {sqlReviewV2 ? (
+        <div className={STANDARD_RULES_COLUMN}>
+          <SQLReviewStandardRulesSection standardRules={standardRules} />
         </div>
+      ) : (
+        <>
+          <WorkspacePageInfo
+            description={
+              <>
+                {t("sql-review.description")}{" "}
+                <LearnMoreLink
+                  href="https://docs.bytebase.com/sql-review/review-rules?source=console"
+                  className="text-accent"
+                />
+              </>
+            }
+          />
+
+          <WorkspacePageToolbar align="end">
+            <SearchInput
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder={t("common.filter-by-name")}
+              autoFocus
+              wrapperClassName="max-w-full"
+            />
+            {hasCreatePermission && (
+              <Button onClick={navigateToCreate}>
+                <Plus className="w-4 h-4 mr-1" />
+                {t("common.create")}
+              </Button>
+            )}
+          </WorkspacePageToolbar>
+
+          {policyList.length > 0 ? (
+            <PolicyTable
+              policies={filteredList}
+              searchText={searchText}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <div className="py-12 border rounded-sm flex flex-col items-center justify-center gap-y-3 text-control-light">
+              <span>{t("common.no-data")}</span>
+              {hasCreatePermission && (
+                <Button size="sm" onClick={navigateToCreate}>
+                  <Plus className="w-4 h-4 mr-1" />
+                  {t("common.create")}
+                </Button>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {standardRules.isDirty && (
+        <StickyActionFooter
+          contentPadding={false}
+          contentClassName={STANDARD_RULES_COLUMN}
+          left={
+            <Button
+              appearance="outline"
+              disabled={standardRules.saving}
+              onClick={standardRules.revert}
+            >
+              {t("common.cancel")}
+            </Button>
+          }
+          right={
+            <Button
+              disabled={standardRules.saving}
+              onClick={() => void standardRules.save()}
+            >
+              {t("common.update")}
+            </Button>
+          }
+        />
       )}
     </WorkspacePageLayout>
   );

@@ -10351,7 +10351,8 @@ Permissions required: bb.planCheckRuns.run</p></td>
               <tr>
                 <td>SYNTAX</td>
                 <td>1</td>
-                <td><p>P0: the statements do not parse for the target engine.</p></td>
+                <td><p>P0: the statements do not parse for the target engine. It gates the
+other rules (see ReviewRulePolicy).</p></td>
               </tr>
             
               <tr>
@@ -28524,7 +28525,7 @@ If false,
         
       
         <h3 id="bytebase.v1.ReviewRulePolicy">ReviewRulePolicy</h3>
-        <p>Standard review rule policy: the rules switched on. The nearest policy</p><p>wins: a project's own policy applies as is; a project without one uses</p><p>the workspace policy; with neither, every rule is on.</p><p>A saved list is explicit, so a rule added to the standard set in a later</p><p>release is appended to every saved policy by a data migration in that</p><p>release.</p>
+        <p>Standard review rule policy: the rules switched on. The nearest policy</p><p>wins: a project's own policy applies as is; a project without one uses</p><p>the workspace policy; with neither, every rule is on. Getting the policy</p><p>of a project without its own is NOT_FOUND; getting the workspace's when it</p><p>has none returns every rule on.</p><p>SYNTAX gates the rest: the other rules judge only SQL that parses, so a</p><p>list without SYNTAX switches every rule off.</p><p>A saved list is explicit, so a rule added to the standard set in a later</p><p>release is appended to every saved policy by a data migration in that</p><p>release.</p>
 
         
           <table class="field-table">
