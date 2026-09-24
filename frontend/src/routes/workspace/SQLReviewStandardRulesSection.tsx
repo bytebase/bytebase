@@ -57,9 +57,12 @@ export function useWorkspaceStandardRules(
   // none, undefined while unknown. GetPolicy stands in for a missing row, so
   // only the list tells them apart.
   const [row, setRow] = useState<Policy | null | undefined>(undefined);
+  const [draft, setDraft] = useState<ReviewRuleType[]>();
   useEffect(() => {
     if (!enabled || !workspace) return;
     let active = true;
+    setDraft(undefined);
+    setRow(undefined);
     setReadFailed(false);
     const store = useAppStore.getState();
     const find = {
@@ -95,7 +98,6 @@ export function useWorkspaceStandardRules(
   }, [enabled, workspace, canList, attempt]);
 
   const stored = effectiveWorkspaceRules(policy);
-  const [draft, setDraft] = useState<ReviewRuleType[]>();
   const [saving, setSaving] = useState(false);
   const isDirty =
     draft !== undefined &&

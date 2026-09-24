@@ -77,6 +77,8 @@ describe("standard rules", () => {
     name: "projects/p/policies/review_rule",
   });
   const switchedOff = policy(false, [ReviewRuleType.SYNTAX]);
+  // Created through the API; the backend runs nothing for it.
+  const withoutSyntax = policy(true, [ReviewRuleType.REQUIRE_WHERE]);
   const customized = policy(true, [
     ReviewRuleType.DISALLOW_RENAME,
     ReviewRuleType.SYNTAX,
@@ -87,6 +89,7 @@ describe("standard rules", () => {
     // Switched off through the API: the backend reads it as absent.
     expect(reviewRulesOfPolicy(switchedOff)).toBeUndefined();
     expect(reviewRulesOfPolicy(noPolicy)).toBeUndefined();
+    expect(reviewRulesOfPolicy(withoutSyntax)).toEqual([]);
     expect(reviewRulesOfPolicy(customized)).toEqual([
       ReviewRuleType.SYNTAX,
       ReviewRuleType.DISALLOW_RENAME,
@@ -97,6 +100,7 @@ describe("standard rules", () => {
     expect(storedReviewRules(undefined)).toBeUndefined();
     expect(storedReviewRules(noPolicy)).toBeUndefined();
     expect(storedReviewRules(switchedOff)).toEqual([ReviewRuleType.SYNTAX]);
+    expect(storedReviewRules(withoutSyntax)).toEqual([]);
     expect(storedReviewRules(customized)).toEqual([
       ReviewRuleType.SYNTAX,
       ReviewRuleType.DISALLOW_RENAME,
@@ -106,6 +110,7 @@ describe("standard rules", () => {
   test("apply every rule for a workspace without an enforced policy", () => {
     expect(effectiveWorkspaceRules(undefined)).toBeUndefined();
     expect(effectiveWorkspaceRules(switchedOff)).toEqual(STANDARD_RULE_TYPES);
+    expect(effectiveWorkspaceRules(withoutSyntax)).toEqual([]);
     expect(effectiveWorkspaceRules(customized)).toEqual([
       ReviewRuleType.SYNTAX,
       ReviewRuleType.DISALLOW_RENAME,

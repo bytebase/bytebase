@@ -47,7 +47,7 @@ interface ProjectStandardRules {
   // the API is not customized, yet a save updates it rather than creating.
   hasOwnRow: boolean;
   // The rules in force: the project's own while customized, else the
-  // workspace's. Undefined when the workspace policy could not be read.
+  // workspace's, which are undefined when this user cannot read them.
   rules: ReviewRuleType[] | undefined;
   setRules: (rules: ReviewRuleType[]) => void;
   isDirty: boolean;
@@ -78,16 +78,23 @@ export function useProjectStandardRules(
       policyType: PolicyType.REVIEW_RULE,
     })
   );
+  // The backend checks a workspace policy at workspace scope, so a role held
+  // only on this project cannot read the rules the project follows.
+  const canReadWorkspace = hasWorkspacePermissionV2("bb.policies.get");
+  const [draft, setDraft] = useState<Draft>();
   const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [readFailed, setReadFailed] = useState(false);
   useEffect(() => {
     if (!workspace) return;
     let active = true;
+    // The route component is reused when moving to another project.
+    setDraft(undefined);
     setLoaded(false);
     setReadFailed(false);
     const store = useAppStore.getState();
-    const finds = [projectName, workspace].map((parentPath) => ({
+    const parents = canReadWorkspace ? [projectName, workspace] : [projectName];
+    const finds = parents.map((parentPath) => ({
       parentPath,
       policyType: PolicyType.REVIEW_RULE,
     }));
@@ -110,14 +117,15 @@ export function useProjectStandardRules(
     return () => {
       active = false;
     };
-  }, [projectName, workspace, attempt]);
+  }, [projectName, workspace, canReadWorkspace, attempt]);
 
   const storedRules = reviewRulesOfPolicy(projectPolicy);
   const hasOwnRow = storedReviewRules(projectPolicy) !== undefined;
-  const workspaceRules = effectiveWorkspaceRules(workspacePolicy);
+  const workspaceRules = canReadWorkspace
+    ? effectiveWorkspaceRules(workspacePolicy)
+    : undefined;
   const storedCustomized = storedRules !== undefined;
 
-  const [draft, setDraft] = useState<Draft>();
   const [saving, setSaving] = useState(false);
   const revert = useCallback(() => setDraft(undefined), []);
   const customized = draft?.customized ?? storedCustomized;
@@ -271,12 +279,18 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
               onCheckedChange={standardRules.setCustomized}
               disabled={customizeLocked || standardRules.saving}
             />
-            {standardRules.rules && (
+            {standardRules.rules ? (
               <StandardRuleSwitches
                 rules={standardRules.rules}
                 onChange={standardRules.setRules}
                 disabled={!canSave || standardRules.saving}
                 readOnly={!standardRules.customized}
+              />
+            ) : (
+              <Alert
+                description={t(
+                  "sql-review.standard-rules.workspace-rules-hidden"
+                )}
               />
             )}
           </>

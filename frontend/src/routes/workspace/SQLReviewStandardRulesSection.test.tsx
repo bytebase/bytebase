@@ -214,6 +214,18 @@ describe("SQLReviewStandardRulesSection", () => {
     ).toBeInTheDocument();
   });
 
+  test("a policy without SYNTAX shows every rule off", async () => {
+    seedWorkspaceRow(reviewRulePolicy([ReviewRuleType.REQUIRE_WHERE]));
+    render(<Harness />);
+
+    for (const control of await findSwitches()) {
+      expect(control).toHaveAttribute("aria-checked", "false");
+    }
+    expect(
+      screen.getByText("sql-review.standard-rules.syntax-off")
+    ).toBeInTheDocument();
+  });
+
   test("a failed read shows an error, and retry reads again", async () => {
     seedPolicies({});
     render(<Harness />);

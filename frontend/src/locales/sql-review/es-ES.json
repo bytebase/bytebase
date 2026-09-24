@@ -789,7 +789,8 @@
     },
     "running": "{{on}} de {{total}} reglas activas",
     "self": "Reglas estándar",
-    "syntax-off": "La sintaxis está desactivada, por lo que no se ejecuta ninguna regla estándar. Active la sintaxis para revisar los cambios."
+    "syntax-off": "La sintaxis está desactivada, por lo que no se ejecuta ninguna regla estándar. Active la sintaxis para revisar los cambios.",
+    "workspace-rules-hidden": "No tienes permiso para ver las reglas del espacio de trabajo que sigue este proyecto."
   },
   "template": {
     "bb-sql-review-dev": "Plantilla Básica",
