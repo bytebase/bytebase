@@ -423,7 +423,6 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Picking back to the stored mode leaves nothing to write.
   test("returning to the stored mode with no edit cannot save", async () => {
     storePolicy(MCPSetting_Capability.DISABLED);
     const { container, render, unmount } = renderIntoContainer(
@@ -498,7 +497,6 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Opening the editor is not an edit.
   test("a pristine editor promises no save", async () => {
     storePolicy(MCPSetting_Capability.DISABLED);
     const { container, render, unmount } = renderIntoContainer(

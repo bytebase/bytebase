@@ -193,6 +193,19 @@ func TestMCPMissingRowUsesGenericUpdateSemantics(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name:  "settings/" + v1pb.Setting_MCP.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Mcp{Mcp: &v1pb.MCPSetting{}}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{},
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err),
+		"an update that names no capability must not create a row")
+	_, err = ctl.getMCPSetting(ctx)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err), "the refused update left no row behind")
+
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY),
 		"allow_missing must create the MCP row")
 	stored, err := ctl.getMCPCapability(ctx)
@@ -239,10 +252,9 @@ func TestMCPRepairIgnoresARetiredKey(t *testing.T) {
 	a.False(retired, "the save rewrote the row without the key")
 }
 
-// TestMCPMissingCapabilityRefusesPartialUpdate pins that a partial update cannot
-// make an invalid row look permissive. With capability the only field, the
-// partial update left is an empty update mask: only a nil mask is refused up
-// front, so an empty one reaches the capability check on the stored row.
+// TestMCPMissingCapabilityRefusesPartialUpdate pins that an update naming no
+// capability is refused before it writes, so it cannot erase a ceiling this
+// build cannot read, such as a tier a newer release wrote.
 func TestMCPMissingCapabilityRefusesPartialUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -254,7 +266,8 @@ func TestMCPMissingCapabilityRefusesPartialUpdate(t *testing.T) {
 	a.NoError(err)
 	defer db.Close()
 	_, err = db.ExecContext(ctx, `
-		UPDATE setting SET value = '{}' WHERE workspace = $1 AND name = 'MCP'
+		UPDATE setting SET value = jsonb_set(value, '{capability}', '"READ_ONLYY"')
+		WHERE workspace = $1 AND name = 'MCP';
 	`, workspaceID)
 	a.NoError(err)
 
@@ -268,6 +281,13 @@ func TestMCPMissingCapabilityRefusesPartialUpdate(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 	a.ErrorContains(err, "capability must be specified")
+
+	var stored string
+	a.NoError(db.QueryRowContext(ctx, `
+		SELECT value ->> 'capability' FROM setting
+		WHERE workspace = $1 AND name = 'MCP';
+	`, workspaceID).Scan(&stored))
+	a.Equal("READ_ONLYY", stored, "the unreadable ceiling is still there, so enforcement still fails closed")
 }
 
 // TestMCPCapabilityBitesTheNextRequest is the live-state pin for the ceiling
@@ -329,12 +349,12 @@ func TestMCPCapabilityBitesTheNextRequest(t *testing.T) {
 		"live in both directions, on the unchanged session: %s", served.Error)
 }
 
-// TestMCPSessionCannotTurnMCPOff is the narrowing direction of the ceiling
-// write. TestMCPCannotRewriteItsOwnCeiling covers widening; turning MCP off
-// from inside a session stops every other user's agents in the workspace.
-// UpdateSetting is FORBIDDEN to MCP sessions, so the refusal comes from the
-// class gate ahead of the handler rather than from the caller's RBAC, and the
-// principal here is a workspace admin, who could otherwise write this setting.
+// TestMCPSessionCannotTurnMCPOff drives the ceiling write from an OAuth-minted
+// session, the credential an agent holds; TestMCPCannotRewriteItsOwnCeiling
+// makes the same refusal on a session opened with the console bearer.
+// UpdateSetting is FORBIDDEN to MCP sessions, so the class gate refuses it
+// ahead of the handler whatever the payload, and the principal is a workspace
+// admin who could otherwise write this setting.
 //
 // The stored value is the half that matters: a guard that refused after the
 // write would leave the setting changed while reporting a denial.

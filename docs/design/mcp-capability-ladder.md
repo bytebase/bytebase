@@ -352,12 +352,13 @@ reference.
 and Peter Zhu decided to retire the "Ignore masking exemptions" toggle (`ignore_masking_exemptions`,
 field 2 of `MCPSetting`) before the 3.23.0 tag. The toggle came from the MCP design work in
 [#21216](https://github.com/bytebase/bytebase/pull/21216), and no customer stated a requirement for
-it. The former D8, which set the toggle's copy, is removed. An MCP session now applies the caller's
-own masking provisioning exactly as the console does, including masking exemptions and the unmask
-carried by an access grant. There is deliberately no setting that forces masking for MCP sessions.
-Field 2 is reserved in both the store and v1 messages. Stored rows need no migration, because the
-store's unmarshaler discards the unknown key and the next save rewrites the row without it. The
-masked-write guard stays, because it never depended on the toggle.
+it. The former D8 set the toggle's copy and is removed; its note on the Read-only description
+sentence moved to Copy. An MCP session now applies the caller's own masking provisioning exactly as
+the console does, including masking exemptions and the unmask carried by an access grant. There is
+deliberately no setting that forces masking for MCP sessions. Field 2 is reserved in both the store
+and v1 messages. Stored rows need no migration, because the store's unmarshaler discards the unknown
+key and the next save rewrites the row without it. The masked-write guard stays, because it never
+depended on the toggle.
 
 ## States
 
@@ -390,6 +391,8 @@ under
 - "Best for" lines, unchanged: Disabled "keeping MCP off until you are ready to turn it on";
   Read-only "querying and exploring data, including by people who do not write SQL"; Read-write
   "making database changes through an AI agent, still capped by each user's own permissions".
+- The Read-only description sentence ("Sessions can explore schemas and run read-only queries…")
+  is retired everywhere; its content lives in the Read-only summary and in row 2's sub-item.
 - Row titles and sub-items: the table above, verbatim.
 - Dividers: "Read-only stops here", "Read-write stops here".
 - Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."

@@ -4967,8 +4967,8 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 
 ### MCPSetting.Capability
 Capability is the ceiling: a session runs at this level or lower.
-Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
-path to leave the current ceiling unchanged.
+Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving
+value.mcp.capability out of the update mask, is rejected.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |

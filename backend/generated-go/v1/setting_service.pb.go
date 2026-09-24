@@ -149,8 +149,8 @@ func (Setting_SettingName) EnumDescriptor() ([]byte, []int) {
 }
 
 // Capability is the ceiling: a session runs at this level or lower.
-// Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
-// path to leave the current ceiling unchanged.
+// Writing CAPABILITY_UNSPECIFIED, explicitly or by leaving
+// value.mcp.capability out of the update mask, is rejected.
 type MCPSetting_Capability int32
 
 const (

@@ -80,7 +80,7 @@ func setupMCPMaskingFixture(ctx context.Context, t *testing.T) *mcpMaskingFixtur
 	// The substitution is spelled out rather than left to the default, because
 	// the masked-write guard recognizes this one string: a workspace that
 	// configured any other substitution is outside what the guard can detect,
-	// and pinning the recognizable one is what makes the write half testable.
+	// and pinning the recognizable one is what makes the guard testable.
 	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		AllowMissing: true,
 		Setting: &v1pb.Setting{
@@ -439,8 +439,8 @@ func TestMCPMaskingFollowsTheCallersProvisioning(t *testing.T) {
 		"and Export over MCP honors the same grant")
 }
 
-// TestMCPMaskedWriteIsRefused is the corruption the read half would otherwise
-// invite: the agent reads a masked column, gets the placeholder, and writes the
+// TestMCPMaskedWriteIsRefused is the corruption a masked read invites: the
+// agent reads a masked column, gets the placeholder, and writes the
 // placeholder back as if it were the value. The real data is gone and nothing
 // in the change looks wrong.
 //
