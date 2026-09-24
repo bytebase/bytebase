@@ -395,8 +395,7 @@ func convertToMCPSetting(s *storepb.MCPSetting) *v1pb.MCPSetting {
 		return nil
 	}
 	return &v1pb.MCPSetting{
-		Capability:              convertToV1MCPCapability(s.Capability),
-		IgnoreMaskingExemptions: s.IgnoreMaskingExemptions,
+		Capability: convertToV1MCPCapability(s.Capability),
 	}
 }
 

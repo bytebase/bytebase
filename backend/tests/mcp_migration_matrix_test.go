@@ -59,8 +59,8 @@ package tests
 //
 // Row 7 — a tightened ceiling bites the NEXT request of a live MCP session,
 // with no re-auth. That the gate reads the stored setting fresh, past the
-// setting cache, is pinned by TestMCPMaskingToggleBitesTheNextRequest in this
-// package, which flips the same setting out of band. NEW:
+// setting cache, is pinned by TestMCPCapabilityBitesTheNextRequest in this
+// package, which flips the ceiling out of band. NEW:
 // TestMCPMigrationTightenedCeilingBitesLiveSession.
 
 import (

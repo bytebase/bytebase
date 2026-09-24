@@ -1,7 +1,31 @@
+import { Tooltip as BaseTooltip } from "@base-ui/react/tooltip";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Tooltip } from "./tooltip";
+import { BlockTooltip, Tooltip } from "./tooltip";
+
+const { recordTooltipProvider } = vi.hoisted(() => ({
+  recordTooltipProvider: vi.fn(),
+}));
+
+vi.mock("@base-ui/react/tooltip", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@base-ui/react/tooltip")>();
+  const { createElement } = await import("react");
+
+  function Provider(
+    props: Parameters<typeof actual.Tooltip.Provider>[0]
+  ) {
+    recordTooltipProvider(props);
+    return createElement(actual.Tooltip.Provider, props);
+  }
+
+  return {
+    Tooltip: {
+      ...actual.Tooltip,
+      Provider,
+    },
+  };
+});
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -9,6 +33,7 @@ import { Tooltip } from "./tooltip";
 
 describe("Tooltip", () => {
   afterEach(() => {
+    recordTooltipProvider.mockClear();
     vi.useRealTimers();
     document.body.innerHTML = "";
   });
@@ -41,6 +66,80 @@ describe("Tooltip", () => {
     expect(overlayRoot?.querySelector(".max-w-96")).toBeInstanceOf(
       HTMLDivElement
     );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("does not mount providers for individual tooltips", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <BaseTooltip.Provider>
+          <Tooltip content="First tooltip">
+            <button type="button">First trigger</button>
+          </Tooltip>
+          <Tooltip content="Second tooltip">
+            <button type="button">Second trigger</button>
+          </Tooltip>
+        </BaseTooltip.Provider>
+      );
+    });
+
+    expect(recordTooltipProvider).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("keeps a block tooltip closed until its controlled state opens", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const onOpenChange = vi.fn();
+
+    act(() => {
+      root.render(
+        <BlockTooltip
+          content="Truncated query"
+          open={false}
+          onOpenChange={onOpenChange}
+          render={<span className="block truncate" />}
+        >
+          <button type="button">Query</button>
+        </BlockTooltip>
+      );
+    });
+
+    const trigger = container.querySelector("button");
+    expect(trigger).toBeInstanceOf(HTMLButtonElement);
+
+    await act(async () => {
+      trigger?.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+
+    expect(onOpenChange).toHaveBeenCalledWith(true, expect.anything());
+    expect(document.body.textContent).not.toContain("Truncated query");
+
+    act(() => {
+      root.render(
+        <BlockTooltip
+          content="Truncated query"
+          open
+          onOpenChange={onOpenChange}
+          render={<span className="block truncate" />}
+        >
+          <button type="button">Query</button>
+        </BlockTooltip>
+      );
+    });
+
+    expect(document.body.textContent).toContain("Truncated query");
 
     act(() => {
       root.unmount();

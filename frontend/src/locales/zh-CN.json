@@ -2757,18 +2757,6 @@
         "description": "{{bound}}{{audit}}",
         "edit": "编辑策略",
         "loading": "正在读取访问策略…",
-        "masking": {
-          "badge": "已忽略脱敏豁免",
-          "badge-disabled": "已忽略脱敏豁免 — MCP 已关闭",
-          "badge-unlicensed": "已忽略脱敏豁免 — 未授权脱敏功能",
-          "description": "启用后，即使用户拥有豁免或解除脱敏的授权，在 MCP 会话中被脱敏的数据仍保持脱敏。覆盖范围取决于引擎：Bytebase 本来就不脱敏的地方，这不会有任何改变。控制台不受影响。",
-          "title": "忽略脱敏豁免",
-          "unavailable": "本工作空间未授权数据脱敏功能，因此无论此项如何设置都不会脱敏。"
-        },
-        "masking-pending": {
-          "applied": "此策略将在保留脱敏豁免的状态下保存。",
-          "ignored": "此策略将在忽略脱敏豁免的状态下保存。"
-        },
         "mode": {
           "disabled": {
             "best-for": "适用于：在准备好开启之前先关闭 MCP。",

@@ -24,7 +24,6 @@ const mocks = vi.hoisted(() => ({
   workspaceList: { value: [] as { name: string; title: string }[] },
   loadWorkspace: vi.fn(async () => {}),
   loadWorkspaceList: vi.fn(async () => {}),
-  refreshSubscription: vi.fn(),
   loadServerInfo: vi.fn(),
   refreshServerInfo: vi.fn(),
   switchWorkspace: vi.fn(async () => {}),
@@ -37,7 +36,6 @@ const mocks = vi.hoisted(() => ({
     },
   },
   fetchImpl: vi.fn(),
-  dataMaskingAvailable: { value: true },
 }));
 mocks.useAuthStore.mockImplementation(() => ({
   get isLoggedIn() {
@@ -58,11 +56,9 @@ mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
     isLoggedIn: () => mocks.isLoggedIn.value,
     loadWorkspace: mocks.loadWorkspace,
     loadWorkspaceList: mocks.loadWorkspaceList,
-    refreshSubscription: mocks.refreshSubscription,
     loadServerInfo: mocks.loadServerInfo,
     refreshServerInfo: mocks.refreshServerInfo,
     switchWorkspace: mocks.switchWorkspace,
-    hasFeature: () => mocks.dataMaskingAvailable.value,
   })
 );
 vi.mock("@/hooks/useAppState", () => ({
@@ -174,16 +170,12 @@ beforeEach(async () => {
   mocks.currentRoute.value.fullPath = "/oauth2/consent";
   globalThis.fetch = mocks.fetchImpl as typeof fetch;
   mocks.fetchImpl.mockReset();
-  mocks.dataMaskingAvailable.value = true;
   // Default: a served read-only ceiling, the page's ordinary case. Allow
   // renders only under one, so a failing default would leave every test that
   // is not about the ceiling asserting against the undisclosed card.
-  const serverInfo = {
-    mcpSetting: { capability: 3, ignoreMaskingExemptions: false },
-  };
+  const serverInfo = { mcpSetting: { capability: 3 } };
   mocks.loadServerInfo.mockResolvedValue(serverInfo);
   mocks.refreshServerInfo.mockResolvedValue(serverInfo);
-  mocks.refreshSubscription.mockResolvedValue({});
   ({ OAuth2ConsentPage } = await import("./OAuth2ConsentPage"));
 });
 
@@ -234,7 +226,6 @@ describe("OAuth2ConsentPage", () => {
     render();
     await flushPromises();
     expect(mocks.fetchImpl).toHaveBeenCalledWith("/api/oauth2/clients/c1");
-    expect(mocks.refreshSubscription).toHaveBeenCalledOnce();
     expect(container.textContent).toContain("Acme");
     expect(container.querySelector('form[method="POST"]')).not.toBeNull();
     const hiddenClientId = container.querySelector<HTMLInputElement>(
@@ -531,12 +522,8 @@ describe("OAuth2ConsentPage", () => {
       ok: true,
       json: async () => ({ client_name: "Acme" }),
     });
-    mocks.loadServerInfo.mockResolvedValue({
-      mcpSetting: { capability: 3, ignoreMaskingExemptions: false },
-    });
-    mocks.refreshServerInfo.mockResolvedValue({
-      mcpSetting: { capability: 4, ignoreMaskingExemptions: false },
-    });
+    mocks.loadServerInfo.mockResolvedValue({ mcpSetting: { capability: 3 } });
+    mocks.refreshServerInfo.mockResolvedValue({ mcpSetting: { capability: 4 } });
 
     const { container, render, unmount } = renderIntoContainer(
       <OAuth2ConsentPage />
@@ -548,35 +535,6 @@ describe("OAuth2ConsentPage", () => {
     expect(mocks.loadServerInfo).not.toHaveBeenCalled();
     expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
     unmount();
-  });
-
-  test("waits for a fresh subscription before presenting consent", async () => {
-    mocks.currentRoute.value.query = consentQuery();
-    mocks.fetchImpl.mockResolvedValue({
-      ok: true,
-      json: async () => ({ client_name: "Acme" }),
-    });
-    let resolveSubscription: (() => void) | undefined;
-    mocks.refreshSubscription.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveSubscription = () => resolve({});
-        })
-    );
-
-    const { container, render, unmount } = renderIntoContainer(
-      <OAuth2ConsentPage />
-    );
-    try {
-      render();
-      await flushPromises();
-
-      expect(mocks.refreshSubscription).toHaveBeenCalledOnce();
-      expect(container.querySelector('form[method="POST"]')).toBeNull();
-    } finally {
-      resolveSubscription?.();
-      unmount();
-    }
   });
 
   // Codex, #21237: the !response.ok branch returned, its sibling catch did not.
@@ -598,10 +556,7 @@ describe("OAuth2ConsentPage", () => {
   });
 
   test("a read-only ceiling starts compact and can reveal the complete MCP policy boundary", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 3,
-      ignoreMaskingExemptions: false,
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 3 });
     expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
     expect(container.textContent).not.toContain(
       "settings.mcp.ladder.row.read-schemas.details"
@@ -615,10 +570,6 @@ describe("OAuth2ConsentPage", () => {
     expect(container.textContent).toContain("settings.mcp.ladder.stops.read");
     expect(container.textContent).toContain("settings.mcp.ladder.floor.text");
     expect(container.textContent).not.toContain("oauth2.consent.mcp.line.no-write");
-    // The masking line is the toggle's, not the ceiling's.
-    expect(container.textContent).not.toContain(
-      "oauth2.consent.mcp.line.masking"
-    );
     expect(container.textContent).toContain("settings.mcp.ladder.show-details");
     expect(container.textContent).toContain("oauth2.consent.allow-access");
 
@@ -659,10 +610,7 @@ describe("OAuth2ConsentPage", () => {
   });
 
   test("uses the broad responsive consent-card width", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 3,
-      ignoreMaskingExemptions: false,
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 3 });
 
     expect(container.firstElementChild).toHaveClass(
       "w-full",
@@ -676,10 +624,7 @@ describe("OAuth2ConsentPage", () => {
   });
 
   test("each ceiling states the shared policy bound", async () => {
-    const readOnly = await renderWithCeiling({
-      capability: 3,
-      ignoreMaskingExemptions: false,
-    });
+    const readOnly = await renderWithCeiling({ capability: 3 });
     expect(readOnly.container.textContent).toContain(
       "settings.mcp.policy.bound"
     );
@@ -688,10 +633,7 @@ describe("OAuth2ConsentPage", () => {
     );
     readOnly.unmount();
 
-    const readWrite = await renderWithCeiling({
-      capability: 4,
-      ignoreMaskingExemptions: false,
-    });
+    const readWrite = await renderWithCeiling({ capability: 4 });
     expect(readWrite.container.textContent).toContain(
       "settings.mcp.policy.bound"
     );
@@ -702,34 +644,9 @@ describe("OAuth2ConsentPage", () => {
   });
 
   test("a read-write ceiling adds the write line and the caution", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 4,
-      ignoreMaskingExemptions: true,
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 4 });
     expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
     expect(container.textContent).toContain("oauth2.consent.mcp.write-caution");
-    expect(container.textContent).toContain("settings.mcp.policy.masking.badge");
-    expect(container.textContent).not.toContain(
-      "oauth2.consent.mcp.line.masking"
-    );
-    unmount();
-  });
-
-  // The masking badge promises a restriction. The toggle withholds unmasking
-  // exemptions from MCP sessions, which restricts nothing on a workspace where
-  // masking does not run — and this card is read at the moment someone decides
-  // whether to hand over access.
-  test("the masking badge is not promised where masking does not run", async () => {
-    mocks.dataMaskingAvailable.value = false;
-    const { container, unmount } = await renderWithCeiling({
-      capability: 4,
-      ignoreMaskingExemptions: true,
-    });
-    // The rest of the card is unchanged, so this is the badge and not the card.
-    expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
-    expect(container.textContent).not.toContain(
-      "settings.mcp.policy.masking.badge"
-    );
     unmount();
   });
 
@@ -738,10 +655,7 @@ describe("OAuth2ConsentPage", () => {
   // access_denied to the registered redirect_uri, which is the answer it is
   // blocked on.
   test("dismissing a disabled ceiling denies the request instead of going back", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 1,
-      ignoreMaskingExemptions: false,
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 1 });
 
     const submitted: HTMLFormElement[] = [];
     const realSubmit = HTMLFormElement.prototype.submit;
@@ -767,19 +681,13 @@ describe("OAuth2ConsentPage", () => {
   // Codex, #21237: a SaaS user whose current workspace has MCP off could not
   // switch to one that permits it without abandoning the OAuth flow.
   test("the disabled screen keeps the workspace switcher", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 1,
-      ignoreMaskingExemptions: false,
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 1 });
     expect(container.textContent).toContain("oauth2.consent.workspace-label");
     unmount();
   });
 
   test("a disabled ceiling offers nothing to approve", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 1,
-      ignoreMaskingExemptions: false,
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 1 });
     expect(container.textContent).toContain("oauth2.consent.mcp.disabled.title");
     expect(container.textContent).toContain(
       "oauth2.consent.mcp.disabled.ask-admin"
@@ -845,10 +753,7 @@ describe("OAuth2ConsentPage", () => {
     ["a tier a newer release wrote", 5],
     ["a value nothing could resolve", 0],
   ])("%s offers no grant and no retry", async (_name, capability) => {
-    const { container, unmount } = await renderWithCeiling({
-      capability,
-      ignoreMaskingExemptions: false,
-    });
+    const { container, unmount } = await renderWithCeiling({ capability });
     expect(container.textContent).not.toContain("oauth2.consent.allow-access");
     expect(container.querySelector('form[method="POST"]')).toBeNull();
     expect(container.textContent).toContain(
@@ -867,10 +772,7 @@ describe("OAuth2ConsentPage", () => {
   // waiting on a callback that never comes, and these states are the ones where
   // the person has nothing else to do here.
   test("dismissing an undisclosed policy denies the request", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 0,
-      ignoreMaskingExemptions: false,
-    });
+    const { container, unmount } = await renderWithCeiling({ capability: 0 });
 
     const submitted: HTMLFormElement[] = [];
     const realSubmit = HTMLFormElement.prototype.submit;

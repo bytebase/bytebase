@@ -13,11 +13,9 @@ import {
 } from "@/components/mcp/mcpPolicy";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -28,7 +26,6 @@ import {
   Setting_SettingName,
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { MCPCapabilityLadder } from "./MCPCapabilityLadder";
 
 export function MCPAccessPolicySection() {
@@ -37,7 +34,6 @@ export function MCPAccessPolicySection() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pick, setPick] = useState<MCPMode | undefined>(undefined);
-  const [ignoreMasking, setIgnoreMasking] = useState(false);
   const [readSettled, setReadSettled] = useState(false);
   // Held here rather than in the ladder so the open state carries from the view
   // into the editor, which renders the ladder in a different place.
@@ -46,9 +42,6 @@ export function MCPAccessPolicySection() {
   const serverInfo = useAppStore((state) => state.serverInfo);
   const loadServerInfo = useAppStore((state) => state.loadServerInfo);
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
-  const dataMaskingAvailable = useAppStore((state) =>
-    state.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
-  );
 
   useEffect(() => {
     void loadServerInfo().then(() => setReadSettled(true));
@@ -61,28 +54,19 @@ export function MCPAccessPolicySection() {
       : undefined;
   const unreadable =
     storedCapability === MCPSetting_Capability.CAPABILITY_UNSPECIFIED;
-  const storedIgnoreMasking =
-    serverInfo?.mcpSetting?.ignoreMaskingExemptions ?? false;
 
   // The form is seeded when editing opens, not on every store change: the
   // stored value only moves under an open form when someone else saved, and
   // replacing an admin's unsaved pick is worse than showing it stale.
   const startEditing = () => {
     setPick(storedMode);
-    setIgnoreMasking(storedIgnoreMasking);
     setEditing(true);
   };
 
-  // Only a serving mode admits a session for the masking flag to govern, so the
-  // toggle is withheld elsewhere — but the draft behind it is kept and saved
-  // whatever the pick, because withholding a control is not a reason to discard
-  // what the admin set with it.
-  const maskingApplies = isServingMode(pick);
-  const maskingChanged = ignoreMasking !== storedIgnoreMasking;
-  const isDirty = editing && (pick !== storedMode || maskingChanged);
+  const isDirty = editing && pick !== storedMode;
   useUnsavedChangesGuard(isDirty);
-  // A row nobody can read is repaired by naming a capability. Saving anything
-  // else would erase it, and the server refuses that write.
+  // A row nobody can read is repaired only by naming a capability, so Save
+  // waits for a pick.
   const canSave = isDirty && pick !== undefined;
 
   const modeLabel = (capability: MCPMode): string =>
@@ -92,13 +76,6 @@ export function MCPAccessPolicySection() {
     if (pick === undefined) {
       return;
     }
-    const paths: string[] = [];
-    if (pick !== storedMode) {
-      paths.push("value.mcp.capability");
-    }
-    if (maskingChanged) {
-      paths.push("value.mcp.ignore_masking_exemptions");
-    }
     setSaving(true);
     try {
       await useAppStore.getState().upsertSetting({
@@ -106,13 +83,12 @@ export function MCPAccessPolicySection() {
         value: create(SettingValueSchema, {
           value: {
             case: "mcp",
-            value: create(MCPSettingSchema, {
-              capability: pick,
-              ignoreMaskingExemptions: ignoreMasking,
-            }),
+            value: create(MCPSettingSchema, { capability: pick }),
           },
         }),
-        updateMask: create(FieldMaskSchema, { paths }),
+        updateMask: create(FieldMaskSchema, {
+          paths: ["value.mcp.capability"],
+        }),
       });
       // Re-read before leaving the editor. refreshServerInfo throws without
       // clearing what it holds, so closing first would present the pre-save
@@ -168,36 +144,6 @@ export function MCPAccessPolicySection() {
         })
       : t("settings.mcp.policy.tightening");
 
-  // Where the pick withholds the toggle and the form can still be saved, the
-  // footer is the flag's only disclosure. It names the value Save writes
-  // whenever that value will be set, not only when this edit changed it — and
-  // says nothing about when the value takes effect, which depends on a masking
-  // license this line cannot see.
-  const maskingPending =
-    canSave && !maskingApplies && (ignoreMasking || storedIgnoreMasking)
-      ? ignoreMasking
-        ? t("settings.mcp.policy.masking-pending.ignored")
-        : t("settings.mcp.policy.masking-pending.applied")
-      : undefined;
-
-  // What the stored flag is doing, for the view that reports it. Takes the mode
-  // rather than reading `storedMode`, so the branch that already proved there is
-  // a stored mode passes the proof in instead of re-testing for it.
-  const maskingBadgeFor = (mode: MCPMode) =>
-    mode === MCPSetting_Capability.DISABLED ? (
-      <Badge variant="default">
-        {t("settings.mcp.policy.masking.badge-disabled")}
-      </Badge>
-    ) : dataMaskingAvailable ? (
-      <Badge variant="secondary">
-        {t("settings.mcp.policy.masking.badge")}
-      </Badge>
-    ) : (
-      <Badge variant="default">
-        {t("settings.mcp.policy.masking.badge-unlicensed")}
-      </Badge>
-    );
-
   // Three states share this slot and only the last renders a policy. Early
   // returns rather than a ternary chain, so each state is named where it is
   // decided and the card reads as the ordinary case it is.
@@ -232,15 +178,12 @@ export function MCPAccessPolicySection() {
                 )}
               </span>
             ) : (
-              <div className="flex flex-wrap items-center gap-2">
-                <MCPModeBadge
-                  mode={storedMode}
-                  describedAs={t("settings.mcp.policy.current", {
-                    mode: modeLabel(storedMode),
-                  })}
-                />
-                {storedIgnoreMasking && maskingBadgeFor(storedMode)}
-              </div>
+              <MCPModeBadge
+                mode={storedMode}
+                describedAs={t("settings.mcp.policy.current", {
+                  mode: modeLabel(storedMode),
+                })}
+              />
             )}
             <PermissionGuard permissions={["bb.settings.set"]}>
               {({ disabled }) => (
@@ -348,43 +291,9 @@ export function MCPAccessPolicySection() {
               </>
             )}
 
-            {maskingApplies && (
-              <>
-                <Separator />
-
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-x-2">
-                    <Switch
-                      checked={ignoreMasking}
-                      onCheckedChange={setIgnoreMasking}
-                      disabled={saving}
-                      aria-label={t("settings.mcp.policy.masking.title")}
-                      className="shrink-0"
-                    />
-                    <div className="text-base font-semibold text-main">
-                      {t("settings.mcp.policy.masking.title")}
-                    </div>
-                  </div>
-                  <div className="textinfolabel">
-                    {t("settings.mcp.policy.masking.description")}
-                  </div>
-                  {!dataMaskingAvailable && (
-                    <div className="text-sm text-warning">
-                      {t("settings.mcp.policy.masking.unavailable")}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
             <Separator />
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-col gap-1">
-                <p className="textinfolabel">{footerSentence}</p>
-                {maskingPending && (
-                  <p className="textinfolabel">{maskingPending}</p>
-                )}
-              </div>
+              <p className="textinfolabel">{footerSentence}</p>
               <div className="flex shrink-0 gap-x-2">
                 <Button
                   appearance="outline"

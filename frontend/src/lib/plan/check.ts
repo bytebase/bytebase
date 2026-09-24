@@ -37,9 +37,12 @@ export const getPlanCheckSummaryWithFallback = (
   const running = counts[PlanCheckRun_Status[PlanCheckRun_Status.RUNNING]] || 0;
   const success = counts[Advice_Level[Advice_Level.SUCCESS]] || 0;
   const warning = counts[Advice_Level[Advice_Level.WARNING]] || 0;
-  const error =
-    (counts[Advice_Level[Advice_Level.ERROR]] || 0) +
-    (counts[PlanCheckRun_Status[PlanCheckRun_Status.FAILED]] || 0);
+  // A plan has one check run; its ERROR result already represents a failed run.
+  const error = Math.max(
+    counts[Advice_Level[Advice_Level.ERROR]] || 0,
+    counts[PlanCheckRun_Status[PlanCheckRun_Status.FAILED]] || 0,
+    counts[PlanCheckRun_Status[PlanCheckRun_Status.CANCELED]] || 0
+  );
   return {
     error,
     running,
@@ -59,7 +62,13 @@ export const getPlanCheckSummary = (
 
   for (const checkRun of planCheckRuns) {
     if (checkRun.status === PlanCheckRun_Status.RUNNING) running++;
-    if (checkRun.status === PlanCheckRun_Status.FAILED) error++;
+    if (
+      (checkRun.status === PlanCheckRun_Status.FAILED ||
+        checkRun.status === PlanCheckRun_Status.CANCELED) &&
+      !checkRun.results.some((result) => result.status === Advice_Level.ERROR)
+    ) {
+      error++;
+    }
     for (const result of checkRun.results) {
       if (result.status === Advice_Level.ERROR) error++;
       else if (result.status === Advice_Level.WARNING) warning++;
@@ -108,7 +117,8 @@ export const planCheckRunListForSpec = (
     }
     if (
       (run.status === PlanCheckRun_Status.RUNNING ||
-        run.status === PlanCheckRun_Status.FAILED) &&
+        run.status === PlanCheckRun_Status.FAILED ||
+        run.status === PlanCheckRun_Status.CANCELED) &&
       run.results.length === 0
     ) {
       return [{ ...run, results: [] }];
@@ -131,12 +141,16 @@ export const expandSpecTargets = (
 export const getFilteredResultGroups = ({
   includeRunFailure = false,
   planCheckRuns,
+  runCanceledContent,
+  runCanceledTitle,
   runFailureContent,
   runFailureTitle,
   selectedStatus,
 }: {
   includeRunFailure?: boolean;
   planCheckRuns: PlanCheckRun[];
+  runCanceledContent?: string;
+  runCanceledTitle?: string;
   runFailureContent?: string;
   runFailureTitle?: string;
   selectedStatus?: Advice_Level;
@@ -147,18 +161,25 @@ export const getFilteredResultGroups = ({
   for (const checkRun of planCheckRuns) {
     if (
       includeRunFailure &&
-      checkRun.status === PlanCheckRun_Status.FAILED &&
+      (checkRun.status === PlanCheckRun_Status.FAILED ||
+        checkRun.status === PlanCheckRun_Status.CANCELED) &&
+      !checkRun.results.some(
+        (result) => result.status === Advice_Level.ERROR
+      ) &&
       (selectedStatus === undefined || selectedStatus === Advice_Level.ERROR)
     ) {
+      const canceled = checkRun.status === PlanCheckRun_Status.CANCELED;
       groups.push({
         createTime: checkRun.createTime,
-        key: `failed-${checkRun.name}`,
+        key: `${canceled ? "canceled" : "failed"}-${checkRun.name}`,
         results: [
           create(PlanCheckRun_ResultSchema, {
             code: 0,
-            content: checkRun.error || runFailureContent,
+            content:
+              checkRun.error ||
+              (canceled ? runCanceledContent : runFailureContent),
             status: Advice_Level.ERROR,
-            title: runFailureTitle,
+            title: canceled ? runCanceledTitle : runFailureTitle,
           }),
         ],
         target: "",

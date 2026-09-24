@@ -20,7 +20,7 @@ becomes that editor later without a redesign.
 
 The page today (`frontend/src/routes/workspace/mcp/MCPAccessPolicySection.tsx`) shows, in view
 state, an "In force" line with the mode chip, the mode's description, and two notes; in edit
-state, three mode cards, the masking toggle, and a footer. The consent page
+state, three mode cards and a footer. The consent page
 (`frontend/src/routes/auth/MCPConsentCeiling.tsx`) renders three prose lines for the same policy.
 None of these says what an agent can do.
 
@@ -231,8 +231,8 @@ refused in every mode, so no summary may say "read everything". The line never r
 name, which the chip (view) or the
 selector (edit) already shows. Expanded, it becomes the list heading "Read-write allows", with a
 "Show details" control on the right. In view state it sits under the chip line; in edit state it
-sits under the selector and its "Best for" line, above the masking toggle, so the cause and its
-effect are adjacent. The open state carries across the view-to-edit transition within a page
+sits under the selector and its "Best for" line, so the cause and its effect are adjacent. The open
+state carries across the view-to-edit transition within a page
 visit, and starts collapsed on the next one. Remembering it per browser was cut in review as more
 machinery than a settings page visited this rarely earns.
 
@@ -247,8 +247,8 @@ description.
 
 **D3 — The mode chip is the subject; the "In force" line and the mode sentence go.** The
 three-stripe icon and the words "In force" are removed. View state reads: the mode chip (success
-for Read-only, warning for Read-write, destructive for Disabled), the "Masking exemptions ignored"
-chip when set, Edit policy on the right; then the disclosure line, which carries the description.
+for Read-only, warning for Read-write, destructive for Disabled), Edit policy on the right; then
+the disclosure line, which carries the description.
 The mode chip carries the mode's icon before its name — the same Lucide glyph as the card in edit
 state (`Unplug`, `Eye`, `PencilLine`) — so the identity an admin picked is the identity shown in
 force. The chip is the only place the mode's color appears; the cards stay neutral, because a
@@ -285,8 +285,8 @@ toggle. The caption costs nine words and gives back the at-a-glance comparison t
 provided. Under the cards, one line: the "Best for" of the selected mode, shown once instead of
 three times. Under that, the disclosure for the picked mode, rendering exactly what the view would
 show after saving. No "adds N over Read-only", no added or removed marks, no comparison against the
-stored mode: the muted rows already show what a pick does not serve. The edit state is about 125
-words collapsed and 175 expanded, down from about 215 and 375 in the first draft of this design.
+stored mode: the muted rows already show what a pick does not serve. The edit state is about 90
+words collapsed and 140 expanded, down from about 215 and 375 in the first draft of this design.
 
 **D6 — Marks: ✓ or —, plus a tier tag on served rows only.** A served row shows ✓, a `success`
 "read" badge or a `warning` "write" badge after its title, and full-contrast text. An unserved row
@@ -300,70 +300,6 @@ disclosure slot holds a static line in the floor's soft error tone, "Nothing is 
 session can connect.", so red means "no capability" everywhere on the card. It is not a button and
 does not repeat the mode name.
 
-The rule extends past color: **a control that governs only a serving session is withheld while
-Disabled is picked, and the save leaves its stored value alone.** The masking toggle is the one
-such control today. `mcpIgnoresMaskingExemptions` (`backend/api/v1/mcp_masking.go`) answers on the
-delegated grant an MCP request carries, and Disabled admits no MCP session, so the stored flag is
-never read there — a live toggle under a red line saying no session can connect would be the card
-asserting two things that cannot both hold. Withholding the control is not a reason to discard what the admin set with it, and two attempts to
-make it one both lost an explicit choice. Gating the write dropped the edit on a save under Disabled;
-resetting the draft on the pick dropped it earlier and even when the admin returned to a serving
-mode. The draft is therefore kept and saved whatever the pick: clicking through the modes to read
-their descriptions must not silently undo an unrelated edit, and under Disabled the stored flag is
-inert rather than wrong, so writing it costs nothing now and honors the choice when MCP is turned
-back on.
-
-The "Masking exemptions ignored" chip belongs to the **view**. It reports the stored flag in the
-present tense and says which of three things that flag is doing: in effect, stored but unlicensed,
-or stored with MCP off. Withholding it was tried and is wrong in both inert cases — the flag is
-storable under Disabled, which preserving the draft makes reachable by design, and hiding it leaves
-a set flag with nowhere to see it. The reasons it might be inert live in the editor and in the
-Disabled sentence, and the editor is a different branch behind `bb.settings.set`, so a reader of
-this page may never reach them; the chip therefore carries the reason itself. Its inventory is
-therefore Disabled, then licensed or not — three arms, because a Disabled policy is reported as off
-whether or not the workspace holds a masking license. It renders only where a stored mode exists to
-qualify it, and takes that mode as an argument so the branch that proved there is one passes the
-proof in. A predicate would not: `!isServingMode(storedMode)` also catches the ceiling this build
-cannot parse, and would label a policy nobody turned off as "MCP is off". That ceiling gets no chip
-at all, which is the one place this decision accepts a set flag with nowhere to see it: the repair
-card carries a single instruction — pick a mode — and a second chip beside it competes with the only
-action that resolves the state.
-
-The editor does not render it, and an attempt to do so failed three ways at once. A present-tense
-chip under a pick that admits no session states a live restriction directly beneath the red line
-saying nothing can connect — the contradiction this decision withholds the toggle to prevent,
-restated as a chip. Its text came from the stored pair while Save writes the draft, so it could
-assert the opposite of what Save was about to do, in both directions. And gating it on the stored
-flag left the "turned it on, then picked Disabled" case showing nothing at all — the very gap it was
-added to close. **A surface discloses the state it owns: the view reports what is stored, the editor
-reports what Save will write.** Under a pick that withholds the toggle the editor says so in the
-footer, in the future tense, naming the direction — and whenever the saved flag will be set, not
-only when this edit changed it, because an admin who cannot see the control cannot see the value
-either.
-
-Two bounds on that line, both found by making it say too much. It is gated on the form being
-saveable: an editor opened and not touched has no save to describe, and under no pick at all the card
-would otherwise say "pick a mode to save this policy" and "this policy will be saved" at once. And it
-says only what will be written, never when that takes effect — "takes effect when MCP is enabled" is
-false on a workspace with no masking license, and the caveat that would fix it lives in the toggle
-this pick withholds. **State what is written, never when it takes effect**: the write is a fact this
-card owns, the effect depends on axes it cannot see.
-
-The consent page still withholds its masking line without a license, because its reader sees neither
-the setting nor any caveat and would read the line as "my data is covered".
-(Mock E draws the toggle under Disabled; the implementation does not.)
-
-**D8 — Copy that shrinks, but keeps the coverage limit.** The masking toggle's two paragraphs
-become: "If enabled, masked data stays masked in MCP sessions even for users with exemptions or
-unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing.
-The console is unaffected." The middle sentence stays in the product on purpose. Masking runs only
-on the engines `common.EngineSupportMasking` lists; on the others the query masker falls back to a
-no-op, so on ClickHouse or Doris the toggle keeps nothing masked, and the setting's own proto
-comment says it "is not a confidentiality boundary". A toggle that promised more would mislead the
-admin it exists to protect. The three "Best for" lines keep their current wording. The Read-only description sentence ("Sessions can explore schemas and run
-read-only queries…") is retired everywhere; its content lives in the Read-only summary and in row
-2's sub-item.
-
 **D9 — The Authentication Required alert on the MCP page is removed.** Its two sentences already
 exist on the page: "approve access in the browser" in the Connect a client description, and
 "appropriate permissions" in the section description. Connect a client gains the one clause that
@@ -372,7 +308,7 @@ approve access in the browser."
 
 **D10 — The consent page uses the row titles, and bounds them once.** "This session may" lists the served rows with ✓,
 one ✕ line for the unserved tier under Read-only ( + NO_WRITE + ), then the
-existing capped, masking and audit lines. Read-write keeps its caution. Its mode chip carries the
+existing capped and audit lines. Read-write keeps its caution. Its mode chip carries the
 same icon as the settings page's. One wording table serves both surfaces.
 
 Titles alone carry no caveats, and the caveats live in the row details this screen does not render —
@@ -412,16 +348,28 @@ put where the annotation is typed, since that is where the reread has to happen.
 fact rather than a chore, and names no repo path, because proto comments ship into the published API
 reference.
 
+**D12 — MCP sessions follow the caller's own masking provisioning.** On 2026-09-23, Vincent Huang
+and Peter Zhu decided to retire the "Ignore masking exemptions" toggle (`ignore_masking_exemptions`,
+field 2 of `MCPSetting`) before the 3.23.0 tag. The toggle came from the MCP design work in
+[#21216](https://github.com/bytebase/bytebase/pull/21216), and no customer stated a requirement for
+it. The former D8 set the toggle's copy and is removed; its note on the Read-only description
+sentence moved to Copy. An MCP session now applies the caller's own masking provisioning exactly as
+the console does, including masking exemptions and the unmask carried by an access grant. There is
+deliberately no setting that forces masking for MCP sessions. Field 2 is deleted without a
+`reserved` entry, because no other field is expected to take the number. Stored rows need no
+migration, because the store's unmarshaler discards the unknown key and the next save rewrites the
+row without it. The masked-write guard stays, because it never depended on the toggle.
+
 ## States
 
 | State | What the section shows |
 |---|---|
-| View · Read-only or Read-write | Chip line with Edit policy, plus the masking chip when the flag is stored (D7); the disclosure line as the description, collapsed on every visit (D1). |
-| View · Disabled | Chip line, with the masking chip naming MCP as off when the flag is stored (D7); "No MCP session can connect to this workspace." No disclosure. |
+| View · Read-only or Read-write | Chip line with Edit policy; the disclosure line as the description, collapsed on every visit (D1). |
+| View · Disabled | Chip line; "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
-| Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). No masking chip: in edit the toggle is the flag's disclosure (D7). |
-| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot; NO masking toggle and NO masking chip (D7); separator; footer — the mode sentence, plus, once the form is saveable and the flag is set on either side of the edit, the line naming what Save writes for it — Cancel, Save. |
-| Edit · nothing picked | Only reachable from an unreadable or unserved ceiling: icon cards with no selection; "Pick a mode to save this policy." in the disclosure slot; no masking toggle, no masking chip, and no pending line, because nothing can be saved yet; Cancel, Save disabled. |
+| Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
+| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot (D7); separator; footer sentence (naming the change when dirty), Cancel, Save. |
+| Edit · nothing picked | Only reachable from an unreadable or unserved ceiling: icon cards with no selection; "Pick a mode to save this policy." in the disclosure slot; Cancel, Save disabled. |
 | Consent page | Served row titles with ✓, the ✕ line under Read-only, then the existing constants and caution. |
 
 ## Copy
@@ -443,6 +391,8 @@ under
 - "Best for" lines, unchanged: Disabled "keeping MCP off until you are ready to turn it on";
   Read-only "querying and exploring data, including by people who do not write SQL"; Read-write
   "making database changes through an AI agent, still capped by each user's own permissions".
+- The Read-only description sentence ("Sessions can explore schemas and run read-only queries…")
+  is retired everywhere; its content lives in the Read-only summary and in row 2's sub-item.
 - Row titles and sub-items: the table above, verbatim.
 - Dividers: "Read-only stops here", "Read-write stops here".
 - Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an Admin mode session, or read anyone else's query history."
@@ -461,14 +411,6 @@ under
   connection" and was false on the same axis for the opposite reason — it named the plumbing rather
   than the feature, and MCP does reach the admin data source. It names Admin mode now.
 - Tier badges: "read", "write".
-- Masking toggle: the three sentences in D8, including the engine-coverage limit.
-- Masking chip, by what the stored flag is doing: "Masking exemptions ignored",
-  "Masking exemptions ignored — masking not licensed",
-  "Masking exemptions ignored — MCP is off".
-- Footer, once the form is saveable under a pick that withholds the toggle and the flag is set
-  before or after the edit, naming what Save writes and not when it takes effect:
-  "This policy will be saved with masking exemptions ignored."
-  and "This policy will be saved with masking exemptions applied.".
 - Footer, clean: "Applies to every running session's next request." Dirty: "{from} → {to} applies
   to every running session's next request."
 - Connect a client: the sentence in D9.
@@ -504,7 +446,7 @@ under
   strip the mode cards to icon, label and caption and add the "Best for" line
   under them;
   move the audit sentence to the section description; show the footer sentence only while editing
-  and interpolate both modes when dirty; replace the masking copy.
+  and interpolate both modes when dirty.
 - `MCPPage.tsx`: remove the Authentication Required alert; extend the Connect a client description.
 - `MCPConsentCeiling.tsx`: replace the read, write and workflow lines with the row titles from the
   same table.
