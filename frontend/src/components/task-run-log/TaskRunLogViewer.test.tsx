@@ -1,12 +1,19 @@
+import { create } from "@bufbuild/protobuf";
 import { CheckCircle2 } from "lucide-react";
-import { act, createElement } from "react";
+import { act, createElement, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TaskRunLogEntry_Type } from "@/types/proto-es/v1/rollout_service_pb";
-import { SectionContent } from "./SectionContent";
+import {
+  TaskRun_Status,
+  type TaskRunLogEntry,
+  TaskRunLogEntry_Type,
+  TaskRunLogEntrySchema,
+} from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRunLogViewer } from "./TaskRunLogViewer";
-import type { Section } from "./types";
-import type { UseTaskRunLogSectionsOptions } from "./useTaskRunLogSections";
+import type {
+  UseTaskRunLogSectionsOptions,
+  useTaskRunLogSections,
+} from "./useTaskRunLogSections";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -15,6 +22,9 @@ import type { UseTaskRunLogSectionsOptions } from "./useTaskRunLogSections";
 const mocks = vi.hoisted(() => ({
   useTaskRunLogData: vi.fn(),
   useTaskRunLogSections: vi.fn(),
+  actualUseTaskRunLogSections: undefined as
+    | typeof useTaskRunLogSections
+    | undefined,
 }));
 
 vi.mock("react-i18next", () => ({
@@ -63,8 +73,16 @@ vi.mock("./useTaskRunLogData", () => ({
   useTaskRunLogData: mocks.useTaskRunLogData,
 }));
 
-vi.mock("./useTaskRunLogSections", () => ({
-  useTaskRunLogSections: mocks.useTaskRunLogSections,
+vi.mock("./useTaskRunLogSections", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("./useTaskRunLogSections")>();
+  mocks.actualUseTaskRunLogSections = actual.useTaskRunLogSections;
+  return { useTaskRunLogSections: mocks.useTaskRunLogSections };
+});
+
+// CopyButton reaches the app store, whose import chain is not available here.
+vi.mock("@/stores/app", () => ({
+  useAppStore: { getState: () => ({ notify: vi.fn() }) },
 }));
 
 const createDefaultData = () => ({
@@ -285,160 +303,260 @@ describe("TaskRunLogViewer", () => {
 
     unmount();
   });
+});
 
-  test("offers the full date only for a line that has an instant", () => {
-    const item = (key: string, time: string, timeMs: number | undefined) => ({
-      key,
-      time,
-      timeMs,
-      relativeTime: "",
-      levelIndicator: "\u2713",
-      levelClass: "text-green-600",
-      detail: `ROW ${key}`,
-      detailClass: "text-gray-600",
+describe("TaskRunLogViewer row folds", () => {
+  const SHOW = "task-run.log-detail.show-full-statement";
+  const HIDE = "task-run.log-detail.hide-full-statement";
+  const STATEMENT = "ALTER TABLE t\n  ADD COLUMN c int;";
+  const ROW_HEIGHT = 28;
+
+  const ts = (seconds: number) => ({ seconds: BigInt(seconds), nanos: 0 });
+  const transaction = (seconds: number) =>
+    create(TaskRunLogEntrySchema, {
+      type: TaskRunLogEntry_Type.TRANSACTION_CONTROL,
+      logTime: ts(seconds),
+      transactionControl: {},
     });
-    const section: Section = {
-      id: "section-0",
+  const command = (seconds: number, error: string, replicaId = "") =>
+    create(TaskRunLogEntrySchema, {
       type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-      label: "Command Execute",
-      status: "success",
-      statusIcon: CheckCircle2,
-      statusClass: "text-green-600",
-      duration: "2s",
-      entryCount: 3,
-      items: [
-        item("timed", "12:00:00.000", Date.UTC(2026, 2, 2, 12)),
-        item("untimed", "--:--:--.---", undefined),
-        item("impossible", "12:00:02.000", 8.64e15 + 1),
-      ],
-    };
+      logTime: ts(seconds),
+      replicaId,
+      commandExecute: {
+        logTime: ts(seconds),
+        statement: STATEMENT,
+        response: { logTime: ts(seconds + 1), error },
+      },
+    });
 
-    const { container, unmount } = renderIntoContainer(
-      createElement(SectionContent, { section, datasetKey: "runs/1" })
+  // The viewer is memoized and a poll changes no prop, so new entries have to
+  // arrive the way they do in the product: through the data hook's own state.
+  const log = {
+    entries: [] as TaskRunLogEntry[],
+    listeners: new Set<() => void>(),
+  };
+  const subscribe = (listener: () => void) => {
+    log.listeners.add(listener);
+    return () => log.listeners.delete(listener);
+  };
+
+  const mountViewer = (
+    entries: TaskRunLogEntry[],
+    props: { taskRunStatus?: TaskRun_Status } = {}
+  ) => {
+    log.entries = entries;
+    const view = renderIntoContainer(
+      createElement(TaskRunLogViewer, { taskRunName: "runs/1", ...props })
     );
-
-    // A tooltip with nothing to say renders its children bare, so the trigger
-    // it wraps them in is what says whether the full date is on offer.
-    const cell = (text: string) =>
-      Array.from(container.querySelectorAll("span")).find(
-        (span) => span.textContent === text
-      );
-    const timed = cell("12:00:00.000");
-    expect(timed).toBeDefined();
-    expect(cell("--:--:--.---")?.firstElementChild).toBeNull();
-    // Finite, and past the last instant there is: no reading, so no tooltip.
-    expect(cell("12:00:02.000")?.firstElementChild).toBeNull();
-
-    unmount();
-  });
-
-  test("the offered date is the line's own instant", () => {
-    // Which instant, not merely that there is one: a tooltip built from the
-    // wrong time reads as plausibly as the right one. The zone is pinned to
-    // Asia/Shanghai in vitest.config.ts, so noon UTC reads as 8pm.
-    vi.useFakeTimers();
-    const section: Section = {
-      id: "section-0",
-      type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-      label: "Command Execute",
-      status: "success",
-      statusIcon: CheckCircle2,
-      statusClass: "text-green-600",
-      duration: "2s",
-      entryCount: 1,
-      items: [
-        {
-          key: "timed",
-          time: "20:00:00.000",
-          timeMs: Date.UTC(2026, 2, 2, 12),
-          relativeTime: "",
-          levelIndicator: "\u2713",
-          levelClass: "text-green-600",
-          detail: "ROW",
-          detailClass: "text-gray-600",
-        },
-      ],
-    };
-
-    const { container, unmount } = renderIntoContainer(
-      createElement(SectionContent, { section, datasetKey: "runs/1" })
-    );
-
-    act(() => {
-      Array.from(container.querySelectorAll("span"))
-        .find((span) => span.textContent === "20:00:00.000")
-        ?.firstElementChild?.dispatchEvent(
-          new FocusEvent("focusin", { bubbles: true })
+    const poll = (next: TaskRunLogEntry[]) =>
+      act(() => {
+        log.entries = next;
+        for (const listener of log.listeners) listener();
+      });
+    const switchTo = (taskRunName: string) =>
+      act(() => {
+        view.root.render(
+          createElement(TaskRunLogViewer, { ...props, taskRunName })
         );
-      vi.advanceTimersByTime(200);
-    });
-
-    const overlay = document.getElementById("bb-react-layer-overlay");
-    expect(overlay?.textContent).toContain("Mar 2, 2026");
-    expect(overlay?.textContent).toContain("8:00:00");
-
-    unmount();
-    vi.useRealTimers();
-  });
-
-  test("renders a load more action for large sections", () => {
-    const largeSection: Section = {
-      id: "section-0",
-      type: TaskRunLogEntry_Type.COMMAND_EXECUTE,
-      label: "Command Execute",
-      status: "success",
-      statusIcon: CheckCircle2,
-      statusClass: "text-green-600",
-      duration: "2s",
-      entryCount: 60,
-      items: Array.from({ length: 60 }, (_, index) => ({
-        key: `item-${index}`,
-        time: `12:00:${String(index).padStart(2, "0")}.000`,
-        timeMs: new Date("2026-03-02T12:00:00Z").getTime() + index * 1000,
-        relativeTime: "",
-        levelIndicator: "✓",
-        levelClass: "text-green-600",
-        detail: `ROW ${index}`,
-        detailClass: "text-gray-600",
-      })),
+      });
+    const foldControl = () =>
+      view.container.querySelector<HTMLButtonElement>(
+        `button[aria-label="${SHOW}"], button[aria-label="${HIDE}"]`
+      );
+    const block = () =>
+      view.container.querySelector<HTMLElement>('[data-log-payload="block"]');
+    const sectionHeader = (label: string) => {
+      const header = Array.from(
+        view.container.querySelectorAll<HTMLButtonElement>(
+          "button[aria-expanded]"
+        )
+      ).find((button) => button.textContent?.includes(label));
+      if (!header) throw new Error(`no section header "${label}"`);
+      return header;
     };
+    return { ...view, poll, switchTo, foldControl, block, sectionHeader };
+  };
 
-    const { container, root, unmount } = renderIntoContainer(
-      createElement(SectionContent, {
-        section: largeSection,
-        datasetKey: "runs/1",
-      })
-    );
-
-    expect(container.textContent).toContain("common.load-more");
-    expect(container.textContent).toContain("ROW 0");
-    expect(container.textContent).not.toContain("ROW 59");
-
-    const loadMoreButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent?.includes("common.load-more"));
-    expect(loadMoreButton).toBeDefined();
-
+  const click = (element: Element | null) => {
+    if (!element) throw new Error("nothing to click");
     act(() => {
-      loadMoreButton?.dispatchEvent(
+      element.dispatchEvent(
         new MouseEvent("click", { bubbles: true, cancelable: true })
       );
     });
+  };
 
-    expect(container.textContent).toContain("ROW 59");
+  const commandSection = String(TaskRunLogEntry_Type.COMMAND_EXECUTE);
 
-    act(() => {
-      root.render(
-        createElement(SectionContent, {
-          section: largeSection,
-          datasetKey: "runs/2",
-        })
-      );
+  beforeEach(() => {
+    log.listeners.clear();
+    mocks.useTaskRunLogData.mockImplementation(() => ({
+      ...createDefaultData(),
+      entries: useSyncExternalStore(subscribe, () => log.entries),
+    }));
+    const actual = mocks.actualUseTaskRunLogSections;
+    if (!actual) throw new Error("the sections hook was never imported");
+    mocks.useTaskRunLogSections.mockImplementation(
+      (options: UseTaskRunLogSectionsOptions) =>
+        actual({ ...options, getSectionLabel: (type) => String(type) })
+    );
+  });
+
+  test("forwards the run's status to the section builder", () => {
+    const actual = mocks.actualUseTaskRunLogSections;
+    let forwarded: TaskRun_Status | undefined;
+    mocks.useTaskRunLogSections.mockImplementation(
+      (options: UseTaskRunLogSectionsOptions) => {
+        forwarded = options.taskRunStatus;
+        return actual?.({ ...options, getSectionLabel: (type) => String(type) });
+      }
+    );
+
+    const view = mountViewer([command(1, "ERROR: exists")], {
+      taskRunStatus: TaskRun_Status.DONE,
     });
 
-    expect(container.textContent).toContain("common.load-more");
-    expect(container.textContent).not.toContain("ROW 59");
+    expect(forwarded).toBe(TaskRun_Status.DONE);
 
-    unmount();
+    view.unmount();
+  });
+
+  test("a failed row starts folded, and one the reader unfolds stays so through collapsing its section", () => {
+    const view = mountViewer([
+      transaction(1),
+      command(2, "ERROR: exists"),
+      transaction(4),
+    ]);
+
+    expect(view.block()).toBeNull();
+    click(view.foldControl());
+    expect(view.block()).not.toBeNull();
+
+    click(view.sectionHeader(commandSection));
+    expect(view.foldControl()).toBeNull();
+    click(view.sectionHeader(commandSection));
+
+    expect(view.foldControl()?.getAttribute("aria-expanded")).toBe("true");
+    expect(view.block()).not.toBeNull();
+
+    view.unmount();
+  });
+
+  test("a row unfolded by clicking its statement stays unfolded through collapsing its section", () => {
+    const view = mountViewer([transaction(1), command(2, ""), transaction(4)]);
+    const line = () =>
+      view.container.querySelector<HTMLElement>('[data-log-payload="line"]');
+
+    click(view.sectionHeader(commandSection));
+    expect(view.block()).toBeNull();
+    click(line());
+    expect(view.block()?.textContent).toContain("ADD COLUMN c int;");
+
+    click(view.sectionHeader(commandSection));
+    expect(line()).toBeNull();
+    click(view.sectionHeader(commandSection));
+
+    expect(view.block()?.textContent).toContain("ADD COLUMN c int;");
+    expect(view.foldControl()?.getAttribute("aria-expanded")).toBe("true");
+
+    view.unmount();
+  });
+
+  test("an unfolded row stays unfolded when the sole section gives way to the section tree", () => {
+    const view = mountViewer([command(2, "ERROR: exists")]);
+
+    expect(view.container.querySelector("button[aria-expanded]")).toBe(
+      view.foldControl()
+    );
+    click(view.foldControl());
+    expect(view.block()).not.toBeNull();
+
+    view.poll([command(2, "ERROR: exists"), transaction(4)]);
+
+    expect(view.sectionHeader(commandSection)).toBeDefined();
+    expect(view.foldControl()?.getAttribute("aria-expanded")).toBe("true");
+    expect(view.block()).not.toBeNull();
+
+    view.unmount();
+  });
+
+  test("an unfolded row stays unfolded when a second replica appears", () => {
+    const view = mountViewer([command(2, "ERROR: exists", "replica-a")]);
+
+    click(view.foldControl());
+    expect(view.block()).not.toBeNull();
+
+    view.poll([
+      command(2, "ERROR: exists", "replica-a"),
+      command(6, "", "replica-b"),
+    ]);
+
+    expect(view.container.textContent).toContain(
+      "task-run.log-viewer.multiple-replicas-notice"
+    );
+    expect(view.block()?.textContent).toContain("ADD COLUMN c int;");
+
+    view.unmount();
+  });
+
+  test("a different task run starts with no folds", () => {
+    const view = mountViewer([command(2, "ERROR: exists")]);
+
+    click(view.foldControl());
+    expect(view.block()).not.toBeNull();
+
+    view.switchTo("runs/2");
+    expect(view.block()).toBeNull();
+
+    view.unmount();
+  });
+
+  test("a failure arriving into a collapsed section leaves it collapsed, then is scrolled to", () => {
+    const offsetTop = vi
+      .spyOn(HTMLElement.prototype, "offsetTop", "get")
+      .mockImplementation(function (this: HTMLElement) {
+        const siblings = Array.from(this.parentElement?.children ?? []);
+        return siblings.indexOf(this) * ROW_HEIGHT;
+      });
+    const offsetHeight = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockReturnValue(ROW_HEIGHT);
+    const clientHeight = vi
+      .spyOn(HTMLElement.prototype, "clientHeight", "get")
+      .mockReturnValue(10 * ROW_HEIGHT);
+
+    const succeeded = Array.from({ length: 20 }, (_, index) =>
+      command(10 + index * 2, "")
+    );
+    const view = mountViewer([transaction(1), ...succeeded]);
+
+    // Opened, then shut, by the reader.
+    click(view.sectionHeader(commandSection));
+    click(view.sectionHeader(commandSection));
+    expect(
+      view.sectionHeader(commandSection).getAttribute("aria-expanded")
+    ).toBe("false");
+
+    view.poll([transaction(1), ...succeeded, command(60, "ERROR: exists")]);
+    expect(
+      view.sectionHeader(commandSection).getAttribute("aria-expanded")
+    ).toBe("false");
+    expect(view.block()).toBeNull();
+
+    click(view.sectionHeader(commandSection));
+    // Brought into view, and still folded: opening it is the reader's move.
+    const failedRow = Array.from(
+      view.container.querySelectorAll<HTMLElement>(
+        '[data-testid="task-run-log-row"]'
+      )
+    ).find((row) => row.textContent?.includes("ERROR: exists"));
+    expect(failedRow?.parentElement?.scrollTop).toBe(20 * ROW_HEIGHT);
+    expect(view.block()).toBeNull();
+
+    offsetTop.mockRestore();
+    offsetHeight.mockRestore();
+    clientHeight.mockRestore();
+    view.unmount();
   });
 });

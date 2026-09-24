@@ -3725,7 +3725,9 @@
       "completed": "Đã hoàn thành",
       "computing": "tính toán...",
       "dumping": "đang xuất...",
+      "hide-full-statement": "Ẩn toàn bộ câu lệnh",
       "retry-attempt": "nỗ lực {{current}}/{{max}}",
+      "show-full-statement": "Hiển thị toàn bộ câu lệnh",
       "syncing": "đang đồng bộ hóa..."
     },
     "log-type": {
