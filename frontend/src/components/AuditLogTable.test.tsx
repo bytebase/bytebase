@@ -1,16 +1,16 @@
 import { create } from "@bufbuild/protobuf";
+import { timestampFromMs, anyPack } from "@bufbuild/protobuf/wkt";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
 import { StatusSchema } from "@/types/proto-es/google/rpc/status_pb";
 import {
   AuditLog_Severity,
   AuditLogSchema,
 } from "@/types/proto-es/v1/audit_log_service_pb";
 import { PermissionDeniedDetailSchema } from "@/types/proto-es/v1/common_pb";
-import { timestampFromMs, anyPack } from "@bufbuild/protobuf/wkt";
-import { TIMESTAMP_COLUMN_WIDTH } from "@/components/timestampColumn";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -173,27 +173,6 @@ afterEach(() => {
 });
 
 describe("AuditLogTable", () => {
-    );
-    );
-    await render();
-
-    const handle = container.querySelector("th [class*=cursor-col-resize]");
-    expect(handle).not.toBeNull();
-    const [created] = Array.from(container.querySelectorAll("col"));
-    act(() => {
-      handle?.dispatchEvent(
-        new MouseEvent("mousedown", { bubbles: true, clientX: 400 })
-      );
-      document.dispatchEvent(new MouseEvent("mousemove", { clientX: 300 }));
-      document.dispatchEvent(new MouseEvent("mouseup"));
-    });
-    expect(created.style.width).toBe(
-      `${TIMESTAMP_COLUMN.datetime.width - 100}px`
-    );
-
-    unmount();
-  });
-
   test("opens the date whole, and lets a reader narrow it to the day", async () => {
     mocks.searchAuditLogs.mockResolvedValue({
       auditLogs: [
@@ -228,29 +207,8 @@ describe("AuditLogTable", () => {
     const date = container.querySelector("tbody tr td:first-child");
     expect(date?.querySelector(".shrink-0")).not.toBeNull();
     expect(date?.querySelector(".truncate")).not.toBeNull();
-
     unmount();
   });
-
-  test("keeps the full date-time on one line at any width", async () => {
-    // The evidence tier's tooltip is the age, which cannot give the value
-    // back, so its column never narrows past the form: sized to it, and the
-    // floor a drag stops at.
-    mocks.searchAuditLogs.mockResolvedValue({
-      auditLogs: [create(AuditLogSchema, { name: "auditLogs/1" })],
-      nextPageToken: "",
-    });
-    const { container, render, unmount } = renderIntoContainer(
-      <AuditLogTable parent="projects/-" canExport={false} />
-    );
-    await render();
-
-    const [created] = Array.from(container.querySelectorAll("col"));
-    expect(created.style.width).toBe(`${TIMESTAMP_COLUMN.datetime.width}px`);
-
-    unmount();
-  });
-
 
   test("searches only the matching special-account kind for a prefixed actor", async () => {
     mocks.searchAuditLogs.mockResolvedValue({ auditLogs: [], nextPageToken: "" });

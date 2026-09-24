@@ -6,8 +6,10 @@
 // The rule is about the member, not the name it is reached through, so this
 // matches `read` and `nextChangeAt` wherever they are named: under an alias,
 // through a local or a table, via `.call`, passed as a callback, or optionally
-// chained. It also rejects an object that defines those members, which is what
-// keeps readings in the modules below rather than assembled at a display.
+// chained. It also rejects an object that defines `nextChangeAt`, which is what
+// keeps readings in the modules below rather than assembled at a display. An
+// object is judged by that member alone because a reading carries both and
+// `read` alone names plenty of things that have nothing to do with time.
 //
 // Where it stops, measured rather than assumed, is a key that is not a plain
 // identifier or quoted string -- `x[key]` and ``x[`read`]`` both get past it --
@@ -25,14 +27,16 @@
 // reading and reads it directly, since that is how it checks one at all.
 //
 // Matching the member rather than the receiver reserves these two names across
-// src/, and more widely than it first looks. A stream reader's `.read()` is
-// reported, and because the object-literal alternative uses `contains`, so is
-// any object literal with an identifier `read` anywhere beneath it: `{ onRead:
-// read }`, or a nested `{ handlers: { read } }`, which reports twice -- once
-// for each literal. None of this has anything to do with time, and none of it
-// exists in src/ today. If one arrives, rename it or exclude the file in
-// biome.json: the rule cannot tell them apart, and that is the price of
-// catching the spellings a name-based rule missed.
+// src/. A stream reader's `.read()` is reported, and so is any object literal
+// with an identifier `nextChangeAt` anywhere beneath it, however nested, which
+// reports once per literal. Neither has anything to do with time. When one
+// arrives, rename it or exclude the file in biome.json: the rule cannot tell
+// them apart, and that is the price of catching the spellings a name-based
+// rule missed. A literal keyed `read` without `nextChangeAt` is left alone --
+// the MCP capability tables in `src/components/mcp/` are keyed that way -- so
+// a half-assembled reading passes here and is caught where its `read` is
+// reached instead. Shorthand `{ read }` keeps its own alternative, since that
+// spelling is a reading being unpacked or passed on, not a table of flags.
 language js
 
 pattern reached_past_the_hook() {
@@ -43,7 +47,8 @@ pattern reached_past_the_hook() {
     js"{ $member: $binding }" where {
       or { $member <: `read`, $member <: `nextChangeAt` }
     },
-    js"{ $properties }" where { $properties <: contains or { `read`, `nextChangeAt` } },
+    js"{ read }",
+    js"{ $properties }" where { $properties <: contains `nextChangeAt` },
     js"$object[$key]" where { or { $key <: `"read"`, $key <: `"nextChangeAt"` } }
   }
 }
