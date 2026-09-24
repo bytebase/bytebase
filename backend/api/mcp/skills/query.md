@@ -66,5 +66,6 @@ Run SQL queries against databases managed by Bytebase.
 |-------|-------|-----|
 | data source id is required | Missing dataSourceId field | Get dataSourceId from instanceResource.dataSources in database listing |
 | database not found | Wrong instance/database name | List databases first and use its exact canonical `name` |
-| permission denied | Missing bb.sql.query | Check user permissions |
+| not available to MCP sessions | The workspace's MCP access policy refuses the call | Follow the next step in the message; no permission request lifts a workspace policy |
+| permission denied | Missing bb.sql.select on the database | Request the SQL Editor role on the project |
 | syntax error | Invalid SQL | Check SQL syntax for the database engine |

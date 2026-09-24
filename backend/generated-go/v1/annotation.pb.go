@@ -248,34 +248,35 @@ const (
 	// enforces — and the denial falls back to generic wording. CI rejects this
 	// on a method classified FORBIDDEN or EXCLUDED.
 	MCPDenialReason_MCP_DENIAL_REASON_UNSPECIFIED MCPDenialReason = 0
-	// Puts a token for the caller's own principal in the response body.
+	// Returns a sign-in credential in the response body: a session token, an
+	// MFA secret, or recovery codes.
 	MCPDenialReason_MINTS_CREDENTIAL MCPDenialReason = 1
-	// Drives the out-of-band reset flow that sets or delivers the secret a
-	// login or a credential change accepts.
+	// Sends or redeems a one-time code or reset link that can sign in to an
+	// account or change its credentials.
 	MCPDenialReason_RESETS_CREDENTIAL MCPDenialReason = 2
-	// Rewrites an account's own credentials, which would let the session log in
+	// Can rewrite an account's credentials, which would let the session log in
 	// as that account.
 	MCPDenialReason_TAKES_OVER_ACCOUNT MCPDenialReason = 3
-	// Destroys the human's own login session.
+	// Signs the user out of their web session.
 	MCPDenialReason_ENDS_SESSION MCPDenialReason = 4
-	// Destroys the caller's own workspace membership and mints a plain
-	// workspace token on the way out.
+	// Deletes the workspace or removes the caller from it, and can return a
+	// workspace token for another workspace on the way out.
 	MCPDenialReason_ENDS_MEMBERSHIP MCPDenialReason = 5
-	// Leaves someone holding a principal the caller is not — by issuing its
-	// credential, carrying an existing one out to a host the caller named,
-	// choosing what will later be trusted to mint one, or redirecting where one
-	// gets delivered.
+	// Can create, reveal, or redirect a credential for an account, service, or
+	// database other than the caller: by issuing it, carrying a stored one out
+	// to a host the caller named, choosing what will later be trusted to mint
+	// one, or redirecting where one gets delivered.
 	MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS MCPDenialReason = 6
-	// Rewrites the workspace configuration that governs the session making the
-	// call — the MCP switch itself, the sign-in and SSO settings, the mail
-	// relay that carries credential resets, and the AI endpoint the stored API
-	// key is sent to. A session that can widen its own ceiling is not bounded
-	// by it.
+	// Changes workspace settings, some of which govern the session making the
+	// call: the MCP switch itself, the sign-in and SSO settings, the mail relay
+	// that carries credential resets, and the AI endpoint the stored API key is
+	// sent to. The method is refused whole, settings unrelated to the session
+	// included. A session that can widen its own ceiling is not bounded by it.
 	MCPDenialReason_REWRITES_SESSION_BOUNDARY MCPDenialReason = 7
-	// Works the human approval step that gates the change: recording the review
-	// decision, or re-running the finding that sets it and can clear the issue
-	// outright. An agent composes a change; it does not move its own change
-	// through the gate.
+	// Makes or re-runs the human approval decision on an issue: recording an
+	// approval or rejection, or re-running the finding that sets it and can
+	// clear the issue outright. An agent composes a change; it makes no
+	// approval decision on any issue, whoever created it.
 	MCPDenialReason_DRIVES_THE_APPROVAL_DECISION MCPDenialReason = 8
 	// Administers the workspace rather than doing database work: identity,
 	// credentials, access control, governance policy, billing, workspace and
@@ -293,8 +294,9 @@ const (
 	// unmasked SQL. It shares a plain read permission with sibling methods that
 	// only read Bytebase's own store.
 	MCPDenialReason_OPENS_AN_ADMIN_CONNECTION MCPDenialReason = 11
-	// Spends a stored workspace credential on an outbound call to a third
-	// party, which puts whatever the caller passes outside the product.
+	// Contacts an outside service, such as the configured AI provider or a
+	// webhook endpoint, on the workspace's behalf, which can carry a stored
+	// credential or caller-supplied content outside the product.
 	MCPDenialReason_SENDS_DATA_TO_A_THIRD_PARTY MCPDenialReason = 12
 	// Returns a stored secret in its response body today. These are ordinary
 	// reads that belong in a serving class on their merits, and each is here

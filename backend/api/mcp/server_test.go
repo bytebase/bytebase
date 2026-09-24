@@ -434,7 +434,7 @@ func TestMCPAuthMiddlewareAudienceMatrix(t *testing.T) {
 // never a verdict against the token.
 func TestDecideAudience(t *testing.T) {
 	const expected = "https://bb.example.com/mcp"
-	unconfigured := connect.NewError(connect.CodeFailedPrecondition, errors.New("external URL isn't setup yet"))
+	unconfigured := connect.NewError(connect.CodeFailedPrecondition, errors.New("external URL isn't set up yet"))
 	infraDown := connect.NewError(connect.CodeInternal, errors.New("failed to get workspace setting: db unreachable"))
 
 	t.Run("matching expected audience is allowed", func(t *testing.T) {

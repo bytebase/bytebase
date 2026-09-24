@@ -57,6 +57,10 @@ func ClassifyMCPCeiling(settings *storepb.MCPSetting, err error) MCPCeilingVerdi
 	}
 }
 
+// MCPAccessPolicyLocation is where an admin changes the ceiling, named the way
+// the console's navigation names it.
+const MCPAccessPolicyLocation = "Integration > MCP > Access policy"
+
 // Refusal is what a door tells the caller it is refusing: what is wrong with
 // this workspace's ceiling, and what an admin does about it. Empty for
 // MCPCeilingServes, which refuses nothing.
@@ -68,19 +72,20 @@ func ClassifyMCPCeiling(settings *storepb.MCPSetting, err error) MCPCeilingVerdi
 // door refused is already carried by the status, the page, and the audit row's
 // method, so the sentence does not say it again.
 //
-// Lowercase and unterminated: every door but the consent page composes this
-// into a larger error, and that page ends the sentence itself.
+// Complete sentences, because the /mcp connection gate, the token endpoint and
+// the consent redirect show it on its own. ASCII only: the last two carry it in
+// an OAuth error_description, which RFC 6749 limits to printable ASCII.
 func (v MCPCeilingVerdict) Refusal() string {
 	switch v {
 	case MCPCeilingDisabled:
-		return "a workspace admin has turned MCP access off for this workspace. " +
-			"Ask them to raise the MCP ceiling in the workspace settings"
+		return "A workspace admin has turned off MCP access for this workspace. " +
+			"Ask a workspace admin to choose Read-only or Read-write under " + MCPAccessPolicyLocation + "."
 	case MCPCeilingUnserved:
-		return "this workspace's stored MCP capability ceiling is not one this build serves. " +
-			"Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings"
+		return "This workspace's MCP access policy is set to a value this version of Bytebase does not support. " +
+			"Ask a workspace admin to choose a policy under " + MCPAccessPolicyLocation + "."
 	case MCPCeilingUnavailable:
-		return "this workspace's MCP capability ceiling could not be read. " +
-			"Retry shortly; if it persists, ask a workspace admin to check the workspace settings"
+		return "Bytebase could not read this workspace's MCP access policy. " +
+			"Retry shortly; if it keeps failing, ask a workspace admin to check " + MCPAccessPolicyLocation + "."
 	default:
 		return ""
 	}
@@ -93,9 +98,9 @@ func (v MCPCeilingVerdict) Heading() string {
 	case MCPCeilingDisabled:
 		return "MCP access is turned off"
 	case MCPCeilingUnserved:
-		return "This workspace's MCP setting is not one this version supports"
+		return "This workspace's MCP access policy isn't supported by this version of Bytebase"
 	case MCPCeilingUnavailable:
-		return "MCP settings are temporarily unavailable"
+		return "The MCP access policy is temporarily unavailable"
 	default:
 		return ""
 	}

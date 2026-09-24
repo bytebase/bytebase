@@ -186,7 +186,7 @@ func TestMCPCannotMintCredentialsForOtherPrincipals(t *testing.T) {
 		a.Equal(http.StatusForbidden, out.Status, "%s must be refused before dispatch", name)
 		a.Contains(out.Error, "not available to MCP sessions",
 			"%s must be refused by the FORBIDDEN gate, not by a handler precondition", name)
-		a.Contains(out.Error, "principal other than the caller",
+		a.Contains(out.Error, "a credential for another account, service, or database",
 			"%s must name the reason for this class, not a caller's-own-credential one", name)
 	}
 	a.Empty(created.Response.ServiceKey, "an MCP session must never receive a service key")
@@ -389,7 +389,7 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		a.Equal(http.StatusForbidden, out.Status, "%s must be refused before dispatch", name)
 		a.Contains(out.Error, "not available to MCP sessions",
 			"%s must be refused by the FORBIDDEN gate", name)
-		a.Contains(out.Error, "principal other than the caller",
+		a.Contains(out.Error, "a credential for another account, service, or database",
 			"%s must name this class's reason", name)
 	}
 
@@ -497,7 +497,7 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 	a.Equal(http.StatusForbidden, retargeted.Status,
 		"the retarget must be refused before Bytebase dials anything")
 	a.Contains(retargeted.Error, "not available to MCP sessions")
-	a.Contains(retargeted.Error, "principal other than the caller",
+	a.Contains(retargeted.Error, "a credential for another account, service, or database",
 		"a database user is a principal too; the denial should say so")
 
 	// Nothing moved. With validate_only the handler would not have persisted
@@ -646,7 +646,7 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	} {
 		a.Equal(http.StatusForbidden, out.Status, "the %s write must be refused before dispatch", name)
 		a.Contains(out.Error, "not available to MCP sessions", "the %s write must be refused by the gate", name)
-		a.Contains(out.Error, "the switch meant to contain it",
+		a.Contains(out.Error, "control what this session can do",
 			"the %s denial must name the boundary, not a credential it did not hand out", name)
 	}
 
@@ -937,6 +937,6 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		"parent": workspaceName,
 	})
 	a.Equal(http.StatusForbidden, saRead.Status)
-	a.Contains(saRead.Error, "administers the workspace",
+	a.Contains(saRead.Error, "belongs to workspace administration",
 		"the read is refused for what it is, not for minting a credential")
 }

@@ -162,9 +162,9 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 	}
 
 	if len(matches) == 0 {
-		suggestion := "check the database name or use search_api to list available databases"
+		suggestion := "check the database name, or " + listDatabasesHint
 		if instance != "" || project != "" {
-			suggestion = "try without instance/project filters, or use search_api to list available databases"
+			suggestion = "try without instance/project filters, or " + listDatabasesHint
 		}
 		return nil, &toolError{
 			Code:       "DATABASE_NOT_FOUND",
@@ -224,6 +224,10 @@ func (s *Server) resolveDatabase(ctx context.Context, database, instance, projec
 	return matchDatabases(databases, database, instance, project)
 }
 
+// listDatabasesHint is where a not-found answer sends the agent. search_api
+// lists API operations, not databases.
+const listDatabasesHint = `call call_api with operationId "DatabaseService/ListDatabases" to list the databases you can access; ones you cannot access are not listed`
+
 // resolveTarget resolves the database a tool was asked for and settles any
 // elicitation it needs.
 //
@@ -231,7 +235,10 @@ func (s *Server) resolveDatabase(ctx context.Context, database, instance, projec
 // consulted even when this resolve is unique, and a call site that re-derived
 // that condition and got it wrong would run against a database the caller never
 // chose. Returns either a resolved database or the result to return unchanged.
-func (s *Server) resolveTarget(ctx context.Context, req *mcp.CallToolRequest, database, instance, project string) (*resolvedDatabase, *mcp.CallToolResult) {
+//
+// question is what the person picking is asked, and it names what the pick is
+// for: the same prompt fronts a read and a change that may run.
+func (s *Server) resolveTarget(ctx context.Context, req *mcp.CallToolRequest, question, database, instance, project string) (*resolvedDatabase, *mcp.CallToolResult) {
 	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
 	defer resolveCancel()
 
@@ -242,7 +249,7 @@ func (s *Server) resolveTarget(ctx context.Context, req *mcp.CallToolRequest, da
 	if _, answered := elicitedDatabaseChoice(req); !resolved.ambiguous && !answered {
 		return resolved, nil
 	}
-	return s.elicitDatabaseChoice(req, resolved, database)
+	return s.elicitDatabaseChoice(req, resolved, question, database)
 }
 
 // databaseChoiceRequestID is the ID the ambiguous-database elicitation is filed
@@ -262,7 +269,7 @@ const (
 // One shape serves both client generations (SEP-2322). A client on the
 // 2026-07-28 protocol answers the input request itself; for an older one the
 // SDK's middleware answers it by eliciting and re-invoking this handler.
-func (*Server) elicitDatabaseChoice(req *mcp.CallToolRequest, resolved *resolvedDatabase, database string) (*resolvedDatabase, *mcp.CallToolResult) {
+func (*Server) elicitDatabaseChoice(req *mcp.CallToolRequest, resolved *resolvedDatabase, question, database string) (*resolvedDatabase, *mcp.CallToolResult) {
 	fallback := formatAmbiguousResult(database, resolved.candidates)
 	if req == nil || req.Session == nil {
 		return nil, fallback
@@ -306,7 +313,7 @@ func (*Server) elicitDatabaseChoice(req *mcp.CallToolRequest, resolved *resolved
 		InputRequests: mcp.InputRequestMap{
 			databaseChoiceRequestID: &mcp.ElicitParams{
 				Mode:    "form",
-				Message: "Multiple databases match. Which one do you want to query?",
+				Message: fmt.Sprintf("Multiple databases match %q. %s", database, question),
 				RequestedSchema: map[string]any{
 					"type": "object",
 					"properties": map[string]any{
