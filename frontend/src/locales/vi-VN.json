@@ -1533,8 +1533,11 @@
       "all-databases": "Tất cả cơ sở dữ liệu",
       "all-databases-tip": "Tất cả cơ sở dữ liệu hiện tại và tương lai trong dự án này.",
       "details": "Chi tiết cấp vai trò",
+      "direct-execution-suffix": "chạy trực tiếp {{kind}} tại {{environments}}",
       "expired-at": "Hết hạn lúc",
+      "grantee": "Người được cấp",
       "manually-select": "Chọn thủ công",
+      "requested-by": "Được yêu cầu bởi {{creator}}",
       "use-cel": "Sử dụng biểu thức CEL"
     },
     "sort": {
@@ -2014,11 +2017,27 @@
       "self": "Miễn trừ Che giấu"
     },
     "members": {
-      "ddl-current-all": "Câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor ở TẤT CẢ các môi trường mà không cần phê duyệt.",
-      "ddl-current-none": "Câu lệnh {{kind}} cần được phê duyệt trước khi chạy trong SQL Editor.",
-      "ddl-current-some": "Câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor ở các môi trường được liệt kê mà không cần phê duyệt.",
-      "ddl-warning": "Trong các môi trường đã chọn, câu lệnh {{kind}} có thể được chạy trực tiếp trong SQL Editor mà không cần phê duyệt.",
       "description": "Thành viên dự án xác định quyền để vận hành cơ sở dữ liệu và các vấn đề bên trong dự án. Chủ sở hữu dự án, Quản trị viên không gian làm việc và DBA không gian làm việc đều có toàn quyền dự án.",
+      "direct-execution": {
+        "all": "Chạy {{kind}} trong SQL Editor mà không cần phê duyệt ở mọi môi trường; liên kết này không có phạm vi môi trường.",
+        "custom": "Điều kiện tùy chỉnh; việc chạy trực tiếp {{kind}} phụ thuộc vào điều kiện này:",
+        "in-environments": "Trong các môi trường sau",
+        "lead-approver": "Khi phê duyệt, {{grantee}} sẽ chạy {{kind}} trực tiếp từ SQL Editor, không cần kế hoạch thay đổi hay phê duyệt, tại:",
+        "lead-binding": "Chạy {{kind}} trong SQL Editor mà không cần phê duyệt tại:",
+        "lead-grant": "Thành viên có vai trò này chạy {{kind}} trực tiếp từ SQL Editor, không cần kế hoạch thay đổi hay phê duyệt, tại:",
+        "lead-request": "Sau khi được phê duyệt, bạn chạy {{kind}} trực tiếp từ SQL Editor, không cần kế hoạch thay đổi, tại:",
+        "none-binding": "Liên kết này không cấp quyền chạy trực tiếp {{kind}}.",
+        "none-grant": "Việc cấp quyền này không cấp quyền chạy trực tiếp {{kind}}.",
+        "off-caption": "Tắt: việc cấp quyền này không cấp quyền chạy trực tiếp {{kind}}. SQL Editor từ chối {{kind}} trừ khi một cấp quyền khác cho phép; thành viên có thể tạo kế hoạch thay đổi sẽ được hướng dẫn tạo.",
+        "pick-or-off": "Chọn ít nhất một môi trường, hoặc tắt tùy chọn này.",
+        "protected-tag": "Môi trường được bảo vệ",
+        "protected_one": "{{environments}} là môi trường được bảo vệ.",
+        "protected_other": "{{environments}} là các môi trường được bảo vệ.",
+        "role-pointer": "Việc chạy trực tiếp {{kind}} được thiết lập bên dưới.",
+        "select-environments": "Chọn môi trường",
+        "switch-label": "Cho phép chạy {{kind}} trong SQL Editor mà không cần phê duyệt",
+        "title": "Chạy trực tiếp {{kind}}"
+      },
       "edit-member": "Chỉnh sửa thành viên - {{member}}",
       "expiration-presets": {
         "one-month": "1 tháng",
@@ -2250,7 +2269,7 @@
       "self": "Nhà phát triển dự án"
     },
     "project-owner": {
-      "description": "Tất cả các quyền trong dự án",
+      "description": "Mọi quyền trong dự án, bao gồm DDL/DML trong SQL Editor mà không cần phê duyệt trong các môi trường mà cấp quyền mở ra.",
       "self": "Chủ sở hữu dự án"
     },
     "project-releaser": {
@@ -2276,7 +2295,7 @@
       "self": "Người dùng Trình soạn thảo SQL chỉ đọc"
     },
     "sql-editor-user": {
-      "description": "Quyền truy vấn dữ liệu cơ sở dữ liệu.",
+      "description": "Truy vấn dữ liệu trong SQL Editor. Cũng có thể chạy DDL/DML tại đó mà không cần phê duyệt, trong các môi trường mà cấp quyền mở ra.",
       "self": "Người dùng Trình soạn thảo SQL"
     },
     "title": "Tiêu đề",

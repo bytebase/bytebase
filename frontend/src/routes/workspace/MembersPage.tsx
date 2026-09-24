@@ -23,7 +23,6 @@ import { v4 as uuidv4 } from "uuid";
 import { WORKSPACE_ROUTE_GROUPS } from "@/app/router";
 import { AccountMultiSelect } from "@/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/components/DatabaseResourceSelector";
-import { EnvironmentSelect } from "@/components/EnvironmentSelect";
 import { ExprEditor, type OptionConfig } from "@/components/ExprEditor";
 import { FeatureBadge } from "@/components/FeatureBadge";
 import { HumanizeTs } from "@/components/HumanizeTs";
@@ -35,7 +34,12 @@ import {
   ProjectPageToolbar,
 } from "@/components/ProjectPageLayout";
 import { RoleSelect } from "@/components/RoleSelect";
-import { DDLWarningCallout } from "@/components/role-grant/DDLWarningCallout";
+import { DirectExecutionCallout } from "@/components/role-grant/DirectExecutionCallout";
+import {
+  DirectExecutionField,
+  directExecutionEnvironments,
+  isDirectExecutionValid,
+} from "@/components/role-grant/DirectExecutionField";
 import { UserCell } from "@/components/UserCell";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -80,11 +84,15 @@ import {
   GRANT_ACCESS_PRODUCT_INTRO,
   useProductIntro,
 } from "@/lib/productIntro";
+import type { EnvLimitationKind } from "@/lib/project-member/utils";
 import {
   getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
 } from "@/lib/project-member/utils";
-import { displayRoleTitleFromList } from "@/lib/role";
+import {
+  displayRoleDescriptionFromList,
+  displayRoleTitleFromList,
+} from "@/lib/role";
 import { cn } from "@/lib/utils";
 import { RequestRoleSheet } from "@/modules/access-control/RequestRoleSheet";
 import {
@@ -138,10 +146,9 @@ import {
   convertFromExpr,
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
-import { MemberBindingEnvironmentBanner } from "./MemberBindingEnvironmentBanner";
 import { MemberDatabaseResourceName } from "./MemberDatabaseResourceName";
 import { getSetIamPolicyPermissionGuardConfig } from "./membersPageActions";
-import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
+import { getProjectRoleBindingDirectExecutionScope } from "./membersPageEnvironment";
 
 const EMPTY_ROLE_SET = new Set<string>();
 
@@ -929,6 +936,8 @@ interface RoleBindingFormState {
   databaseResources: DatabaseResource[];
   exprGroup: ConditionGroupExpr;
   environments: string[];
+  // Kept beside the list: off and on-with-nothing-picked serialize alike.
+  directExecution: boolean;
 }
 
 // ============================================================
@@ -1100,6 +1109,10 @@ function ProjectRoleBindingForm({
     [form.role]
   );
 
+  const roleDescription = form.role
+    ? displayRoleDescriptionFromList(form.role, roleList)
+    : undefined;
+
   const handleRoleChange = (role: string) => {
     onChange({
       ...form,
@@ -1108,6 +1121,7 @@ function ProjectRoleBindingForm({
       databaseResources: [],
       exprGroup: wrapAsGroup(emptySimpleExpr()),
       environments: [],
+      directExecution: false,
     });
   };
 
@@ -1171,6 +1185,18 @@ function ProjectRoleBindingForm({
           multiple={false}
           scope="project"
         />
+        {roleDescription && (
+          <p className="text-xs leading-4 text-control-light">
+            {roleDescription}
+          </p>
+        )}
+        {envKind && (
+          <p className="text-xs leading-4 text-control-light">
+            {t("project.members.direct-execution.role-pointer", {
+              kind: envKind,
+            })}
+          </p>
+        )}
       </FormField>
 
       {/* Permissions display */}
@@ -1238,17 +1264,22 @@ function ProjectRoleBindingForm({
         />
       )}
 
-      {/* Environments (conditional on role) */}
       {envKind && (
-        <FormField title={<>{t("common.environments")}</>}>
-          <DDLWarningCallout type="drawer" kind={envKind} />
-          <EnvironmentSelect
-            multiple
-            portal
-            value={form.environments}
-            onChange={(envs) => onChange({ ...form, environments: envs })}
-          />
-        </FormField>
+        <DirectExecutionField
+          kind={envKind}
+          lead="grant"
+          value={{
+            enabled: form.directExecution,
+            environments: form.environments,
+          }}
+          onChange={(next) =>
+            onChange({
+              ...form,
+              directExecution: next.enabled,
+              environments: next.environments,
+            })
+          }
+        />
       )}
 
       {/* Expiration */}
@@ -1429,6 +1460,7 @@ function EditMemberRoleDrawer({
     databaseResources: [],
     exprGroup: wrapAsGroup(emptySimpleExpr()),
     environments: [],
+    directExecution: false,
   }));
 
   useEscapeKey(true, onClose);
@@ -1556,7 +1588,10 @@ function EditMemberRoleDrawer({
             const environments =
               form.role &&
               getRoleEnvironmentLimitationKind(form.role) !== undefined
-                ? form.environments
+                ? directExecutionEnvironments({
+                    enabled: form.directExecution,
+                    environments: form.environments,
+                  })
                 : undefined;
             const hasCondition =
               form.expirationTimestampInMS !== undefined ||
@@ -1744,6 +1779,23 @@ function EditMemberRoleDrawer({
     }
   };
 
+  // The simple role picker writes bindings without an environment clause, so a
+  // DDL/DML role granted here runs everywhere; say so before it is saved.
+  const unscopedDirectExecutionKind = useMemo<
+    EnvLimitationKind | undefined
+  >(() => {
+    const kinds = new Set(
+      selectedRoles
+        .map((role) => getRoleEnvironmentLimitationKind(role))
+        .filter((kind): kind is EnvLimitationKind => kind !== undefined)
+    );
+    if (kinds.size === 0) return undefined;
+    if (kinds.has("DDL/DML") || (kinds.has("DDL") && kinds.has("DML"))) {
+      return "DDL/DML";
+    }
+    return kinds.has("DDL") ? "DDL" : "DML";
+  }, [selectedRoles]);
+
   const allowConfirm = isProjectCreateMode
     ? selectedBindings.length > 0 &&
       !!form.role &&
@@ -1757,7 +1809,11 @@ function EditMemberRoleDrawer({
         roleHasDatabaseLimitation(form.role) &&
         form.databaseMode === "EXPRESSION" &&
         !validateSimpleExpr(form.exprGroup)
-      )
+      ) &&
+      isDirectExecutionValid({
+        enabled: form.directExecution,
+        environments: form.environments,
+      })
     : isEditMode
       ? selectedRoles.length > 0
       : selectedBindings.length > 0 && selectedRoles.length > 0;
@@ -1796,8 +1852,8 @@ function EditMemberRoleDrawer({
                 )}
                 {liveProjectRoleBindings.map((binding, idx) => {
                   const rows = getSingleBindingRows(binding);
-                  const envLimitation =
-                    getProjectRoleBindingEnvironmentLimitationState(binding);
+                  const directExecutionScope =
+                    getProjectRoleBindingDirectExecutionScope(binding);
                   const bindingKind = getRoleEnvironmentLimitationKind(
                     binding.role
                   );
@@ -1849,11 +1905,12 @@ function EditMemberRoleDrawer({
                       </div>
 
                       {/* Environment info banner */}
-                      {envLimitation && bindingKind && (
+                      {directExecutionScope && bindingKind && (
                         <div className="mx-4 mt-3">
-                          <MemberBindingEnvironmentBanner
-                            envLimitation={envLimitation}
-                            bindingKind={bindingKind}
+                          <DirectExecutionCallout
+                            kind={bindingKind}
+                            lead="binding"
+                            scope={directExecutionScope}
                           />
                         </div>
                       )}
@@ -1990,6 +2047,13 @@ function EditMemberRoleDrawer({
                   onChange={setSelectedRoles}
                   scope={projectName ? "project" : undefined}
                 />
+                {unscopedDirectExecutionKind && (
+                  <DirectExecutionCallout
+                    kind={unscopedDirectExecutionKind}
+                    lead="binding"
+                    scope={{ type: "all" }}
+                  />
+                )}
               </FormField>
             )}
           </div>

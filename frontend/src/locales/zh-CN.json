@@ -1533,8 +1533,11 @@
       "all-databases": "所有数据库",
       "all-databases-tip": "所有当前和未来属于这个项目的数据库。",
       "details": "角色授权详情",
+      "direct-execution-suffix": "在 {{environments}} 直接执行 {{kind}}",
       "expired-at": "过期时间",
+      "grantee": "被授权人",
       "manually-select": "手动选择",
+      "requested-by": "由 {{creator}} 申请",
       "use-cel": "使用 CEL 表达式"
     },
     "sort": {
@@ -2014,11 +2017,27 @@
       "self": "脱敏豁免"
     },
     "members": {
-      "ddl-current-all": "{{kind}} 语句可在 SQL 编辑器中针对所有（ALL）环境直接执行，无需审批。",
-      "ddl-current-none": "{{kind}} 语句在 SQL 编辑器中运行前需要审批。",
-      "ddl-current-some": "{{kind}} 语句可在 SQL 编辑器中针对所列环境直接执行，无需审批。",
-      "ddl-warning": "在所选环境中，{{kind}} 语句可在 SQL 编辑器中直接执行，无需审批。",
       "description": "项目成员角色决定了操作项目中的数据库和工单的权限。项目的所有者，工作空间管理员和 DBA 都具有项目所有的权限。",
+      "direct-execution": {
+        "all": "可在 SQL 编辑器中针对所有环境免审批直接执行 {{kind}}；此绑定没有环境范围。",
+        "custom": "自定义条件；能否直接执行 {{kind}} 取决于它：",
+        "in-environments": "允许的环境",
+        "lead-approver": "批准后，{{grantee}} 可直接从 SQL 编辑器执行 {{kind}}，不走变更工单、不经审批，范围：",
+        "lead-binding": "可在 SQL 编辑器中免审批直接执行 {{kind}}，范围：",
+        "lead-grant": "拥有此角色的成员可直接从 SQL 编辑器执行 {{kind}}，不走变更工单、不经审批，范围：",
+        "lead-request": "批准后，你可直接从 SQL 编辑器执行 {{kind}}，不走变更工单，范围：",
+        "none-binding": "此绑定不授予任何直接执行 {{kind}} 的权限。",
+        "none-grant": "此授权不授予任何直接执行 {{kind}} 的权限。",
+        "off-caption": "关闭：此授权不授予任何直接执行 {{kind}} 的权限。除非其他授权允许，SQL 编辑器会拒绝 {{kind}}；能创建变更工单的成员会被引导去创建工单。",
+        "pick-or-off": "请至少选择一个环境，或关闭此开关。",
+        "protected-tag": "受保护环境",
+        "protected_one": "{{environments}} 是受保护环境。",
+        "protected_other": "{{environments}} 是受保护环境。",
+        "role-pointer": "直接执行 {{kind}} 的范围在下方设置。",
+        "select-environments": "选择环境",
+        "switch-label": "允许在 SQL 编辑器中免审批直接执行 {{kind}}",
+        "title": "{{kind}} 直接执行"
+      },
       "edit-member": "编辑成员 - {{member}}",
       "expiration-presets": {
         "one-month": "1 个月",
@@ -2250,7 +2269,7 @@
       "self": "项目开发者"
     },
     "project-owner": {
-      "description": "项目内的所有权限。",
+      "description": "项目内的所有权限，包括在授权开放的环境中免审批直接在 SQL 编辑器执行 DDL/DML。",
       "self": "项目所有者"
     },
     "project-releaser": {
@@ -2276,7 +2295,7 @@
       "self": "SQL 编辑器只读用户"
     },
     "sql-editor-user": {
-      "description": "可查询指定范围的数据。",
+      "description": "可在 SQL 编辑器中查询数据；在授权开放的环境中，还可免审批直接执行 DDL/DML。",
       "self": "SQL 编辑器用户"
     },
     "title": "称谓",

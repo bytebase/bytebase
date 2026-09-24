@@ -1533,8 +1533,11 @@
       "all-databases": "すべてのデータベース",
       "all-databases-tip": "このプロジェクトに属する現在および将来のすべてのデータベース。",
       "details": "ロール付与の詳細",
+      "direct-execution-suffix": "{{environments}} で {{kind}} を直接実行",
       "expired-at": "有効期限",
+      "grantee": "付与先",
       "manually-select": "手動選択",
+      "requested-by": "{{creator}} による申請",
       "use-cel": "CEL式を使用"
     },
     "sort": {
@@ -2014,11 +2017,27 @@
       "self": "マスキング免除"
     },
     "members": {
-      "ddl-current-all": "すべての（ALL）環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
-      "ddl-current-none": "{{kind}} ステートメントを SQL エディターで実行するには承認が必要です。",
-      "ddl-current-some": "リストされた環境で {{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
-      "ddl-warning": "選択した環境では、{{kind}} ステートメントを SQL エディターで承認なしに直接実行できます。",
       "description": "プロジェクトメンバーのロールにより、プロジェクト内のデータベースとイシューを操作するための権限が決まります。プロジェクト所有者、ワークスペース管理者、および DBA はすべて、プロジェクトに対する完全な権限を持っています。",
+      "direct-execution": {
+        "all": "すべての環境で SQL エディターから承認なしに {{kind}} を実行できます。このバインディングには環境スコープがありません。",
+        "custom": "カスタム条件です。{{kind}} の直接実行はこの条件に依存します：",
+        "in-environments": "対象の環境",
+        "lead-approver": "承認すると、{{grantee}} は変更プランも承認もなしに SQL エディターから直接 {{kind}} を実行できます。対象：",
+        "lead-binding": "SQL エディターから承認なしに {{kind}} を実行できます。対象：",
+        "lead-grant": "このロールを持つメンバーは、変更プランも承認もなしに SQL エディターから直接 {{kind}} を実行できます。対象：",
+        "lead-request": "承認されると、変更プランなしに SQL エディターから直接 {{kind}} を実行できます。対象：",
+        "none-binding": "このバインディングは {{kind}} の直接実行を付与しません。",
+        "none-grant": "この付与は {{kind}} の直接実行を付与しません。",
+        "off-caption": "オフ：この付与は {{kind}} の直接実行を付与しません。他の付与で許可されていない限り、SQL エディターは {{kind}} を拒否します。変更プランを作成できるメンバーには作成が案内されます。",
+        "pick-or-off": "環境を 1 つ以上選択するか、このスイッチをオフにしてください。",
+        "protected-tag": "保護された環境",
+        "protected_one": "{{environments}} は保護された環境です。",
+        "protected_other": "{{environments}} は保護された環境です。",
+        "role-pointer": "{{kind}} の直接実行は下で設定します。",
+        "select-environments": "環境を選択",
+        "switch-label": "SQL エディターで承認なしに {{kind}} を実行することを許可する",
+        "title": "{{kind}} の直接実行"
+      },
       "edit-member": "メンバー編集 - {{member}}",
       "expiration-presets": {
         "one-month": "1か月",
@@ -2250,7 +2269,7 @@
       "self": "プロジェクト開発者"
     },
     "project-owner": {
-      "description": "プロジェクト内のすべての権限。",
+      "description": "プロジェクト内のすべての権限。付与で開放された環境では、SQL エディターで承認なしに DDL/DML を実行できます。",
       "self": "プロジェクトオーナー"
     },
     "project-releaser": {
@@ -2276,7 +2295,7 @@
       "self": "SQLエディタ読み取り専用ユーザー"
     },
     "sql-editor-user": {
-      "description": "指定した範囲内のデータをクエリできます。",
+      "description": "SQL エディターでデータを照会します。付与で開放された環境では、承認なしに DDL/DML も実行できます。",
       "self": "SQLエディタのユーザー"
     },
     "title": "タイトル",

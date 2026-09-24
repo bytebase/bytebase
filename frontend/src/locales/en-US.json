@@ -1533,8 +1533,11 @@
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
       "details": "Role grant details",
+      "direct-execution-suffix": "direct {{kind}} in {{environments}}",
       "expired-at": "Expired at",
+      "grantee": "Grantee",
       "manually-select": "Manually select",
+      "requested-by": "Requested by {{creator}}",
       "use-cel": "Use CEL Expression"
     },
     "sort": {
@@ -2014,11 +2017,27 @@
       "self": "Masking Exemptions"
     },
     "members": {
-      "ddl-current-all": "{{kind}} statements can be directly run in SQL Editor in ALL environments without approval.",
-      "ddl-current-none": "{{kind}} statements require approval before running in SQL Editor.",
-      "ddl-current-some": "{{kind}} statements can be directly run in SQL Editor in the listed environments without approval.",
-      "ddl-warning": "In the selected environments, {{kind}} statements can be directly run in SQL Editor without approval.",
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
+      "direct-execution": {
+        "all": "Runs {{kind}} in SQL Editor without approval in every environment; this binding has no environment scope.",
+        "custom": "Custom condition; direct {{kind}} execution depends on it:",
+        "in-environments": "In these environments",
+        "lead-approver": "Approving lets {{grantee}} run {{kind}} straight from SQL Editor, with no change plan and no approval, in:",
+        "lead-binding": "Runs {{kind}} in SQL Editor without approval in:",
+        "lead-grant": "Members with this role run {{kind}} straight from SQL Editor, with no change plan and no approval, in:",
+        "lead-request": "Once approved, you run {{kind}} straight from SQL Editor, with no change plan, in:",
+        "none-binding": "This binding adds no direct {{kind}} access.",
+        "none-grant": "This grant adds no direct {{kind}} access.",
+        "off-caption": "Off: this grant adds no direct {{kind}} access. SQL Editor refuses {{kind}} unless another grant allows it; members who can create change plans are pointed to one.",
+        "pick-or-off": "Pick at least one environment, or turn this off.",
+        "protected-tag": "Protected environment",
+        "protected_one": "{{environments}} is a protected environment.",
+        "protected_other": "{{environments}} are protected environments.",
+        "role-pointer": "Direct {{kind}} execution is set below.",
+        "select-environments": "Select environments",
+        "switch-label": "Allow running {{kind}} in SQL Editor without approval",
+        "title": "Direct {{kind}} execution"
+      },
       "edit-member": "Edit member - {{member}}",
       "expiration-presets": {
         "one-month": "1 month",
@@ -2250,7 +2269,7 @@
       "self": "Project Developer"
     },
     "project-owner": {
-      "description": "All permissions within the project",
+      "description": "All permissions within the project, including DDL/DML in SQL Editor without approval in the environments the grant opens.",
       "self": "Project Owner"
     },
     "project-releaser": {
@@ -2276,7 +2295,7 @@
       "self": "SQL Editor Read User"
     },
     "sql-editor-user": {
-      "description": "Permissions for querying database data.",
+      "description": "Query data in SQL Editor. Can also run DDL/DML there without approval, in the environments the grant opens.",
       "self": "SQL Editor User"
     },
     "title": "Title",

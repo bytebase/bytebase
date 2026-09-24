@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, test, vi } from "vitest";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
-import { getProjectRoleBindingEnvironmentLimitationState } from "./membersPageEnvironment";
+import { getProjectRoleBindingDirectExecutionScope } from "./membersPageEnvironment";
 
 vi.mock("@/lib/project-member/utils", () => ({
   getRoleEnvironmentLimitationKind: (role: string) =>
@@ -9,59 +9,77 @@ vi.mock("@/lib/project-member/utils", () => ({
 }));
 
 vi.mock("@/utils/issue/cel", () => ({
-  convertFromExpr: (expr: { environments?: string[] }) => ({
+  convertFromExpr: (expr: {
+    environments?: string[];
+    unrecognized?: true;
+  }) => ({
     environments: expr.environments,
+    unrecognized: expr.unrecognized,
   }),
 }));
 
-const binding = (role: string, environments?: string[]): Binding =>
+const binding = (
+  role: string,
+  parsed?: { environments?: string[]; unrecognized?: true },
+  expression = ""
+): Binding =>
   ({
     role,
-    parsedExpr: environments === undefined ? {} : { environments },
-  }) as Binding;
+    parsedExpr: parsed,
+    condition: { expression },
+  }) as unknown as Binding;
 
-const bindingWithoutParsedExpr = (role: string): Binding =>
-  ({
-    role,
-  }) as Binding;
-
-describe("getProjectRoleBindingEnvironmentLimitation", () => {
-  test("returns undefined for roles without DDL or DML environment restrictions", () => {
+describe("getProjectRoleBindingDirectExecutionScope", () => {
+  test("a role without DDL/DML has no scope to show", () => {
     expect(
-      getProjectRoleBindingEnvironmentLimitationState(
-        binding("roles/viewer", [])
+      getProjectRoleBindingDirectExecutionScope(
+        binding("roles/viewer", { environments: [] })
       )
     ).toBeUndefined();
   });
 
-  test("returns unrestricted when a DDL/DML role has no environment condition", () => {
+  test("no parsed condition is unscoped", () => {
     expect(
-      getProjectRoleBindingEnvironmentLimitationState(
-        binding("roles/sqlEditorUser")
-      )
-    ).toEqual({
-      type: "unrestricted",
-    });
+      getProjectRoleBindingDirectExecutionScope(binding("roles/sqlEditorUser"))
+    ).toEqual({ type: "all" });
   });
 
-  test("returns unrestricted when a DDL/DML role has no parsed condition", () => {
+  test("a condition without an environment clause is unscoped", () => {
     expect(
-      getProjectRoleBindingEnvironmentLimitationState(
-        bindingWithoutParsedExpr("roles/sqlEditorUser")
+      getProjectRoleBindingDirectExecutionScope(
+        binding("roles/sqlEditorUser", {})
       )
-    ).toEqual({
-      type: "unrestricted",
-    });
+    ).toEqual({ type: "all" });
   });
 
-  test("preserves explicit empty environment restrictions", () => {
+  test("an explicit empty list is the switch off", () => {
     expect(
-      getProjectRoleBindingEnvironmentLimitationState(
-        binding("roles/sqlEditorUser", [])
+      getProjectRoleBindingDirectExecutionScope(
+        binding("roles/sqlEditorUser", { environments: [] })
       )
-    ).toEqual({
-      environments: [],
-      type: "restricted",
-    });
+    ).toEqual({ type: "none" });
+  });
+
+  test("a list is the switch on", () => {
+    expect(
+      getProjectRoleBindingDirectExecutionScope(
+        binding("roles/sqlEditorUser", {
+          environments: ["environments/staging"],
+        })
+      )
+    ).toEqual({ type: "some", environments: ["environments/staging"] });
+  });
+
+  test("an unrecognized condition shows its raw expression", () => {
+    const expression = 'resource.environment_id in ["staging"] || true';
+    expect(
+      getProjectRoleBindingDirectExecutionScope(
+        binding(
+          "roles/sqlEditorUser",
+          { environments: ["environments/staging"], unrecognized: true },
+          expression
+        )
+      )
+    ).toEqual({ type: "custom", expression });
   });
 });

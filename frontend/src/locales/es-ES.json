@@ -1533,8 +1533,11 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "details": "Detalles de la concesión de rol",
+      "direct-execution-suffix": "{{kind}} directo en {{environments}}",
       "expired-at": "Expiró el",
+      "grantee": "Beneficiario",
       "manually-select": "selección manual",
+      "requested-by": "Solicitado por {{creator}}",
       "use-cel": "Usar expresión CEL"
     },
     "sort": {
@@ -2014,11 +2017,27 @@
       "self": "Exenciones de Enmascaramiento"
     },
     "members": {
-      "ddl-current-all": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en TODOS los entornos sin aprobación.",
-      "ddl-current-none": "Las sentencias {{kind}} requieren aprobación antes de ejecutarse en el editor SQL.",
-      "ddl-current-some": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en los entornos listados sin aprobación.",
-      "ddl-warning": "En los entornos seleccionados, las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL sin aprobación.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
+      "direct-execution": {
+        "all": "Ejecuta {{kind}} en el editor SQL sin aprobación en todos los entornos; esta vinculación no tiene alcance de entorno.",
+        "custom": "Condición personalizada; la ejecución directa de {{kind}} depende de ella:",
+        "in-environments": "En estos entornos",
+        "lead-approver": "Al aprobar, {{grantee}} podrá ejecutar {{kind}} directamente desde el editor SQL, sin plan de cambio ni aprobación, en:",
+        "lead-binding": "Ejecuta {{kind}} en el editor SQL sin aprobación en:",
+        "lead-grant": "Los miembros con este rol ejecutan {{kind}} directamente desde el editor SQL, sin plan de cambio ni aprobación, en:",
+        "lead-request": "Una vez aprobado, ejecutarás {{kind}} directamente desde el editor SQL, sin plan de cambio, en:",
+        "none-binding": "Esta vinculación no añade acceso directo a {{kind}}.",
+        "none-grant": "Esta concesión no añade acceso directo a {{kind}}.",
+        "off-caption": "Desactivado: esta concesión no añade acceso directo a {{kind}}. El editor SQL rechaza {{kind}} salvo que otra concesión lo permita; a los miembros que pueden crear planes de cambio se les indica uno.",
+        "pick-or-off": "Elige al menos un entorno o desactiva esta opción.",
+        "protected-tag": "Entorno protegido",
+        "protected_one": "{{environments}} es un entorno protegido.",
+        "protected_other": "{{environments}} son entornos protegidos.",
+        "role-pointer": "La ejecución directa de {{kind}} se configura abajo.",
+        "select-environments": "Seleccionar entornos",
+        "switch-label": "Permitir ejecutar {{kind}} en el editor SQL sin aprobación",
+        "title": "Ejecución directa de {{kind}}"
+      },
       "edit-member": "Editar miembro - {{member}}",
       "expiration-presets": {
         "one-month": "1 mes",
@@ -2250,7 +2269,7 @@
       "self": "Desarrollador del proyecto"
     },
     "project-owner": {
-      "description": "El propietario del proyecto tiene todos los permisos dentro del proyecto.",
+      "description": "Todos los permisos dentro del proyecto, incluido DDL/DML en el editor SQL sin aprobación en los entornos que la concesión abre.",
       "self": "Propietario del proyecto"
     },
     "project-releaser": {
@@ -2276,7 +2295,7 @@
       "self": "Usuario de solo lectura del editor SQL"
     },
     "sql-editor-user": {
-      "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto.",
+      "description": "Consulta datos en el editor SQL. También puede ejecutar DDL/DML allí sin aprobación, en los entornos que la concesión abre.",
       "self": "Usuario del editor SQL"
     },
     "title": "Título",
