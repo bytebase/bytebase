@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AccountTypeBadge } from "@/components/AccountTypeBadge";
 import { HumanizeTs } from "@/components/HumanizeTs";
-import { DDLWarningCallout } from "@/components/role-grant/DDLWarningCallout";
+import { DirectExecutionCallout } from "@/components/role-grant/DirectExecutionCallout";
+import { RoleDescription } from "@/components/role-grant/RoleDescription";
+import { UserCell } from "@/components/UserCell";
 import {
   Table,
   TableBody,
@@ -10,27 +13,39 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useEnvironmentList } from "@/hooks/useAppState";
-import { getRoleEnvironmentLimitationKind } from "@/lib/project-member/utils";
+import { useEnvironmentList, usePlanFeature } from "@/hooks/useAppState";
+import { directExecutionOf } from "@/lib/project-member/directExecution";
 import { displayRoleTitleFromList } from "@/lib/role";
 import { useAppStore } from "@/stores/app";
 import type { DatabaseResource } from "@/types";
+import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import {
   type ConditionExpression,
-  convertFromCELString,
+  readableConditionFromCELString,
 } from "@/utils/issue/cel";
 import { extractDatabaseResourceName } from "@/utils/v1/database";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
+import { usePrincipal } from "./usePrincipal";
 
 export function IssueDetailRoleGrantDetails() {
   const { t } = useTranslation();
   const page = useIssueDetailContext();
   const issue = page.issue;
   const requestRoleName = issue?.roleGrant?.role ?? "";
+  const granteeName = issue?.roleGrant?.user;
+  const creatorName = issue?.creator;
   const roleList = useAppStore((state) => state.roleList);
   const requestRole = useAppStore((state) =>
     state.getRoleByName(requestRoleName)
+  );
+  const grantee = usePrincipal(granteeName);
+  const showRequestedBy =
+    creatorName !== undefined && creatorName !== granteeName;
+  const creator = usePrincipal(showRequestedBy ? creatorName : undefined);
+  const environmentList = useEnvironmentList();
+  const hasEnvTierFeature = usePlanFeature(
+    PlanFeature.FEATURE_ENVIRONMENT_TIERS
   );
   const [condition, setCondition] = useState<ConditionExpression | undefined>();
 
@@ -45,10 +60,13 @@ export function IssueDetailRoleGrantDetails() {
     let canceled = false;
     void (async () => {
       try {
-        const parsed = await convertFromCELString(expression);
+        const parsed = await readableConditionFromCELString(expression);
         if (!canceled) setCondition(parsed);
       } catch (error) {
+        // Unreadable reads as the widest grant, so the execution row never
+        // disappears.
         console.error("Failed to parse CEL expression:", error);
+        if (!canceled) setCondition({ databaseResources: [] });
       }
     })();
     return () => {
@@ -67,25 +85,14 @@ export function IssueDetailRoleGrantDetails() {
     }
   }, [condition?.databaseResources]);
 
-  const envKind = getRoleEnvironmentLimitationKind(requestRoleName);
-  const envNames = condition?.environments ?? [];
-  const envList = useEnvironmentList();
-  // Falls back to the raw env resource name (e.g. environments/prod-old) when
-  // the env isn't in the store — happens when an env is renamed or deleted
-  // between request submission and approver review.
-  const envTitles = envNames.map(
-    (n) => envList.find((e) => e.name === n)?.title ?? n
-  );
-
-  // Three-way env scope:
-  //   environments === undefined  → no env clause in CEL → unrestricted (binding-all)
-  //   environments === []         → restricted to empty list (binding-none)
-  //   environments === [list]     → restricted to listed envs (binding-some)
-  // Hide during async parse so we don't briefly show binding-all for an
-  // expression that's about to resolve to binding-some/binding-none.
   const expression = issue?.roleGrant?.condition?.expression ?? "";
+  // Hidden while the expression parses, so a request that resolves to an
+  // explicit list is never shown as unscoped in between.
   const isParsing = expression !== "" && condition === undefined;
-  const envScope = computeEnvScope(envKind, isParsing, condition?.environments);
+  const directExecution = isParsing
+    ? undefined
+    : directExecutionOf(requestRoleName, condition);
+  const granteeTitle = grantee?.title || grantee?.email || granteeName || "";
 
   return (
     <div className="flex flex-col gap-y-4">
@@ -98,40 +105,52 @@ export function IssueDetailRoleGrantDetails() {
             <div className="text-base">
               {displayRoleTitleFromList(requestRoleName, roleList)}
             </div>
+            <RoleDescription role={requestRoleName} roleList={roleList} />
           </div>
         )}
 
-        {requestRole && (
-          <div className="flex flex-col gap-y-2">
+        {granteeName && (
+          <div
+            className="flex flex-col gap-y-2"
+            data-testid="role-grant-grantee"
+          >
             <span className="text-sm text-control-light">
-              {t("common.permissions")} ({requestRole.permissions.length})
+              {t("issue.role-grant.grantee")}
             </span>
-            <div className="max-h-[10em] overflow-auto rounded-sm border p-2">
-              {requestRole.permissions.map((permission) => (
-                <p key={permission} className="text-sm leading-5">
-                  {permission}
-                </p>
-              ))}
-            </div>
+            <UserCell
+              title={granteeTitle}
+              subtitle={grantee?.title ? grantee.email : undefined}
+              showAvatar={false}
+              badges={<AccountTypeBadge email={grantee?.email} />}
+            />
+            {showRequestedBy && (
+              <p className="text-xs leading-4 text-control-light">
+                {t("issue.role-grant.requested-by", {
+                  creator: creator?.title || creator?.email || creatorName,
+                })}
+              </p>
+            )}
           </div>
         )}
 
-        {envScope === "binding-all" && envKind && (
-          <DDLWarningCallout type="binding-all" kind={envKind} />
-        )}
-        {/*
-         * binding-none on the issue page = the request specified an empty
-         * env list (degenerate: the binding would grant no env access at
-         * all). Showing an info box would suggest there's something to
-         * approve here when really the binding grants nothing. Hide.
-         */}
-        {envScope === "binding-some" && envKind && (
-          <div className="flex flex-col gap-y-2">
+        {directExecution && (
+          <div
+            className="flex flex-col gap-y-2"
+            data-testid="role-grant-direct-execution"
+          >
             <span className="text-sm text-control-light">
-              {t("common.environments")}
+              {t("project.members.direct-execution.title", {
+                kind: directExecution.kind,
+              })}
             </span>
-            <DDLWarningCallout type="binding-some" kind={envKind} />
-            <div className="text-base">{envTitles.join(", ")}</div>
+            <DirectExecutionCallout
+              kind={directExecution.kind}
+              lead="approver"
+              scope={directExecution.scope}
+              grantee={granteeTitle}
+              environmentList={environmentList}
+              hasEnvTierFeature={hasEnvTierFeature}
+            />
           </div>
         )}
 
@@ -169,6 +188,21 @@ export function IssueDetailRoleGrantDetails() {
             )}
           </div>
         </div>
+
+        {requestRole && (
+          <div className="flex flex-col gap-y-2">
+            <span className="text-sm text-control-light">
+              {t("common.permissions")} ({requestRole.permissions.length})
+            </span>
+            <div className="max-h-[10em] overflow-auto rounded-sm border p-2">
+              {requestRole.permissions.map((permission) => (
+                <p key={permission} className="text-sm leading-5">
+                  {permission}
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -249,17 +283,6 @@ function IssueDetailDatabaseResourceTable({
       </Table>
     </div>
   );
-}
-
-function computeEnvScope(
-  envKind: ReturnType<typeof getRoleEnvironmentLimitationKind>,
-  isParsing: boolean,
-  environments: string[] | undefined
-): "binding-all" | "binding-some" | "binding-none" | undefined {
-  if (!envKind || isParsing) return undefined;
-  if (environments === undefined) return "binding-all";
-  if (environments.length === 0) return "binding-none";
-  return "binding-some";
 }
 
 function extractTableName(databaseResource: DatabaseResource) {

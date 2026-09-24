@@ -46,15 +46,17 @@ const getConstantInt64Value = (expr: CELExpr): number => {
   return 0;
 };
 
-const getConstantStringValue = (expr: CELExpr): string => {
-  if (
-    expr.exprKind?.case === "constExpr" &&
-    expr.exprKind.value.constantKind?.case === "stringValue"
-  ) {
-    return expr.exprKind.value.constantKind.value;
-  }
-  return "";
-};
+// The string a constant node carries; undefined for any other node.
+export const constantStringOf = (
+  expr: CELExpr | undefined
+): string | undefined =>
+  expr?.exprKind?.case === "constExpr" &&
+  expr.exprKind.value.constantKind?.case === "stringValue"
+    ? expr.exprKind.value.constantKind.value
+    : undefined;
+
+const getConstantStringValue = (expr: CELExpr): string =>
+  constantStringOf(expr) ?? "";
 
 const getConstantBoolValue = (expr: CELExpr): boolean => {
   if (
@@ -332,16 +334,28 @@ export const emptySimpleExpr = (
   };
 };
 
-const getFactorName = (expr: CELExpr): string => {
-  if (expr.exprKind?.case === "identExpr") {
+// `resource.environment_id` parses as a select on the ident `resource`; the
+// dotted ident is what `buildCELExpr` emits. Only an ident or a select names a
+// factor.
+export const factorNameOf = (expr: CELExpr | undefined): string | undefined => {
+  if (expr?.exprKind?.case === "identExpr") {
     return expr.exprKind.value.name;
-  } else if (expr.exprKind?.case === "selectExpr") {
-    const selectExpr = expr.exprKind.value;
-    const operandName =
-      selectExpr.operand?.exprKind?.case === "identExpr"
-        ? selectExpr.operand.exprKind.value.name
-        : "";
-    return `${operandName}.${selectExpr.field}`;
   }
-  throw new Error(`cannot resolve factor name ${JSON.stringify(expr)}`);
+  if (expr?.exprKind?.case === "selectExpr") {
+    const { operand, field } = expr.exprKind.value;
+    const operandName =
+      operand?.exprKind?.case === "identExpr"
+        ? operand.exprKind.value.name
+        : "";
+    return `${operandName}.${field}`;
+  }
+  return undefined;
+};
+
+const getFactorName = (expr: CELExpr): string => {
+  const name = factorNameOf(expr);
+  if (name === undefined) {
+    throw new Error(`cannot resolve factor name ${JSON.stringify(expr)}`);
+  }
+  return name;
 };
