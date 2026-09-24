@@ -736,9 +736,11 @@
       "view-workspace-rules": "View workspace rules"
     },
     "description": "Built-in rules that review the SQL of every issue. Projects that do not customize their rules follow these.",
+    "load-failed": "The standard rules could not be loaded.",
     "off": "Off",
     "on": "On",
     "project-description": "Built-in rules that review the SQL of every issue in this project.",
+    "retry": "Retry",
     "rule": {
       "disallow-drop-constraint": {
         "description": "Flags dropping a PRIMARY KEY, FOREIGN KEY, UNIQUE, or CHECK constraint.",

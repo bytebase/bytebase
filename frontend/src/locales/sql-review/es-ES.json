@@ -736,9 +736,11 @@
       "view-workspace-rules": "Ver las reglas del espacio de trabajo"
     },
     "description": "Reglas integradas que revisan el SQL de cada issue. Los proyectos que no personalizan sus reglas siguen estas.",
+    "load-failed": "No se pudieron cargar las reglas estándar.",
     "off": "Desactivada",
     "on": "Activada",
     "project-description": "Reglas integradas que revisan el SQL de cada issue de este proyecto.",
+    "retry": "Reintentar",
     "rule": {
       "disallow-drop-constraint": {
         "description": "Señala la eliminación de una restricción PRIMARY KEY, FOREIGN KEY, UNIQUE o CHECK.",

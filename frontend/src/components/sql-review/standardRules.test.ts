@@ -8,12 +8,14 @@ import {
 } from "@/types/proto-es/v1/org_policy_service_pb";
 import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import {
+  effectiveWorkspaceRules,
   isStandardReviewOn,
   reviewRulesOfPolicy,
   STANDARD_RULE_TYPES,
   sameStandardRules,
   sortStandardRules,
   standardRuleText,
+  storedReviewRules,
 } from "./standardRules";
 
 const t = ((key: string) => key) as unknown as TFunction;
@@ -61,43 +63,53 @@ describe("standard rules", () => {
     ).toBe(false);
   });
 
+  const policy = (enforce: boolean, rules: ReviewRuleType[]) =>
+    create(PolicySchema, {
+      type: PolicyType.REVIEW_RULE,
+      enforce,
+      policy: {
+        case: "reviewRulePolicy",
+        value: create(ReviewRulePolicySchema, { rules }),
+      },
+    });
+  // What the store caches when a project has no policy of its own.
+  const noPolicy = create(PolicySchema, {
+    name: "projects/p/policies/review_rule",
+  });
+  const switchedOff = policy(false, [ReviewRuleType.SYNTAX]);
+  const customized = policy(true, [
+    ReviewRuleType.DISALLOW_RENAME,
+    ReviewRuleType.SYNTAX,
+  ]);
+
   test("read the rules of a policy, and nothing from a policy without one", () => {
     expect(reviewRulesOfPolicy(undefined)).toBeUndefined();
     // Switched off through the API: the backend reads it as absent.
-    expect(
-      reviewRulesOfPolicy(
-        create(PolicySchema, {
-          type: PolicyType.REVIEW_RULE,
-          enforce: false,
-          policy: {
-            case: "reviewRulePolicy",
-            value: create(ReviewRulePolicySchema, {
-              rules: [ReviewRuleType.SYNTAX],
-            }),
-          },
-        })
-      )
-    ).toBeUndefined();
-    // What the store caches when a project has no policy of its own.
-    expect(
-      reviewRulesOfPolicy(
-        create(PolicySchema, { name: "projects/p/policies/review_rule" })
-      )
-    ).toBeUndefined();
-    expect(
-      reviewRulesOfPolicy(
-        create(PolicySchema, {
-          type: PolicyType.REVIEW_RULE,
-          enforce: true,
-          policy: {
-            case: "reviewRulePolicy",
-            value: create(ReviewRulePolicySchema, {
-              rules: [ReviewRuleType.DISALLOW_RENAME, ReviewRuleType.SYNTAX],
-            }),
-          },
-        })
-      )
-    ).toEqual([ReviewRuleType.SYNTAX, ReviewRuleType.DISALLOW_RENAME]);
+    expect(reviewRulesOfPolicy(switchedOff)).toBeUndefined();
+    expect(reviewRulesOfPolicy(noPolicy)).toBeUndefined();
+    expect(reviewRulesOfPolicy(customized)).toEqual([
+      ReviewRuleType.SYNTAX,
+      ReviewRuleType.DISALLOW_RENAME,
+    ]);
+  });
+
+  test("read the stored rules of a row whether or not it is enforced", () => {
+    expect(storedReviewRules(undefined)).toBeUndefined();
+    expect(storedReviewRules(noPolicy)).toBeUndefined();
+    expect(storedReviewRules(switchedOff)).toEqual([ReviewRuleType.SYNTAX]);
+    expect(storedReviewRules(customized)).toEqual([
+      ReviewRuleType.SYNTAX,
+      ReviewRuleType.DISALLOW_RENAME,
+    ]);
+  });
+
+  test("apply every rule for a workspace without an enforced policy", () => {
+    expect(effectiveWorkspaceRules(undefined)).toBeUndefined();
+    expect(effectiveWorkspaceRules(switchedOff)).toEqual(STANDARD_RULE_TYPES);
+    expect(effectiveWorkspaceRules(customized)).toEqual([
+      ReviewRuleType.SYNTAX,
+      ReviewRuleType.DISALLOW_RENAME,
+    ]);
   });
 
   test("need SYNTAX for standard review to run", () => {

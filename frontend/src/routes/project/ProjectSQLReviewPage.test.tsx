@@ -16,6 +16,8 @@ const PROJECT = "projects/p";
 
 const mocks = vi.hoisted(() => ({
   permissions: {} as Record<string, boolean>,
+  // Parents whose read fails: the store then caches nothing for them.
+  unreadable: new Set<string>(),
   upsertPolicy: vi.fn(),
   deletePolicy: vi.fn(),
   fetchPolicy: vi.fn(),
@@ -83,6 +85,7 @@ vi.mock("@/stores/app", async () => {
     getPolicyByParentAndType: ({ parentPath }) => get().policies[parentPath],
     getOrFetchPolicyByParentAndType: async (params) => {
       mocks.fetchPolicy(params);
+      if (mocks.unreadable.has(params.parentPath)) return undefined;
       if (!get().policies[params.parentPath]) {
         set((state) => ({
           policies: {
@@ -130,11 +133,15 @@ const seedPolicies = (policies: Record<string, Policy>) =>
   ).setState({ policies });
 const { ProjectSQLReviewPage } = await import("./ProjectSQLReviewPage");
 
-const reviewRulePolicy = (parent: string, rules: ReviewRuleType[]): Policy =>
+const reviewRulePolicy = (
+  parent: string,
+  rules: ReviewRuleType[],
+  enforce = true
+): Policy =>
   create(PolicySchema, {
     name: `${parent}/policies/review_rule`,
     type: PolicyType.REVIEW_RULE,
-    enforce: true,
+    enforce,
     policy: {
       case: "reviewRulePolicy",
       value: create(ReviewRulePolicySchema, { rules }),
@@ -176,6 +183,7 @@ const update = () =>
 describe("ProjectSQLReviewPage", () => {
   beforeEach(() => {
     mocks.permissions = {};
+    mocks.unreadable.clear();
     mocks.upsertPolicy.mockReset();
     mocks.deletePolicy.mockReset();
     mocks.fetchPolicy.mockReset();
@@ -297,6 +305,79 @@ describe("ProjectSQLReviewPage", () => {
 
     expect(customize).toHaveAttribute("data-disabled");
     expect(ruleSwitch("require-where")).not.toHaveAttribute("data-disabled");
+  });
+
+  test("a workspace policy switched off through the API counts as every rule", async () => {
+    seedPolicies({
+      [WORKSPACE]: reviewRulePolicy(WORKSPACE, [ReviewRuleType.SYNTAX], false),
+    });
+    const customize = await renderLoaded();
+
+    expect(customize).toHaveAttribute("aria-checked", "false");
+    expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(
+      11
+    );
+    fireEvent.click(customize);
+    expect(ruleSwitch("disallow-truncate")).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+  });
+
+  test("a project row switched off through the API is updated, not created", async () => {
+    mocks.permissions = { "bb.policies.create": false };
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      [PROJECT]: reviewRulePolicy(PROJECT, [ReviewRuleType.SYNTAX], false),
+    });
+    const customize = await renderLoaded();
+
+    // The row is not in force, so the project follows the workspace.
+    expect(customize).toHaveAttribute("aria-checked", "false");
+    expect(customize).not.toHaveAttribute("data-disabled");
+    fireEvent.click(customize);
+    expect(ruleSwitch("require-where")).not.toHaveAttribute("data-disabled");
+    await update();
+
+    expect(mocks.upsertPolicy).toHaveBeenCalledTimes(1);
+    expect(mocks.upsertPolicy.mock.calls[0][0].policy.enforce).toBe(true);
+  });
+
+  test("a project row switched off through the API needs bb.policies.update", async () => {
+    mocks.permissions = { "bb.policies.update": false };
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      [PROJECT]: reviewRulePolicy(PROJECT, [ReviewRuleType.SYNTAX], false),
+    });
+    const customize = await renderLoaded();
+
+    expect(customize).toHaveAttribute("data-disabled");
+  });
+
+  test("a failed read shows an error instead of the switches, and retry reads again", async () => {
+    mocks.unreadable.add(PROJECT);
+    render(<ProjectSQLReviewPage projectId="p" />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "sql-review.standard-rules.load-failed"
+    );
+    expect(screen.queryAllByRole("switch")).toHaveLength(0);
+
+    mocks.unreadable.clear();
+    fireEvent.click(
+      screen.getByRole("button", { name: "sql-review.standard-rules.retry" })
+    );
+
+    const customize = await screen.findByRole("switch", {
+      name: "sql-review.standard-rules.customize.self",
+    });
+    expect(customize).toHaveAttribute("aria-checked", "false");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(mocks.fetchPolicy).toHaveBeenCalledWith({
+      parentPath: PROJECT,
+      policyType: PolicyType.REVIEW_RULE,
+      refresh: true,
+    });
   });
 
   test("undoing an unsaved switch needs no permission", async () => {

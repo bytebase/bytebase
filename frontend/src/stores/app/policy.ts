@@ -5,6 +5,7 @@ import { silentContextKey } from "@/api/context-key";
 import {
   DeletePolicyRequestSchema,
   GetPolicyRequestSchema,
+  ListPoliciesRequestSchema,
   type Policy,
   PolicyResourceType,
   PolicySchema,
@@ -158,6 +159,18 @@ export const createPolicySlice: AppSliceCreator<PolicySlice> = (set, get) => ({
     return policy?.policy?.case === "queryDataPolicy"
       ? policy.policy.value
       : EMPTY_QUERY_DATA_POLICY;
+  },
+
+  listPolicies: async ({ parentPath, policyType, showDeleted = false }) => {
+    const { policies } = await orgPolicyServiceClientConnect.listPolicies(
+      createProto(ListPoliciesRequestSchema, {
+        parent: parentPath,
+        policyType,
+        showDeleted,
+      }),
+      { contextValues: createContextValues().set(silentContextKey, true) }
+    );
+    return policies;
   },
 
   upsertPolicy: async ({ parentPath, policy }) => {
