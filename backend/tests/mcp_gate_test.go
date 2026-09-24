@@ -64,14 +64,14 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 	// ships covers.
 	excluded := callAPIOnSession(ctx, t, session, "UserService/ListUsers", map[string]any{})
 	a.Equal(http.StatusForbidden, excluded.Status)
-	a.Contains(excluded.Error, "administers the workspace")
+	a.Contains(excluded.Error, "belongs to workspace administration")
 	a.Contains(excluded.Error, "Bytebase console", "the denial must name where the human can do it instead")
 
 	// FORBIDDEN: refused with a different recorded reason, so the two classes
 	// do not collapse into one sentence an operator cannot tell apart.
 	forbidden := callAPIOnSession(ctx, t, session, "AuthService/Logout", map[string]any{})
 	a.Equal(http.StatusForbidden, forbidden.Status)
-	a.Contains(forbidden.Error, "ends the human's own login session")
+	a.Contains(forbidden.Error, "signs the user out of their Bytebase web session")
 
 	// A gate refusal is streamed, never stored; the served CreateSheet is stored.
 	a.Empty(mcpAuditRows(ctx, t, ctl, workspaceName, "/bytebase.v1.UserService/ListUsers"),
@@ -118,8 +118,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		},
 	})
 	a.Equal(http.StatusForbidden, grant.Status)
-	a.Contains(grant.Error, "ROLE_GRANT", "the denial must name the issue type it refused")
-	a.Contains(grant.Error, "no human step")
+	a.Contains(grant.Error, "may only create database-change issues", "the denial must state the rule it enforces")
+	a.Contains(grant.Error, "no human approval")
 
 	// The bypass: UpdateIssue with allow_missing creates the issue when it does
 	// not exist, by calling CreateIssue directly — a Go call, so the ceiling
@@ -142,7 +142,7 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	})
 	a.Equal(http.StatusForbidden, upsert.Status,
 		"allow_missing on a missing issue is a creation, and the guard must reach it: %s", upsert.Error)
-	a.Contains(upsert.Error, "may not create a ROLE_GRANT issue")
+	a.Contains(upsert.Error, "may not create this issue")
 
 	// The same upsert for the type an agent is allowed to create reaches the
 	// handler, which then asks for the plan it has no way to do without. The

@@ -60,7 +60,7 @@ func TestMCPPolicyDenialsReachTheAuditPage(t *testing.T) {
 	connection := connectionRows[0]
 	a.Equal(ctl.principalName, connection.Actor)
 	a.NotNil(connection.Status)
-	a.Contains(connection.Status.Message, "turned MCP access off")
+	a.Contains(connection.Status.Message, "turned off MCP access")
 	a.NotNil(connection.McpDelegation, "the row wears the MCP badge")
 	a.Equal(clientID, connection.McpDelegation.ClientId)
 	a.Empty(connection.McpDelegation.CorrelationId,
@@ -74,7 +74,7 @@ func TestMCPPolicyDenialsReachTheAuditPage(t *testing.T) {
 
 	consentRows := searchMCP(`method == "/bytebase.mcp.Consent/Approve"`)
 	a.Len(consentRows, 1, "the refused consent is on the audit page too")
-	a.Contains(consentRows[0].Status.GetMessage(), "turned MCP access off")
+	a.Contains(consentRows[0].Status.GetMessage(), "turned off MCP access")
 	a.Empty(consentRows[0].McpDelegation.GetCorrelationId(),
 		"a consent never reached the boundary that mints one")
 

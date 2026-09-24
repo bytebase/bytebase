@@ -81,7 +81,7 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.EqualValues(t, 7, row.Status.GetCode(), "PermissionDenied")
 		require.Equal(t, storepb.AuditLog_WARNING, row.Severity,
 			"the door and the per-request gate stamp one ceiling verdict the same way")
-		require.Contains(t, row.Status.GetMessage(), "turned MCP access off")
+		require.Contains(t, row.Status.GetMessage(), "turned off MCP access")
 		require.Equal(t, "10.0.1.50", row.RequestMetadata.GetCallerIp())
 		require.Equal(t, "TestAgent/1.0", row.RequestMetadata.GetCallerSuppliedUserAgent())
 
@@ -105,7 +105,7 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.Equal(t, http.StatusForbidden, connect(t, srv, mcpToken(t, secret, tokenOptions{})))
 
 		require.Len(t, st.auditRows, 1)
-		require.Contains(t, st.auditRows[0].Status.GetMessage(), "not one this build serves")
+		require.Contains(t, st.auditRows[0].Status.GetMessage(), "does not support")
 	})
 
 	t.Run("a failed ceiling read is an outage, not a denial", func(t *testing.T) {

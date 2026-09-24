@@ -3,10 +3,12 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -37,7 +39,7 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 	settings, ok := mcpSettingsFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.New(
-			"this MCP request cannot be checked against the workspace MCP capability ceiling, so it fails closed"))
+			"this MCP request cannot be checked against the workspace's MCP access policy, so it is refused"))
 	}
 	return settings.Capability == storepb.MCPSetting_READ_ONLY, nil
 }
@@ -61,23 +63,28 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 // rewrites the same setting (set_config, BOT-88).
 func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 	if !parserbase.HasQueryValidator(engine) {
-		return refuseClampedStatement(fmt.Sprintf(
-			"Bytebase has no read-only classifier for %v, so no statement on this engine can be shown to be a read", engine))
+		return refuseClampedStatement(
+			"Bytebase cannot check statements on this database engine, so none can be verified as a read",
+			clampNextStep)
 	}
 	units := mcpClampUnits(engine, statement)
 	for i, unit := range units {
 		readOnly, allQuery, err := parserbase.ValidateSQLForEditor(engine, unit)
 		if err != nil {
+			// A parse failure is usually a syntax error, which neither way out
+			// below fixes; a valid statement the parser does not model needs them.
 			return refuseClampedStatement(fmt.Sprintf(
-				"%s could not be parsed, so it cannot be shown to be a read: %v", describeClampUnit(i, len(units)), err))
+				"Bytebase could not parse %s (%v), so it cannot verify it is a read", describeClampUnit(i, len(units)), err),
+				"Check the statement's syntax for this database engine. If it is valid, "+lowerFirst(clampNextStep))
 		}
 		if !readOnly {
-			return refuseClampedStatement(fmt.Sprintf("%s is not a read", describeClampUnit(i, len(units))))
+			return refuseClampedStatement(fmt.Sprintf("%s is not a read", describeClampUnit(i, len(units))), clampNextStep)
 		}
 		if !allQuery {
 			return refuseClampedStatement(fmt.Sprintf(
-				"%s returns no data, so it either rewrites the session it runs on, which can switch off the read-only session the rest of the request depends on, or runs the query to measure it. A read-only ceiling serves statements that only read",
-				describeClampUnit(i, len(units))))
+				"%s returns no data, and a statement like that can change the session the rest of the request runs on, "+
+					"switching off its read-only protection, or run the statement it measures",
+				describeClampUnit(i, len(units))), clampNextStep)
 		}
 	}
 	return nil
@@ -122,10 +129,22 @@ func describeClampUnit(index, total int) string {
 }
 
 // refuseClampedStatement wraps a reason in the denial the gate set the shape
-// for: what refused, why, and the two ways out.
-func refuseClampedStatement(reason string) error {
+// for: what refused, why, and what to do instead.
+func refuseClampedStatement(reason, nextStep string) error {
 	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-		"this workspace's MCP capability ceiling is READ_ONLY, so an MCP session may only run statements Bytebase can show are reads: %s. "+
-			"Ask a workspace admin to raise the MCP ceiling in the workspace settings, "+
-			"or run this statement signed in to the Bytebase console instead", reason))
+		"This workspace's MCP access policy is Read-only, so an MCP session may only run statements Bytebase "+
+			"can verify are reads: %s. %s", reason, nextStep))
+}
+
+// clampNextStep is the way out when the statement itself is sound: a policy
+// that runs it, or a person who may.
+const clampNextStep = "To run it, ask a workspace admin to switch the policy to Read-write under " +
+	auth.MCPAccessPolicyLocation + ", or, if your role allows it, run it in the Bytebase console."
+
+// lowerFirst lowercases a sentence's first letter so it can follow a comma.
+func lowerFirst(sentence string) string {
+	if sentence == "" {
+		return ""
+	}
+	return strings.ToLower(sentence[:1]) + sentence[1:]
 }

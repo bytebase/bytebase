@@ -168,9 +168,9 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	write := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
 		"INSERT INTO employee VALUES (2, 'agent')")
 	a.True(write.isError, "an INSERT must be refused under a read-only ceiling: %s", write.text)
-	a.Contains(write.text, "READ_ONLY", "the denial must name the ceiling that refused")
+	a.Contains(write.text, "MCP access policy is Read-only", "the denial must name the ceiling that refused")
 	a.Contains(write.text, "the statement is not a read", "the denial must say what was wrong with the request")
-	a.Contains(write.text, "raise the MCP ceiling", "the denial must name the way out")
+	a.Contains(write.text, "switch the policy to Read-write", "the denial must name the way out")
 	a.Contains(write.text, "Bytebase console", "the denial must name where the human can do it instead")
 
 	// Refused before execution, not after: the database is untouched.
@@ -216,7 +216,7 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 		}
 	}
 	a.NotNil(denied, "the denied query must have produced a row of its own")
-	a.Contains(denied.Status.Message, "READ_ONLY")
+	a.Contains(denied.Status.Message, "MCP access policy is Read-only")
 	a.Equal(v1pb.AuditLog_WARNING, denied.Severity, "the clamp marks its refusal")
 	for _, row := range rows {
 		if row.Status == nil {
@@ -278,8 +278,8 @@ func TestMCPReadOnlyCeilingRefusesASessionRewrite(t *testing.T) {
 	disarm := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
 		"SET default_transaction_read_only = off; SELECT nextval('employee_seq')")
 	a.True(disarm.isError, "a request that rewrites its own session must be refused: %s", disarm.text)
-	a.Contains(disarm.text, "rewrites the session it runs on")
-	a.Contains(disarm.text, "READ_ONLY")
+	a.Contains(disarm.text, "can change the session the rest of the request runs on")
+	a.Contains(disarm.text, "MCP access policy is Read-only")
 
 	a.Equal(before, f.sequenceValue(t),
 		"neither statement may run: the sequence must not have advanced")
@@ -382,7 +382,7 @@ func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 	refused := queryDatabaseOnSession(f.ctx, t, session, f.name,
 		"INSERT INTO employee VALUES (6, 'agent')")
 	a.True(refused.isError, "the tightening must bite the very next request of the open session: %s", refused.text)
-	a.Contains(refused.text, "READ_ONLY")
+	a.Contains(refused.text, "MCP access policy is Read-only")
 	a.Equal(2, f.employeeCount(t))
 
 	// Reads keep working on that same session, so what tightened is the
@@ -424,7 +424,7 @@ func TestMCPReadOnlyClampCoversAnExplainRequest(t *testing.T) {
 	})
 	a.Equal(http.StatusForbidden, refused.Status,
 		"an explain request must be clamped like any other: %s", refused.Error)
-	a.Contains(refused.Error, "READ_ONLY")
+	a.Contains(refused.Error, "MCP access policy is Read-only")
 	a.Equal(1, f.employeeCount(t))
 }
 
@@ -467,8 +467,8 @@ func TestMCPCutoverAdmitsReadOnlyAndNothingElse(t *testing.T) {
 		"sheet":  map[string]any{"content": base64.StdEncoding.EncodeToString([]byte("SELECT 1;"))},
 	})
 	a.Equal(http.StatusForbidden, sheet.Status, "a WRITE method must stay refused under READ_ONLY")
-	a.Contains(sheet.Error, "READ_ONLY")
-	a.Contains(sheet.Error, "raise the MCP ceiling")
+	a.Contains(sheet.Error, "MCP access policy is Read-only")
+	a.Contains(sheet.Error, "switch the policy to Read-write")
 
 	// DISABLED is still the ceiling that closes the door.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_DISABLED))
@@ -589,7 +589,7 @@ func TestMCPReadOnlyRoleDowngradeBitesTheNextRequest(t *testing.T) {
 	refused := callAPIOnSession(f.ctx, t, session, "SQLService/Query", query)
 	a.Equal(http.StatusForbidden, refused.Status,
 		"a role taken away must bite on the very next request: %s", refused.Error)
-	a.NotContains(refused.Error, "READ_ONLY",
+	a.NotContains(refused.Error, "MCP access policy is Read-only",
 		"this refusal is the caller's own RBAC, not the ceiling — effective access is the intersection")
 
 	// Live in both directions, so the refusal was the role and not damage to
@@ -606,5 +606,5 @@ func TestMCPReadOnlyRoleDowngradeBitesTheNextRequest(t *testing.T) {
 		"name": f.database, "statement": "INSERT INTO employee VALUES (9, 'reader')",
 	})
 	a.Equal(http.StatusForbidden, written.Status)
-	a.Contains(written.Error, "READ_ONLY")
+	a.Contains(written.Error, "MCP access policy is Read-only")
 }

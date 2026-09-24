@@ -340,7 +340,7 @@ func TestMCPCapabilityBitesTheNextRequest(t *testing.T) {
 	refused := createSheet()
 	a.Equal(http.StatusForbidden, refused.Status,
 		"the ceiling must bite the very next request of the session already open")
-	a.Contains(refused.Error, "capability ceiling is READ_ONLY",
+	a.Contains(refused.Error, "MCP access policy is Read-only",
 		"the refusal must be the ceiling gate's")
 
 	writeCeiling(v1pb.MCPSetting_READ_WRITE)

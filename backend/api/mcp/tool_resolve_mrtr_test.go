@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -413,6 +414,45 @@ func callMRTR(t *testing.T, session *mcp.ClientSession, responses mcp.InputRespo
 	})
 	require.NoError(t, err)
 	return res
+}
+
+// TestAmbiguousDatabaseQuestionNamesWhatThePickIsFor pins that the person
+// picking a database is told what the pick is for. The same prompt fronts a
+// read and a change that may run, and a question worded for a query would have
+// someone choose a change's target thinking it was a read.
+func TestAmbiguousDatabaseQuestionNamesWhatThePickIsFor(t *testing.T) {
+	s, _, token := newAmbiguousServer(t, ambiguousDatabases())
+	session := connectMRTR(t, mrtrEndpoint(t, s), token)
+
+	for tool, row := range map[string]struct {
+		arguments map[string]any
+		question  string
+	}{
+		"query_database": {
+			arguments: map[string]any{"database": ambiguousShortName, "statement": "SELECT 1"},
+			question:  "Which one should this query run against?",
+		},
+		"propose_database_change": {
+			arguments: map[string]any{"database": ambiguousShortName, "sql": "UPDATE t SET c = 1", "title": "t"},
+			question:  "Which one should this change target?",
+		},
+		"get_schema": {
+			arguments: map[string]any{"database": ambiguousShortName},
+			question:  "Which one's schema do you want?",
+		},
+	} {
+		t.Run(tool, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
+			res, err := session.CallTool(ctx, &mcp.CallToolParams{Name: tool, Arguments: row.arguments})
+			require.NoError(t, err)
+			require.True(t, res.NeedsInput(), "an ambiguous match must ask, not guess")
+			elicit, ok := res.InputRequests[databaseChoiceRequestID].(*mcp.ElicitParams)
+			require.True(t, ok, "the input request must be an elicitation")
+			require.Contains(t, elicit.Message, fmt.Sprintf("%q", ambiguousShortName), "the question names what matched")
+			require.Contains(t, elicit.Message, row.question)
+		})
+	}
 }
 
 // TestAmbiguousDatabaseReturnsInputRequestUnderMRTRClient pins the shape a

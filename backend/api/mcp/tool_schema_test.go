@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
@@ -903,4 +905,34 @@ func TestBuildMetadataFilter(t *testing.T) {
 			require.Equal(t, tc.want, buildMetadataFilter(tc.schema, tc.table))
 		})
 	}
+}
+
+// TestFetchMetadata_TimeoutNamesArgumentsTheToolTakes pins that the way out of
+// a schema timeout names arguments get_schema accepts. The internal request
+// carries a filter, but the tool builds it from schema and table, so advice to
+// pass a filter cannot be followed.
+func TestFetchMetadata_TimeoutNamesArgumentsTheToolTakes(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(500 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	})
+	s := newTestServerWithMock(t, handler)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	_, err := s.fetchMetadata(ctx, "instances/prod-pg/databases/employee_db", "", 0)
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Contains(t, te.Message, "within 30 seconds")
+
+	accepted := map[string]bool{}
+	for _, field := range reflect.VisibleFields(reflect.TypeFor[SchemaInput]()) {
+		accepted[strings.Split(field.Tag.Get("json"), ",")[0]] = true
+	}
+	for _, argument := range []string{"schema", "table"} {
+		require.True(t, accepted[argument], "get_schema takes no %q argument", argument)
+		require.Contains(t, te.Suggestion, argument)
+	}
+	require.False(t, accepted["filter"], "the test assumes get_schema takes no filter argument")
+	require.NotContains(t, te.Suggestion, "filter")
 }

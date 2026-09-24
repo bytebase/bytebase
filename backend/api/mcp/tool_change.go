@@ -194,7 +194,7 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	}
 
 	// Step 2: Resolve database.
-	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
+	resolved, resolveResult := s.resolveTarget(ctx, req, "Which one should this change target?", input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
 		return resolveResult, nil, nil
 	}

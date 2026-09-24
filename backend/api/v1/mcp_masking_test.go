@@ -244,6 +244,30 @@ func TestMCPRefusalsNameThemselvesToTheQueryTool(t *testing.T) {
 			class:   v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED,
 			request: connect.NewRequest(&v1pb.QueryRequest{}),
 		},
+		{
+			name:    "a FORBIDDEN method",
+			stores:  readWrite,
+			class:   v1pb.MCPMethodClass_FORBIDDEN,
+			request: connect.NewRequest(&v1pb.QueryRequest{}),
+		},
+		{
+			name:    "an EXCLUDED method",
+			stores:  readWrite,
+			class:   v1pb.MCPMethodClass_EXCLUDED,
+			request: connect.NewRequest(&v1pb.QueryRequest{}),
+		},
+		{
+			name:    "a policy this build does not support",
+			stores:  mcpGateStore{ceiling: storepb.MCPSetting_Capability(2)},
+			class:   v1pb.MCPMethodClass_READ,
+			request: connect.NewRequest(&v1pb.QueryRequest{}),
+		},
+		{
+			name:    "a Disabled policy",
+			stores:  mcpGateStore{ceiling: storepb.MCPSetting_DISABLED},
+			class:   v1pb.MCPMethodClass_READ,
+			request: connect.NewRequest(&v1pb.QueryRequest{}),
+		},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			got := invokeMCPGate(t, row.stores, &common.AuthContext{

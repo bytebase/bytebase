@@ -60,16 +60,19 @@ func TestEveryVerdictThatRefusesHasWording(t *testing.T) {
 		require.NotEmpty(t, refusal, "%v reaches a caller and must say what is wrong", v)
 		require.NotEmpty(t, v.Heading(), "%v reaches a caller and must have a heading", v)
 
-		// Composed into a larger error at every door but the consent page, so
-		// it starts lowercase and ends unterminated.
-		require.Equal(t, strings.ToLower(refusal[:1]), refusal[:1],
-			"%v: a door prefixes this, so it must not start a sentence", v)
-		require.NotEqual(t, ".", refusal[len(refusal)-1:],
-			"%v: the consent page terminates it; the others compose it", v)
+		// Shown on its own by the /mcp gate, the token endpoint and the consent
+		// redirect, so it is complete sentences.
+		require.Equal(t, strings.ToUpper(refusal[:1]), refusal[:1], "%v: it must start a sentence", v)
+		require.True(t, strings.HasSuffix(refusal, "."), "%v: it must end a sentence", v)
+		for _, r := range refusal {
+			require.True(t, r >= 0x20 && r <= 0x7e && r != '"' && r != '\\',
+				"%v: an OAuth error_description allows printable ASCII only, without quote or backslash (RFC 6749 section 5.2), got %q", v, r)
+		}
 
-		// Every refusal names the remedy, not only the fault. A denial an
-		// operator cannot act on is the failure this series exists to fix.
-		require.Contains(t, refusal, "workspace settings", "%v must name where the fix is", v)
+		// Every refusal names the remedy, not only the fault, where an admin
+		// finds it. A denial an operator cannot act on is the failure this
+		// series exists to fix.
+		require.Contains(t, refusal, MCPAccessPolicyLocation, "%v must name where the fix is", v)
 	}
 
 	require.Empty(t, MCPCeilingServes.Refusal(), "serving refuses nothing")
@@ -87,6 +90,6 @@ func TestRefusalsDistinguishTheStoredStates(t *testing.T) {
 		}
 		seen[refusal] = v
 	}
-	require.Contains(t, MCPCeilingDisabled.Refusal(), "turned MCP access off")
-	require.Contains(t, MCPCeilingUnserved.Refusal(), "not one this build serves")
+	require.Contains(t, MCPCeilingDisabled.Refusal(), "turned off MCP access")
+	require.Contains(t, MCPCeilingUnserved.Refusal(), "does not support")
 }
