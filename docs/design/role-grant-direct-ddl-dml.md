@@ -235,7 +235,7 @@ differ — possible only through the API — the row gains one line, *"Requested
 they match, nothing. That line is visibility, not a control: the self-approval guard keys on the
 creator (`backend/component/review/workflow.go:352`), so a request opened by a service account for
 a human leaves that human free to approve their own grant until the guard also excludes the
-grantee ([BOT-137](https://linear.app/bytebase/issue/BOT-137)).
+grantee ([BYT-10275](https://linear.app/bytebase/issue/BYT-10275)).
 
 **D9 · The issue title carries the scope.** The sheet generates *Request "SQL Editor User" role*
 today, or *[Request role] {reason}* when the project enforces issue titles
@@ -326,10 +326,10 @@ The implementation, which follows separately. Also deliberately out:
 - **Approval rules keyed on the direct-execution scope.** The evaluator never reads the
   environment clause, so "direct DDL/DML in Prod requires a DBA" cannot be routed; only the coarse
   `request.role` rule can. Exposing the clause to role-grant rules is a backend change, tracked as
-  [BOT-138](https://linear.app/bytebase/issue/BOT-138).
+  [BYT-10274](https://linear.app/bytebase/issue/BYT-10274).
 - **Denying approval when the actor is the grantee.** One guard beside the creator check in
   `workflow.go:352`, effective when self-approval is off. Backend, tracked as
-  [BOT-137](https://linear.app/bytebase/issue/BOT-137); until it lands, D8's *Requested by* line is
+  [BYT-10275](https://linear.app/bytebase/issue/BYT-10275); until it lands, D8's *Requested by* line is
   visibility only.
 - **A workspace-level ceiling.** An environment setting that closes an environment to direct
   execution for everyone, which the picker would show as disabled with a reason, would turn "do
