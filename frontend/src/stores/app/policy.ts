@@ -28,6 +28,8 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType): string[] => {
       return [PolicySchema.field.queryDataPolicy.name];
     case PolicyType.TAG:
       return [PolicySchema.field.tagPolicy.name];
+    case PolicyType.REVIEW_RULE:
+      return [PolicySchema.field.reviewRulePolicy.name];
     default:
       throw new Error(`unexpected policy type ${policyType}`);
   }

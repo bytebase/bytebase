@@ -729,6 +729,66 @@
   },
   "select-all": "选择全部",
   "select-review-rules": "选择 SQL 审核规则",
+  "standard-rules": {
+    "customize": {
+      "description": "关闭时，此项目遵循工作空间的标准规则。",
+      "self": "为此项目自定义",
+      "view-workspace-rules": "查看工作空间规则"
+    },
+    "description": "内置规则，审核每个工单中的 SQL。未自定义规则的项目遵循这里的设置。",
+    "off": "关",
+    "on": "开",
+    "project-description": "内置规则，审核此项目每个工单中的 SQL。",
+    "rule": {
+      "disallow-drop-constraint": {
+        "description": "标记删除 PRIMARY KEY、FOREIGN KEY、UNIQUE 或 CHECK 约束的操作。",
+        "title": "删除约束"
+      },
+      "disallow-drop-object": {
+        "description": "标记 DROP TABLE、COLUMN、SCHEMA 或 DATABASE。",
+        "title": "删除对象"
+      },
+      "disallow-rename": {
+        "description": "标记重命名表或列的操作。",
+        "title": "重命名"
+      },
+      "disallow-truncate": {
+        "description": "标记 TRUNCATE。",
+        "title": "清空表"
+      },
+      "online-migration": {
+        "description": "标记请求在线大表变更但不满足条件的变更。",
+        "title": "在线大表变更可行性"
+      },
+      "prior-backup": {
+        "description": "标记开启了事先备份但无法完成备份的变更。",
+        "title": "事先备份可行性"
+      },
+      "require-is-null": {
+        "description": "标记谓词中的 = NULL 或 <> NULL，它们永远不为真。请改用 IS NULL 或 IS NOT NULL。",
+        "title": "NULL 比较"
+      },
+      "require-primary-key": {
+        "description": "标记变更新建的表没有主键，或删除主键后没有重新添加。",
+        "title": "主键"
+      },
+      "require-where": {
+        "description": "标记没有 WHERE 子句的 UPDATE 或 DELETE。",
+        "title": "WHERE 子句"
+      },
+      "syntax": {
+        "description": "标记数据库引擎无法解析的语句。其他规则只检查能解析的 SQL，因此关闭此项会关闭所有标准规则。",
+        "title": "语法"
+      },
+      "walk-through": {
+        "description": "标记在已同步的 Schema 上执行失败的语句，例如表或列不存在、对象重复或引用无效。",
+        "title": "Schema 模拟执行"
+      }
+    },
+    "running": "{{total}} 条规则中 {{on}} 条生效",
+    "self": "标准规则",
+    "syntax-off": "语法检查已关闭，所有标准规则都不会运行。开启语法检查后才会审核变更。"
+  },
   "template": {
     "bb-sql-review-dev": "基础模板",
     "bb-sql-review-dev-desc": "保证变更可正确地应用到数据库。",

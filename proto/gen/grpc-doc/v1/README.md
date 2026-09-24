@@ -3376,7 +3376,7 @@ needs a person&#39;s acceptance, not that it is forbidden.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | REVIEW_RULE_TYPE_UNSPECIFIED | 0 |  |
-| SYNTAX | 1 | P0: the statements do not parse for the target engine. |
+| SYNTAX | 1 | P0: the statements do not parse for the target engine. It gates the other rules (see ReviewRulePolicy). |
 | WALK_THROUGH | 2 | P0: applying the statements to the synced schema fails: a missing table or column, a duplicate object, or an invalid reference. |
 | ONLINE_MIGRATION | 3 | P0: the change requests online migration but is not eligible. |
 | PRIOR_BACKUP | 4 | P0: the change enables prior backup but the backup cannot be taken. |
@@ -10025,7 +10025,12 @@ the reviewer, and the project policy wins where they conflict.
 ### ReviewRulePolicy
 Standard review rule policy: the rules switched on. The nearest policy
 wins: a project&#39;s own policy applies as is; a project without one uses
-the workspace policy; with neither, every rule is on.
+the workspace policy; with neither, every rule is on. Getting the policy
+of a project without its own is NOT_FOUND; getting the workspace&#39;s when it
+has none returns every rule on.
+
+SYNTAX gates the rest: the other rules judge only SQL that parses, so a
+list without SYNTAX switches every rule off.
 
 A saved list is explicit, so a rule added to the standard set in a later
 release is appended to every saved policy by a data migration in that

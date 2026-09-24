@@ -1,0 +1,283 @@
+import { create } from "@bufbuild/protobuf";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  type Policy,
+  PolicyResourceType,
+  PolicySchema,
+  PolicyType,
+  ReviewRulePolicySchema,
+} from "@/types/proto-es/v1/org_policy_service_pb";
+import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
+
+const WORKSPACE = "workspaces/ws";
+const PROJECT = "projects/p";
+
+const mocks = vi.hoisted(() => ({
+  canUpdate: { value: true },
+  upsertPolicy: vi.fn(),
+  deletePolicy: vi.fn(),
+  fetchPolicy: vi.fn(),
+  pushNotification: vi.fn(),
+}));
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock("@/hooks/useAppState", () => ({
+  useWorkspaceResourceName: () => "workspaces/ws",
+}));
+
+vi.mock("@/hooks/useProjectByName", () => ({
+  useProjectByName: (name: string) => ({ name }),
+}));
+
+vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
+  useUnsavedChangesGuard: vi.fn(),
+}));
+
+vi.mock("@/utils", () => ({
+  hasProjectPermissionV2: () => mocks.canUpdate.value,
+  hasWorkspacePermissionV2: () => true,
+}));
+
+vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
+vi.mock("@/stores/modules/v1/common", () => ({ projectNamePrefix: "projects/" }));
+
+vi.mock("@/components/RouterLink", () => ({
+  RouterLink: ({ children }: { children: ReactNode }) => <a href="/">{children}</a>,
+}));
+
+// Mirrors the real store: a fetch of a missing policy caches one with no
+// payload, and a delete drops the cached entry.
+vi.mock("@/stores/app", async () => {
+  const { create: createStore } = await import("zustand");
+  const { create: createMessage } = await import("@bufbuild/protobuf");
+  const { PolicySchema: Schema } = await import(
+    "@/types/proto-es/v1/org_policy_service_pb"
+  );
+  type StorePolicy = import("@/types/proto-es/v1/org_policy_service_pb").Policy;
+  const useAppStore = createStore<{
+    policies: Record<string, StorePolicy>;
+    getPolicyByParentAndType: (params: {
+      parentPath: string;
+    }) => StorePolicy | undefined;
+    getOrFetchPolicyByParentAndType: (params: {
+      parentPath: string;
+      refresh?: boolean;
+    }) => Promise<StorePolicy | undefined>;
+    upsertPolicy: (params: {
+      parentPath: string;
+      policy: Partial<StorePolicy>;
+    }) => Promise<StorePolicy>;
+    deletePolicy: (name: string) => Promise<void>;
+  }>()((set, get) => ({
+    policies: {},
+    getPolicyByParentAndType: ({ parentPath }) => get().policies[parentPath],
+    getOrFetchPolicyByParentAndType: async (params) => {
+      mocks.fetchPolicy(params);
+      if (!get().policies[params.parentPath]) {
+        set((state) => ({
+          policies: {
+            ...state.policies,
+            [params.parentPath]: createMessage(Schema, {
+              name: `${params.parentPath}/policies/review_rule`,
+            }),
+          },
+        }));
+      }
+      return get().policies[params.parentPath];
+    },
+    upsertPolicy: async (params) => {
+      await mocks.upsertPolicy(params);
+      const saved = {
+        ...params.policy,
+        name: `${params.parentPath}/policies/review_rule`,
+      } as StorePolicy;
+      set((state) => ({
+        policies: { ...state.policies, [params.parentPath]: saved },
+      }));
+      return saved;
+    },
+    deletePolicy: async (name) => {
+      await mocks.deletePolicy(name);
+      set((state) => ({
+        policies: Object.fromEntries(
+          Object.entries(state.policies).filter(
+            ([, policy]) => policy.name !== name
+          )
+        ),
+      }));
+    },
+  }));
+  return { useAppStore };
+});
+
+const { useAppStore } = await import("@/stores/app");
+// The mocked store holds only the policy cache.
+const seedPolicies = (policies: Record<string, Policy>) =>
+  (
+    useAppStore as unknown as {
+      setState: (state: { policies: Record<string, Policy> }) => void;
+    }
+  ).setState({ policies });
+const { ProjectSQLReviewPage } = await import("./ProjectSQLReviewPage");
+
+const reviewRulePolicy = (parent: string, rules: ReviewRuleType[]): Policy =>
+  create(PolicySchema, {
+    name: `${parent}/policies/review_rule`,
+    type: PolicyType.REVIEW_RULE,
+    policy: {
+      case: "reviewRulePolicy",
+      value: create(ReviewRulePolicySchema, { rules }),
+    },
+  });
+
+const workspacePolicy = () =>
+  reviewRulePolicy(WORKSPACE, [
+    ReviewRuleType.SYNTAX,
+    ReviewRuleType.REQUIRE_WHERE,
+  ]);
+
+const renderLoaded = async () => {
+  render(<ProjectSQLReviewPage projectId="p" />);
+  return screen.findByRole("switch", {
+    name: "sql-review.standard-rules.customize.self",
+  });
+};
+
+const ruleSwitch = (rule: string) =>
+  screen.getByRole("switch", {
+    name: `sql-review.standard-rules.rule.${rule}.title`,
+  });
+
+const update = () =>
+  act(async () => {
+    fireEvent.click(screen.getByRole("button", { name: "common.update" }));
+  });
+
+describe("ProjectSQLReviewPage", () => {
+  beforeEach(() => {
+    mocks.canUpdate.value = true;
+    mocks.upsertPolicy.mockReset();
+    mocks.deletePolicy.mockReset();
+    mocks.fetchPolicy.mockReset();
+    mocks.pushNotification.mockReset();
+    seedPolicies({ [WORKSPACE]: workspacePolicy() });
+  });
+
+  test("a project without its own policy shows the workspace rules as text", async () => {
+    const customize = await renderLoaded();
+
+    expect(customize).toHaveAttribute("aria-checked", "false");
+    // Only the customize control is a switch; the rules are read-only.
+    expect(screen.getAllByRole("switch")).toHaveLength(1);
+    expect(screen.getAllByText("sql-review.standard-rules.on")).toHaveLength(2);
+    expect(screen.getAllByText("sql-review.standard-rules.off")).toHaveLength(
+      9
+    );
+    expect(
+      screen.getByText("sql-review.standard-rules.running")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "common.update" })
+    ).not.toBeInTheDocument();
+  });
+
+  test("customizing starts from the workspace rules and saves a project policy", async () => {
+    const customize = await renderLoaded();
+
+    fireEvent.click(customize);
+    expect(ruleSwitch("require-where")).toHaveAttribute("aria-checked", "true");
+    expect(ruleSwitch("disallow-truncate")).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+    fireEvent.click(ruleSwitch("disallow-truncate"));
+    await update();
+
+    expect(mocks.upsertPolicy).toHaveBeenCalledTimes(1);
+    const { parentPath, policy } = mocks.upsertPolicy.mock.calls[0][0];
+    expect(parentPath).toBe(PROJECT);
+    expect(policy.type).toBe(PolicyType.REVIEW_RULE);
+    expect(policy.resourceType).toBe(PolicyResourceType.PROJECT);
+    expect(policy.policy.value.rules).toEqual([
+      ReviewRuleType.SYNTAX,
+      ReviewRuleType.REQUIRE_WHERE,
+      ReviewRuleType.DISALLOW_TRUNCATE,
+    ]);
+    expect(
+      screen.queryByRole("button", { name: "common.update" })
+    ).not.toBeInTheDocument();
+    expect(customize).toHaveAttribute("aria-checked", "true");
+    expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
+  });
+
+  test("turning customization off deletes the project policy", async () => {
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      [PROJECT]: reviewRulePolicy(PROJECT, [ReviewRuleType.SYNTAX]),
+    });
+    const customize = await renderLoaded();
+    expect(customize).toHaveAttribute("aria-checked", "true");
+    expect(ruleSwitch("require-where")).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+
+    fireEvent.click(customize);
+    // Back to the workspace rules, shown as text again.
+    expect(screen.getAllByRole("switch")).toHaveLength(1);
+    await update();
+
+    expect(mocks.upsertPolicy).not.toHaveBeenCalled();
+    expect(mocks.deletePolicy).toHaveBeenCalledWith(
+      `${PROJECT}/policies/review_rule`
+    );
+    expect(mocks.fetchPolicy).toHaveBeenLastCalledWith({
+      parentPath: PROJECT,
+      policyType: PolicyType.REVIEW_RULE,
+      refresh: true,
+    });
+    expect(customize).toHaveAttribute("aria-checked", "false");
+  });
+
+  test("switching customization on and back off is not a change", async () => {
+    const customize = await renderLoaded();
+
+    fireEvent.click(customize);
+    fireEvent.click(customize);
+    expect(
+      screen.queryByRole("button", { name: "common.update" })
+    ).not.toBeInTheDocument();
+  });
+
+  test("a failed save keeps the draft", async () => {
+    mocks.upsertPolicy.mockRejectedValue(new Error("denied"));
+    const customize = await renderLoaded();
+
+    fireEvent.click(customize);
+    await update();
+
+    expect(
+      screen.getByRole("button", { name: "common.update" })
+    ).toBeInTheDocument();
+    expect(customize).toHaveAttribute("aria-checked", "true");
+    expect(mocks.pushNotification).not.toHaveBeenCalled();
+  });
+
+  test("without bb.policies.update nothing can be switched", async () => {
+    mocks.canUpdate.value = false;
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      [PROJECT]: reviewRulePolicy(PROJECT, [ReviewRuleType.SYNTAX]),
+    });
+    await renderLoaded();
+
+    for (const control of screen.getAllByRole("switch")) {
+      expect(control).toHaveAttribute("data-disabled");
+    }
+  });
+});

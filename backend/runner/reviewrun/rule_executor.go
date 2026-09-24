@@ -66,6 +66,11 @@ func (e *RuleExecutor) RunOnce(ctx context.Context, projectID string, issueUID i
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get review rule policy")
 	}
+	// An empty policy is review switched off. omni evaluates SYNTAX whether or
+	// not it is listed, so it is not asked at all.
+	if len(policy.GetRules()) == 0 {
+		return nil, nil
+	}
 
 	databaseGroup, err := plancheck.GetDatabaseGroupForPlan(ctx, e.store, plan, nil)
 	if err != nil {

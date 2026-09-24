@@ -67,6 +67,7 @@ import {
   hexToColor,
   sqlReviewPolicySlug,
 } from "@/utils";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 
 // ---------------------------------------------------------------------------
 // ApprovalFlowIndicator
@@ -147,6 +148,8 @@ export function ProjectSettingsPage() {
   void projectsByName;
   const project = useProjectByName(projectName);
   const isDefault = isDefaultProject(projectName);
+  // The v1 review policy settings go away with SQL Review V2.
+  const sqlReviewV2 = sqlReviewV2Enabled();
 
   const hasPermission = useCallback(
     (permission: Permission) =>
@@ -266,7 +269,9 @@ export function ProjectSettingsPage() {
   useEffect(() => {
     if (lastFetchedProject.current === projectName) return;
     lastFetchedProject.current = projectName;
-    useSQLReviewStore.getState().fetchReviewPolicyList();
+    if (!sqlReviewV2Enabled()) {
+      useSQLReviewStore.getState().fetchReviewPolicyList();
+    }
     useAppStore.getState().getOrFetchPolicyByParentAndType({
       parentPath: projectName,
       policyType: PolicyType.DATA_QUERY,
@@ -737,62 +742,63 @@ export function ProjectSettingsPage() {
             {canGetPolicies && (
               <>
                 {/* SQL Review */}
-                {hasWorkspacePermissionV2("bb.reviewConfigs.get") && (
-                  <FormField title={t("sql-review.title")}>
-                    <div>
-                      {pendingReviewPolicy ? (
-                        <FormControlRow>
-                          <Switch
-                            checked={enforceReview}
-                            onCheckedChange={setEnforceReview}
-                            disabled={
-                              !hasWorkspacePermissionV2(
-                                "bb.reviewConfigs.update"
-                              )
-                            }
-                          />
-                          <span
-                            className="text-sm font-medium text-accent cursor-pointer hover:underline"
-                            onClick={() =>
-                              router.push({
-                                name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
-                                params: {
-                                  sqlReviewPolicySlug:
-                                    sqlReviewPolicySlug(pendingReviewPolicy),
-                                },
-                              })
-                            }
-                          >
-                            {pendingReviewPolicy.name}
-                          </span>
-                          {canUpdatePolicies && (
-                            <Button
-                              appearance="secondary"
-                              size="sm"
-                              onClick={() => {
-                                setPendingReviewPolicy(undefined);
-                                setEnforceReview(false);
-                              }}
+                {!sqlReviewV2 &&
+                  hasWorkspacePermissionV2("bb.reviewConfigs.get") && (
+                    <FormField title={t("sql-review.title")}>
+                      <div>
+                        {pendingReviewPolicy ? (
+                          <FormControlRow>
+                            <Switch
+                              checked={enforceReview}
+                              onCheckedChange={setEnforceReview}
+                              disabled={
+                                !hasWorkspacePermissionV2(
+                                  "bb.reviewConfigs.update"
+                                )
+                              }
+                            />
+                            <span
+                              className="text-sm font-medium text-accent cursor-pointer hover:underline"
+                              onClick={() =>
+                                router.push({
+                                  name: WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
+                                  params: {
+                                    sqlReviewPolicySlug:
+                                      sqlReviewPolicySlug(pendingReviewPolicy),
+                                  },
+                                })
+                              }
                             >
-                              <X className="size-4" />
-                            </Button>
-                          )}
-                        </FormControlRow>
-                      ) : (
-                        <Button
-                          appearance="outline"
-                          disabled={
-                            !canUpdatePolicies ||
-                            !hasWorkspacePermissionV2("bb.reviewConfigs.list")
-                          }
-                          onClick={() => setShowReviewDialog(true)}
-                        >
-                          {t("sql-review.configure-policy")}
-                        </Button>
-                      )}
-                    </div>
-                  </FormField>
-                )}
+                              {pendingReviewPolicy.name}
+                            </span>
+                            {canUpdatePolicies && (
+                              <Button
+                                appearance="secondary"
+                                size="sm"
+                                onClick={() => {
+                                  setPendingReviewPolicy(undefined);
+                                  setEnforceReview(false);
+                                }}
+                              >
+                                <X className="size-4" />
+                              </Button>
+                            )}
+                          </FormControlRow>
+                        ) : (
+                          <Button
+                            appearance="outline"
+                            disabled={
+                              !canUpdatePolicies ||
+                              !hasWorkspacePermissionV2("bb.reviewConfigs.list")
+                            }
+                            onClick={() => setShowReviewDialog(true)}
+                          >
+                            {t("sql-review.configure-policy")}
+                          </Button>
+                        )}
+                      </div>
+                    </FormField>
+                  )}
 
                 {/* Maximum SQL Result Rows */}
                 <FormField
@@ -975,17 +981,19 @@ export function ProjectSettingsPage() {
                 "project.settings.issue-related.enforce-issue-title.description"
               )}
             />
-            <ToggleRow
-              checked={enforceSqlReview}
-              onCheckedChange={setEnforceSqlReview}
-              disabled={!canUpdateProject}
-              label={t(
-                "project.settings.issue-related.enforce-sql-review.self"
-              )}
-              description={t(
-                "project.settings.issue-related.enforce-sql-review.description"
-              )}
-            />
+            {!sqlReviewV2 && (
+              <ToggleRow
+                checked={enforceSqlReview}
+                onCheckedChange={setEnforceSqlReview}
+                disabled={!canUpdateProject}
+                label={t(
+                  "project.settings.issue-related.enforce-sql-review.self"
+                )}
+                description={t(
+                  "project.settings.issue-related.enforce-sql-review.description"
+                )}
+              />
+            )}
             <FormField
               title={t(
                 "project.settings.issue-related.approval-permissions.self"
