@@ -358,7 +358,7 @@ become: "If enabled, masked data stays masked in MCP sessions even for users wit
 unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing.
 The console is unaffected." The middle sentence stays in the product on purpose. Masking runs only
 on the engines `common.EngineSupportMasking` lists; on the others the query masker falls back to a
-no-op, so on Snowflake or ClickHouse the toggle keeps nothing masked, and the setting's own proto
+no-op, so on ClickHouse or Doris the toggle keeps nothing masked, and the setting's own proto
 comment says it "is not a confidentiality boundary". A toggle that promised more would mislead the
 admin it exists to protect. The three "Best for" lines keep their current wording. The Read-only description sentence ("Sessions can explore schemas and run
 read-only queries…") is retired everywhere; its content lives in the Read-only summary and in row

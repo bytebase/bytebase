@@ -136,14 +136,14 @@ func EngineSupportMasking(e storepb.Engine) bool {
 		storepb.Engine_SPANNER,
 		storepb.Engine_REDSHIFT,
 		storepb.Engine_CASSANDRA,
-		storepb.Engine_TRINO:
+		storepb.Engine_TRINO,
+		storepb.Engine_SNOWFLAKE:
 		return true
 	case
 		storepb.Engine_ENGINE_UNSPECIFIED,
 		storepb.Engine_MONGODB,
 		storepb.Engine_REDIS,
 		storepb.Engine_CLICKHOUSE,
-		storepb.Engine_SNOWFLAKE,
 		storepb.Engine_STARROCKS,
 		storepb.Engine_HIVE,
 		storepb.Engine_COCKROACHDB,
