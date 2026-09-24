@@ -374,7 +374,7 @@ func (s *Server) fetchMetadata(ctx context.Context, resourceName, filter string,
 	resp, err := s.apiRequest(ctx, "/bytebase.v1.DatabaseService/GetDatabaseMetadata", body)
 	if err != nil {
 		return nil, internalRequestError("SCHEMA_FETCH_ERROR", "load the schema", err,
-			"narrow it with the filter argument and try again")
+			"narrow it with the schema or table argument and try again")
 	}
 
 	if resp.Status >= 400 {
