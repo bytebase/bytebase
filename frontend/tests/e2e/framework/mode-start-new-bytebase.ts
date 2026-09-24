@@ -59,7 +59,10 @@ export function cleanupOrphans(pidFile: string = PID_FILE): void {
   fs.unlinkSync(pidFile);
 }
 
-function checkPort(port: number): Promise<boolean> {
+// A port is free only when nothing answers on loopback, where the health
+// checks connect, and the server's own bind would succeed.
+async function checkPort(port: number): Promise<boolean> {
+  if (await isPortListening(port)) return false;
   return new Promise((resolve) => {
     const server = net.createServer();
     server.once("error", () => resolve(false));

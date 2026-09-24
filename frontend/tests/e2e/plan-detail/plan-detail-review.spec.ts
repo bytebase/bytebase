@@ -53,7 +53,11 @@ import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient, type IamPolicy } from "../framework/api-client";
 import { signInBrowserAs } from "../framework/sign-in";
 import { PlanDetailPage } from "./plan-detail.page";
-import { seedReviewPlan, waitForApprovalStatus } from "./plan-helpers";
+import {
+  authorMayApprove,
+  seedReviewPlan,
+  waitForApprovalStatus,
+} from "./plan-helpers";
 
 test.setTimeout(180_000);
 
@@ -68,6 +72,7 @@ let originalProjectSettings: {
   requireIssueApproval?: boolean;
   requirePlanCheckNoError?: boolean;
   allowSelfApproval?: boolean;
+  allowLastPlanEditorApproval?: boolean;
 } = {};
 let originalApproval: unknown = null;
 const createdReviewConfigs: string[] = [];
@@ -108,14 +113,14 @@ async function goReview(planId: string): Promise<void> {
 
 // Configure a mandatory single/multi-step approval flow (the common case for
 // the review-action + flow describes). Clears any review-config tag first so a
-// prior describe's ERROR rule can't leak in. allowSelfApproval=true lets demo@
-// (the issue creator) approve their own issue for single-admin tests.
+// prior describe's ERROR rule can't leak in. authorMayApprove lets demo@ (the
+// issue creator and last plan editor) approve their own issue.
 async function setupApproval(rule: object): Promise<void> {
   await env.api.deletePolicy(env.project, "tag").catch(() => {});
   await env.api.updateProjectSettings(env.project, {
     requireIssueApproval: true,
     requirePlanCheckNoError: false,
-    allowSelfApproval: true,
+    ...authorMayApprove(true),
   });
   await env.api.upsertSetting(
     "WORKSPACE_APPROVAL",
@@ -146,6 +151,7 @@ test.beforeAll(async ({ browser }) => {
     requireIssueApproval: !!project.requireIssueApproval,
     requirePlanCheckNoError: !!project.requirePlanCheckNoError,
     allowSelfApproval: !!project.allowSelfApproval,
+    allowLastPlanEditorApproval: !!project.allowLastPlanEditorApproval,
   };
   originalApproval = (await env.api.getSetting("WORKSPACE_APPROVAL"))?.value ?? null;
 
@@ -713,7 +719,7 @@ test.describe("Bypass when approved but checks failed (CUJ F)", () => {
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: false,
       requirePlanCheckNoError: false,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
@@ -761,7 +767,7 @@ test.describe("Waiting-review bypass link is gated by requireIssueApproval (CUJ 
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: true,
       requirePlanCheckNoError: false,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
@@ -806,7 +812,7 @@ test.describe("A mandatory project gate hard-blocks the bypass confirm", () => {
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: false,
       requirePlanCheckNoError: true,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
@@ -855,7 +861,7 @@ test.describe("confirm sheet shows the skipped state in its review box (BYT-9745
     await env.api.updateProjectSettings(env.project, {
       requireIssueApproval: false,
       requirePlanCheckNoError: false,
-      allowSelfApproval: true,
+      ...authorMayApprove(true),
     });
     await env.api.upsertSetting(
       "WORKSPACE_APPROVAL",
