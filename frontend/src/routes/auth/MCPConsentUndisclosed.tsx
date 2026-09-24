@@ -43,7 +43,7 @@ export function MCPConsentUndisclosed({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="text-center flex flex-col gap-2">
+      <div className="text-center text-balance flex flex-col gap-2">
         <h1 className="text-xl font-semibold text-main">{t(`${key}.title`)}</h1>
         <p className="text-control">{t(`${key}.description`)}</p>
       </div>
