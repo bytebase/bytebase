@@ -1533,8 +1533,11 @@
       "all-databases": "All databases",
       "all-databases-tip": "All current and future databases in this project.",
       "details": "Role grant details",
+      "direct-execution-suffix": "{{kind}} without approval in {{environments}}",
       "expired-at": "Expired at",
+      "grantee": "Grantee",
       "manually-select": "Manually select",
+      "requested-by": "Requested by {{creator}}",
       "use-cel": "Use CEL Expression"
     },
     "sort": {
@@ -2016,11 +2019,23 @@
       "self": "Masking Exemptions"
     },
     "members": {
-      "ddl-current-all": "{{kind}} statements can be directly run in SQL Editor in ALL environments without approval.",
-      "ddl-current-none": "{{kind}} statements require approval before running in SQL Editor.",
-      "ddl-current-some": "{{kind}} statements can be directly run in SQL Editor in the listed environments without approval.",
-      "ddl-warning": "In the selected environments, {{kind}} statements can be directly run in SQL Editor without approval.",
       "description": "Project members determine the permission to operate database and issues inside the project. Project Owner, Workspace Admin and Workspace DBA all have full project permissions.",
+      "direct-execution": {
+        "all": "Can run {{kind}} in SQL Editor in every environment without approval.",
+        "environment-required": "At least one environment is required.",
+        "in-environments": "In these environments",
+        "lead-approver": "Approving lets {{grantee}} run {{kind}} in SQL Editor without approval in:",
+        "lead-binding": "Can run {{kind}} in SQL Editor without approval in:",
+        "lead-grant": "Members with this role can run {{kind}} in SQL Editor without approval in:",
+        "lead-request": "Once approved, you can run {{kind}} in SQL Editor without approval in:",
+        "none": "{{kind}} cannot run in SQL Editor without approval.",
+        "protected-tag": "Production environment",
+        "protected_one": "{{environments}} is a production environment.",
+        "protected_other": "{{environments}} are production environments.",
+        "select-environments": "Select environments",
+        "switch-label": "Allow running {{kind}} in SQL Editor without approval",
+        "title": "Direct {{kind}} execution"
+      },
       "edit-member": "Edit member - {{member}}",
       "expiration-presets": {
         "one-month": "1 month",
@@ -2278,7 +2293,7 @@
       "self": "SQL Editor Read User"
     },
     "sql-editor-user": {
-      "description": "Permissions for querying database data.",
+      "description": "Query data in SQL Editor; DDL/DML runs without approval only in the allowed environments.",
       "self": "SQL Editor User"
     },
     "title": "Title",

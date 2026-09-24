@@ -1533,8 +1533,11 @@
       "all-databases": "todas las bases de datos",
       "all-databases-tip": "Todas las bases de datos actuales y futuras de este proyecto.",
       "details": "Detalles de la concesión de rol",
+      "direct-execution-suffix": "{{kind}} sin aprobación en {{environments}}",
       "expired-at": "Expiró el",
+      "grantee": "Beneficiario",
       "manually-select": "selección manual",
+      "requested-by": "Solicitado por {{creator}}",
       "use-cel": "Usar expresión CEL"
     },
     "sort": {
@@ -2016,11 +2019,23 @@
       "self": "Exenciones de Enmascaramiento"
     },
     "members": {
-      "ddl-current-all": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en TODOS los entornos sin aprobación.",
-      "ddl-current-none": "Las sentencias {{kind}} requieren aprobación antes de ejecutarse en el editor SQL.",
-      "ddl-current-some": "Las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL en los entornos listados sin aprobación.",
-      "ddl-warning": "En los entornos seleccionados, las sentencias {{kind}} pueden ejecutarse directamente en el editor SQL sin aprobación.",
       "description": "Los miembros del proyecto determinan el permiso para operar la base de datos y los problemas dentro del proyecto. El propietario del proyecto, el administrador del espacio de trabajo y el DBA del espacio de trabajo tienen permisos completos para el proyecto.",
+      "direct-execution": {
+        "all": "Puede ejecutar {{kind}} en el editor SQL en todos los entornos sin aprobación.",
+        "environment-required": "Se requiere al menos un entorno.",
+        "in-environments": "En estos entornos",
+        "lead-approver": "Al aprobar, {{grantee}} podrá ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-binding": "Puede ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-grant": "Los miembros con este rol pueden ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "lead-request": "Una vez aprobado, podrás ejecutar {{kind}} en el editor SQL sin aprobación en:",
+        "none": "{{kind}} no puede ejecutarse en el editor SQL sin aprobación.",
+        "protected-tag": "Entorno de producción",
+        "protected_one": "{{environments}} es un entorno de producción.",
+        "protected_other": "{{environments}} son entornos de producción.",
+        "select-environments": "Seleccionar entornos",
+        "switch-label": "Permitir ejecutar {{kind}} en el editor SQL sin aprobación",
+        "title": "Ejecución directa de {{kind}}"
+      },
       "edit-member": "Editar miembro - {{member}}",
       "expiration-presets": {
         "one-month": "1 mes",
@@ -2278,7 +2293,7 @@
       "self": "Usuario de solo lectura del editor SQL"
     },
     "sql-editor-user": {
-      "description": "El consultor del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto.",
+      "description": "Consulta datos en el editor SQL; DDL/DML se ejecuta sin aprobación solo en los entornos permitidos.",
       "self": "Usuario del editor SQL"
     },
     "title": "Título",
