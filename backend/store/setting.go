@@ -577,8 +577,6 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 // in-process writes refresh it, so a setting flipped out of band — direct SQL,
 // another replica — must still bite on the next request.
 //
-// Both fields come off one row, so the gate cannot admit a call that a later
-// enforcement point then judges under a different row.
 // Returns nil with any error; no caller may act on partially resolved settings.
 //
 // Existing workspaces without an MCP row retain the previous READ_WRITE

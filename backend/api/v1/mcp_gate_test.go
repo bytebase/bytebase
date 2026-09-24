@@ -804,16 +804,15 @@ func TestMCPClassificationInventory(t *testing.T) {
 // exercised without a database. The end-to-end path exists too, in
 // backend/tests, now that a READ_ONLY ceiling admits a connection.
 type mcpGateStore struct {
-	ceiling                 storepb.MCPSetting_Capability
-	ignoreMaskingExemptions bool
-	err                     error
+	ceiling storepb.MCPSetting_Capability
+	err     error
 }
 
 func (s mcpGateStore) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
 	if s.err != nil {
 		return nil, s.err
 	}
-	return &storepb.MCPSetting{Capability: s.ceiling, IgnoreMaskingExemptions: s.ignoreMaskingExemptions}, nil
+	return &storepb.MCPSetting{Capability: s.ceiling}, nil
 }
 
 func readWriteCeiling() mcpGateStore {

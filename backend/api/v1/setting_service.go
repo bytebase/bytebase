@@ -211,8 +211,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			switch path {
 			case "value.mcp.capability":
 				mcpSetting.Capability = convertToStoreMCPCapability(payload.Capability)
-			case "value.mcp.ignore_masking_exemptions":
-				mcpSetting.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
 			default:
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
 			}
