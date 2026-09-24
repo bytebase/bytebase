@@ -69,13 +69,10 @@ export function useWorkspaceStandardRules(
       parentPath: workspace,
       policyType: PolicyType.REVIEW_RULE,
     };
-    // A read that failed leaves nothing in the cache.
     void store
-      .getOrFetchPolicyByParentAndType({ ...find, refresh: attempt > 0 })
-      .then(() => {
-        if (active && store.getPolicyByParentAndType(find) === undefined) {
-          setReadFailed(true);
-        }
+      .fetchPolicyByParentAndType({ ...find, refresh: attempt > 0 })
+      .then((policy) => {
+        if (active && policy === undefined) setReadFailed(true);
       });
     if (canList) {
       void store
@@ -162,6 +159,7 @@ export function SQLReviewStandardRulesSection({
   standardRules: WorkspaceStandardRules;
 }) {
   const { t } = useTranslation();
+  const workspace = useWorkspaceResourceName();
 
   return (
     <section className="flex flex-col gap-y-6 pt-8">
@@ -190,6 +188,8 @@ export function SQLReviewStandardRulesSection({
       )}
       {standardRules.rules && (
         <StandardRuleSwitches
+          // The rules remembered while SYNTAX is off belong to one workspace.
+          key={workspace}
           rules={standardRules.rules}
           onChange={standardRules.setRules}
           disabled={!standardRules.canEdit || standardRules.saving}

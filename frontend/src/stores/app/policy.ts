@@ -87,14 +87,14 @@ const policyResourceName = (parent: string, policyType: PolicyType) =>
 /**
  * `policyMapByName` cache + sync/async getters keyed by resource name.
  */
-export const createPolicySlice: AppSliceCreator<PolicySlice> = (set, get) => ({
-  policyMapByName: {},
-  policyRequests: {},
-
-  getPolicyByName: (name) =>
-    get().policyMapByName[replacePolicyTypeNameToLowerCase(name)],
-
-  getOrFetchPolicyByName: async (name, refresh = false) => {
+export const createPolicySlice: AppSliceCreator<PolicySlice> = (set, get) => {
+  // Resolves to the policy; to null when the resource has none, caching a
+  // stand-in so repeated lookups do not hammer the backend; or to undefined
+  // when the read failed, leaving the cache as it was.
+  const fetchPolicy = async (
+    name: string,
+    refresh: boolean
+  ): Promise<Policy | null | undefined> => {
     const key = replacePolicyTypeNameToLowerCase(name);
     const cached = get().policyMapByName[key];
     if (cached && !refresh) return cached;
@@ -118,12 +118,12 @@ export const createPolicySlice: AppSliceCreator<PolicySlice> = (set, get) => ({
         });
         return policy;
       })
-      .catch((error): undefined => {
+      .catch((error): null | undefined => {
+        const notFound =
+          error instanceof ConnectError && error.code === Code.NotFound;
         set((state) => {
           const { [key]: _, ...policyRequests } = state.policyRequests;
-          // Cache an empty policy on NotFound so repeated lookups don't
-          // hammer the backend.
-          if (error instanceof ConnectError && error.code === Code.NotFound) {
+          if (notFound) {
             return {
               policyMapByName: {
                 ...state.policyMapByName,
@@ -134,79 +134,97 @@ export const createPolicySlice: AppSliceCreator<PolicySlice> = (set, get) => ({
           }
           return { policyRequests };
         });
-        return undefined;
+        return notFound ? null : undefined;
       });
     set((state) => ({
       policyRequests: { ...state.policyRequests, [key]: request },
     }));
     return request;
-  },
+  };
 
-  getPolicyByParentAndType: ({ parentPath, policyType }) =>
-    get().policyMapByName[policyResourceName(parentPath, policyType)],
+  return {
+    policyMapByName: {},
+    policyRequests: {},
 
-  getOrFetchPolicyByParentAndType: ({ parentPath, policyType, refresh }) =>
-    get().getOrFetchPolicyByName(
-      policyResourceName(parentPath, policyType),
-      refresh
-    ),
+    getPolicyByName: (name) =>
+      get().policyMapByName[replacePolicyTypeNameToLowerCase(name)],
 
-  getQueryDataPolicyByParent: (parent) => {
-    const policy = get().getPolicyByParentAndType({
-      parentPath: parent,
-      policyType: PolicyType.DATA_QUERY,
-    });
-    return policy?.policy?.case === "queryDataPolicy"
-      ? policy.policy.value
-      : EMPTY_QUERY_DATA_POLICY;
-  },
+    getOrFetchPolicyByName: async (name, refresh = false) =>
+      (await fetchPolicy(name, refresh)) ?? undefined,
 
-  listPolicies: async ({ parentPath, policyType, showDeleted = false }) => {
-    const { policies } = await orgPolicyServiceClientConnect.listPolicies(
-      createProto(ListPoliciesRequestSchema, {
-        parent: parentPath,
-        policyType,
-        showDeleted,
-      }),
-      { contextValues: createContextValues().set(silentContextKey, true) }
-    );
-    return policies;
-  },
+    getPolicyByParentAndType: ({ parentPath, policyType }) =>
+      get().policyMapByName[policyResourceName(parentPath, policyType)],
 
-  upsertPolicy: async ({ parentPath, policy }) => {
-    if (!policy.type) {
-      throw new Error("policy type is required");
-    }
-    const name = policyResourceName(parentPath, policy.type);
-    const response = await orgPolicyServiceClientConnect.updatePolicy(
-      createProto(UpdatePolicyRequestSchema, {
-        policy: createProto(PolicySchema, {
-          name,
-          inheritFromParent: policy.inheritFromParent ?? false,
-          type: policy.type,
-          resourceType:
-            policy.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
-          enforce: policy.enforce ?? false,
-          policy: policy.policy,
+    getOrFetchPolicyByParentAndType: ({ parentPath, policyType, refresh }) =>
+      get().getOrFetchPolicyByName(
+        policyResourceName(parentPath, policyType),
+        refresh
+      ),
+
+    fetchPolicyByParentAndType: ({ parentPath, policyType, refresh = false }) =>
+      fetchPolicy(policyResourceName(parentPath, policyType), refresh),
+
+    getQueryDataPolicyByParent: (parent) => {
+      const policy = get().getPolicyByParentAndType({
+        parentPath: parent,
+        policyType: PolicyType.DATA_QUERY,
+      });
+      return policy?.policy?.case === "queryDataPolicy"
+        ? policy.policy.value
+        : EMPTY_QUERY_DATA_POLICY;
+    },
+
+    listPolicies: async ({ parentPath, policyType, showDeleted = false }) => {
+      const { policies } = await orgPolicyServiceClientConnect.listPolicies(
+        createProto(ListPoliciesRequestSchema, {
+          parent: parentPath,
+          policyType,
+          showDeleted,
         }),
-        updateMask: { paths: getUpdateMaskFromPolicyType(policy.type) },
-        allowMissing: true,
-      })
-    );
-    set((state) => ({
-      policyMapByName: { ...state.policyMapByName, [response.name]: response },
-    }));
-    return response;
-  },
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      );
+      return policies;
+    },
 
-  deletePolicy: async (name) => {
-    await orgPolicyServiceClientConnect.deletePolicy(
-      createProto(DeletePolicyRequestSchema, { name })
-    );
-    const key = replacePolicyTypeNameToLowerCase(name);
-    set((state) => {
-      const { [key]: _removed, ...policyMapByName } = state.policyMapByName;
-      return { policyMapByName };
-    });
-  },
-});
+    upsertPolicy: async ({ parentPath, policy }) => {
+      if (!policy.type) {
+        throw new Error("policy type is required");
+      }
+      const name = policyResourceName(parentPath, policy.type);
+      const response = await orgPolicyServiceClientConnect.updatePolicy(
+        createProto(UpdatePolicyRequestSchema, {
+          policy: createProto(PolicySchema, {
+            name,
+            inheritFromParent: policy.inheritFromParent ?? false,
+            type: policy.type,
+            resourceType:
+              policy.resourceType ??
+              PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
+            enforce: policy.enforce ?? false,
+            policy: policy.policy,
+          }),
+          updateMask: { paths: getUpdateMaskFromPolicyType(policy.type) },
+          allowMissing: true,
+        })
+      );
+      set((state) => ({
+        policyMapByName: {
+          ...state.policyMapByName,
+          [response.name]: response,
+        },
+      }));
+      return response;
+    },
+
+    deletePolicy: async (name) => {
+      await orgPolicyServiceClientConnect.deletePolicy(
+        createProto(DeletePolicyRequestSchema, { name })
+      );
+      const key = replacePolicyTypeNameToLowerCase(name);
+      set((state) => {
+        const { [key]: _removed, ...policyMapByName } = state.policyMapByName;
+        return { policyMapByName };
+      });
+    },
+  };
+};
