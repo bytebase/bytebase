@@ -55,6 +55,7 @@ describe("policy store", () => {
       policy: {
         type: PolicyType.REVIEW_RULE,
         resourceType: PolicyResourceType.PROJECT,
+        enforce: true,
         policy: {
           case: "reviewRulePolicy",
           value: create(ReviewRulePolicySchema, {
@@ -66,7 +67,11 @@ describe("policy store", () => {
 
     const request = mocks.updatePolicy.mock.calls[0][0] as UpdatePolicyRequest;
     expect(request.policy?.name).toBe("projects/p/policies/review_rule");
-    expect(request.updateMask?.paths).toEqual(["review_rule_policy"]);
+    expect(request.policy?.enforce).toBe(true);
+    expect(request.updateMask?.paths).toEqual([
+      "review_rule_policy",
+      "enforce",
+    ]);
     expect(request.allowMissing).toBe(true);
     expect(
       store.getPolicyByParentAndType({

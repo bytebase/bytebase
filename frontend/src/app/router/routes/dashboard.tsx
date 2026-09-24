@@ -184,10 +184,11 @@ const workspaceLevelRoutes: RouteObject[] = [
         index: true,
         handle: {
           name: WORKSPACE_ROUTE_SQL_REVIEW,
-          requiredPermissionList: (): Permission[] => [
-            "bb.reviewConfigs.list",
-            "bb.policies.get",
-          ],
+          // The V2 page reads the review rule policy only.
+          requiredPermissionList: (): Permission[] =>
+            sqlReviewV2Enabled()
+              ? ["bb.policies.get"]
+              : ["bb.reviewConfigs.list", "bb.policies.get"],
         },
         lazy: lazyPage(
           () => import("@/routes/workspace/SQLReviewPage"),

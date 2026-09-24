@@ -63,6 +63,21 @@ describe("standard rules", () => {
 
   test("read the rules of a policy, and nothing from a policy without one", () => {
     expect(reviewRulesOfPolicy(undefined)).toBeUndefined();
+    // Switched off through the API: the backend reads it as absent.
+    expect(
+      reviewRulesOfPolicy(
+        create(PolicySchema, {
+          type: PolicyType.REVIEW_RULE,
+          enforce: false,
+          policy: {
+            case: "reviewRulePolicy",
+            value: create(ReviewRulePolicySchema, {
+              rules: [ReviewRuleType.SYNTAX],
+            }),
+          },
+        })
+      )
+    ).toBeUndefined();
     // What the store caches when a project has no policy of its own.
     expect(
       reviewRulesOfPolicy(
@@ -73,6 +88,7 @@ describe("standard rules", () => {
       reviewRulesOfPolicy(
         create(PolicySchema, {
           type: PolicyType.REVIEW_RULE,
+          enforce: true,
           policy: {
             case: "reviewRulePolicy",
             value: create(ReviewRulePolicySchema, {

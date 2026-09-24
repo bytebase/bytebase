@@ -65,6 +65,7 @@ export function useWorkspaceStandardRules(
         policy: {
           type: PolicyType.REVIEW_RULE,
           resourceType: PolicyResourceType.WORKSPACE,
+          enforce: true,
           policy: {
             case: "reviewRulePolicy",
             value: create(ReviewRulePolicySchema, { rules: draft }),
@@ -101,7 +102,10 @@ export function SQLReviewStandardRulesSection({
   standardRules: WorkspaceStandardRules;
 }) {
   const { t } = useTranslation();
-  const canUpdate = hasWorkspacePermissionV2("bb.policies.update");
+  // The workspace has no policy row until the first save, which creates it.
+  const canUpdate =
+    hasWorkspacePermissionV2("bb.policies.update") &&
+    hasWorkspacePermissionV2("bb.policies.create");
 
   return (
     <section className="flex flex-col gap-y-6 pt-8">

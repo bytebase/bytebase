@@ -14,7 +14,7 @@ import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 const WORKSPACE = "workspaces/ws";
 
 const mocks = vi.hoisted(() => ({
-  canUpdate: { value: true },
+  permissions: {} as Record<string, boolean>,
   upsertPolicy: vi.fn(),
   pushNotification: vi.fn(),
 }));
@@ -29,7 +29,7 @@ vi.mock("@/hooks/useAppState", () => ({
 
 vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: (permission: string) =>
-    permission === "bb.policies.update" ? mocks.canUpdate.value : true,
+    mocks.permissions[permission] ?? true,
 }));
 
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
@@ -81,6 +81,7 @@ const reviewRulePolicy = (rules: ReviewRuleType[]): Policy =>
   create(PolicySchema, {
     name: `${WORKSPACE}/policies/review_rule`,
     type: PolicyType.REVIEW_RULE,
+    enforce: true,
     policy: {
       case: "reviewRulePolicy",
       value: create(ReviewRulePolicySchema, { rules }),
@@ -110,13 +111,13 @@ const ruleSwitch = (rule: string) =>
 
 describe("SQLReviewStandardRulesSection", () => {
   beforeEach(() => {
-    mocks.canUpdate.value = true;
+    mocks.permissions = {};
     mocks.upsertPolicy.mockReset();
     mocks.pushNotification.mockReset();
     seedPolicies({ [WORKSPACE]: reviewRulePolicy([...STANDARD_RULE_TYPES]) });
   });
 
-  test("saves the edited rules as the workspace policy", async () => {
+  test("saves the edited rules as the enforced workspace policy", async () => {
     render(<Harness />);
     expect(screen.getByTestId("dirty")).toHaveTextContent("false");
 
@@ -132,6 +133,7 @@ describe("SQLReviewStandardRulesSection", () => {
     expect(parentPath).toBe(WORKSPACE);
     expect(policy.type).toBe(PolicyType.REVIEW_RULE);
     expect(policy.resourceType).toBe(PolicyResourceType.WORKSPACE);
+    expect(policy.enforce).toBe(true);
     expect(policy.policy.value.rules).toEqual(
       STANDARD_RULE_TYPES.filter(
         (rule) => rule !== ReviewRuleType.DISALLOW_TRUNCATE
@@ -171,8 +173,12 @@ describe("SQLReviewStandardRulesSection", () => {
     expect(mocks.pushNotification).not.toHaveBeenCalled();
   });
 
-  test("locks the switches without bb.policies.update", () => {
-    mocks.canUpdate.value = false;
+  test.each([
+    ["bb.policies.update"],
+    // The first save creates the workspace's policy row.
+    ["bb.policies.create"],
+  ])("locks the switches without %s", (permission) => {
+    mocks.permissions = { [permission]: false };
     render(<Harness />);
 
     for (const control of screen.getAllByRole("switch")) {

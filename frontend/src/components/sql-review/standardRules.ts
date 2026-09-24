@@ -36,11 +36,12 @@ export const sameStandardRules = (
 };
 
 // The rules a cached review rule policy switches on, or undefined when the
-// resource has none of its own.
+// resource has none of its own. A policy that is not enforced counts as
+// absent, as the backend reads it.
 export const reviewRulesOfPolicy = (
   policy: Policy | undefined
 ): ReviewRuleType[] | undefined =>
-  policy?.policy.case === "reviewRulePolicy"
+  policy?.policy.case === "reviewRulePolicy" && policy.enforce
     ? sortStandardRules(policy.policy.value.rules)
     : undefined;
 

@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
+import type { Permission } from "@/types";
 import {
   PolicyResourceType,
   PolicyType,
@@ -35,6 +36,8 @@ interface ProjectStandardRules {
   // workspace.
   customized: boolean;
   setCustomized: (customized: boolean) => void;
+  // Whether the stored policy is the project's own; the draft may differ.
+  storedCustomized: boolean;
   // The rules in force: the project's own while customized, else the
   // workspace's. Undefined when the workspace policy could not be read.
   rules: ReviewRuleType[] | undefined;
@@ -118,6 +121,7 @@ export function useProjectStandardRules(
           policy: {
             type: PolicyType.REVIEW_RULE,
             resourceType: PolicyResourceType.PROJECT,
+            enforce: true,
             policy: {
               case: "reviewRulePolicy",
               value: create(ReviewRulePolicySchema, { rules: draft.rules }),
@@ -150,6 +154,7 @@ export function useProjectStandardRules(
     loaded,
     customized,
     setCustomized,
+    storedCustomized,
     rules: customized ? ownRules : workspaceRules,
     setRules: (rules) => setDraft({ customized: true, rules }),
     isDirty,
@@ -170,9 +175,19 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
   const standardRules = useProjectStandardRules(projectName);
   useUnsavedChangesGuard(standardRules.isDirty);
 
-  const allowEdit =
-    hasProjectPermissionV2(project, "bb.policies.update") &&
-    !standardRules.saving;
+  const can = (permission: Permission) =>
+    hasProjectPermissionV2(project, permission);
+  const canCreate = can("bb.policies.create");
+  const canUpdate = can("bb.policies.update");
+  const canDelete = can("bb.policies.delete");
+  // Switching customization on creates the project policy and switching it
+  // off deletes it; undoing an unsaved switch does neither.
+  const customizeLocked = standardRules.customized
+    ? standardRules.storedCustomized && !canDelete
+    : !standardRules.storedCustomized && !canCreate;
+  // The rules save as a create while the project still follows the
+  // workspace, and as an update once it has a policy of its own.
+  const rulesLocked = standardRules.storedCustomized ? !canUpdate : !canCreate;
   const canViewWorkspaceRules =
     hasWorkspacePermissionV2("bb.reviewConfigs.list") &&
     hasWorkspacePermissionV2("bb.policies.get");
@@ -213,13 +228,13 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
               }
               checked={standardRules.customized}
               onCheckedChange={standardRules.setCustomized}
-              disabled={!allowEdit}
+              disabled={customizeLocked || standardRules.saving}
             />
             {standardRules.rules && (
               <StandardRuleSwitches
                 rules={standardRules.rules}
                 onChange={standardRules.setRules}
-                disabled={!allowEdit}
+                disabled={rulesLocked || standardRules.saving}
                 readOnly={!standardRules.customized}
               />
             )}
