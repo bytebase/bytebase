@@ -7,10 +7,13 @@ import { RouterLink } from "@/components/RouterLink";
 import { StandardRuleSwitches } from "@/components/sql-review/StandardRuleSwitches";
 import { SwitchRow } from "@/components/sql-review/SwitchRow";
 import {
+  effectiveWorkspaceRules,
   reviewRulesOfPolicy,
   STANDARD_RULE_TYPES,
   sameStandardRules,
+  storedReviewRules,
 } from "@/components/sql-review/standardRules";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { StickyActionFooter } from "@/components/ui/sticky-action-footer";
 import { useWorkspaceResourceName } from "@/hooks/useAppState";
@@ -32,12 +35,17 @@ import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 interface ProjectStandardRules {
   // False until both the project and the workspace policy have been read.
   loaded: boolean;
+  readFailed: boolean;
+  reload: () => void;
   // Whether the project has rules of its own; otherwise it follows the
   // workspace.
   customized: boolean;
   setCustomized: (customized: boolean) => void;
   // Whether the stored policy is the project's own; the draft may differ.
   storedCustomized: boolean;
+  // Whether the project has a policy row at all. A row switched off through
+  // the API is not customized, yet a save updates it rather than creating.
+  hasOwnRow: boolean;
   // The rules in force: the project's own while customized, else the
   // workspace's. Undefined when the workspace policy could not be read.
   rules: ReviewRuleType[] | undefined;
@@ -70,27 +78,43 @@ export function useProjectStandardRules(
       policyType: PolicyType.REVIEW_RULE,
     })
   );
+  const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [readFailed, setReadFailed] = useState(false);
   useEffect(() => {
     if (!workspace) return;
+    let active = true;
     setLoaded(false);
+    setReadFailed(false);
     const store = useAppStore.getState();
-    void Promise.all([
-      store.getOrFetchPolicyByParentAndType({
-        parentPath: projectName,
-        policyType: PolicyType.REVIEW_RULE,
-      }),
-      store.getOrFetchPolicyByParentAndType({
-        parentPath: workspace,
-        policyType: PolicyType.REVIEW_RULE,
-      }),
-    ]).then(() => setLoaded(true));
-  }, [projectName, workspace]);
+    const finds = [projectName, workspace].map((parentPath) => ({
+      parentPath,
+      policyType: PolicyType.REVIEW_RULE,
+    }));
+    void Promise.all(
+      finds.map((find) =>
+        store.getOrFetchPolicyByParentAndType({ ...find, refresh: attempt > 0 })
+      )
+    ).then(() => {
+      if (!active) return;
+      // A read that failed leaves nothing in the cache, where a project
+      // without its own policy leaves a policy with no payload.
+      if (
+        finds.some((find) => store.getPolicyByParentAndType(find) === undefined)
+      ) {
+        setReadFailed(true);
+        return;
+      }
+      setLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [projectName, workspace, attempt]);
 
-  // A project without its own policy reads as NotFound, which the store
-  // caches as a policy with no payload.
   const storedRules = reviewRulesOfPolicy(projectPolicy);
-  const workspaceRules = reviewRulesOfPolicy(workspacePolicy);
+  const hasOwnRow = storedReviewRules(projectPolicy) !== undefined;
+  const workspaceRules = effectiveWorkspaceRules(workspacePolicy);
   const storedCustomized = storedRules !== undefined;
 
   const [draft, setDraft] = useState<Draft>();
@@ -152,9 +176,12 @@ export function useProjectStandardRules(
 
   return {
     loaded,
+    readFailed,
+    reload: () => setAttempt((n) => n + 1),
     customized,
     setCustomized,
     storedCustomized,
+    hasOwnRow,
     rules: customized ? ownRules : workspaceRules,
     setRules: (rules) => setDraft({ customized: true, rules }),
     isDirty,
@@ -177,17 +204,16 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
 
   const can = (permission: Permission) =>
     hasProjectPermissionV2(project, permission);
-  const canCreate = can("bb.policies.create");
-  const canUpdate = can("bb.policies.update");
-  const canDelete = can("bb.policies.delete");
-  // Switching customization on creates the project policy and switching it
-  // off deletes it; undoing an unsaved switch does neither.
+  // Switching customization on and editing the project's own rules save the
+  // project policy: a create when the project has no row, else an update.
+  // Switching customization off deletes the row. Undoing an unsaved switch
+  // does neither.
+  const canSave = standardRules.hasOwnRow
+    ? can("bb.policies.update")
+    : can("bb.policies.create");
   const customizeLocked = standardRules.customized
-    ? standardRules.storedCustomized && !canDelete
-    : !standardRules.storedCustomized && !canCreate;
-  // The rules save as a create while the project still follows the
-  // workspace, and as an update once it has a policy of its own.
-  const rulesLocked = standardRules.storedCustomized ? !canUpdate : !canCreate;
+    ? standardRules.storedCustomized && !can("bb.policies.delete")
+    : !standardRules.storedCustomized && !canSave;
   const canViewWorkspaceRules =
     hasWorkspacePermissionV2("bb.reviewConfigs.list") &&
     hasWorkspacePermissionV2("bb.policies.get");
@@ -203,6 +229,21 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
             {t("sql-review.standard-rules.project-description")}
           </p>
         </div>
+        {standardRules.readFailed && (
+          <Alert
+            variant="error"
+            description={t("sql-review.standard-rules.load-failed")}
+          >
+            <Button
+              className="mt-3"
+              appearance="outline"
+              size="sm"
+              onClick={standardRules.reload}
+            >
+              {t("sql-review.standard-rules.retry")}
+            </Button>
+          </Alert>
+        )}
         {standardRules.loaded && (
           <>
             <SwitchRow
@@ -234,7 +275,7 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
               <StandardRuleSwitches
                 rules={standardRules.rules}
                 onChange={standardRules.setRules}
-                disabled={rulesLocked || standardRules.saving}
+                disabled={!canSave || standardRules.saving}
                 readOnly={!standardRules.customized}
               />
             )}

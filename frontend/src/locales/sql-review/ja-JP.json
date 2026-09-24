@@ -736,9 +736,11 @@
       "view-workspace-rules": "ワークスペースのルールを表示"
     },
     "description": "すべての Issue の SQL をレビューする組み込みルールです。ルールをカスタマイズしていないプロジェクトはこの設定に従います。",
+    "load-failed": "標準ルールを読み込めませんでした。",
     "off": "オフ",
     "on": "オン",
     "project-description": "このプロジェクトのすべての Issue の SQL をレビューする組み込みルールです。",
+    "retry": "再試行",
     "rule": {
       "disallow-drop-constraint": {
         "description": "PRIMARY KEY、FOREIGN KEY、UNIQUE、CHECK 制約の削除を検出します。",

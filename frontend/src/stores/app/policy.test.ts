@@ -2,6 +2,8 @@
 import { create } from "@bufbuild/protobuf";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  type ListPoliciesRequest,
+  ListPoliciesResponseSchema,
   PolicyResourceType,
   PolicySchema,
   PolicyType,
@@ -12,11 +14,13 @@ import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { createPolicySlice } from "./policy";
 
 const mocks = vi.hoisted(() => ({
+  listPolicies: vi.fn(),
   updatePolicy: vi.fn(),
 }));
 
 vi.mock("@/api", () => ({
   orgPolicyServiceClientConnect: {
+    listPolicies: mocks.listPolicies,
     updatePolicy: mocks.updatePolicy,
   },
 }));
@@ -79,5 +83,29 @@ describe("policy store", () => {
         policyType: PolicyType.REVIEW_RULE,
       })?.policy.value
     ).toEqual(expect.objectContaining({ rules: [ReviewRuleType.SYNTAX] }));
+  });
+
+  test("lists the rows of a parent, including ones switched off", async () => {
+    const row = create(PolicySchema, {
+      name: "workspaces/ws/policies/review_rule",
+      type: PolicyType.REVIEW_RULE,
+      enforce: false,
+    });
+    mocks.listPolicies.mockResolvedValue(
+      create(ListPoliciesResponseSchema, { policies: [row] })
+    );
+    const store = createStore();
+
+    const policies = await store.listPolicies({
+      parentPath: "workspaces/ws",
+      policyType: PolicyType.REVIEW_RULE,
+      showDeleted: true,
+    });
+
+    const request = mocks.listPolicies.mock.calls[0][0] as ListPoliciesRequest;
+    expect(request.parent).toBe("workspaces/ws");
+    expect(request.policyType).toBe(PolicyType.REVIEW_RULE);
+    expect(request.showDeleted).toBe(true);
+    expect(policies).toEqual([row]);
   });
 });

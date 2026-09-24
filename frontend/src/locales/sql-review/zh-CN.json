@@ -736,9 +736,11 @@
       "view-workspace-rules": "查看工作空间规则"
     },
     "description": "内置规则，审核每个工单中的 SQL。未自定义规则的项目遵循这里的设置。",
+    "load-failed": "标准规则加载失败。",
     "off": "关",
     "on": "开",
     "project-description": "内置规则，审核此项目每个工单中的 SQL。",
+    "retry": "重试",
     "rule": {
       "disallow-drop-constraint": {
         "description": "标记删除 PRIMARY KEY、FOREIGN KEY、UNIQUE 或 CHECK 约束的操作。",

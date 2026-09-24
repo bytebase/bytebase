@@ -736,9 +736,11 @@
       "view-workspace-rules": "Xem quy tắc của không gian làm việc"
     },
     "description": "Các quy tắc tích hợp sẵn dùng để đánh giá SQL của mọi issue. Các dự án không tùy chỉnh quy tắc sẽ tuân theo các quy tắc này.",
+    "load-failed": "Không thể tải các quy tắc tiêu chuẩn.",
     "off": "Tắt",
     "on": "Bật",
     "project-description": "Các quy tắc tích hợp sẵn dùng để đánh giá SQL của mọi issue trong dự án này.",
+    "retry": "Thử lại",
     "rule": {
       "disallow-drop-constraint": {
         "description": "Đánh dấu việc xóa ràng buộc PRIMARY KEY, FOREIGN KEY, UNIQUE hoặc CHECK.",

@@ -984,6 +984,12 @@ export type PolicySlice = {
     refresh?: boolean;
   }) => Promise<Policy | undefined>;
   getQueryDataPolicyByParent: (parent: string) => QueryDataPolicy;
+  listPolicies: (params: {
+    parentPath: string;
+    policyType: PolicyType;
+    // Includes policies that are not enforced.
+    showDeleted?: boolean;
+  }) => Promise<Policy[]>;
   upsertPolicy: (params: {
     parentPath: string;
     policy: Partial<Policy>;
