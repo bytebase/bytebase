@@ -26,6 +26,7 @@ import {
   PROJECT_V1_ROUTE_RELEASES,
   PROJECT_V1_ROUTE_SERVICE_ACCOUNTS,
   PROJECT_V1_ROUTE_SETTINGS,
+  PROJECT_V1_ROUTE_SQL_REVIEW,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WORKLOAD_IDENTITIES,
@@ -34,6 +35,7 @@ import { RouterLink } from "@/components/RouterLink";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
+import { sqlReviewV2Enabled } from "@/utils/featureGates";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -109,6 +111,12 @@ function useSidebarItems(): SidebarItem[] {
             title: t("gitops.self"),
             path: PROJECT_V1_ROUTE_GITOPS,
             type: "div",
+          },
+          {
+            title: t("sql-review.title"),
+            path: PROJECT_V1_ROUTE_SQL_REVIEW,
+            type: "div",
+            hide: !sqlReviewV2Enabled(),
           },
         ],
       },

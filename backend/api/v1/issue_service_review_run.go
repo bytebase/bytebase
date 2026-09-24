@@ -82,6 +82,15 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if len(targets) == 0 {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the plan has no reviewable SQL"))
 	}
+	if reviewType == store.ReviewRunTypeRule {
+		policy, err := s.store.GetEffectiveReviewRulePolicy(ctx, project.Workspace, projectID)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get review rule policy"))
+		}
+		if len(policy.GetRules()) == 0 {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("rule review requires the SYNTAX rule to be on"))
+		}
+	}
 	if reviewType == store.ReviewRunTypeAI {
 		aiSetting, err := s.store.GetAISetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 		if err != nil {

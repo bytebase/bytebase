@@ -33,7 +33,8 @@ type ReviewRuleType int32
 
 const (
 	ReviewRuleType_REVIEW_RULE_TYPE_UNSPECIFIED ReviewRuleType = 0
-	// P0: the statements do not parse for the target engine.
+	// P0: the statements do not parse for the target engine. It gates the
+	// other rules (see ReviewRulePolicy).
 	ReviewRuleType_SYNTAX ReviewRuleType = 1
 	// P0: applying the statements to the synced schema fails: a missing
 	// table or column, a duplicate object, or an invalid reference.

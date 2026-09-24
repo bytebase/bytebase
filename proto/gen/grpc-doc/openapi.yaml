@@ -26876,7 +26876,12 @@ components:
       description: |-
         Standard review rule policy: the rules switched on. The nearest policy
          wins: a project's own policy applies as is; a project without one uses
-         the workspace policy; with neither, every rule is on.
+         the workspace policy; with neither, every rule is on. Getting the policy
+         of a project without its own is NOT_FOUND; getting the workspace's when it
+         has none returns every rule on.
+
+         SYNTAX gates the rest: the other rules judge only SQL that parses, so a
+         list without SYNTAX switches every rule off.
 
          A saved list is explicit, so a rule added to the standard set in a later
          release is appended to every saved policy by a data migration in that
