@@ -638,7 +638,7 @@ snapshot, a sample instance's lifecycle hooks. The seven packages outside
 `api/` are untouched.
 
 Server boots go the same way:
-`mcp_capability_setting_test.go` spends 6 to read and write one settings row,
+`mcp_capability_setting_test.go` spends 5 of its 7 to read and write one settings row,
 the saved-query list and filter tests 12, GitOps `CheckRelease` 11 of 17. Keep
 the 27 `TestCollision*` and `TestClaim*` tests where they are —
 `backend/store/AGENTS.md` requires them for a bug class unit tests cannot catch.
