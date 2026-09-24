@@ -2757,18 +2757,6 @@
         "description": "{{bound}} {{audit}}",
         "edit": "Sửa chính sách",
         "loading": "Đang đọc chính sách truy cập…",
-        "masking": {
-          "badge": "Đã bỏ qua miễn trừ che dữ liệu",
-          "badge-disabled": "Bỏ qua miễn trừ che dữ liệu — MCP đang tắt",
-          "badge-unlicensed": "Bỏ qua miễn trừ che dữ liệu — chưa có bản quyền che dữ liệu",
-          "description": "Nếu bật, dữ liệu đã che vẫn được che trong phiên MCP kể cả với người dùng có miễn trừ hoặc quyền bỏ che. Phạm vi phụ thuộc vào engine: ở nơi Bytebase không che, điều này không thay đổi gì. Console không bị ảnh hưởng.",
-          "title": "Bỏ qua miễn trừ che dữ liệu",
-          "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
-        },
-        "masking-pending": {
-          "applied": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu được áp dụng.",
-          "ignored": "Chính sách này sẽ được lưu với các miễn trừ che dữ liệu bị bỏ qua."
-        },
         "mode": {
           "disabled": {
             "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",

@@ -17,7 +17,6 @@ import {
 import { useWorkspace } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import type { MCPSetting } from "@/types/proto-es/v1/setting_service_pb";
-import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { MCPConsentCeiling } from "./MCPConsentCeiling";
 import { MCPConsentDisabled } from "./MCPConsentDisabled";
 import type { UndisclosedReason } from "./MCPConsentUndisclosed";
@@ -40,15 +39,12 @@ export function OAuth2ConsentPage() {
   const [mcpSetting, setMcpSetting] = useState<MCPSetting | undefined>(
     undefined
   );
-  const [dataMaskingAvailable, setDataMaskingAvailable] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
-  const refreshSubscription = useAppStore((state) => state.refreshSubscription);
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
   const switchWorkspace = useAppStore((state) => state.switchWorkspace);
-  const hasFeature = useAppStore((state) => state.hasFeature);
 
   const isLoggedIn = useAppStore((s) => s.isLoggedIn());
   // Workspace context shown on the consent card. On SaaS, every Bytebase
@@ -88,24 +84,9 @@ export function OAuth2ConsentPage() {
     }
   }, [refreshServerInfo]);
 
-  const readConsentDisclosure = useCallback(async () => {
-    const [mcpSetting, subscription] = await Promise.all([
-      readCeiling(),
-      refreshSubscription(),
-    ]);
-    return {
-      mcpSetting,
-      dataMaskingAvailable:
-        subscription !== undefined &&
-        hasFeature(PlanFeature.FEATURE_DATA_MASKING),
-    };
-  }, [hasFeature, readCeiling, refreshSubscription]);
-
   const retryCeiling = async () => {
     setRetrying(true);
-    const disclosure = await readConsentDisclosure();
-    setMcpSetting(disclosure.mcpSetting);
-    setDataMaskingAvailable(disclosure.dataMaskingAvailable);
+    setMcpSetting(await readCeiling());
     setRetrying(false);
   };
 
@@ -152,12 +133,10 @@ export function OAuth2ConsentPage() {
         setLoading(false);
         return;
       }
-      const disclosure = await readConsentDisclosure();
-      setMcpSetting(disclosure.mcpSetting);
-      setDataMaskingAvailable(disclosure.dataMaskingAvailable);
+      setMcpSetting(await readCeiling());
       setLoading(false);
     })();
-  }, [readConsentDisclosure]);
+  }, [readCeiling]);
 
   // Prefetch workspace list on SaaS so the picker can render. This runs in
   // its own effect keyed on `isSaaSMode` because actuator's serverInfo may
@@ -342,11 +321,7 @@ export function OAuth2ConsentPage() {
           </p>
         </div>
         {workspaceCard}
-        <MCPConsentCeiling
-          mode={ceiling.mode}
-          ignoreMaskingExemptions={ceiling.ignoreMaskingExemptions}
-          dataMaskingAvailable={dataMaskingAvailable}
-        />
+        <MCPConsentCeiling mode={ceiling.mode} />
         <form method="POST" action={AUTHORIZE_URL}>
           <Input type="hidden" name="client_id" value={clientId} />
           <Input type="hidden" name="redirect_uri" value={redirectUri} />
