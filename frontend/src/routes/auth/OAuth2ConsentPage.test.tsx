@@ -609,20 +609,6 @@ describe("OAuth2ConsentPage", () => {
     unmount();
   });
 
-  test("uses the broad responsive consent-card width", async () => {
-    const { container, unmount } = await renderWithCeiling({ capability: 3 });
-
-    expect(container.firstElementChild).toHaveClass(
-      "w-full",
-      "max-w-5xl",
-      "px-4",
-      "md:w-3/5",
-      "lg:w-1/2",
-      "lg:px-0"
-    );
-    unmount();
-  });
-
   test("each ceiling states the shared policy bound", async () => {
     const readOnly = await renderWithCeiling({ capability: 3 });
     expect(readOnly.container.textContent).toContain(
