@@ -789,7 +789,8 @@
     },
     "running": "{{on}} of {{total}} rules running",
     "self": "Standard rules",
-    "syntax-off": "Syntax is off, so none of the standard rules run. Turn Syntax on to review changes."
+    "syntax-off": "Syntax is off, so none of the standard rules run. Turn Syntax on to review changes.",
+    "workspace-rules-hidden": "You do not have permission to view the workspace rules this project follows."
   },
   "template": {
     "bb-sql-review-dev": "Basic Template",

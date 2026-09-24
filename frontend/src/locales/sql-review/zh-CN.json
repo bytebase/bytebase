@@ -789,7 +789,8 @@
     },
     "running": "{{total}} 条规则中 {{on}} 条生效",
     "self": "标准规则",
-    "syntax-off": "语法检查已关闭，所有标准规则都不会运行。开启语法检查后才会审核变更。"
+    "syntax-off": "语法检查已关闭，所有标准规则都不会运行。开启语法检查后才会审核变更。",
+    "workspace-rules-hidden": "你没有权限查看此项目所遵循的工作空间规则。"
   },
   "template": {
     "bb-sql-review-dev": "基础模板",

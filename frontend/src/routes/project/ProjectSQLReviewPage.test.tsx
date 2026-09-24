@@ -16,6 +16,7 @@ const PROJECT = "projects/p";
 
 const mocks = vi.hoisted(() => ({
   permissions: {} as Record<string, boolean>,
+  workspacePermissions: {} as Record<string, boolean>,
   // Parents whose read fails: the store then caches nothing for them.
   unreadable: new Set<string>(),
   upsertPolicy: vi.fn(),
@@ -43,7 +44,8 @@ vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
 vi.mock("@/utils", () => ({
   hasProjectPermissionV2: (_project: unknown, permission: string) =>
     mocks.permissions[permission] ?? true,
-  hasWorkspacePermissionV2: () => true,
+  hasWorkspacePermissionV2: (permission: string) =>
+    mocks.workspacePermissions[permission] ?? true,
 }));
 
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
@@ -183,6 +185,7 @@ const update = () =>
 describe("ProjectSQLReviewPage", () => {
   beforeEach(() => {
     mocks.permissions = {};
+    mocks.workspacePermissions = {};
     mocks.unreadable.clear();
     mocks.upsertPolicy.mockReset();
     mocks.deletePolicy.mockReset();
@@ -378,6 +381,66 @@ describe("ProjectSQLReviewPage", () => {
       policyType: PolicyType.REVIEW_RULE,
       refresh: true,
     });
+  });
+
+  test("a project policy without SYNTAX is customized with every rule off", async () => {
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      [PROJECT]: reviewRulePolicy(PROJECT, [ReviewRuleType.REQUIRE_WHERE]),
+    });
+    const customize = await renderLoaded();
+
+    expect(customize).toHaveAttribute("aria-checked", "true");
+    expect(ruleSwitch("require-where")).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
+    expect(
+      screen.getByText("sql-review.standard-rules.syntax-off")
+    ).toBeInTheDocument();
+  });
+
+  test("moving to another project drops the draft", async () => {
+    const { rerender } = render(<ProjectSQLReviewPage projectId="p" />);
+    const customize = await screen.findByRole("switch", {
+      name: "sql-review.standard-rules.customize.self",
+    });
+    fireEvent.click(customize);
+    expect(updateButton()).toBeInTheDocument();
+
+    rerender(<ProjectSQLReviewPage projectId="q" />);
+
+    const customizeOther = await screen.findByRole("switch", {
+      name: "sql-review.standard-rules.customize.self",
+    });
+    expect(mocks.fetchPolicy).toHaveBeenCalledWith(
+      expect.objectContaining({ parentPath: "projects/q" })
+    );
+    expect(customizeOther).toHaveAttribute("aria-checked", "false");
+    expect(updateButton()).not.toBeInTheDocument();
+  });
+
+  test("a role held only on the project loads without the workspace policy", async () => {
+    mocks.workspacePermissions = { "bb.policies.get": false };
+    const customize = await renderLoaded();
+
+    expect(mocks.fetchPolicy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ parentPath: WORKSPACE })
+    );
+    expect(screen.queryByRole("alert")).toHaveTextContent(
+      "sql-review.standard-rules.workspace-rules-hidden"
+    );
+    expect(
+      screen.queryByText("sql-review.standard-rules.on")
+    ).not.toBeInTheDocument();
+
+    // Customizing starts from every rule, as nothing else is known.
+    fireEvent.click(customize);
+    expect(screen.getAllByRole("switch")).toHaveLength(12);
+    expect(ruleSwitch("disallow-truncate")).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
   });
 
   test("undoing an unsaved switch needs no permission", async () => {

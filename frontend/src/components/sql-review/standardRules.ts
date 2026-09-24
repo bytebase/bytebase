@@ -35,14 +35,20 @@ export const sameStandardRules = (
   );
 };
 
-// The rules a resource's own policy row lists, whatever its enforce flag;
-// undefined when the resource has no row.
+// SYNTAX gates the rest: without it no standard rule runs.
+export const isStandardReviewOn = (rules: readonly ReviewRuleType[]): boolean =>
+  rules.includes(ReviewRuleType.SYNTAX);
+
+// The rules a resource's own policy row switches on, whatever its enforce
+// flag; undefined when the resource has no row. A list without SYNTAX runs
+// nothing, so it reads as empty, as the backend applies it.
 export const storedReviewRules = (
   policy: Policy | undefined
-): ReviewRuleType[] | undefined =>
-  policy?.policy.case === "reviewRulePolicy"
-    ? sortStandardRules(policy.policy.value.rules)
-    : undefined;
+): ReviewRuleType[] | undefined => {
+  if (policy?.policy.case !== "reviewRulePolicy") return undefined;
+  const { rules } = policy.policy.value;
+  return isStandardReviewOn(rules) ? sortStandardRules(rules) : [];
+};
 
 // The rules a cached review rule policy switches on, or undefined when the
 // resource has none of its own. A policy that is not enforced counts as
@@ -60,10 +66,6 @@ export const effectiveWorkspaceRules = (
   policy === undefined
     ? undefined
     : (reviewRulesOfPolicy(policy) ?? [...STANDARD_RULE_TYPES]);
-
-// SYNTAX gates the rest: without it no standard rule runs.
-export const isStandardReviewOn = (rules: readonly ReviewRuleType[]): boolean =>
-  rules.includes(ReviewRuleType.SYNTAX);
 
 export const standardRuleText = (
   t: TFunction,

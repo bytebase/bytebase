@@ -789,7 +789,8 @@
     },
     "running": "{{on}} trên {{total}} quy tắc đang chạy",
     "self": "Quy tắc tiêu chuẩn",
-    "syntax-off": "Cú pháp đang tắt nên không quy tắc tiêu chuẩn nào được chạy. Hãy bật Cú pháp để đánh giá các thay đổi."
+    "syntax-off": "Cú pháp đang tắt nên không quy tắc tiêu chuẩn nào được chạy. Hãy bật Cú pháp để đánh giá các thay đổi.",
+    "workspace-rules-hidden": "Bạn không có quyền xem các quy tắc của không gian làm việc mà dự án này tuân theo."
   },
   "template": {
     "bb-sql-review-dev": "Mẫu Cơ bản",
