@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"database/sql"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -161,53 +162,6 @@ func TestMCPSettingExistsWithTheWorkspace(t *testing.T) {
 	a.Equal(v1pb.MCPSetting_READ_ONLY, stored)
 }
 
-// TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate is the write-path half of
-// the fail-closed rule. The unmarshaler resolves an unknown enum name to
-// UNSPECIFIED, and marshalling would omit that zero enum. The partial update
-// therefore requires the request to set a recognized capability rather than
-// silently erasing the stored value.
-func TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx := context.Background()
-	ctl, ctx := startWorkspace(ctx, t)
-
-	workspaceID := currentWorkspaceID(ctx, t, ctl)
-	db, err := sql.Open("pgx", ctl.profile.PgURL)
-	a.NoError(err)
-	defer db.Close()
-	result, err := db.ExecContext(ctx, `
-		UPDATE setting SET value = jsonb_set(value, '{capability}', '"READ_ONLYY"')
-		WHERE workspace = $1 AND name = 'MCP';
-	`, workspaceID)
-	a.NoError(err)
-	affected, err := result.RowsAffected()
-	a.NoError(err)
-	a.Equal(int64(1), affected, "the MCP setting row must exist for this test to mean anything")
-
-	err = ctl.setIgnoreMaskingExemptions(ctx, true)
-	a.Error(err, "saving the toggle must not erase a ceiling this build cannot read")
-	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
-
-	var stored string
-	a.NoError(db.QueryRowContext(ctx, `
-		SELECT value ->> 'capability' FROM setting
-		WHERE workspace = $1 AND name = 'MCP';
-	`, workspaceID).Scan(&stored))
-	a.Equal("READ_ONLYY", stored, "the unreadable ceiling is still there, so enforcement still fails closed")
-
-	// A dry run can repair the parsed capability state without persisting it.
-	dryRun := ctl.updateMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY, true)
-	a.NoError(dryRun, "a dry run that repairs the capability is fine")
-
-	// The same request that sets a capability repairs the row.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY))
-	got, err := ctl.getMCPCapability(ctx)
-	a.NoError(err)
-	a.Equal(v1pb.MCPSetting_READ_ONLY, got)
-	a.NoError(ctl.setIgnoreMaskingExemptions(ctx, true), "and the toggle saves once the ceiling is readable")
-}
-
 func TestMCPMissingRowUsesGenericUpdateSemantics(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -239,19 +193,31 @@ func TestMCPMissingRowUsesGenericUpdateSemantics(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 
-	a.NoError(ctl.setIgnoreMaskingExemptions(ctx, true),
-		"allow_missing must create an MCP row from the READ_WRITE compatibility fallback")
-	setting, err := ctl.getMCPSetting(ctx)
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name:  "settings/" + v1pb.Setting_MCP.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Mcp{Mcp: &v1pb.MCPSetting{}}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{},
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err),
+		"an update that names no capability must not create a row")
+	_, err = ctl.getMCPSetting(ctx)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err), "the refused update left no row behind")
+
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY),
+		"allow_missing must create the MCP row")
+	stored, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
-	a.Equal(v1pb.MCPSetting_READ_WRITE, setting.GetCapability())
-	a.True(setting.GetIgnoreMaskingExemptions())
+	a.Equal(v1pb.MCPSetting_READ_ONLY, stored)
 }
 
-// TestMCPRepairKeepsTheMaskingToggle pins that fixing the ceiling does not
-// disarm the masking toggle. Repairing a policy must change the one field the
-// request names; handing users' unmasking exemptions back to MCP sessions as a
-// side effect of a ceiling fix would be a silent loosening.
-func TestMCPRepairKeepsTheMaskingToggle(t *testing.T) {
+// TestMCPRepairIgnoresARetiredKey pins why the retired ignoreMaskingExemptions
+// key needs no migration. The store's unmarshaler discards a key this build
+// does not define, and a save marshals what it read, so the key neither fails
+// the read nor survives the next write.
+func TestMCPRepairIgnoresARetiredKey(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -269,23 +235,26 @@ func TestMCPRepairKeepsTheMaskingToggle(t *testing.T) {
 	`, workspaceID)
 	a.NoError(err)
 
-	// Generic reads still expose the fields this build understands.
-	setting, err := ctl.getMCPSetting(ctx)
-	a.NoError(err)
-	a.True(setting.GetIgnoreMaskingExemptions(),
-		"the toggle is readable even though the ceiling is not")
+	_, err = ctl.getMCPSetting(ctx)
+	a.NoError(err, "the retired key must not fail the read")
 
-	// Repairing the ceiling must not disarm the toggle.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY))
-	repaired, err := ctl.getMCPSetting(ctx)
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY),
+		"the retired key must not block repairing the ceiling")
+	repaired, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
-	a.Equal(v1pb.MCPSetting_READ_ONLY, repaired.GetCapability())
-	a.True(repaired.GetIgnoreMaskingExemptions(),
-		"repairing the ceiling must not return exemptions to MCP sessions")
+	a.Equal(v1pb.MCPSetting_READ_ONLY, repaired)
+
+	var retired bool
+	a.NoError(db.QueryRowContext(ctx, `
+		SELECT jsonb_exists(value, 'ignoreMaskingExemptions') FROM setting
+		WHERE workspace = $1 AND name = 'MCP';
+	`, workspaceID).Scan(&retired))
+	a.False(retired, "the save rewrote the row without the key")
 }
 
-// TestMCPMissingCapabilityRefusesPartialUpdate pins that a partial update cannot
-// make an invalid row look permissive.
+// TestMCPMissingCapabilityRefusesPartialUpdate pins that an update naming no
+// capability is refused before it writes, so it cannot erase a ceiling this
+// build cannot read, such as a tier a newer release wrote.
 func TestMCPMissingCapabilityRefusesPartialUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -297,11 +266,136 @@ func TestMCPMissingCapabilityRefusesPartialUpdate(t *testing.T) {
 	a.NoError(err)
 	defer db.Close()
 	_, err = db.ExecContext(ctx, `
-		UPDATE setting SET value = '{}' WHERE workspace = $1 AND name = 'MCP'
+		UPDATE setting SET value = jsonb_set(value, '{capability}', '"READ_ONLYY"')
+		WHERE workspace = $1 AND name = 'MCP';
 	`, workspaceID)
 	a.NoError(err)
 
-	err = ctl.setIgnoreMaskingExemptions(ctx, true)
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name:  "settings/" + v1pb.Setting_MCP.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Mcp{Mcp: &v1pb.MCPSetting{}}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{},
+	}))
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.ErrorContains(err, "capability must be specified")
+
+	var stored string
+	a.NoError(db.QueryRowContext(ctx, `
+		SELECT value ->> 'capability' FROM setting
+		WHERE workspace = $1 AND name = 'MCP';
+	`, workspaceID).Scan(&stored))
+	a.Equal("READ_ONLYY", stored, "the unreadable ceiling is still there, so enforcement still fails closed")
+}
+
+// TestMCPCapabilityBitesTheNextRequest is the live-state pin for the ceiling
+// gate. The gate reads the MCP setting straight from the database on every
+// request, so a changed ceiling binds the next request of a session that is
+// already open: no re-consent, no reconnect, no restart.
+//
+// The writes are direct SQL. An in-process UpdateSetting refreshes the setting
+// cache, so a cached read would pass too; an out-of-band edit is the state only
+// an uncached read answers correctly. READ_ONLY rather than DISABLED: the /mcp
+// connection gate refuses DISABLED on a read of its own before the ceiling gate
+// runs.
+//
+// The RED state: point the gate at the cached Store.GetSetting instead of
+// GetMCPSettingsUncached and the out-of-band READ_ONLY stops biting.
+func TestMCPCapabilityBitesTheNextRequest(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	workspaceID := currentWorkspaceID(ctx, t, ctl)
+	db, err := sql.Open("pgx", ctl.profile.PgURL)
+	a.NoError(err)
+	defer db.Close()
+	writeCeiling := func(capability v1pb.MCPSetting_Capability) {
+		result, err := db.ExecContext(ctx, `
+			UPDATE setting SET value = jsonb_set(value, '{capability}', to_jsonb($2::text))
+			WHERE workspace = $1 AND name = 'MCP';
+		`, workspaceID, capability.String())
+		a.NoError(err)
+		affected, err := result.RowsAffected()
+		a.NoError(err)
+		a.Equal(int64(1), affected, "the MCP setting row must exist for the out-of-band write to mean anything")
+	}
+
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+	token, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
+	session := openMCPSession(ctx, t, ctl, token)
+	defer session.Close()
+	createSheet := func() mcpCallResult {
+		return callAPIOnSession(ctx, t, session, "SheetService/CreateSheet",
+			sheetBody(ctl.project.Name, "SELECT 1;"))
+	}
+
+	served := createSheet()
+	a.Equal(http.StatusOK, served.Status, "READ_WRITE serves a WRITE method: %s", served.Error)
+
+	writeCeiling(v1pb.MCPSetting_READ_ONLY)
+	refused := createSheet()
+	a.Equal(http.StatusForbidden, refused.Status,
+		"the ceiling must bite the very next request of the session already open")
+	a.Contains(refused.Error, "capability ceiling is READ_ONLY",
+		"the refusal must be the ceiling gate's")
+
+	writeCeiling(v1pb.MCPSetting_READ_WRITE)
+	served = createSheet()
+	a.Equal(http.StatusOK, served.Status,
+		"live in both directions, on the unchanged session: %s", served.Error)
+}
+
+// TestMCPSessionCannotTurnMCPOff drives the ceiling write from an OAuth-minted
+// session, the credential an agent holds; TestMCPCannotRewriteItsOwnCeiling
+// makes the same refusal on a session opened with the console bearer.
+// UpdateSetting is FORBIDDEN to MCP sessions, so the class gate refuses it
+// ahead of the handler whatever the payload, and the principal is a workspace
+// admin who could otherwise write this setting.
+//
+// The stored value is the half that matters: a guard that refused after the
+// write would leave the setting changed while reporting a denial.
+func TestMCPSessionCannotTurnMCPOff(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl, ctx := startWorkspace(ctx, t)
+
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+
+	token, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
+	session := openMCPSession(ctx, t, ctl, token)
+	defer session.Close()
+
+	out := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
+		"allowMissing": true,
+		"setting": map[string]any{
+			"name": "settings/" + v1pb.Setting_MCP.String(),
+			"value": map[string]any{
+				"mcp": map[string]any{"capability": "DISABLED"},
+			},
+		},
+		"updateMask": "value.mcp.capability",
+	})
+	t.Logf("MCP UpdateSetting{capability: DISABLED} → status=%d error=%q", out.Status, out.Error)
+
+	a.Equal(http.StatusForbidden, out.Status,
+		"an MCP session must not be able to rewrite the workspace settings")
+	a.Contains(out.Error, "not available to MCP sessions",
+		"the refusal must come from the FORBIDDEN gate, not from a permission check")
+
+	stored, err := ctl.getMCPCapability(ctx)
+	a.NoError(err)
+	a.Equal(v1pb.MCPSetting_READ_WRITE, stored, "the refusal must land before the write")
+
+	a.Empty(mcpAuditRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.SettingService/UpdateSetting"),
+		"a gate refusal is never stored")
 }

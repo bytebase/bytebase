@@ -2757,18 +2757,6 @@
         "description": "{{bound}} {{audit}}",
         "edit": "Edit policy",
         "loading": "Reading the access policy…",
-        "masking": {
-          "badge": "Masking exemptions ignored",
-          "badge-disabled": "Masking exemptions ignored — MCP is off",
-          "badge-unlicensed": "Masking exemptions ignored — masking not licensed",
-          "description": "If enabled, masked data stays masked in MCP sessions even for users with exemptions or unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing. The console is unaffected.",
-          "title": "Ignore masking exemptions",
-          "unavailable": "Data masking is not licensed for this workspace, so nothing is masked whatever this is set to."
-        },
-        "masking-pending": {
-          "applied": "This policy will be saved with masking exemptions applied.",
-          "ignored": "This policy will be saved with masking exemptions ignored."
-        },
         "mode": {
           "disabled": {
             "best-for": "Best for: keeping MCP off until you are ready to turn it on.",

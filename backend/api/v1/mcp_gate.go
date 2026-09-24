@@ -308,9 +308,8 @@ func mcpSettingsForCurrentWorkspace(ctx context.Context, reader mcpSettingsReade
 // refuses regardless of what RBAC would have said, and the refusal is streamed.
 //
 // The ceiling is read live, per request, with no caching anywhere in the path
-// (store.GetMCPSettingsUncached, which resolves the masking toggle off the same
-// row). An admin tightening the ceiling binds the next request of a session
-// already open; work already admitted finishes.
+// (store.GetMCPSettingsUncached). An admin tightening the ceiling binds the next
+// request of a session already open; work already admitted finishes.
 //
 // A policy denial is marked (setPermissionDenied), so the audit
 // interceptor streams it whatever the method's audit annotation says. That is

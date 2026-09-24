@@ -2757,18 +2757,6 @@
         "description": "{{bound}} {{audit}}",
         "edit": "Editar política",
         "loading": "Leyendo la política de acceso…",
-        "masking": {
-          "badge": "Exenciones de enmascaramiento ignoradas",
-          "badge-disabled": "Exenciones de enmascaramiento ignoradas — MCP está desactivado",
-          "badge-unlicensed": "Exenciones de enmascaramiento ignoradas — enmascaramiento sin licencia",
-          "description": "Si se activa, los datos enmascarados siguen enmascarados en las sesiones MCP incluso para usuarios con exenciones o permisos de desenmascarado. La cobertura depende del motor: donde Bytebase no enmascara, esto no cambia nada. La consola no se ve afectada.",
-          "title": "Ignorar las exenciones de enmascaramiento",
-          "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
-        },
-        "masking-pending": {
-          "applied": "Esta política se guardará con las exenciones de enmascaramiento aplicadas.",
-          "ignored": "Esta política se guardará con las exenciones de enmascaramiento ignoradas."
-        },
         "mode": {
           "disabled": {
             "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",
