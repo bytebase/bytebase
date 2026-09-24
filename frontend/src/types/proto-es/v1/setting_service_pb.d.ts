@@ -763,22 +763,6 @@ export declare type MCPSetting = Message<"bytebase.v1.MCPSetting"> & {
    * @generated from field: bytebase.v1.MCPSetting.Capability capability = 1;
    */
   capability: MCPSetting_Capability;
-
-  /**
-   * Whether a request that arrived over MCP stops applying the caller's own
-   * unmasking provisioning. Two mechanisms let a user see a real value and this
-   * suppresses both: the masking exemptions granted to them, and the unmask
-   * carried by an access grant. The same user in the console is untouched.
-   *
-   * It cannot force masking where there is none. Masking substitutes values in
-   * query results, so this does not reach data copied into a column carrying no
-   * masking policy, and it does nothing on the engines Bytebase does not mask.
-   * It narrows what an agent reads through the paths Bytebase masks; it is not
-   * a confidentiality boundary.
-   *
-   * @generated from field: bool ignore_masking_exemptions = 2;
-   */
-  ignoreMaskingExemptions: boolean;
 };
 
 /**

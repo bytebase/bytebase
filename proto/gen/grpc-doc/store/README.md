@@ -4054,9 +4054,6 @@ sign-in configuration.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | capability | [MCPSetting.Capability](#bytebase-store-MCPSetting-Capability) |  | The maximum capability available to MCP sessions in this workspace, acting as an admin-set ceiling. Enforced server-side at three points: the /mcp endpoint decides whether a connection is admitted at all, the ceiling gate on the internal MCP chain decides, per request, which method classes are served, and under READ_ONLY the SQL clamp decides, per statement, whether it only reads. |
-| ignore_masking_exemptions | [bool](#bool) |  | Whether a request that arrived over MCP stops applying the caller&#39;s own unmasking provisioning. Two mechanisms let a user see a real value and this suppresses both: the masking exemptions granted to them, and the unmask carried by an access grant. The same user in the console is untouched.
-
-It cannot force masking where there is none. Masking substitutes values in query results, so this does not reach data copied into a column carrying no masking policy, and it does nothing on the engines Bytebase does not mask. It narrows what an agent reads through the paths Bytebase masks; it is not a confidentiality boundary. |
 
 
 
