@@ -243,7 +243,7 @@ describe("CommentThreadCard", () => {
     });
     const [thread] = groupThreads([comment("root", "Root question"), reply]);
     render(
-      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+      <CommentThreadCard issue={issue} project={project} thread={thread} />
     );
 
     const shown = shownTimestampInstants(container);

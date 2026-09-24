@@ -1110,7 +1110,7 @@ function ExemptionGrantSection({
           <span className="font-medium text-sm">{title}</span>
           {/* No reading means no expiry: zero is this API's "never". */}
           {!daysLeft ? (
-            <span className="text-xs font-medium text-amber-600">
+            <span className="text-xs font-medium text-warning">
               {t("settings.sensitive-data.never-expires")}
             </span>
           ) : daysLeft.kind === "passed" ? (
