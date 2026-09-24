@@ -56,6 +56,7 @@ import {
 import { signInBrowserAs } from "../framework/sign-in";
 import { PlanDetailPage } from "./plan-detail.page";
 import {
+  authorMayApprove,
   seedDraftPlan,
   seedReviewPlan,
   waitForApprovalStatus,
@@ -98,6 +99,7 @@ let originalProjectSettings: {
   requireIssueApproval?: boolean;
   requirePlanCheckNoError?: boolean;
   allowSelfApproval?: boolean;
+  allowLastPlanEditorApproval?: boolean;
   enforceSqlReview?: boolean;
   forceIssueLabels?: boolean;
   issueLabels?: IssueLabelSetting[];
@@ -134,15 +136,15 @@ const ADMIN_RULE = {
   },
 };
 
-// Mandatory single-step admin approval. allowSelfApproval decides whether the
-// admin creator is a candidate (true → "Review" action) or an observer
+// Mandatory single-step admin approval. `authorApproves` decides whether the
+// admin author is a candidate (true → "Review" action) or an observer
 // (false → "Under review" pill).
-async function setApproval(allowSelfApproval: boolean): Promise<void> {
+async function setApproval(authorApproves: boolean): Promise<void> {
   await env.api.deletePolicy(env.project, "tag").catch(() => {});
   await env.api.updateProjectSettings(env.project, {
     requireIssueApproval: true,
     requirePlanCheckNoError: false,
-    allowSelfApproval,
+    ...authorMayApprove(authorApproves),
     enforceSqlReview: false,
     forceIssueLabels: false,
   });
@@ -222,6 +224,7 @@ test.beforeAll(async ({ browser }) => {
     requireIssueApproval: !!project.requireIssueApproval,
     requirePlanCheckNoError: !!project.requirePlanCheckNoError,
     allowSelfApproval: !!project.allowSelfApproval,
+    allowLastPlanEditorApproval: !!project.allowLastPlanEditorApproval,
     enforceSqlReview: !!project.enforceSqlReview,
     forceIssueLabels: !!project.forceIssueLabels,
     issueLabels: Array.isArray(project.issueLabels)
@@ -617,7 +620,7 @@ test.describe("Review advance is persona-scoped (R1/R2)", () => {
   let planId = "";
 
   test.beforeAll(async () => {
-    // allowSelfApproval → admin (creator) IS the candidate.
+    // The author may approve → admin (creator) IS the candidate.
     await setApproval(true);
     const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Hdr R1R2",

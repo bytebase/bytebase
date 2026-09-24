@@ -336,7 +336,7 @@ test.describe("Duplicate", () => {
     const projectPrefix = env.project;
     const urlPromise = page.waitForURL(
       (url) => {
-        const m = url.pathname.match(/\/sheets\/([0-9a-f-]+)/i);
+        const m = url.pathname.match(/\/savedQueries\/([0-9a-f-]+)/i);
         return !!m && m[1] !== sourceUuid;
       },
       { timeout: 10_000 },
@@ -345,7 +345,7 @@ test.describe("Duplicate", () => {
     await dialog.getByRole("button", { name: "Confirm", exact: true }).click();
     await urlPromise;
 
-    const newUuid = page.url().match(/\/sheets\/([0-9a-f-]+)/i)?.[1];
+    const newUuid = page.url().match(/\/savedQueries\/([0-9a-f-]+)/i)?.[1];
     if (newUuid) {
       duplicateSavedQuery = `${projectPrefix}/savedQueries/${newUuid}`;
     }

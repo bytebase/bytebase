@@ -145,18 +145,6 @@ test.describe("Targets 'View all' sheet scrolls to the last target on Plan Detai
       .filter({ hasText: `Targets (${TARGET_COUNT})` });
     await expect(sheet).toBeVisible({ timeout: 5000 });
 
-    // The scroll container (min-h-0 flex-1 overflow-y-auto) must actually
-    // overflow — sanity that we have enough rows to exercise the bug.
-    const scrollRegion = sheet.locator("div.overflow-y-auto").first();
-    await expect(scrollRegion).toBeVisible({ timeout: 5000 });
-    const overflow = await scrollRegion.evaluate(
-      (el) => el.scrollHeight - el.clientHeight,
-    );
-    expect(
-      overflow,
-      "the targets list must overflow its container (otherwise scroll can't be tested)",
-    ).toBeGreaterThan(10);
-
     // THE REGRESSION ORACLE: the last target row can be scrolled into the
     // viewport. Pre-fix the Dialog had no functioning scroll container, so rows
     // below the fold were unreachable → scrollIntoViewIfNeeded can't surface it
@@ -166,6 +154,24 @@ test.describe("Targets 'View all' sheet scrolls to the last target on Plan Detai
       lastRow,
       "the last target must be present in the (initially scrolled-off) list",
     ).toHaveCount(1);
+
+    // The list must actually overflow the element that scrolls it — sanity
+    // that we have enough rows to exercise the bug. The container is found
+    // from the row by computed style, not by a styling class.
+    const overflow = await lastRow.evaluate((el) => {
+      for (let node = el.parentElement; node; node = node.parentElement) {
+        const { overflowY } = getComputedStyle(node);
+        if (overflowY === "auto" || overflowY === "scroll") {
+          return node.scrollHeight - node.clientHeight;
+        }
+      }
+      return 0;
+    });
+    expect(
+      overflow,
+      "the targets list must overflow its container (otherwise scroll can't be tested)",
+    ).toBeGreaterThan(10);
+
     await lastRow.scrollIntoViewIfNeeded();
     await expect(
       lastRow,
@@ -173,11 +179,11 @@ test.describe("Targets 'View all' sheet scrolls to the last target on Plan Detai
         "popup was frozen and the bottom targets were unreachable)",
     ).toBeInViewport({ timeout: 5000 });
 
-    // Anti-freeze: the in-sheet search narrows the list. Each target renders as
-    // a `rounded-lg border` row inside the scroll region; at baseline there are
-    // all 21 rows.
-    const targetRows = scrollRegion.locator("div.rounded-lg.border");
-    await expect(targetRows).toHaveCount(TARGET_COUNT, { timeout: 5000 });
+    // Anti-freeze: the in-sheet search narrows the list. Each target shows its
+    // database name as its own text, so the per-run prefix counts the listed
+    // targets: all 21 at baseline.
+    const targetNames = sheet.getByText(new RegExp(`^${DB_PREFIX}\\d{2}$`));
+    await expect(targetNames).toHaveCount(TARGET_COUNT, { timeout: 5000 });
 
     const search = sheet.getByPlaceholder("Search").first();
     await expect(search).toBeVisible({ timeout: 5000 });
@@ -185,8 +191,8 @@ test.describe("Targets 'View all' sheet scrolls to the last target on Plan Detai
     await search.pressSequentially(LAST_DB, { delay: 15 });
     // Filtering down to the single matching target proves the list is live
     // (not a frozen popup).
-    await expect(targetRows).toHaveCount(1, { timeout: 5000 });
-    await expect(scrollRegion.getByText(LAST_DB, { exact: false })).toBeVisible();
+    await expect(targetNames).toHaveCount(1, { timeout: 5000 });
+    await expect(sheet.getByText(LAST_DB, { exact: false })).toBeVisible();
 
     // Escape closes the sheet.
     await page.keyboard.press("Escape");

@@ -765,12 +765,13 @@ export class BytebaseApiClient {
       }>;
       allowJustInTimeAccess?: boolean;
       allowRequestRole?: boolean;
-      // When license is installed, project.allow_self_approval defaults
-      // to false → an issue's creator cannot approve their own issue
-      // (403 "cannot approve because self-approval is not allowed for
-      // this project"). Tests that have a single admin both create and
-      // approve must flip this to true.
+      // Approval by the issue creator and by the last plan editor are
+      // separate, cumulative permissions, and a new project denies both
+      // ("cannot approve because self-approval is not allowed for this
+      // project" / "... the user is the last Plan editor"). A single admin
+      // who creates and approves a plan-backed issue needs both.
       allowSelfApproval?: boolean;
+      allowLastPlanEditorApproval?: boolean;
       // DATA_CLASSIFICATION config id the project uses. Must reference a config
       // already defined in the DATA_CLASSIFICATION setting (UpdateProject
       // validates it exists).
@@ -810,6 +811,10 @@ export class BytebaseApiClient {
     if (settings.allowSelfApproval !== undefined) {
       fields.push("allow_self_approval");
       body.allowSelfApproval = settings.allowSelfApproval;
+    }
+    if (settings.allowLastPlanEditorApproval !== undefined) {
+      fields.push("allow_last_plan_editor_approval");
+      body.allowLastPlanEditorApproval = settings.allowLastPlanEditorApproval;
     }
     if (settings.dataClassificationConfigId !== undefined) {
       fields.push("data_classification_config_id");

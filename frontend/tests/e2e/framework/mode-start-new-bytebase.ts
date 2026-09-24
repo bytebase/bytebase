@@ -59,7 +59,11 @@ export function cleanupOrphans(): void {
   fs.unlinkSync(PID_FILE);
 }
 
-function checkPort(port: number): Promise<boolean> {
+// A port is free only when nothing answers on loopback, where the health
+// checks connect, and the server's wildcard bind would succeed. A 127.0.0.1
+// bind probe alone passes beside another process's wildcard listener on macOS.
+async function checkPort(port: number): Promise<boolean> {
+  if (await isPortListening(port)) return false;
   return new Promise((resolve) => {
     const server = net.createServer();
     server.once("error", () => resolve(false));
@@ -67,7 +71,7 @@ function checkPort(port: number): Promise<boolean> {
       server.close();
       resolve(true);
     });
-    server.listen(port, "127.0.0.1");
+    server.listen(port, "0.0.0.0");
   });
 }
 
@@ -118,22 +122,30 @@ function isPortListening(port: number): Promise<boolean> {
 }
 
 // Poll until predicate succeeds or deadline passes. On timeout, throws with
-// the last underlying error so the cause isn't swallowed.
+// the last underlying error so the cause isn't swallowed. `abortReason`, when
+// it returns a message, fails the poll at once — checked before each attempt
+// and again after a success.
 async function pollUntil(
   predicate: () => Promise<void>,
   deadline: number,
   intervalMs: number,
-  timeoutMessage: string
+  timeoutMessage: string,
+  abortReason?: () => string | undefined
 ): Promise<void> {
   let lastError: unknown;
   while (Date.now() < deadline) {
+    const before = abortReason?.();
+    if (before) throw new Error(before);
     try {
       await predicate();
-      return;
     } catch (err) {
       lastError = err;
+      await new Promise((r) => setTimeout(r, intervalMs));
+      continue;
     }
-    await new Promise((r) => setTimeout(r, intervalMs));
+    const after = abortReason?.();
+    if (after) throw new Error(after);
+    return;
   }
   const cause = lastError instanceof Error ? lastError.message : String(lastError ?? "no error captured");
   throw new Error(`${timeoutMessage} Last error: ${cause}`);
@@ -218,6 +230,12 @@ export async function startServer(): Promise<{
     10
   );
   const deadline = Date.now() + timeout;
+  // The probes below reach whatever answers on the port, so stop as soon as
+  // the spawned server exits instead of configuring another process's server.
+  const serverExited = () =>
+    child.exitCode !== null || child.signalCode !== null
+      ? `Bytebase server exited during startup (${child.exitCode ?? child.signalCode}); is port ${port} held by another process?`
+      : undefined;
 
   // Phase 1: Poll /healthz
   await pollUntil(
@@ -227,7 +245,8 @@ export async function startServer(): Promise<{
     },
     deadline,
     500,
-    `Bytebase server did not become healthy within ${timeout}ms.`
+    `Bytebase server did not become healthy within ${timeout}ms.`,
+    serverExited
   );
 
   // Phase 2: Signup the first admin. Retry while the server finishes
@@ -238,7 +257,8 @@ export async function startServer(): Promise<{
     () => api.signup(ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_TITLE),
     deadline,
     500,
-    "Failed to signup admin. Server may not be fully initialized."
+    "Failed to signup admin. Server may not be fully initialized.",
+    serverExited
   );
 
   // Phase 3: Login to obtain a body token for subsequent API calls.
@@ -278,7 +298,8 @@ export async function startServer(): Promise<{
     },
     deadline,
     500,
-    "Sample instance did not appear after PrepareSampleProjectInstance."
+    "Sample instance did not appear after PrepareSampleProjectInstance.",
+    serverExited
   );
 
   // Phase 5: Wait for the sample Postgres backings to accept TCP connections.
@@ -296,7 +317,8 @@ export async function startServer(): Promise<{
     },
     deadline,
     500,
-    "Sample Postgres instance did not start listening on PORT+3."
+    "Sample Postgres instance did not start listening on PORT+3.",
+    serverExited
   );
 
   return {
