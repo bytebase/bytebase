@@ -17,6 +17,7 @@ message Policy {
     IAM = 5;
     TAG = 6;
     REVIEW_RULE = 7;
+    REVIEW_AI = 8;
   }
 
   enum Resource {
@@ -31,6 +32,14 @@ message Policy {
 // wins: the project's if it has one, else the workspace's, else every rule.
 message ReviewRulePolicy {
   repeated ReviewRuleType rules = 1;
+}
+
+// ReviewAIPolicy holds the natural-language policy the AI review judges a
+// change against. Both levels apply: the workspace policy and the project
+// policy both reach the reviewer, and the project policy wins where they
+// conflict.
+message ReviewAIPolicy {
+  string content = 1;
 }
 
 message RolloutPolicy {

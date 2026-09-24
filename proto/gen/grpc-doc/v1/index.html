@@ -2478,6 +2478,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ReviewAIPolicy"><span class="badge">M</span>ReviewAIPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ReviewRulePolicy"><span class="badge">M</span>ReviewRulePolicy</a>
                 </li>
               
@@ -12069,8 +12073,8 @@ review passed: whether problems remain is judged from open comments.</p></td>
               <tr>
                 <td>AI</td>
                 <td>2</td>
-                <td><p>Review against the AI review policy&#39;s natural-language instructions,
-performed by a model.</p></td>
+                <td><p>Review against the natural-language AI review policy, performed by a
+model.</p></td>
               </tr>
             
           </tbody>
@@ -28414,6 +28418,13 @@ Environment resource name: environments/environment-id. </p></td>
                 </tr>
               
                 <tr>
+                  <td>review_ai_policy</td>
+                  <td><a href="#bytebase.v1.ReviewAIPolicy">ReviewAIPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>enforce</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -28479,6 +28490,30 @@ If true, users can select the admin data source or read-only data source
 If false,
 1. when read-only data source is configured, users&#39;re force to use the read-only data source
 2. otherwise fallback to use the admin data source. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ReviewAIPolicy">ReviewAIPolicy</h3>
+        <p>Natural-language policy for the AI review. Unlike the review rule policy,</p><p>both levels apply: the workspace policy and the project policy both reach</p><p>the reviewer, and the project policy wins where they conflict.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>content</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The policy text. Must not be blank, at most 64 KiB. </p></td>
                 </tr>
               
             </tbody>
@@ -28728,6 +28763,12 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>REVIEW_RULE</td>
                 <td>7</td>
                 <td><p>Standard review rule switch. Allowed on WORKSPACE and PROJECT.</p></td>
+              </tr>
+            
+              <tr>
+                <td>REVIEW_AI</td>
+                <td>8</td>
+                <td><p>Natural-language policy for the AI review. Allowed on WORKSPACE and PROJECT.</p></td>
               </tr>
             
           </tbody>
