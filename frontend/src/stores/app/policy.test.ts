@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
   type ListPoliciesRequest,
@@ -14,12 +15,14 @@ import { ReviewRuleType } from "@/types/proto-es/v1/review_rule_pb";
 import { createPolicySlice } from "./policy";
 
 const mocks = vi.hoisted(() => ({
+  getPolicy: vi.fn(),
   listPolicies: vi.fn(),
   updatePolicy: vi.fn(),
 }));
 
 vi.mock("@/api", () => ({
   orgPolicyServiceClientConnect: {
+    getPolicy: mocks.getPolicy,
     listPolicies: mocks.listPolicies,
     updatePolicy: mocks.updatePolicy,
   },
@@ -83,6 +86,47 @@ describe("policy store", () => {
         policyType: PolicyType.REVIEW_RULE,
       })?.policy.value
     ).toEqual(expect.objectContaining({ rules: [ReviewRuleType.SYNTAX] }));
+  });
+
+  test("fetches a policy, and tells an absent one from a failed read", async () => {
+    const store = createStore();
+    const find = {
+      parentPath: "projects/p",
+      policyType: PolicyType.REVIEW_RULE,
+      refresh: true,
+    };
+    const row = create(PolicySchema, {
+      name: "projects/p/policies/review_rule",
+      type: PolicyType.REVIEW_RULE,
+      enforce: true,
+    });
+
+    mocks.getPolicy.mockResolvedValueOnce(row);
+    await expect(store.fetchPolicyByParentAndType(find)).resolves.toBe(row);
+    expect(store.getPolicyByParentAndType(find)).toBe(row);
+
+    // A failed read leaves the last policy read in the cache.
+    mocks.getPolicy.mockRejectedValueOnce(
+      new ConnectError("gone", Code.Unavailable)
+    );
+    await expect(
+      store.fetchPolicyByParentAndType(find)
+    ).resolves.toBeUndefined();
+    expect(store.getPolicyByParentAndType(find)).toBe(row);
+
+    // An absent policy caches a stand-in without a payload.
+    mocks.getPolicy.mockRejectedValueOnce(
+      new ConnectError("missing", Code.NotFound)
+    );
+    await expect(store.fetchPolicyByParentAndType(find)).resolves.toBeNull();
+    expect(store.getPolicyByParentAndType(find)?.policy.case).toBeUndefined();
+
+    mocks.getPolicy.mockRejectedValueOnce(
+      new ConnectError("missing", Code.NotFound)
+    );
+    await expect(
+      store.getOrFetchPolicyByParentAndType(find)
+    ).resolves.toBeUndefined();
   });
 
   test("lists the rows of a parent, including ones switched off", async () => {

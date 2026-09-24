@@ -44,10 +44,10 @@ vi.mock("@/stores/app", async () => {
     getPolicyByParentAndType: (params: {
       parentPath: string;
     }) => StorePolicy | undefined;
-    getOrFetchPolicyByParentAndType: (params: {
+    fetchPolicyByParentAndType: (params: {
       parentPath: string;
       refresh?: boolean;
-    }) => Promise<StorePolicy | undefined>;
+    }) => Promise<StorePolicy | null | undefined>;
     listPolicies: (params: {
       parentPath: string;
       showDeleted?: boolean;
@@ -59,8 +59,8 @@ vi.mock("@/stores/app", async () => {
   }>()((set, get) => ({
     policies: {},
     getPolicyByParentAndType: ({ parentPath }) => get().policies[parentPath],
-    // A failed read caches nothing, as the real store does.
-    getOrFetchPolicyByParentAndType: async (params) => {
+    // A read of a policy that is not seeded fails.
+    fetchPolicyByParentAndType: async (params) => {
       mocks.fetchPolicy(params);
       return get().policies[params.parentPath];
     },

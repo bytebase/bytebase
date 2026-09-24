@@ -100,15 +100,13 @@ export function useProjectStandardRules(
     }));
     void Promise.all(
       finds.map((find) =>
-        store.getOrFetchPolicyByParentAndType({ ...find, refresh: attempt > 0 })
+        store.fetchPolicyByParentAndType({ ...find, refresh: attempt > 0 })
       )
-    ).then(() => {
+    ).then((policies) => {
       if (!active) return;
-      // A read that failed leaves nothing in the cache, where a project
-      // without its own policy leaves a policy with no payload.
-      if (
-        finds.some((find) => store.getPolicyByParentAndType(find) === undefined)
-      ) {
+      // A read that failed may leave an earlier policy in the cache, so the
+      // results decide, not the cache.
+      if (policies.some((policy) => policy === undefined)) {
         setReadFailed(true);
         return;
       }
@@ -281,6 +279,9 @@ export function ProjectSQLReviewPage({ projectId }: { projectId: string }) {
             />
             {standardRules.rules ? (
               <StandardRuleSwitches
+                // The rules remembered while SYNTAX is off belong to one
+                // project.
+                key={projectName}
                 rules={standardRules.rules}
                 onChange={standardRules.setRules}
                 disabled={!canSave || standardRules.saving}

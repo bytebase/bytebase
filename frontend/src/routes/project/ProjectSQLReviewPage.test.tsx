@@ -60,7 +60,8 @@ vi.mock("@/components/RouterLink", () => ({
 }));
 
 // Mirrors the real store: a fetch of a missing policy caches one with no
-// payload, and a delete drops the cached entry.
+// payload and resolves to null, a failed read resolves to undefined and
+// leaves the cache as it was, and a delete drops the cached entry.
 vi.mock("@/stores/app", async () => {
   const { create: createStore } = await import("zustand");
   const { create: createMessage } = await import("@bufbuild/protobuf");
@@ -73,6 +74,10 @@ vi.mock("@/stores/app", async () => {
     getPolicyByParentAndType: (params: {
       parentPath: string;
     }) => StorePolicy | undefined;
+    fetchPolicyByParentAndType: (params: {
+      parentPath: string;
+      refresh?: boolean;
+    }) => Promise<StorePolicy | null | undefined>;
     getOrFetchPolicyByParentAndType: (params: {
       parentPath: string;
       refresh?: boolean;
@@ -85,7 +90,7 @@ vi.mock("@/stores/app", async () => {
   }>()((set, get) => ({
     policies: {},
     getPolicyByParentAndType: ({ parentPath }) => get().policies[parentPath],
-    getOrFetchPolicyByParentAndType: async (params) => {
+    fetchPolicyByParentAndType: async (params) => {
       mocks.fetchPolicy(params);
       if (mocks.unreadable.has(params.parentPath)) return undefined;
       if (!get().policies[params.parentPath]) {
@@ -97,9 +102,12 @@ vi.mock("@/stores/app", async () => {
             }),
           },
         }));
+        return null;
       }
       return get().policies[params.parentPath];
     },
+    getOrFetchPolicyByParentAndType: async (params) =>
+      (await get().fetchPolicyByParentAndType(params)) ?? undefined,
     upsertPolicy: async (params) => {
       await mocks.upsertPolicy(params);
       const saved = {
@@ -400,7 +408,12 @@ describe("ProjectSQLReviewPage", () => {
     ).toBeInTheDocument();
   });
 
-  test("moving to another project drops the draft", async () => {
+  test("moving to another project drops the draft and the remembered rules", async () => {
+    seedPolicies({
+      [WORKSPACE]: workspacePolicy(),
+      // Customized with SYNTAX off.
+      "projects/q": reviewRulePolicy("projects/q", []),
+    });
     const { rerender } = render(<ProjectSQLReviewPage projectId="p" />);
     const customize = await screen.findByRole("switch", {
       name: "sql-review.standard-rules.customize.self",
@@ -416,8 +429,37 @@ describe("ProjectSQLReviewPage", () => {
     expect(mocks.fetchPolicy).toHaveBeenCalledWith(
       expect.objectContaining({ parentPath: "projects/q" })
     );
-    expect(customizeOther).toHaveAttribute("aria-checked", "false");
+    expect(customizeOther).toHaveAttribute("aria-checked", "true");
     expect(updateButton()).not.toBeInTheDocument();
+
+    // Switching SYNTAX on starts from every rule, not from what the first
+    // project had on.
+    fireEvent.click(ruleSwitch("syntax"));
+    expect(ruleSwitch("disallow-truncate")).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+  });
+
+  test("a retry that fails again keeps the error, whatever the cache holds", async () => {
+    mocks.unreadable.add(PROJECT);
+    render(<ProjectSQLReviewPage projectId="p" />);
+    await screen.findByRole("alert");
+
+    // The workspace policy read fine and is cached; now only its read fails.
+    mocks.unreadable.clear();
+    mocks.unreadable.add(WORKSPACE);
+    fireEvent.click(
+      screen.getByRole("button", { name: "sql-review.standard-rules.retry" })
+    );
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(screen.queryAllByRole("switch")).toHaveLength(0);
+    expect(mocks.fetchPolicy).toHaveBeenLastCalledWith({
+      parentPath: WORKSPACE,
+      policyType: PolicyType.REVIEW_RULE,
+      refresh: true,
+    });
   });
 
   test("a role held only on the project loads without the workspace policy", async () => {
