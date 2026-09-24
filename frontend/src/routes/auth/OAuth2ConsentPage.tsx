@@ -365,7 +365,7 @@ export function OAuth2ConsentPage() {
     // An interstitial centered on the whole viewport: the card keeps one width
     // wherever it fits and narrows only on narrower screens. SplashLayout's
     // half-width column would narrow it on screens 1024px to 1727px wide.
-    <div className="min-h-screen flex flex-col items-center justify-center gap-8 px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-8 px-4 py-8">
       <BytebaseLogo />
       <div
         data-testid="oauth2-consent-card"
