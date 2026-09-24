@@ -29,7 +29,12 @@ const getUpdateMaskFromPolicyType = (policyType: PolicyType): string[] => {
     case PolicyType.TAG:
       return [PolicySchema.field.tagPolicy.name];
     case PolicyType.REVIEW_RULE:
-      return [PolicySchema.field.reviewRulePolicy.name];
+      // Saving the rules also re-enables a policy that was switched off
+      // through the API, since the UI reads an unenforced policy as absent.
+      return [
+        PolicySchema.field.reviewRulePolicy.name,
+        PolicySchema.field.enforce.name,
+      ];
     default:
       throw new Error(`unexpected policy type ${policyType}`);
   }

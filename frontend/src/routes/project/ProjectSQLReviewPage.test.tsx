@@ -15,7 +15,7 @@ const WORKSPACE = "workspaces/ws";
 const PROJECT = "projects/p";
 
 const mocks = vi.hoisted(() => ({
-  canUpdate: { value: true },
+  permissions: {} as Record<string, boolean>,
   upsertPolicy: vi.fn(),
   deletePolicy: vi.fn(),
   fetchPolicy: vi.fn(),
@@ -39,15 +39,20 @@ vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
 }));
 
 vi.mock("@/utils", () => ({
-  hasProjectPermissionV2: () => mocks.canUpdate.value,
+  hasProjectPermissionV2: (_project: unknown, permission: string) =>
+    mocks.permissions[permission] ?? true,
   hasWorkspacePermissionV2: () => true,
 }));
 
 vi.mock("@/stores", () => ({ pushNotification: mocks.pushNotification }));
-vi.mock("@/stores/modules/v1/common", () => ({ projectNamePrefix: "projects/" }));
+vi.mock("@/stores/modules/v1/common", () => ({
+  projectNamePrefix: "projects/",
+}));
 
 vi.mock("@/components/RouterLink", () => ({
-  RouterLink: ({ children }: { children: ReactNode }) => <a href="/">{children}</a>,
+  RouterLink: ({ children }: { children: ReactNode }) => (
+    <a href="/">{children}</a>
+  ),
 }));
 
 // Mirrors the real store: a fetch of a missing policy caches one with no
@@ -129,6 +134,7 @@ const reviewRulePolicy = (parent: string, rules: ReviewRuleType[]): Policy =>
   create(PolicySchema, {
     name: `${parent}/policies/review_rule`,
     type: PolicyType.REVIEW_RULE,
+    enforce: true,
     policy: {
       case: "reviewRulePolicy",
       value: create(ReviewRulePolicySchema, { rules }),
@@ -140,6 +146,12 @@ const workspacePolicy = () =>
     ReviewRuleType.SYNTAX,
     ReviewRuleType.REQUIRE_WHERE,
   ]);
+
+const seedCustomized = () =>
+  seedPolicies({
+    [WORKSPACE]: workspacePolicy(),
+    [PROJECT]: reviewRulePolicy(PROJECT, [ReviewRuleType.SYNTAX]),
+  });
 
 const renderLoaded = async () => {
   render(<ProjectSQLReviewPage projectId="p" />);
@@ -153,6 +165,9 @@ const ruleSwitch = (rule: string) =>
     name: `sql-review.standard-rules.rule.${rule}.title`,
   });
 
+const updateButton = () =>
+  screen.queryByRole("button", { name: "common.update" });
+
 const update = () =>
   act(async () => {
     fireEvent.click(screen.getByRole("button", { name: "common.update" }));
@@ -160,7 +175,7 @@ const update = () =>
 
 describe("ProjectSQLReviewPage", () => {
   beforeEach(() => {
-    mocks.canUpdate.value = true;
+    mocks.permissions = {};
     mocks.upsertPolicy.mockReset();
     mocks.deletePolicy.mockReset();
     mocks.fetchPolicy.mockReset();
@@ -181,12 +196,10 @@ describe("ProjectSQLReviewPage", () => {
     expect(
       screen.getByText("sql-review.standard-rules.running")
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "common.update" })
-    ).not.toBeInTheDocument();
+    expect(updateButton()).not.toBeInTheDocument();
   });
 
-  test("customizing starts from the workspace rules and saves a project policy", async () => {
+  test("customizing starts from the workspace rules and saves an enforced project policy", async () => {
     const customize = await renderLoaded();
 
     fireEvent.click(customize);
@@ -203,23 +216,19 @@ describe("ProjectSQLReviewPage", () => {
     expect(parentPath).toBe(PROJECT);
     expect(policy.type).toBe(PolicyType.REVIEW_RULE);
     expect(policy.resourceType).toBe(PolicyResourceType.PROJECT);
+    expect(policy.enforce).toBe(true);
     expect(policy.policy.value.rules).toEqual([
       ReviewRuleType.SYNTAX,
       ReviewRuleType.REQUIRE_WHERE,
       ReviewRuleType.DISALLOW_TRUNCATE,
     ]);
-    expect(
-      screen.queryByRole("button", { name: "common.update" })
-    ).not.toBeInTheDocument();
+    expect(updateButton()).not.toBeInTheDocument();
     expect(customize).toHaveAttribute("aria-checked", "true");
     expect(mocks.pushNotification).toHaveBeenCalledTimes(1);
   });
 
   test("turning customization off deletes the project policy", async () => {
-    seedPolicies({
-      [WORKSPACE]: workspacePolicy(),
-      [PROJECT]: reviewRulePolicy(PROJECT, [ReviewRuleType.SYNTAX]),
-    });
+    seedCustomized();
     const customize = await renderLoaded();
     expect(customize).toHaveAttribute("aria-checked", "true");
     expect(ruleSwitch("require-where")).toHaveAttribute(
@@ -249,9 +258,7 @@ describe("ProjectSQLReviewPage", () => {
 
     fireEvent.click(customize);
     fireEvent.click(customize);
-    expect(
-      screen.queryByRole("button", { name: "common.update" })
-    ).not.toBeInTheDocument();
+    expect(updateButton()).not.toBeInTheDocument();
   });
 
   test("a failed save keeps the draft", async () => {
@@ -261,23 +268,45 @@ describe("ProjectSQLReviewPage", () => {
     fireEvent.click(customize);
     await update();
 
-    expect(
-      screen.getByRole("button", { name: "common.update" })
-    ).toBeInTheDocument();
+    expect(updateButton()).toBeInTheDocument();
     expect(customize).toHaveAttribute("aria-checked", "true");
     expect(mocks.pushNotification).not.toHaveBeenCalled();
   });
 
-  test("without bb.policies.update nothing can be switched", async () => {
-    mocks.canUpdate.value = false;
-    seedPolicies({
-      [WORKSPACE]: workspacePolicy(),
-      [PROJECT]: reviewRulePolicy(PROJECT, [ReviewRuleType.SYNTAX]),
-    });
-    await renderLoaded();
+  test("switching customization on needs bb.policies.create", async () => {
+    mocks.permissions = { "bb.policies.create": false };
+    const customize = await renderLoaded();
 
-    for (const control of screen.getAllByRole("switch")) {
-      expect(control).toHaveAttribute("data-disabled");
-    }
+    expect(customize).toHaveAttribute("data-disabled");
+  });
+
+  test("editing the project's own rules needs bb.policies.update", async () => {
+    mocks.permissions = { "bb.policies.update": false };
+    seedCustomized();
+    const customize = await renderLoaded();
+
+    expect(ruleSwitch("require-where")).toHaveAttribute("data-disabled");
+    // Switching customization off is a delete, which this role may do.
+    expect(customize).not.toHaveAttribute("data-disabled");
+  });
+
+  test("switching customization off needs bb.policies.delete", async () => {
+    mocks.permissions = { "bb.policies.delete": false };
+    seedCustomized();
+    const customize = await renderLoaded();
+
+    expect(customize).toHaveAttribute("data-disabled");
+    expect(ruleSwitch("require-where")).not.toHaveAttribute("data-disabled");
+  });
+
+  test("undoing an unsaved switch needs no permission", async () => {
+    mocks.permissions = { "bb.policies.delete": false };
+    const customize = await renderLoaded();
+
+    fireEvent.click(customize);
+    expect(customize).not.toHaveAttribute("data-disabled");
+    fireEvent.click(customize);
+    expect(customize).toHaveAttribute("aria-checked", "false");
+    expect(updateButton()).not.toBeInTheDocument();
   });
 });
