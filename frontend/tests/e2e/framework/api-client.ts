@@ -137,6 +137,19 @@ export class BytebaseApiClient {
     }
   }
 
+  // OAuth2 dynamic client registration (RFC 7591), the call an MCP client makes
+  // before sending its user to the consent page. The backend accepts only
+  // localhost, known hosted-client, and allowlisted app-scheme redirect URIs.
+  async registerOAuth2Client(
+    clientName: string,
+    redirectURIs: string[],
+  ): Promise<{ client_id: string }> {
+    return this.request<{ client_id: string }>("POST", "/api/oauth2/register", {
+      client_name: clientName,
+      redirect_uris: redirectURIs,
+    });
+  }
+
   // Creates a new project with the given resourceId and title. Used by the
   // seed-test-data fixture to ensure tests have ≥ 2 projects (the
   // project-switcher CUJ in connection.spec.ts needs an alternative to the
