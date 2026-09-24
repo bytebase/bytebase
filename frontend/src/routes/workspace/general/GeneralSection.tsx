@@ -201,10 +201,7 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                   description={
                     <>
                       {t("settings.general.workspace.external-url.description")}{" "}
-                      <LearnMoreLink
-                        href="https://docs.bytebase.com/get-started/self-host/external-url?source=console"
-                        className="text-accent"
-                      />
+                      <LearnMoreLink href="https://docs.bytebase.com/get-started/self-host/external-url?source=console" />
                     </>
                   }
                 >

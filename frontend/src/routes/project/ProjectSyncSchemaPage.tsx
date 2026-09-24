@@ -434,10 +434,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
         description={
           <>
             {t("database.sync-schema.description")}{" "}
-            <LearnMoreLink
-              href="https://docs.bytebase.com/change-database/synchronize-schema?source=console"
-              className="text-accent"
-            />
+            <LearnMoreLink href="https://docs.bytebase.com/change-database/synchronize-schema?source=console" />
           </>
         }
       />
@@ -890,7 +887,7 @@ function ChangelogLabel({ entry }: { entry: ChangelogEntry }) {
         )}
       </span>
       {entry.planTitle && (
-        <span className="inline-flex items-center px-1.5 py-0 rounded-full bg-control-bg text-xs">
+        <span className="inline-flex items-center rounded-xs border border-transparent bg-control-bg px-1.5 py-0.5 text-xs">
           {entry.planTitle}
         </span>
       )}
@@ -1076,7 +1073,7 @@ function SourceSchemaInfo({
           <Button
             appearance="secondary"
             size="md"
-            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
+            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-xs bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
             onClick={gotoDatabase}
           >
             <span className="opacity-60">{t("common.database")}</span>
@@ -1091,7 +1088,7 @@ function SourceSchemaInfo({
           <Button
             appearance="secondary"
             size="md"
-            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
+            className="h-auto inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-xs bg-control-bg text-sm transition-colors hover:bg-control-bg-hover"
             onClick={gotoChangelog}
           >
             <span className="opacity-60 mr-1">{t("common.changelog")}</span>
@@ -1100,10 +1097,10 @@ function SourceSchemaInfo({
         </>
       ) : (
         <>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-control-bg text-sm">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-xs bg-control-bg text-sm">
             {t("schema-editor.raw-sql")}
           </span>
-          <span className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-full bg-control-bg text-sm">
+          <span className="inline-flex items-center gap-x-1 px-2.5 py-0.5 rounded-xs bg-control-bg text-sm">
             <span className="opacity-60 mr-1">{t("database.engine")}</span>
             <EngineIcon engine={sourceEngine} className="w-4 h-4" />
             <span>{engineNameV1(sourceEngine)}</span>

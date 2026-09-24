@@ -2275,10 +2275,7 @@ export function MembersPage({ projectId }: { projectId?: string }) {
           description={
             <>
               {t("project.members.description")}{" "}
-              <LearnMoreLink
-                href="https://docs.bytebase.com/administration/roles/?source=console#project-roles"
-                className="text-accent"
-              />
+              <LearnMoreLink href="https://docs.bytebase.com/administration/roles/?source=console#project-roles" />
             </>
           }
         />

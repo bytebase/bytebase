@@ -138,8 +138,9 @@ Use semantic utilities backed by CSS custom properties:
 
 ### Borders, Corners, Focus, And Layers
 
-- Use `rounded-xs` for compact controls, `rounded-sm` for ordinary framed
-  surfaces, and `rounded-full` only for circular controls, avatars, and pills.
+- Use `rounded-xs` for compact controls and textual labels, including status
+  badges, tags, and selected tokens. Use `rounded-sm` for ordinary framed
+  surfaces, and `rounded-full` only for circular controls and avatars.
 - Use `border-control-border` for controls and `border-block-border` for region
   boundaries.
 - Interactive elements MUST have a visible keyboard focus state. Prefer the

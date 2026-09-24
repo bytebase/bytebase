@@ -110,8 +110,8 @@ export function AccessGrantItem({
        * `flex-wrap` + `justify-between` keeps the original "badges left,
        * expiration right" layout when both fit on the row, but lets the
        * row wrap when the panel is narrow. Pairing it with `shrink-0`
-       * on the badges container preserves each pill at its natural size
-       * so the label never wraps inside the pill (`脱敏豁免` → "脱敏豁
+       * on the badges container preserves each label at its natural size
+       * so the label never wraps inside the badge (`脱敏豁免` → "脱敏豁
        * \n免"). When the expiration wraps to a second row it falls back
        * to the row's start alignment (justify-between has no effect on
        * a single-item row), so it reads naturally left-to-right under
@@ -119,27 +119,14 @@ export function AccessGrantItem({
        */}
       <div className="w-full flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <div className="flex items-center gap-x-1 shrink-0">
-          <Badge
-            variant={badgeVariant}
-            className="text-xs px-1.5 py-0 rounded-full"
-          >
+          <Badge variant={badgeVariant} className="px-1.5 py-0.5">
             {statusLabel}
           </Badge>
           {grant.unmask && (
-            <Badge
-              variant="default"
-              className="text-xs px-1.5 py-0 rounded-full"
-            >
-              {t("sql-editor.grant-type-unmask")}
-            </Badge>
+            <Badge variant="default">{t("sql-editor.grant-type-unmask")}</Badge>
           )}
           {grant.export && (
-            <Badge
-              variant="default"
-              className="text-xs px-1.5 py-0 rounded-full"
-            >
-              {t("sql-editor.grant-type-export")}
-            </Badge>
+            <Badge variant="default">{t("sql-editor.grant-type-export")}</Badge>
           )}
         </div>
         {expirationText && (

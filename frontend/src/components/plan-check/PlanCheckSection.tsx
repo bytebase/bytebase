@@ -448,7 +448,7 @@ export function PlanCheckResultCard({
         )}
         {affectedRows !== undefined && (
           <div className="mt-1 flex items-center gap-1 text-sm">
-            <span className="inline-flex items-center rounded-full bg-background px-2 py-0.5 text-xs text-control">
+            <span className="inline-flex items-center rounded-xs border border-transparent bg-background px-1.5 py-0.5 text-xs text-control">
               {t("task.check-type.affected-rows.self")}
             </span>
             <span>{String(affectedRows)}</span>

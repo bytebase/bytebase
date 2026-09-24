@@ -314,7 +314,7 @@ export function ProjectMaskingExemptionPage({
             </span>
             <span>{u.title}</span>
             {currentUser && u.name === currentUser.name && (
-              <span className="text-xs bg-success/10 text-success rounded-full px-1.5">
+              <span className="inline-flex items-center rounded-xs border border-transparent bg-success/10 px-1.5 py-0.5 text-xs text-success">
                 {t("common.you")}
               </span>
             )}
@@ -946,17 +946,17 @@ function ExemptionMemberItem({
         <div className="flex items-center gap-x-1.5">
           <span className="font-medium text-sm truncate">{displayName}</span>
           {member.type === "group" && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-control-border bg-background">
+            <span className="inline-flex items-center rounded-xs border border-control-border bg-background px-1.5 py-0.5 text-xs">
               {t("common.groups")}
             </span>
           )}
           {isServiceAccount && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent whitespace-nowrap shrink-0">
+            <span className="inline-flex items-center rounded-xs border border-accent/30 bg-accent/5 px-1.5 py-0.5 text-xs text-accent whitespace-nowrap shrink-0">
               {t("settings.members.service-account")}
             </span>
           )}
           {isWorkloadIdentity && (
-            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs border border-accent/30 bg-accent/5 text-accent whitespace-nowrap shrink-0">
+            <span className="inline-flex items-center rounded-xs border border-accent/30 bg-accent/5 px-1.5 py-0.5 text-xs text-accent whitespace-nowrap shrink-0">
               {t("settings.members.workload-identity")}
             </span>
           )}
@@ -1299,7 +1299,7 @@ function ExemptionLevelCard({
         <span className="textinfolabel font-medium uppercase text-xs">
           {t("common.scope")}
         </span>
-        <span className="rounded-xs border border-success/20 bg-success/10 px-2 py-0.5 text-xs text-success">
+        <span className="rounded-xs border border-success/20 bg-success/10 px-1.5 py-0.5 text-xs text-success">
           {t("database.all")}
         </span>
       </div>

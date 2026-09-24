@@ -194,6 +194,11 @@ describe("CredentialSourceForm", () => {
     expect(
       container.querySelector("textarea")?.getAttribute("placeholder")
     ).toBe("instance.type-or-paste-credentials-write-only");
+    expect(
+      container.querySelector("textarea")
+        ?.closest('[data-slot="form-field"]')
+        ?.querySelector('[data-slot="form-field-description"]')?.textContent
+    ).toContain("instance.create-gcp-credentials");
 
     unmount();
   });

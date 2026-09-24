@@ -26,17 +26,15 @@ export function IssueDetailHeader() {
     <div className="px-2 py-2 sm:px-4">
       <div className="flex flex-row items-center justify-between gap-2">
         {showClosedTag && (
-          <Badge
-            className="shrink-0 gap-x-1.5 rounded-full px-3 py-1"
-            variant="default"
-          >
+          <Badge className="shrink-0 gap-x-1.5" size="sm" variant="default">
             <Ban className="h-4 w-4" />
             {t("common.closed")}
           </Badge>
         )}
         {showDoneTag && !showClosedTag && (
           <Badge
-            className="shrink-0 gap-x-1.5 rounded-full px-3 py-1"
+            className="shrink-0 gap-x-1.5"
+            size="sm"
             variant={doneTagVariant}
           >
             <CheckCircle2 className="h-4 w-4" />

@@ -85,7 +85,7 @@ export function DeployTaskHeader({
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <PlanTargetDisplay size="md" target={task.target} />
             {isExpanded && scheduledTimeTs > 0 && (
-              <span className="flex shrink-0 items-center gap-x-1 rounded-full bg-info/10 px-2 py-0.5 text-xs text-info">
+              <span className="flex shrink-0 items-center gap-x-1 rounded-xs border border-transparent bg-info/10 px-1.5 py-0.5 text-xs text-info">
                 <LoaderCircle className="size-3 animate-spin motion-reduce:animate-none" />
                 <HumanizeTs ts={scheduledTimeTs} />
               </span>
@@ -160,7 +160,7 @@ export function DeployTaskHeader({
       {!isExpanded && collapsedStatusText && (
         <div className="mt-1 flex items-center gap-x-2 text-xs">
           {latestTaskRun?.createTime && (
-            <span className="rounded-full border bg-control-bg px-2 py-0.5 text-control-light">
+            <span className="rounded-xs border bg-control-bg px-1.5 py-0.5 text-control-light">
               <HumanizeTs
                 ts={
                   getTimeForPbTimestampProtoEs(latestTaskRun.createTime, 0) /

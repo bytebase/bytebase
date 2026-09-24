@@ -21,7 +21,7 @@ export function LifecycleStamp({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full border text-sm",
+        "inline-flex shrink-0 items-center rounded-xs border text-sm",
         size === "sm" && "gap-x-1 px-2 py-0.5",
         size === "md" && "h-9 gap-x-1.5 px-3",
         tone === "success" && "border-success/40 text-success",
